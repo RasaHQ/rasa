@@ -646,6 +646,20 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[RANDOM_SEED],
         )
+
+        types, shapes = data_generator._get_example_shape_type()
+
+        print(types)
+        print(shapes)
+
+        # exit(0)
+
+        train_dataset = tf.data.Dataset.from_generator(
+            data_generator._yield_examples,
+            output_types=tuple(types),
+            output_shapes=tuple(shapes),
+        ).prefetch(100)
+
         callbacks = rasa.utils.train_utils.create_common_callbacks(
             self.config[EPOCHS],
             self.config[TENSORBOARD_LOG_DIR],
@@ -653,7 +667,7 @@ class TEDPolicy(Policy):
             self.tmp_checkpoint_dir,
         )
         self.model.fit(
-            data_generator,
+            train_dataset,
             epochs=self.config[EPOCHS],
             validation_data=validation_data_generator,
             validation_freq=self.config[EVAL_NUM_EPOCHS],

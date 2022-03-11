@@ -395,7 +395,28 @@ class RasaBatchDataGenerator(RasaDataGenerator):
 
         # return input and target data, as our target data is inside the input
         # data return None for the target data
-        return self.prepare_batch(self._data, start, end), None
+        return self.prepare_batch(self._data, start, end)
+
+    def _get_example_shape_type(self):
+        # this is a hack right now to get this info quickly
+        elements = self.prepare_batch(self._data, 0, 1)
+        types = []
+        shapes = []
+        for element in elements:
+            shape = []
+            for index, size in enumerate(element.shape):
+                if index == 0:
+                    shape.append(None)
+                    continue
+                shape.append(size)
+            shapes.append(tuple(shape))
+            types.append(element.dtype)
+
+        return types, shapes
+
+    def _yield_examples(self):
+        for index in range(self.__len__()):
+            yield self.__getitem__(index)
 
     def on_epoch_end(self) -> None:
         """Update the data after every epoch."""

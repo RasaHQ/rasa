@@ -60,7 +60,7 @@ LABEL_SUB_KEY = IDS
 
 
 # noinspection PyMethodOverriding
-class RasaModel(TmpKerasModel):
+class RasaModel(tf.keras.models.Model):
     """Abstract custom Keras model.
 
      This model overwrites the following methods:
