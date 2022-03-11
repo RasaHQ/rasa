@@ -27,7 +27,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
@@ -351,7 +351,7 @@ def test_container_derive_messages_from_domain_and_add():
         action_texts=action_texts,
         responses=responses,
         entities=["e_a", "e_b", "e_c"],
-        slots=[Slot(name="s", mappings=[{}])],
+        slots=[TextSlot(name="s", mappings=[{}])],
         forms=forms,
         data={},
     )
