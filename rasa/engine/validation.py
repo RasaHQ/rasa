@@ -242,6 +242,7 @@ def _get_parameter_information(
 
     type_hints = _get_type_hints(uses, fn)
     return_type = type_hints.pop("return", inspect.Parameter.empty)
+    type_hints.pop("cls", None)
 
     params = inspect.signature(fn).parameters
 
