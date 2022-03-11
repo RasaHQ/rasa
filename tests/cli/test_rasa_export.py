@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 from typing import Callable, Optional, Text, List, Tuple
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -17,7 +17,7 @@ from rasa.exceptions import PublishingError, NoEventsToMigrateError
 from tests.conftest import (
     MockExporter,
     random_user_uttered_event,
-    write_endpoint_config_to_yaml,
+    write_endpoint_config_to_yaml, AsyncMock,
 )
 
 

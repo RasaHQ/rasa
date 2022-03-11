@@ -20,7 +20,7 @@ from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.engine.url import URL
 from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock
 
 import rasa.core.tracker_store
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
@@ -49,6 +49,7 @@ from rasa.core.tracker_store import (
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from tests.conftest import AsyncMock
 from tests.core.conftest import MockedMongoTrackerStore
 
 test_domain = Domain.load("data/test_domains/default.yml")

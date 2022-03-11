@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 from typing import Optional, Text, List
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock
 
 import pytest
 
@@ -20,7 +20,7 @@ from rasa.exceptions import (
     NoEventsInTimeRangeError,
     PublishingError,
 )
-from tests.conftest import MockExporter, random_user_uttered_event
+from tests.conftest import MockExporter, random_user_uttered_event, AsyncMock
 
 
 @pytest.mark.parametrize(
