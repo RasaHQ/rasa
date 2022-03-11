@@ -369,7 +369,7 @@ class RulePolicy(MemoizationPolicy):
         if not rule_fingerprints:
             return
 
-        error_messages = []
+        error_messages: List[Text] = []
         for tracker in rule_trackers:
             states = tracker.past_states(domain)
             # the last action is always action listen
