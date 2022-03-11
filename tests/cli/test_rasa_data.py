@@ -202,6 +202,37 @@ def test_validate_files_form_not_found_invalid_domain(
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
 
+@pytest.mark.parametrize(
+    ("file_type", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+def test_validate_files_with_active_loop_null(
+    file_type: Text, data_type: Text, tmp_path: Path
+):
+    file_name = tmp_path / f"{file_type}.yml"
+    file_name.write_text(
+        f"""
+        version: "3.0"
+        {file_type}:
+        - {data_type}: test path
+          steps:
+            - intent: request_restaurant
+            - action: restaurant_form
+            - active_loop: restaurant_form
+            - active_loop: null
+            - action: action_search_restaurants
+        """
+    )
+    args = {
+        "domain": "data/test_domains/restaurant_form.yml",
+        "data": [file_name],
+        "max_history": None,
+        "config": None,
+        "fail_on_warnings": False,
+    }
+    with pytest.warns(None):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
 def test_validate_files_form_slots_not_matching(tmp_path: Path):
     domain_file_name = tmp_path / "domain.yml"
     domain_file_name.write_text(
