@@ -19,6 +19,8 @@ from typing import (
     Union,
     TYPE_CHECKING,
     Generator,
+    TypeVar,
+    Generic,
 )
 
 from boto3.dynamodb.conditions import Key
@@ -83,6 +85,40 @@ class TrackerDeserialisationException(RasaException):
     """Raised when an error is encountered while deserialising a tracker."""
 
 
+SerializationType = TypeVar("SerializationType")
+
+
+class SerializedTrackerRepresentation(Generic[SerializationType]):
+    """Mixin class for specifying different serialization methods per tracker store."""
+
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> SerializationType:
+        """Requires implementation to return representation of tracker."""
+        raise NotImplementedError()
+
+
+class SerializedTrackerAsText(SerializedTrackerRepresentation[Text]):
+    """Mixin class that returns the serialized tracker as string."""
+
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
+        """Serializes the tracker, returns representation of the tracker."""
+        dialogue = tracker.as_dialogue()
+
+        return json.dumps(dialogue.as_dict())
+
+
+class SerializedTrackerAsDict(SerializedTrackerRepresentation[Dict]):
+    """Mixin class that returns the serialized tracker as dictionary."""
+
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> Dict:
+        """Serializes the tracker, returns representation of the tracker."""
+        d = tracker.as_dialogue().as_dict()
+        d.update({"sender_id": tracker.sender_id})
+        return d
+
+
 class TrackerStore:
     """Represents common behavior and interface for all `TrackerStore`s."""
 
@@ -100,7 +136,7 @@ class TrackerStore:
                 destination.
             kwargs: Additional kwargs.
         """
-        self.domain = domain or Domain.empty()
+        self._domain = domain or Domain.empty()
         self.event_broker = event_broker
         self.max_event_history = None
 
@@ -165,10 +201,10 @@ class TrackerStore:
         return tracker
 
     def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
-        """Returns a Dialogue State Tracker"""
+        """Returns a Dialogue State Tracker."""
         return DialogueStateTracker(
             sender_id,
-            self.domain.slots if self.domain else None,
+            self.domain.slots,
             max_event_history=self.max_event_history,
         )
 
@@ -264,13 +300,6 @@ class TrackerStore:
         """Returns the set of values for the tracker store's primary key"""
         raise NotImplementedError()
 
-    @staticmethod
-    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
-        """Serializes the tracker, returns representation of the tracker."""
-        dialogue = tracker.as_dialogue()
-
-        return json.dumps(dialogue.as_dict())
-
     def deserialise_tracker(
         self, sender_id: Text, serialised_tracker: Union[Text, bytes]
     ) -> Optional[DialogueStateTracker]:
@@ -290,9 +319,18 @@ class TrackerStore:
 
         return tracker
 
+    @property
+    def domain(self) -> Domain:
+        """Returns the domain of the tracker store."""
+        return self._domain
 
-class InMemoryTrackerStore(TrackerStore):
-    """Stores conversation history in memory"""
+    @domain.setter
+    def domain(self, domain: Optional[Domain]) -> None:
+        self._domain = domain or Domain.empty()
+
+
+class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
+    """Stores conversation history in memory."""
 
     def __init__(
         self,
@@ -300,6 +338,7 @@ class InMemoryTrackerStore(TrackerStore):
         event_broker: Optional[EventBroker] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
+        """Initializes the tracker store."""
         self.store: Dict[Text, Text] = {}
         super().__init__(domain, event_broker, **kwargs)
 
@@ -323,8 +362,8 @@ class InMemoryTrackerStore(TrackerStore):
         return self.store.keys()
 
 
-class RedisTrackerStore(TrackerStore):
-    """Stores conversation history in Redis"""
+class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
+    """Stores conversation history in Redis."""
 
     def __init__(
         self,
@@ -342,6 +381,7 @@ class RedisTrackerStore(TrackerStore):
         ssl_ca_certs: Optional[Text] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
+        """Initializes the tracker store."""
         import redis
 
         self.red = redis.StrictRedis(
@@ -412,8 +452,8 @@ class RedisTrackerStore(TrackerStore):
         return self.red.keys(self.key_prefix + "*")
 
 
-class DynamoTrackerStore(TrackerStore):
-    """Stores conversation history in DynamoDB"""
+class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
+    """Stores conversation history in DynamoDB."""
 
     def __init__(
         self,
@@ -475,12 +515,17 @@ class DynamoTrackerStore(TrackerStore):
 
         self.db.put_item(Item=serialized)
 
-    def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
-        """Serializes the tracker, returns object with decimal types."""
-        d = tracker.as_dialogue().as_dict()
-        d.update({"sender_id": tracker.sender_id})
-        # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
-        return core_utils.replace_floats_with_decimals(d)
+    @staticmethod
+    def serialise_tracker(
+        tracker: "DialogueStateTracker",
+    ) -> Dict:
+        """Serializes the tracker, returns object with decimal types.
+
+        DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s.
+        """
+        return core_utils.replace_floats_with_decimals(
+            SerializedTrackerAsDict.serialise_tracker(tracker)
+        )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieve dialogues for a sender_id in reverse-chronological order.
@@ -523,7 +568,7 @@ class DynamoTrackerStore(TrackerStore):
         return sender_ids
 
 
-class MongoTrackerStore(TrackerStore):
+class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
     """Stores conversation history in Mongo.
 
     Property methods:
@@ -802,7 +847,7 @@ def validate_port(port: Any) -> Optional[int]:
     return port
 
 
-class SQLTrackerStore(TrackerStore):
+class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
     """Store which can save and retrieve trackers from an SQL database."""
 
     Base: DeclarativeMeta = declarative_base()
@@ -1131,8 +1176,10 @@ class SQLTrackerStore(TrackerStore):
 
 
 class FailSafeTrackerStore(TrackerStore):
-    """Wraps a tracker store so that we can fallback to a different tracker store in
-    case of errors."""
+    """Tracker store wrapper.
+
+    Allows a fallback to a different tracker store in case of errors.
+    """
 
     def __init__(
         self,
@@ -1155,7 +1202,8 @@ class FailSafeTrackerStore(TrackerStore):
         super().__init__(tracker_store.domain, tracker_store.event_broker)
 
     @property
-    def domain(self) -> Optional[Domain]:
+    def domain(self) -> Domain:
+        """Returns the domain of the primary tracker store."""
         return self._tracker_store.domain
 
     @domain.setter
