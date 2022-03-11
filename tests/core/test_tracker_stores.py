@@ -44,7 +44,7 @@ from rasa.core.tracker_store import (
     SQLTrackerStore,
     DynamoTrackerStore,
     FailSafeTrackerStore,
-    AwaitableTrackerStore
+    AwaitableTrackerStore,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
@@ -608,9 +608,10 @@ async def test_sql_additional_events_with_session_start(domain: Domain):
     "tracker_store_type,tracker_store_kwargs",
     [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
-
 async def test_tracker_store_retrieve_with_session_started_events(
-    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain: Domain,
+    tracker_store_type: Type[TrackerStore],
+    tracker_store_kwargs: Dict,
+    domain: Domain,
 ):
     tracker_store = tracker_store_type(domain, **tracker_store_kwargs)
     events = [
@@ -639,7 +640,9 @@ async def test_tracker_store_retrieve_with_session_started_events(
     [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
 async def test_tracker_store_retrieve_without_session_started_events(
-    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain,
+    tracker_store_type: Type[TrackerStore],
+    tracker_store_kwargs: Dict,
+    domain,
 ):
     tracker_store = tracker_store_type(domain, **tracker_store_kwargs)
 
@@ -944,8 +947,8 @@ def test_sql_tracker_store_with_token_serialisation(
 ):
     tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
     prepare_token_serialisation(tracker_store, response_selector_agent, "sql")
-    
-    
+
+
 def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
     with pytest.raises(RasaException) as error:
         TrackerStore.create(
@@ -956,7 +959,9 @@ def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
 
 
 def test_create_non_async_tracker_store(domain: Domain):
-    endpoint_config = EndpointConfig(type="tests.core.test_tracker_stores.NonAsyncTrackerStore")
+    endpoint_config = EndpointConfig(
+        type="tests.core.test_tracker_stores.NonAsyncTrackerStore"
+    )
     with pytest.warns(FutureWarning):
         tracker_store = TrackerStore.create(endpoint_config)
     assert isinstance(tracker_store, AwaitableTrackerStore)

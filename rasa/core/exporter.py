@@ -175,7 +175,9 @@ class Exporter:
             tracker store are returned.
 
         """
-        conversation_ids_in_tracker_store = await self._get_conversation_ids_in_tracker()
+        conversation_ids_in_tracker_store = (
+            await self._get_conversation_ids_in_tracker()
+        )
 
         if not self.requested_conversation_ids:
             return conversation_ids_in_tracker_store

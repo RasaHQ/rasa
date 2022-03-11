@@ -74,11 +74,18 @@ def check_if_tracker_store_async(tracker_store: TrackerStore) -> bool:
     :param tracker_store: tracker store object we're evaluating
     :return: boolean indicating if the tracker store correctly implemented all async methods
     """
-    return all(iscoroutinefunction(getattr(tracker_store, method)) for method in get_async_tracker_store_methods())
+    return all(
+        iscoroutinefunction(getattr(tracker_store, method))
+        for method in get_async_tracker_store_methods()
+    )
 
 
 def get_async_tracker_store_methods() -> List[str]:
-    return [attribute for attribute in dir(TrackerStore) if iscoroutinefunction(getattr(TrackerStore, attribute))]
+    return [
+        attribute
+        for attribute in dir(TrackerStore)
+        if iscoroutinefunction(getattr(TrackerStore, attribute))
+    ]
 
 
 class TrackerDeserialisationException(RasaException):
@@ -157,12 +164,14 @@ class TrackerStore:
         try:
             tracker_store = _create_from_endpoint_config(obj, domain, event_broker)
             if not check_if_tracker_store_async(tracker_store):
-                rasa.shared.utils.io.raise_deprecation_warning(f"Tracker store implementation "
-                                                               f"{tracker_store.__class__.__name__} "
-                                                               f"is not asynchronous. Non-asynchronous tracker stores "
-                                                               f"are currently deprecated and will be removed in 4.0. "
-                                                               f"Please make the following methods async: "
-                                                               f"{get_async_tracker_store_methods()}")
+                rasa.shared.utils.io.raise_deprecation_warning(
+                    f"Tracker store implementation "
+                    f"{tracker_store.__class__.__name__} "
+                    f"is not asynchronous. Non-asynchronous tracker stores "
+                    f"are currently deprecated and will be removed in 4.0. "
+                    f"Please make the following methods async: "
+                    f"{get_async_tracker_store_methods()}"
+                )
                 tracker_store = AwaitableTrackerStore(tracker_store)
             return tracker_store
         except (
@@ -726,7 +735,9 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
         """Fetching all tracker events across conversation sessions."""
-        events = await self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
+        events = await self._retrieve(
+            conversation_id, fetch_events_from_all_sessions=True
+        )
 
         if not events:
             return None
@@ -1020,7 +1031,8 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                     "WHERE datname = :database_name"
                 ),
                 database_name=database_name,
-            ).rowcount
+            )
+            .rowcount
         )
 
         if not matching_rows:
@@ -1065,10 +1077,12 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
         """Fetching all tracker events across conversation sessions."""
-        return await self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
+        return await self._retrieve(
+            conversation_id, fetch_events_from_all_sessions=True
+        )
 
     async def _retrieve(
-            self, sender_id: Text, fetch_events_from_all_sessions: bool
+        self, sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> Optional[DialogueStateTracker]:
         with self.session_scope() as session:
 
@@ -1110,10 +1124,12 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         """
         # Subquery to find the timestamp of the latest `SessionStarted` event
         session_start_sub_query = (
-            session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start")).filter(
+            session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start"))
+            .filter(
                 self.SQLEvent.sender_id == sender_id,
                 self.SQLEvent.type_name == SessionStarted.type_name,
-            ).subquery()
+            )
+            .subquery()
         )
 
         event_query = session.query(self.SQLEvent).filter(
@@ -1338,8 +1354,8 @@ class AwaitableTrackerStore(TrackerStore):
     """Wraps a tracker store so it can be implemented with async overrides."""
 
     def __init__(
-            self,
-            tracker_store: TrackerStore,
+        self,
+        tracker_store: TrackerStore,
     ) -> None:
         """Create a `AwaitableTrackerStore`.
         Args:
@@ -1359,13 +1375,17 @@ class AwaitableTrackerStore(TrackerStore):
         self._tracker_store.domain = domain
 
     @staticmethod
-    def create(obj: Union[TrackerStore, EndpointConfig, None],
-               domain: Optional[Domain] = None,
-               event_broker: Optional[EventBroker] = None, ) -> Optional[TrackerStore]:
+    def create(
+        obj: Union[TrackerStore, EndpointConfig, None],
+        domain: Optional[Domain] = None,
+        event_broker: Optional[EventBroker] = None,
+    ) -> Optional[TrackerStore]:
         if isinstance(obj, TrackerStore):
             return AwaitableTrackerStore(obj)
         else:
-            raise ValueError(f"{type(obj).__name__} supplied but expected object of type {TrackerStore.__name__}.")
+            raise ValueError(
+                f"{type(obj).__name__} supplied but expected object of type {TrackerStore.__name__}."
+            )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         result = self._tracker_store.retrieve(sender_id)

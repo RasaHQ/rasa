@@ -168,7 +168,9 @@ def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
 
     def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
-        async def decorated(request: Request, *args: Any, **kwargs: Any) -> "SanicResponse":
+        async def decorated(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> "SanicResponse":
             conversation_id = kwargs["conversation_id"]
             if await request.app.agent.tracker_store.exists(conversation_id):
                 return await f(request, *args, **kwargs)
@@ -308,7 +310,9 @@ async def get_test_stories(
         The stories for `conversation_id` in test format.
     """
     if fetch_all_sessions:
-        trackers = await processor.get_trackers_for_all_conversation_sessions(conversation_id)
+        trackers = await processor.get_trackers_for_all_conversation_sessions(
+            conversation_id
+        )
     else:
         trackers = [await processor.get_tracker(conversation_id)]
 

@@ -125,9 +125,9 @@ async def test_fetch_events_within_time_range_tracker_contains_no_events():
     tracker_store = Mock()
 
     tracker_store.keys = AsyncMock(return_value=["a great ID"])
-    tracker_store.retrieve_full_tracker = AsyncMock(return_value=DialogueStateTracker.from_events(
-            "a great ID", []
-        ))
+    tracker_store.retrieve_full_tracker = AsyncMock(
+        return_value=DialogueStateTracker.from_events("a great ID", [])
+    )
 
     exporter = MockExporter(tracker_store)
 
