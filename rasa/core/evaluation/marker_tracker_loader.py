@@ -1,7 +1,7 @@
 import random
 from rasa.shared.exceptions import RasaException
 from rasa.shared.core.trackers import DialogueStateTracker
-from typing import Any, Iterable, Iterator, List, Text, Optional, Coroutine, AsyncIterator
+from typing import Any, Iterable, List, Text, Optional, AsyncIterator
 from rasa.core.tracker_store import TrackerStore
 import rasa.shared.utils.io
 
