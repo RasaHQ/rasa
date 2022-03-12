@@ -172,7 +172,7 @@ def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
             request: Request, *args: Any, **kwargs: Any
         ) -> "SanicResponse":
             conversation_id = kwargs["conversation_id"]
-            if await request.app.agent.tracker_store.exists(conversation_id):
+            if await request.app.ctx.agent.tracker_store.exists(conversation_id):
                 return await f(request, *args, **kwargs)
             else:
                 raise ErrorResponse(
@@ -759,7 +759,7 @@ def create_app(
                     await processor.execute_side_effects(
                         events, tracker, output_channel
                     )
-                await app.agent.tracker_store.save(tracker)
+                await app.ctx.agent.tracker_store.save(tracker)
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -808,7 +808,7 @@ def create_app(
                 )
 
                 # will override an existing tracker with the same id!
-                await app.agent.tracker_store.save(tracker)
+                await app.ctx.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -832,7 +832,7 @@ def create_app(
 
         try:
             stories = await get_test_stories(
-                app.agent.processor,
+                app.ctx.agent.processor,
                 conversation_id,
                 until_time,
                 fetch_all_sessions=fetch_all_sessions,
@@ -1024,7 +1024,7 @@ def create_app(
                 tracker = await app.ctx.agent.processor.run_action_extract_slots(
                     user_message.output_channel, tracker
                 )
-                await app.agent.processor.save_tracker(tracker)
+                await app.ctx.agent.processor.save_tracker(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
