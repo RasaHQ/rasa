@@ -1064,13 +1064,25 @@ class TEDPolicy(Policy):
             predict_data_example,
         ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
-        model = cls._load_tf_model(
-            model_utilities,
-            model_data_example,
-            predict_data_example,
-            featurizer,
-            execution_context.is_finetuning,
-        )
+        model = ""
+        
+        if config['use_gpu']:
+            model = cls._load_tf_model(
+                    model_utilities,
+                    model_data_example,
+                    predict_data_example,
+                    featurizer,
+                    execution_context.is_finetuning,
+            )
+        else:
+            with tf.device('/cpu:0'):
+                model = cls._load_tf_model(
+                    model_utilities,
+                    model_data_example,
+                    predict_data_example,
+                    featurizer,
+                    execution_context.is_finetuning,
+                )
 
         return cls._load_policy_with_model(
             config,
