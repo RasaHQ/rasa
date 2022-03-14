@@ -225,6 +225,8 @@ async def run_nlu_test_async(
         )
     elif cross_validation:
         logger.info("Test model using cross validation.")
+        # FIXME: supporting Union[Path, Text] down the chain
+        # is the proper fix and needs more work
         config = str(
             rasa.cli.utils.get_validated_path(config, "config", DEFAULT_CONFIG_PATH)
         )

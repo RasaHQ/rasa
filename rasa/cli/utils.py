@@ -45,7 +45,7 @@ def get_validated_path(
     default: Optional[Union["Path", Text]] = None,
     none_is_valid: bool = False,
 ) -> Optional[Union["Path", Text]]:
-    """Check whether a file path or its default value is valid and returns it.
+    """Checks whether a file path or its default value is valid and returns it.
 
     Args:
         current: The parsed value.
@@ -82,7 +82,7 @@ def get_validated_path(
 def missing_config_keys(
     path: Union["Path", Text], mandatory_keys: List[Text]
 ) -> List[Text]:
-    """Check wheter the config file at `path` contains the `mandatory_keys`.
+    """Checks whether the config file at `path` contains the `mandatory_keys`.
 
     Args:
         path: The path to the config file.

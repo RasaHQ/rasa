@@ -1,7 +1,8 @@
 import argparse
 import logging
 import os
-from typing import List, Optional, Text, TYPE_CHECKING, Union
+from pathlib import Path
+from typing import List, Optional, Text, Union
 
 from rasa import model
 from rasa.cli import SubParsersAction
@@ -15,8 +16,6 @@ from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.cli
 import rasa.utils.common
 
-if TYPE_CHECKING:
-    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

@@ -37,11 +37,12 @@ def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
         raise ModelNotFound(f"No file or directory at '{model_path}'.")
 
     if os.path.isdir(model_path):
-        model_path = get_latest_model(model_path)  # type: ignore[assignment]
-        if not model_path:
+        file_model_path = get_latest_model(model_path)
+        if not file_model_path:
             raise ModelNotFound(
                 f"Could not find any Rasa model files in '{model_path}'."
             )
+        model_path = file_model_path
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
