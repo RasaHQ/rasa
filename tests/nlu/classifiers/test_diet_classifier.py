@@ -77,7 +77,7 @@ def create_diet(
 
         default_execution_context.is_finetuning = finetune
         rasa.utils.common.validate_config_and_insert_defaults(
-            defaults=DIETClassifier.get_default_config(), config=config
+            defaults=DIETClassifier.get_default_config(), custom=config
         )
         return constructor(
             config=config,
