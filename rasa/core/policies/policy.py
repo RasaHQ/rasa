@@ -534,7 +534,7 @@ class PolicyPrediction:
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
-        self.policy_priority = (policy_priority,)
+        self.policy_priority = policy_priority
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction

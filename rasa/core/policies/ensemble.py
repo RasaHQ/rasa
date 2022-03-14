@@ -178,7 +178,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         Returns:
             The index of the best prediction
         """
-        best_confidence = (-1.0, (-1,))
+        best_confidence = (-1.0, -1)
         best_index = -1
 
         # different type of predictions have different priorities
