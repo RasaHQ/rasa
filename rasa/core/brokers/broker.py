@@ -13,7 +13,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-EB = TypeVar("EB", bound=EventBroker)
+EB = TypeVar("EB", bound="EventBroker")
 
 
 class EventBroker:
