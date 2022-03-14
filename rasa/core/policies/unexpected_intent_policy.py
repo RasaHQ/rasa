@@ -36,6 +36,7 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
     UNLIKELY_INTENT_POLICY_PRIORITY,
+    DEFAULT_MAX_HISTORY,
 )
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
@@ -294,6 +295,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             BILOU_FLAG: False,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
+            # Max history of the policy, unbounded by default
+            POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
         }
