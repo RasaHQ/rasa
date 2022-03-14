@@ -333,30 +333,13 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         return not_found()
 
 
-def update_existing_keys(
-    original: Dict[Any, Any], updates: Dict[Any, Any]
-) -> Dict[Any, Any]:
-    """Iterate through all the updates and update a value in the original dictionary.
+def validate_config_and_insert_defaults(
+    custom: Dict[Text, Any],
+    defaults: Dict[Text, Any],
+) -> None:
+    """Validates the given config and insert (missing) default values.
 
-    If the updates contain a key that is not present in the original dict, it will
-    be ignored.
-    """
-    updated = original.copy()
-    for k, v in updates.items():
-        if k in updated:
-            updated[k] = v
-    return updated
-
-
-def override_defaults(
-    defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
-) -> Dict[Text, Any]:
-    """Override default config with the given config.
-
-    If no defaults are specified, then just a copy of the given custom configuration is
-    returned.
-
-    Otherwise, the given custom configuration is checked against the given
+    The given custom configuration is checked against the given
     defaults and missing values are filled in according to the following rules:
 
     1. If a configuration key maps to a non-dictionary, then a default value for this
@@ -373,36 +356,24 @@ def override_defaults(
        values for the sub-keys will be filled in.
 
     Args:
-        defaults: default config
+        defaults: default configuration (with default values that must allow for a
+           deep copy)
         custom: user config containing new parameters
-
-    Returns:
-        a new configuration containing the specified defaults or, if specified,
-        the custom values instead
 
     Raises:
         `InvalidConfigException` if the rules outlined above are violated
     """
-    config = copy.deepcopy(defaults) if defaults else {}
-
-    if not custom:
-        return config
-
-    if defaults is None:
-        return copy.deepcopy(custom)
-
-    assert_override_defaults(defaults=defaults, custom=custom)
-
-    for key in custom.keys():
-        if isinstance(config.get(key), dict):
-            config[key].update(custom[key])
-            continue
-        config[key] = custom[key]
-
-    return config
+    _raise_if_items_without_defaults_are_configured(defaults=defaults, custom=custom)
+    for key, key_default in defaults.items():
+        if key not in custom:
+            custom[key] = copy.deepcopy(key_default)
+        elif isinstance(key_default, dict):
+            key_custom = custom[key]
+            for sub_key, sub_key_default in key_default.items():
+                key_custom.setdefault(sub_key, sub_key_default)
 
 
-def assert_override_defaults(
+def _raise_if_items_without_defaults_are_configured(
     defaults: Dict[Text, Any], custom: Dict[Text, Any]
 ) -> None:
     """Raises if the given config does not just override default values.
@@ -426,8 +397,7 @@ def assert_override_defaults(
     for key in custom:
         if isinstance(defaults.get(key), dict) and not isinstance(custom[key], dict):
             keys_that_should_map_to_dicts.add(key)
-            continue
-        if key not in keys_without_defaults and isinstance(defaults.get(key), dict):
+        elif key not in keys_without_defaults and isinstance(defaults.get(key), dict):
             sub_keys_without_defaults = set(custom[key].keys()).difference(
                 defaults[key].keys()
             )

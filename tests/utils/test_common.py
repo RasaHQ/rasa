@@ -145,14 +145,16 @@ def test_module_path_from_class(clazz: Type, module_path: Text):
     assert rasa.utils.common.module_path_from_class(clazz) == module_path
 
 
-def test_override_defaults():
+def test_validate_config_and_insert_defaults():
     defaults = {"nested-dict": {"key1": "value1", "key2": "value2"}}
     custom = {"nested-dict": {"key2": "override-value2"}}
 
-    updated_config = rasa.utils.common.override_defaults(defaults, custom)
+    rasa.utils.common.validate_config_and_insert_defaults(
+        custom=custom, defaults=defaults
+    )
 
     expected_config = {"nested-dict": {"key1": "value1", "key2": "override-value2"}}
-    assert updated_config == expected_config
+    assert custom == expected_config
 
 
 @pytest.mark.parametrize(
@@ -167,11 +169,13 @@ def test_override_defaults():
         ({"key1": {"should-be-a-dict": 3}}, {"key1": "this-is-not-a-dict"}),
     ],
 )
-def test_override_defaults_raises_if_unknown_keys_are_specified(
+def test_validate_config_and_insert_defaults_raises_if_unknown_keys_are_specified(
     defaults: Dict[Text, Any], custom: Dict[Text, Any]
 ):
     with pytest.raises(InvalidConfigException):
-        rasa.utils.common.override_defaults(defaults, custom)
+        rasa.utils.common.validate_config_and_insert_defaults(
+            defaults=defaults, custom=custom
+        )
 
 
 def test_cli_missing_log_level_default_used():

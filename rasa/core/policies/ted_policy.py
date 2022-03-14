@@ -418,10 +418,10 @@ class TEDPolicy(Policy):
 
     def _auto_update_configuration(self) -> None:
         """Takes care of deprecations and compatibility of parameters."""
-        self.config = rasa.utils.train_utils.update_confidence_type(self.config)
+        rasa.utils.train_utils.update_confidence_type(self.config)
         rasa.utils.train_utils.validate_configuration_settings(self.config)
-        self.config = rasa.utils.train_utils.update_similarity_type(self.config)
-        self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
+        rasa.utils.train_utils.update_similarity_type(self.config)
+        rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
     def _create_label_data(
         self,
@@ -1083,7 +1083,7 @@ class TEDPolicy(Policy):
 
         model_utilities = cls._load_model_utilities(model_path)
 
-        config = cls._update_loaded_params(config)
+        cls._update_loaded_params(config)
 
         (
             model_data_example,
@@ -1176,10 +1176,8 @@ class TEDPolicy(Policy):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = rasa.utils.train_utils.update_confidence_type(meta)
-        meta = rasa.utils.train_utils.update_similarity_type(meta)
-
-        return meta
+        rasa.utils.train_utils.update_confidence_type(meta)
+        rasa.utils.train_utils.update_similarity_type(meta)
 
 
 class TED(TransformerRasaModel):

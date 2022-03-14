@@ -380,18 +380,12 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
 
-        self.component_config = train_utils.update_confidence_type(
-            self.component_config
-        )
+        train_utils.update_confidence_type(self.component_config)
 
         train_utils.validate_configuration_settings(self.component_config)
 
-        self.component_config = train_utils.update_similarity_type(
-            self.component_config
-        )
-        self.component_config = train_utils.update_evaluation_parameters(
-            self.component_config
-        )
+        train_utils.update_similarity_type(self.component_config)
+        train_utils.update_evaluation_parameters(self.component_config)
 
     @classmethod
     def create(
@@ -1139,8 +1133,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             sparse_feature_sizes,
         ) = cls._load_from_files(model_path)
 
-        config = train_utils.update_confidence_type(config)
-        config = train_utils.update_similarity_type(config)
+        train_utils.update_confidence_type(config)
+        train_utils.update_similarity_type(config)
 
         model = cls._load_model(
             entity_tag_specs,

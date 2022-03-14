@@ -355,7 +355,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         return IntentTED
 
     def _auto_update_configuration(self) -> None:
-        self.config = train_utils.update_evaluation_parameters(self.config)
+        train_utils.update_evaluation_parameters(self.config)
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
@@ -905,9 +905,10 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         return model_utilties
 
     @classmethod
-    def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = rasa.utils.common.override_defaults(cls.get_default_config(), meta)
-        return meta
+    def _update_loaded_params(cls, meta: Dict[Text, Any]) -> None:
+        rasa.utils.common.validate_config_and_insert_defaults(
+            custom=meta, defaults=cls.get_default_config()
+        )
 
     @classmethod
     def _load_policy_with_model(

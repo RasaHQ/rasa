@@ -226,7 +226,7 @@ def test_confidence_renormalization_settings(
 def test_update_confidence_type(
     component_config: Dict[Text, Text], model_confidence: Text
 ):
-    component_config = train_utils.update_confidence_type(component_config)
+    train_utils.update_confidence_type(component_config)
     assert component_config[MODEL_CONFIDENCE] == model_confidence
 
 

@@ -111,22 +111,18 @@ def rank_and_mask(
     return indices, confidences
 
 
-def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
+def update_similarity_type(config: Dict[Text, Any]) -> None:
     """
     If SIMILARITY_TYPE is set to 'auto', update the SIMILARITY_TYPE depending
     on the LOSS_TYPE.
     Args:
         config: model configuration
-
-    Returns: updated model configuration
     """
     if config.get(SIMILARITY_TYPE) == AUTO:
         if config[LOSS_TYPE] == CROSS_ENTROPY:
             config[SIMILARITY_TYPE] = INNER
         elif config[LOSS_TYPE] == MARGIN:
             config[SIMILARITY_TYPE] = COSINE
-
-    return config
 
 
 def align_token_features(
@@ -176,7 +172,7 @@ def align_token_features(
     return out_token_features
 
 
-def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
+def update_evaluation_parameters(config: Dict[Text, Any]) -> None:
     """
     If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of the training.
 
@@ -197,7 +193,6 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
         )
     if config[CHECKPOINT_MODEL] and config[EVAL_NUM_EXAMPLES] == 0:
         config[CHECKPOINT_MODEL] = False
-    return config
 
 
 def load_tf_hub_model(model_url: Text) -> Any:
@@ -419,7 +414,7 @@ def create_common_callbacks(
     return callbacks
 
 
-def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]:
+def update_confidence_type(component_config: Dict[Text, Any]) -> None:
     """Set model confidence to auto if margin loss is used.
 
     Option `auto` is reserved for margin loss type. It will be removed once margin loss
@@ -427,9 +422,6 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
 
     Args:
         component_config: model configuration
-
-    Returns:
-        updated model configuration
     """
     if component_config[LOSS_TYPE] == MARGIN:
         rasa.shared.utils.io.raise_warning(
@@ -440,7 +432,6 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
             f"cross entropy loss by setting `{LOSS_TYPE}={CROSS_ENTROPY}`."
         )
         component_config[MODEL_CONFIDENCE] = AUTO
-    return component_config
 
 
 def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
