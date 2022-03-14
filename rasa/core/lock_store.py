@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import json
 import logging
@@ -38,7 +39,7 @@ class LockError(RasaException):
 
 class LockStore:
     @staticmethod
-    def create(obj: Union["LockStore", EndpointConfig, None]) -> "LockStore":
+    def create(obj: Union[LockStore, EndpointConfig, None]) -> LockStore:
         """Factory to create a lock store."""
 
         if isinstance(obj, LockStore):
@@ -296,7 +297,7 @@ class InMemoryLockStore(LockStore):
 
 def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig] = None,
-) -> "LockStore":
+) -> LockStore:
     """Given an endpoint configuration, create a proper `LockStore` object."""
 
     if (
@@ -306,7 +307,7 @@ def _create_from_endpoint_config(
     ):
         # this is the default type if no lock store type is set
 
-        lock_store: "LockStore" = InMemoryLockStore()
+        lock_store: LockStore = InMemoryLockStore()
     elif endpoint_config.type == "redis":
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
     else:
@@ -319,7 +320,7 @@ def _create_from_endpoint_config(
 
 def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,
-) -> "LockStore":
+) -> LockStore:
     """Retrieve a `LockStore` based on its class name."""
 
     try:
