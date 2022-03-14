@@ -112,13 +112,14 @@ async def test_parsing(default_processor: MessageProcessor):
 async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "Joe"}')
     old_domain = default_processor.domain
-    new_domain = Domain.from_dict(old_domain.as_dict())
-    new_domain.intent_properties = {
-        name: intent
-        for name, intent in new_domain.intent_properties.items()
-        if name != "greet"
-    }
-    new_domain.entities = [e for e in new_domain.entities if e != "name"]
+    dict_for_new_domain = old_domain.as_dict()
+    dict_for_new_domain["intents"] = [
+        intent for intent in dict_for_new_domain["intents"] if intent != "greet"
+    ]
+    dict_for_new_domain["entities"] = [
+        entity for entity in dict_for_new_domain["entities"] if entity != "name"
+    ]
+    new_domain = Domain.from_dict(dict_for_new_domain)
     default_processor.domain = new_domain
 
     parsed = await default_processor.parse_message(message)
@@ -1184,6 +1185,7 @@ async def test_logging_of_end_to_end_action(
         action_names=[],
         forms={},
         action_texts=[end_to_end_action],
+        data={},
     )
 
     default_processor.domain = new_domain
@@ -1247,7 +1249,7 @@ async def test_predict_next_action_with_hidden_rules(
     story_slot = "story_slot"
     domain_content = textwrap.dedent(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {rule_intent}
         - {story_intent}
@@ -1367,14 +1369,14 @@ def test_predict_next_action_raises_limit_reached_exception(
 
 
 async def test_processor_logs_text_tokens_in_tracker(
-    mood_agent: Agent, whitespace_tokenizer: WhitespaceTokenizer
+    default_agent: Agent, whitespace_tokenizer: WhitespaceTokenizer
 ):
     text = "Hello there"
     tokens = whitespace_tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [(t.start, t.end) for t in tokens]
 
     message = UserMessage(text)
-    processor = mood_agent.processor
+    processor = default_agent.processor
     tracker = await processor.log_message(message)
     event = tracker.get_last_event_for(event_type=UserUttered)
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
@@ -1382,20 +1384,20 @@ async def test_processor_logs_text_tokens_in_tracker(
     assert event_tokens == indices
 
 
-async def test_processor_valid_slot_setting(form_bot_agent: Agent):
-    processor = form_bot_agent.processor
+async def test_processor_valid_slot_setting(default_agent: Agent):
+    processor = default_agent.processor
     message = UserMessage(
-        "that's correct",
+        "Hiya Peter",
         CollectingOutputChannel(),
         "test",
         parse_data={
-            "intent": {"name": "affirm"},
-            "entities": [{"entity": "seating", "value": True}],
+            "intent": {"name": "greet"},
+            "entities": [{"entity": "name", "value": "Peter"}],
         },
     )
     await processor.handle_message(message)
     tracker = processor.get_tracker("test")
-    assert SlotSet("outdoor_seating", True) in tracker.events
+    assert SlotSet("name", "Peter") in tracker.events
 
 
 async def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
@@ -1491,8 +1493,8 @@ async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFi
     )
 
 
-async def test_model_name_is_available(trained_moodbot_path: Text):
-    processor = Agent.load(model_path=trained_moodbot_path).processor
+async def test_model_name_is_available(trained_rasa_model: Text):
+    processor = Agent.load(model_path=trained_rasa_model).processor
     assert len(processor.model_filename) > 0
     assert "/" not in processor.model_filename
 

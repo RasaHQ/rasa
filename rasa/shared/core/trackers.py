@@ -12,6 +12,7 @@ from typing import (
     Iterator,
     Generator,
     Type,
+    TypeVar,
     List,
     Deque,
     Iterable,
@@ -64,7 +65,7 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict
+    from typing_extensions import TypedDict, TypeAlias
 
     from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
@@ -81,6 +82,8 @@ if TYPE_CHECKING:
         },
         total=False,
     )
+
+    EventTypeAlias: TypeAlias = TypeVar("EventTypeAlias", Event)
 
 
 logger = logging.getLogger(__name__)
@@ -118,7 +121,7 @@ class AnySlotDict(dict):
         value = self[key] = Slot(key, mappings=[])
         return value
 
-    def __contains__(self, key: Text) -> bool:
+    def __contains__(self, key: Any) -> bool:
         return True
 
 
@@ -133,13 +136,14 @@ class DialogueStateTracker:
         cls,
         sender_id: Text,
         events_as_dict: List[Dict[Text, Any]],
-        slots: Optional[List[Slot]] = None,
+        slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
     ) -> "DialogueStateTracker":
         """Create a tracker from dump.
 
         The dump should be an array of dumped events. When restoring
-        the tracker, these events will be replayed to recreate the state."""
+        the tracker, these events will be replayed to recreate the state.
+        """
         evts = events.deserialise_events(events_as_dict)
 
         return cls.from_events(sender_id, evts, slots, max_event_history)
@@ -401,6 +405,8 @@ class DialogueStateTracker:
         Returns:
             Entity values.
         """
+        if self.latest_message is None:
+            return iter([])
 
         return (
             x.get(ENTITY_ATTRIBUTE_VALUE)
@@ -479,7 +485,7 @@ class DialogueStateTracker:
             if isinstance(event, ActiveLoop) and event.name
         ]
 
-        applied_events = []
+        applied_events: List[Event] = []
 
         for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):
@@ -717,11 +723,11 @@ class DialogueStateTracker:
 
     def get_last_event_for(
         self,
-        event_type: Union[Type[Event], Tuple[Type, ...]],
+        event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"], ...]],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
         event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
-    ) -> Optional[Event]:
+    ) -> Optional["EventTypeAlias"]:
         """Gets the last event of a given type which was actually applied.
 
         Args:
@@ -735,7 +741,6 @@ class DialogueStateTracker:
         Returns:
             event which matched the query or `None` if no event matched.
         """
-
         to_exclude = action_names_to_exclude or []
 
         def filter_function(e: Event) -> bool:
@@ -843,6 +848,9 @@ class DialogueStateTracker:
 
         Returns: name of the previously executed action or text of e2e action
         """
+        if self.latest_action is None:
+            return None
+
         return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
             ACTION_TEXT
         )

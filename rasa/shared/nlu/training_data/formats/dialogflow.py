@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Any, Dict, Optional, Text, List, Tuple
+from pathlib import Path
+from typing import Any, Dict, Optional, Text, List, Tuple, Union
 
 import rasa.shared.nlu.training_data.util
 from rasa.shared.constants import DOCS_BASE_URL
@@ -24,7 +25,9 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 
 class DialogflowReader(TrainingDataReader):
-    def read(self, fn: Text, **kwargs: Any) -> "TrainingData":
+    """Reader for NLU training data."""
+
+    def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingData":
         """Loads training data stored in the Dialogflow data format."""
         language = kwargs["language"]
         fformat = kwargs["fformat"]
@@ -35,12 +38,16 @@ class DialogflowReader(TrainingDataReader):
                 "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES)
             )
 
-        root_js = rasa.shared.utils.io.read_json_file(fn)
-        examples = self._read_examples(fn, language, fformat)
+        root_js = rasa.shared.utils.io.read_json_file(filename)
+
+        if isinstance(filename, Path):
+            filename = str(filename)
+
+        examples = self._read_examples(filename, language, fformat)
 
         if not examples:
             rasa.shared.utils.io.raise_warning(
-                f"No training examples found for dialogflow file {fn}!",
+                f"No training examples found for dialogflow file {filename}!",
                 docs=DOCS_URL_MIGRATE_GOOGLE,
             )
             return TrainingData()

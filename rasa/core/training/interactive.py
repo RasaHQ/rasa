@@ -50,7 +50,13 @@ from rasa.shared.core.constants import (
 from rasa.core import run, utils
 import rasa.core.train
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    Domain,
+    KEY_INTENTS,
+    KEY_ENTITIES,
+    KEY_RESPONSES,
+    KEY_ACTIONS,
+)
 import rasa.shared.core.events
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -108,7 +114,7 @@ OTHER_INTENT = uuid.uuid4().hex
 OTHER_ACTION = uuid.uuid4().hex
 NEW_ACTION = uuid.uuid4().hex
 
-NEW_RESPONSES = {}
+NEW_RESPONSES: Dict[Text, List[Dict[Text, Any]]] = {}
 
 MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
 
@@ -312,9 +318,8 @@ async def _ask_questions(
     is_abort: Callable[[Dict[Text, Any]], bool] = lambda x: False,
 ) -> Any:
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
-
     should_retry = True
-    answers = {}
+    answers: Any = {}
 
     while should_retry:
         answers = questions.ask()
@@ -329,7 +334,6 @@ def _selection_choices_from_intent_prediction(
     predictions: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Any]]:
     """Given a list of ML predictions create a UI choice list."""
-
     sorted_intents = sorted(
         predictions, key=lambda k: (-k["confidence"], k[INTENT_NAME_KEY])
     )
@@ -917,7 +921,7 @@ def _write_domain_to_file(
 
     messages = _collect_messages(events)
     actions = _collect_actions(events)
-    responses = NEW_RESPONSES  # type: Dict[Text, List[Dict[Text, Any]]]
+    responses = NEW_RESPONSES
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(
@@ -929,16 +933,16 @@ def _write_domain_to_file(
         }
     )
 
-    new_domain = Domain(
-        intents=_intents_from_messages(messages),
-        entities=_entities_from_messages(messages),
-        slots=[],
-        responses=responses,
-        action_names=collected_actions,
-        forms={},
+    new_domain = Domain.from_dict(
+        {
+            KEY_INTENTS: list(_intents_from_messages(messages)),
+            KEY_ENTITIES: _entities_from_messages(messages),
+            KEY_RESPONSES: responses,
+            KEY_ACTIONS: collected_actions,
+        }
     )
 
-    old_domain.merge(new_domain).persist_clean(domain_path)
+    old_domain.merge(new_domain).persist(domain_path)
 
 
 async def _predict_till_next_listen(
@@ -952,7 +956,10 @@ async def _predict_till_next_listen(
     listen = False
     while not listen:
         result = await request_prediction(endpoint, conversation_id)
-        predictions = result.get("scores") or []
+        if result is None:
+            result = {}
+
+        predictions = result.get("scores", [])
         if not predictions:
             raise InvalidConfigException(
                 "Cannot continue as no action was predicted by the dialogue manager. "
@@ -1473,7 +1480,9 @@ async def record_messages(
             )
             return
 
-        intents = [next(iter(i)) for i in (domain.get("intents") or [])]
+        domain_intents = domain.get("intents", []) if domain is not None else []
+
+        intents = [next(iter(i)) for i in domain_intents]
 
         num_messages = 0
 

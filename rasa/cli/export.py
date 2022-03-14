@@ -1,8 +1,8 @@
 import argparse
+import asyncio
 import logging
 import typing
 from typing import List, Text, Optional
-import asyncio
 
 from rasa import telemetry
 from rasa.cli import SubParsersAction

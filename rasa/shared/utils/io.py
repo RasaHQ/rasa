@@ -164,7 +164,7 @@ def list_directory(path: Text) -> List[Text]:
     if os.path.isfile(path):
         return [path]
     elif os.path.isdir(path):
-        results = []
+        results: List[Text] = []
         for base, dirs, files in os.walk(path, followlinks=True):
             # sort files for same order across runs
             files = sorted(files, key=_filename_without_prefix)
@@ -302,7 +302,6 @@ def fix_yaml_loader() -> None:
 
     yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
-    yaml.allow_duplicate_keys = False
 
 
 def replace_environment_variables() -> None:

@@ -80,8 +80,8 @@ class DomainForCoreTrainingProvider(GraphComponent):
 
         serialized_domain.pop("config", None)  # `store_entities_as_slots`
         serialized_domain.pop(SESSION_CONFIG_KEY, None)
-        for response_name in serialized_domain[KEY_RESPONSES]:
+        for response_name in serialized_domain.get(KEY_RESPONSES, []):
             serialized_domain[KEY_RESPONSES][response_name] = []
-        for form_name in serialized_domain[KEY_FORMS]:
+        for form_name in serialized_domain.get(KEY_FORMS, []):
             serialized_domain[KEY_FORMS][form_name] = {REQUIRED_SLOTS_KEY: []}
         return Domain.from_dict(serialized_domain)

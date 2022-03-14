@@ -83,14 +83,14 @@ class SocketIOOutput(OutputChannel):
         messages = [{"text": message, "quick_replies": []} for message in message_parts]
 
         # attach all buttons to the last text fragment
-        for button in buttons:
-            messages[-1]["quick_replies"].append(
-                {
-                    "content_type": "text",
-                    "title": button["title"],
-                    "payload": button["payload"],
-                }
-            )
+        messages[-1]["quick_replies"] = [
+            {
+                "content_type": "text",
+                "title": button["title"],
+                "payload": button["payload"],
+            }
+            for button in buttons
+        ]
 
         for message in messages:
             await self._send_message(recipient_id, message)
@@ -119,7 +119,7 @@ class SocketIOOutput(OutputChannel):
 
         await self.sio.emit(self.bot_message_evt, **json_message)
 
-    async def send_attachment(
+    async def send_attachment(  # type: ignore[override]
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends an attachment to the user."""
