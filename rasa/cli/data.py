@@ -300,12 +300,11 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
     import rasa.nlu.convert
-
     from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
         NLUMarkdownToYamlConverter,
     )
 
-    if args.format in ["json", "md"]:
+    if args.format in ["json", "md", "yaml"]:
         rasa.nlu.convert.convert_training_data(
             args.data, args.out, args.format, args.language
         )
