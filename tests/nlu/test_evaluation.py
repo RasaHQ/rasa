@@ -431,7 +431,12 @@ async def test_run_cv_evaluation():
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 2},
+            {
+                "name": "DIETClassifier",
+                EPOCHS: 1,
+                "batch_size": [16,64],
+                "transformer_size": 128,
+            },
         ],
     }
 
@@ -475,7 +480,13 @@ async def test_run_cv_evaluation_no_entities():
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 25},
+            {
+                "name": "DIETClassifier",
+                EPOCHS: 5,
+                "batch_size": [16,64],
+                "transformer_size": 128,
+
+            },
         ],
     }
 
@@ -525,7 +536,12 @@ async def test_run_cv_evaluation_with_response_selector():
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 25},
+            {
+                "name": "DIETClassifier",
+                EPOCHS: 5,
+                "batch_size": [16,64],
+                "transformer_size": 128,
+            },
             {"name": "ResponseSelector", EPOCHS: 2},
         ],
     }
