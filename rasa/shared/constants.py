@@ -1,3 +1,6 @@
+from typing import List, Text
+
+
 DOCS_BASE_URL = "https://rasa.com/docs/rasa"
 LEGACY_DOCS_BASE_URL = "https://legacy-docs-v1.rasa.com"
 DOCS_URL_TRAINING_DATA = DOCS_BASE_URL + "/training-data-format"
@@ -23,6 +26,7 @@ DOCS_URL_PIKA_EVENT_BROKER = DOCS_URL_EVENT_BROKERS + "#pika-event-broker"
 DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/tracker-stores"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/components"
 DOCS_URL_GRAPH_COMPONENTS = DOCS_BASE_URL + "/custom-graph-components"
+DOCS_URL_GRAPH_RECIPE = DOCS_BASE_URL + "/graph-recipe"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide"
 DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
     f"{DOCS_URL_MIGRATION_GUIDE}#rasa-21-to-rasa-22"
@@ -40,7 +44,7 @@ MODEL_CONFIG_SCHEMA_FILE = "shared/utils/schemas/model_config.yml"
 CONFIG_SCHEMA_FILE = "shared/utils/schemas/config.yml"
 RESPONSES_SCHEMA_FILE = "shared/nlu/training_data/schemas/responses.yml"
 SCHEMA_EXTENSIONS_FILE = "shared/utils/pykwalify_extensions.py"
-LATEST_TRAINING_DATA_FORMAT_VERSION = "3.0"
+LATEST_TRAINING_DATA_FORMAT_VERSION = "3.1"
 
 DOMAIN_SCHEMA_FILE = "shared/utils/schemas/domain.yml"
 
@@ -67,7 +71,7 @@ CONFIG_AUTOCONFIGURABLE_KEYS = (
 CONFIG_KEYS_CORE = ["policies"]
 CONFIG_KEYS_NLU = ["language", "pipeline"]
 CONFIG_KEYS = CONFIG_KEYS_CORE + CONFIG_KEYS_NLU
-CONFIG_MANDATORY_KEYS_CORE = []
+CONFIG_MANDATORY_KEYS_CORE: List[Text] = []
 CONFIG_MANDATORY_KEYS_NLU = ["language"]
 CONFIG_MANDATORY_KEYS = CONFIG_MANDATORY_KEYS_CORE + CONFIG_MANDATORY_KEYS_NLU
 

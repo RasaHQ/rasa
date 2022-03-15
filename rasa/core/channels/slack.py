@@ -67,9 +67,10 @@ class SlackBot(OutputChannel):
             channel=recipient, as_user=True, text=image, blocks=[image_block]
         )
 
-    async def send_attachment(
+    async def send_attachment(  # type: ignore[override]
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
+        """Sends message with attachment."""
         recipient = self.slack_channel or recipient_id
         await self._post_message(
             channel=recipient, as_user=True, attachments=[attachment], **kwargs
@@ -93,15 +94,17 @@ class SlackBot(OutputChannel):
             )
             return await self.send_text_message(recipient, text, **kwargs)
 
-        button_block = {"type": "actions", "elements": []}
-        for button in buttons:
-            button_block["elements"].append(
+        button_block = {
+            "type": "actions",
+            "elements": [
                 {
                     "type": "button",
                     "text": {"type": "plain_text", "text": button["title"]},
                     "value": button["payload"],
                 }
-            )
+                for button in buttons
+            ],
+        }
 
         await self._post_message(
             channel=recipient,

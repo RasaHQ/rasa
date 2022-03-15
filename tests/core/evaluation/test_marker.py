@@ -568,7 +568,7 @@ def test_domain_validation_with_valid_marker(depth: int, max_branches: int, seed
     slots = [Slot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
     actions = list(_collect_parameters(marker, ActionExecutedMarker))
     intents = _collect_parameters(marker, IntentDetectedMarker)
-    domain = Domain(intents, [], slots, {}, actions, {})
+    domain = Domain(intents, [], slots, {}, actions, {}, {})
 
     assert marker.validate_against_domain(domain)
 
