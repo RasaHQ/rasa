@@ -139,7 +139,7 @@ def _two_fallbacks_in_a_row(tracker: DialogueStateTracker) -> bool:
 def _last_n_intent_names(
     tracker: DialogueStateTracker, number_of_last_intent_names: int
 ) -> List[Optional[Text]]:
-    intent_names = []
+    intent_names: List[Optional[Text]] = []
     for i in range(number_of_last_intent_names):
         message = tracker.get_last_event_for(
             (UserUttered, UserUtteranceReverted),

@@ -82,6 +82,9 @@ class DummyImporter(TrainingDataImporter):
     def get_stories(self) -> StoryGraph:
         return StoryGraph([])
 
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        return "config.yml"
+
 
 def _test_validation_warnings_with_default_configs(
     training_data: TrainingData,

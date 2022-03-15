@@ -480,7 +480,7 @@ Returns a unique hash for the tracker which is stable across python runs.
 #### get\_active\_loop\_name
 
 ```python
-get_active_loop_name(state: State) -> Optional[Union[Text, Tuple[Union[float, Text]]]]
+get_active_loop_name(state: State) -> Optional[Text]
 ```
 
 Get the name of current active loop.

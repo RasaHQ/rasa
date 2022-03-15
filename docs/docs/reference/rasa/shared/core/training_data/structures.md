@@ -56,6 +56,14 @@ NOTE: Checkpoints are not only limited to those manually written
 in the story file, but are also implicitly created at points where
 multiple intents are separated in one line by chaining them with &quot;OR&quot;s.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(block_name: Text, start_checkpoints: Optional[List[Checkpoint]] = None, end_checkpoints: Optional[List[Checkpoint]] = None, events: Optional[List[Union[Event, List[Event]]]] = None, source_name: Optional[Text] = None) -> None
+```
+
+Initialise `StoryStep` default attributes.
+
 #### as\_story\_string
 
 ```python

@@ -46,7 +46,7 @@ Get the latest model from a path.
 #### get\_model\_for\_finetuning
 
 ```python
-get_model_for_finetuning(previous_model_file: Union[Path, Text]) -> Optional[Path]
+get_model_for_finetuning(previous_model_file_or_dir: Union[Path, Text]) -> Optional[Path]
 ```
 
 Gets validated path for model to finetune.

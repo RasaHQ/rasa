@@ -117,7 +117,7 @@ Persist this model into the passed directory.
 
 ```python
  | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> DIETClassifier
+ | load(cls: Type[DIETClassifierT], config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> DIETClassifierT
 ```
 
 Loads a policy from the storage (see parent class for full docstring).

@@ -88,7 +88,7 @@ Create a TrackerStore.
 
 ```python
  | @staticmethod
- | create(obj: Union["TrackerStore", EndpointConfig, None], domain: Optional[Domain] = None, event_broker: Optional[EventBroker] = None) -> "TrackerStore"
+ | create(obj: Union[TrackerStore, EndpointConfig, None], domain: Optional[Domain] = None, event_broker: Optional[EventBroker] = None) -> TrackerStore
 ```
 
 Factory to create a tracker store.
