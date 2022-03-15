@@ -2,11 +2,13 @@
 sidebar_label: rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter
 title: rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter
 ---
-## NLUMarkdownToYamlConverter Objects
+## NLUToYamlConverter Objects
 
 ```python
-class NLUMarkdownToYamlConverter(TrainingDataConverter)
+class NLUToYamlConverter(TrainingDataConverter)
 ```
+
+Converts NLU Rasa JSON and Markdown files to Rasa YAML format.
 
 #### filter
 
@@ -15,8 +17,9 @@ class NLUMarkdownToYamlConverter(TrainingDataConverter)
  | filter(cls, source_path: Path) -> bool
 ```
 
-Checks if the given training data file contains NLU data in `Markdown` format
-and can be converted to `YAML`.
+Checks if the given training data file can be converted to `YAML`.
+
+Works with NLU data in Markdown or JSON format.
 
 **Arguments**:
 
