@@ -55,7 +55,7 @@ def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
 
 
 def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
-    run_in_simple_project(
+    result = run_in_simple_project(
         "data",
         "convert",
         "nlu",
@@ -67,6 +67,7 @@ def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
         "json",
     )
 
+    assert "NLU data in Rasa JSON format is deprecated" in str(result.stderr)
     assert os.path.exists("out_nlu_data.json")
 
 
