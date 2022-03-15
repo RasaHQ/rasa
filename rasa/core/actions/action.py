@@ -747,12 +747,12 @@ class RemoteAction(Action):
 
             events_json = response.get("events", [])
             responses = response.get("responses", [])
-            bot_messages: List[Event] = await self._utter_responses(
+            bot_messages = await self._utter_responses(
                 responses, output_channel, nlg, tracker
             )
 
             evts = events.deserialise_events(events_json)
-            return bot_messages + evts
+            return cast(List[Event], bot_messages) + evts
 
         except ClientResponseError as e:
             if e.status == 400:
@@ -880,7 +880,9 @@ def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
         raise TypeError("Cannot find last event to revert to.")
 
     last_user_event = copy.deepcopy(last_user_event)
-    last_user_event.parse_data["intent"]["confidence"] = 1.0
+    # FIXME: better type annotation for `parse_data` would require
+    # a larger refactoring (e.g. switch to dataclass)
+    last_user_event.parse_data["intent"]["confidence"] = 1.0  # type: ignore[typeddict-item]  # noqa: E501
 
     return revert_events + [last_user_event]
 
@@ -943,8 +945,11 @@ class ActionDefaultAskAffirmation(Action):
 
         intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
 
-        intent_ranking: List["IntentPrediction"] = (
-            latest_message.parse_data.get(INTENT_RANKING_KEY) or []
+        # FIXME: better type annotation for `parse_data` would require
+        # a larger refactoring (e.g. switch to dataclass)
+        intent_ranking = cast(
+            List["IntentPrediction"],
+            latest_message.parse_data.get(INTENT_RANKING_KEY) or [],
         )
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME

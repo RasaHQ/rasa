@@ -51,16 +51,18 @@ class LocalModelStorage(ModelStorage):
             )
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            temporary_directory = Path(temporary_directory)
+            temporary_directory_path = Path(temporary_directory)
 
-            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
-            logger.debug(f"Extracted model to '{temporary_directory}'.")
+            cls._extract_archive_to_directory(
+                model_archive_path, temporary_directory_path
+            )
+            logger.debug(f"Extracted model to '{temporary_directory_path}'.")
 
             cls._initialize_model_storage_from_model_archive(
-                temporary_directory, storage_path
+                temporary_directory_path, storage_path
             )
 
-            metadata = cls._load_metadata(temporary_directory)
+            metadata = cls._load_metadata(temporary_directory_path)
 
             return (cls(storage_path), metadata)
 
@@ -70,10 +72,12 @@ class LocalModelStorage(ModelStorage):
     ) -> ModelMetadata:
         """Retrieves metadata from archive (see parent class for full docstring)."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-            temporary_directory = Path(temporary_directory)
+            temporary_directory_path = Path(temporary_directory)
 
-            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
-            metadata = cls._load_metadata(temporary_directory)
+            cls._extract_archive_to_directory(
+                model_archive_path, temporary_directory_path
+            )
+            metadata = cls._load_metadata(temporary_directory_path)
 
             return metadata
 
@@ -86,7 +90,7 @@ class LocalModelStorage(ModelStorage):
         LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
 
     @staticmethod
-    def _assert_not_rasa2_archive(temporary_directory: Path) -> None:
+    def _assert_not_rasa2_archive(temporary_directory: Union[Text, Path]) -> None:
         fingerprint_file = Path(temporary_directory) / "fingerprint.json"
         if fingerprint_file.is_file():
             serialized_fingerprint = rasa.shared.utils.io.read_json_file(

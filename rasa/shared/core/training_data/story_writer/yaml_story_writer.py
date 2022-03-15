@@ -118,7 +118,7 @@ class YAMLStoryWriter(StoryWriter):
             else:
                 stories.append(self.process_story_step(story_step))
 
-        result = OrderedDict()
+        result: OrderedDict[Text, Any] = OrderedDict()
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
             LATEST_TRAINING_DATA_FORMAT_VERSION
         )
@@ -139,7 +139,7 @@ class YAMLStoryWriter(StoryWriter):
         Returns:
             Dict with a story step.
         """
-        result = OrderedDict()
+        result: OrderedDict[Text, Any] = OrderedDict()
         result[KEY_STORY_NAME] = story_step.block_name
         steps = self.process_checkpoints(story_step.start_checkpoints)
         for event in story_step.events:
@@ -324,7 +324,9 @@ class YAMLStoryWriter(StoryWriter):
         for checkpoint in checkpoints:
             if checkpoint.name == STORY_START:
                 continue
-            next_checkpoint = OrderedDict([(KEY_CHECKPOINT, checkpoint.name)])
+            next_checkpoint: OrderedDict[Text, Any] = OrderedDict(
+                [(KEY_CHECKPOINT, checkpoint.name)]
+            )
             if checkpoint.conditions:
                 next_checkpoint[KEY_CHECKPOINT_SLOTS] = [
                     {key: value} for key, value in checkpoint.conditions.items()
@@ -374,7 +376,7 @@ class YAMLStoryWriter(StoryWriter):
         Returns:
             Converted rule step.
         """
-        result = OrderedDict()
+        result: OrderedDict[Text, Any] = OrderedDict()
         result[KEY_RULE_NAME] = rule_step.block_name
 
         condition_steps = []

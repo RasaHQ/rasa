@@ -145,14 +145,14 @@ class TrackerStore:
         """
         self._domain = domain or Domain.empty()
         self.event_broker = event_broker
-        self.max_event_history = None
+        self.max_event_history: Optional[int] = None
 
     @staticmethod
     def create(
-        obj: Union["TrackerStore", EndpointConfig, None],
+        obj: Union[TrackerStore, EndpointConfig, None],
         domain: Optional[Domain] = None,
         event_broker: Optional[EventBroker] = None,
-    ) -> "TrackerStore":
+    ) -> TrackerStore:
         """Factory to create a tracker store."""
         if isinstance(obj, TrackerStore):
             return obj
@@ -795,7 +795,7 @@ def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
     if not is_postgresql_url(url):
         return {}
 
-    kwargs = {}
+    kwargs: Dict[Text, Any] = {}
 
     schema_name = os.environ.get(POSTGRESQL_SCHEMA)
 
@@ -1223,7 +1223,7 @@ class FailSafeTrackerStore(TrackerStore):
         return self._tracker_store.domain
 
     @domain.setter
-    def domain(self, domain: Optional[Domain]) -> None:
+    def domain(self, domain: Domain) -> None:
         self._tracker_store.domain = domain
 
         if self._fallback_tracker_store:
@@ -1275,14 +1275,13 @@ def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig] = None,
     domain: Optional[Domain] = None,
     event_broker: Optional[EventBroker] = None,
-) -> "TrackerStore":
+) -> TrackerStore:
     """Given an endpoint configuration, create a proper tracker store object."""
-
     domain = domain or Domain.empty()
 
     if endpoint_config is None or endpoint_config.type is None:
         # default tracker store if no type is set
-        tracker_store = InMemoryTrackerStore(domain, event_broker)
+        tracker_store: TrackerStore = InMemoryTrackerStore(domain, event_broker)
     elif endpoint_config.type.lower() == "redis":
         tracker_store = RedisTrackerStore(
             domain=domain,
@@ -1320,7 +1319,7 @@ def _create_from_endpoint_config(
 
 def _load_from_module_name_in_endpoint_config(
     domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None
-) -> "TrackerStore":
+) -> TrackerStore:
     """Initializes a custom tracker.
 
     Defaults to the InMemoryTrackerStore if the module path can not be found.
@@ -1333,7 +1332,6 @@ def _load_from_module_name_in_endpoint_config(
     Returns:
         a tracker store from a specified type in a stores endpoint configuration
     """
-
     try:
         tracker_store_class = rasa.shared.utils.common.class_from_module_path(
             store.type

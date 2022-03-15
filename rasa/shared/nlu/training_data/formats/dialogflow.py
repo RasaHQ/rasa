@@ -60,12 +60,12 @@ class DialogflowReader(TrainingDataReader):
         self, intent: Dict[Text, Any], examples: List[Dict[Text, Any]]
     ) -> "TrainingData":
         """Reads the intent and examples from respective jsons."""
-        intent = intent.get("name")
+        intent_name = intent.get("name")
 
         training_examples = []
         for ex in examples:
             text, entities = self._join_text_chunks(ex["data"])
-            training_examples.append(Message.build(text, intent, entities))
+            training_examples.append(Message.build(text, intent_name, entities))
 
         return TrainingData(training_examples)
 

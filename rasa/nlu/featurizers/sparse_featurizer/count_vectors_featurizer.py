@@ -706,12 +706,13 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
                 # Definitely need to persist some vocabularies
                 featurizer_file = model_dir / "vocabularies.pkl"
 
-                if self.use_shared_vocab:
-                    # Only persist vocabulary from one attribute. Can be loaded and
-                    # distributed to all attributes.
-                    vocab = attribute_vocabularies[TEXT]
-                else:
-                    vocab = attribute_vocabularies
+                # Only persist vocabulary from one attribute if `use_shared_vocab`.
+                # Can be loaded and distributed to all attributes.
+                vocab = (
+                    attribute_vocabularies[TEXT]
+                    if self.use_shared_vocab
+                    else attribute_vocabularies
+                )
 
                 io_utils.json_pickle(featurizer_file, vocab)
 
