@@ -338,7 +338,9 @@ jobs:
       run: |
         set -x
         make ${{ matrix.test }}
-        mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        if [[ -z "${{ matrix.os }}" == "windows-2019" ]]; then
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        fi
       shell: bash
 
     - name: Test Code 🔍 (multithread)
@@ -350,8 +352,11 @@ jobs:
         DD_SERVICE: rasa
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
+        set -x
         make ${{ matrix.test }}
-        mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        if [[ -z "${{ matrix.os }}" == "windows-2019" ]]; then
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        fi
       shell: bash
 
     - name: Store coverage reports
