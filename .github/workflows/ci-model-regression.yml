@@ -511,7 +511,8 @@ jobs:
       - name: Download gomplate
         run: |-
           curl.exe -o C:\Windows\system32\gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_windows-amd64.exe
-          # sudo chmod +x /usr/local/bin/gomplate
+          sudo chmod +x /usr/local/bin/gomplate
+        shell: bash
 
       - name: Set env variables
         id: set_dataset_config_vars
@@ -574,6 +575,7 @@ jobs:
 
           HOST_NAME=`hostname`
           echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
+        shell: bash
 
       - name: Checkout dataset - external
         uses: actions/checkout@v2
@@ -591,6 +593,7 @@ jobs:
           DATASET_COMMIT=$(git rev-parse HEAD)
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
+        shell: bash
 
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -607,6 +610,7 @@ jobs:
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
+        shell: bash
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
@@ -638,20 +642,24 @@ jobs:
         run: |
           make install-full
           poetry run python -m spacy download de_core_news_md
+        shell: bash
 
       - name: Install datadog dependencies
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: poetry run pip install -U datadog-api-client ddtrace
+        shell: bash
 
       - name: CPU run - Validate that no GPUs are available
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
           poetry run python .github/scripts/validate_cpu.py
+        shell: bash
 
       - name: Download pretrained models 💪
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
           poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG}
+        shell: bash
 
       - name: Run test
         id: run_test
@@ -689,6 +697,7 @@ jobs:
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
+        shell: bash
 
       - name: Generate a JSON file with a report / Publish results to Datadog
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -715,6 +724,7 @@ jobs:
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
           cat $SUMMARY_FILE
+        shell: bash
 
       - name: Upload an artifact with the report
         uses: actions/upload-artifact@v2
@@ -727,6 +737,7 @@ jobs:
         if: ${{ always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' }}
         run: |
           service datadog-agent stop
+        shell: bash
 
   combine_reports:
     name: Combine reports
