@@ -1,6 +1,11 @@
 from pathlib import Path
 from typing import Dict, Text, Any
 
+from rasa.shared.nlu.training_data.formats.rasa import RasaReader
+
+from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA
+
+from rasa.shared.nlu.training_data import loading
 from rasa.shared.utils.cli import print_success
 from rasa.nlu.utils.pattern_utils import read_lookup_table_file
 from rasa.shared.nlu.training_data.formats import MarkdownReader
@@ -9,11 +14,14 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.converter import TrainingDataConverter
 
 
-class NLUMarkdownToYamlConverter(TrainingDataConverter):
+class NLUToYamlConverter(TrainingDataConverter):
+    """Converts NLU Rasa JSON and Markdown files to Rasa YAML format."""
+
     @classmethod
     def filter(cls, source_path: Path) -> bool:
-        """Checks if the given training data file contains NLU data in `Markdown` format
-        and can be converted to `YAML`.
+        """Checks if the given training data file can be converted to `YAML`.
+
+        Works with NLU data in Markdown or JSON format.
 
         Args:
             source_path: Path to the training data file.
@@ -21,7 +29,8 @@ class NLUMarkdownToYamlConverter(TrainingDataConverter):
         Returns:
             `True` if the given file can be converted, `False` otherwise
         """
-        return MarkdownReader.is_markdown_nlu_file(source_path)
+        guessed_format = loading.guess_format(str(source_path))
+        return guessed_format in [MARKDOWN, RASA]
 
     @classmethod
     async def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
@@ -35,9 +44,14 @@ class NLUMarkdownToYamlConverter(TrainingDataConverter):
             source_path, output_path
         )
 
-        yaml_training_data = MarkdownReader(ignore_deprecation_warning=True).read(
-            source_path
-        )
+        guessed_format = loading.guess_format(str(source_path))
+        if guessed_format == MARKDOWN:
+            yaml_training_data = MarkdownReader(ignore_deprecation_warning=True).read(
+                source_path
+            )
+        else:
+            yaml_training_data = RasaReader().read(source_path)
+
         RasaYAMLWriter().dump(output_nlu_path, yaml_training_data)
 
         for lookup_table in yaml_training_data.lookup_tables:
