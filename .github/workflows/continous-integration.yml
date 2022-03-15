@@ -338,7 +338,7 @@ jobs:
       run: |
         set -x
         make ${{ matrix.test }}
-        if [[ -z "${{ matrix.os }}" == "windows-2019" ]]; then
+        if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
           mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
         fi
       shell: bash
@@ -354,7 +354,7 @@ jobs:
       run: |
         set -x
         make ${{ matrix.test }}
-        if [[ -z "${{ matrix.os }}" == "windows-2019" ]]; then
+        if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
           mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
         fi
       shell: bash
