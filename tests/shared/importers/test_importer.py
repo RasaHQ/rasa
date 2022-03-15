@@ -37,20 +37,6 @@ def default_importer(project: Text) -> TrainingDataImporter:
     )
 
 
-def test_use_of_interface():
-    importer = TrainingDataImporter()
-
-    functions_to_test = [
-        lambda: importer.get_config(),
-        lambda: importer.get_stories(),
-        lambda: importer.get_nlu_data(),
-        lambda: importer.get_domain(),
-    ]
-    for f in functions_to_test:
-        with pytest.raises(NotImplementedError):
-            f()
-
-
 @pytest.mark.parametrize(
     "config, expected",
     [

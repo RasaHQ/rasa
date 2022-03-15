@@ -23,9 +23,10 @@ class Slot(ABC):
     """Key-value store for storing information during a conversation."""
 
     @property
+    @abstractmethod
     def type_name(self) -> Text:
         """Name of the type of slot."""
-        raise NotImplementedError
+        ...
 
     def __init__(
         self,

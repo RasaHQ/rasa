@@ -20,6 +20,7 @@ from typing import (
     FrozenSet,
     Tuple,
     TYPE_CHECKING,
+    cast,
 )
 
 import rasa.shared.utils.io
@@ -874,7 +875,7 @@ class DialogueStateTracker:
 
 def get_active_loop_name(
     state: State,
-) -> Optional[Union[Text, Tuple[Union[float, Text]]]]:
+) -> Optional[Text]:
     """Get the name of current active loop.
 
     Args:
@@ -889,7 +890,9 @@ def get_active_loop_name(
     ):
         return None
 
-    return state[ACTIVE_LOOP].get(LOOP_NAME)
+    # FIXME: better type annotation for `State` would require
+    # a larger refactoring (e.g. switch to dataclass)
+    return cast(Optional[Text], state[ACTIVE_LOOP].get(LOOP_NAME))
 
 
 def is_prev_action_listen_in_state(state: State) -> bool:

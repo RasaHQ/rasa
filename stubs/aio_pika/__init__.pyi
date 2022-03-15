@@ -1,3 +1,5 @@
+# FIXME: aio_pika 7.0 comes with types, we might want to upgrade
+# https://github.com/mosquito/aio-pika/blob/master/CHANGELOG.md#700
 from aio_pika import patterns, pool
 from aio_pika.channel import Channel
 from aio_pika.connection import Connection, connect

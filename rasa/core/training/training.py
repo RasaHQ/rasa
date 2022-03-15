@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set, Text, TYPE_CHECKING
+from typing import DefaultDict, Dict, List, Optional, Set, Text, TYPE_CHECKING
 from collections import defaultdict
 
 from rasa.shared.core.events import ActionExecuted, UserUttered
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 def _find_events_after_actions(
     trackers: List["DialogueStateTracker"],
-) -> Dict[Text, Set["Event"]]:
+) -> DefaultDict[Text, Set["Event"]]:
     """Creates a mapping of action names / texts and events that follow these actions.
 
     Args:
@@ -71,7 +71,7 @@ def create_action_fingerprints(
 
     # take into account only featurized slots
     featurized_slots = {slot.name for slot in domain.slots if slot.has_features()}
-    action_fingerprints: Dict[Text, "ActionFingerprint"] = defaultdict(dict)
+    action_fingerprints: DefaultDict[Text, "ActionFingerprint"] = defaultdict(dict)
     for action_name, events_after_action in events_after_actions.items():
         slots = list(
             set(

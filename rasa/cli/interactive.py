@@ -1,7 +1,8 @@
 import argparse
 import logging
 import os
-from typing import List, Optional, Text, TYPE_CHECKING, Union
+from pathlib import Path
+from typing import List, Optional, Text, Union
 
 from rasa import model
 from rasa.cli import SubParsersAction
@@ -15,8 +16,6 @@ from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.cli
 import rasa.utils.common
 
-if TYPE_CHECKING:
-    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +69,7 @@ def interactive(args: argparse.Namespace) -> None:
                 "data or a model containing core data."
             )
 
-        zipped_model: Optional[Union[Text, "Path"]] = (
+        zipped_model: Optional[Union[Text, Path]] = (
             train.run_core_training(args)
             if args.core_only
             else train.run_training(args)
@@ -130,7 +129,7 @@ def perform_interactive_learning(
     do_interactive_learning(args, file_importer)
 
 
-def get_provided_model(arg_model: Text) -> Optional[Union[Text, "Path"]]:
+def get_provided_model(arg_model: Text) -> Optional[Union[Text, Path]]:
     """Checks model path input and selects model from it."""
     model_path = rasa.cli.utils.get_validated_path(
         arg_model, "model", DEFAULT_MODELS_PATH
