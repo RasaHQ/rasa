@@ -590,6 +590,7 @@ jobs:
         id: set-dataset-commit
         working-directory: ${{ env.DATASET_DIR }}
         run: |
+          set -x
           DATASET_COMMIT=$(git rev-parse HEAD)
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
@@ -608,6 +609,7 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
+          set -x
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
         shell: bash
@@ -621,6 +623,7 @@ jobs:
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
+          set -x
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
@@ -640,6 +643,7 @@ jobs:
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
+          set -x
           make install-full
           poetry run python -m spacy download de_core_news_md
         shell: bash
@@ -652,12 +656,14 @@ jobs:
       - name: CPU run - Validate that no GPUs are available
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
+          set -x
           poetry run python .github/scripts/validate_cpu.py
         shell: bash
 
       - name: Download pretrained models 💪
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
+          set -x
           poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG}
         shell: bash
 
@@ -668,6 +674,7 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
+          set -x
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -720,6 +727,7 @@ jobs:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu
         run: |-
+          set -x
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
@@ -736,6 +744,7 @@ jobs:
       - name: Stop Datadog Agent
         if: ${{ always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' }}
         run: |
+          set -x
           service datadog-agent stop
         shell: bash
 
