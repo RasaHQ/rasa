@@ -217,14 +217,14 @@ jobs:
       fail-fast: false
       matrix:
         test:
-        # - test-cli
-        # - test-core-featurizers
-        # - test-policies
-        # - test-nlu-featurizers
-        # - test-nlu-predictors
-        # - test-full-model-training
+        - test-cli
+        - test-core-featurizers
+        - test-policies
+        - test-nlu-featurizers
+        - test-nlu-predictors
+        - test-full-model-training
         - test-other-unit-tests
-        # - test-performance
+        - test-performance
         os: [ ubuntu-latest, windows-2019 ]
         python-version: [ 3.7, 3.8, 3.9 ]
 
@@ -336,7 +336,7 @@ jobs:
         DD_SERVICE: rasa
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
-        OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n 1 -k test_migrate_domain_raises_exception_for_non_domain_file -m category_other_unit_tests --cov rasa --ignore tests/integration_tests --ddtrace --ddtrace-patch-all
+        make ${{ matrix.test }}
         poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
       shell: bash
 
@@ -351,6 +351,7 @@ jobs:
       run: |
         make ${{ matrix.test }}
         mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+      shell: bash
 
     - name: Store coverage reports
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
