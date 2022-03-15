@@ -182,7 +182,9 @@ async def run_nlu_test_async(
         test_nlu,
     )
 
-    data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
+    data_path = str(
+        rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
+    )
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=domain_path
     )
@@ -223,8 +225,10 @@ async def run_nlu_test_async(
         )
     elif cross_validation:
         logger.info("Test model using cross validation.")
-        config = rasa.cli.utils.get_validated_path(
-            config, "config", DEFAULT_CONFIG_PATH
+        # FIXME: supporting Union[Path, Text] down the chain
+        # is the proper fix and needs more work
+        config = str(
+            rasa.cli.utils.get_validated_path(config, "config", DEFAULT_CONFIG_PATH)
         )
         config_importer = TrainingDataImporter.load_from_dict(config_path=config)
 

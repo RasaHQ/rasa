@@ -203,10 +203,9 @@ class RegexFeaturizer(SparseFeaturizer, GraphComponent):
         sentence_features = np.zeros([1, num_patterns])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
-            matches = re.finditer(
-                pattern["pattern"], message.get(attribute), flags=flags
+            matches = list(
+                re.finditer(pattern["pattern"], message.get(attribute), flags=flags)
             )
-            matches = list(matches)
 
             for token_index, t in enumerate(tokens):
                 patterns = t.get("pattern", default={})

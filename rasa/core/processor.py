@@ -109,9 +109,10 @@ class MessageProcessor:
             if os.path.isfile(model_path):
                 model_tar = model_path
             else:
-                model_tar = get_latest_model(model_path)
-                if not model_tar:
+                model_file_path = get_latest_model(model_path)
+                if not model_file_path:
                     raise ModelNotFound(f"No model found at path '{model_path}'.")
+                model_tar = model_file_path
         except TypeError:
             raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
