@@ -35,6 +35,7 @@ class TrainingDataImporter(ABC):
         training_data_paths: Optional[Union[List[Text], Text]] = None,
         **kwargs: Any,
     ) -> None:
+        """Initialise the importer."""
         ...
 
     @abstractmethod

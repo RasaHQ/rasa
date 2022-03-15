@@ -1242,7 +1242,6 @@ def _create_from_endpoint_config(
     event_broker: Optional[EventBroker] = None,
 ) -> TrackerStore:
     """Given an endpoint configuration, create a proper tracker store object."""
-
     domain = domain or Domain.empty()
 
     if endpoint_config is None or endpoint_config.type is None:
@@ -1298,7 +1297,6 @@ def _load_from_module_name_in_endpoint_config(
     Returns:
         a tracker store from a specified type in a stores endpoint configuration
     """
-
     try:
         tracker_store_class = rasa.shared.utils.common.class_from_module_path(
             store.type

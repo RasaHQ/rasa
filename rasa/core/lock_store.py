@@ -38,10 +38,11 @@ class LockError(RasaException):
 
 
 class LockStore:
+    """Base class for ticket locks."""
+
     @staticmethod
     def create(obj: Union[LockStore, EndpointConfig, None]) -> LockStore:
         """Factory to create a lock store."""
-
         if isinstance(obj, LockStore):
             return obj
 
@@ -53,22 +54,18 @@ class LockStore:
     @staticmethod
     def create_lock(conversation_id: Text) -> TicketLock:
         """Create a new `TicketLock` for `conversation_id`."""
-
         return TicketLock(conversation_id)
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         """Fetch lock for `conversation_id` from storage."""
-
         raise NotImplementedError
 
     def delete_lock(self, conversation_id: Text) -> None:
         """Delete lock for `conversation_id` from storage."""
-
         raise NotImplementedError
 
     def save_lock(self, lock: TicketLock) -> None:
         """Commit `lock` to storage."""
-
         raise NotImplementedError
 
     def issue_ticket(
@@ -299,7 +296,6 @@ def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig] = None,
 ) -> LockStore:
     """Given an endpoint configuration, create a proper `LockStore` object."""
-
     if (
         endpoint_config is None
         or endpoint_config.type is None
@@ -322,7 +318,6 @@ def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,
 ) -> LockStore:
     """Retrieve a `LockStore` based on its class name."""
-
     try:
         lock_store_class = rasa.shared.utils.common.class_from_module_path(
             endpoint_config.type

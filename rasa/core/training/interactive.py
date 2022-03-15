@@ -229,7 +229,8 @@ async def send_action(
             if action_name in NEW_RESPONSES:
                 warning_questions = questionary.confirm(
                     f"WARNING: You have created a new action: '{action_name}', "
-                    f"with matching response: '{NEW_RESPONSES[action_name][0][KEY_RESPONSES_TEXT]}'. "
+                    f"with matching response: "
+                    f"'{NEW_RESPONSES[action_name][0][KEY_RESPONSES_TEXT]}'. "
                     f"This action will not return its message in this session, "
                     f"but the new response will be saved to your domain file "
                     f"when you exit and save this session. "
