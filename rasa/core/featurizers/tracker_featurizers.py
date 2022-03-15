@@ -6,7 +6,18 @@ import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
+from typing import (
+    Tuple,
+    List,
+    Optional,
+    Dict,
+    Text,
+    Union,
+    Any,
+    Iterator,
+    Set,
+    DefaultDict,
+)
 import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -966,7 +977,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         hashed_examples = set()
         # Mapping of example state hash to set of
         # positive labels associated with the state.
-        state_hash_to_label_set: Dict[int, Set[Text]] = defaultdict(set)
+        state_hash_to_label_set: DefaultDict[int, Set[Text]] = defaultdict(set)
 
         logger.debug(
             f"Creating states and {self.LABEL_NAME} label examples from "

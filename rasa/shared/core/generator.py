@@ -14,6 +14,7 @@ from typing import (
     Dict,
     Tuple,
     Deque,
+    DefaultDict,
     Any,
     Iterable,
     Generator,
@@ -245,7 +246,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
 
 # define types
-TrackerLookupDict = Dict[Text, List[TrackerWithCachedStates]]
+TrackerLookupDict = DefaultDict[Text, List[TrackerWithCachedStates]]
 
 TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedStates]]
 
@@ -345,7 +346,9 @@ class TrainingDataGenerator:
             )
         self._mark_first_action_in_story_steps_as_unpredictable()
 
-        active_trackers: Dict[Text, List[TrackerWithCachedStates]] = defaultdict(list)
+        active_trackers: DefaultDict[Text, List[TrackerWithCachedStates]] = defaultdict(
+            list
+        )
 
         init_tracker = TrackerWithCachedStates(
             "",

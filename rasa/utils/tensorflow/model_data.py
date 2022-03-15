@@ -1,6 +1,7 @@
 import logging
 from typing import (
     Optional,
+    DefaultDict,
     Dict,
     Text,
     List,
@@ -710,9 +711,9 @@ class RasaModelData:
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
-        new_data: Dict[Text, Dict[Text, List[List[FeatureArray]]]] = defaultdict(
-            lambda: defaultdict(list)
-        )
+        new_data: DefaultDict[
+            Text, DefaultDict[Text, List[List[FeatureArray]]]
+        ] = defaultdict(lambda: defaultdict(list))
 
         while min(num_data_cycles) == 0:
             if shuffle:
