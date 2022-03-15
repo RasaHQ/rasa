@@ -336,8 +336,9 @@ jobs:
         DD_SERVICE: rasa
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
+        set -x
         make ${{ matrix.test }}
-        poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
+        mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
       shell: bash
 
     - name: Test Code 🔍 (multithread)
