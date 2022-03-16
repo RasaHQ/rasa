@@ -8,7 +8,7 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.model import get_latest_model
+from rasa.model import get_local_model
 from rasa.shared.data import TrainingType
 from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
@@ -68,10 +68,10 @@ def shell_nlu(args: argparse.Namespace) -> None:
 
     args.connector = "cmdline"
 
-    model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     try:
-        model = get_latest_model(model)
+        model = get_local_model(model_path)
     except ModelNotFound:
         print_error(
             "No model found. Train a model before running the "
@@ -101,7 +101,7 @@ def shell(args: argparse.Namespace) -> None:
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     try:
-        model = get_latest_model(model)
+        model = get_local_model(model)
     except ModelNotFound:
         print_error(
             "No model found. Train a model before running the "

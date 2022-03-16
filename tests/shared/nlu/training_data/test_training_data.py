@@ -792,10 +792,11 @@ def test_without_additional_e2e_examples(tmp_path: Path):
     stories = StoryGraph(
         [
             StoryStep(
+                "name",
                 events=[
                     UserUttered(None, {"name": "greet_from_stories"}),
                     ActionExecuted("utter_greet_from_stories"),
-                ]
+                ],
             )
         ]
     )

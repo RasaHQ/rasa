@@ -17,6 +17,8 @@ class LimitSlot(Slot):
           limit: 100
     """
 
+    type_name = "limit"
+
     def __init__(
         self,
         name: Text,

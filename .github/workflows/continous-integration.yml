@@ -323,7 +323,7 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       run: poetry run pip install -U ddtrace
 
-    - name: Test Code 🔍 (multithread)
+    - name: Test Code 🔍 (multi-process)
       if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
