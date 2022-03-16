@@ -418,6 +418,7 @@ async def test_eval_data(tmp_path: Path, project: Text, trained_rasa_model: Text
     assert len(entity_results) == 46
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     240, func_only=True
 )  # these can take a longer time than the default timeout
@@ -431,12 +432,7 @@ async def test_run_cv_evaluation():
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {
-                "name": "DIETClassifier",
-                EPOCHS: 1,
-                "batch_size": [16,64],
-                "transformer_size": 128,
-            },
+            {"name": "DIETClassifier", EPOCHS: 2},
         ],
     }
 
@@ -467,6 +463,7 @@ async def test_run_cv_evaluation():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     180, func_only=True
 )  # these can take a longer time than the default timeout
@@ -513,6 +510,7 @@ async def test_run_cv_evaluation_no_entities():
     assert len(entity_results.evaluation) == 0
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     280, func_only=True
 )  # these can take a longer time than the default timeout
@@ -592,6 +590,7 @@ async def test_run_cv_evaluation_with_response_selector():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     280, func_only=True
 )  # these can take a longer time than the default timeout
