@@ -831,8 +831,8 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
 
     with pytest.raises(
         RasaException,
-        match=f"The domain directory '{domain_dir}' does not contain any domain files. "
-        f"Please make sure to include these for a successful migration.",
+        match=f"The domain directory '{str(domain_dir)}' does not contain any domain "
+        f"files. Please make sure to include these for a successful migration.",
     ):
         migrate.migrate_domain_format(domain_dir, None)
 
