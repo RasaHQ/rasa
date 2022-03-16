@@ -634,6 +634,7 @@ def pytest_runtest_setup(item: Function) -> None:
     ):
         pytest.skip("cannot run on CI")
 
+
 class MockExporter(Exporter):
     """Mocked `Exporter` class."""
 
