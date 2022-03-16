@@ -112,9 +112,8 @@ def rank_and_mask(
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> None:
-    """
-    If SIMILARITY_TYPE is set to 'auto', update the SIMILARITY_TYPE depending
-    on the LOSS_TYPE.
+    """If the SIMILARITY_TYPE is set to 'auto', then update it according to LOSS_TYPE.
+
     Args:
         config: model configuration
     """
@@ -173,15 +172,14 @@ def align_token_features(
 
 
 def update_evaluation_parameters(config: Dict[Text, Any]) -> None:
-    """
-    If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of the training.
+    """If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of the training.
 
     Args:
         config: model configuration
 
-    Returns: updated model configuration
+    Returns:
+        updated model configuration
     """
-
     if config[EVAL_NUM_EPOCHS] == -1:
         config[EVAL_NUM_EPOCHS] = config[EPOCHS]
     elif config[EVAL_NUM_EPOCHS] < 1:
@@ -196,8 +194,7 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> None:
 
 
 def load_tf_hub_model(model_url: Text) -> Any:
-    """Load model from cache if possible, otherwise from TFHub"""
-
+    """Load model from cache if possible, otherwise from TFHub."""
     import tensorflow_hub as tfhub
 
     # needed to load the ConveRT model
