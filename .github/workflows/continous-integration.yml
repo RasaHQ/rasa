@@ -1,6 +1,5 @@
 name: Continuous Integration
 
-
 on:
   push:
     branches:
@@ -226,6 +225,7 @@ jobs:
         # - test-full-model-training
         - test-other-unit-tests
         # - test-performance
+        repetition: [1, 2, 3, 4, 5]
         os: [ ubuntu-latest, windows-2019 ]
         python-version: [ 3.7, 3.8, 3.9 ]
 
