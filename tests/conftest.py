@@ -628,7 +628,11 @@ def pytest_runtest_setup(item: Function) -> None:
         and sys.platform == "win32"
     ):
         pytest.skip("cannot run on Windows")
-
+    if (
+        "skip_on_ci" in [mark.name for mark in item.iter_markers()]
+        and os.environ.get("CI") in ["true", "True", "yes", "t", "1"]
+    ):
+        pytest.skip("cannot run on CI")
 
 class MockExporter(Exporter):
     """Mocked `Exporter` class."""
