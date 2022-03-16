@@ -223,8 +223,9 @@ def _migrate_domain_files(
 
     if not domain_files:
         raise RasaException(
-            f"The domain directory '{domain_path.as_posix()}' does not contain any domain "
-            f"files. Please make sure to include these for a successful migration."
+            f"The domain directory '{domain_path.as_posix()}' does not contain any "
+            f"domain files. Please make sure to include these for a successful "
+            f"migration."
         )
 
     for file in domain_files:
