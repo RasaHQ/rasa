@@ -80,6 +80,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def skip_on_CI() -> bool:
+    """Checks whether to skip this configuration on CI."""
+    return os.environ.get("CI") in ["true", "True", "yes", "t", "1"]
+
+
 async def test_message_processor(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -1479,6 +1484,11 @@ def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
 
 
 async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
+    if skip_on_CI():
+        pytest.skip(
+            "FIXME: these tests take too long to run in the CI, disabling them for now"
+        )
+
     processor = e2e_bot_agent.processor
     message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test")
     with caplog.at_level(logging.DEBUG):
