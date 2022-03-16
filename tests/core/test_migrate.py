@@ -776,6 +776,7 @@ def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
             assert migrated.get("intents") == ["greet"]
 
 
+@pytest.mark.skip_on_windows
 def test_migrate_domain_raises_exception_for_non_domain_file(tmp_path: Path):
     domain_file = prepare_domain_path(
         tmp_path,
@@ -806,6 +807,7 @@ def test_migrate_domain_raises_exception_for_non_domain_file(tmp_path: Path):
         migrate.migrate_domain_format(domain_file, new_domain_file)
 
 
+@pytest.mark.skip_on_windows
 def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()

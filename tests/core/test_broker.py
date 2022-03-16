@@ -301,6 +301,7 @@ async def test_kafka_broker_security_protocols(file: Text, exception: Exception)
         actual._create_producer()
 
 
+@pytest.mark.skip_on_windows
 async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
     broker = PikaEventBroker(
         "host", "username", "password", retry_delay_in_seconds=1, connection_attempts=1

@@ -153,6 +153,7 @@ def test_wit_data():
     assert td.entities == {"location", "wit$datetime"}
 
 
+@pytest.mark.skip_on_windows
 def test_dialogflow_data():
     td = load_data("data/examples/dialogflow/")
     assert not td.is_empty()
