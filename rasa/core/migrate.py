@@ -223,7 +223,7 @@ def _migrate_domain_files(
 
     if not domain_files:
         raise RasaException(
-            f"The domain directory '{str(domain_path)}' does not contain any domain "
+            f"The domain directory '{domain_path.as_posix()}' does not contain any domain "
             f"files. Please make sure to include these for a successful migration."
         )
 
@@ -375,7 +375,7 @@ def migrate_domain_format(
         else:
             if not Domain.is_domain_file(domain_path):
                 raise RasaException(
-                    f"The file '{str(domain_path)}' could not be validated as a "
+                    f"The file '{domain_path.as_posix()}' could not be validated as a "
                     f"domain file. Only domain yaml files can be migrated. "
                 )
             original_domain = _create_back_up(domain_path, backup_location)
