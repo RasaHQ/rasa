@@ -164,7 +164,7 @@ class SocketIOInput(InputChannel):
         self.user_message_evt = user_message_evt
         self.namespace = namespace
         self.socketio_path = socketio_path
-        self.sio = None
+        self.sio: Optional[AsyncServer] = None
 
         self.jwt_key = jwt_key
         self.jwt_algorithm = jwt_method
