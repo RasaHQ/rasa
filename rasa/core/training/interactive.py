@@ -1623,7 +1623,7 @@ def _serve_application(
 def start_visualization(image_path: Text, port: int) -> None:
     """Add routes to serve the conversation visualization files."""
 
-    app = Sanic(__name__)
+    app = Sanic("rasa_interactive")
 
     # noinspection PyUnusedLocal
     @app.exception(NotFound)
