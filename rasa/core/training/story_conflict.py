@@ -181,7 +181,7 @@ def _find_conflicting_states(
     domain: Domain,
     max_history: Optional[int],
     tokenizer: Optional[Tokenizer] = None,
-) -> Dict[int, Optional[List[Text]]]:
+) -> Dict[int, List[int]]:
     """Identifies all states from which different actions follow.
 
     Args:
@@ -238,7 +238,7 @@ def _build_conflicts_from_states(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int],
-    conflicting_state_action_mapping: Dict[int, Optional[List[Text]]],
+    conflicting_state_action_mapping: Dict[int, List[int]],
     tokenizer: Optional[Tokenizer] = None,
 ) -> List["StoryConflict"]:
     """Builds a list of `StoryConflict` objects for each given conflict.

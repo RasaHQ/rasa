@@ -236,9 +236,8 @@ class DialogueStateTracker:
         self, event_verbosity: EventVerbosity = EventVerbosity.NONE
     ) -> Dict[Text, Any]:
         """Returns the current tracker state as an object."""
-        _events = self._events_for_verbosity(event_verbosity)
-        if _events:
-            _events = [e.as_dict() for e in _events]
+        events = self._events_for_verbosity(event_verbosity)
+        events_as_dict = [e.as_dict() for e in events] if events else None
         latest_event_time = None
         if len(self.events) > 0:
             latest_event_time = self.events[-1].timestamp
@@ -250,7 +249,7 @@ class DialogueStateTracker:
             "latest_event_time": latest_event_time,
             FOLLOWUP_ACTION: self.followup_action,
             "paused": self.is_paused(),
-            "events": _events,
+            "events": events_as_dict,
             "latest_input_channel": self.get_latest_input_channel(),
             ACTIVE_LOOP: self.active_loop,
             "latest_action": self.latest_action,
@@ -410,7 +409,7 @@ class DialogueStateTracker:
             return iter([])
 
         return (
-            x.get(ENTITY_ATTRIBUTE_VALUE)
+            cast(Text, x[ENTITY_ATTRIBUTE_VALUE])
             for x in self.latest_message.entities
             if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
             and x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group

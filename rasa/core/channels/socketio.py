@@ -80,7 +80,9 @@ class SocketIOOutput(OutputChannel):
         # the `or` makes sure there is at least one message we can attach the quick
         # replies to
         message_parts = text.strip().split("\n\n") or [text]
-        messages = [{"text": message, "quick_replies": []} for message in message_parts]
+        messages: List[Dict[Text, Any]] = [
+            {"text": message, "quick_replies": []} for message in message_parts
+        ]
 
         # attach all buttons to the last text fragment
         messages[-1]["quick_replies"] = [

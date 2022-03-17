@@ -1164,7 +1164,8 @@ def create_app(
             )
 
         try:
-            evaluation = await test_coroutine
+            if test_coroutine is not None:
+                evaluation = await test_coroutine
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())

@@ -155,7 +155,7 @@ class YAMLStoryWriter(StoryWriter):
 
         return result
 
-    def process_event(self, event: Event) -> Optional[OrderedDict]:
+    def process_event(self, event: Union[Event, List[Event]]) -> Optional[OrderedDict]:
         if isinstance(event, list):
             return self.process_or_utterances(event)
         if isinstance(event, UserUttered):

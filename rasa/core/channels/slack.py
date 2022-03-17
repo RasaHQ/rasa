@@ -41,12 +41,15 @@ class SlackBot(OutputChannel):
         super().__init__()
 
     async def _post_message(self, channel: Text, **kwargs: Any) -> None:
+        # type issues below are ignored because the `run_async` paramenter
+        # above ensures chat_postMessage is await-able. mypy complains
+        # because the type annotations are not precise enough in Slack
         if self.thread_id:
-            await self.client.chat_postMessage(
+            await self.client.chat_postMessage(  # type: ignore[misc]
                 channel=channel, **kwargs, thread_ts=self.thread_id
             )
         else:
-            await self.client.chat_postMessage(channel=channel, **kwargs)
+            await self.client.chat_postMessage(channel=channel, **kwargs)  # type: ignore[misc]
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any

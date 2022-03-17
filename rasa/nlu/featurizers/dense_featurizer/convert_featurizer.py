@@ -221,7 +221,7 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
             cls._validate_model_files_exist(model_url)
 
     @staticmethod
-    def _get_signature(signature: Text, module: Any) -> NoReturn:
+    def _get_signature(signature: Text, module: Any) -> WrappedFunction:
         """Retrieve a signature from a (hopefully loaded) TF model."""
         if not module:
             raise Exception(
@@ -445,5 +445,5 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
     @staticmethod
     def _clean_tokens(tokens: List[bytes]) -> List[Text]:
         """Encode tokens and remove special char added by ConveRT."""
-        tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
-        return [string for string in tokens if string]
+        decoded_tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
+        return [string for string in decoded_tokens if string]
