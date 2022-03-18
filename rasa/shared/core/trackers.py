@@ -245,7 +245,9 @@ class DialogueStateTracker:
             "paused": self.is_paused(),
             "events": events_as_dict,
             "latest_input_channel": self.get_latest_input_channel(),
-            ACTIVE_LOOP: dataclasses.asdict(self.active_loop),
+            ACTIVE_LOOP: (
+                dataclasses.asdict(self.active_loop) if self.active_loop else {}
+            ),
             "latest_action": self.latest_action,
             "latest_action_name": self.latest_action_name,
         }
