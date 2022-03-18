@@ -1,6 +1,6 @@
 from typing import Dict, List, Text, Any, TYPE_CHECKING
 
-import rasa.shared.core.events.deserialise_events
+import rasa.shared.core.events
 
 
 if TYPE_CHECKING:
