@@ -52,7 +52,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
-import rasa.core.training.training
+from rasa.core.training.training import create_action_fingerprints, ActionFingerprint
 
 logger = logging.getLogger(__name__)
 
@@ -302,18 +302,18 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _expected_but_missing_slots(
-        fingerprint: Dict[Text, List[Text]], state: State
+        fingerprint: ActionFingerprint, state: State
     ) -> Set[Text]:
-        expected_slots = set(fingerprint.get(SLOTS, {}))
+        expected_slots = set(fingerprint.slots)
         current_slots = set(state.get(SLOTS, {}).keys())
         # report all slots that are expected but aren't set in current slots
         return expected_slots.difference(current_slots)
 
     @staticmethod
     def _check_active_loops_fingerprint(
-        fingerprint: Dict[Text, List[Text]], state: State
+        fingerprint: ActionFingerprint, state: State
     ) -> Set[Text]:
-        expected_active_loops = set(fingerprint.get(ACTIVE_LOOP, {}))
+        expected_active_loops = set(fingerprint.active_loop)
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         current_active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
