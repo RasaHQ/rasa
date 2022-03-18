@@ -1,8 +1,9 @@
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
-from rasa.nlu.classifiers.logistic_regression_classifier import \
-    LogisticRegressionClassifier
+from rasa.nlu.classifiers.logistic_regression_classifier import (
+    LogisticRegressionClassifier,
+)
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
