@@ -562,23 +562,21 @@ class Marker(ABC):
 
         tag, _ = MarkerRegistry.get_non_negated_tag(tag_or_negated_tag=tag)
         if tag in MarkerRegistry.operator_tag_to_marker_class:
-            marker = OperatorMarker.from_tag_and_sub_config(
+            return OperatorMarker.from_tag_and_sub_config(
                 tag=tag, sub_config=sub_marker_config, name=name
             )
         elif tag in MarkerRegistry.condition_tag_to_marker_class:
-            marker = ConditionMarker.from_tag_and_sub_config(
+            return ConditionMarker.from_tag_and_sub_config(
                 tag=tag, sub_config=sub_marker_config, name=name
             )
-        else:
-            raise InvalidMarkerConfig(
-                f"Expected a marker configuration with a key that specifies"
-                f" an operator or a condition but found {tag}. "
-                f"Available conditions and operators are: "
-                f"{sorted(MarkerRegistry.all_tags)}. "
-                f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
-            )
 
-        return marker
+        raise InvalidMarkerConfig(
+            f"Expected a marker configuration with a key that specifies"
+            f" an operator or a condition but found {tag}. "
+            f"Available conditions and operators are: "
+            f"{sorted(MarkerRegistry.all_tags)}. "
+            f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+        )
 
     def evaluate_trackers(
         self,

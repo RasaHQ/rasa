@@ -106,8 +106,10 @@ def _rasa_service(
 def _prepare_credentials_for_rasa_x(
     credentials_path: Optional[Text], rasa_x_url: Optional[Text] = None
 ) -> Text:
-    credentials_path = rasa.cli.utils.get_validated_path(
-        credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+    credentials_path = str(
+        rasa.cli.utils.get_validated_path(
+            credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+        )
     )
     if credentials_path:
         credentials = rasa.shared.utils.io.read_config_file(credentials_path)
@@ -426,7 +428,7 @@ def _get_config_path(args: argparse.Namespace) -> Optional[Text]:
         args.config, "config", DEFAULT_CONFIG_PATH
     )
 
-    return config_path
+    return str(config_path)
 
 
 def _get_domain_path(args: argparse.Namespace) -> Optional[Text]:
@@ -434,7 +436,7 @@ def _get_domain_path(args: argparse.Namespace) -> Optional[Text]:
         args.domain, "domain", DEFAULT_DOMAIN_PATH
     )
 
-    return domain_path
+    return str(domain_path)
 
 
 def _get_credentials_and_endpoints_paths(

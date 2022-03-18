@@ -1,5 +1,5 @@
 import logging
-
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Text, Type
 
 import rasa.shared.core.constants
@@ -19,10 +19,14 @@ class InvalidSlotConfigError(RasaException, ValueError):
     """Raised if a slot's config is invalid."""
 
 
-class Slot:
+class Slot(ABC):
     """Key-value store for storing information during a conversation."""
 
-    type_name = None
+    @property
+    @abstractmethod
+    def type_name(self) -> Text:
+        """Name of the type of slot."""
+        ...
 
     def __init__(
         self,
@@ -84,6 +88,7 @@ class Slot:
 
         return self._as_feature()
 
+    @abstractmethod
     def _as_feature(self) -> List[float]:
         raise NotImplementedError(
             "Each slot type needs to specify how its "
@@ -436,4 +441,13 @@ class AnySlot(Slot):
             and self.initial_value == other.initial_value
             and self._value_reset_delay == other._value_reset_delay
             and self.value == other.value
+        )
+
+    def _as_feature(self) -> List[float]:
+        raise InvalidSlotConfigError(
+            f"An {AnySlot.__name__} cannot be featurized. "
+            f"Please use a different slot type for slot '{self.name}' instead. If you "
+            f"need to featurize a data type which is not supported out of the box, "
+            f"implement a custom slot type by subclassing '{Slot.__name__}'. "
+            f"See the documentation for more information: {DOCS_URL_SLOTS}"
         )

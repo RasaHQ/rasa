@@ -28,7 +28,9 @@ from tests.core.utilities import tracker_from_dialogue
 
 
 class CustomSlot(Slot):
-    def as_feature(self):
+    type_name = "custom"
+
+    def _as_feature(self):
         return [0.5]
 
 

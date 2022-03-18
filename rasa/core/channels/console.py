@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, AsyncGenerator, Dict, List, Optional, Text
+from typing import Any, AsyncGenerator, Dict, List, Optional, Text, overload
 
 import aiohttp
 import questionary
@@ -93,6 +93,11 @@ def _print_bot_output(
     return None
 
 
+@overload
+def _get_user_input(previous_response: None) -> Text:
+    ...
+
+
 def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
     button_response = None
     if previous_response is not None:
@@ -102,7 +107,7 @@ def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Tex
         response = cli_utils.payload_from_button_question(button_response)
         if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
-            response = _get_user_input({})
+            response = _get_user_input(None)
     else:
         response = questionary.text(
             "",
