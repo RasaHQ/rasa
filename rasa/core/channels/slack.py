@@ -49,7 +49,7 @@ class SlackBot(OutputChannel):
                 channel=channel, **kwargs, thread_ts=self.thread_id
             )
         else:
-            await self.client.chat_postMessage(channel=channel, **kwargs)  # type: ignore[misc]
+            await self.client.chat_postMessage(channel=channel, **kwargs)  # type: ignore[misc]  # noqa: E501
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any

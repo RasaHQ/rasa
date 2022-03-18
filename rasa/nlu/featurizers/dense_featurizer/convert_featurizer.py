@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import os
-from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
 import tensorflow as tf
 from tensorflow.python.eager.wrap_function import WrappedFunction

@@ -116,7 +116,7 @@ class SingleStateFeaturizer:
         if attribute in {INTENT, ACTION_NAME}:
             return {sub_state[attribute]: 1}  # type: ignore[dict-item]
         elif attribute == ENTITIES:
-            return {entity: 1 for entity in sub_state.get(ENTITIES, [])}  # type: ignore[misc]
+            return {entity: 1 for entity in sub_state.get(ENTITIES, [])}  # type: ignore[misc]  # noqa: E501
         elif attribute == ACTIVE_LOOP:
             return {sub_state["name"]: 1}  # type: ignore[dict-item]
         elif attribute == SLOTS:

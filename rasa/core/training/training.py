@@ -1,6 +1,6 @@
 import dataclasses
 
-from typing import DefaultDict, Dict, List, Optional, Set, Text, TYPE_CHECKING
+from typing import DefaultDict, Dict, List, Set, Text, TYPE_CHECKING
 from collections import defaultdict
 
 from rasa.shared.core.events import ActionExecuted, UserUttered

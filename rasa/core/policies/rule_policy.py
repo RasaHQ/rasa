@@ -364,9 +364,7 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         logger.debug("Started checking if some rules are incomplete.")
         # we need to use only fingerprints from rules
-        rule_fingerprints = rasa.core.training.training.create_action_fingerprints(
-            rule_trackers, domain
-        )
+        rule_fingerprints = create_action_fingerprints(rule_trackers, domain)
         if not rule_fingerprints:
             return
 
