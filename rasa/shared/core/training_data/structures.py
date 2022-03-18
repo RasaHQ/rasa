@@ -351,7 +351,7 @@ class RuleStep(StoryStep):
             )
         )
 
-    def get_rules_condition(self) -> List[Event]:
+    def get_rules_condition(self) -> List[Union[Event, List[Event]]]:
         """Returns a list of events forming a condition of the Rule."""
         return [
             event
@@ -359,7 +359,7 @@ class RuleStep(StoryStep):
             if event_id in self.condition_events_indices
         ]
 
-    def get_rules_events(self) -> List[Event]:
+    def get_rules_events(self) -> List[Union[Event, List[Event]]]:
         """Returns a list of events forming the Rule, that are not conditions."""
         return [
             event
