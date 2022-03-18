@@ -76,10 +76,11 @@ def create_diet(
             constructor = DIETClassifier.create
 
         default_execution_context.is_finetuning = finetune
+        rasa.utils.common.validate_config_and_insert_defaults(
+            defaults=DIETClassifier.get_default_config(), custom=config
+        )
         return constructor(
-            config=rasa.utils.common.override_defaults(
-                DIETClassifier.get_default_config(), config
-            ),
+            config=config,
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=default_diet_resource,

@@ -70,7 +70,8 @@ class SpacyNLP(GraphComponent):
             # retrieve the same vector, if set to `False`. For some
             # applications and models it makes sense to differentiate
             # between these two words, therefore setting this to `True`.
-            "case_sensitive": False
+            "case_sensitive": False,
+            "model": None,
         }
 
     @staticmethod
@@ -113,7 +114,7 @@ class SpacyNLP(GraphComponent):
         execution_context: ExecutionContext,
     ) -> SpacyNLP:
         """Creates component (see parent class for full docstring)."""
-        spacy_model_name = config.get("model")
+        spacy_model_name = config["model"]
 
         logger.info(f"Trying to load SpaCy model with name '{spacy_model_name}'.")
 
@@ -160,7 +161,8 @@ class SpacyNLP(GraphComponent):
             # this example, but since we are processing in batch mode, it would
             # get complex to collect all processed and neglected examples.
             text = ""
-        if self._config.get("case_sensitive"):
+        # TODO: following default will become unnecessary with #10464
+        if self._config.get("case_sensitive", False):
             return text
         else:
             return text.lower()

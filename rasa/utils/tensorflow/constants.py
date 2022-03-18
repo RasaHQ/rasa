@@ -19,6 +19,7 @@ MAX_RELATIVE_POSITION = "max_relative_position"
 BATCH_SIZES = "batch_size"
 BATCH_STRATEGY = "batch_strategy"
 EPOCHS = "epochs"
+FINETUNING_EPOCH_FRACTION = "finetuning_epoch_fraction"
 RANDOM_SEED = "random_seed"
 LEARNING_RATE = "learning_rate"
 
@@ -84,6 +85,7 @@ MEAN_POOLING = "mean"
 
 TENSORBOARD_LOG_DIR = "tensorboard_log_directory"
 TENSORBOARD_LOG_LEVEL = "tensorboard_log_level"
+TENSORBOARD_PROFILE_BATCH = "_tensorboard_profile_batch"
 
 SEQUENCE_FEATURES = "sequence_features"
 SENTENCE_FEATURES = "sentence_features"

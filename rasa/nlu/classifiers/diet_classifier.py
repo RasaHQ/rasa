@@ -72,6 +72,7 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     ENTITY_RECOGNITION,
     TENSORBOARD_LOG_DIR,
+    TENSORBOARD_PROFILE_BATCH,
     INTENT_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
@@ -105,6 +106,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     SOFTMAX,
+    FINETUNING_EPOCH_FRACTION,
 )
 
 logger = logging.getLogger(__name__)
@@ -182,6 +184,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             BATCH_STRATEGY: BALANCED,
             # Number of epochs to train
             EPOCHS: 300,
+            # Fraction of epoch number to be used during finetuning.
+            FINETUNING_EPOCH_FRACTION: 1.0,
             # Set random seed to any 'int' to get reproducible results
             RANDOM_SEED: None,
             # Initial learning rate for the optimizer
@@ -261,6 +265,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'batch'
             TENSORBOARD_LOG_LEVEL: "epoch",
+            # Define for which batches profiling should be enabled. For more
+            # information take a look at the tensorflow API.
+            # Set to 0 for no profiling.
+            TENSORBOARD_PROFILE_BATCH: 0,
             # Perform model checkpointing
             CHECKPOINT_MODEL: False,
             # Specify what features to use as sequence and sentence features
@@ -331,6 +339,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self.finetune_mode = self._execution_context.is_finetuning
         self._sparse_feature_sizes = sparse_feature_sizes
 
+        self._effective_epochs = train_utils.effective_number_of_epochs(
+            during_finetuning=self.finetune_mode,
+            epochs=self.component_config[EPOCHS],
+            finetuning_epoch_fraction=self.component_config[FINETUNING_EPOCH_FRACTION],
+            epoch_overwrite=None,
+        )
+
     # init helpers
     def _check_masked_lm(self) -> None:
         if (
@@ -368,18 +383,12 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
 
-        self.component_config = train_utils.update_confidence_type(
-            self.component_config
-        )
+        train_utils.update_confidence_type(self.component_config)
 
         train_utils.validate_configuration_settings(self.component_config)
 
-        self.component_config = train_utils.update_similarity_type(
-            self.component_config
-        )
-        self.component_config = train_utils.update_evaluation_parameters(
-            self.component_config
-        )
+        train_utils.update_similarity_type(self.component_config)
+        train_utils.update_evaluation_parameters(self.component_config)
 
     @classmethod
     def create(
@@ -908,21 +917,22 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
             self.component_config[BATCH_SIZES],
-            self.component_config[EPOCHS],
+            self._effective_epochs,
             self.component_config[BATCH_STRATEGY],
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[RANDOM_SEED],
         )
         callbacks = train_utils.create_common_callbacks(
-            self.component_config[EPOCHS],
+            self._effective_epochs,
             self.component_config[TENSORBOARD_LOG_DIR],
             self.component_config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
+            profile_batch=self.component_config[TENSORBOARD_PROFILE_BATCH],
         )
 
         self.model.fit(
             data_generator,
-            epochs=self.component_config[EPOCHS],
+            epochs=self._effective_epochs,
             validation_data=validation_data_generator,
             validation_freq=self.component_config[EVAL_NUM_EPOCHS],
             callbacks=callbacks,
@@ -1126,8 +1136,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             sparse_feature_sizes,
         ) = cls._load_from_files(model_path)
 
-        config = train_utils.update_confidence_type(config)
-        config = train_utils.update_similarity_type(config)
+        train_utils.update_confidence_type(config)
+        train_utils.update_similarity_type(config)
 
         model = cls._load_model(
             entity_tag_specs,

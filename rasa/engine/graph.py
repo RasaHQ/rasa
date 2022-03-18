@@ -357,9 +357,16 @@ class GraphNode:
         self._constructor_fn: Callable = getattr(
             self._component_class, self._constructor_name
         )
-        self._component_config: Dict[Text, Any] = rasa.utils.common.override_defaults(
-            self._component_class.get_default_config(), component_config
-        )
+        default_config = component_class.get_default_config()
+        if default_config:
+            # Note that an empty default config is not interpreted as a "must not
+            # contain anything in the configuration" but allows for arbitrary
+            # custom configurations.
+            rasa.utils.common.validate_config_and_insert_defaults(
+                custom=component_config,
+                defaults=default_config,
+            )
+        self._component_config = component_config
         self._fn_name: Text = fn_name
         self._fn: Callable = getattr(self._component_class, self._fn_name)
         self._inputs: Dict[Text, Text] = inputs

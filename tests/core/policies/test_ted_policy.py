@@ -196,7 +196,7 @@ class TestTEDPolicy(PolicyTestCollection):
             execution_context,
         )
 
-        assert loaded_policy.config[EPOCHS] == expected_epoch_value
+        assert loaded_policy._effective_epochs == expected_epoch_value
 
     def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
         config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"

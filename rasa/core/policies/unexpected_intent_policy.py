@@ -36,6 +36,7 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
     UNLIKELY_INTENT_POLICY_PRIORITY,
+    DEFAULT_MAX_HISTORY,
 )
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
@@ -82,6 +83,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    TENSORBOARD_PROFILE_BATCH,
     CHECKPOINT_MODEL,
     FEATURIZERS,
     ENTITY_RECOGNITION,
@@ -104,6 +106,8 @@ from rasa.utils.tensorflow.constants import (
     SEVERITY_KEY,
     QUERY_INTENT_KEY,
     NAME,
+    EPOCH_OVERRIDE,
+    FINETUNING_EPOCH_FRACTION,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
@@ -195,6 +199,10 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             BATCH_STRATEGY: BALANCED,
             # Number of epochs to train
             EPOCHS: 1,
+            # Fraction of epoch number to be used during finetuning.
+            FINETUNING_EPOCH_FRACTION: 1.0,
+            # Do not use. Used for unit tests only.
+            EPOCH_OVERRIDE: None,
             # Set random seed to any 'int' to get reproducible results
             RANDOM_SEED: None,
             # Initial learning rate for the optimizer
@@ -247,6 +255,10 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'batch'
             TENSORBOARD_LOG_LEVEL: "epoch",
+            # Define for which batches profiling should be enabled. For more
+            # information take a look at the tensorflow API.
+            # Set to 0 for no profiling.
+            TENSORBOARD_PROFILE_BATCH: 0,
             # Perform model checkpointing
             CHECKPOINT_MODEL: False,
             # Specify what features to use as sequence and sentence features.
@@ -283,6 +295,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             BILOU_FLAG: False,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
+            # Max history of the policy, unbounded by default
+            POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
         }
@@ -344,7 +358,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         return IntentTED
 
     def _auto_update_configuration(self) -> None:
-        self.config = train_utils.update_evaluation_parameters(self.config)
+        train_utils.update_evaluation_parameters(self.config)
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
@@ -894,9 +908,10 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         return model_utilties
 
     @classmethod
-    def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = rasa.utils.common.override_defaults(cls.get_default_config(), meta)
-        return meta
+    def _update_loaded_params(cls, meta: Dict[Text, Any]) -> None:
+        rasa.utils.common.validate_config_and_insert_defaults(
+            custom=meta, defaults=cls.get_default_config()
+        )
 
     @classmethod
     def _load_policy_with_model(

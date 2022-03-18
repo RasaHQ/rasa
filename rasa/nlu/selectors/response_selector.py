@@ -81,6 +81,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     SOFTMAX,
+    FINETUNING_EPOCH_FRACTION,
 )
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -172,6 +173,8 @@ class ResponseSelector(DIETClassifier):
             BATCH_STRATEGY: BALANCED,
             # Number of epochs to train
             EPOCHS: 300,
+            # Fraction of epoch number to be used during finetuning.
+            FINETUNING_EPOCH_FRACTION: 1.0,
             # Set random seed to any 'int' to get reproducible results
             RANDOM_SEED: None,
             # Initial learning rate for the optimizer

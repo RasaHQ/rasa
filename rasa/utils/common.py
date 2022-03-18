@@ -33,6 +33,7 @@ from rasa.constants import (
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
 import rasa.shared.utils.io
+from rasa.shared.exceptions import InvalidConfigException
 
 logger = logging.getLogger(__name__)
 
@@ -332,47 +333,92 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         return not_found()
 
 
-def update_existing_keys(
-    original: Dict[Any, Any], updates: Dict[Any, Any]
-) -> Dict[Any, Any]:
-    """Iterate through all the updates and update a value in the original dictionary.
+def validate_config_and_insert_defaults(
+    custom: Dict[Text, Any],
+    defaults: Dict[Text, Any],
+) -> None:
+    """Validates the given config and insert (missing) default values.
 
-    If the updates contain a key that is not present in the original dict, it will
-    be ignored.
+    The given custom configuration is checked against the given
+    defaults and missing values are filled in according to the following rules:
+
+    1. If a configuration key maps to a non-dictionary, then a default value for this
+       key must be defined.
+       If a configuration key maps to a dictionary, then the default for this key must
+       also be a dictionary, and there must be no sub-key for which no corresponding
+       default sub-key exists.
+
+    2. If the custom configuration is missing a key, then the default value will
+       be filled in.
+
+    3. If the custom configuration contains a key that maps to a dictionary and if
+       one of the default sub-keys is missing (which exist because of 1.), then default
+       values for the sub-keys will be filled in.
+
+    Args:
+        defaults: default configuration (with default values that must allow for a
+           deep copy)
+        custom: user config containing new parameters
+
+    Raises:
+        `InvalidConfigException` if the rules outlined above are violated
     """
-    updated = original.copy()
-    for k, v in updates.items():
-        if k in updated:
-            updated[k] = v
-    return updated
+    _raise_if_items_without_defaults_are_configured(defaults=defaults, custom=custom)
+    for key, key_default in defaults.items():
+        if key not in custom:
+            custom[key] = copy.deepcopy(key_default)
+        elif isinstance(key_default, dict):
+            key_custom = custom[key]
+            for sub_key, sub_key_default in key_default.items():
+                key_custom.setdefault(sub_key, sub_key_default)
 
 
-def override_defaults(
-    defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
-) -> Dict[Text, Any]:
-    """Override default config with the given config.
+def _raise_if_items_without_defaults_are_configured(
+    defaults: Dict[Text, Any], custom: Dict[Text, Any]
+) -> None:
+    """Raises if the given config does not just override default values.
 
-    We cannot use `dict.update` method because configs contain nested dicts.
+    If a configuration key maps to a non-dictionary, then a default value for this key
+    must be defined.
+    If a default key maps to a dictionary and the given custom configuration
+    specifies a value for this key, then the custom configuration must map to a
+    dictionary as well and there must be *no* sub-key for which *no* corresponding
+    default sub-key exists.
 
     Args:
         defaults: default config
         custom: user config containing new parameters
 
-    Returns:
-        updated config
+    Raises:
+        `InvalidConfigException` if the rules outlined above are violated
     """
-    config = copy.deepcopy(defaults) if defaults else {}
-
-    if not custom:
-        return config
-
-    for key in custom.keys():
-        if isinstance(config.get(key), dict):
-            config[key].update(custom[key])
-            continue
-        config[key] = custom[key]
-
-    return config
+    keys_without_defaults = set(custom.keys()).difference(defaults.keys())
+    keys_that_should_map_to_dicts = set()
+    for key in custom:
+        if isinstance(defaults.get(key), dict) and not isinstance(custom[key], dict):
+            keys_that_should_map_to_dicts.add(key)
+        elif key not in keys_without_defaults and isinstance(defaults.get(key), dict):
+            sub_keys_without_defaults = set(custom[key].keys()).difference(
+                defaults[key].keys()
+            )
+            keys_without_defaults.update(
+                [(key, sub_key) for sub_key in sub_keys_without_defaults]
+            )
+    messages = []
+    if keys_without_defaults:
+        messages.append(
+            f"Expected configurations only for arguments "
+            f"for which there are default values defined, but the given "
+            f"configuration contains unknown keys: {keys_without_defaults}. "
+        )
+    if keys_that_should_map_to_dicts:
+        messages.append(
+            f"Expected a dictionary to be defined for the following "
+            f"keys but found non-dictionary values:"
+            f" {keys_that_should_map_to_dicts}. "
+        )
+    if messages:
+        raise InvalidConfigException("\n".join(messages))
 
 
 class RepeatedLogFilter(logging.Filter):

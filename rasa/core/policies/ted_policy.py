@@ -99,6 +99,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    TENSORBOARD_PROFILE_BATCH,
     CHECKPOINT_MODEL,
     ENCODING_DIMENSION,
     UNIDIRECTIONAL_ENCODER,
@@ -119,6 +120,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
     EPOCH_OVERRIDE,
+    FINETUNING_EPOCH_FRACTION,
 )
 
 
@@ -235,6 +237,10 @@ class TEDPolicy(Policy):
             BATCH_STRATEGY: BALANCED,
             # Number of epochs to train
             EPOCHS: 1,
+            # Fraction of epoch number to be used during finetuning.
+            FINETUNING_EPOCH_FRACTION: 1.0,
+            # Do not use. Used for unit tests only.
+            EPOCH_OVERRIDE: None,
             # Set random seed to any 'int' to get reproducible results
             RANDOM_SEED: None,
             # Initial learning rate for the optimizer
@@ -312,6 +318,10 @@ class TEDPolicy(Policy):
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'batch'
             TENSORBOARD_LOG_LEVEL: "epoch",
+            # Define for which batches profiling should be enabled. For more
+            # information take a look at the tensorflow API.
+            # Set to 0 for no profiling.
+            TENSORBOARD_PROFILE_BATCH: 0,
             # Perform model checkpointing
             CHECKPOINT_MODEL: False,
             # Only pick e2e prediction if the policy is confident enough
@@ -381,6 +391,13 @@ class TEDPolicy(Policy):
         if self.config[CHECKPOINT_MODEL]:
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
+        self._effective_epochs = train_utils.effective_number_of_epochs(
+            during_finetuning=self.finetune_mode,
+            epochs=self.config[EPOCHS],
+            finetuning_epoch_fraction=self.config[FINETUNING_EPOCH_FRACTION],
+            epoch_overwrite=self.config[EPOCH_OVERRIDE],
+        )
+
     @staticmethod
     def model_class() -> Type[TED]:
         """Gets the class of the model architecture to be used by the policy.
@@ -401,10 +418,10 @@ class TEDPolicy(Policy):
 
     def _auto_update_configuration(self) -> None:
         """Takes care of deprecations and compatibility of parameters."""
-        self.config = rasa.utils.train_utils.update_confidence_type(self.config)
+        rasa.utils.train_utils.update_confidence_type(self.config)
         rasa.utils.train_utils.validate_configuration_settings(self.config)
-        self.config = rasa.utils.train_utils.update_similarity_type(self.config)
-        self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
+        rasa.utils.train_utils.update_similarity_type(self.config)
+        rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
     def _create_label_data(
         self,
@@ -663,16 +680,17 @@ class TEDPolicy(Policy):
         ) = rasa.utils.train_utils.create_data_generators(
             model_data,
             self.config[BATCH_SIZES],
-            self.config[EPOCHS],
+            self._effective_epochs,
             self.config[BATCH_STRATEGY],
             self.config[EVAL_NUM_EXAMPLES],
             self.config[RANDOM_SEED],
         )
         callbacks = rasa.utils.train_utils.create_common_callbacks(
-            self.config[EPOCHS],
+            self._effective_epochs,
             self.config[TENSORBOARD_LOG_DIR],
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
+            profile_batch=self.config[TENSORBOARD_PROFILE_BATCH],
         )
 
         if self.model is None:
@@ -680,7 +698,7 @@ class TEDPolicy(Policy):
 
         self.model.fit(
             data_generator,
-            epochs=self.config[EPOCHS],
+            epochs=self._effective_epochs,
             validation_data=validation_data_generator,
             validation_freq=self.config[EVAL_NUM_EPOCHS],
             callbacks=callbacks,
@@ -1065,9 +1083,7 @@ class TEDPolicy(Policy):
 
         model_utilities = cls._load_model_utilities(model_path)
 
-        config = cls._update_loaded_params(config)
-        if execution_context.is_finetuning and EPOCH_OVERRIDE in config:
-            config[EPOCHS] = config.get(EPOCH_OVERRIDE)
+        cls._update_loaded_params(config)
 
         (
             model_data_example,
@@ -1160,10 +1176,8 @@ class TEDPolicy(Policy):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = rasa.utils.train_utils.update_confidence_type(meta)
-        meta = rasa.utils.train_utils.update_similarity_type(meta)
-
-        return meta
+        rasa.utils.train_utils.update_confidence_type(meta)
+        rasa.utils.train_utils.update_similarity_type(meta)
 
 
 class TED(TransformerRasaModel):

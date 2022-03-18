@@ -1,4 +1,6 @@
 from pathlib import Path
+
+import math
 import numpy as np
 from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 
@@ -38,6 +40,31 @@ if TYPE_CHECKING:
     from rasa.nlu.extractors.extractor import EntityTagSpec
     from rasa.nlu.tokenizers.tokenizer import Token
     from tensorflow.keras.callbacks import Callback
+
+
+def effective_number_of_epochs(
+    epochs: int,
+    during_finetuning: bool,
+    finetuning_epoch_fraction: float,
+    epoch_overwrite: Optional[int],
+) -> int:
+    """Returns the number of epochs to be used according to the given settings.
+
+    Args:
+        epochs: the number of epochs specified e.g. in a config file
+        during_finetuning: whether we are in finetuning mode
+        finetuning_epoch_fraction: the fraction of the epochs to be used during
+          finetuning
+        epoch_overwrite: (optional) if this is specified **and** if
+          `during_finetuning` is `True`, then this number of epochs
+          is used instead of any epoch number that would be derived from the
+          other settings
+    """
+    if during_finetuning:
+        if epoch_overwrite is not None:
+            return epoch_overwrite
+        return math.ceil(epochs * float(finetuning_epoch_fraction))
+    return epochs
 
 
 def rank_and_mask(
@@ -84,22 +111,17 @@ def rank_and_mask(
     return indices, confidences
 
 
-def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """
-    If SIMILARITY_TYPE is set to 'auto', update the SIMILARITY_TYPE depending
-    on the LOSS_TYPE.
+def update_similarity_type(config: Dict[Text, Any]) -> None:
+    """If the SIMILARITY_TYPE is set to 'auto', then update it according to LOSS_TYPE.
+
     Args:
         config: model configuration
-
-    Returns: updated model configuration
     """
     if config.get(SIMILARITY_TYPE) == AUTO:
         if config[LOSS_TYPE] == CROSS_ENTROPY:
             config[SIMILARITY_TYPE] = INNER
         elif config[LOSS_TYPE] == MARGIN:
             config[SIMILARITY_TYPE] = COSINE
-
-    return config
 
 
 def align_token_features(
@@ -149,16 +171,15 @@ def align_token_features(
     return out_token_features
 
 
-def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """
-    If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of the training.
+def update_evaluation_parameters(config: Dict[Text, Any]) -> None:
+    """If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of the training.
 
     Args:
         config: model configuration
 
-    Returns: updated model configuration
+    Returns:
+        updated model configuration
     """
-
     if config[EVAL_NUM_EPOCHS] == -1:
         config[EVAL_NUM_EPOCHS] = config[EPOCHS]
     elif config[EVAL_NUM_EPOCHS] < 1:
@@ -170,12 +191,10 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
         )
     if config[CHECKPOINT_MODEL] and config[EVAL_NUM_EXAMPLES] == 0:
         config[CHECKPOINT_MODEL] = False
-    return config
 
 
 def load_tf_hub_model(model_url: Text) -> Any:
-    """Load model from cache if possible, otherwise from TFHub"""
-
+    """Load model from cache if possible, otherwise from TFHub."""
     import tensorflow_hub as tfhub
 
     # needed to load the ConveRT model
@@ -349,6 +368,7 @@ def create_common_callbacks(
     tensorboard_log_dir: Optional[Text] = None,
     tensorboard_log_level: Optional[Text] = None,
     checkpoint_dir: Optional[Path] = None,
+    profile_batch: Union[int, Tuple[int, int]] = 0,
 ) -> List["Callback"]:
     """Create common callbacks.
 
@@ -363,6 +383,8 @@ def create_common_callbacks(
         tensorboard_log_level: defines when training metrics for tensorboard should be
                                logged. Valid values: 'epoch' and 'batch'.
         checkpoint_dir: optional directory that should be used for model checkpointing
+        profile_batch: optional profiling of these batch(es) to sample compute
+            characteristics
 
     Returns:
         A list of callbacks.
@@ -379,6 +401,7 @@ def create_common_callbacks(
                 write_graph=True,
                 write_images=True,
                 histogram_freq=10,
+                profile_batch=profile_batch,
             )
         )
 
@@ -388,7 +411,7 @@ def create_common_callbacks(
     return callbacks
 
 
-def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]:
+def update_confidence_type(component_config: Dict[Text, Any]) -> None:
     """Set model confidence to auto if margin loss is used.
 
     Option `auto` is reserved for margin loss type. It will be removed once margin loss
@@ -396,9 +419,6 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
 
     Args:
         component_config: model configuration
-
-    Returns:
-        updated model configuration
     """
     if component_config[LOSS_TYPE] == MARGIN:
         rasa.shared.utils.io.raise_warning(
@@ -409,7 +429,6 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
             f"cross entropy loss by setting `{LOSS_TYPE}={CROSS_ENTROPY}`."
         )
         component_config[MODEL_CONFIDENCE] = AUTO
-    return component_config
 
 
 def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:

@@ -37,7 +37,7 @@ from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.utils.tensorflow.constants import EPOCHS, FINETUNING_EPOCH_FRACTION
 
 
 def count_temp_rasa_files(directory: Text) -> int:
@@ -568,7 +568,13 @@ def test_model_finetuning_core(
     storage_dir = tmp_path_factory.mktemp("finetuned model")
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(result))
 
-    assert metadata.train_schema.nodes["train_TEDPolicy0"].config[EPOCHS] == 2
+    assert metadata.train_schema.nodes["train_TEDPolicy0"].config[EPOCHS] == 10
+    assert (
+        metadata.train_schema.nodes["train_TEDPolicy0"].config[
+            FINETUNING_EPOCH_FRACTION
+        ]
+        == 0.2
+    )
     assert metadata.training_type == TrainingType.CORE
 
 
@@ -600,7 +606,15 @@ def test_model_finetuning_core_with_default_epochs(
     storage_dir = tmp_path_factory.mktemp("finetuned model")
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(model_name))
 
-    assert metadata.train_schema.nodes["train_TEDPolicy0"].config[EPOCHS] == 2
+    # defaults won't be filled in automatically
+    assert EPOCHS not in metadata.train_schema.nodes["train_TEDPolicy0"].config
+    # finetuning epoch fraction will be added
+    assert (
+        metadata.train_schema.nodes["train_TEDPolicy0"].config[
+            FINETUNING_EPOCH_FRACTION
+        ]
+        == 2
+    )
 
 
 def test_model_finetuning_core_new_domain_label(
@@ -692,7 +706,13 @@ def test_model_finetuning_nlu(
     storage_dir = tmp_path_factory.mktemp("finetuned model")
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(model_name))
 
-    assert metadata.train_schema.nodes["train_DIETClassifier5"].config[EPOCHS] == 2
+    assert metadata.train_schema.nodes["train_DIETClassifier5"].config[EPOCHS] == 10
+    assert (
+        metadata.train_schema.nodes["train_DIETClassifier5"].config[
+            FINETUNING_EPOCH_FRACTION
+        ]
+        == 0.2
+    )
     assert metadata.training_type == TrainingType.NLU
 
 
@@ -812,7 +832,15 @@ def test_model_finetuning_nlu_with_default_epochs(
     storage_dir = tmp_path_factory.mktemp("finetuned model")
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(model_name))
 
-    assert metadata.train_schema.nodes["train_DIETClassifier5"].config[EPOCHS] == 3
+    # defaults won't be filled in automatically
+    assert EPOCHS not in metadata.train_schema.nodes["train_DIETClassifier5"].config
+    # finetuning epoch fraction will be added
+    assert (
+        metadata.train_schema.nodes["train_DIETClassifier5"].config[
+            FINETUNING_EPOCH_FRACTION
+        ]
+        == 0.01
+    )
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])

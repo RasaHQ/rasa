@@ -1,7 +1,7 @@
 import os
 import logging
 from pathlib import Path
-from typing import Any, Text, Type
+from typing import Any, Text, Type, Dict
 from unittest import mock
 
 import pytest
@@ -9,6 +9,7 @@ import pytest
 from rasa.core.agent import Agent
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.utils.common
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.utils.common import (
     RepeatedLogFilter,
     find_unavailable_packages,
@@ -144,14 +145,37 @@ def test_module_path_from_class(clazz: Type, module_path: Text):
     assert rasa.utils.common.module_path_from_class(clazz) == module_path
 
 
-def test_override_defaults():
+def test_validate_config_and_insert_defaults():
     defaults = {"nested-dict": {"key1": "value1", "key2": "value2"}}
     custom = {"nested-dict": {"key2": "override-value2"}}
 
-    updated_config = rasa.utils.common.override_defaults(defaults, custom)
+    rasa.utils.common.validate_config_and_insert_defaults(
+        custom=custom, defaults=defaults
+    )
 
     expected_config = {"nested-dict": {"key1": "value1", "key2": "override-value2"}}
-    assert updated_config == expected_config
+    assert custom == expected_config
+
+
+@pytest.mark.parametrize(
+    "defaults,custom",
+    [
+        ({"key": 1}, {"wrong-key": 2}),
+        (
+            {"other-key": 1, "same-key": {"sub-key": 1}},
+            {"other-key": 2, "same-key": {"wrong-sub-key": 3}},
+        ),
+        ({"key1": 1, "key2": {"wrong-level": 3}}, {"wrong-level": 3}),
+        ({"key1": {"should-be-a-dict": 3}}, {"key1": "this-is-not-a-dict"}),
+    ],
+)
+def test_validate_config_and_insert_defaults_raises_if_unknown_keys_are_specified(
+    defaults: Dict[Text, Any], custom: Dict[Text, Any]
+):
+    with pytest.raises(InvalidConfigException):
+        rasa.utils.common.validate_config_and_insert_defaults(
+            defaults=defaults, custom=custom
+        )
 
 
 def test_cli_missing_log_level_default_used():
