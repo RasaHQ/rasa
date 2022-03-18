@@ -269,7 +269,11 @@ class RasaModelData:
         self.sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]] = {}
 
     @overload
-    def get(self, key: Text, sub_key: Text = ...) -> List[FeatureArray]:
+    def get(self, key: Text, sub_key: Text) -> List[FeatureArray]:
+        ...
+
+    @overload
+    def get(self, key: Text, sub_key: None = ...) -> Dict[Text, List[FeatureArray]]:
         ...
 
     def get(
