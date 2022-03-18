@@ -210,7 +210,7 @@ class PikaEventBroker(EventBroker):
 
     async def _set_up_exchange(
         self, channel: aio_pika.RobustChannel
-    ) -> aio_pika.Exchange:
+    ) -> aio_pika.RobustExchange:
         exchange = await channel.declare_exchange(
             self.exchange_name, type=aio_pika.ExchangeType.FANOUT
         )

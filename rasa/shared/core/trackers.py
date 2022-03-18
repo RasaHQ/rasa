@@ -20,6 +20,7 @@ from typing import (
     FrozenSet,
     Tuple,
     TYPE_CHECKING,
+    cast,
 )
 
 import rasa.shared.utils.io
@@ -62,10 +63,10 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import AnySlot, Slot
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict, TypeAlias
+    from typing_extensions import TypedDict
 
     from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
@@ -83,7 +84,7 @@ if TYPE_CHECKING:
         total=False,
     )
 
-    EventTypeAlias: TypeAlias = TypeVar("EventTypeAlias", Event)
+    EventTypeAlias = TypeVar("EventTypeAlias", bound=Event)
 
 
 logger = logging.getLogger(__name__)
@@ -118,7 +119,7 @@ class AnySlotDict(dict):
     e.g. properly featurizing the slot."""
 
     def __missing__(self, key: Text) -> Slot:
-        value = self[key] = Slot(key, mappings=[])
+        value = self[key] = AnySlot(key, mappings=[])
         return value
 
     def __contains__(self, key: Any) -> bool:
@@ -217,11 +218,11 @@ class DialogueStateTracker:
         # if tracker is paused, no actions should be taken
         self._paused = False
         # A deterministically scheduled action to be executed next
-        self.followup_action = ACTION_LISTEN_NAME
-        self.latest_action = None
+        self.followup_action: Optional[Text] = ACTION_LISTEN_NAME
+        self.latest_action: Optional[Dict[Text, Text]] = None
         # Stores the most recent message sent by the user
         self.latest_message: Optional[UserUttered] = None
-        self.latest_bot_utterance = None
+        self.latest_bot_utterance: Optional[BotUttered] = None
         self._reset()
         self.active_loop: "TrackerActiveLoop" = {}
 
@@ -874,7 +875,7 @@ class DialogueStateTracker:
 
 def get_active_loop_name(
     state: State,
-) -> Optional[Union[Text, Tuple[Union[float, Text]]]]:
+) -> Optional[Text]:
     """Get the name of current active loop.
 
     Args:
@@ -889,7 +890,9 @@ def get_active_loop_name(
     ):
         return None
 
-    return state[ACTIVE_LOOP].get(LOOP_NAME)
+    # FIXME: better type annotation for `State` would require
+    # a larger refactoring (e.g. switch to dataclass)
+    return cast(Optional[Text], state[ACTIVE_LOOP].get(LOOP_NAME))
 
 
 def is_prev_action_listen_in_state(state: State) -> bool:

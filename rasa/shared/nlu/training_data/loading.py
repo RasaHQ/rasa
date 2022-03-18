@@ -75,7 +75,7 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
         DialogflowReader,
     )
 
-    reader = None
+    reader: Optional["TrainingDataReader"] = None
     if fformat == LUIS:
         reader = LuisReader()
     elif fformat == WIT:

@@ -988,9 +988,12 @@ class DefaultV1Recipe(Recipe):
 
         rasa.shared.utils.io.write_text_file("".join(updated_lines), config_file_path)
 
-        auto_configured_keys = transform_collection_to_sentence(auto_configured_keys)
+        auto_configured_keys_text = transform_collection_to_sentence(
+            auto_configured_keys
+        )
         rasa.shared.utils.cli.print_info(
-            f"The configuration for {auto_configured_keys} was chosen automatically. "
+            f"The configuration for {auto_configured_keys_text} "
+            f"was chosen automatically. "
             f"It was written into the config file at '{config_file_path}'."
         )
 
@@ -1004,7 +1007,7 @@ class DefaultV1Recipe(Recipe):
         try:
             content = rasa.shared.utils.io.read_config_file(config_file_path)
         except FileNotFoundException:
-            content = ""
+            content = {}
 
         return (
             bool(content)

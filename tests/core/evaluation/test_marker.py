@@ -26,7 +26,7 @@ from rasa.core.evaluation.marker_base import (
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered, SessionStarted
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import TextSlot
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.tracker_store import InMemoryTrackerStore
@@ -565,7 +565,7 @@ def test_domain_validation_with_valid_marker(depth: int, max_branches: int, seed
         constant_negated=None,
     )
 
-    slots = [Slot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
+    slots = [TextSlot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
     actions = list(_collect_parameters(marker, ActionExecutedMarker))
     intents = _collect_parameters(marker, IntentDetectedMarker)
     domain = Domain(intents, [], slots, {}, actions, {}, {})

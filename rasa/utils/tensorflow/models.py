@@ -65,6 +65,8 @@ class RasaModel(TmpKerasModel):
     Cannot be used as tf.keras.Model.
     """
 
+    _training: Optional[bool]
+
     def __init__(self, random_seed: Optional[int] = None, **kwargs: Any) -> None:
         """Initialize the RasaModel.
 
