@@ -60,7 +60,7 @@ async def generate_response(nlg_call, domain):
 
 
 def run_server(domain, port, workers):
-    app = Sanic(__name__)
+    app = Sanic("nlg_server")
 
     @app.route("/nlg", methods=["POST", "OPTIONS"])
     async def nlg(request):
