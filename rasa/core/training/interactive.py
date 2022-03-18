@@ -1024,7 +1024,6 @@ async def _correct_wrong_nlu(
     conversation_id: Text,
 ) -> None:
     """A wrong NLU prediction got corrected, update core's tracker."""
-
     revert_latest_user_utterance = UserUtteranceReverted().as_dict()
     # `UserUtteranceReverted` also removes the `ACTION_LISTEN` event before, hence we
     # have to replay it.
@@ -1049,7 +1048,6 @@ async def _correct_wrong_action(
     is_new_action: bool = False,
 ) -> None:
     """A wrong action prediction got corrected, update core's tracker."""
-
     await send_action(
         endpoint, conversation_id, corrected_action, is_new_action=is_new_action
     )
@@ -1081,8 +1079,8 @@ async def _confirm_form_validation(
 ) -> None:
     """Ask a user whether an input for a form should be validated.
 
-    Previous to this call, the active form was chosen after it was rejected."""
-
+    Previous to this call, the active form was chosen after it was rejected.
+    """
     requested_slot = tracker.get("slots", {}).get(REQUESTED_SLOT)
 
     validation_questions = questionary.confirm(
@@ -1137,8 +1135,8 @@ async def _validate_action(
 ) -> bool:
     """Query the user to validate if an action prediction is correct.
 
-    Returns `True` if the prediction is correct, `False` otherwise."""
-
+    Returns `True` if the prediction is correct, `False` otherwise.
+    """
     if action_name == ACTION_UNLIKELY_INTENT_NAME:
         question = questionary.confirm(
             f"The bot wants to run '{action_name}' "
@@ -1207,8 +1205,8 @@ def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -
     """Validate if a users message input is correct.
 
     This assumes the user entered an intent directly, e.g. using
-    `/greet`. Return `True` if the intent is a known one."""
-
+    `/greet`. Return `True` if the intent is a known one.
+    """
     parse_data = latest_message.get("parse_data", {})
     intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
 
@@ -1223,8 +1221,8 @@ async def _validate_user_text(
 ) -> bool:
     """Validate a user message input as free text.
 
-    This assumes the user message is a text message (so NOT `/greet`)."""
-
+    This assumes the user message is a text message (so NOT `/greet`).
+    """
     parse_data = latest_message.get("parse_data", {})
     text = _as_md_message(parse_data)
     intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
@@ -1255,8 +1253,8 @@ async def _validate_nlu(
     """Validate if a user message, either text or intent is correct.
 
     If the prediction of the latest user message is incorrect,
-    the tracker will be corrected with the correct intent / entities."""
-
+    the tracker will be corrected with the correct intent / entities.
+    """
     tracker = await retrieve_tracker(
         endpoint, conversation_id, EventVerbosity.AFTER_RESTART
     )
@@ -1292,7 +1290,8 @@ async def _correct_entities(
 ) -> List[Dict[Text, Any]]:
     """Validate the entities of a user message.
 
-    Returns the corrected entities"""
+    Returns the corrected entities.
+    """
     from rasa.shared.nlu.training_data import entities_parser
 
     parse_original = latest_message.get("parse_data", {})
@@ -1337,7 +1336,6 @@ def _is_same_entity_annotation(entity: Dict[Text, Any], other: Dict[Text, Any]) 
 
 async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
-
     question = questionary.text("Your input ->")
 
     message = await _ask_questions(question, conversation_id, endpoint, lambda a: not a)
@@ -1352,7 +1350,6 @@ async def is_listening_for_message(
     conversation_id: Text, endpoint: EndpointConfig
 ) -> bool:
     """Check if the conversation is in need for a user message."""
-
     tracker = await retrieve_tracker(endpoint, conversation_id, EventVerbosity.APPLIED)
 
     for i, e in enumerate(reversed(tracker.get("events", []))):
@@ -1365,7 +1362,6 @@ async def is_listening_for_message(
 
 async def _undo_latest(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Undo either the latest bot action or user message, whatever is last."""
-
     tracker = await retrieve_tracker(endpoint, conversation_id, EventVerbosity.ALL)
 
     # Get latest `UserUtterance` or `ActionExecuted` event.
@@ -1393,7 +1389,6 @@ async def _fetch_events(
     conversation_ids: List[Union[Text, List[Event]]], endpoint: EndpointConfig
 ) -> List[List[Event]]:
     """Retrieve all event trackers from the endpoint for all conversation ids."""
-
     event_sequences = []
     for conversation_id in conversation_ids:
         if isinstance(conversation_id, str):
@@ -1419,8 +1414,8 @@ async def _plot_trackers(
     This assumes that the last conversation id is the conversation we are currently
     working on. If there are events that are not part of this active tracker
     yet, they can be passed as part of `unconfirmed`. They will be appended
-    to the currently active conversation."""
-
+    to the currently active conversation.
+    """
     if not output_file or not conversation_ids:
         # if there is no output file provided, we are going to skip plotting
         # same happens if there are no conversation ids
@@ -1443,7 +1438,6 @@ async def _plot_trackers(
 
 def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
-
     if not skip_visualization:
         visualization_url = DEFAULT_SERVER_FORMAT.format(
             "http", DEFAULT_SERVER_PORT + 1
@@ -1469,7 +1463,6 @@ async def record_messages(
     skip_visualization: bool = False,
 ) -> None:
     """Read messages from the command line and print bot responses."""
-
     try:
         try:
             domain = await retrieve_domain(endpoint)
@@ -1594,7 +1587,6 @@ def _serve_application(
     port: int,
 ) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
-
     endpoint = EndpointConfig(url=DEFAULT_SERVER_FORMAT.format("http", port))
 
     async def run_interactive_io(running_app: Sanic) -> None:
@@ -1622,7 +1614,6 @@ def _serve_application(
 
 def start_visualization(image_path: Text, port: int) -> None:
     """Add routes to serve the conversation visualization files."""
-
     app = Sanic("rasa_interactive")
 
     # noinspection PyUnusedLocal
