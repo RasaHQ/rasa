@@ -5,6 +5,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from pathlib import Path
 from collections import defaultdict
 import os
+import contextlib
 
 import numpy as np
 import tensorflow as tf
@@ -711,11 +712,8 @@ class TEDPolicy(Policy):
             )
             return self._resource
 
-        if self.config[USE_GPU]:
+        with(contextlib.nullcontext() if self.config['use_gpu'] else tf.device('/cpu:0')):
             self.run_training(model_data, label_ids)
-        else:
-            with tf.device('/cpu:0'):
-                self.run_training(model_data, label_ids)
 
         self.persist()
 
@@ -1066,7 +1064,7 @@ class TEDPolicy(Policy):
 
         model = ""
         
-        if config['use_gpu']:
+        with(contextlib.nullcontext() if config['use_gpu'] else tf.device('/cpu:0')):
             model = cls._load_tf_model(
                     model_utilities,
                     model_data_example,
@@ -1074,15 +1072,6 @@ class TEDPolicy(Policy):
                     featurizer,
                     execution_context.is_finetuning,
             )
-        else:
-            with tf.device('/cpu:0'):
-                model = cls._load_tf_model(
-                    model_utilities,
-                    model_data_example,
-                    predict_data_example,
-                    featurizer,
-                    execution_context.is_finetuning,
-                )
 
         return cls._load_policy_with_model(
             config,
