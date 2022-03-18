@@ -1,6 +1,6 @@
 import dataclasses
 
-from typing import DefaultDict, Dict, List, Set, Text, TYPE_CHECKING
+from typing import DefaultDict, Dict, List, Optional, Set, Text, TYPE_CHECKING
 from collections import defaultdict
 
 from rasa.shared.core.events import ActionExecuted, UserUttered
@@ -17,7 +17,7 @@ class ActionFingerprint:
     """Dataclass to represent an action fingerprint."""
 
     slots: List[Text]
-    active_loop: List[Text]
+    active_loop: List[Optional[Text]]
 
 
 def _find_events_after_actions(
@@ -85,7 +85,7 @@ def create_action_fingerprints(
             set(
                 event.name
                 for event in events_after_action
-                if isinstance(event, ActiveLoop) and event.name is not None
+                if isinstance(event, ActiveLoop)
             )
         )
         action_fingerprints[action_name] = ActionFingerprint(slots, active_loops)

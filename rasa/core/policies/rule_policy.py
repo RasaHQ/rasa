@@ -312,7 +312,7 @@ class RulePolicy(MemoizationPolicy):
     @staticmethod
     def _check_active_loops_fingerprint(
         fingerprint: ActionFingerprint, state: State
-    ) -> Set[Text]:
+    ) -> Set[Optional[Text]]:
         expected_active_loops = set(fingerprint.active_loop)
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
