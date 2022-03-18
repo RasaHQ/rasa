@@ -17,7 +17,10 @@ from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
-from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
+from rasa.core.policies.unexpected_intent_policy import (
+    UnexpecTEDIntentPolicy,
+    RankingCandidateMetadata,
+)
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -41,11 +44,6 @@ from rasa.utils.tensorflow.constants import (
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
     RANKING_KEY,
-    SCORE_KEY,
-    THRESHOLD_KEY,
-    SEVERITY_KEY,
-    QUERY_INTENT_KEY,
-    NAME,
     RANKING_LENGTH,
 )
 from rasa.shared.nlu.constants import INTENT
@@ -853,7 +851,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         )
 
         def test_individual_label_metadata(
-            label_metadata: Dict[Text, Optional[float]],
+            label_metadata: RankingCandidateMetadata,
             all_thresholds: Dict[int, float],
             all_similarities: np.array,
             label_index: int,
@@ -867,9 +865,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                 expected_threshold - expected_score if expected_threshold else None
             )
 
-            assert label_metadata.get(SCORE_KEY) == expected_score
-            assert label_metadata.get(THRESHOLD_KEY) == expected_threshold
-            assert label_metadata.get(SEVERITY_KEY) == expected_severity
+            assert label_metadata.score == expected_score
+            assert label_metadata.threshold == expected_threshold
+            assert label_metadata.severity == expected_severity
 
         # Monkey-patch certain attributes of the policy to make the testing easier.
         label_thresholds = {0: 1.2, 1: -0.3, 4: -2.3, 5: 0.2}
@@ -885,18 +883,10 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain, similarities, query_intent=query_intent
         )
 
-        # Expected outer-most keys
-        assert sorted(list(metadata.keys())) == sorted([QUERY_INTENT_KEY, RANKING_KEY])
-
-        # Schema validation for query intent key
-        assert sorted(list(metadata[QUERY_INTENT_KEY].keys())) == sorted(
-            [NAME, SCORE_KEY, THRESHOLD_KEY, SEVERITY_KEY]
-        )
-
         # Test all elements of metadata for query intent
-        assert metadata[QUERY_INTENT_KEY].get(NAME) == query_intent
+        assert metadata.query_intent.name == query_intent
         test_individual_label_metadata(
-            metadata.get(QUERY_INTENT_KEY),
+            metadata.query_intent,
             label_thresholds,
             similarities,
             query_intent_index,
@@ -916,13 +906,13 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain.intents[index] for index, _ in sorted_label_similarities
         ]
         collected_label_rankings = [
-            label_metadata.get(NAME) for label_metadata in metadata.get(RANKING_KEY)
+            label_metadata.name for label_metadata in metadata.ranking
         ]
         assert collected_label_rankings == expected_label_rankings
 
         # Test all elements of metadata for all labels in ranking
-        for label_metadata in metadata.get(RANKING_KEY):
-            label_index = default_domain.intents.index(label_metadata.get(NAME))
+        for label_metadata in metadata.ranking:
+            label_index = default_domain.intents.index(label_metadata.name)
             test_individual_label_metadata(
                 label_metadata, label_thresholds, similarities, label_index
             )
