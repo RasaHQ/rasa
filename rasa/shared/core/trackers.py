@@ -1,4 +1,5 @@
 import copy
+import dataclasses
 import logging
 import os
 import time
@@ -42,9 +43,6 @@ from rasa.shared.core.constants import (
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    LOOP_REJECTED,
-    TRIGGER_MESSAGE,
-    LOOP_INTERRUPTED,
     ACTION_SESSION_START_NAME,
     FOLLOWUP_ACTION,
 )
@@ -66,25 +64,21 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import AnySlot, Slot
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict
-
     from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 
-    # precise type definition for `DialogueStateTracker.active_loop`
-    TrackerActiveLoop = TypedDict(
-        "TrackerActiveLoop",
-        {
-            LOOP_NAME: Optional[Text],
-            LOOP_INTERRUPTED: bool,
-            LOOP_REJECTED: bool,
-            TRIGGER_MESSAGE: Dict,
-        },
-        total=False,
-    )
-
     EventTypeAlias = TypeVar("EventTypeAlias", bound=Event)
+
+
+@dataclasses.dataclass
+class TrackerActiveLoop:
+    """Dataclass for `DialogueStateTracker.active_loop`."""
+
+    name: Optional[Text]
+    is_interrupted: bool
+    rejected: bool
+    trigger_message: Dict
 
 
 logger = logging.getLogger(__name__)
@@ -224,7 +218,7 @@ class DialogueStateTracker:
         self.latest_message: Optional[UserUttered] = None
         self.latest_bot_utterance: Optional[BotUttered] = None
         self._reset()
-        self.active_loop: "TrackerActiveLoop" = {}
+        self.active_loop: Optional[TrackerActiveLoop] = None
 
         # Optional model_id to add to all events.
         self.model_id: Optional[Text] = None
@@ -251,7 +245,7 @@ class DialogueStateTracker:
             "paused": self.is_paused(),
             "events": events_as_dict,
             "latest_input_channel": self.get_latest_input_channel(),
-            ACTIVE_LOOP: self.active_loop,
+            ACTIVE_LOOP: dataclasses.asdict(self.active_loop),
             "latest_action": self.latest_action,
             "latest_action_name": self.latest_action_name,
         }
@@ -332,14 +326,14 @@ class DialogueStateTracker:
             loop_name: The name of loop which should be marked as active.
         """
         if loop_name is not None:
-            self.active_loop = {
-                LOOP_NAME: loop_name,
-                LOOP_INTERRUPTED: False,
-                LOOP_REJECTED: False,
-                TRIGGER_MESSAGE: self.latest_message.parse_data,
-            }
+            self.active_loop = TrackerActiveLoop(
+                loop_name,
+                False,
+                False,
+                self.latest_message.parse_data,
+            )
         else:
-            self.active_loop = {}
+            self.active_loop = None
 
     def interrupt_loop(self, is_interrupted: bool) -> None:
         """Interrupt loop and mark that we entered an unhappy path in the conversation.
@@ -347,12 +341,13 @@ class DialogueStateTracker:
         Args:
             is_interrupted: `True` if the loop was run after an unhappy path.
         """
-        self.active_loop[LOOP_INTERRUPTED] = is_interrupted
+        if self.active_loop is not None:
+            self.active_loop.is_interrupted = is_interrupted
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active loop that it was rejected."""
-        if action_name == self.active_loop_name:
-            self.active_loop[LOOP_REJECTED] = True
+        if self.active_loop is not None and action_name == self.active_loop_name:
+            self.active_loop.rejected = True
 
     def set_latest_action(self, action: Dict[Text, Text]) -> None:
         """Sets latest action name or text.
@@ -363,13 +358,16 @@ class DialogueStateTracker:
             action: Serialized action event.
         """
         self.latest_action = action
-        if self.active_loop_name:
+        if self.active_loop is not None and self.active_loop_name:
             # reset form validation if some loop is active
-            self.active_loop[LOOP_INTERRUPTED] = False
+            self.active_loop.is_interrupted = False
 
-        if action.get(ACTION_NAME) == self.active_loop_name:
+        if (
+            self.active_loop is not None
+            and action.get(ACTION_NAME) == self.active_loop_name
+        ):
             # reset loop rejection if it was predicted again
-            self.active_loop[LOOP_REJECTED] = False
+            self.active_loop.rejected = False
 
     def current_slot_values(self) -> Dict[Text, Any]:
         """Return the currently set values of the slots"""
@@ -787,7 +785,7 @@ class DialogueStateTracker:
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
-        self.active_loop = {}
+        self.active_loop = None
 
     def _reset_slots(self) -> None:
         """Set all the slots to their initial value."""
@@ -837,10 +835,10 @@ class DialogueStateTracker:
 
         Returns: `None` if no active loop or the name of the currently active loop.
         """
-        if not self.active_loop or self.active_loop.get(LOOP_NAME) == SHOULD_NOT_BE_SET:
+        if not self.active_loop or self.active_loop.name == SHOULD_NOT_BE_SET:
             return None
 
-        return self.active_loop.get(LOOP_NAME)
+        return self.active_loop.name
 
     @property
     def latest_action_name(self) -> Optional[Text]:
@@ -854,6 +852,16 @@ class DialogueStateTracker:
         return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
             ACTION_TEXT
         )
+
+    @property
+    def is_active_loop_rejected(self) -> bool:
+        """Return True if there is an active loop and it's rejected."""
+        return self.active_loop is not None and self.active_loop.rejected
+
+    @property
+    def is_active_loop_interrupted(self) -> bool:
+        """Return True if there is an active loop and it's interrupted."""
+        return self.active_loop is not None and self.active_loop.is_interrupted
 
     def fingerprint(self) -> Text:
         """Returns a unique hash for the tracker which is stable across python runs.

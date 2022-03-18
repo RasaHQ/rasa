@@ -1198,7 +1198,7 @@ def test_reading_of_trackers_with_legacy_form_events():
 
     expected_events = [ActiveLoop(loop_name1), LegacyForm(None), LegacyForm(loop_name2)]
     assert list(tracker.events) == expected_events
-    assert tracker.active_loop[LOOP_NAME] == loop_name2
+    assert tracker.active_loop.name == loop_name2
 
 
 def test_writing_trackers_with_legacy_form_events():
@@ -1228,7 +1228,7 @@ def test_reading_of_trackers_with_legacy_form_validation_events():
     assert not actual_events[0].is_interrupted
     assert actual_events[1].is_interrupted
 
-    assert tracker.active_loop[LOOP_INTERRUPTED]
+    assert tracker.active_loop.is_interrupted
 
 
 def test_writing_trackers_with_legacy_for_validation_events():

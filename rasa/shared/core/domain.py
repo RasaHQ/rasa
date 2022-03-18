@@ -1229,12 +1229,8 @@ class Domain:
         """
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
-        active_loop = cast(
-            Optional[Text],
-            tracker.active_loop.get(rasa.shared.core.constants.LOOP_NAME),
-        )
-        if active_loop:
-            return {rasa.shared.core.constants.LOOP_NAME: active_loop}
+        if tracker.active_loop:
+            return {rasa.shared.core.constants.LOOP_NAME: tracker.active_loop.name}
         else:
             return {}
 

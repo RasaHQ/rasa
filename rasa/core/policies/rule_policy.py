@@ -43,7 +43,6 @@ from rasa.shared.core.constants import (
     RULE_SNIPPET_ACTION_NAME,
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
-    LOOP_REJECTED,
     LOOP_NAME,
     SLOTS,
     ACTIVE_LOOP,
@@ -958,7 +957,7 @@ class RulePolicy(MemoizationPolicy):
         if active_loop_name is None:
             return None, None
 
-        active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
+        active_loop_rejected = tracker.is_active_loop_rejected
         should_predict_loop = (
             not active_loop_rejected
             and tracker.latest_action
