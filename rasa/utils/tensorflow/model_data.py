@@ -868,10 +868,10 @@ class RasaModelData:
         Returns:
             The test and train RasaModelData
         """
-        data_train: defaultdict[
-            Text, defaultdict[Text, List[FeatureArray]]
+        data_train: DefaultDict[
+            Text, DefaultDict[Text, List[FeatureArray]]
         ] = defaultdict(lambda: defaultdict(list))
-        data_val: defaultdict[Text, defaultdict[Text, List[Any]]] = defaultdict(
+        data_val: DefaultDict[Text, DefaultDict[Text, List[Any]]] = defaultdict(
             lambda: defaultdict(list)
         )
 
