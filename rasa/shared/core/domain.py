@@ -1219,7 +1219,9 @@ class Domain:
         return tracker.latest_action
 
     @staticmethod
-    def _get_active_loop_sub_state(tracker: "DialogueStateTracker") -> Dict[Text, Text]:
+    def _get_active_loop_sub_state(
+        tracker: "DialogueStateTracker",
+    ) -> Dict[Text, Optional[Text]]:
         """Turn tracker's active loop into a state name.
 
         Args:

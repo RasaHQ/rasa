@@ -299,14 +299,14 @@ class EvaluationStore:
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
                 ),
-                key=lambda x: x[ENTITY_ATTRIBUTE_START],
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],  # type: ignore[misc]
             )
             entity_predictions = sorted(
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
                     self.entity_predictions,
                 ),
-                key=lambda x: x[ENTITY_ATTRIBUTE_START],
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],  # type: ignore[misc]
             )
 
             i_pred, i_target = 0, 0
@@ -459,7 +459,7 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}
+        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}  # type: ignore[misc]
         for k in (
             ENTITY_ATTRIBUTE_START,
             ENTITY_ATTRIBUTE_END,
@@ -471,7 +471,7 @@ def _clean_entity_results(
                     # convert values to strings for evaluation as
                     # target values are all of type string
                     r[k] = str(r[k])
-                cleaned_entity[k] = r[k]
+                cleaned_entity[k] = r[k]  # type: ignore[misc]
         cleaned_entities.append(cleaned_entity)
 
     return cleaned_entities

@@ -78,7 +78,7 @@ class TrackerActiveLoop:
     name: Optional[Text]
     is_interrupted: bool
     rejected: bool
-    trigger_message: Dict
+    trigger_message: Optional[Dict]
 
 
 logger = logging.getLogger(__name__)
@@ -271,7 +271,7 @@ class DialogueStateTracker:
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[misc]
 
         return parse_data_with_nlu_state
 
@@ -332,7 +332,7 @@ class DialogueStateTracker:
                 loop_name,
                 False,
                 False,
-                self.latest_message.parse_data,
+                self.latest_message.parse_data if self.latest_message else None,
             )
         else:
             self.active_loop = None

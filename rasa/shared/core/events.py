@@ -69,7 +69,7 @@ if TYPE_CHECKING:
     EntityPrediction = TypedDict(
         "EntityPrediction",
         {
-            ENTITY_ATTRIBUTE_TEXT: Text,
+            ENTITY_ATTRIBUTE_TEXT: Text,  # type: ignore[misc]
             ENTITY_ATTRIBUTE_START: Optional[float],
             ENTITY_ATTRIBUTE_END: Optional[float],
             ENTITY_ATTRIBUTE_VALUE: Text,
@@ -83,12 +83,12 @@ if TYPE_CHECKING:
     )
 
     IntentPrediction = TypedDict(
-        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float}
+        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float}  # type: ignore[misc]  # noqa: E501
     )
     NLUPredictionData = TypedDict(
         "NLUPredictionData",
         {
-            TEXT: Text,
+            TEXT: Text,  # type: ignore[misc]
             INTENT: IntentPrediction,
             INTENT_RANKING_KEY: List[IntentPrediction],
             ENTITIES: List[EntityPrediction],
@@ -466,7 +466,7 @@ class UserUttered(Event):
             self.use_text_for_featurization = False
 
         self.parse_data: "NLUPredictionData" = {
-            INTENT: self.intent,
+            INTENT: self.intent,  # type: ignore[misc]
             # Copy entities so that changes to `self.entities` don't affect
             # `self.parse_data` and hence don't get persisted
             ENTITIES: self.entities.copy(),

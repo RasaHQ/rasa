@@ -405,7 +405,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return None
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
         ]
 
         if (
@@ -438,7 +438,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return []
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
         ]
 
         if (
@@ -954,7 +954,7 @@ class ActionDefaultAskAffirmation(Action):
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[misc]
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
