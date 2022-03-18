@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Optional, List, Dict, Text, Type
+from typing import Optional, List, Dict, Type
 import tensorflow as tf
 import numpy as np
 import pytest

@@ -271,7 +271,7 @@ class DialogueStateTracker:
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[misc]
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[misc]  # noqa: E501
 
         return parse_data_with_nlu_state
 
@@ -372,12 +372,11 @@ class DialogueStateTracker:
             self.active_loop.rejected = False
 
     def current_slot_values(self) -> Dict[Text, Any]:
-        """Return the currently set values of the slots"""
+        """Return the currently set values of the slots."""
         return {key: slot.value for key, slot in self.slots.items()}
 
     def get_slot(self, key: Text) -> Optional[Any]:
         """Retrieves the value of a slot."""
-
         if key in self.slots:
             return self.slots[key].value
         else:
@@ -767,7 +766,6 @@ class DialogueStateTracker:
         Returns:
             `True` if last executed action had name `name`, otherwise `False`.
         """
-
         last: Optional[ActionExecuted] = self.get_last_event_for(
             ActionExecuted, action_names_to_exclude=[ACTION_LISTEN_NAME], skip=skip
         )
@@ -780,7 +778,6 @@ class DialogueStateTracker:
     ###
     def _reset(self) -> None:
         """Reset tracker to initial state - doesn't delete events though!."""
-
         self._reset_slots()
         self._paused = False
         self.latest_action = {}
@@ -791,7 +788,6 @@ class DialogueStateTracker:
 
     def _reset_slots(self) -> None:
         """Set all the slots to their initial value."""
-
         for slot in self.slots.values():
             slot.reset()
 

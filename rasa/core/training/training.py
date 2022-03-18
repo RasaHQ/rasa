@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass
 class ActionFingerprint:
+    """Dataclass to represent an action fingerprint."""
+
     slots: List[Text]
     active_loop: List[Text]
 

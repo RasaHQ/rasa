@@ -378,7 +378,6 @@ async def _pull_runtime_config_from_server(
     Returns a list of paths to yaml dumps, each containing the contents of one of
     `keys`.
     """
-
     while attempts:
         try:
             async with aiohttp.ClientSession() as session:

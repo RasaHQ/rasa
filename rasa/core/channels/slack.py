@@ -54,6 +54,7 @@ class SlackBot(OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
+        """Send text message to Slack API."""
         recipient = self.slack_channel or recipient_id
         for message_part in text.strip().split("\n\n"):
             await self._post_message(

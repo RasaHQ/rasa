@@ -459,7 +459,7 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}  # type: ignore[misc]
+        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}  # type: ignore[misc]  # noqa E501
         for k in (
             ENTITY_ATTRIBUTE_START,
             ENTITY_ATTRIBUTE_END,

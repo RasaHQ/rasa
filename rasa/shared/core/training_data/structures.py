@@ -463,13 +463,13 @@ class StoryGraph:
 
     def cyclic_edges(self) -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]:
         """Returns the story steps ordered by topological order of the DAG."""
-
         return [
             (self._get_step(source), self._get_step(target))
             for source, target in self.cyclic_edge_ids
         ]
 
     def merge(self, other: Optional["StoryGraph"]) -> "StoryGraph":
+        """Merge two StoryGraph together."""
         if not other:
             return self
 

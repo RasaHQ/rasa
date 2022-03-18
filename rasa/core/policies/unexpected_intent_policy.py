@@ -111,6 +111,8 @@ from rasa.shared.utils import common
 
 @dataclasses.dataclass
 class RankingCandidateMetadata:
+    """Dataclass to represent metada for a candidate intent."""
+
     name: Text
     score: float
     threshold: Optional[float]
@@ -119,6 +121,8 @@ class RankingCandidateMetadata:
 
 @dataclasses.dataclass
 class UnexpecTEDIntentPolicyMetadata:
+    """Dataclass to represent policy metadata."""
+
     query_intent: RankingCandidateMetadata
     ranking: List[RankingCandidateMetadata]
 
