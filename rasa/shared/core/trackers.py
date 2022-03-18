@@ -231,7 +231,7 @@ class DialogueStateTracker:
     ) -> Dict[Text, Any]:
         """Returns the current tracker state as an object."""
         events = self._events_for_verbosity(event_verbosity)
-        events_as_dict = [e.as_dict() for e in events] if events else None
+        events_as_dict = [e.as_dict() for e in events] if events is not None else None
         latest_event_time = None
         if len(self.events) > 0:
             latest_event_time = self.events[-1].timestamp
