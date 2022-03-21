@@ -274,7 +274,7 @@ class TrackerStore:
     async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Retrieve method for fetching all tracker events across conversation sessions \
+        """Retrieve method for fetching all tracker events across conversation sessions\
         that may be overridden by specific tracker.
 
         The default implementation uses `self.retrieve()`.
@@ -1384,7 +1384,7 @@ class AwaitableTrackerStore(TrackerStore):
         domain: Optional[Domain] = None,
         event_broker: Optional[EventBroker] = None,
     ) -> Optional[TrackerStore]:
-        """Wrapper for `create` method of TrackerStore to handle sync and async implementations."""
+        """Wrapper to call `create` method of primary tracker store."""
         if isinstance(obj, TrackerStore):
             return AwaitableTrackerStore(obj)
         else:
@@ -1394,23 +1394,23 @@ class AwaitableTrackerStore(TrackerStore):
             )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Wrapper for `retrieve` method of TrackerStore to handle sync and async implementations."""
+        """Wrapper to call `retrieve` method of primary tracker store."""
         result = self._tracker_store.retrieve(sender_id)
         return await result if isawaitable(result) else result
 
     async def keys(self) -> Iterable[Text]:
-        """Wrapper for `keys` method of TrackerStore to handle sync and async implementations."""
+        """Wrapper to call `keys` method of primary tracker store.."""
         result = self._tracker_store.keys()
         return await result if isawaitable(result) else result
 
     async def save(self, tracker: DialogueStateTracker) -> None:
-        """Wrapper for `save` method of TrackerStore to handle sync and async implementations."""
+        """Wrapper to call `save` method of primary tracker store.."""
         result = self._tracker_store.save(tracker)
         return await result if isawaitable(result) else result
 
     async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Wrapper for `retrieve_full_tracker` method of TrackerStore to handle sync and async implementations."""
+        """Wrapper to call `retrieve_full_tracker` method of primary tracker store."""
         result = self._tracker_store.retrieve_full_tracker(conversation_id)
         return await result if isawaitable(result) else result
