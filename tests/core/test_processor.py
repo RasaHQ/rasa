@@ -1396,7 +1396,7 @@ async def test_processor_valid_slot_setting(default_agent: Agent):
         },
     )
     await processor.handle_message(message)
-    tracker = processor.get_tracker("test")
+    tracker = await processor.get_tracker("test")
     assert SlotSet("name", "Peter") in tracker.events
 
 

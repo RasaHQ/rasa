@@ -58,7 +58,7 @@ async def test_load_sample(marker_trackerstore: TrackerStore):
 
     senders = set()
     for item in result:
-        assert marker_trackerstore.exists(item.sender_id)
+        assert await marker_trackerstore.exists(item.sender_id)
         assert item.sender_id not in senders
         senders.add(item.sender_id)
 
@@ -73,7 +73,7 @@ async def test_load_sample_with_seed(marker_trackerstore: TrackerStore):
 
     for item, expected in zip(result, expected_ids):
         assert item.sender_id == expected
-        assert marker_trackerstore.exists(item.sender_id)
+        assert await marker_trackerstore.exists(item.sender_id)
 
 
 async def test_load_first_n(marker_trackerstore: TrackerStore):
@@ -95,7 +95,7 @@ async def test_load_all(marker_trackerstore: TrackerStore):
     assert len(result) == len(list(await marker_trackerstore.keys()))
 
     for item in result:
-        assert marker_trackerstore.exists(item.sender_id)
+        assert await marker_trackerstore.exists(item.sender_id)
 
 
 def test_exception_invalid_strategy(marker_trackerstore: TrackerStore):

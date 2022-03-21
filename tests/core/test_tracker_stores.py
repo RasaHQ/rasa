@@ -511,7 +511,7 @@ def test_set_fail_safe_tracker_store_domain(domain: Domain):
     assert fallback_tracker_store.domain is failsafe_store.domain
 
 
-def create_tracker_with_partially_saved_events(
+async def create_tracker_with_partially_saved_events(
     tracker_store: TrackerStore,
 ) -> Tuple[List[Event], DialogueStateTracker]:
     # creates a tracker with two events and saved it to the tracker store
@@ -521,7 +521,7 @@ def create_tracker_with_partially_saved_events(
     # create tracker with two events and save it
     events = [UserUttered("hello"), BotUttered("what")]
     tracker = DialogueStateTracker.from_events(sender_id, events)
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     # add more events to the tracker, do not yet save it
     events = [ActionExecuted(ACTION_LISTEN_NAME), UserUttered("123"), BotUttered("yes")]
@@ -549,9 +549,9 @@ async def _saved_tracker_with_multiple_session_starts(
     return await tracker_store.retrieve(sender_id)
 
 
-def test_mongo_additional_events(domain: Domain):
+async def test_mongo_additional_events(domain: Domain):
     tracker_store = MockedMongoTrackerStore(domain)
-    events, tracker = create_tracker_with_partially_saved_events(tracker_store)
+    events, tracker = await create_tracker_with_partially_saved_events(tracker_store)
 
     # make sure only new events are returned
     # noinspection PyProtectedMember
@@ -574,9 +574,9 @@ async def test_mongo_additional_events_with_session_start(domain: Domain):
 
 # we cannot parametrise over this and the previous test due to the different ways of
 # calling _additional_events()
-def test_sql_additional_events(domain: Domain):
+async def test_sql_additional_events(domain: Domain):
     tracker_store = SQLTrackerStore(domain)
-    additional_events, tracker = create_tracker_with_partially_saved_events(
+    additional_events, tracker = await create_tracker_with_partially_saved_events(
         tracker_store
     )
 
