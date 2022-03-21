@@ -274,7 +274,7 @@ class TrackerStore:
     async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Retrieve method for fetching all tracker events across conversation sessions
+        """Retrieve method for fetching all tracker events across conversation sessions \
         that may be overridden by specific tracker.
 
         The default implementation uses `self.retrieve()`.
@@ -1251,6 +1251,7 @@ class FailSafeTrackerStore(TrackerStore):
             )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Calls `retrieve` method of primary tracker store."""
         try:
             return await self._tracker_store.retrieve(sender_id)
         except Exception as e:
@@ -1258,6 +1259,7 @@ class FailSafeTrackerStore(TrackerStore):
             return None
 
     async def keys(self) -> Iterable[Text]:
+        """Calls `keys` method of primary tracker store."""
         try:
             return await self._tracker_store.keys()
         except Exception as e:
@@ -1265,6 +1267,7 @@ class FailSafeTrackerStore(TrackerStore):
             return []
 
     async def save(self, tracker: DialogueStateTracker) -> None:
+        """Calls `save` method of primary tracker store."""
         try:
             await self._tracker_store.save(tracker)
         except Exception as e:
