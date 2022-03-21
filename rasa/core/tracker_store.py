@@ -69,18 +69,18 @@ DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 
 def check_if_tracker_store_async(tracker_store: TrackerStore) -> bool:
-    """
-    Evaluates if a tracker store object is async based on implementation of methods
+    """Evaluates if a tracker store object is async based on implementation of methods.
+
     :param tracker_store: tracker store object we're evaluating
     :return: if the tracker store correctly implements all async methods
     """
     return all(
         iscoroutinefunction(getattr(tracker_store, method))
-        for method in get_async_tracker_store_methods()
+        for method in _get_async_tracker_store_methods()
     )
 
 
-def get_async_tracker_store_methods() -> List[str]:
+def _get_async_tracker_store_methods() -> List[str]:
     return [
         attribute
         for attribute in dir(TrackerStore)
@@ -170,7 +170,7 @@ class TrackerStore:
                     f"is not asynchronous. Non-asynchronous tracker stores "
                     f"are currently deprecated and will be removed in 4.0. "
                     f"Please make the following methods async: "
-                    f"{get_async_tracker_store_methods()}"
+                    f"{_get_async_tracker_store_methods()}"
                 )
                 tracker_store = AwaitableTrackerStore(tracker_store)
             return tracker_store
@@ -306,7 +306,7 @@ class TrackerStore:
         return len(old_tracker.events) if old_tracker else 0
 
     async def keys(self) -> Iterable[Text]:
-        """Returns the set of values for the tracker store's primary key"""
+        """Returns the set of values for the tracker store's primary key."""
         raise NotImplementedError()
 
     def deserialise_tracker(
@@ -358,6 +358,7 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
         self.store[tracker.sender_id] = serialised
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id."""
         if sender_id in self.store:
             logger.debug(f"Recreating tracker for id '{sender_id}'")
             return self.deserialise_tracker(sender_id, self.store[sender_id])
@@ -367,7 +368,7 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
         return None
 
     async def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the Tracker Store in memory"""
+        """Returns sender_ids of the Tracker Store in memory."""
         return self.store.keys()
 
 
@@ -1356,20 +1357,22 @@ class AwaitableTrackerStore(TrackerStore):
         tracker_store: TrackerStore,
     ) -> None:
         """Create a `AwaitableTrackerStore`.
+
         Args:
             tracker_store: the wrapped tracker store.
         """
-
         self._tracker_store = tracker_store
 
         super().__init__(tracker_store.domain, tracker_store.event_broker)
 
     @property
     def domain(self) -> Optional[Domain]:
+        """Returns the domain of the primary tracker store."""
         return self._tracker_store.domain
 
     @domain.setter
     def domain(self, domain: Optional[Domain]) -> None:
+        """Setter method to modify the wrapped tracker store's domain field."""
         self._tracker_store.domain = domain
 
     @staticmethod
@@ -1378,6 +1381,7 @@ class AwaitableTrackerStore(TrackerStore):
         domain: Optional[Domain] = None,
         event_broker: Optional[EventBroker] = None,
     ) -> Optional[TrackerStore]:
+        """Wrapper for `create` method of TrackerStore to handle sync and async implementations."""
         if isinstance(obj, TrackerStore):
             return AwaitableTrackerStore(obj)
         else:
@@ -1387,19 +1391,23 @@ class AwaitableTrackerStore(TrackerStore):
             )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Wrapper for `retrieve` method of TrackerStore to handle sync and async implementations."""
         result = self._tracker_store.retrieve(sender_id)
         return await result if isawaitable(result) else result
 
     async def keys(self) -> Iterable[Text]:
+        """Wrapper for `keys` method of TrackerStore to handle sync and async implementations."""
         result = self._tracker_store.keys()
         return await result if isawaitable(result) else result
 
     async def save(self, tracker: DialogueStateTracker) -> None:
+        """Wrapper for `save` method of TrackerStore to handle sync and async implementations."""
         result = self._tracker_store.save(tracker)
         return await result if isawaitable(result) else result
 
     async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
+        """Wrapper for `retrieve_full_tracker` method of TrackerStore to handle sync and async implementations."""
         result = self._tracker_store.retrieve_full_tracker(conversation_id)
         return await result if isawaitable(result) else result
