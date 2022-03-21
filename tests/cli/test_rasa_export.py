@@ -17,7 +17,8 @@ from rasa.exceptions import PublishingError, NoEventsToMigrateError
 from tests.conftest import (
     MockExporter,
     random_user_uttered_event,
-    write_endpoint_config_to_yaml, AsyncMock,
+    write_endpoint_config_to_yaml,
+    AsyncMock,
 )
 
 

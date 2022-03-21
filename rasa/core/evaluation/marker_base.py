@@ -13,7 +13,8 @@ from typing import (
     TypeVar,
     TYPE_CHECKING,
     Union,
-    Any, AsyncIterator,
+    Any,
+    AsyncIterator,
 )
 
 from pathlib import Path

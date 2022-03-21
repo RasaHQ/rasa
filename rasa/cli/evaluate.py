@@ -177,12 +177,19 @@ def _run_markers(
 
     try:
         import asyncio
-        asyncio.run(markers.evaluate_trackers(
-            trackers=tracker_loader.load(),
-            output_file=output_filename,
-            session_stats_file=_append_suffix(stats_file_prefix, STATS_SESSION_SUFFIX),
-            overall_stats_file=_append_suffix(stats_file_prefix, STATS_OVERALL_SUFFIX),
-        ))
+
+        asyncio.run(
+            markers.evaluate_trackers(
+                trackers=tracker_loader.load(),
+                output_file=output_filename,
+                session_stats_file=_append_suffix(
+                    stats_file_prefix, STATS_SESSION_SUFFIX
+                ),
+                overall_stats_file=_append_suffix(
+                    stats_file_prefix, STATS_OVERALL_SUFFIX
+                ),
+            )
+        )
     except (FileExistsError, NotADirectoryError) as e:
         rasa.shared.utils.cli.print_error_and_exit(message=str(e))
 
