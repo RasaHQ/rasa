@@ -82,7 +82,7 @@ if TYPE_CHECKING:
     ]
     SanicView = Callable[
         [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
-        SanicResponse,
+        Coroutine[Any, Any, SanicResponse],
     ]
 
 

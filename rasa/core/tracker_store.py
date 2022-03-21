@@ -1369,21 +1369,21 @@ class AwaitableTrackerStore(TrackerStore):
         super().__init__(tracker_store.domain, tracker_store.event_broker)
 
     @property
-    def domain(self) -> Optional[Domain]:
+    def domain(self) -> Domain:
         """Returns the domain of the primary tracker store."""
         return self._tracker_store.domain
 
     @domain.setter
     def domain(self, domain: Optional[Domain]) -> None:
         """Setter method to modify the wrapped tracker store's domain field."""
-        self._tracker_store.domain = domain
+        self._tracker_store.domain = domain or Domain.empty()
 
     @staticmethod
     def create(
         obj: Union[TrackerStore, EndpointConfig, None],
         domain: Optional[Domain] = None,
         event_broker: Optional[EventBroker] = None,
-    ) -> Optional[TrackerStore]:
+    ) -> TrackerStore:
         """Wrapper to call `create` method of primary tracker store."""
         if isinstance(obj, TrackerStore):
             return AwaitableTrackerStore(obj)
@@ -1396,7 +1396,7 @@ class AwaitableTrackerStore(TrackerStore):
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Wrapper to call `retrieve` method of primary tracker store."""
         result = self._tracker_store.retrieve(sender_id)
-        return await result if isawaitable(result) else result
+        return await result if isawaitable(result) else result  # type: ignore[return-value]
 
     async def keys(self) -> Iterable[Text]:
         """Wrapper to call `keys` method of primary tracker store.."""
@@ -1413,4 +1413,5 @@ class AwaitableTrackerStore(TrackerStore):
     ) -> Optional[DialogueStateTracker]:
         """Wrapper to call `retrieve_full_tracker` method of primary tracker store."""
         result = self._tracker_store.retrieve_full_tracker(conversation_id)
-        return await result if isawaitable(result) else result
+        return await result if isawaitable(result) else result  # type: ignore[return-value]
+
