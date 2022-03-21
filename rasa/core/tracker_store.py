@@ -1403,12 +1403,12 @@ class AwaitableTrackerStore(TrackerStore):
         )
 
     async def keys(self) -> Iterable[Text]:
-        """Wrapper to call `keys` method of primary tracker store.."""
+        """Wrapper to call `keys` method of primary tracker store."""
         result = self._tracker_store.keys()
         return await result if isawaitable(result) else result
 
     async def save(self, tracker: DialogueStateTracker) -> None:
-        """Wrapper to call `save` method of primary tracker store.."""
+        """Wrapper to call `save` method of primary tracker store."""
         result = self._tracker_store.save(tracker)
         return await result if isawaitable(result) else result
 
