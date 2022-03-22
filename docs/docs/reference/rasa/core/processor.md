@@ -123,7 +123,7 @@ tracker.
 #### get\_tracker
 
 ```python
- | get_tracker(conversation_id: Text) -> DialogueStateTracker
+ | async get_tracker(conversation_id: Text) -> DialogueStateTracker
 ```
 
 Get the tracker for a conversation.
@@ -146,7 +146,7 @@ conversation.
 #### get\_trackers\_for\_all\_conversation\_sessions
 
 ```python
- | get_trackers_for_all_conversation_sessions(conversation_id: Text) -> List[DialogueStateTracker]
+ | async get_trackers_for_all_conversation_sessions(conversation_id: Text) -> List[DialogueStateTracker]
 ```
 
 Fetches all trackers for a conversation.
@@ -316,7 +316,7 @@ in the events array.
 #### save\_tracker
 
 ```python
- | save_tracker(tracker: DialogueStateTracker) -> None
+ | async save_tracker(tracker: DialogueStateTracker) -> None
 ```
 
 Save the given tracker to the tracker store.
