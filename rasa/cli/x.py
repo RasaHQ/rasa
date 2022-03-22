@@ -5,11 +5,12 @@ import logging
 from multiprocessing.process import BaseProcess
 from multiprocessing import get_context
 from packaging import version
+from pathlib import Path
 import os
 import signal
 import sys
 import traceback
-from typing import Iterable, List, Optional, Text, Tuple
+from typing import Iterable, List, Optional, Text, Tuple, Union
 
 import aiohttp
 from rasa.exceptions import MissingDependencyException
@@ -371,13 +372,12 @@ async def _pull_runtime_config_from_server(
     attempts: int = 60,
     wait_time_between_pulls: float = 5,
     keys: Iterable[Text] = ("endpoints", "credentials"),
-) -> Optional[List[Text]]:
+) -> List[Text]:
     """Pull runtime config from `config_endpoint`.
 
     Returns a list of paths to yaml dumps, each containing the contents of one of
     `keys`.
     """
-
     while attempts:
         try:
             async with aiohttp.ClientSession() as session:
@@ -443,18 +443,22 @@ def _get_credentials_and_endpoints_paths(
     args: argparse.Namespace,
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
+    endpoints_config_path: Optional[Union[Path, Text]]
+
     if config_endpoint:
         endpoints_config_path, credentials_path = asyncio.run(
             _pull_runtime_config_from_server(config_endpoint)
         )
-
     else:
         endpoints_config_path = rasa.cli.utils.get_validated_path(
             args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
         credentials_path = None
 
-    return credentials_path, endpoints_config_path
+    return (
+        credentials_path,
+        str(endpoints_config_path) if endpoints_config_path else None,
+    )
 
 
 def _prevent_failure_if_git_is_not_available() -> None:

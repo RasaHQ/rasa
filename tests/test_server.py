@@ -1958,7 +1958,7 @@ async def test_get_story(
     tracker_store = InMemoryTrackerStore(Domain.empty())
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
@@ -2022,7 +2022,7 @@ async def test_get_story_does_not_update_conversation_session(
 
     tracker_store = InMemoryTrackerStore(domain)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
@@ -2115,9 +2115,9 @@ async def test_update_conversation_with_events(
     model_id = agent.model_id
 
     if initial_tracker_events:
-        tracker = agent.processor.get_tracker(conversation_id)
+        tracker = await agent.processor.get_tracker(conversation_id)
         tracker.update_with_events(initial_tracker_events, domain)
-        tracker_store.save(tracker)
+        await tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append

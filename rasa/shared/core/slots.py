@@ -288,7 +288,7 @@ class ListSlot(Slot):
             return [0.0]
 
     # FIXME: https://github.com/python/mypy/issues/8085
-    @Slot.value.setter  # type: ignore[attr-defined]
+    @Slot.value.setter  # type: ignore[attr-defined,misc]
     def value(self, value: Any) -> None:
         """Sets the slot's value."""
         if value and not isinstance(value, list):
