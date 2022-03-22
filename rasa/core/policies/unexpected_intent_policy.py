@@ -5,7 +5,6 @@ from typing import Any, List, Optional, Text, Dict, Type
 
 import numpy as np
 import tensorflow as tf
-rasa/core/policies/unexpected_intent_policy.py
 import rasa.utils.common
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
