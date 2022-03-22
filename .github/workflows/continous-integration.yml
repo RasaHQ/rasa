@@ -336,7 +336,6 @@ jobs:
         DD_SERVICE: rasa
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
-        set -x
         make ${{ matrix.test }}
         if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
           mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
@@ -352,7 +351,6 @@ jobs:
         DD_SERVICE: rasa
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
-        set -x
         make ${{ matrix.test }}
         if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
           mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
