@@ -583,7 +583,7 @@ def filter_errors(
         an `ImportError` which should be discarded.
     """
     if hint and "exc_info" in hint:
-        exc_type, exc_value, tb = hint.get("exc_info")
+        exc_type, exc_value, tb = hint["exc_info"]
         if isinstance(exc_value, ImportError):
             return None
     return event

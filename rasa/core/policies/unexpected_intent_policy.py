@@ -1,9 +1,10 @@
+import dataclasses
 import logging
-from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from pathlib import Path
+from typing import Any, List, Optional, Text, Dict, Type
+
 import numpy as np
 import tensorflow as tf
-from pathlib import Path
-from typing import Any, List, Optional, Text, Dict, Type, TYPE_CHECKING
 
 import rasa.utils.common
 from rasa.engine.graph import ExecutionContext
@@ -25,6 +26,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import (
@@ -98,12 +100,6 @@ from rasa.utils.tensorflow.constants import (
     LABEL_PAD_ID,
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
-    RANKING_KEY,
-    SCORE_KEY,
-    THRESHOLD_KEY,
-    SEVERITY_KEY,
-    QUERY_INTENT_KEY,
-    NAME,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
@@ -112,23 +108,24 @@ import rasa.utils.io as io_utils
 from rasa.core.exceptions import RasaCoreException
 from rasa.shared.utils import common
 
-if TYPE_CHECKING:
-    from typing_extensions import TypedDict
 
-    RankingCandidateMetadata = TypedDict(
-        "RankingCandidateMetadata",
-        {
-            NAME: Text,
-            SCORE_KEY: float,
-            THRESHOLD_KEY: Optional[float],
-            SEVERITY_KEY: Optional[float],
-        },
-    )
+@dataclasses.dataclass
+class RankingCandidateMetadata:
+    """Dataclass to represent metada for a candidate intent."""
 
-    UnexpecTEDIntentPolicyMetadata = TypedDict(
-        "UnexpecTEDIntentPolicyMetadata",
-        {QUERY_INTENT_KEY: Text, RANKING_KEY: List["RankingCandidateMetadata"]},
-    )
+    name: Text
+    score: float
+    threshold: Optional[float]
+    severity: Optional[float]
+
+
+@dataclasses.dataclass
+class UnexpecTEDIntentPolicyMetadata:
+    """Dataclass to represent policy metadata."""
+
+    query_intent: RankingCandidateMetadata
+    ranking: List[RankingCandidateMetadata]
+
 
 logger = logging.getLogger(__name__)
 
@@ -490,7 +487,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array, query_intent: Text
-    ) -> "UnexpecTEDIntentPolicyMetadata":
+    ) -> UnexpecTEDIntentPolicyMetadata:
         """Collects metadata to be attached to the predicted action.
 
         Metadata schema looks like this:
@@ -524,22 +521,20 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         def _compile_metadata_for_label(
             label_name: Text, similarity_score: float, threshold: Optional[float]
-        ) -> "RankingCandidateMetadata":
+        ) -> RankingCandidateMetadata:
             severity = float(threshold - similarity_score) if threshold else None
-            return {
-                NAME: label_name,
-                SCORE_KEY: float(similarity_score),
-                THRESHOLD_KEY: float(threshold) if threshold else None,
-                SEVERITY_KEY: severity,
-            }
-
-        metadata: "UnexpecTEDIntentPolicyMetadata" = {
-            QUERY_INTENT_KEY: _compile_metadata_for_label(
-                query_intent,
-                similarities[0][domain.intents.index(query_intent)],
-                self.label_thresholds.get(query_intent_index),
+            return RankingCandidateMetadata(
+                label_name,
+                float(similarity_score),
+                float(threshold) if threshold else None,
+                severity,
             )
-        }
+
+        query_intent_metadata = _compile_metadata_for_label(
+            query_intent,
+            similarities[0][domain.intents.index(query_intent)],
+            self.label_thresholds.get(query_intent_index),
+        )
 
         # Ranking in descending order of predicted similarities
         sorted_similarities = sorted(
@@ -550,7 +545,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         if self.config[RANKING_LENGTH] > 0:
             sorted_similarities = sorted_similarities[: self.config[RANKING_LENGTH]]
 
-        metadata[RANKING_KEY] = [
+        ranking_metadata = [
             _compile_metadata_for_label(
                 domain.intents[intent_index],
                 similarity,
@@ -559,7 +554,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             for intent_index, similarity in sorted_similarities
         ]
 
-        return metadata
+        return UnexpecTEDIntentPolicyMetadata(query_intent_metadata, ranking_metadata)
 
     def predict_action_probabilities(
         self,
@@ -629,8 +624,10 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         return self._prediction(
             confidences,
-            action_metadata=self._collect_action_metadata(
-                domain, sequence_similarities, query_intent
+            action_metadata=dataclasses.asdict(
+                self._collect_action_metadata(
+                    domain, sequence_similarities, query_intent
+                )
             ),
         )
 
