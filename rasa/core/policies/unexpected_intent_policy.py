@@ -330,7 +330,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         common.mark_as_experimental_feature("UnexpecTED Intent Policy")
 
-    def _standard_featurizer(self) -> TrackerFeaturizer:
+    def _standard_featurizer(self) -> IntentMaxHistoryTrackerFeaturizer:
         return IntentMaxHistoryTrackerFeaturizer(
             IntentTokenizerSingleStateFeaturizer(),
             max_history=self.config.get(POLICY_MAX_HISTORY),
@@ -423,7 +423,11 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         # Hence, we first filter out the attributes inside `model_data`
         # to keep only those which should be present during prediction.
         model_prediction_data = self._prepare_data_for_prediction(model_data)
-        prediction_scores = self.model.run_bulk_inference(model_prediction_data)
+        prediction_scores = (
+            self.model.run_bulk_inference(model_prediction_data)
+            if self.model is not None
+            else {}
+        )
         label_id_scores = self._collect_label_id_grouped_scores(
             prediction_scores, label_ids
         )
@@ -563,8 +567,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -572,9 +576,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         Args:
             tracker: Tracker containing past conversation events.
             domain: Domain of the assistant.
-            precomputations: Contains precomputed features and attributes.
             rule_only_data: Slots and loops which are specific to rules and hence
                 should be ignored by this policy.
+            precomputations: Contains precomputed features and attributes.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
@@ -610,7 +614,12 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         sequence_similarities = all_similarities[:, -1, :]
 
         # Check for unlikely intent
-        query_intent = tracker.get_last_event_for(UserUttered).intent_name
+        last_user_uttered_event = tracker.get_last_event_for(UserUttered)
+        query_intent = (
+            last_user_uttered_event.intent_name
+            if last_user_uttered_event is not None
+            else ""
+        )
         is_unlikely_intent = self._check_unlikely_intent(
             domain, sequence_similarities, query_intent
         )
@@ -773,7 +782,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         if LABEL_PAD_ID in unique_label_ids:
             unique_label_ids.remove(LABEL_PAD_ID)
 
-        label_id_scores = {
+        label_id_scores: Dict[int, Dict[Text, List[float]]] = {
             label_id: {POSITIVE_SCORES_KEY: [], NEGATIVE_SCORES_KEY: []}
             for label_id in unique_label_ids
         }

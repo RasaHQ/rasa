@@ -54,7 +54,7 @@ class SlotMapping:
                 f"{DOCS_URL_SLOTS} for more information."
             )
 
-        validations = {
+        validations: Dict[SlotMappingType, List[Text]] = {
             SlotMappingType.FROM_ENTITY: ["entity"],
             SlotMappingType.FROM_INTENT: ["value"],
             SlotMappingType.FROM_TRIGGER_INTENT: ["value"],
@@ -62,7 +62,7 @@ class SlotMapping:
             SlotMappingType.CUSTOM: [],
         }
 
-        required_keys = validations.get(mapping_type)
+        required_keys = validations[mapping_type]
         for required_key in required_keys:
             if mapping.get(required_key) is None:
                 raise InvalidDomain(
@@ -107,16 +107,21 @@ class SlotMapping:
 
         active_loop_name = tracker.active_loop_name
         if active_loop_name:
-            mapping_not_intents = set(
+            mapping_not_intents = (
                 mapping_not_intents
                 + SlotMapping._get_active_loop_ignored_intents(
                     mapping, domain, active_loop_name
                 )
             )
 
-        intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        if tracker.latest_message:
+            intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        else:
+            intent = None
 
-        intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
+        intent_not_blocked = not mapping_intents and intent not in set(
+            mapping_not_intents
+        )
 
         return intent_not_blocked or intent in mapping_intents
 
@@ -145,7 +150,10 @@ class SlotMapping:
             True, if slot should be filled, false otherwise.
         """
         slot_fulfils_entity_mapping = False
-        extracted_entities = tracker.latest_message.entities
+        if tracker.latest_message:
+            extracted_entities = tracker.latest_message.entities
+        else:
+            extracted_entities = []
 
         for entity in extracted_entities:
             if (

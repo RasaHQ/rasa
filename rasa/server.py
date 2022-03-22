@@ -13,6 +13,7 @@ from http import HTTPStatus
 from typing import (
     Any,
     Callable,
+    DefaultDict,
     List,
     Optional,
     Text,
@@ -1236,7 +1237,7 @@ def create_app(
             "response_selection_evaluation": response_selector_report,
         }
 
-        result = defaultdict(dict)
+        result: DefaultDict[Text, Any] = defaultdict(dict)
         for evaluation_name, evaluation in eval_name_mapping.items():
             report = evaluation.evaluation.get("report", {})
             averages = report.get("weighted avg", {})
@@ -1364,7 +1365,10 @@ def create_app(
     @ensure_loaded_agent(app)
     async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
-        accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
+        # FIXME: this is a false positive mypy error after upgrading to 0.931
+        accepts = request.headers.get(  # type: ignore[call-overload]
+            "Accept", default=JSON_CONTENT_TYPE
+        )
         if accepts.endswith("json"):
             domain = app.ctx.agent.domain.as_dict()
             return response.json(domain)

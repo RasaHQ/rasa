@@ -55,7 +55,7 @@ def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
 
 
 def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
-    run_in_simple_project(
+    result = run_in_simple_project(
         "data",
         "convert",
         "nlu",
@@ -67,6 +67,7 @@ def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
         "json",
     )
 
+    assert "NLU data in Rasa JSON format is deprecated" in str(result.stderr)
     assert os.path.exists("out_nlu_data.json")
 
 
@@ -206,8 +207,8 @@ def test_validate_files_form_not_found_invalid_domain(
 def test_validate_files_with_active_loop_null(tmp_path: Path):
     file_name = tmp_path / "rules.yml"
     file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         rules:
         - rule: test path
           steps:

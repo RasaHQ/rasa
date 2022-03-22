@@ -865,8 +865,8 @@ def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path):
     domain_dir.mkdir()
     prepare_domain_path(
         domain_dir,
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents: []
         """,
         "domain.yml",
