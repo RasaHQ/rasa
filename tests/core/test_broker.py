@@ -310,11 +310,16 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         with pytest.raises(Exception):
             await broker.connect()
 
-    # Only Rasa Open Source logs, but logs from the library itself.
-    assert all(
-        record.name in ["rasa.core.brokers.pika", "asyncio"]
+    caplog_records = [
+        record
         for record in caplog.records
-    )
+        if record.name not in ["ddtrace.internal.writer"]
+    ]
+
+    # Only Rasa Open Source logs, but logs from the library itself.
+    for r in caplog_records:
+        print((r.name, r))
+        assert r.name in ["rasa.core.brokers.pika", "asyncio"], (r.name, r)
 
 
 async def test_create_pika_invalid_port():
