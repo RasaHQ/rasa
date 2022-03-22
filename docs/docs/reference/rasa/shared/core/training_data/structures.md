@@ -114,7 +114,7 @@ A Special type of StoryStep representing a Rule.
 #### get\_rules\_condition
 
 ```python
- | get_rules_condition() -> List[Event]
+ | get_rules_condition() -> List[Union[Event, List[Event]]]
 ```
 
 Returns a list of events forming a condition of the Rule.
@@ -122,7 +122,7 @@ Returns a list of events forming a condition of the Rule.
 #### get\_rules\_events
 
 ```python
- | get_rules_events() -> List[Event]
+ | get_rules_events() -> List[Union[Event, List[Event]]]
 ```
 
 Returns a list of events forming the Rule, that are not conditions.
@@ -202,6 +202,14 @@ Returns the story steps ordered by topological order of the DAG.
 
 Returns the story steps ordered by topological order of the DAG.
 
+#### merge
+
+```python
+ | merge(other: Optional["StoryGraph"]) -> "StoryGraph"
+```
+
+Merge two StoryGraph together.
+
 #### overlapping\_checkpoint\_names
 
 ```python
@@ -218,14 +226,6 @@ Find overlapping checkpoints names.
 ```
 
 Create a graph with the cyclic edges removed from this graph.
-
-#### get
-
-```python
- | get(step_id: Text) -> Optional[StoryStep]
-```
-
-Looks a story step up by its id.
 
 #### order\_steps
 

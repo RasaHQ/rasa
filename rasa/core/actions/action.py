@@ -49,7 +49,6 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     SlotMappingType,
-    LOOP_REJECTED,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -406,7 +405,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return None
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
         ]
 
         if (
@@ -439,7 +438,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return []
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
         ]
 
         if (
@@ -955,7 +954,7 @@ class ActionDefaultAskAffirmation(Action):
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[misc]
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
@@ -1011,8 +1010,7 @@ class ActionExtractSlots(Action):
             return True
 
         if (
-            tracker.active_loop
-            and tracker.active_loop.get(LOOP_REJECTED)
+            tracker.is_active_loop_rejected
             and tracker.get_slot(REQUESTED_SLOT) == slot_name
         ):
             return False

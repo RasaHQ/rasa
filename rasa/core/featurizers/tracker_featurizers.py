@@ -17,6 +17,7 @@ from typing import (
     Iterator,
     Set,
     DefaultDict,
+    cast,
 )
 import numpy as np
 
@@ -824,7 +825,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 sliced_states = self.slice_state_history(
                     tracker_states[:label_index], self.max_history
                 )
-                label = [event.action_name or event.action_text]
+                label = cast(List[Text], [event.action_name or event.action_text])
                 entities = [entity_data]
 
                 yield sliced_states, label, entities
@@ -1072,7 +1073,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 sliced_states = self.slice_state_history(
                     tracker_states[:label_index], self.max_history
                 )
-                label = [event.intent_name or event.text]
+                label = cast(List[Text], [event.intent_name or event.text])
                 entities: List[Dict[Text, Any]] = [{}]
 
                 yield sliced_states, label, entities

@@ -2,6 +2,15 @@
 sidebar_label: rasa.shared.core.trackers
 title: rasa.shared.core.trackers
 ---
+## TrackerActiveLoop Objects
+
+```python
+@dataclasses.dataclass
+class TrackerActiveLoop()
+```
+
+Dataclass for `DialogueStateTracker.active_loop`.
+
 ## EventVerbosity Objects
 
 ```python
@@ -180,7 +189,7 @@ Resets loop validation and rejection parameters.
  | current_slot_values() -> Dict[Text, Any]
 ```
 
-Return the currently set values of the slots
+Return the currently set values of the slots.
 
 #### get\_slot
 
@@ -464,6 +473,24 @@ Returns: `None` if no active loop or the name of the currently active loop.
 Get the name of the previously executed action or text of e2e action.
 
 Returns: name of the previously executed action or text of e2e action
+
+#### is\_active\_loop\_rejected
+
+```python
+ | @property
+ | is_active_loop_rejected() -> bool
+```
+
+Return True if there is an active loop and it&#x27;s rejected.
+
+#### is\_active\_loop\_interrupted
+
+```python
+ | @property
+ | is_active_loop_interrupted() -> bool
+```
+
+Return True if there is an active loop and it&#x27;s interrupted.
 
 #### fingerprint
 

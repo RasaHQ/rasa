@@ -269,7 +269,11 @@ class RasaModelData:
         self.sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]] = {}
 
     @overload
-    def get(self, key: Text, sub_key: Text = ...) -> List[FeatureArray]:
+    def get(self, key: Text, sub_key: Text) -> List[FeatureArray]:
+        ...
+
+    @overload
+    def get(self, key: Text, sub_key: None = ...) -> Dict[Text, List[FeatureArray]]:
         ...
 
     def get(
@@ -864,10 +868,10 @@ class RasaModelData:
         Returns:
             The test and train RasaModelData
         """
-        data_train: defaultdict[
-            Text, defaultdict[Text, List[FeatureArray]]
+        data_train: DefaultDict[
+            Text, DefaultDict[Text, List[FeatureArray]]
         ] = defaultdict(lambda: defaultdict(list))
-        data_val: defaultdict[Text, defaultdict[Text, List[Any]]] = defaultdict(
+        data_val: DefaultDict[Text, DefaultDict[Text, List[Any]]] = defaultdict(
             lambda: defaultdict(list)
         )
 

@@ -1,20 +1,23 @@
+import dataclasses
+
 from typing import DefaultDict, Dict, List, Optional, Set, Text, TYPE_CHECKING
 from collections import defaultdict
 
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.events import SlotSet, ActiveLoop
-from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.events import Event
 
-    ActionFingerprint = TypedDict(
-        "ActionFingerprint",
-        {SLOTS: List[Text], ACTIVE_LOOP: List[Optional[Text]]},
-    )
+
+@dataclasses.dataclass
+class ActionFingerprint:
+    """Dataclass to represent an action fingerprint."""
+
+    slots: List[Text]
+    active_loop: List[Optional[Text]]
 
 
 def _find_events_after_actions(
@@ -50,7 +53,7 @@ def _find_events_after_actions(
 
 def create_action_fingerprints(
     trackers: List["DialogueStateTracker"], domain: "Domain"
-) -> Dict[Text, "ActionFingerprint"]:
+) -> Dict[Text, ActionFingerprint]:
     """Fingerprint each action using the events it created during train.
 
     This allows us to emit warnings when the model is used
@@ -71,7 +74,7 @@ def create_action_fingerprints(
 
     # take into account only featurized slots
     featurized_slots = {slot.name for slot in domain.slots if slot.has_features()}
-    action_fingerprints: DefaultDict[Text, "ActionFingerprint"] = defaultdict(dict)
+    action_fingerprints: Dict[Text, ActionFingerprint] = {}
     for action_name, events_after_action in events_after_actions.items():
         slots = list(
             set(
@@ -85,10 +88,6 @@ def create_action_fingerprints(
                 if isinstance(event, ActiveLoop)
             )
         )
-
-        if slots:
-            action_fingerprints[action_name][SLOTS] = slots
-        if active_loops:
-            action_fingerprints[action_name][ACTIVE_LOOP] = active_loops
+        action_fingerprints[action_name] = ActionFingerprint(slots, active_loops)
 
     return action_fingerprints
