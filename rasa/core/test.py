@@ -3,9 +3,8 @@ import os
 from pathlib import Path
 import tempfile
 import warnings as pywarnings
-import typing
 from collections import defaultdict, namedtuple
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, TYPE_CHECKING, cast
 
 from rasa import telemetry
 from rasa.core.constants import (
@@ -63,11 +62,11 @@ from rasa.exceptions import ActionLimitReached
 
 from rasa.core.actions.action import ActionRetrieveResponse
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
-    from rasa.shared.core.events import EntityPrediction
+    from rasa.shared.core.events import Event, EntityPrediction
 
 logger = logging.getLogger(__name__)
 
@@ -592,7 +591,7 @@ def emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None:
     """
     from rasa.shared.core.events import ActionExecutionRejected
 
-    rejected_action_name: Text = partial_tracker.active_loop_name
+    rejected_action_name = partial_tracker.active_loop_name
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
@@ -601,7 +600,7 @@ async def _get_e2e_entity_evaluation_result(
     tracker: DialogueStateTracker,
     prediction: PolicyPrediction,
 ) -> Optional[EntityEvaluationResult]:
-    previous_event = tracker.events[-1]
+    previous_event: Optional["Event"] = tracker.events[-1]
 
     if isinstance(previous_event, SlotSet):
         # UserUttered events with entities can be followed by SlotSet events
@@ -875,7 +874,9 @@ async def _predict_tracker_actions(
             # so we can skip the NLU part and take the parse data directly.
             # Indirectly that means that the test story was in YAML format.
             if not event.text:
-                predicted = event.parse_data
+                # FIXME: better type annotation for `parse_data` would require
+                # a larger refactoring (e.g. switch to dataclass)
+                predicted = cast(Dict[Text, Any], event.parse_data)
             # Indirectly that means that the test story was either:
             # in YAML format containing a user message, or in Markdown format.
             # Leaving that as it is because Markdown is in legacy mode.

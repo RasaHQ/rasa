@@ -55,7 +55,7 @@ class TrainingDataReader(abc.ABC):
 
     def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a file."""
-        self.filename = filename
+        self.filename = str(filename)
         return self.reads(rasa.shared.utils.io.read_file(filename), **kwargs)
 
     @abc.abstractmethod

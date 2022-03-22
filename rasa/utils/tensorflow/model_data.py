@@ -1,11 +1,23 @@
 import logging
+from typing import (
+    Optional,
+    DefaultDict,
+    Dict,
+    Text,
+    List,
+    Tuple,
+    Any,
+    Union,
+    NamedTuple,
+    ItemsView,
+    overload,
+)
+from collections import defaultdict, OrderedDict
 
 import numpy as np
 import scipy.sparse
-
 from sklearn.model_selection import train_test_split
-from typing import Optional, Dict, Text, List, Tuple, Any, Union, NamedTuple, ItemsView
-from collections import defaultdict, OrderedDict
+
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +88,7 @@ class FeatureArray(np.ndarray):
             return
 
         self.units = getattr(obj, "units", None)
-        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)
+        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)  # type: ignore[assignment] # noqa:E501
         self.is_sparse = getattr(obj, "is_sparse", None)
 
         default_attributes = {
@@ -255,6 +267,10 @@ class RasaModelData:
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
         self.sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]] = {}
+
+    @overload
+    def get(self, key: Text, sub_key: Text = ...) -> List[FeatureArray]:
+        ...
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
@@ -695,8 +711,8 @@ class RasaModelData:
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
-        new_data: defaultdict[
-            Text, defaultdict[Text, List[List[FeatureArray]]]
+        new_data: DefaultDict[
+            Text, DefaultDict[Text, List[List[FeatureArray]]]
         ] = defaultdict(lambda: defaultdict(list))
 
         while min(num_data_cycles) == 0:

@@ -345,6 +345,36 @@ def test_epoch_fraction_cli_param():
     assert train_schema == expected_train_schema
 
 
+def test_epoch_fraction_cli_param_unspecified():
+    # TODO: enhance testing of cli instead of imitating expected parsed input
+    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
+        "data/graph_schemas/default_config_finetune_epoch_fraction_schema.yml"
+    )
+    expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
+
+    # modify the expected schema
+    for schema_node in expected_train_schema.nodes.values():
+        if "finetuning_epoch_fraction" in schema_node.config:
+            schema_node.config["finetuning_epoch_fraction"] = 1.0
+            if "epochs" in schema_node.config:
+                schema_node.config["epochs"] *= 2
+
+    config = rasa.shared.utils.io.read_yaml_file(
+        "rasa/engine/recipes/config_files/default_config.yml"
+    )
+
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
+    model_config = recipe.graph_config_for_recipe(
+        config, {"finetuning_epoch_fraction": None}, is_finetuning=True
+    )
+
+    train_schema = model_config.train_schema
+    for node_name, node in expected_train_schema.nodes.items():
+        assert train_schema.nodes[node_name] == node
+
+    assert train_schema == expected_train_schema
+
+
 def test_register_component():
     @DefaultV1Recipe.register(
         DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER,

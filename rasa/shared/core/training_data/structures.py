@@ -119,13 +119,13 @@ class StoryStep:
 
     def __init__(
         self,
-        block_name: Optional[Text] = None,
+        block_name: Text,
         start_checkpoints: Optional[List[Checkpoint]] = None,
         end_checkpoints: Optional[List[Checkpoint]] = None,
         events: Optional[List[Union[Event, List[Event]]]] = None,
         source_name: Optional[Text] = None,
     ) -> None:
-
+        """Initialise `StoryStep` default attributes."""
         self.end_checkpoints = end_checkpoints if end_checkpoints else []
         self.start_checkpoints = start_checkpoints if start_checkpoints else []
         self.events = events if events else []
