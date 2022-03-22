@@ -824,6 +824,7 @@ async def test_adjusting_layers_incremental_training(
     test_data_signatures(new_predict_data_signature, old_predict_data_signature)
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
 @pytest.mark.skip_on_windows
 @pytest.mark.timeout(120)
 @pytest.mark.parametrize(
