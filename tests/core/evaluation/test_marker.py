@@ -496,7 +496,7 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     assert evaluation[1]["my-marker"][0].idx == 8  # i.e. NOT the index in the dialogue
 
 
-def test_markers_cli_results_save_correctly(tmp_path: Path):
+async def test_markers_cli_results_save_correctly(tmp_path: Path):
     domain = Domain.empty()
     store = InMemoryTrackerStore(domain)
 
@@ -508,7 +508,7 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
         tracker.update_with_events(
             [SlotSet(str(5 + j), "slot") for j in range(5)], domain
         )
-        store.save(tracker)
+        await store.save(tracker)
 
     tracker_loader = MarkerTrackerLoader(store, "all")
 
@@ -517,7 +517,7 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
     markers = OrMarker(
         markers=[SlotSetMarker("2", name="marker1"), SlotSetMarker("7", name="marker2")]
     )
-    markers.evaluate_trackers(tracker_loader.load(), results_path)
+    await markers.evaluate_trackers(tracker_loader.load(), results_path)
 
     with open(results_path, "r") as results:
         result_reader = csv.DictReader(results)
