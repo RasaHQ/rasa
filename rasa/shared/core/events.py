@@ -20,6 +20,7 @@ from typing import (
     Iterable,
     cast,
     Tuple,
+    TypeVar,
 )
 
 import rasa.shared.utils.common
@@ -87,6 +88,7 @@ if TYPE_CHECKING:
     NLUPredictionData = TypedDict(
         "NLUPredictionData",
         {
+            TEXT: Text,
             INTENT: IntentPrediction,
             INTENT_RANKING_KEY: List[IntentPrediction],
             ENTITIES: List[EntityPrediction],
@@ -243,6 +245,9 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
     )
 
 
+E = TypeVar("E", bound="Event")
+
+
 class Event(ABC):
     """Describes events in conversation and how the affect the conversation state.
 
@@ -305,7 +310,9 @@ class Event(ABC):
         return event_class._from_parameters(parameters)
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List["Event"]]:
+    def _from_story_string(
+        cls: Type[E], parameters: Dict[Text, Any]
+    ) -> Optional[List[E]]:
         """Called to convert a parsed story line into an event."""
         return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
@@ -527,14 +534,14 @@ class UserUttered(Event):
         """Returns text representation of event."""
         entities = ""
         if self.entities:
-            entities = [
+            entities_list = [
                 f"{entity[ENTITY_ATTRIBUTE_VALUE]} "
                 f"(Type: {entity[ENTITY_ATTRIBUTE_TYPE]}, "
                 f"Role: {entity.get(ENTITY_ATTRIBUTE_ROLE)}, "
                 f"Group: {entity.get(ENTITY_ATTRIBUTE_GROUP)})"
                 for entity in self.entities
             ]
-            entities = f", entities: {', '.join(entities)}"
+            entities = f", entities: {', '.join(entities_list)}"
 
         return (
             f"UserUttered(text: {self.text}, intent: {self.intent_name}"
@@ -605,7 +612,9 @@ class UserUttered(Event):
         return out
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["UserUttered"]]:
         try:
             return [
                 cls._from_parse_data(
@@ -1185,7 +1194,9 @@ class ReminderScheduled(Event):
         return d
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["ReminderScheduled"]]:
 
         trigger_date_time = parser.parse(parameters.get("date_time"))
 
@@ -1299,7 +1310,9 @@ class ReminderCancelled(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["ReminderCancelled"]]:
         return [
             ReminderCancelled(
                 parameters.get("name"),
@@ -1363,7 +1376,9 @@ class StoryExported(Event):
         return hash(32143124319)
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["StoryExported"]]:
         return [
             StoryExported(
                 parameters.get("path"),
@@ -1431,7 +1446,9 @@ class FollowupAction(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["FollowupAction"]]:
 
         return [
             FollowupAction(
@@ -1536,6 +1553,13 @@ class ActionExecuted(Event):
         self.action_text = action_text
         self.hide_rule_turn = hide_rule_turn
 
+        if self.action_name is None and self.action_text is None:
+            raise ValueError(
+                "Both the name of the action and the end-to-end "
+                "predicted text are missing. "
+                "The `ActionExecuted` event cannot be initialised."
+            )
+
         super().__init__(timestamp, metadata)
 
     def __members__(self) -> Tuple[Optional[Text], Optional[Text], Text]:
@@ -1548,9 +1572,9 @@ class ActionExecuted(Event):
             self.action_name, self.policy, self.confidence
         )
 
-    def __str__(self) -> Optional[Text]:
+    def __str__(self) -> Text:
         """Returns event as human readable string."""
-        return self.action_name or self.action_text
+        return str(self.action_name) or str(self.action_text)
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
@@ -1575,7 +1599,9 @@ class ActionExecuted(Event):
         return self.action_name
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["ActionExecuted"]]:
         return [
             ActionExecuted(
                 parameters.get("name"),

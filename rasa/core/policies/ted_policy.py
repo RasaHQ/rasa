@@ -693,6 +693,7 @@ class TEDPolicy(Policy):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        **kwargs: Any,
     ) -> Resource:
         """Trains the policy (see parent class for full docstring)."""
         if not training_trackers:
@@ -809,8 +810,8 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""

@@ -112,13 +112,14 @@ async def test_parsing(default_processor: MessageProcessor):
 async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "Joe"}')
     old_domain = default_processor.domain
-    new_domain = Domain.from_dict(old_domain.as_dict())
-    new_domain.intent_properties = {
-        name: intent
-        for name, intent in new_domain.intent_properties.items()
-        if name != "greet"
-    }
-    new_domain.entities = [e for e in new_domain.entities if e != "name"]
+    dict_for_new_domain = old_domain.as_dict()
+    dict_for_new_domain["intents"] = [
+        intent for intent in dict_for_new_domain["intents"] if intent != "greet"
+    ]
+    dict_for_new_domain["entities"] = [
+        entity for entity in dict_for_new_domain["entities"] if entity != "name"
+    ]
+    new_domain = Domain.from_dict(dict_for_new_domain)
     default_processor.domain = new_domain
 
     parsed = await default_processor.parse_message(message)
@@ -1477,6 +1478,8 @@ def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
     assert tracker.model_id == model_id
 
 
+# FIXME: these tests take too long to run in the CI, disabling them for now
+@pytest.mark.skip_on_ci
 async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
     processor = e2e_bot_agent.processor
     message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test")

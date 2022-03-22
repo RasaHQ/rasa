@@ -1,7 +1,7 @@
 from __future__ import annotations
 import functools
 import logging
-from typing import Any, List, Dict, Text, Optional, Set, Tuple
+from typing import Any, List, DefaultDict, Dict, Text, Optional, Set, Tuple, cast
 
 from tqdm import tqdm
 import numpy as np
@@ -159,7 +159,7 @@ class RulePolicy(MemoizationPolicy):
         self._enable_fallback_prediction = config["enable_fallback_prediction"]
         self._check_for_contradictions = config["check_for_contradictions"]
 
-        self._rules_sources: defaultdict[Text, List[Tuple[Text, Text]]] = defaultdict(
+        self._rules_sources: DefaultDict[Text, List[Tuple[Text, Text]]] = defaultdict(
             list
         )
 
@@ -371,7 +371,7 @@ class RulePolicy(MemoizationPolicy):
         if not rule_fingerprints:
             return
 
-        error_messages = []
+        error_messages: List[Text] = []
         for tracker in rule_trackers:
             states = tracker.past_states(domain)
             # the last action is always action listen
@@ -409,9 +409,9 @@ class RulePolicy(MemoizationPolicy):
                 )
 
         if error_messages:
-            error_messages = "\n".join(error_messages)
+            error_text = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nIncomplete rules found🚨\n\n{error_messages}\n"
+                f"\nIncomplete rules found🚨\n\n{error_text}\n"
                 f"Please note that if some slots or active loops should not be set "
                 f"during prediction you need to explicitly set them to 'null' in the "
                 f"rules."
@@ -428,7 +428,10 @@ class RulePolicy(MemoizationPolicy):
         for states in trackers_as_states:
             for state in states:
                 slots.update(set(state.get(SLOTS, {}).keys()))
-                active_loop: Optional[Text] = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+                # FIXME: ideally we have better annotation for State, TypedDict
+                # could work but support in mypy is very limited. Dataclass are
+                # another option
+                active_loop = cast(Text, state.get(ACTIVE_LOOP, {}).get(LOOP_NAME))
                 if active_loop:
                     loops.add(active_loop)
         return slots, loops
@@ -494,7 +497,7 @@ class RulePolicy(MemoizationPolicy):
         self,
         tracker: TrackerWithCachedStates,
         predicted_action_name: Optional[Text],
-        gold_action_name: Text,
+        gold_action_name: Optional[Text],
         prediction_source: Text,
     ) -> None:
         # we need to remember which action should be predicted by the rule
@@ -721,9 +724,9 @@ class RulePolicy(MemoizationPolicy):
 
         logger.setLevel(logger_level)  # reset logger level
         if error_messages:
-            error_messages = "\n".join(error_messages)
+            error_text = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nContradicting rules or stories found 🚨\n\n{error_messages}\n"
+                f"\nContradicting rules or stories found 🚨\n\n{error_text}\n"
                 f"Please update your stories and rules so that they don't contradict "
                 f"each other."
             )

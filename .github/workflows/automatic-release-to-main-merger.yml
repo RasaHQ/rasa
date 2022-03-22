@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Fetch git tags 🎨
         # see https://github.com/actions/checkout/issues/206#issuecomment-617937725

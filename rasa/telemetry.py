@@ -570,7 +570,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 
 def filter_errors(
-    event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None
+    event: Optional[Dict[Text, Any]], hint: Optional[Dict[Text, Any]] = None
 ) -> Optional[Dict[Text, Any]]:
     """Filter errors.
 
@@ -602,9 +602,8 @@ def before_send(
         the event without any sensitive / PII data or `None` if the event should
         be discarded.
     """
-    event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
-    event = filter_errors(event, _unused_hint)
-    return event
+    cleaned_event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
+    return filter_errors(cleaned_event, _unused_hint)
 
 
 def strip_sensitive_data_from_sentry_event(

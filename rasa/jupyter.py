@@ -1,7 +1,7 @@
+import asyncio
 import pprint as pretty_print
 import typing
 from typing import Any, Dict, Optional, Text
-import asyncio
 
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_success
@@ -30,7 +30,9 @@ def chat(
         agent: Rasa Core agent (used if no Rasa model given).
     """
     if model_path:
-        agent = rasa.core.agent.load_agent(model_path=model_path, endpoints=endpoints)
+        agent = asyncio.run(
+            rasa.core.agent.load_agent(model_path=model_path, endpoints=endpoints)
+        )
 
     if agent is None:
         raise RasaException(
