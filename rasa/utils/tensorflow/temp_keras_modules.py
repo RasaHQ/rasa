@@ -1,5 +1,5 @@
 import copy
-from typing import List, Dict, Union, Optional, Any, Generator, Tuple, Iterator
+from typing import List, Dict, Union, Optional, Any, Generator, Tuple, Iterator, cast
 
 import numpy as np
 
@@ -45,7 +45,7 @@ class TmpKerasModel(Model):
     # This code is adapted from
     # https://github.com/keras-team/keras/blob/v2.7.0/keras/engine/training.py#L902
 
-    @traceback_utils.filter_traceback
+    @traceback_utils.filter_traceback  # type: ignore[misc]
     def fit(
         self,
         x: Optional[
@@ -358,11 +358,12 @@ class TmpKerasModel(Model):
                     epochs=epochs,
                     steps=data_handler.inferred_steps,
                 )
+            callbacks_list = cast(callbacks_module.CallbackList, callbacks)
 
             self.stop_training = False
             self.train_function = self.make_train_function()
             self._train_counter.assign(0)
-            callbacks.on_train_begin()
+            callbacks_list.on_train_begin()
             training_logs = None
             # Handle fault-tolerance for multi-worker.
             # TODO(omalleyt): Fix the ordering issues that mean this has to
@@ -373,7 +374,7 @@ class TmpKerasModel(Model):
             logs = None
             for epoch, iterator in data_handler.enumerate_epochs():
                 self.reset_metrics()
-                callbacks.on_epoch_begin(epoch)
+                callbacks_list.on_epoch_begin(epoch)
                 with data_handler.catch_stop_iteration():
                     for step in data_handler.steps():
                         with tf.profiler.experimental.Trace(
@@ -383,13 +384,13 @@ class TmpKerasModel(Model):
                             batch_size=batch_size,
                             _r=1,
                         ):
-                            callbacks.on_train_batch_begin(step)
+                            callbacks_list.on_train_batch_begin(step)
                             tmp_logs = self.train_function(iterator)
                             if data_handler.should_sync:
                                 context.async_wait()
                             logs = tmp_logs  # No error, now safe to assign to logs.
                             end_step = step + data_handler.step_increment
-                            callbacks.on_train_batch_end(end_step, logs)
+                            callbacks_list.on_train_batch_end(end_step, logs)
                             if self.stop_training:
                                 break
 
@@ -429,7 +430,7 @@ class TmpKerasModel(Model):
                         sample_weight=val_sample_weight,
                         batch_size=validation_batch_size or batch_size,
                         steps=validation_steps,
-                        callbacks=callbacks,
+                        callbacks=callbacks_list,
                         max_queue_size=max_queue_size,
                         workers=workers,
                         use_multiprocessing=use_multiprocessing,
@@ -439,7 +440,7 @@ class TmpKerasModel(Model):
                     val_logs = {"val_" + name: val for name, val in val_logs.items()}
                     epoch_logs.update(val_logs)
 
-                callbacks.on_epoch_end(epoch, epoch_logs)
+                callbacks_list.on_epoch_end(epoch, epoch_logs)
                 training_logs = epoch_logs
                 if self.stop_training:
                     break
@@ -447,7 +448,7 @@ class TmpKerasModel(Model):
             # If eval_data_handler exists, delete it after all epochs are done.
             if getattr(self, "_eval_data_handler", None) is not None:
                 del self._eval_data_handler
-            callbacks.on_train_end(logs=training_logs)
+            callbacks_list.on_train_end(logs=training_logs)
             return self.history
 
 

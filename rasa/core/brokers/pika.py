@@ -5,7 +5,7 @@ import os
 import ssl
 from asyncio import AbstractEventLoop
 from collections import deque
-from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple
+from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple, cast
 from urllib.parse import urlparse
 
 import aio_pika
@@ -171,7 +171,7 @@ class PikaEventBroker(EventBroker):
         ssl_options = _create_rabbitmq_ssl_options(self.host)
         logger.info("Connecting to RabbitMQ ...")
 
-        last_exception = None
+        last_exception: Optional[Exception] = None
         for _ in range(self._connection_attempts):
             try:
                 return await aio_pika.connect_robust(
@@ -193,6 +193,7 @@ class PikaEventBroker(EventBroker):
                 )
                 await asyncio.sleep(self._retry_delay_in_seconds)
 
+        last_exception = cast(Exception, last_exception)
         logger.error(
             f"Connecting to '{self.host}' failed with error '{last_exception}'."
         )
@@ -210,7 +211,7 @@ class PikaEventBroker(EventBroker):
 
     async def _set_up_exchange(
         self, channel: aio_pika.RobustChannel
-    ) -> aio_pika.Exchange:
+    ) -> aio_pika.RobustExchange:
         exchange = await channel.declare_exchange(
             self.exchange_name, type=aio_pika.ExchangeType.FANOUT
         )
@@ -244,6 +245,9 @@ class PikaEventBroker(EventBroker):
 
     def is_ready(self) -> bool:
         """Return `True` if a connection was established."""
+        if self._connection is None:
+            return False
+
         return not self._connection.is_closed
 
     def publish(
@@ -262,6 +266,9 @@ class PikaEventBroker(EventBroker):
     async def _publish(
         self, event: Dict[Text, Any], headers: Optional[Dict[Text, Text]] = None
     ) -> None:
+        if self._exchange is None:
+            return
+
         try:
             await self._exchange.publish(self._message(event, headers), "")
 

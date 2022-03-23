@@ -68,7 +68,9 @@ class RasaYAMLReader(TrainingDataReader):
             e.filename = self.filename
             raise e
 
-    def reads(self, string: Text, **kwargs: Any) -> "TrainingData":
+    def reads(  # type: ignore[override]
+        self, string: Text, **kwargs: Any
+    ) -> "TrainingData":
         """Reads TrainingData in YAML format from a string.
 
         Args:
@@ -402,7 +404,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         if not any([nlu_items, training_data.responses]):
             return None
 
-        result = OrderedDict()
+        result: OrderedDict[Text, Any] = OrderedDict()
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
             LATEST_TRAINING_DATA_FORMAT_VERSION
         )
@@ -419,9 +421,9 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_intents(cls, training_data: "TrainingData") -> List[OrderedDict]:
-        training_data = cls.prepare_training_examples(training_data)
+        """Serializes the intents."""
         return RasaYAMLWriter.process_training_examples_by_key(
-            training_data,
+            cls.prepare_training_examples(training_data),
             KEY_INTENT,
             KEY_INTENT_EXAMPLES,
             TrainingDataWriter.generate_message,
@@ -429,7 +431,8 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_synonyms(cls, training_data: "TrainingData") -> List[OrderedDict]:
-        inverted_synonyms = OrderedDict()
+        """Serializes the synonyms."""
+        inverted_synonyms: Dict[Text, List[Dict]] = OrderedDict()
         for example, synonym in training_data.entity_synonyms.items():
             if not inverted_synonyms.get(synonym):
                 inverted_synonyms[synonym] = []
@@ -444,7 +447,8 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_regexes(cls, training_data: "TrainingData") -> List[OrderedDict]:
-        inverted_regexes = OrderedDict()
+        """Serializes the regexes."""
+        inverted_regexes: Dict[Text, List[Text]] = OrderedDict()
         for regex in training_data.regex_features:
             if not inverted_regexes.get(regex["name"]):
                 inverted_regexes[regex["name"]] = []
@@ -512,7 +516,7 @@ class RasaYAMLWriter(TrainingDataWriter):
                 examples, example_extraction_predicate
             )
 
-            intent = OrderedDict()
+            intent: OrderedDict[Text, Any] = OrderedDict()
             intent[key_name] = intent_name
             if intent_metadata:
                 intent[KEY_METADATA] = intent_metadata
@@ -526,12 +530,13 @@ class RasaYAMLWriter(TrainingDataWriter):
             )
 
             if examples_have_metadata or example_texts_have_escape_chars:
-                rendered = RasaYAMLWriter._render_training_examples_as_objects(
+                intent[
+                    key_examples
+                ] = RasaYAMLWriter._render_training_examples_as_objects(converted)
+            else:
+                intent[key_examples] = RasaYAMLWriter._render_training_examples_as_text(
                     converted
                 )
-            else:
-                rendered = RasaYAMLWriter._render_training_examples_as_text(converted)
-            intent[key_examples] = rendered
 
             intents.append(intent)
 

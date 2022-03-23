@@ -33,6 +33,7 @@ from rasa.shared.data import TrainingType
 
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import InvalidConfigException
@@ -910,8 +911,9 @@ def test_models_not_retrained_if_only_new_responses(
       utter_greet:
       - text: "Hi from Rasa"
     """
+    domain_with_extra_response = Domain.from_yaml(domain_with_extra_response)
 
-    new_domain = domain.merge(Domain.from_yaml(domain_with_extra_response))
+    new_domain = domain.merge(domain_with_extra_response)
     new_domain_path = tmp_path / "domain.yml"
     rasa.shared.utils.io.write_yaml(new_domain.as_dict(), new_domain_path)
 
@@ -963,7 +965,7 @@ def test_invalid_graph_schema(
 ):
     config = textwrap.dedent(
         """
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
 
     pipeline:
@@ -1003,7 +1005,7 @@ def test_fingerprint_changes_if_module_changes(
 
     config = textwrap.dedent(
         f"""
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
 
     policies:
