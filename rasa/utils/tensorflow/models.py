@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import random
 from collections import defaultdict
-from typing import List, Text, Dict, Tuple, Union, Optional, Any
+from typing import List, Text, Dict, Tuple, Union, Optional, Any, TYPE_CHECKING
 
 from keras.utils import tf_utils
 
@@ -46,6 +46,11 @@ from rasa.utils.tensorflow.data_generator import (
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
 
+
+if TYPE_CHECKING:
+    from tensorflow.python.types.core import GenericFunction
+
+
 logger = logging.getLogger(__name__)
 
 LABEL_KEY = LABEL
@@ -85,7 +90,7 @@ class RasaModel(TmpKerasModel):
         self.random_seed = random_seed
         self._set_random_seed()
 
-        self._tf_predict_step = None
+        self._tf_predict_step: Optional["GenericFunction"] = None
         self.prepared_for_prediction = False
 
     def _set_random_seed(self) -> None:
