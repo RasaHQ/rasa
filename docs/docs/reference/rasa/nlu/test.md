@@ -491,7 +491,7 @@ response targets and predictions) as well as entity results
 #### run\_evaluation
 
 ```python
-async run_evaluation(data_path: Text, processor: MessageProcessor, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
+async run_evaluation(data_path: Text, processor: MessageProcessor, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None, domain_path: Optional[Text] = None) -> Dict
 ```
 
 Evaluate intent classification, response selection and entity extraction.
@@ -508,6 +508,7 @@ Evaluate intent classification, response selection and entity extraction.
   If `False` the report is returned in a human-readable text format. If `None`
   `report_as_dict` is considered as `True` in case an `output_directory` is
   given.
+- `domain_path` - Path to the domain file(s).
   
 - `Returns` - dictionary containing evaluation results
 
