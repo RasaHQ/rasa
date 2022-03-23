@@ -119,25 +119,29 @@ def _setup_cpu_environment() -> None:
 
     if inter_op_parallel_threads:
         try:
-            inter_op_parallel_threads = int(inter_op_parallel_threads.strip())
+            inter_op_parallel_threads_number = int(inter_op_parallel_threads.strip())
         except ValueError:
             raise ValueError(
                 f"Error parsing the environment variable '{ENV_CPU_INTER_OP_CONFIG}'. "
                 f"Please cross-check the value."
             )
 
-        tf_config.threading.set_inter_op_parallelism_threads(inter_op_parallel_threads)
+        tf_config.threading.set_inter_op_parallelism_threads(
+            inter_op_parallel_threads_number
+        )
 
     if intra_op_parallel_threads:
         try:
-            intra_op_parallel_threads = int(intra_op_parallel_threads.strip())
+            intra_op_parallel_threads_number = int(intra_op_parallel_threads.strip())
         except ValueError:
             raise ValueError(
                 f"Error parsing the environment variable '{ENV_CPU_INTRA_OP_CONFIG}'. "
                 f"Please cross-check the value."
             )
 
-        tf_config.threading.set_intra_op_parallelism_threads(intra_op_parallel_threads)
+        tf_config.threading.set_intra_op_parallelism_threads(
+            intra_op_parallel_threads_number
+        )
 
 
 def setup_tf_environment() -> None:
