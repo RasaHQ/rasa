@@ -333,7 +333,10 @@ jobs:
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
-        mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        fi
+      shell: bash  # bash shell is a way to make code run for both Linux and Windows
 
     - name: Store coverage reports
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'

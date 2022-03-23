@@ -1,5 +1,5 @@
-import asyncio
 import copy
+import inspect
 import logging
 import logging.handlers
 import os
@@ -407,7 +407,7 @@ async def call_potential_coroutine(
     Returns:
         The return value of the function.
     """
-    if asyncio.iscoroutine(coroutine_or_return_value):
+    if inspect.iscoroutine(coroutine_or_return_value):
         return await coroutine_or_return_value
 
     return coroutine_or_return_value

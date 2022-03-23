@@ -1,10 +1,10 @@
 from __future__ import annotations
 import asyncio
+from contextlib import asynccontextmanager
 import json
 import logging
 import os
 
-from async_generator import asynccontextmanager
 from typing import AsyncGenerator, Dict, Optional, Text, Union
 
 from rasa.shared.exceptions import RasaException, ConnectionException
