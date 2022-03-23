@@ -337,7 +337,10 @@ jobs:
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
-        poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
+        if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        fi
+      shell: bash  # bash shell is a way to make code run for both Linux and Windows
 
     - name: Test Code 🔍 (multi-process)
       if: needs.changes.outputs.backend == 'true' && !(matrix.os == 'windows-2019' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
@@ -349,7 +352,10 @@ jobs:
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
-        mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        fi
+      shell: bash
 
     - name: Store coverage reports
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
