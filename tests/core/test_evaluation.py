@@ -545,6 +545,7 @@ async def test_log_evaluation_table(caplog, skip_field, skip_value):
         assert "Classification report:" not in caplog.text
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "test_file, correct_intent, correct_entity",
     [
@@ -618,6 +619,7 @@ async def test_wrong_predictions_with_intent_and_entities(
         assert failed_stories.count("\n") == 9
 
 
+@pytest.mark.skip_on_windows
 async def test_failed_entity_extraction_comment(
     tmpdir: Path, restaurantbot_agent: Agent
 ):
