@@ -100,7 +100,7 @@ class PolicyPredictionEnsemble(ABC):
             value for value in kwargs.values() if isinstance(value, PolicyPrediction)
         ]
         return self.combine_predictions(
-            predictions=predictions, tracker=tracker, domain=domain,
+            predictions=predictions, tracker=tracker, domain=domain
         )
 
     @abstractmethod
@@ -178,7 +178,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         Returns:
             The index of the best prediction
         """
-        best_confidence = (-1, -1)
+        best_confidence = (-1.0, -1)
         best_index = -1
 
         # different type of predictions have different priorities

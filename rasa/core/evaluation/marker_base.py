@@ -11,8 +11,10 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    TYPE_CHECKING,
     Union,
     Any,
+    AsyncIterator,
 )
 
 from pathlib import Path
@@ -26,13 +28,18 @@ import rasa.shared.utils.common
 from rasa.shared.data import is_likely_yaml_file
 from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
+from rasa import telemetry
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.io import WriteRow
+from rasa.shared.constants import DOCS_URL_MARKERS
 
 import logging
 import csv
 import os.path
+
+if TYPE_CHECKING:
+    from rasa.core.evaluation.marker import OrMarker
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +185,7 @@ class Marker(ABC):
         self.history: List[bool] = []
         # Note: we allow negation here even though there might not be a negated tag
         # for 2 reasons: testing and the fact that the `MarkerRegistry`+`from_config`
-        # won't allow to create a negated marker if there is not negated tag.
+        # won't allow to create a negated marker if there is no negated tag.
         self.negated: bool = negated
 
     def __str__(self) -> Text:
@@ -249,17 +256,12 @@ class Marker(ABC):
         self.history = []
 
     @abstractmethod
-    def __iter__(self) -> Iterator[Marker]:
-        """Returns an iterator over all markers that are part of this marker.
+    def flatten(self) -> Iterator[Marker]:
+        """Returns an iterator over all conditions and operators used in this marker.
 
         Returns:
-            an iterator over all markers that are part of this marker
+            an iterator over all conditions and operators that are part of this marker
         """
-        ...
-
-    @abstractmethod
-    def __len__(self) -> int:
-        """Returns the count of all markers that are part of this marker."""
         ...
 
     @abstractmethod
@@ -271,9 +273,12 @@ class Marker(ABC):
         """
         ...
 
-    def evaluate_events(
-        self, events: List[Event], recursive: bool = False
-    ) -> List[SessionEvaluation]:
+    @abstractmethod
+    def max_depth(self) -> int:
+        """Gets the maximum depth from this point in the marker tree."""
+        ...
+
+    def evaluate_events(self, events: List[Event]) -> List[SessionEvaluation]:
         """Resets the marker, tracks all events, and collects some information.
 
         The collected information includes:
@@ -283,21 +288,15 @@ class Marker(ABC):
         If this marker is the special `ANY_MARKER` (identified by its name), then
         results will be collected for all (immediate) sub-markers.
 
-        If `recursive` is set to `True`, then all included markers are evaluated.
-
         Args:
             events: a list of events describing a conversation
-            recursive: set this to `True` to collect evaluations for all markers that
-               this marker consists of
         Returns:
             a list that contains, for each session contained in the tracker, a
             dictionary mapping that maps marker names to meta data of relevant
             events
         """
         # determine which marker to extract results from
-        if recursive:
-            markers_to_be_evaluated = [marker for marker in self]
-        elif isinstance(self, OperatorMarker) and self.name == Marker.ANY_MARKER:
+        if isinstance(self, OperatorMarker) and self.name == Marker.ANY_MARKER:
             markers_to_be_evaluated = self.sub_markers
         else:
             markers_to_be_evaluated = [self]
@@ -340,11 +339,9 @@ class Marker(ABC):
         if len(session_start_indices) == 0:
             return [(events, 0)]
         sessions_and_start_indices: List[Tuple[List[Event], int]] = []
-        for session_idx in range(len(session_start_indices)):
-            start_idx = (
-                session_start_indices[session_idx - 1] if (session_idx > 0) else 0
-            )
-            end_idx = session_start_indices[session_idx]
+        for session_idx in range(len(session_start_indices) - 1):
+            start_idx = session_start_indices[session_idx]
+            end_idx = session_start_indices[session_idx + 1]
             session = [events[idx] for idx in range(start_idx, end_idx)]
             sessions_and_start_indices.append((session, start_idx))
         last_session = [
@@ -395,7 +392,7 @@ class Marker(ABC):
         return [idx for (idx, applies) in enumerate(self.history) if applies]
 
     @classmethod
-    def from_path(cls, path: Union[Path, Text]) -> Marker:
+    def from_path(cls, path: Union[Path, Text]) -> "OrMarker":
         """Loads markers from one config file or all config files in a directory tree.
 
         Each config file should contain a dictionary mapping marker names to the
@@ -441,18 +438,24 @@ class Marker(ABC):
                 try:
                     marker = Marker.from_config(marker_config, name=marker_name)
                 except InvalidMarkerConfig as e:
+                    # we don't re-raise here because the stack trace would only be
+                    # printed when we run rasa evaluate with --debug flag
                     raise InvalidMarkerConfig(
-                        f"Could not load marker {marker_name} from {yaml_file}"
-                    ) from e
+                        f"Could not load marker {marker_name} from {yaml_file}. "
+                        f"Reason: {str(e)}. "
+                    )
                 loaded_markers.append(marker)
 
-        # combine the markers
-        if len(loaded_markers) > 1:
-            marker = OrMarker(markers=loaded_markers)
-            marker.name = Marker.ANY_MARKER  # cannot be set via name parameter
-        else:
-            marker = loaded_markers[0]
+        # Reminder: We could also just create a dictionary of markers from this.
+        # However, if we want to allow re-using top-level markers (e.g.
+        # "custom_marker1 or custom_marker2" and/or optimize the marker evaluation such
+        # that e.g. the same condition is not instantiated (and evaluated) twice, then
+        # the current approach might be better (e.g. with a dictionary of markers one
+        # might expect the markers to be independent objects).
 
+        # combine the markers
+        marker = OrMarker(markers=loaded_markers)
+        marker.name = Marker.ANY_MARKER  # cannot be set via name parameter
         return marker
 
     @staticmethod
@@ -480,13 +483,14 @@ class Marker(ABC):
                 f"The given path ({path}) is neither pointing to a directory "
                 f"nor a file. Please specify the location of a yaml file or a "
                 f"root directory (all yaml configs found in the directories "
-                f"under that root directory will be loaded."
-            )  # TODO: add link to docs
+                f"under that root directory will be loaded). "
+                f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+            )
         return yaml_files
 
     @staticmethod
     def _collect_configs_from_yaml_files(yaml_files: List[Text]) -> Dict[Text, Dict]:
-        marker_names = set()
+        marker_names: Set[Text] = set()
         loaded_configs: Dict[Text, Dict] = {}
         for yaml_file in yaml_files:
             loaded_config = rasa.shared.utils.io.read_yaml_file(yaml_file)
@@ -494,8 +498,9 @@ class Marker(ABC):
                 raise InvalidMarkerConfig(
                     f"Expected the loaded configurations to be a dictionary "
                     f"of marker configurations but found a "
-                    f"{type(loaded_config)} in {yaml_file}."
-                )  # TODO: add link to docs
+                    f"{type(loaded_config)} in {yaml_file}. "
+                    f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+                )
             if set(loaded_config.keys()).intersection(marker_names):
                 raise InvalidMarkerConfig(
                     f"The names of markers defined in {yaml_file} "
@@ -503,8 +508,9 @@ class Marker(ABC):
                     f"overlap with the names of markers loaded so far "
                     f"({sorted(marker_names)}). "
                     f"Please adapt your configurations such that your custom "
-                    f"marker names are unique."
-                )  # TODO: add link to docs
+                    f"marker names are unique. "
+                    f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+                )
             if set(loaded_config.keys()).intersection(MarkerRegistry.all_tags):
                 raise InvalidMarkerConfig(
                     f"The top level of your marker configuration should consist "
@@ -514,8 +520,9 @@ class Marker(ABC):
                     f"or operator and won't be evaluated against any sessions. "
                     f"Please remove any of the pre-defined marker tags "
                     f"(i.e. {MarkerRegistry.all_tags}) "
-                    f"from {yaml_file}."
-                )  # TODO: add link to docs
+                    f"from {yaml_file}. "
+                    f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+                )
             marker_names.update(loaded_config.keys())
             loaded_configs[yaml_file] = loaded_config
         return loaded_configs
@@ -547,34 +554,34 @@ class Marker(ABC):
                 "To configure a marker, please define a dictionary that maps a "
                 "single operator tag or a single condition tag to the "
                 "corresponding parameter configuration or a list of marker "
-                "configurations, respectively."
-            )  # TODO: add link to docs
+                "configurations, respectively. "
+                f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+            )
 
         tag = next(iter(config))
         sub_marker_config = config[tag]
 
         tag, _ = MarkerRegistry.get_non_negated_tag(tag_or_negated_tag=tag)
         if tag in MarkerRegistry.operator_tag_to_marker_class:
-            marker = OperatorMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name,
+            return OperatorMarker.from_tag_and_sub_config(
+                tag=tag, sub_config=sub_marker_config, name=name
             )
         elif tag in MarkerRegistry.condition_tag_to_marker_class:
-            marker = ConditionMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name,
+            return ConditionMarker.from_tag_and_sub_config(
+                tag=tag, sub_config=sub_marker_config, name=name
             )
-        else:
-            raise InvalidMarkerConfig(
-                f"Expected a marker configuration with a key that specifies"
-                f" an operator or a condition but found {tag}. "
-                f"Available conditions and operators are: "
-                f"{sorted(MarkerRegistry.all_tags)}. "
-            )  # TODO: add link to docs
 
-        return marker
+        raise InvalidMarkerConfig(
+            f"Expected a marker configuration with a key that specifies"
+            f" an operator or a condition but found {tag}. "
+            f"Available conditions and operators are: "
+            f"{sorted(MarkerRegistry.all_tags)}. "
+            f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+        )
 
-    def evaluate_trackers(
+    async def evaluate_trackers(
         self,
-        trackers: Iterator[Optional[DialogueStateTracker]],
+        trackers: AsyncIterator[Optional[DialogueStateTracker]],
         output_file: Path,
         session_stats_file: Optional[Path] = None,
         overall_stats_file: Optional[Path] = None,
@@ -604,10 +611,13 @@ class Marker(ABC):
 
         # Apply marker to each session stored in each tracker and save the results.
         processed_trackers: Dict[Text, List[SessionEvaluation]] = {}
-        for tracker in trackers:
+        async for tracker in trackers:
             if tracker:
                 tracker_result = self.evaluate_events(tracker.events)
                 processed_trackers[tracker.sender_id] = tracker_result
+
+        processed_trackers_count = len(processed_trackers)
+        telemetry.track_markers_extracted(processed_trackers_count)
         Marker._save_results(output_file, processed_trackers)
 
         # Compute and write statistics if requested.
@@ -622,6 +632,8 @@ class Marker(ABC):
                         session_idx=session_idx,
                         meta_data_on_relevant_events_per_marker=session_result,
                     )
+
+            telemetry.track_markers_stats_computed(processed_trackers_count)
             if overall_stats_file:
                 stats.overall_statistic_to_csv(path=overall_stats_file)
             if session_stats_file:
@@ -641,8 +653,8 @@ class Marker(ABC):
                 [
                     "sender_id",
                     "session_idx",
-                    "marker_name",
-                    "event_id",
+                    "marker",
+                    "event_idx",
                     "num_preceding_user_turns",
                 ]
             )
@@ -654,7 +666,7 @@ class Marker(ABC):
 
     @staticmethod
     def _write_relevant_events(
-        writer: WriteRow, sender_id: Text, session_idx: int, session: SessionEvaluation,
+        writer: WriteRow, sender_id: Text, session_idx: int, session: SessionEvaluation
     ) -> None:
         for marker_name, meta_data_per_relevant_event in session.items():
             for event_meta_data in meta_data_per_relevant_event:
@@ -725,20 +737,16 @@ class OperatorMarker(Marker, ABC):
             marker.track(event)
         super().track(event)
 
-    def __iter__(self) -> Iterator[Marker]:
+    def flatten(self) -> Iterator[Marker]:
         """Returns an iterator over all included markers, plus this marker itself.
 
         Returns:
             an iterator over all markers that are part of this marker
         """
         for marker in self.sub_markers:
-            for sub_marker in marker:
+            for sub_marker in marker.flatten():
                 yield sub_marker
         yield self
-
-    def __len__(self) -> int:
-        """Returns the count of all markers that are part of this marker."""
-        return len(self.sub_markers) + 1
 
     def reset(self) -> None:
         """Resets the history of this marker and all its sub-markers."""
@@ -756,9 +764,13 @@ class OperatorMarker(Marker, ABC):
             marker.validate_against_domain(domain) for marker in self.sub_markers
         )
 
+    def max_depth(self) -> int:
+        """Gets the maximum depth from this point in the marker tree."""
+        return 1 + max(child.max_depth() for child in self.sub_markers)
+
     @staticmethod
     def from_tag_and_sub_config(
-        tag: Text, sub_config: Any, name: Optional[Text] = None,
+        tag: Text, sub_config: Any, name: Optional[Text] = None
     ) -> OperatorMarker:
         """Creates an operator marker from the given config.
 
@@ -788,18 +800,22 @@ class OperatorMarker(Marker, ABC):
             try:
                 sub_marker = Marker.from_config(sub_marker_config)
             except InvalidMarkerConfig as e:
+                # we don't re-raise here because the stack trace would only be
+                # printed when we run rasa evaluate with --debug flag
                 raise InvalidMarkerConfig(
                     f"Could not create sub-marker for operator '{tag}' from "
-                    f"{sub_marker_config}"
-                ) from e
+                    f"{sub_marker_config}. Reason: {str(e)}"
+                )
             collected_sub_markers.append(sub_marker)
         try:
             marker = operator_class(markers=collected_sub_markers, negated=is_negation)
         except InvalidMarkerConfig as e:
+            # we don't re-raise here because the stack trace would only be
+            # printed when we run rasa evaluate with --debug flag
             raise InvalidMarkerConfig(
                 f"Could not create operator '{tag}' with sub-markers "
-                f"{collected_sub_markers}"
-            ) from e
+                f"{collected_sub_markers}. Reason: {str(e)}"
+            )
         marker.name = name
         return marker
 
@@ -825,7 +841,7 @@ class ConditionMarker(Marker, ABC):
     def _to_str_with(self, tag: Text) -> Text:
         return f"({tag}: {self.text})"
 
-    def __iter__(self) -> Iterator[ConditionMarker]:
+    def flatten(self) -> Iterator[ConditionMarker]:
         """Returns an iterator that just returns this `AtomicMarker`.
 
         Returns:
@@ -833,8 +849,8 @@ class ConditionMarker(Marker, ABC):
         """
         yield self
 
-    def __len__(self) -> int:
-        """Returns the count of all markers that are part of this marker."""
+    def max_depth(self) -> int:
+        """Gets the maximum depth from this point in the marker tree."""
         return 1
 
     @staticmethod

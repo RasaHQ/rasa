@@ -45,7 +45,11 @@ class TestCacheableOutput:
 
     @classmethod
     def from_cache(
-        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+        cls,
+        node_name: Text,
+        directory: Path,
+        model_storage: ModelStorage,
+        output_fingerprint: Text,
     ) -> "TestCacheableOutput":
 
         value = rasa.shared.utils.io.read_json_file(directory / "cached.json")
@@ -232,7 +236,7 @@ def test_restore_cached_output_with_invalid_module(
     )
 
     monkeypatch.setattr(
-        rasa.shared.utils.common, "class_from_module_path", cached_module,
+        rasa.shared.utils.common, "class_from_module_path", cached_module
     )
 
     assert (

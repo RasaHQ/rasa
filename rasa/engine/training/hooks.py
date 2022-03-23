@@ -42,6 +42,7 @@ class TrainingHook(GraphNodeHook):
         graph_component_class = self._get_graph_component_class(
             execution_context, node_name
         )
+
         fingerprint_key = fingerprinting.calculate_fingerprint_key(
             graph_component_class=graph_component_class,
             config=config,

@@ -67,9 +67,10 @@ class SlackBot(OutputChannel):
             channel=recipient, as_user=True, text=image, blocks=[image_block]
         )
 
-    async def send_attachment(
+    async def send_attachment(  # type: ignore[override]
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
+        """Sends message with attachment."""
         recipient = self.slack_channel or recipient_id
         await self._post_message(
             channel=recipient, as_user=True, attachments=[attachment], **kwargs
@@ -93,15 +94,17 @@ class SlackBot(OutputChannel):
             )
             return await self.send_text_message(recipient, text, **kwargs)
 
-        button_block = {"type": "actions", "elements": []}
-        for button in buttons:
-            button_block["elements"].append(
+        button_block = {
+            "type": "actions",
+            "elements": [
                 {
                     "type": "button",
                     "text": {"type": "plain_text", "text": button["title"]},
                     "value": button["payload"],
                 }
-            )
+                for button in buttons
+            ],
+        }
 
         await self._post_message(
             channel=recipient,
@@ -139,6 +142,7 @@ class SlackInput(InputChannel):
             credentials.get("errors_ignore_retry", None),
             credentials.get("use_threads", False),
             credentials.get("slack_signing_secret", ""),
+            credentials.get("conversation_granularity", "sender"),
         )
 
     def __init__(
@@ -151,6 +155,7 @@ class SlackInput(InputChannel):
         errors_ignore_retry: Optional[List[Text]] = None,
         use_threads: Optional[bool] = False,
         slack_signing_secret: Text = "",
+        conversation_granularity: Optional[Text] = "sender",
     ) -> None:
         """Create a Slack input channel.
 
@@ -182,7 +187,10 @@ class SlackInput(InputChannel):
             slack_signing_secret: Slack creates a unique string for your app and
                 shares it with you. This allows us to verify requests from Slack
                 with confidence by verifying signatures using your signing secret.
-
+            conversation_granularity: conversation granularity for slack conversations.
+                sender allows 1 conversation per user (across channels)
+                channel allows 1 conversation per user per channel
+                thread allows 1 conversation per user per thread
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel
@@ -192,6 +200,7 @@ class SlackInput(InputChannel):
         self.retry_num_header = slack_retry_number_header
         self.use_threads = use_threads
         self.slack_signing_secret = slack_signing_secret
+        self.conversation_granularity = conversation_granularity
 
         self._validate_credentials()
 
@@ -350,7 +359,7 @@ class SlackInput(InputChannel):
             )
 
             return response.text(
-                None, status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": 1}
+                None, status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": "1"}
             )
 
         if metadata is not None:
@@ -506,6 +515,11 @@ class SlackInput(InputChannel):
                 user_message = event.get("text", "")
                 sender_id = event.get("user", "")
                 metadata = self.get_metadata(request)
+                channel_id = metadata.get("out_channel")
+                thread_id = metadata.get("thread_id")
+                conversation_id = self._get_conversation_id(
+                    sender_id, channel_id, thread_id
+                )
 
                 if "challenge" in output:
                     return response.json(output.get("challenge"))
@@ -528,7 +542,7 @@ class SlackInput(InputChannel):
                     request,
                     on_new_message,
                     text=self._sanitize_user_message(user_message, metadata["users"]),
-                    sender_id=sender_id,
+                    sender_id=conversation_id,
                     metadata=metadata,
                 )
             elif content_type == "application/x-www-form-urlencoded":
@@ -541,8 +555,13 @@ class SlackInput(InputChannel):
                     text = self._get_interactive_response(payload["actions"][0])
                     if text is not None:
                         metadata = self.get_metadata(request)
+                        channel_id = metadata.get("out_channel")
+                        thread_id = metadata.get("thread_id")
+                        conversation_id = self._get_conversation_id(
+                            sender_id, channel_id, thread_id
+                        )
                         return await self.process_message(
-                            request, on_new_message, text, sender_id, metadata
+                            request, on_new_message, text, conversation_id, metadata
                         )
                     if payload["actions"][0]["type"] == "button":
                         # link buttons don't have "value", don't send their clicks to
@@ -556,6 +575,24 @@ class SlackInput(InputChannel):
             return response.text("Bot message delivered.")
 
         return slack_webhook
+
+    def _get_conversation_id(
+        self,
+        sender_id: Optional[Text],
+        channel_id: Optional[Text],
+        thread_id: Optional[Text],
+    ) -> Optional[Text]:
+        conversation_id = sender_id
+        if self.conversation_granularity == "channel" and sender_id and channel_id:
+            conversation_id = sender_id + "_" + channel_id
+        if (
+            self.conversation_granularity == "thread"
+            and sender_id
+            and channel_id
+            and thread_id
+        ):
+            conversation_id = sender_id + "_" + channel_id + "_" + thread_id
+        return conversation_id
 
     def _is_supported_channel(self, slack_event: Dict, metadata: Dict) -> bool:
         return (

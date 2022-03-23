@@ -33,6 +33,7 @@ from rasa.engine.graph import (
 from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import DOCS_URL_GRAPH_COMPONENTS
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 
@@ -100,9 +101,7 @@ def _validate(
         )
         _validate_constructor(node, create_fn_params)
 
-        _validate_needs(
-            node, schema, create_fn_params, run_fn_params,
-        )
+        _validate_needs(node, schema, create_fn_params, run_fn_params)
 
     _validate_required_components(schema)
 
@@ -124,7 +123,7 @@ def _validate_prediction_targets(
 
 
 def _validate_target(
-    target_name: Text, target_type: Text, expected_type: Type, schema: GraphSchema,
+    target_name: Text, target_type: Text, expected_type: Type, schema: GraphSchema
 ) -> None:
     if target_name not in schema.nodes:
         raise GraphSchemaValidationException(
@@ -147,7 +146,8 @@ def _validate_target(
             f"Your {target_type} model's output component "
             f"'{target_node.uses.__name__}' returns an invalid return "
             f"type '{target_return_type}'. This is not allowed. The {target_type} "
-            f"model's last component is expected to return the type '{expected_type}'."
+            f"model's last component is expected to return the type '{expected_type}'. "
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
 
@@ -188,11 +188,12 @@ def _validate_interface_usage(node: SchemaNode) -> None:
             f"This class does not implement the '{GraphComponent.__name__}' interface "
             f"and can hence not be run within Rasa Open Source. Please use a different "
             f"component or implement the '{GraphComponent}' interface in class "
-            f"'{node.uses.__name__}'."
+            f"'{node.uses.__name__}'. "
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
 
-def _validate_supported_languages(language: Optional[Text], node: SchemaNode,) -> None:
+def _validate_supported_languages(language: Optional[Text], node: SchemaNode) -> None:
     supported_languages = node.uses.supported_languages()
     not_supported_languages = node.uses.not_supported_languages()
 
@@ -241,6 +242,7 @@ def _get_parameter_information(
 
     type_hints = _get_type_hints(uses, fn)
     return_type = type_hints.pop("return", inspect.Parameter.empty)
+    type_hints.pop("cls", None)
 
     params = inspect.signature(fn).parameters
 
@@ -281,6 +283,7 @@ def _get_type_hints(
             f"all type annotations can be resolved during runtime. Note that you might "
             f"need to do a 'from __future__ import annotations' to avoid forward "
             f"references."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
 
@@ -293,6 +296,7 @@ def _get_fn(uses: Type[GraphComponent], method_name: Text) -> Callable:
             f"method '{method_name}'. Please make sure you're either using "
             f"the right component or that your component is registered with the "
             f"correct component type."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
     return fn
 
@@ -314,6 +318,7 @@ def _validate_run_fn(
                 f"'{node.fn}'. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."
+                f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
             )
 
 
@@ -337,10 +342,11 @@ def _validate_run_fn_return_type(
             f"method '{node.fn}' does not have a type annotation for "
             f"its return value. Type annotations are required for all "
             f"components to validate your model's structure."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
     # TODO: Handle forward references here
-    if typing_utils.issubtype(return_type, typing.List):
+    if typing_utils.issubtype(return_type, list):
         return_type = typing_utils.get_args(return_type)[0]
 
     if is_training and not isinstance(return_type, Fingerprintable):
@@ -366,11 +372,12 @@ def _validate_types_of_reserved_keywords(
                     f"incompatible type '{param.type_annotation}' for "
                     f"the '{param_name}' parameter in its '{fn_name}' method. "
                     f"The expected type is '{KEYWORDS_EXPECTED_TYPES[param_name]}'."
+                    f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
                 )
 
 
 def _validate_constructor(
-    node: SchemaNode, create_fn_params: Dict[Text, ParameterInfo],
+    node: SchemaNode, create_fn_params: Dict[Text, ParameterInfo]
 ) -> None:
     _validate_types_of_reserved_keywords(create_fn_params, node, node.constructor_name)
 
@@ -383,6 +390,7 @@ def _validate_constructor(
             f"('{', '.join(required_args)}'). "
             f"Extra parameters can only be supplied to the constructor method which is "
             f"used during training."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
     for param_name in _required_args(create_fn_params):
@@ -393,6 +401,7 @@ def _validate_constructor(
                 f"'{node.constructor_name}'. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."
+                f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
             )
 
 
@@ -416,6 +425,7 @@ def _validate_needs(
                 f"name. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."
+                f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
             )
 
         if not _is_placeholder_input(parent_name) and parent_name not in graph.nodes:
@@ -425,15 +435,15 @@ def _validate_needs(
                 f"your model configuration. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."
+                f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
             )
 
         required_type = available_args.get(param_name)
-        needs_passed_to_kwargs = has_kwargs and required_type is None
 
-        if not needs_passed_to_kwargs:
+        if not has_kwargs and required_type is not None:
             parent = None
             if _is_placeholder_input(parent_name):
-                parent_return_type = RESERVED_PLACEHOLDERS[parent_name]
+                parent_return_type: TypeAnnotation = RESERVED_PLACEHOLDERS[parent_name]
             else:
                 parent = graph.nodes[parent_name]
                 _, parent_return_type = _get_parameter_information(
@@ -481,14 +491,15 @@ def _validate_parent_return_type(
             f"Please make sure that you registered "
             f"your component correctly and and that your model configuration is "
             f"valid."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
 
-def _validate_required_components(schema: GraphSchema,) -> None:
+def _validate_required_components(schema: GraphSchema) -> None:
     unmet_requirements: Dict[Type, Set[Text]] = dict()
     for target_name in schema.target_names:
         unmet_requirements_for_target, _ = _recursively_check_required_components(
-            node_name=target_name, schema=schema,
+            node_name=target_name, schema=schema
         )
         for component_type, node_names in unmet_requirements_for_target.items():
             unmet_requirements.setdefault(component_type, set()).update(node_names)
@@ -516,7 +527,7 @@ def _validate_required_components(schema: GraphSchema,) -> None:
 
 
 def _recursively_check_required_components(
-    node_name: Text, schema: GraphSchema,
+    node_name: Text, schema: GraphSchema
 ) -> Tuple[Dict[Type, Set[Text]], Set[Type]]:
     """Collects unmet requirements and types used in the subtree rooted at `node_name`.
 

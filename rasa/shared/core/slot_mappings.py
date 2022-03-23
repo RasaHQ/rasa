@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Text, Dict, Any, List, Optional, TYPE_CHECKING
 
 from rasa.shared.constants import DOCS_URL_SLOTS, IGNORED_INTENTS
@@ -7,6 +6,15 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
+    INTENT,
+    NOT_INTENT,
+    INTENT_NAME_KEY,
+)
+from rasa.shared.core.constants import (
+    SLOT_MAPPINGS,
+    MAPPING_TYPE,
+    SlotMappingType,
+    MAPPING_CONDITIONS,
 )
 
 if TYPE_CHECKING:
@@ -14,18 +22,8 @@ if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
 
 
-class SlotMapping(Enum):
-    """Defines the available slot mappings."""
-
-    FROM_ENTITY = 0
-    FROM_INTENT = 1
-    FROM_TRIGGER_INTENT = 2
-    FROM_TEXT = 3
-    CUSTOM = 4
-
-    def __str__(self) -> Text:
-        """Returns a string representation of the object."""
-        return self.name.lower()
+class SlotMapping:
+    """Defines functionality for the available slot mappings."""
 
     @staticmethod
     def validate(mapping: Dict[Text, Any], slot_name: Text) -> None:
@@ -47,24 +45,24 @@ class SlotMapping(Enum):
                 f"{DOCS_URL_SLOTS} for more information."
             )
 
-        validations = {
-            str(SlotMapping.FROM_ENTITY): ["entity"],
-            str(SlotMapping.FROM_INTENT): ["value"],
-            str(SlotMapping.FROM_TRIGGER_INTENT): ["value"],
-            str(SlotMapping.FROM_TEXT): [],
-            str(SlotMapping.CUSTOM): [],
-        }
-
-        mapping_type = mapping.get("type")
-        required_keys = validations.get(mapping_type)
-
-        if required_keys is None:
+        try:
+            mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
+        except ValueError:
             raise InvalidDomain(
                 f"Your domain uses an invalid slot mapping of type "
-                f"'{mapping_type}' for slot '{slot_name}'. Please see "
+                f"'{mapping.get(MAPPING_TYPE)}' for slot '{slot_name}'. Please see "
                 f"{DOCS_URL_SLOTS} for more information."
             )
 
+        validations: Dict[SlotMappingType, List[Text]] = {
+            SlotMappingType.FROM_ENTITY: ["entity"],
+            SlotMappingType.FROM_INTENT: ["value"],
+            SlotMappingType.FROM_TRIGGER_INTENT: ["value"],
+            SlotMappingType.FROM_TEXT: [],
+            SlotMappingType.CUSTOM: [],
+        }
+
+        required_keys = validations[mapping_type]
         for required_key in required_keys:
             if mapping.get(required_key) is None:
                 raise InvalidDomain(
@@ -76,11 +74,11 @@ class SlotMapping(Enum):
 
     @staticmethod
     def _get_active_loop_ignored_intents(
-        mapping: Dict[Text, Any], domain: "Domain", active_loop_name: Text,
+        mapping: Dict[Text, Any], domain: "Domain", active_loop_name: Text
     ) -> List[Text]:
         from rasa.shared.core.constants import ACTIVE_LOOP
 
-        mapping_conditions = mapping.get("conditions")
+        mapping_conditions = mapping.get(MAPPING_CONDITIONS)
         active_loop_match = True
         ignored_intents = []
 
@@ -101,24 +99,29 @@ class SlotMapping(Enum):
 
     @staticmethod
     def intent_is_desired(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: "Domain",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: "Domain"
     ) -> bool:
         """Checks whether user intent matches slot mapping intent specifications."""
-        mapping_intents = SlotMapping.to_list(mapping.get("intent", []))
-        mapping_not_intents = SlotMapping.to_list(mapping.get("not_intent", []))
+        mapping_intents = SlotMapping.to_list(mapping.get(INTENT, []))
+        mapping_not_intents = SlotMapping.to_list(mapping.get(NOT_INTENT, []))
 
         active_loop_name = tracker.active_loop_name
         if active_loop_name:
-            mapping_not_intents = set(
+            mapping_not_intents = (
                 mapping_not_intents
                 + SlotMapping._get_active_loop_ignored_intents(
                     mapping, domain, active_loop_name
                 )
             )
 
-        intent = tracker.latest_message.intent.get("name")
+        if tracker.latest_message:
+            intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        else:
+            intent = None
 
-        intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
+        intent_not_blocked = not mapping_intents and intent not in set(
+            mapping_not_intents
+        )
 
         return intent_not_blocked or intent in mapping_intents
 
@@ -135,7 +138,7 @@ class SlotMapping(Enum):
 
     @staticmethod
     def entity_is_desired(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker"
     ) -> bool:
         """Checks whether slot should be filled by an entity in the input or not.
 
@@ -147,7 +150,10 @@ class SlotMapping(Enum):
             True, if slot should be filled, false otherwise.
         """
         slot_fulfils_entity_mapping = False
-        extracted_entities = tracker.latest_message.entities
+        if tracker.latest_message:
+            extracted_entities = tracker.latest_message.entities
+        else:
+            extracted_entities = []
 
         for entity in extracted_entities:
             if (
@@ -167,6 +173,48 @@ class SlotMapping(Enum):
 
         return slot_fulfils_entity_mapping
 
+    @staticmethod
+    def check_mapping_validity(
+        slot_name: Text,
+        mapping_type: SlotMappingType,
+        mapping: Dict[Text, Any],
+        domain: "Domain",
+    ) -> bool:
+        """Checks the mapping for validity.
+
+        Args:
+            slot_name: The name of the slot to be validated.
+            mapping_type: The type of the slot mapping.
+            mapping: Slot mapping.
+            domain: The domain to check against.
+
+        Returns:
+            True, if intent and entity specified in a mapping exist in domain.
+        """
+        if (
+            mapping_type == SlotMappingType.FROM_ENTITY
+            and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities
+        ):
+            rasa.shared.utils.io.raise_warning(
+                f"Slot '{slot_name}' uses a 'from_entity' mapping "
+                f"for a non-existent entity '{mapping.get(ENTITY_ATTRIBUTE_TYPE)}'. "
+                f"Skipping slot extraction because of invalid mapping."
+            )
+            return False
+
+        if (
+            mapping_type == SlotMappingType.FROM_INTENT
+            and mapping.get(INTENT) not in domain.intents
+        ):
+            rasa.shared.utils.io.raise_warning(
+                f"Slot '{slot_name}' uses a 'from_intent' mapping for "
+                f"a non-existent intent '{mapping.get('intent')}'. "
+                f"Skipping slot extraction because of invalid mapping."
+            )
+            return False
+
+        return True
+
 
 def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     """Raises InvalidDomain exception if slot mappings are invalid."""
@@ -178,7 +226,7 @@ def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     )
 
     for slot_name, properties in domain_slots.items():
-        mappings = properties.get("mappings")
+        mappings = properties.get(SLOT_MAPPINGS)
 
         for slot_mapping in mappings:
             SlotMapping.validate(slot_mapping, slot_name)

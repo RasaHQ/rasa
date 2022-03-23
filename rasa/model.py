@@ -4,11 +4,7 @@ import logging
 import os
 from pathlib import Path
 from subprocess import check_output, DEVNULL, CalledProcessError
-from typing import (
-    Text,
-    Optional,
-    Union,
-)
+from typing import Text, Optional, Union
 
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 
@@ -41,11 +37,12 @@ def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
         raise ModelNotFound(f"No file or directory at '{model_path}'.")
 
     if os.path.isdir(model_path):
-        model_path = get_latest_model(model_path)
-        if not model_path:
+        file_model_path = get_latest_model(model_path)
+        if not file_model_path:
             raise ModelNotFound(
                 f"Could not find any Rasa model files in '{model_path}'."
             )
+        model_path = file_model_path
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
@@ -76,7 +73,9 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     return max(list_of_files, key=os.path.getctime)
 
 
-def get_model_for_finetuning(previous_model_file: Union[Path, Text]) -> Optional[Path]:
+def get_model_for_finetuning(
+    previous_model_file_or_dir: Union[Path, Text]
+) -> Optional[Path]:
     """Gets validated path for model to finetune.
 
     Args:
@@ -86,15 +85,16 @@ def get_model_for_finetuning(previous_model_file: Union[Path, Text]) -> Optional
     Returns:
         Path to model archive. `None` if there is no model.
     """
-    if Path(previous_model_file).is_dir():
+    model_file: Optional[Union[Path, Text]] = previous_model_file_or_dir
+    if Path(previous_model_file_or_dir).is_dir():
         logger.debug(
-            f"Trying to load latest model from '{previous_model_file}' for "
+            f"Trying to load latest model from '{previous_model_file_or_dir}' for "
             f"finetuning."
         )
-        previous_model_file = get_latest_model(previous_model_file)
+        model_file = get_latest_model(previous_model_file_or_dir)
 
-    if previous_model_file and Path(previous_model_file).is_file():
-        return Path(previous_model_file)
+    if model_file and Path(model_file).is_file():
+        return Path(model_file)
 
     logger.debug(
         "No valid model for finetuning found as directory either "

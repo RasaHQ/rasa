@@ -1,7 +1,7 @@
 from collections import defaultdict
 import logging
 import json
-from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
+from typing import DefaultDict, Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.constants import (
@@ -38,7 +38,7 @@ class StoryConflict:
 
         self._sliced_states = sliced_states
         # A list of actions that all follow from the same state.
-        self._conflicting_actions = defaultdict(
+        self._conflicting_actions: DefaultDict[Text, List[Text]] = defaultdict(
             list
         )  # {"action": ["story_1", ...], ...}
 
@@ -170,7 +170,7 @@ def find_story_conflicts(
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = _build_conflicts_from_states(
-        trackers, domain, max_history, conflicting_state_action_mapping,
+        trackers, domain, max_history, conflicting_state_action_mapping
     )
 
     return conflicts
@@ -196,7 +196,7 @@ def _find_conflicting_states(
     """
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
-    state_action_mapping = defaultdict(list)
+    state_action_mapping: DefaultDict[int, List[int]] = defaultdict(list)
 
     for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash
@@ -266,7 +266,7 @@ def _build_conflicts_from_states(
                 conflicts[hashed_state] = StoryConflict(element.sliced_states)
 
             conflicts[hashed_state].add_conflicting_action(
-                action=str(element.event), story_name=element.tracker.sender_id,
+                action=str(element.event), story_name=element.tracker.sender_id
             )
 
     # Return list of conflicts that arise from unpredictable actions

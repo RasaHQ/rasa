@@ -5,6 +5,7 @@ import time
 import urllib.parse
 import uuid
 import sys
+from argparse import Namespace
 from http import HTTPStatus
 from multiprocessing import Process, Manager
 from multiprocessing.managers import DictProxy
@@ -22,7 +23,7 @@ from freezegun import freeze_time
 from unittest.mock import MagicMock
 from ruamel.yaml import StringIO
 from sanic import Sanic
-from sanic.testing import SanicASGITestClient
+from sanic_testing.testing import SanicASGITestClient
 
 import rasa
 import rasa.constants
@@ -63,7 +64,13 @@ from rasa.shared.core.events import (
     SessionStarted,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    PREDICTED_CONFIDENCE_KEY,
+)
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import AsyncMock, with_model_id, with_model_ids
@@ -160,7 +167,7 @@ async def test_root_secured(rasa_non_trained_secured_app: SanicASGITestClient):
 
 async def test_version(rasa_non_trained_app: SanicASGITestClient):
     _, response = await rasa_non_trained_app.get("/version")
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert content.get("version") == rasa.__version__
     assert (
@@ -171,9 +178,9 @@ async def test_version(rasa_non_trained_app: SanicASGITestClient):
 
 async def test_status(rasa_app: SanicASGITestClient, trained_rasa_model: Text):
     _, response = await rasa_app.get("/status")
-    model_file = response.json()["model_file"]
+    model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "model_id" in response.json
     assert model_file == Path(trained_rasa_model).name
 
 
@@ -181,10 +188,10 @@ async def test_status_nlu_only(
     rasa_app_nlu: SanicASGITestClient, trained_nlu_model: Text
 ):
     _, response = await rasa_app_nlu.get("/status")
-    model_file = response.json()["model_file"]
+    model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
-    assert "model_file" in response.json()
+    assert "model_id" in response.json
+    assert "model_file" in response.json
     assert model_file == Path(trained_nlu_model).name
 
 
@@ -194,7 +201,7 @@ async def test_status_secured(rasa_secured_app: SanicASGITestClient):
 
 
 async def test_status_not_ready_agent(rasa_app: SanicASGITestClient):
-    rasa_app.app.agent = None
+    rasa_app.sanic_app.ctx.agent = None
     _, response = await rasa_app.get("/status")
     assert response.status == HTTPStatus.CONFLICT
 
@@ -230,7 +237,7 @@ def background_server(
         import sys
 
         monkeypatch.setattr(
-            sys.modules["rasa.model_training"], "train", mocked_training_function,
+            sys.modules["rasa.model_training"], "train", mocked_training_function
         )
 
         from rasa import __main__
@@ -377,7 +384,7 @@ async def test_parse(rasa_app: SanicASGITestClient, response_test: ResponseTest)
     _, response = await rasa_app.post(
         response_test.endpoint, json=response_test.payload
     )
-    rjs = response.json()
+    rjs = response.json
     assert response.status == HTTPStatus.OK
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
     assert rjs["entities"] == response_test.expected_response["entities"]
@@ -430,11 +437,11 @@ async def test_parse_without_nlu_model(rasa_app_core: SanicASGITestClient):
     _, response = await rasa_app_core.post("/model/parse", json={"text": "hello"})
     assert response.status == HTTPStatus.OK
 
-    rjs = response.json()
+    rjs = response.json
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
-async def test_parse_on_invalid_emulation_mode(rasa_app: SanicASGITestClient,):
+async def test_parse_on_invalid_emulation_mode(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
         "/model/parse?emulation_mode=ANYTHING", json={"text": "hello"}
     )
@@ -552,7 +559,7 @@ async def test_train_with_retrieval_events_success(
 
 
 def assert_trained_model(
-    response_body: bytes, tmp_path_factory: TempPathFactory,
+    response_body: bytes, tmp_path_factory: TempPathFactory
 ) -> None:
     # save model to temporary file
 
@@ -568,10 +575,10 @@ def assert_trained_model(
 
 
 async def test_train_with_yaml(
-    rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory,
+    rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory
 ):
-    training_data = """
-version: "2.0"
+    training_data = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
 stories:
 - story: My story
@@ -725,7 +732,7 @@ async def xtest_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Te
 
     assert response.status == HTTPStatus.OK
 
-    js = response.json()
+    js = response.json
     assert set(js.keys()) == {
         "report",
         "precision",
@@ -766,7 +773,7 @@ async def test_evaluate_stories_end_to_end(
     )
 
     assert response.status == HTTPStatus.OK
-    js = response.json()
+    js = response.json
     assert set(js.keys()) == {
         "report",
         "precision",
@@ -786,6 +793,44 @@ async def test_evaluate_stories_end_to_end(
     }
 
 
+async def test_add_message(rasa_app: SanicASGITestClient):
+
+    conversation_id = "test_add_message_test_id"
+
+    _, response = await rasa_app.get(f"/conversations/{conversation_id}/tracker")
+    previous_num_events = len(response.json["events"])
+
+    unique_text = f"test_add_message_text_{time.time()}"
+    unique_slot_value = f"test_add_message_entity_{time.time()}"
+    data = {
+        "text": unique_text,
+        "sender": "user",  # must be "user"
+        "parse_data": {
+            "text": unique_text,  # this is what is used for "latest_message"
+            "intent": {PREDICTED_CONFIDENCE_KEY: 0.57, INTENT_NAME_KEY: "greet"},
+            "entities": [
+                {
+                    ENTITY_ATTRIBUTE_TYPE: "name",
+                    ENTITY_ATTRIBUTE_VALUE: unique_slot_value,
+                }
+            ],
+        },
+    }
+    _, response = await rasa_app.post(
+        f"/conversations/{conversation_id}/messages",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        json=data,
+    )
+    assert response.json["latest_message"]["text"] == unique_text
+
+    _, response = await rasa_app.get(f"/conversations/{conversation_id}/tracker")
+    updated_events = response.json["events"]
+    assert len(updated_events) == previous_num_events + 2
+    assert updated_events[-2]["text"] == unique_text
+    assert updated_events[-1]["event"] == "slot"
+    assert updated_events[-1]["value"] == unique_slot_value
+
+
 async def test_evaluate_intent(rasa_app: SanicASGITestClient, nlu_data_path: Text):
     nlu_data = rasa.shared.utils.io.read_file(nlu_data_path)
 
@@ -796,7 +841,7 @@ async def test_evaluate_intent(rasa_app: SanicASGITestClient, nlu_data_path: Tex
     )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
@@ -815,7 +860,7 @@ async def test_evaluate_invalid_intent_model_file(rasa_app: SanicASGITestClient)
 
 async def test_evaluate_intent_without_body(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
-        "/model/test/intents", headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+        "/model/test/intents", headers={"Content-type": rasa.server.YAML_CONTENT_TYPE}
     )
 
     assert response.status == HTTPStatus.BAD_REQUEST
@@ -833,7 +878,7 @@ async def test_evaluate_intent_on_just_nlu_model(
     )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
@@ -844,7 +889,7 @@ async def test_evaluate_intent_with_model_param(
     rasa_app: SanicASGITestClient, trained_nlu_model: Text, nlu_data_path: Text
 ):
     _, response = await rasa_app.get("/status")
-    previous_model_file = response.json()["model_file"]
+    previous_model_file = response.json["model_file"]
 
     nlu_data = rasa.shared.utils.io.read_file(nlu_data_path)
 
@@ -855,14 +900,14 @@ async def test_evaluate_intent_with_model_param(
     )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
     }
 
     _, response = await rasa_app.get("/status")
-    assert previous_model_file == response.json()["model_file"]
+    assert previous_model_file == response.json["model_file"]
 
 
 async def test_evaluate_intent_with_model_server(
@@ -895,7 +940,7 @@ async def test_evaluate_intent_with_model_server(
         agent_with_model_server = await load_agent(
             model_server=EndpointConfig(production_model_server_url)
         )
-        rasa_app.app.agent = agent_with_model_server
+        rasa_app.sanic_app.ctx.agent = agent_with_model_server
 
         _, response = await rasa_app.post(
             f"/model/test/intents?model={test_model_server_url}",
@@ -904,13 +949,13 @@ async def test_evaluate_intent_with_model_server(
         )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
     }
 
-    production_model_server = rasa_app.app.agent.model_server
+    production_model_server = rasa_app.sanic_app.ctx.agent.model_server
     # Assert that the model server URL for the test didn't override the production
     # model server URL
     assert production_model_server.url == production_model_server_url
@@ -935,7 +980,7 @@ async def test_cross_validation(
     )
 
     assert response.status == HTTPStatus.OK
-    response_body = response.json()
+    response_body = response.json
     for required_key in {
         "intent_evaluation",
         "entity_evaluation",
@@ -1106,7 +1151,7 @@ async def test_predict(rasa_app: SanicASGITestClient):
         json=data,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert "scores" in content
     assert "tracker" in content
@@ -1137,12 +1182,12 @@ async def test_predict_invalid_entities_format(rasa_app: SanicASGITestClient):
 
 async def test_predict_empty_request_body(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
-        "/model/predict", headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        "/model/predict", headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE}
     )
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_append_events_empty_request_body(rasa_app: SanicASGITestClient,):
+async def test_append_events_empty_request_body(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
         "/conversations/testid/tracker/events",
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
@@ -1160,9 +1205,9 @@ async def test_replace_events_empty_request_body(rasa_app: SanicASGITestClient):
 
 @freeze_time("2018-01-01")
 async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     _, response = await rasa_app.get("/conversations/madeupid/tracker")
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert content["paused"] is False
     assert content["slots"] == {
@@ -1209,7 +1254,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
 
 @pytest.mark.parametrize("event", test_events)
 async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1226,11 +1271,11 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
         json=serialized_event,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    assert response.json() is not None
+    assert response.json is not None
     assert response.status == HTTPStatus.OK
 
     _, tracker_response = await rasa_app.get(f"/conversations/{sender_id}/tracker")
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
 
     assert len(tracker.get("events")) == 4
@@ -1246,7 +1291,7 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
 
 
 async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1263,7 +1308,7 @@ async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClien
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
     _, tracker_response = await rasa_app.get(f"/conversations/{sender_id}/tracker")
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
 
     deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
 
@@ -1273,7 +1318,7 @@ async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClien
 
 
 async def test_push_multiple_events(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     conversation_id = str(uuid.uuid1())
     conversation = f"/conversations/{conversation_id}"
 
@@ -1283,13 +1328,13 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
         json=events,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    assert response.json() is not None
+    assert response.json is not None
     assert response.status == HTTPStatus.OK
 
     _, tracker_response = await rasa_app.get(
         f"/conversations/{conversation_id}/tracker"
     )
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
 
     # there is an initial session start sequence at the beginning
@@ -1335,7 +1380,7 @@ async def test_pushing_event_while_executing_side_effects(
 
 
 async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     conversation_id = str(uuid.uuid1())
     id_len = len(conversation_id) // 2
     conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
@@ -1347,13 +1392,13 @@ async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
         json=events,
         headers={"Content-Type": "application/json"},
     )
-    assert response.json() is not None
+    assert response.json is not None
     assert response.status == HTTPStatus.OK
 
     _, tracker_response = await rasa_app.get(
         f"/conversations/{conversation_id}/tracker"
     )
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
 
     # there is a session start sequence at the start
@@ -1369,13 +1414,13 @@ async def test_put_tracker(rasa_app: SanicASGITestClient):
         json=data,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert len(content["events"]) == len(test_events)
     assert content["sender_id"] == "pushtracker"
 
     _, tracker_response = await rasa_app.get("/conversations/pushtracker/tracker")
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
     evts = tracker.get("events")
     assert events.deserialise_events(evts) == test_events
@@ -1385,14 +1430,14 @@ async def test_predict_without_conversation_id(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post("/conversations/non_existent_id/predict")
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json()["message"] == "Conversation ID not found."
+    assert response.json["message"] == "Conversation ID not found."
 
 
 async def test_sorted_predict(rasa_app: SanicASGITestClient):
     await _create_tracker_for_sender(rasa_app, "sortedpredict")
 
     _, response = await rasa_app.post("/conversations/sortedpredict/predict")
-    scores = response.json()["scores"]
+    scores = response.json["scores"]
     sorted_scores = sorted(scores, key=lambda k: (-k["score"], k["action"]))
     assert scores == sorted_scores
 
@@ -1477,26 +1522,24 @@ def test_list_routes(empty_agent: Agent):
 async def test_unload_model_error(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.get("/status")
     assert response.status == HTTPStatus.OK
-    assert "model_file" in response.json() and response.json()["model_file"] is not None
+    assert "model_file" in response.json and response.json["model_file"] is not None
 
     _, response = await rasa_app.delete("/model")
     assert response.status == HTTPStatus.NO_CONTENT
 
 
-async def test_get_domain(rasa_app: SanicASGITestClient):
+async def test_get_domain(rasa_app: SanicASGITestClient, domain_path: Text):
     _, response = await rasa_app.get(
         "/domain", headers={"accept": rasa.server.JSON_CONTENT_TYPE}
     )
 
-    content = response.json()
+    content = response.json
 
     assert response.status == HTTPStatus.OK
-    assert "config" in content
-    assert "intents" in content
-    assert "entities" in content
-    assert "slots" in content
-    assert "responses" in content
-    assert "actions" in content
+    # assert only keys in `domain_path` fixture
+    original_domain_dict = Domain.load(domain_path).as_dict()
+    for key in original_domain_dict.keys():
+        assert key in content
 
 
 async def test_get_domain_invalid_accept_header(rasa_app: SanicASGITestClient):
@@ -1509,9 +1552,9 @@ async def test_load_model(rasa_app: SanicASGITestClient, trained_core_model: Tex
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "model_id" in response.json
 
-    old_fingerprint = response.json()["fingerprint"]
+    old_model_id = response.json["model_id"]
 
     data = {"model_file": trained_core_model}
     _, response = await rasa_app.put("/model", json=data)
@@ -1521,9 +1564,9 @@ async def test_load_model(rasa_app: SanicASGITestClient, trained_core_model: Tex
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "model_id" in response.json
 
-    assert old_fingerprint != response.json()["fingerprint"]
+    assert old_model_id != response.json["model_id"]
 
 
 async def test_load_model_from_model_server(
@@ -1532,9 +1575,9 @@ async def test_load_model_from_model_server(
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "model_id" in response.json
 
-    old_fingerprint = response.json()["fingerprint"]
+    old_model_id = response.json["model_id"]
 
     endpoint = EndpointConfig("https://example.com/model/trained_core_model")
     with open(trained_core_model, "rb") as f:
@@ -1559,9 +1602,9 @@ async def test_load_model_from_model_server(
             _, response = await rasa_app.get("/status")
 
             assert response.status == HTTPStatus.OK
-            assert "fingerprint" in response.json()
+            assert "model_id" in response.json
 
-            assert old_fingerprint != response.json()["fingerprint"]
+            assert old_model_id != response.json["model_id"]
 
 
 async def test_load_model_invalid_request_body(
@@ -1589,7 +1632,7 @@ async def test_execute(rasa_app: SanicASGITestClient):
 
     assert response.status == HTTPStatus.OK
 
-    parsed_content = response.json()
+    parsed_content = response.json
     assert parsed_content["tracker"]
     assert parsed_content["messages"]
 
@@ -1601,7 +1644,7 @@ async def test_execute_without_conversation_id(rasa_app: SanicASGITestClient):
     )
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json()["message"] == "Conversation ID not found."
+    assert response.json["message"] == "Conversation ID not found."
 
 
 async def test_execute_with_missing_action_name(rasa_app: SanicASGITestClient):
@@ -1636,7 +1679,7 @@ async def test_trigger_intent(rasa_app: SanicASGITestClient):
 
     assert response.status == HTTPStatus.OK
 
-    parsed_content = response.json()
+    parsed_content = response.json
     assert parsed_content["tracker"]
     assert parsed_content["messages"]
 
@@ -1651,7 +1694,7 @@ async def test_trigger_intent_with_entity(rasa_app: SanicASGITestClient):
 
     assert response.status == HTTPStatus.OK
 
-    parsed_content = response.json()
+    parsed_content = response.json
     last_slot_set_event = [
         event
         for event in parsed_content["tracker"]["events"]
@@ -1705,8 +1748,8 @@ def test_get_output_channel(
     input_channels: List[Text], output_channel_to_use: Text, expected_channel: Type
 ):
     request = MagicMock()
-    app = MagicMock()
-    app.input_channels = input_channels
+    app = MagicMock(ctx=Namespace())
+    app.ctx.input_channels = input_channels
     request.app = app
     request.args = {"output_channel": output_channel_to_use}
 
@@ -1725,8 +1768,8 @@ def test_get_output_channel(
 )
 def test_get_latest_output_channel(input_channels: List[Text], expected_channel: Type):
     request = MagicMock()
-    app = MagicMock()
-    app.input_channels = input_channels
+    app = MagicMock(ctx=Namespace())
+    app.ctx.input_channels = input_channels
     request.app = app
     request.args = {"output_channel": "latest"}
 
@@ -1743,6 +1786,7 @@ def test_app_when_app_has_no_input_channels():
     request = MagicMock()
 
     class NoInputChannels:
+        ctx = Namespace()
         pass
 
     request.app = NoInputChannels()
@@ -1766,7 +1810,7 @@ def test_app_when_app_has_no_input_channels():
             ],
             None,
             True,
-            """version: "2.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1789,7 +1833,7 @@ stories:
             ],
             None,
             True,
-            """version: "2.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID, story 1
   steps:
@@ -1819,7 +1863,7 @@ stories:
             ],
             None,
             False,
-            """version: "2.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1843,7 +1887,7 @@ stories:
             ],
             None,
             None,
-            """version: "2.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1866,7 +1910,7 @@ stories:
             ],
             4,
             True,
-            """version: "2.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1876,7 +1920,7 @@ stories:
   - action: utter_greet""",
         ),
         # empty conversation
-        ([], None, True, 'version: "2.0"'),
+        ([], None, True, f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"'),
         # Conversation with slot
         (
             [
@@ -1888,7 +1932,7 @@ stories:
             ],
             None,
             True,
-            """version: "2.0"
+            f"""version: "{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1914,10 +1958,12 @@ async def test_get_story(
     tracker_store = InMemoryTrackerStore(Domain.empty())
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
-    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
-    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
+    )
 
     url = f"/conversations/{conversation_id}/story?"
 
@@ -1944,7 +1990,7 @@ async def test_get_story_without_conversation_id(
     _, response = await rasa_app.get(url)
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json()["message"] == "Conversation ID not found."
+    assert response.json["message"] == "Conversation ID not found."
 
 
 async def test_get_story_does_not_update_conversation_session(
@@ -1958,7 +2004,7 @@ async def test_get_story_does_not_update_conversation_session(
         session_expiration_time=1 / 60, carry_over_slots=True
     )
 
-    monkeypatch.setattr(rasa_app.app.agent.processor, "domain", domain)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent.processor, "domain", domain)
 
     # conversation contains one session that has expired
     now = time.time()
@@ -1972,14 +2018,16 @@ async def test_get_story_does_not_update_conversation_session(
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
     # the conversation session has expired
-    assert rasa_app.app.agent.processor._has_session_expired(tracker)
+    assert rasa_app.sanic_app.ctx.agent.processor._has_session_expired(tracker)
 
     tracker_store = InMemoryTrackerStore(domain)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
-    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
-    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
+    )
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
 
@@ -1988,7 +2036,7 @@ async def test_get_story_does_not_update_conversation_session(
     # expected story is returned
     assert (
         response.content.decode().strip()
-        == """version: "2.0"
+        == f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -2061,17 +2109,54 @@ async def test_update_conversation_with_events(
     expected_events: List[Event],
 ):
     conversation_id = "some-conversation-ID"
-    agent = rasa_app.app.agent
+    agent = rasa_app.sanic_app.ctx.agent
     tracker_store = agent.tracker_store
     domain = agent.domain
     model_id = agent.model_id
 
     if initial_tracker_events:
-        tracker = agent.processor.get_tracker(conversation_id)
+        tracker = await agent.processor.get_tracker(conversation_id)
         tracker.update_with_events(initial_tracker_events, domain)
-        tracker_store.save(tracker)
+        await tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append
     )
     assert list(fetched_tracker.events) == with_model_ids(expected_events, model_id)
+
+
+async def test_append_events_does_not_repeat_session_start(
+    rasa_app: SanicASGITestClient,
+):
+    session_start_events = [
+        {
+            "event": "action",
+            "timestamp": 1644577572.9639301,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "name": "action_session_start",
+            "policy": None,
+            "confidence": 1.0,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+        {
+            "event": "session_started",
+            "timestamp": 1644577572.963996,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+        },
+        {
+            "event": "action",
+            "timestamp": 1644577572.964009,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "name": "action_listen",
+            "policy": None,
+            "confidence": None,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+    ]
+    _, response = await rasa_app.post(
+        "/conversations/testid/tracker/events", json=session_start_events
+    )
+
+    assert response.json["events"] == session_start_events

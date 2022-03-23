@@ -179,7 +179,7 @@
 # Redirects for latest version permalinks
 # this needs to be updated when we cut a new version
 [[redirects]]
-  from = "/docs/rasa/2.x/*"
+  from = "/docs/rasa/3.x/*"
   to = "/docs/rasa/:splat"
 # end permalink section
 

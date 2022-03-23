@@ -11,6 +11,9 @@ import fakeredis
 import freezegun
 import pytest
 
+from rasa.core.actions.action import ActionExtractSlots
+from rasa.core.channels import CollectingOutputChannel
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.training import load_data
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -22,7 +25,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -67,11 +70,7 @@ from tests.dialogues import (
     TEST_MOODBOT_DIALOGUE,
     TEST_DOMAINS_FOR_DIALOGUES,
 )
-from tests.core.utilities import (
-    tracker_from_dialogue,
-    user_uttered,
-    get_tracker,
-)
+from tests.core.utilities import tracker_from_dialogue, user_uttered, get_tracker
 
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
@@ -124,8 +123,8 @@ def test_tracker_duplicate(moodbot_domain: Domain):
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-def test_tracker_store_storage_and_retrieval(store: TrackerStore):
-    tracker = store.get_or_create_tracker("some-id")
+async def test_tracker_store_storage_and_retrieval(store: TrackerStore):
+    tracker = await store.get_or_create_tracker("some-id")
     # the retrieved tracker should be empty
     assert tracker.sender_id == "some-id"
 
@@ -136,28 +135,28 @@ def test_tracker_store_storage_and_retrieval(store: TrackerStore):
     intent = {"name": "greet", "confidence": 1.0}
     tracker.update(UserUttered("/greet", intent, []))
     assert tracker.latest_message.intent.get("name") == "greet"
-    store.save(tracker)
+    await store.save(tracker)
 
     # retrieving the same tracker should result in the same tracker
-    retrieved_tracker = store.get_or_create_tracker("some-id")
+    retrieved_tracker = await store.get_or_create_tracker("some-id")
     assert retrieved_tracker.sender_id == "some-id"
     assert len(retrieved_tracker.events) == 2
     assert retrieved_tracker.latest_message.intent.get("name") == "greet"
 
     # getting another tracker should result in an empty tracker again
-    other_tracker = store.get_or_create_tracker("some-other-id")
+    other_tracker = await store.get_or_create_tracker("some-other-id")
     assert other_tracker.sender_id == "some-other-id"
     assert len(other_tracker.events) == 1
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
 @pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, TEST_DOMAINS_FOR_DIALOGUES))
-def test_tracker_store(store, pair):
+async def test_tracker_store(store, pair):
     dialogue, domainpath = pair
     domain = Domain.load(domainpath)
     tracker = tracker_from_dialogue(dialogue, domain)
-    store.save(tracker)
-    restored = store.retrieve(tracker.sender_id)
+    await store.save(tracker)
+    restored = await store.retrieve(tracker.sender_id)
     assert restored == tracker
 
 
@@ -187,7 +186,7 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent: Age
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
         await default_agent.handle_text("/greet", sender_id=sender_id)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)
@@ -205,7 +204,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
         await default_agent.handle_text("/greet", sender_id=sender_id)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = [
         "action_session_start",
@@ -231,7 +230,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent: Agent):
 
     await default_agent.handle_text("/greet", sender_id=sender_id)
 
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # important is, that the 'bot' comes after the second 'action' and not
     # before
@@ -317,7 +316,7 @@ def test_get_latest_entity_values(
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
-def test_tracker_update_slots_with_entity(domain: Domain):
+async def test_tracker_update_slots_with_entity(domain: Domain):
     tracker = DialogueStateTracker("default", domain.slots)
 
     test_entity = domain.entities[0]
@@ -340,6 +339,15 @@ def test_tracker_update_slots_with_entity(domain: Domain):
         ),
         domain,
     )
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(events, domain)
 
     assert tracker.get_slot(test_entity) == expected_slot_value
 
@@ -1364,13 +1372,13 @@ def test_policy_prediction_reflected_in_tracker_state():
     assert tracker.latest_message.parse_data["entities"] == nlu_entities
 
 
-def test_autofill_slots_for_policy_entities():
+async def test_fill_slots_for_policy_entities():
     policy_entity, policy_entity_value = "policy_entity", "end-to-end"
     nlu_entity, nlu_entity_value = "nlu_entity", "nlu rocks"
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "2.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             entities:
             - {nlu_entity}
             - {policy_entity}
@@ -1410,10 +1418,6 @@ def test_autofill_slots_for_policy_entities():
         slots=domain.slots,
     )
 
-    # Slots are correctly set
-    assert tracker.slots[nlu_entity].value == nlu_entity_value
-    assert tracker.slots[policy_entity].value == policy_entity_value
-
     expected_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(
@@ -1425,8 +1429,6 @@ def test_autofill_slots_for_policy_entities():
                 {"entity": policy_entity, "value": policy_entity_value},
             ],
         ),
-        # SlotSet event added for entity predicted by NLU
-        SlotSet(nlu_entity, nlu_entity_value),
         DefinePrevUserUtteredFeaturization(True),
         EntitiesAdded(
             entities=[
@@ -1434,12 +1436,23 @@ def test_autofill_slots_for_policy_entities():
                 {"entity": nlu_entity, "value": nlu_entity_value},
             ]
         ),
-        # SlotSet event added for entity predicted by policies
-        # This event is somewhat duplicate. We don't deduplicate as this is a true
-        # reflection of the given events and it doesn't change the actual state.
         SlotSet(nlu_entity, nlu_entity_value),
         SlotSet(policy_entity, policy_entity_value),
     ]
+
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(events, domain)
+
+    # Slots are correctly set
+    assert tracker.slots[nlu_entity].value == nlu_entity_value
+    assert tracker.slots[policy_entity].value == policy_entity_value
 
     for actual, expected in zip(tracker.events, expected_events):
         assert actual == expected
@@ -1528,7 +1541,7 @@ def test_tracker_fingerprint_story_reading(domain: Domain):
 def test_model_id_is_added_to_events():
     tracker = DialogueStateTracker("bloop", [])
     tracker.model_id = "some_id"
-    tracker.update(ActionExecuted())
+    tracker.update(ActionExecuted(action_name="test"))
     tracker.update_with_events([UserUttered(), SessionStarted()], None)
     assert all(e.metadata[METADATA_MODEL_ID] == "some_id" for e in tracker.events)
 
@@ -1536,5 +1549,7 @@ def test_model_id_is_added_to_events():
 def test_model_id_is_not_added_to_events_with_id():
     tracker = DialogueStateTracker("bloop", [])
     tracker.model_id = "some_id"
-    tracker.update(ActionExecuted(metadata={METADATA_MODEL_ID: "old_id"}))
+    tracker.update(
+        ActionExecuted(action_name="test", metadata={METADATA_MODEL_ID: "old_id"})
+    )
     assert tracker.events[-1].metadata[METADATA_MODEL_ID] == "old_id"

@@ -24,9 +24,9 @@ from rasa.core.evaluation.marker_base import (
     InvalidMarkerConfig,
 )
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
+from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered, SessionStarted
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import TextSlot
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.tracker_store import InMemoryTrackerStore
@@ -205,10 +205,11 @@ def test_operator_and(negated: bool):
     assert marker.history == expected
 
 
-@pytest.mark.parametrize("negated", [True, False])
-def test_operator_seq_track(negated: bool):
+@pytest.mark.parametrize("negated", [False, True])
+def test_operator_seq(negated: bool):
     events_expected = [
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (ActionExecuted("unrelated event that does not interrupt the sequence"), False),
         (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
         (UserUttered(intent={INTENT_NAME_KEY: "3"}), False),
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
@@ -216,6 +217,31 @@ def test_operator_seq_track(negated: bool):
     ]
     events, expected = zip(*events_expected)
     sub_markers = [IntentDetectedMarker("1"), IntentDetectedMarker("2")]
+    marker = SequenceMarker(sub_markers, name="marker_name", negated=negated)
+    for event in events:
+        marker.track(event)
+    expected = list(expected)
+    if negated:
+        expected = [not applies for applies in expected]
+    assert marker.history == expected
+
+
+@pytest.mark.parametrize("negated", [False, True])
+def test_operator_seq_does_not_allow_overlap(negated: bool):
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "3"}), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "3"}), False),
+    ]
+    events, expected = zip(*events_expected)
+    sub_markers = [
+        IntentDetectedMarker("1"),
+        IntentDetectedMarker("2"),
+        IntentDetectedMarker("3"),
+    ]
     marker = SequenceMarker(sub_markers, name="marker_name", negated=negated)
     for event in events:
         marker.track(event)
@@ -238,9 +264,7 @@ def test_operator_occur(negated: bool):
     ]
     events, expected = zip(*events_expected)
     sub_marker = OrMarker(
-        [IntentDetectedMarker("1"), SlotSetMarker("2")],
-        name="or marker",
-        negated=False,
+        [IntentDetectedMarker("1"), SlotSetMarker("2")], name="or marker", negated=False
     )
     marker = OccurrenceMarker([sub_marker], name="marker_name", negated=negated)
     for event in events:
@@ -282,9 +306,7 @@ def test_operator_occur_never_applied_negated():
     ]
     events, expected = zip(*events_expected)
     sub_marker = OrMarker(
-        [IntentDetectedMarker("1"), SlotSetMarker("2")],
-        name="or marker",
-        negated=False,
+        [IntentDetectedMarker("1"), SlotSetMarker("2")], name="or marker", negated=False
     )
     marker = OccurrenceMarker([sub_marker], name="or never occurred", negated=True)
     for event in events:
@@ -306,7 +328,7 @@ def test_operators_nested_simple():
     marker = AndMarker(
         markers=[
             SlotSetMarker("s1"),
-            OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6"),]),
+            OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6")]),
         ],
         name="marker_name",
     )
@@ -383,8 +405,8 @@ def test_operator_nested_randomly_all_sub_markers_track_events(
     ]
     for event in events:
         marker.track(event)
-    assert len([sub_marker for sub_marker in marker]) == expected_size
-    for sub_marker in marker:
+    assert len([sub_marker for sub_marker in marker.flatten()]) == expected_size
+    for sub_marker in marker.flatten():
         assert len(sub_marker.history) == len(events)
 
 
@@ -423,15 +445,16 @@ def test_operator_nested_randomly_all_sub_markers_track_events_and_apply_at_some
 
     # by design, every marker applies at some point / never
     if applies_at_some_point:
-        assert all([any(sub_marker.history) for sub_marker in marker])
+        assert all([any(sub_marker.history) for sub_marker in marker.flatten()])
     else:
-        assert all([not any(sub_marker.history) for sub_marker in marker])
+        assert all([not any(sub_marker.history) for sub_marker in marker.flatten()])
 
 
 def test_sessions_evaluated_separately():
     """Each marker applies an exact number of times (slots are immediately un-set)."""
 
     events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
@@ -452,6 +475,7 @@ def test_sessions_evaluated_separately():
 
 def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     events = [
+        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
@@ -466,13 +490,13 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     assert len(evaluation) == 2
     assert len(evaluation[0]["my-marker"]) == 1
     assert evaluation[0]["my-marker"][0].preceding_user_turns == 3
-    assert evaluation[0]["my-marker"][0].idx == 3
+    assert evaluation[0]["my-marker"][0].idx == 4
     assert len(evaluation[1]["my-marker"]) == 1
     assert evaluation[1]["my-marker"][0].preceding_user_turns == 2
-    assert evaluation[1]["my-marker"][0].idx == 7  # i.e. NOT the index in the dialogue
+    assert evaluation[1]["my-marker"][0].idx == 8  # i.e. NOT the index in the dialogue
 
 
-def test_markers_cli_results_save_correctly(tmp_path: Path):
+async def test_markers_cli_results_save_correctly(tmp_path: Path):
     domain = Domain.empty()
     store = InMemoryTrackerStore(domain)
 
@@ -484,7 +508,7 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
         tracker.update_with_events(
             [SlotSet(str(5 + j), "slot") for j in range(5)], domain
         )
-        store.save(tracker)
+        await store.save(tracker)
 
     tracker_loader = MarkerTrackerLoader(store, "all")
 
@@ -493,7 +517,7 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
     markers = OrMarker(
         markers=[SlotSetMarker("2", name="marker1"), SlotSetMarker("7", name="marker2")]
     )
-    markers.evaluate_trackers(tracker_loader.load(), results_path)
+    await markers.evaluate_trackers(tracker_loader.load(), results_path)
 
     with open(results_path, "r") as results:
         result_reader = csv.DictReader(results)
@@ -501,14 +525,14 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
 
         for row in result_reader:
             senders.add(row["sender_id"])
-            if row["marker_name"] == "marker1":
+            if row["marker"] == "marker1":
                 assert row["session_idx"] == "0"
-                assert int(row["event_id"]) >= 2
+                assert int(row["event_idx"]) >= 2
                 assert row["num_preceding_user_turns"] == "0"
 
-            if row["marker_name"] == "marker2":
+            if row["marker"] == "marker2":
                 assert row["session_idx"] == "1"
-                assert int(row["event_id"]) >= 3
+                assert int(row["event_idx"]) >= 3
                 assert row["num_preceding_user_turns"] == "1"
 
         assert len(senders) == 5
@@ -519,7 +543,7 @@ def _collect_parameters(
 ) -> Set[Text]:
     return set(
         sub_marker.text
-        for sub_marker in marker
+        for sub_marker in marker.flatten()
         if isinstance(sub_marker, condition_type)
     )
 
@@ -541,10 +565,10 @@ def test_domain_validation_with_valid_marker(depth: int, max_branches: int, seed
         constant_negated=None,
     )
 
-    slots = [Slot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
+    slots = [TextSlot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
     actions = list(_collect_parameters(marker, ActionExecutedMarker))
     intents = _collect_parameters(marker, IntentDetectedMarker)
-    domain = Domain(intents, [], slots, {}, actions, {})
+    domain = Domain(intents, [], slots, {}, actions, {}, {})
 
     assert marker.validate_against_domain(domain)
 
@@ -603,18 +627,40 @@ def test_marker_validation_raises(config: Any):
         Marker.from_config(config)
 
 
-def test_marker_from_path_only_reads_yamls(tmp_path: Path,):
+def test_marker_from_path_only_reads_yamls(tmp_path: Path):
     suffixes = [("yaml", True), ("yml", True), ("yaeml", False), ("config", False)]
     for idx, (suffix, allowed) in enumerate(suffixes):
         config = {f"marker-{idx}": {IntentDetectedMarker.positive_tag(): "intent"}}
         config_file = tmp_path / f"config-{idx}.{suffix}"
-        rasa.shared.utils.io.write_yaml(
-            data=config, target=config_file,
-        )
+        rasa.shared.utils.io.write_yaml(data=config, target=config_file)
     loaded = Marker.from_path(tmp_path)
     assert len(loaded.sub_markers) == sum(allowed for _, allowed in suffixes)
     assert set(sub_marker.name for sub_marker in loaded.sub_markers) == set(
         f"marker-{idx}" for idx, (_, allowed) in enumerate(suffixes) if allowed
+    )
+
+
+@pytest.mark.parametrize(
+    "configs",
+    [
+        {"my_marker1": {IntentDetectedMarker.positive_tag(): "this-intent"}},
+        {
+            "my_marker1": {IntentDetectedMarker.positive_tag(): "this-intent"},
+            "my_marker2": {IntentDetectedMarker.positive_tag(): "this-action"},
+        },
+    ],
+)
+def test_marker_from_path_adds_special_or_marker(tmp_path: Path, configs: Any):
+
+    yaml_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(data=configs, target=yaml_file)
+    loaded = Marker.from_path(tmp_path)
+    assert isinstance(loaded, OrMarker)
+    assert loaded.name == Marker.ANY_MARKER
+    assert len(loaded.sub_markers) == len(configs)
+    assert all(
+        isinstance(sub_marker, IntentDetectedMarker)
+        for sub_marker in loaded.sub_markers
     )
 
 
@@ -641,7 +687,7 @@ def test_marker_from_path_only_reads_yamls(tmp_path: Path,):
                 "folder1/config2.yaml",
                 {"my_marker1": {IntentDetectedMarker.positive_tag(): "intent1"}},
             ),
-            ("folder2/config2.yaml", {"my_marker1": {"unknown-tag": "intent2"}}),
+            ("folder2/config2.yaml", {"my_marker2": {"unknown-tag": "intent2"}}),
         ],
     ],
 )
@@ -656,3 +702,36 @@ def test_marker_from_path_raises(
         rasa.shared.utils.io.write_yaml(data=config, target=full_path)
     with pytest.raises(InvalidMarkerConfig):
         Marker.from_path(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "marker,expected_depth",
+    [
+        (
+            AndMarker(
+                markers=[
+                    SlotSetMarker("s1"),
+                    OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6")]),
+                ]
+            ),
+            3,
+        ),
+        (SlotSetMarker("s1"), 1),
+        (AndMarker(markers=[SlotSetMarker("s1"), IntentDetectedMarker("6")]), 2),
+    ],
+)
+def test_marker_depth(marker: Marker, expected_depth: int):
+    assert marker.max_depth() == expected_depth
+
+
+def test_split_sessions(tmp_path):
+    """Tests loading a tracker with multiple sessions."""
+
+    events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        UserUttered(intent={"name": "this-intent"}),
+    ]
+    sessions = Marker._split_sessions(events)
+    assert len(sessions) == 1
+    assert len(sessions[0][0]) == len(events)

@@ -3,6 +3,9 @@ from pathlib import Path
 import rasa.shared.utils.io
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.resource import Resource
+
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from typing import Dict, List, Optional, Set, Text, Any, Tuple, Type
 import re
@@ -10,8 +13,8 @@ import re
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
+from rasa.engine.graph import GraphComponent, ExecutionContext, GraphSchema, SchemaNode
 
-from rasa.engine.graph import GraphComponent, GraphSchema, SchemaNode
 from rasa.graph_components.validators.default_recipe_validator import (
     POLICY_CLASSSES,
     DefaultV1RecipeValidator,
@@ -38,7 +41,7 @@ from rasa.core.policies.policy import Policy
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ENTITY_ATTRIBUTE_GROUP,
@@ -52,6 +55,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.validation import YamlValidationException
 import rasa.utils.common
 
 
@@ -77,6 +81,9 @@ class DummyImporter(TrainingDataImporter):
 
     def get_stories(self) -> StoryGraph:
         return StoryGraph([])
+
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        return "config.yml"
 
 
 def _test_validation_warnings_with_default_configs(
@@ -115,10 +122,10 @@ def _test_validation_warnings_with_default_configs(
 
 
 @pytest.mark.parametrize(
-    "component_type, warns", [(ResponseSelector, False,), (None, True)]
+    "component_type, warns", [(ResponseSelector, False), (None, True)]
 )
 def test_nlu_warn_if_training_examples_with_intent_response_key_are_unused(
-    component_type: Type[GraphComponent], warns: bool,
+    component_type: Type[GraphComponent], warns: bool
 ):
     messages = [
         Message(
@@ -154,7 +161,7 @@ def test_nlu_warn_if_training_examples_with_intent_response_key_are_unused(
     if component_type:
         component_types.append(component_type)
     _test_validation_warnings_with_default_configs(
-        training_data=training_data, component_types=component_types, warnings=warnings,
+        training_data=training_data, component_types=component_types, warnings=warnings
     )
 
 
@@ -163,7 +170,7 @@ def test_nlu_warn_if_training_examples_with_intent_response_key_are_unused(
     [(extractor, False) for extractor in TRAINABLE_EXTRACTORS] + [(None, True)],
 )
 def test_nlu_warn_if_training_examples_with_entities_are_unused(
-    component_type: Type[GraphComponent], warns: bool,
+    component_type: Type[GraphComponent], warns: bool
 ):
     messages = [
         Message(
@@ -192,7 +199,7 @@ def test_nlu_warn_if_training_examples_with_entities_are_unused(
     if component_type:
         component_types.append(component_type)
     _test_validation_warnings_with_default_configs(
-        training_data=training_data, component_types=component_types, warnings=warnings,
+        training_data=training_data, component_types=component_types, warnings=warnings
     )
 
 
@@ -209,7 +216,7 @@ def test_nlu_warn_if_training_examples_with_entities_are_unused(
     ],
 )
 def test_nlu_warn_if_training_examples_with_entity_roles_are_unused(
-    component_type: Type[GraphComponent], role_instead_of_group: bool, warns: bool,
+    component_type: Type[GraphComponent], role_instead_of_group: bool, warns: bool
 ):
     messages = [
         Message(
@@ -243,13 +250,13 @@ def test_nlu_warn_if_training_examples_with_entity_roles_are_unused(
     if component_type:
         component_types.append(component_type)
     _test_validation_warnings_with_default_configs(
-        training_data=training_data, component_types=component_types, warnings=warnings,
+        training_data=training_data, component_types=component_types, warnings=warnings
     )
 
 
 @pytest.mark.parametrize(
     "component_type, warns",
-    [(RegexFeaturizer, False), (RegexEntityExtractor, False), (None, True),],
+    [(RegexFeaturizer, False), (RegexEntityExtractor, False), (None, True)],
 )
 def test_nlu_warn_if_regex_features_are_not_used(
     component_type: Type[GraphComponent], warns: bool
@@ -280,7 +287,7 @@ def test_nlu_warn_if_regex_features_are_not_used(
     + [
         (featurizer, consumer, False, False)
         for consumer in [DIETClassifier, CRFEntityExtractor]
-        for featurizer in [RegexFeaturizer, RegexEntityExtractor,]
+        for featurizer in [RegexFeaturizer, RegexEntityExtractor]
     ],
 )
 def test_nlu_warn_if_lookup_table_is_not_used(
@@ -326,7 +333,7 @@ def test_nlu_warn_if_lookup_table_is_not_used(
             [
                 SchemaNode({}, WhitespaceTokenizer, "", "", {}),
                 SchemaNode({}, RegexFeaturizer, "", "", {}),
-                SchemaNode({}, CRFEntityExtractor, "", "", {"features": [["pos"]]},),
+                SchemaNode({}, CRFEntityExtractor, "", "", {"features": [["pos"]]}),
             ],
             True,
         ),
@@ -348,7 +355,7 @@ def test_nlu_warn_if_lookup_table_is_not_used(
             [
                 SchemaNode({}, WhitespaceTokenizer, "", "", {}),
                 SchemaNode({}, RegexFeaturizer, "", "", {}),
-                SchemaNode({}, CRFEntityExtractor, "", "", {"features": [["pos"]]},),
+                SchemaNode({}, CRFEntityExtractor, "", "", {"features": [["pos"]]}),
                 SchemaNode(
                     {},
                     CRFEntityExtractor,
@@ -393,8 +400,8 @@ def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch(
 @pytest.mark.parametrize(
     "components, warns",
     [
-        ([WhitespaceTokenizer, CRFEntityExtractor,], True,),
-        ([WhitespaceTokenizer, CRFEntityExtractor, EntitySynonymMapper,], False,),
+        ([WhitespaceTokenizer, CRFEntityExtractor], True),
+        ([WhitespaceTokenizer, CRFEntityExtractor, EntitySynonymMapper], False),
     ],
 )
 def test_nlu_warn_if_entity_synonyms_unused(
@@ -456,7 +463,7 @@ def test_nlu_raise_if_more_than_one_tokenizer(nodes: Dict[Text, SchemaNode]):
 
 def test_nlu_do_not_raise_if_two_tokenizers_with_end_to_end():
     config = rasa.shared.utils.io.read_yaml_file(
-        "rasa/shared/importers/default_config.yml"
+        "rasa/engine/recipes/config_files/default_config.yml"
     )
     graph_config = DefaultV1Recipe().graph_config_for_recipe(
         config, cli_parameters={}, training_type=TrainingType.END_TO_END
@@ -494,7 +501,7 @@ def test_nlu_do_not_raise_if_trainable_tokenizer():
             ],
             True,
         ),
-        ([WhitespaceTokenizer, LexicalSyntacticFeaturizer, DIETClassifier,], False,),
+        ([WhitespaceTokenizer, LexicalSyntacticFeaturizer, DIETClassifier], False),
     ],
 )
 def test_nlu_warn_of_competing_extractors(
@@ -531,12 +538,12 @@ def test_nlu_warn_of_competing_extractors(
             True,
         ),
         (
-            [WhitespaceTokenizer, LexicalSyntacticFeaturizer, RegexEntityExtractor,],
+            [WhitespaceTokenizer, LexicalSyntacticFeaturizer, RegexEntityExtractor],
             "data/test/overlapping_regex_entities.yml",
             False,
         ),
         (
-            [WhitespaceTokenizer, LexicalSyntacticFeaturizer, DIETClassifier,],
+            [WhitespaceTokenizer, LexicalSyntacticFeaturizer, DIETClassifier],
             "data/test/overlapping_regex_entities.yml",
             False,
         ),
@@ -558,7 +565,7 @@ def test_nlu_warn_of_competition_with_regex_extractor(
     data_path: Text,
     should_warn: bool,
 ):
-    importer = TrainingDataImporter.load_from_dict(training_data_paths=[data_path],)
+    importer = TrainingDataImporter.load_from_dict(training_data_paths=[data_path])
     # there are no domain files for the above examples, so:
     monkeypatch.setattr(Domain, "check_missing_responses", lambda *args, **kwargs: None)
 
@@ -689,9 +696,7 @@ def test_nlu_raise_if_featurizers_are_not_compatible(
         validator.validate(importer)
 
 
-@pytest.mark.parametrize(
-    "policy_type", [TEDPolicy, RulePolicy, MemoizationPolicy,],
-)
+@pytest.mark.parametrize("policy_type", [TEDPolicy, RulePolicy, MemoizationPolicy])
 def test_core_warn_if_data_but_no_policy(
     monkeypatch: MonkeyPatch, policy_type: Optional[Type[Policy]]
 ):
@@ -753,7 +758,7 @@ def test_core_warn_if_data_but_no_policy(
     ],
 )
 def test_core_warn_if_no_rule_policy(
-    monkeypatch: MonkeyPatch, policy_types: List[Type[Policy]], should_warn: bool,
+    monkeypatch: MonkeyPatch, policy_types: List[Type[Policy]], should_warn: bool
 ):
     graph_schema = GraphSchema(
         {
@@ -795,7 +800,7 @@ def test_core_warn_if_no_rule_policy(
     ],
 )
 def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
-    monkeypatch: MonkeyPatch, policy_types: List[Type[Policy]], should_raise: bool,
+    monkeypatch: MonkeyPatch, policy_types: List[Type[Policy]], should_raise: bool
 ):
     domain_with_form = Domain.from_dict(
         {KEY_FORMS: {"some-form": {"required_slots": []}}}
@@ -918,8 +923,29 @@ def test_core_warn_if_policy_priorities_are_not_unique(
         assert len(records) == 0
 
 
+def test_core_raise_if_policy_has_no_priority():
+    class PolicyWithoutPriority(Policy, GraphComponent):
+        def __init__(
+            self,
+            config: Dict[Text, Any],
+            model_storage: ModelStorage,
+            resource: Resource,
+            execution_context: ExecutionContext,
+        ) -> None:
+            super().__init__(config, model_storage, resource, execution_context)
+
+    nodes = {"policy": SchemaNode("", PolicyWithoutPriority, "", "", {})}
+    graph_schema = GraphSchema(nodes)
+    importer = DummyImporter()
+    validator = DefaultV1RecipeValidator(graph_schema)
+    with pytest.raises(
+        InvalidConfigException, match="Every policy must have a priority value"
+    ):
+        validator.validate(importer)
+
+
 @pytest.mark.parametrize("policy_type_consuming_rule_data", [RulePolicy])
-def test_core_warn_if_rule_data_missing(policy_type_consuming_rule_data: Type[Policy],):
+def test_core_warn_if_rule_data_missing(policy_type_consuming_rule_data: Type[Policy]):
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path="data/test_e2ebot/domain.yml",
@@ -945,7 +971,7 @@ def test_core_warn_if_rule_data_missing(policy_type_consuming_rule_data: Type[Po
 
 
 @pytest.mark.parametrize(
-    "policy_type_not_consuming_rule_data", [TEDPolicy, MemoizationPolicy,],
+    "policy_type_not_consuming_rule_data", [TEDPolicy, MemoizationPolicy]
 )
 def test_core_warn_if_rule_data_unused(
     policy_type_not_consuming_rule_data: Type[Policy],
@@ -993,18 +1019,30 @@ def test_no_warnings_with_default_project(tmp_path: Path):
         training_data_paths=[str(tmp_path / "data")],
     )
 
+    config, _missing_keys, _configured_keys = DefaultV1Recipe.auto_configure(
+        importer.get_config_file_for_auto_config(),
+        importer.get_config(),
+        TrainingType.END_TO_END,
+    )
     graph_config = DefaultV1Recipe().graph_config_for_recipe(
-        importer.get_config(), cli_parameters={}, training_type=TrainingType.END_TO_END
+        config, cli_parameters={}, training_type=TrainingType.END_TO_END
     )
     validator = DefaultV1RecipeValidator(graph_config.train_schema)
 
-    with pytest.warns(
-        UserWarning, match="Slot auto-fill has been removed in 3.0"
-    ) as records:
+    with pytest.warns(None) as records:
         validator.validate(importer)
-    assert all(
-        [
-            warn.message.args[0].startswith("Slot auto-fill has been removed")
-            for warn in records.list
-        ]
-    )
+    assert len(records) == 0
+
+
+def test_importer_with_invalid_model_config(tmp_path: Path):
+    invalid = {"version": "2.0", "policies": ["name"]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(invalid, config_file)
+
+    with pytest.raises(YamlValidationException):
+        importer = TrainingDataImporter.load_from_config(str(config_file))
+        DefaultV1Recipe.auto_configure(
+            importer.get_config_file_for_auto_config(),
+            importer.get_config(),
+            TrainingType.END_TO_END,
+        )

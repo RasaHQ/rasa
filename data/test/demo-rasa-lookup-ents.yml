@@ -1,0 +1,27 @@
+version: "3.1"
+nlu:
+- intent: affirm
+  examples: |
+    - yes
+    - yep
+    - yeah
+    - indeed
+    - that's right
+    - ok
+    - great
+    - right, thank you
+    - correct
+    - great choice
+    - sounds really good
+- intent: buy_groceries
+  examples: |
+    - I'd like to buy some [milk](product)
+    - One pack of [butter](product) please
+    - A loaf of [bread](product)
+    - I want to make some [pasta](product) tonight
+- lookup: product
+  examples: |
+    - milk
+    - bread
+    - butter
+    - pasta

@@ -18,12 +18,11 @@
 
 <hr />
 
-💡 **Rasa Open Source 3.0 is coming up!** 💡
+💡 **Rasa Open Source 3.0 is here!** 💡
 
-[2.8](https://github.com/RasaHQ/rasa/milestone/39) will be the last minor in the 2.x series, as we need to pause releasing minors while we work on architectural changes in 3.0. You can still contribute new features and improvements which we plan to release together with 3.0. Read more
-about [our contributor guidelines](#how-to-contribute).
-
-We plan to ship alpha releases and release candidates over the next few months in order to get early feedback. Stay tuned!
+[2.8](https://github.com/RasaHQ/rasa/milestone/39) is the last minor in the 2.x series.
+You can still contribute new features and improvements which we plan to release alongside
+updates to 3.0. Read more about [our contributor guidelines](#how-to-contribute).
 
 <hr />
 
@@ -352,7 +351,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 
 *Release steps*:
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
-    - For Rasa SDK that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
+    - For Rasa SDK, except in the case of a micro release, that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
 2. In case of a minor release, create a new branch that corresponds to the new release, e.g. 
    ```bash
@@ -370,7 +369,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git checkout 1.2.x
     git pull origin 1.2.x
     git tag 1.2.0 -m "next release"
-    git push origin 1.2.0
+    git push origin 1.2.0 --tags
     ```
     GitHub will build this tag and publish the build artifacts.
 8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
@@ -399,8 +398,8 @@ steps + get the PR merged.
 
 We're actively maintaining _any minor on our latest major release_ and _the latest minor of the previous major release_.
 Currently, this means the following minor versions will receive bugfixes updates:
-- 1.10
-- Every minor version on 2.x
+- 2.8
+- Every minor version on 3.x
 
 ## License
 Licensed under the Apache License, Version 2.0.

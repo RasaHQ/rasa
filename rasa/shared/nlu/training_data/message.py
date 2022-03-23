@@ -404,7 +404,7 @@ class Message:
 
     @staticmethod
     def _combine_features(
-        features: List["Features"], featurizers: Optional[List[Text]] = None
+        features: List["Features"], featurizers: List[Text]
     ) -> Optional["Features"]:
         combined_features = None
 

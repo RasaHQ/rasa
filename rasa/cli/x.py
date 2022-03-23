@@ -4,6 +4,7 @@ import importlib.util
 import logging
 from multiprocessing.process import BaseProcess
 from multiprocessing import get_context
+from packaging import version
 import os
 import signal
 import sys
@@ -105,8 +106,10 @@ def _rasa_service(
 def _prepare_credentials_for_rasa_x(
     credentials_path: Optional[Text], rasa_x_url: Optional[Text] = None
 ) -> Text:
-    credentials_path = rasa.cli.utils.get_validated_path(
-        credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+    credentials_path = str(
+        rasa.cli.utils.get_validated_path(
+            credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+        )
     )
     if credentials_path:
         credentials = rasa.shared.utils.io.read_config_file(credentials_path)
@@ -133,9 +136,7 @@ def _get_model_endpoint(
     model_endpoint: Optional[EndpointConfig], rasa_x_token: Text, rasa_x_url: Text
 ) -> EndpointConfig:
     # If you change that, please run a test with Rasa X and speak to the bot
-    default_rasax_model_server_url = (
-        f"{rasa_x_url}/projects/default/models/tags/production"
-    )
+    default_rasax_model_server_url = f"{rasa_x_url}/models/tags/production"
 
     model_endpoint = model_endpoint or EndpointConfig()
 
@@ -262,7 +263,7 @@ def _configure_logging(args: argparse.Namespace) -> None:
     configure_logging_and_warnings(
         log_level, warn_only_once=False, filter_repeated_logs=False
     )
-    configure_file_logging(logging.root, args.log_file)
+    configure_file_logging(logging.root, args.log_file, False)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
@@ -351,6 +352,14 @@ def rasa_x(args: argparse.Namespace) -> None:
 
     _configure_logging(args)
 
+    if version.parse(rasa.version.__version__) >= version.parse("3.0.0"):
+        rasa.shared.utils.io.raise_warning(
+            f"Your version of rasa '{rasa.version.__version__}' is currently "
+            f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
+            f"version higher or equal to 3.0.0 will result in errors.",
+            UserWarning,
+        )
+
     if args.production:
         run_in_production(args)
     else:
@@ -414,20 +423,20 @@ def run_in_production(args: argparse.Namespace) -> None:
     _rasa_service(args, endpoints, None, credentials_path)
 
 
-def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
+def _get_config_path(args: argparse.Namespace) -> Optional[Text]:
     config_path = rasa.cli.utils.get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH
     )
 
-    return config_path
+    return str(config_path)
 
 
-def _get_domain_path(args: argparse.Namespace,) -> Optional[Text]:
+def _get_domain_path(args: argparse.Namespace) -> Optional[Text]:
     domain_path = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH
     )
 
-    return domain_path
+    return str(domain_path)
 
 
 def _get_credentials_and_endpoints_paths(

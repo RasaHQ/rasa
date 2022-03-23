@@ -4,6 +4,7 @@ from rasa.core.evaluation.marker_base import (
     OperatorMarker,
     ConditionMarker,
     MarkerRegistry,
+    Marker,
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 import logging
@@ -64,20 +65,34 @@ class NotMarker(OperatorMarker):
 class SequenceMarker(OperatorMarker):
     """Checks that all sub-markers apply consecutively in the specified order.
 
-    Given a sequence of sub-markers `m_0, m_1,...,m_n`, the sequence marker applies
-    at the `i`-th event if sub-marker `m_{n-j}` applies at the `{i-j}`-th event
-    for `j` in `[0,..,n]`.
+    The sequence marker application follows two rules:
+    (1) Given a sequence of sub-markers `m_0, m_1,...,m_n`, the sequence marker applies
+        at the `i`-th event if all sub-markers successively applied to some previous
+        events and the last sub-marker applies at the current `i`-th events.
+    (2) If the sequence marker applies at the `i`-th event, then for it's next
+        application the events up to the `i`-th event will be ignored.
+
     """
+
+    def __init__(
+        self, markers: List[Marker], negated: bool = False, name: Optional[Text] = None
+    ) -> None:
+        """Instantiate a new sequence marker.
+
+        Args:
+            markers: the sub-markers listed in the expected order
+            negated: whether this marker should be negated (i.e. a negated marker
+                applies if and only if the non-negated marker does not apply)
+            name: a custom name that can be used to replace the default string
+                conversion of this marker
+        """
+        super().__init__(markers=markers, negated=negated, name=name)
+        self._progress: int = 0
 
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
         return "seq"
-
-    @staticmethod
-    def negated_tag() -> Text:
-        """Returns the tag to be used in a config file."""
-        return "not(seq)"
 
     def _to_str_with(self, tag: Text) -> Text:
         sub_markers_str = " -> ".join(str(marker) for marker in self.sub_markers)
@@ -85,15 +100,16 @@ class SequenceMarker(OperatorMarker):
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         # Remember that all the sub-markers have been updated before this tracker.
-        # This means the history of the sub-markers already includes a result
-        # for the event we evaluate here:
-        num_tracked_events_including_current = len(self.sub_markers[0].history)
-        if num_tracked_events_including_current < len(self.sub_markers):
-            return False
-        return all(
-            marker.history[-idx - 1]
-            for idx, marker in enumerate(reversed(self.sub_markers))
-        )
+        # Hence, whether the sub-markers apply to the current `event` is stored in the
+        # last item of their history. Hence, to check if we made some progress in
+        # identifying a sequence, we can simply check:
+        if self.sub_markers[self._progress].history[-1]:
+            self._progress += 1
+        # If we were able to apply every sub-marker once, we reset our progress:
+        if self._progress == len(self.sub_markers):
+            self._progress = 0
+            return True
+        return False
 
 
 @MarkerRegistry.configurable_marker
@@ -144,12 +160,12 @@ class ActionExecutedMarker(ConditionMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "action_executed"
+        return "action"
 
     @staticmethod
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
-        return "action_not_executed"
+        return "not_action"
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.
@@ -182,12 +198,12 @@ class IntentDetectedMarker(ConditionMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "intent_detected"
+        return "intent"
 
     @staticmethod
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
-        return "intent_not_detected"
+        return "not_intent"
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.
@@ -221,12 +237,12 @@ class SlotSetMarker(ConditionMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "slot_is_set"
+        return "slot_was_set"
 
     @staticmethod
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
-        return "slot_is_not_set"
+        return "slot_was_not_set"
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.

@@ -29,7 +29,6 @@ def create_http_input_channels(
     channel: Optional[Text], credentials_file: Optional[Text]
 ) -> List["InputChannel"]:
     """Instantiate the chosen input channel."""
-
     if credentials_file:
         all_credentials = rasa.shared.utils.io.read_config_file(credentials_file)
     else:
@@ -71,7 +70,7 @@ def _create_single_channel(channel: Text, credentials: Dict[Text, Any]) -> Any:
 
 
 def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None) -> Sanic:
-    app = Sanic(__name__, configure_logging=False)
+    app = Sanic("rasa_core_no_api", configure_logging=False)
     server.add_root_route(app)
     server.configure_cors(app, cors)
     return app
@@ -90,10 +89,16 @@ def configure_app(
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
+    use_syslog: bool = False,
+    syslog_address: Optional[Text] = None,
+    syslog_port: Optional[int] = None,
+    syslog_protocol: Optional[Text] = None,
+    request_timeout: Optional[int] = None,
 ) -> Sanic:
     """Run the agent."""
-
-    rasa.core.utils.configure_file_logging(logger, log_file)
+    rasa.core.utils.configure_file_logging(
+        logger, log_file, use_syslog, syslog_address, syslog_port, syslog_protocol
+    )
 
     if enable_api:
         app = server.create_app(
@@ -130,6 +135,7 @@ def configure_app(
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
                 sender_id=conversation_id,
+                request_timeout=request_timeout,
             )
 
             logger.info("Killing Sanic server now.")
@@ -160,9 +166,13 @@ def serve_application(
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
+    use_syslog: Optional[bool] = False,
+    syslog_address: Optional[Text] = None,
+    syslog_port: Optional[int] = None,
+    syslog_protocol: Optional[Text] = None,
+    request_timeout: Optional[int] = None,
 ) -> None:
     """Run the API entrypoint."""
-
     if not channel and not credentials:
         channel = "cmdline"
 
@@ -180,6 +190,11 @@ def serve_application(
         endpoints=endpoints,
         log_file=log_file,
         conversation_id=conversation_id,
+        use_syslog=use_syslog,
+        syslog_address=syslog_address,
+        syslog_port=syslog_port,
+        syslog_protocol=syslog_protocol,
+        request_timeout=request_timeout,
     )
 
     ssl_context = server.create_ssl_context(
@@ -203,7 +218,10 @@ def serve_application(
         input_channels, endpoints, model_path, number_of_workers, enable_api
     )
 
-    rasa.utils.common.update_sanic_log_level(log_file)
+    rasa.utils.common.update_sanic_log_level(
+        log_file, use_syslog, syslog_address, syslog_port, syslog_protocol
+    )
+
     app.run(
         host=interface,
         port=port,
@@ -226,14 +244,14 @@ async def load_agent_on_start(
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments).
     """
-    app.agent = await agent.load_agent(
+    app.ctx.agent = await agent.load_agent(
         model_path=model_path,
         remote_storage=remote_storage,
         endpoints=endpoints,
         loop=loop,
     )
     logger.info("Rasa server is up and running.")
-    return app.agent
+    return app.ctx.agent
 
 
 async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
@@ -243,7 +261,7 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
         app: The Sanic application.
         _: The current Sanic worker event loop.
     """
-    current_agent = getattr(app, "agent", None)
+    current_agent = getattr(app.ctx, "agent", None)
     if not current_agent:
         logger.debug("No agent found when shutting down server.")
         return

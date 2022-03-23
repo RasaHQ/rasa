@@ -1,7 +1,7 @@
 import itertools
 import logging
 from collections import defaultdict
-from typing import Set, Text, Optional, Dict, Any
+from typing import Set, Text, Optional, Dict, Any, List
 
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
@@ -12,12 +12,13 @@ from rasa.shared.constants import (
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
 )
+from rasa.shared.core import constants
 from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
-from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, ActiveLoop
 from rasa.shared.core.events import UserUttered
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrainingDataGenerator
-from rasa.shared.core.slot_mappings import SlotMapping
+from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -58,15 +59,22 @@ class Validator:
 
         return cls(domain, intents, story_graph, config)
 
+    def _non_default_intents(self) -> List[Text]:
+        return [
+            item
+            for item in self.domain.intents
+            if item not in constants.DEFAULT_INTENTS
+        ]
+
     def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
         everything_is_alright = True
 
         nlu_data_intents = {e.data["intent"] for e in self.intents.intent_examples}
 
-        for intent in self.domain.intents:
+        for intent in self._non_default_intents():
             if intent not in nlu_data_intents:
-                logger.debug(
+                rasa.shared.utils.io.raise_warning(
                     f"The intent '{intent}' is listed in the domain file, but "
                     f"is not found in the NLU training data."
                 )
@@ -134,9 +142,11 @@ class Validator:
                 )
                 everything_is_alright = False
 
-        for intent in self.domain.intents:
+        for intent in self._non_default_intents():
             if intent not in stories_intents:
-                logger.debug(f"The intent '{intent}' is not used in any story.")
+                rasa.shared.utils.io.raise_warning(
+                    f"The intent '{intent}' is not used in any story or rule."
+                )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -174,6 +184,10 @@ class Validator:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
                     continue
+
+                if not event.action_name:
+                    continue
+
                 if not event.action_name.startswith(UTTER_PREFIX):
                     # we are only interested in utter actions
                     continue
@@ -195,7 +209,9 @@ class Validator:
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                logger.debug(f"The utterance '{utterance}' is not used in any story.")
+                rasa.shared.utils.io.raise_warning(
+                    f"The utterance '{utterance}' is not used in any story or rule."
+                )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -212,6 +228,10 @@ class Validator:
 
                 if event.name in visited_loops:
                     # We've seen this loop before, don't alert on it twice
+                    continue
+
+                if not event.name:
+                    # To support setting `active_loop` to `null`
                     continue
 
                 if event.name not in self.domain.form_names:
@@ -235,6 +255,9 @@ class Validator:
         for story in self.story_graph.story_steps:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
+                    continue
+
+                if not event.action_name:
                     continue
 
                 if not event.action_name.startswith("action_"):
@@ -283,7 +306,7 @@ class Validator:
 
         # Create a list of `StoryConflict` objects
         conflicts = rasa.core.training.story_conflict.find_story_conflicts(
-            trackers, self.domain, max_history,
+            trackers, self.domain, max_history
         )
 
         if not conflicts:
@@ -369,7 +392,7 @@ class Validator:
                         everything_is_alright = False
 
                 if (
-                    mapping.get("type") == str(SlotMapping.FROM_TRIGGER_INTENT)
+                    mapping[MAPPING_TYPE] == str(SlotMappingType.FROM_TRIGGER_INTENT)
                     and slot.name not in all_required_slots
                 ):
                     rasa.shared.utils.io.raise_warning(
