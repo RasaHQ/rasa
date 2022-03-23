@@ -191,6 +191,7 @@ async def test_nlu(
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
+    domain_path: Optional[Text] = None,
 ) -> None:
     """Tests the NLU Model."""
     from rasa.nlu.test import run_evaluation
@@ -214,7 +215,11 @@ async def test_nlu(
         )
         _agent = Agent.load(model_path=model)
         await run_evaluation(
-            nlu_data, _agent.processor, output_directory=output_directory, **kwargs
+            nlu_data,
+            _agent.processor,
+            output_directory=output_directory,
+            domain_path=domain_path,
+            **kwargs,
         )
     else:
         rasa.shared.utils.cli.print_error(

@@ -235,7 +235,7 @@ async def run_nlu_test_async(
             models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        await test_nlu(model_path, data_path, output, all_args)
+        await test_nlu(model_path, data_path, output, all_args, domain_path=domain_path)
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
