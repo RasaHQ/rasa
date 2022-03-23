@@ -417,7 +417,7 @@ def _create_dummy_features(
 
 
 @pytest.mark.parametrize(
-    "is_sparse, is_sequence, attribute, feature_attribute",
+    "is_sparse, is_sequence, message_attribute, feature_attribute",
     [
         (is_sparse, is_sequence, message_attribute, feature_attribute)
         for is_sparse in [True, False]
