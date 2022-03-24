@@ -610,6 +610,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "classifier_params",
     [
@@ -823,6 +824,8 @@ async def test_adjusting_layers_incremental_training(
     test_data_signatures(new_predict_data_signature, old_predict_data_signature)
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(120)
 @pytest.mark.parametrize(
     "iter1_path, iter2_path, should_raise_exception",
