@@ -126,6 +126,8 @@ google-auth = "<2"
 CacheControl = "^0.12.9"
 randomname = "^0.1.5"
 sanic-routing = "^0.7.2"
+motor = "2.1.0"
+mongomock-motor = "^0.0.3"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"

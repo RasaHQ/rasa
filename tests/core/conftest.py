@@ -38,9 +38,9 @@ class MockedMongoTrackerStore(MongoTrackerStore):
     """In-memory mocked version of `MongoTrackerStore`."""
 
     def __init__(self, _domain: Domain) -> None:
-        from mongomock import MongoClient
+        from mongomock_motor import AsyncMongoMockClient
 
-        self.db = MongoClient().rasa
+        self.db = AsyncMongoMockClient().rasa
         self.collection = "conversations"
 
         # skipcq: PYL-E1003

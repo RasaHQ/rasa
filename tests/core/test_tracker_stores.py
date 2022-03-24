@@ -555,7 +555,7 @@ async def test_mongo_additional_events(domain: Domain):
 
     # make sure only new events are returned
     # noinspection PyProtectedMember
-    assert list(tracker_store._additional_events(tracker)) == events
+    assert list(await tracker_store._additional_events(tracker)) == events
 
 
 async def test_mongo_additional_events_with_session_start(domain: Domain):
@@ -566,7 +566,7 @@ async def test_mongo_additional_events_with_session_start(domain: Domain):
     tracker.update(UserUttered("hi2"))
 
     # noinspection PyProtectedMember
-    additional_events = list(tracker_store._additional_events(tracker))
+    additional_events = list(await tracker_store._additional_events(tracker))
 
     assert len(additional_events) == 1
     assert isinstance(additional_events[0], UserUttered)

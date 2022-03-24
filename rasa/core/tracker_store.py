@@ -24,7 +24,7 @@ from typing import (
 )
 
 from boto3.dynamodb.conditions import Key
-from pymongo.collection import Collection
+from motor.motor_asyncio import AsyncIOMotorCollection
 
 import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
@@ -597,10 +597,9 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         event_broker: Optional[EventBroker] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
-        from pymongo.database import Database
-        from pymongo import MongoClient
+        from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-        self.client = MongoClient(
+        self.client = AsyncIOMotorClient(
             host,
             username=username,
             password=password,
@@ -608,15 +607,16 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             # delay connect until process forking is done
             connect=False,
         )
+        self._validate_db_connection()
 
-        self.db = Database(self.client, db)
+        self.db = AsyncIOMotorDatabase(self.client, db)
         self.collection = collection
         super().__init__(domain, event_broker, **kwargs)
 
         self._ensure_indices()
 
     @property
-    def conversations(self) -> Collection:
+    def conversations(self) -> AsyncIOMotorCollection:
         """Returns the current conversation."""
         return self.db[self.collection]
 
@@ -633,13 +633,21 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         return state
 
+    def _validate_db_connection(self):
+        """Method for verifying MongoDB connection, \
+        since Motor won't try to connect until a read/write \
+        operation"""
+        from asyncio import get_event_loop
+
+        get_event_loop().run_until_complete(self.client.server_info())
+
     async def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
         await self.stream_events(tracker)
 
-        additional_events = self._additional_events(tracker)
+        additional_events = await self._additional_events(tracker)
 
-        self.conversations.update_one(
+        await self.conversations.update_one(
             {"sender_id": tracker.sender_id},
             {
                 "$set": self._current_tracker_state_without_events(tracker),
@@ -650,7 +658,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             upsert=True,
         )
 
-    def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
+    async def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
         """Return events from the tracker which aren't currently stored.
 
         Args:
@@ -661,7 +669,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         """
 
-        stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
+        stored = await self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
         all_events = self._events_from_serialized_tracker(stored)
 
         number_events_since_last_session = len(
@@ -700,14 +708,14 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
     async def _retrieve(
         self, sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> Optional[List[Dict[Text, Any]]]:
-        stored = self.conversations.find_one({"sender_id": sender_id})
+        stored = await self.conversations.find_one({"sender_id": sender_id})
 
         # look for conversations which have used an `int` sender_id in the past
         # and update them.
         if not stored and sender_id.isdigit():
             from pymongo import ReturnDocument
 
-            stored = self.conversations.find_one_and_update(
+            stored = await self.conversations.find_one_and_update(
                 {"sender_id": int(sender_id)},
                 {"$set": {"sender_id": str(sender_id)}},
                 return_document=ReturnDocument.AFTER,
@@ -749,7 +757,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
 
     async def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store."""
-        return [c["sender_id"] for c in self.conversations.find()]
+        return [c["sender_id"] async for c in await self.conversations.find()]
 
 
 def _create_sequence(table_name: Text) -> "Sequence":
