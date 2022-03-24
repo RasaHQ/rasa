@@ -85,7 +85,7 @@ def _add_data_lint_parser(data_subparsers: SubParsersAction, parents: List[argpa
 
 def _lint_data(args: argparse.Namespace) -> None:
     from rasa.lint.linter import lint_file
-    lint_file()
+    lint_file(args.path)
 
 def _add_data_split_parsers(
     data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
