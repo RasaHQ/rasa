@@ -31,6 +31,15 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> N
 
     parser.add_argument("-l", "--language", default="en", help="Language of data.")
 
+def set_lint_arguments(parser: argparse.ArgumentParser) -> None:
+    """Sets Yaml lint arguments."""
+    parser.add_argument(
+        "-p",
+        "--path",
+        default=".",
+        help="Path for yaml file."
+    )
+
 
 def set_split_arguments(parser: argparse.ArgumentParser) -> None:
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
