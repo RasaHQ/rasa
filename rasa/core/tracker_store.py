@@ -633,7 +633,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         return state
 
-    def _validate_db_connection(self):
+    def _validate_db_connection(self) -> None:
         """Method for verifying MongoDB connection, \
         since Motor won't try to connect until a read/write \
         operation."""
