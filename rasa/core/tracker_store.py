@@ -636,7 +636,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
     def _validate_db_connection(self):
         """Method for verifying MongoDB connection, \
         since Motor won't try to connect until a read/write \
-        operation"""
+        operation."""
         from asyncio import get_event_loop
 
         get_event_loop().run_until_complete(self.client.server_info())
@@ -668,8 +668,9 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             List of serialised events that aren't currently stored.
 
         """
-
-        stored = await self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
+        stored = (
+            await self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
+        )
         all_events = self._events_from_serialized_tracker(stored)
 
         number_events_since_last_session = len(

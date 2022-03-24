@@ -1413,13 +1413,24 @@ psutil = "*"
 name = "mongomock"
 version = "3.23.0"
 description = "Fake pymongo stub for testing simple MongoDB-dependent code"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
 sentinels = "*"
 six = "*"
+
+[[package]]
+name = "mongomock-motor"
+version = "0.0.3"
+description = "Library for mocking AsyncIOMotorClient built on top of mongomock."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+mongomock = ">=3.23.0,<4.0.0"
 
 [[package]]
 name = "monotonic"
@@ -2590,7 +2601,7 @@ python-versions = "*"
 name = "sentinels"
 version = "1.0.0"
 description = "Various objects to denote special meanings in python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -3476,7 +3487,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "9e525b886f9a061f44bcff3a253fe9b8398cfe2aec34f4909887d6992cba9c27"
+content-hash = "885aa0797aeb6518f5c3880d4837711cb0d7c6d30ef184bc2dae8b4a01cc18d4"
 
 [metadata.files]
 absl-py = [
@@ -4384,6 +4395,11 @@ memory-profiler = [
 mongomock = [
     {file = "mongomock-3.23.0-py2.py3-none-any.whl", hash = "sha256:01ce0c4eb02b2eced0a30882412444eaf6de27a90f2502bee64e04e3b8ecdc90"},
     {file = "mongomock-3.23.0.tar.gz", hash = "sha256:d9945e7c87c221aed47c6c10708376351a5f5ee48060943c56ba195be425b0dd"},
+]
+mongomock-motor = [
+    {file = "mongomock_motor-0.0.3-py3-none-any.whl", hash = "sha256:32a0dc6c6d6c90c3c42b2e27fa77a100699c104bf0acc9f6b0ee1b357d4b2143"},
+    {file = "mongomock_motor-0.0.3-py3.8.egg", hash = "sha256:03ef3da219445abeafe6742c5ec0d733660ed92047f3cc1e3df6a19c2953f4c6"},
+    {file = "mongomock_motor-0.0.3.tar.gz", hash = "sha256:891d1b573c1ac29fbe23bb51acd99990cd151b882c680d907f5998b295974dd1"},
 ]
 monotonic = [
     {file = "monotonic-1.6-py2.py3-none-any.whl", hash = "sha256:68687e19a14f11f26d140dd5c86f3dba4bf5df58003000ed467e0e2a69bca96c"},
