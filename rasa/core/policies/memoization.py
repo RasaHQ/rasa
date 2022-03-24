@@ -411,9 +411,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         logger.debug("Launch DeLorean...")
 
         # Truncate the tracker based on `max_history`
-        truncated_tracker = _trim_tracker_by_max_history(
-            tracker, self.config[POLICY_MAX_HISTORY]
-        )
+        truncated_tracker: Optional[
+            DialogueStateTracker
+        ] = _trim_tracker_by_max_history(tracker, self.config[POLICY_MAX_HISTORY])
         truncated_tracker = self._strip_leading_events_until_action_executed(
             truncated_tracker
         )

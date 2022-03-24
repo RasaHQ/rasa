@@ -13,6 +13,7 @@ from http import HTTPStatus
 from typing import (
     Any,
     Callable,
+    DefaultDict,
     List,
     Optional,
     Text,
@@ -81,7 +82,7 @@ if TYPE_CHECKING:
     ]
     SanicView = Callable[
         [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
-        SanicResponse,
+        Coroutine[Any, Any, SanicResponse],
     ]
 
 
@@ -168,10 +169,12 @@ def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
 
     def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
-        def decorated(request: Request, *args: Any, **kwargs: Any) -> "SanicResponse":
+        async def decorated(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> "SanicResponse":
             conversation_id = kwargs["conversation_id"]
-            if request.app.ctx.agent.tracker_store.exists(conversation_id):
-                return f(request, *args, **kwargs)
+            if await request.app.ctx.agent.tracker_store.exists(conversation_id):
+                return await f(request, *args, **kwargs)
             else:
                 raise ErrorResponse(
                     HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found."
@@ -288,7 +291,7 @@ def event_verbosity_parameter(
         )
 
 
-def get_test_stories(
+async def get_test_stories(
     processor: "MessageProcessor",
     conversation_id: Text,
     until_time: Optional[float],
@@ -308,9 +311,11 @@ def get_test_stories(
         The stories for `conversation_id` in test format.
     """
     if fetch_all_sessions:
-        trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+        trackers = await processor.get_trackers_for_all_conversation_sessions(
+            conversation_id
+        )
     else:
-        trackers = [processor.get_tracker(conversation_id)]
+        trackers = [await processor.get_tracker(conversation_id)]
 
     if until_time is not None:
         trackers = [tracker.travel_back_in_time(until_time) for tracker in trackers]
@@ -355,7 +360,7 @@ async def update_conversation_with_events(
         The tracker for `conversation_id` with the updated events.
     """
     if rasa.shared.core.events.do_events_begin_with_session_start(events):
-        tracker = processor.get_tracker(conversation_id)
+        tracker = await processor.get_tracker(conversation_id)
     else:
         tracker = await processor.fetch_tracker_with_initial_session(conversation_id)
 
@@ -755,9 +760,7 @@ def create_app(
                     await processor.execute_side_effects(
                         events, tracker, output_channel
                     )
-
-                app.ctx.agent.tracker_store.save(tracker)
-
+                await app.ctx.agent.tracker_store.save(tracker)
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -806,7 +809,7 @@ def create_app(
                 )
 
                 # will override an existing tracker with the same id!
-                app.ctx.agent.tracker_store.save(tracker)
+                await app.ctx.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -829,7 +832,7 @@ def create_app(
         )
 
         try:
-            stories = get_test_stories(
+            stories = await get_test_stories(
                 app.ctx.agent.processor,
                 conversation_id,
                 until_time,
@@ -1022,7 +1025,7 @@ def create_app(
                 tracker = await app.ctx.agent.processor.run_action_extract_slots(
                     user_message.output_channel, tracker
                 )
-                app.ctx.agent.processor.save_tracker(tracker)
+                await app.ctx.agent.processor.save_tracker(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -1163,7 +1166,8 @@ def create_app(
             )
 
         try:
-            evaluation = await test_coroutine
+            if test_coroutine is not None:
+                evaluation = await test_coroutine
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -1236,7 +1240,7 @@ def create_app(
             "response_selection_evaluation": response_selector_report,
         }
 
-        result: defaultdict[Text, Any] = defaultdict(dict)
+        result: DefaultDict[Text, Any] = defaultdict(dict)
         for evaluation_name, evaluation in eval_name_mapping.items():
             report = evaluation.evaluation.get("report", {})
             averages = report.get("weighted avg", {})

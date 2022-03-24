@@ -13,7 +13,6 @@ from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
-    LOOP_INTERRUPTED,
 )
 from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.events import (
@@ -540,7 +539,7 @@ class FormAction(LoopAction):
 
         needs_validation = (
             tracker.latest_action_name == ACTION_LISTEN_NAME
-            and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
+            and not tracker.is_active_loop_interrupted
         )
 
         if needs_validation:
