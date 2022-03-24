@@ -39,9 +39,9 @@ class SingleStateFeaturizer:
 
     def __init__(self) -> None:
         """Initialize the single state featurizer."""
-        self._default_feature_states = {}
-        self.action_texts = []
-        self.entity_tag_specs = []
+        self._default_feature_states: Dict[Text, Any] = {}
+        self.action_texts: List[Text] = []
+        self.entity_tag_specs: List[EntityTagSpec] = []
 
     def _create_entity_tag_specs(
         self, bilou_tagging: bool = False
@@ -116,12 +116,12 @@ class SingleStateFeaturizer:
         if attribute in {INTENT, ACTION_NAME}:
             return {sub_state[attribute]: 1}  # type: ignore[dict-item]
         elif attribute == ENTITIES:
-            return {entity: 1 for entity in sub_state.get(ENTITIES, [])}
+            return {entity: 1 for entity in sub_state.get(ENTITIES, [])}  # type: ignore[misc]  # noqa: E501
         elif attribute == ACTIVE_LOOP:
             return {sub_state["name"]: 1}  # type: ignore[dict-item]
         elif attribute == SLOTS:
             return {
-                f"{slot_name}_{i}": value
+                f"{slot_name}_{i}": value  # type: ignore[misc]
                 for slot_name, slot_as_feature in sub_state.items()
                 for i, value in enumerate(slot_as_feature)
             }
@@ -309,9 +309,11 @@ class SingleStateFeaturizer:
         ):
             # we cannot build a classifier with fewer than 2 classes
             return {}
-
-        message = precomputations.lookup_message(user_text=entity_data[TEXT])
-        message.data[ENTITIES] = entity_data[ENTITIES]
+        if precomputations is None:
+            message = None
+        else:
+            message = precomputations.lookup_message(user_text=entity_data[TEXT])
+            message.data[ENTITIES] = entity_data[ENTITIES]
 
         if not message:
             return {}

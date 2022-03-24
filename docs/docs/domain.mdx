@@ -49,26 +49,52 @@ intents:
     use_entities:
       - name
       - first_name
+- farewell:
     ignore_entities:
       - location
       - age
+      - last_name
 ```
+
+You can only `use_entities` _or_ `ignore_entities` for any single intent.
 
 Excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
 an intent where you don't care about the entities being picked up.
 
-If you list your intents without this parameter, the entities will be
+If you list your intents without a `use_entities` or `ignore_entities` 
+parameter, the entities will be featurized as normal.
+
+
+It is also possible to ignore an entity for all intents
+by setting the `influence_conversation` flag to `false` for the entity itself.
+See [the entities section](#entities) for details.
+
+Excluded entities for intents will be unfeaturized and therefore
+will not impact the next action predictions. This is useful when you have
+an intent where you don't care about the entities being picked up.
+
+If you list your intents without this parameter, and without setting 
+`influence_conversation` to `false` for any entities, all entities will be
 featurized as normal.
 
 :::note
-If you want these entities not to influence action prediction,
+If you want these entities not to influence action prediction via slots either,
 set the [`influence_conversation: false`](./domain.mdx#slots-and-conversation-behavior)
 parameter for slots with the same name.
 
 :::
 
 ## Entities
+:::info New in 3.1
+
+As of 3.1, you can use the `influence_conversation` flag under entities.
+The flag can be set to `false` to declare that an entity should not
+be featurized for any intents. It is a shorthand syntax for adding an entity to
+the `ignore_entities` list of every intent in the domain. The flag is optional 
+and default behaviour remains unchanged.
+
+:::
 
 The `entities` section lists all entities that can be
 extracted by any [entity extractor](./components.mdx) in your
@@ -83,6 +109,9 @@ entities:
    - membership_type  # custom entity extracted by DIETClassifier
    - priority         # custom entity extracted by DIETClassifier
 ```
+
+When using multiple domain files, entities can be specified in any domain file, 
+and can be used or ignored by any intent in any domain file.
 
 If you are using the feature [Entity Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups) you also
 need to list the roles and groups of an entity in this section.
@@ -104,6 +133,21 @@ entities:
        - 1
        - 2
 ```
+
+By default, entities influence action prediction. To prevent extracted entities from
+influencing the conversation for specific intents you can [ignore entities for certain intents](#ignoring-entities-for-certain-intents).
+To ignore an entity for all intents, without having to list it under the `ignore_entities` flag of each intent, 
+you can set the flag `influence_conversation` to `false` under the entity:
+
+```yaml-rasa
+entities:
+- location:
+    influence_conversation: false
+```
+This syntax has the same effect as adding the entity to the `ignore_entities` 
+list for every intent in the domain.
+
+Explicitly setting `influence_conversation: true` does not change any behaviour. This is the default setting.
 
 ## Slots
 

@@ -14,13 +14,13 @@ from tests.core.utilities import tracker_from_dialogue
 
 
 @pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, TEST_DOMAINS_FOR_DIALOGUES))
-def test_inmemory_tracker_store(pair):
+async def test_inmemory_tracker_store(pair):
     dialogue, domainpath = pair
     domain = Domain.load(domainpath)
     tracker = tracker_from_dialogue(dialogue, domain)
     tracker_store = InMemoryTrackerStore(domain)
-    tracker_store.save(tracker)
-    restored = tracker_store.retrieve(tracker.sender_id)
+    await tracker_store.save(tracker)
+    restored = await tracker_store.retrieve(tracker.sender_id)
     assert restored == tracker
 
 

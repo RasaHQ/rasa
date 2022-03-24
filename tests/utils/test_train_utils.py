@@ -291,8 +291,9 @@ def test_warning_eval_num_epochs_greater_than_epochs(
     component_config: Dict[Text, Text]
 ):
     warning = (
-        f"the value of '{EVAL_NUM_EPOCHS}' is greater than the value of "
-        f"'{EPOCHS}'. No evaluation will occur."
+        f"'{EVAL_NUM_EPOCHS}={component_config[EVAL_NUM_EPOCHS]}' is "
+        f"greater than '{EPOCHS}={component_config[EPOCHS]}'."
+        f" No evaluation will occur."
     )
     with pytest.warns(UserWarning) as record:
         train_utils._check_evaluation_setting(component_config)

@@ -19,7 +19,7 @@ from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -55,6 +55,18 @@ class TestNLUTarget(TestComponentWithoutRun):
 class TestCoreTarget(TestComponentWithoutRun):
     def run(self) -> PolicyPrediction:
         pass
+
+
+class TestComponentWithClsTypeHints(GraphComponent):
+    @classmethod
+    def create(
+        cls: "TestComponentWithClsTypeHints",
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> GraphComponent:
+        return cls()
 
 
 DEFAULT_PREDICT_SCHEMA = GraphSchema(
@@ -1183,3 +1195,13 @@ def test_recursively_validate_required_components(
         node_name=f"node-{test_case.targets[0]}", schema=graph_schema
     )
     assert len(unmet_requirements) == num_unmet
+
+
+def test_graph_with_cls_type_hint():
+    class MyComponent(TestComponentWithClsTypeHints):
+        def run(self) -> MyTrainingData:
+            pass
+
+    graph_config = create_test_schema(uses=MyComponent)
+
+    validation.validate(graph_config)

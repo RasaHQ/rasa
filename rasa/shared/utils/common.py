@@ -79,13 +79,12 @@ def lazy_property(function: Callable) -> Any:
     """
     attr_name = "_lazy_" + function.__name__
 
-    @property
     def _lazyprop(self: Any) -> Any:
         if not hasattr(self, attr_name):
             setattr(self, attr_name, function(self))
         return getattr(self, attr_name)
 
-    return _lazyprop
+    return property(_lazyprop)
 
 
 def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:
@@ -201,3 +200,73 @@ def arguments_of(func: Callable) -> List[Text]:
     import inspect
 
     return list(inspect.signature(func).parameters.keys())
+
+
+def extract_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]:
+    """Extracts duplicates from two lists."""
+    if list1:
+        dict1 = {
+            (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i for i in list1
+        }
+    else:
+        dict1 = {}
+
+    if list2:
+        dict2 = {
+            (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i for i in list2
+        }
+    else:
+        dict2 = {}
+
+    set1 = set(dict1.keys())
+    set2 = set(dict2.keys())
+    dupes = set1.intersection(set2)
+    return sorted(list(dupes))
+
+
+def clean_duplicates(dupes: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Removes keys for empty values."""
+    duplicates = dupes.copy()
+    for k in dupes:
+        if not dupes[k]:
+            duplicates.pop(k)
+
+    return duplicates
+
+
+def merge_dicts(
+    tempDict1: Dict[Text, Any],
+    tempDict2: Dict[Text, Any],
+    override_existing_values: bool = False,
+) -> Dict[Text, Any]:
+    """Merges two dicts."""
+    if override_existing_values:
+        merged_dicts, b = tempDict1.copy(), tempDict2.copy()
+
+    else:
+        merged_dicts, b = tempDict2.copy(), tempDict1.copy()
+    merged_dicts.update(b)
+    return merged_dicts
+
+
+def merge_lists(
+    list1: List[Any], list2: List[Any], override: bool = False
+) -> List[Any]:
+    """Merges two lists."""
+    return sorted(list(set(list1 + list2)))
+
+
+def merge_lists_of_dicts(
+    dict_list1: List[Dict],
+    dict_list2: List[Dict],
+    override_existing_values: bool = False,
+) -> List[Dict]:
+    """Merges two dict lists."""
+    dict1 = {
+        (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i for i in dict_list1
+    }
+    dict2 = {
+        (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i for i in dict_list2
+    }
+    merged_dicts = merge_dicts(dict1, dict2, override_existing_values)
+    return list(merged_dicts.values())
