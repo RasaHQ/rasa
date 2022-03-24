@@ -634,7 +634,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         return state
 
     def _validate_db_connection(self) -> None:
-        """Method for verifying MongoDB connection, \
+        """Method for validating MongoDB connection, \
         since Motor won't try to connect until a read/write \
         operation."""
         from asyncio import get_event_loop
