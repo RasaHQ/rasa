@@ -47,6 +47,7 @@ def add_subparser(
     _add_data_split_parsers(data_subparsers, parents)
     _add_data_validate_parsers(data_subparsers, parents)
     _add_data_migrate_parsers(data_subparsers, parents)
+    _add_data_lint_parser(data_subparsers, parents)
 
 
 def _add_data_convert_parsers(
@@ -70,6 +71,17 @@ def _add_data_convert_parsers(
     convert_nlu_parser.set_defaults(func=_convert_nlu_data)
     arguments.set_convert_arguments(convert_nlu_parser, data_type="Rasa NLU")
 
+def _add_data_lint_parser(data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    lint_parser = data_subparsers.add_parser(
+        "lint",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Lint .yml and .yaml files.",
+    )
+
+    lint_parser.set_defaults(func=_lint_data)
+    arguments.set_lint_arguments(lint_parser)
 
 def _add_data_split_parsers(
     data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
