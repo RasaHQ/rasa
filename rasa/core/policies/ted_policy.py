@@ -4,6 +4,7 @@ import logging
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from pathlib import Path
 from collections import defaultdict
+import contextlib
 
 import numpy as np
 import tensorflow as tf
@@ -119,6 +120,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
     EPOCH_OVERRIDE,
+    USE_GPU,
 )
 
 
@@ -341,6 +343,7 @@ class TEDPolicy(Policy):
             POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
+            USE_GPU: True,
         }
 
     def __init__(
@@ -358,11 +361,9 @@ class TEDPolicy(Policy):
         super().__init__(
             config, model_storage, resource, execution_context, featurizer=featurizer
         )
-
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             config[SPLIT_ENTITIES_BY_COMMA], SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-
         self._load_params(config)
 
         self.model = model
@@ -724,7 +725,10 @@ class TEDPolicy(Policy):
             )
             return self._resource
 
-        self.run_training(model_data, label_ids)
+        with (
+            contextlib.nullcontext() if self.config["use_gpu"] else tf.device("/cpu:0")
+        ):
+            self.run_training(model_data, label_ids)
 
         self.persist()
 
@@ -1074,13 +1078,16 @@ class TEDPolicy(Policy):
             predict_data_example,
         ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
-        model = cls._load_tf_model(
-            model_utilities,
-            model_data_example,
-            predict_data_example,
-            featurizer,
-            execution_context.is_finetuning,
-        )
+        model = None
+
+        with (contextlib.nullcontext() if config["use_gpu"] else tf.device("/cpu:0")):
+            model = cls._load_tf_model(
+                model_utilities,
+                model_data_example,
+                predict_data_example,
+                featurizer,
+                execution_context.is_finetuning,
+            )
 
         return cls._load_policy_with_model(
             config,

@@ -5,7 +5,6 @@ from typing import Any, List, Optional, Text, Dict, Type
 
 import numpy as np
 import tensorflow as tf
-
 import rasa.utils.common
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -100,6 +99,7 @@ from rasa.utils.tensorflow.constants import (
     LABEL_PAD_ID,
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
+    USE_GPU,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
@@ -282,6 +282,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             LOSS_TYPE: CROSS_ENTROPY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
+            USE_GPU: True,
         }
 
     def __init__(
