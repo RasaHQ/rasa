@@ -118,7 +118,7 @@ class YAMLStoryWriter(StoryWriter):
             else:
                 stories.append(self.process_story_step(story_step))
 
-        result = OrderedDict()
+        result: OrderedDict[Text, Any] = OrderedDict()
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
             LATEST_TRAINING_DATA_FORMAT_VERSION
         )
@@ -139,7 +139,7 @@ class YAMLStoryWriter(StoryWriter):
         Returns:
             Dict with a story step.
         """
-        result = OrderedDict()
+        result: OrderedDict[Text, Any] = OrderedDict()
         result[KEY_STORY_NAME] = story_step.block_name
         steps = self.process_checkpoints(story_step.start_checkpoints)
         for event in story_step.events:
@@ -155,7 +155,8 @@ class YAMLStoryWriter(StoryWriter):
 
         return result
 
-    def process_event(self, event: Event) -> Optional[OrderedDict]:
+    def process_event(self, event: Union[Event, List[Event]]) -> Optional[OrderedDict]:
+        """Process an event or list of events."""
         if isinstance(event, list):
             return self.process_or_utterances(event)
         if isinstance(event, UserUttered):
@@ -213,9 +214,12 @@ class YAMLStoryWriter(StoryWriter):
             for entity in user_utterance.entities:
                 if "value" in entity:
                     if hasattr(user_utterance, "inline_comment_for_entity"):
-                        for predicted in user_utterance.predicted_entities:
+                        # FIXME: to fix this type issue, WronglyClassifiedUserUtterance
+                        # needs to be imported but it's currently outside
+                        # of `rasa.shared`
+                        for predicted in user_utterance.predicted_entities:  # type: ignore[attr-defined] # noqa: E501
                             if predicted["start"] == entity["start"]:
-                                commented_entity = user_utterance.inline_comment_for_entity(  # noqa: E501
+                                commented_entity = user_utterance.inline_comment_for_entity(  # type: ignore[attr-defined] # noqa: E501
                                     predicted, entity
                                 )
                                 if commented_entity:
@@ -241,7 +245,9 @@ class YAMLStoryWriter(StoryWriter):
             result[KEY_ENTITIES] = entities
 
         if hasattr(user_utterance, "inline_comment"):
-            comment = user_utterance.inline_comment(
+            # FIXME: to fix this type issue, WronglyClassifiedUserUtterance needs to
+            # be imported but it's currently outside of `rasa.shared`
+            comment = user_utterance.inline_comment(  # type: ignore[attr-defined]
                 force_comment_generation=not entities
             )
             if comment:
@@ -283,7 +289,9 @@ class YAMLStoryWriter(StoryWriter):
             result[KEY_BOT_END_TO_END_MESSAGE] = action.action_text
 
         if hasattr(action, "inline_comment"):
-            comment = action.inline_comment()
+            # FIXME: to fix this type issue, WarningPredictedAction needs to
+            # be imported but it's currently outside of `rasa.shared`
+            comment = action.inline_comment()  # type: ignore[attr-defined]
             if KEY_ACTION in result and comment:
                 result.yaml_add_eol_comment(comment, KEY_ACTION)
             elif KEY_BOT_END_TO_END_MESSAGE in result and comment:
@@ -317,7 +325,9 @@ class YAMLStoryWriter(StoryWriter):
         for checkpoint in checkpoints:
             if checkpoint.name == STORY_START:
                 continue
-            next_checkpoint = OrderedDict([(KEY_CHECKPOINT, checkpoint.name)])
+            next_checkpoint: OrderedDict[Text, Any] = OrderedDict(
+                [(KEY_CHECKPOINT, checkpoint.name)]
+            )
             if checkpoint.conditions:
                 next_checkpoint[KEY_CHECKPOINT_SLOTS] = [
                     {key: value} for key, value in checkpoint.conditions.items()
@@ -367,7 +377,7 @@ class YAMLStoryWriter(StoryWriter):
         Returns:
             Converted rule step.
         """
-        result = OrderedDict()
+        result: OrderedDict[Text, Any] = OrderedDict()
         result[KEY_RULE_NAME] = rule_step.block_name
 
         condition_steps = []
@@ -395,11 +405,13 @@ class YAMLStoryWriter(StoryWriter):
         if normal_steps:
             result[KEY_STEPS] = normal_steps
 
-        if len(normal_events) > 1 and (
-            isinstance(normal_events[len(normal_events) - 1], ActionExecuted)
-            and normal_events[len(normal_events) - 1].action_name
-            == rasa.shared.core.constants.RULE_SNIPPET_ACTION_NAME
-        ):
-            result[KEY_WAIT_FOR_USER_INPUT_AFTER_RULE] = False
+        if len(normal_events) > 1:
+            last_event = normal_events[len(normal_events) - 1]
+            if (
+                isinstance(last_event, ActionExecuted)
+                and last_event.action_name
+                == rasa.shared.core.constants.RULE_SNIPPET_ACTION_NAME
+            ):
+                result[KEY_WAIT_FOR_USER_INPUT_AFTER_RULE] = False
 
         return result

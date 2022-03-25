@@ -4,7 +4,10 @@ import pytest
 
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
-from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import (
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
 from rasa.core.channels import CollectingOutputChannel
 from rasa.shared.core.domain import Domain
@@ -156,7 +159,7 @@ async def test_ask_rephrase_after_failed_affirmation():
 
     domain = Domain.from_yaml(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         responses:
             utter_ask_rephrase:
             - text: {rephrase_text}

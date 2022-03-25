@@ -117,9 +117,9 @@ class TwilioVoiceInput(InputChannel):
         initial_prompt: Optional[Text],
         reprompt_fallback_phrase: Optional[Text],
         assistant_voice: Optional[Text],
-        speech_timeout: Optional[Text],
-        speech_model: Optional[Text],
-        enhanced: Optional[Text],
+        speech_timeout: Text = "5",
+        speech_model: Text = "default",
+        enhanced: Text = "false",
     ) -> None:
         """Creates a connection to Twilio voice.
 
@@ -154,16 +154,21 @@ class TwilioVoiceInput(InputChannel):
         if self.speech_model not in self.SUPPORTED_SPEECH_MODELS:
             self._raise_invalid_speech_model_exception()
 
-        if self.enhanced.lower() not in ["true", "false"]:
+        if self.enhanced.lower() not in [
+            "true",
+            "false",
+        ]:
             self._raise_invalid_enhanced_option_exception()
 
-        if (self.enhanced.lower() == "true") and (
-            self.speech_model.lower() != "phone_call"
+        if (
+            self.enhanced.lower() == "true"
+            and self.speech_model.lower() != "phone_call"
         ):
             self._raise_invalid_enhanced_speech_model_exception()
 
-        if (self.speech_model.lower() != "numbers_and_commands") and (
-            self.speech_timeout.lower() == "auto"
+        if (
+            self.speech_model.lower() != "numbers_and_commands"
+            and self.speech_timeout.lower() == "auto"
         ):
             self._raise_invalid_speech_model_timeout_exception()
 
@@ -247,7 +252,7 @@ class TwilioVoiceInput(InputChannel):
             # If the user doesn't respond resend the last message.
             else:
                 # Get last user utterance from tracker.
-                tracker = request.app.agent.tracker_store.retrieve(sender_id)
+                tracker = await request.app.ctx.agent.tracker_store.retrieve(sender_id)
                 last_response = None
                 if tracker:
                     last_response = next(
@@ -261,12 +266,12 @@ class TwilioVoiceInput(InputChannel):
 
                 # If no previous utterance found use the reprompt_fallback phrase.
                 if last_response is None:
-                    last_response = self.reprompt_fallback_phrase
+                    last_response_text = self.reprompt_fallback_phrase
                 else:
-                    last_response = last_response.text
+                    last_response_text = last_response.text
 
                 twilio_response = self._build_twilio_voice_response(
-                    [{"text": last_response}]
+                    [{"text": last_response_text}]
                 )
             return response.text(str(twilio_response), content_type="text/xml")
 

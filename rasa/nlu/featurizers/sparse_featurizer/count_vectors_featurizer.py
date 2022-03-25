@@ -44,6 +44,8 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     from https://arxiv.org/abs/1810.07150.
     """
 
+    OOV_words: List[Text]
+
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
@@ -551,8 +553,8 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
         if not self.vectorizers.get(attribute):
             return [None], [None]
 
-        sequence_features = []
-        sentence_features = []
+        sequence_features: List[Optional[scipy.sparse.spmatrix]] = []
+        sentence_features: List[Optional[scipy.sparse.spmatrix]] = []
 
         for i, tokens in enumerate(all_tokens):
             if not tokens:
@@ -704,12 +706,13 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
                 # Definitely need to persist some vocabularies
                 featurizer_file = model_dir / "vocabularies.pkl"
 
-                if self.use_shared_vocab:
-                    # Only persist vocabulary from one attribute. Can be loaded and
-                    # distributed to all attributes.
-                    vocab = attribute_vocabularies[TEXT]
-                else:
-                    vocab = attribute_vocabularies
+                # Only persist vocabulary from one attribute if `use_shared_vocab`.
+                # Can be loaded and distributed to all attributes.
+                vocab = (
+                    attribute_vocabularies[TEXT]
+                    if self.use_shared_vocab
+                    else attribute_vocabularies
+                )
 
                 io_utils.json_pickle(featurizer_file, vocab)
 

@@ -11,7 +11,7 @@ jobs:
     if: github.repository == 'RasaHQ/rasa'
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: rasahq/update-pr-branch@601ac3dadf708b14e7f0252d98230538235f99d9
         with:
           token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}

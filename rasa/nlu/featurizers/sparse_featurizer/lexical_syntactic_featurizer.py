@@ -4,7 +4,18 @@ from collections import OrderedDict
 
 import scipy.sparse
 import numpy as np
-from typing import Any, Dict, Text, List, Tuple, Callable, Set, Optional, Type, Union
+from typing import (
+    Any,
+    Dict,
+    Text,
+    List,
+    Tuple,
+    Callable,
+    Set,
+    Optional,
+    Type,
+    Union,
+)
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -359,9 +370,9 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
         """
         # Note that this will only sort the top level keys - and we keep
         # doing it to ensure consistently with what was done before)
-        ordered_feature_vocabulary: OrderedDict[
-            Tuple[int, Text], Set[Text]
-        ] = OrderedDict(sorted(feature_vocabulary.items()))
+        ordered_feature_vocabulary: Dict[Tuple[int, Text], Set[Text]] = OrderedDict(
+            sorted(feature_vocabulary.items())
+        )
 
         # create the nested mapping
         feature_to_idx_dict: Dict[Tuple[int, Text], Dict[Text, int]] = {}

@@ -21,6 +21,7 @@ from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
     DOCS_URL_POLICIES,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
@@ -573,7 +574,7 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
     form_name = "my_form"
     old_domain = Domain.from_yaml(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         actions:
         - utter_greet
         - utter_goodbye

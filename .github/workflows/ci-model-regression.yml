@@ -21,6 +21,7 @@ env:
   GCLOUD_VERSION: "318.0.0"
   DD_PROFILING_ENABLED: false
   TF_FORCE_GPU_ALLOW_GROWTH: true
+  NVML_INTERVAL_IN_SEC: 1
 
 jobs:
   read_test_configuration:
@@ -35,7 +36,7 @@ jobs:
 
     steps:
     - name: Checkout main
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Download gomplate
       run: |-
@@ -64,7 +65,7 @@ jobs:
         echo "::set-output name=dataset_branch::${DATASET_BRANCH}"
 
     - name: Checkout dataset
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: ${{ secrets.DATASET_REPOSITORY }}
         token: ${{ secrets.ML_TEST_SA_PAT }}
@@ -162,7 +163,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download gomplate
         run: |-
@@ -194,6 +195,23 @@ jobs:
             NUM_REPLICAS=$matrix_length
           fi
           echo NUM_REPLICAS=$NUM_REPLICAS >> $GITHUB_ENV
+
+      - name: Send warning if the current TF version does not have CUDA image tags configured
+        if: env.GH_RUNNER_IMAGE_TAG == 'latest'
+        env:
+          TF_CUDA_FILE: ./github/config/tf-cuda.json
+        run: |-
+          echo "::warning file=${TF_CUDA_FILE},line=3,col=1,endColumn=3::Missing cuda config for tf ${{ env.TF_VERSION }}. If you are not sure how to config CUDA, please reach out to infrastructure."
+
+      - name: Notify slack on tf-cuda config updates
+        if: env.GH_RUNNER_IMAGE_TAG == 'latest'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
+        with:
+          channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+          status: WARNING
+          color: warning
 
       - name: Render deployment template
         run: |-
@@ -235,10 +253,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Checkout dataset
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
@@ -309,8 +327,11 @@ jobs:
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
+          HOST_NAME=`hostname`
+          echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
+
       - name: Checkout dataset - external
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'
         with:
           repository: ${{ env.DATASET }}
@@ -329,7 +350,7 @@ jobs:
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
-          DATASET: "${{ matrix.dataset }}"
+          DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
@@ -337,15 +358,16 @@ jobs:
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
+          INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
-          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
+          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -364,7 +386,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -423,11 +445,10 @@ jobs:
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
 
-      - name: Generate a JSON file with a report / Publish results to Segment + Datadog
+      - name: Generate a JSON file with a report / Publish results to Datadog
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           SUMMARY_FILE: "./report.json"
-          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
           CONFIG: ${{ matrix.config }}
@@ -477,10 +498,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Checkout dataset
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
@@ -492,7 +513,7 @@ jobs:
           sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
-      - name: Set DATASET and CONFIG variables
+      - name: Set env variables
         id: set_dataset_config_vars
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
@@ -551,8 +572,11 @@ jobs:
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
+          HOST_NAME=`hostname`
+          echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
+
       - name: Checkout dataset - external
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'
         with:
           repository: ${{ env.DATASET }}
@@ -571,7 +595,7 @@ jobs:
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
-          DATASET: "${{ matrix.dataset }}"
+          DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
@@ -579,15 +603,16 @@ jobs:
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
-          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
+          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -606,7 +631,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -665,11 +690,10 @@ jobs:
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
 
-      - name: Generate a JSON file with a report / Publish results to Segment + Datadog
+      - name: Generate a JSON file with a report / Publish results to Datadog
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           SUMMARY_FILE: "./report.json"
-          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
           CONFIG: ${{ matrix.config }}
@@ -730,12 +754,12 @@ jobs:
           echo "::set-output name=success_status::$success_status"
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Get reports
         uses: actions/download-artifact@v2
@@ -787,23 +811,23 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download report from last on-schedule regression test
         run: |
           # Get ID of last on-schedule workflow
           SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
-            | jq -r  '.workflows[] | select(.name == "CI - Model Regression on schedule") | select(.path | test("schedule")) | .id')
+            | jq -r '.workflows[] | select(.name == "CI - Model Regression on schedule") | select(.path | test("schedule")) | .id')
 
-          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
+          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
 
           DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
-            | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
+            | jq -r '.artifacts[] | select(.name == "report.json") | .archive_download_url')
 
           # Download the artifact
-          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
+          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
 
           # Unzip and change name
           unzip report.json.zip && mv report.json report_main.json
@@ -821,16 +845,21 @@ jobs:
       - name: Render a comment to add
         id: get_results
         run: |
-          set +e
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
-          if [ $? -ne 0 ]; then
-              echo "New template failed. Try with legacy template."
-              OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results_legacy.tmpl)"
-          fi
-          set -e
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
+
+          # Get time of current commit as start time
+          TIME_ISO_COMMIT=$(gomplate -d github=https://api.github.com/repos/rasaHQ/rasa/commits/${{ github.sha }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -i '{{ (ds "github").commit.author.date }}')  # Example "2022-02-17T14:06:38Z"
+          TIME_UNIX_COMMIT=$(date -d "${TIME_ISO_COMMIT}" +%s%3N)  # Example: "1645106798"
+
+          # Get current time
+          TIME_ISO_NOW=$(gomplate -i '{{ (time.Now).UTC.Format time.RFC3339}}') # Example: "2022-02-17T14:50:54Z%"
+          TIME_UNIX_NOW=$(date -d "${TIME_ISO_NOW}" +%s%3N)  # Example: "1645118083"
+
+          echo "::set-output name=from_ts::$TIME_UNIX_COMMIT"
+          echo "::set-output name=to_ts::$TIME_UNIX_NOW"
 
       - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v2.2.0
@@ -843,6 +872,8 @@ jobs:
             Status of the run: ${{ needs.combine_reports.outputs.success_status }}
 
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            [Datadog dashboard link](https://app.datadoghq.eu/dashboard/mf4-2hu-x84?tpl_var_branch_baseline=${{ github.head_ref }}&from_ts=${{ steps.get_results.outputs.from_ts }}&to_ts=${{ steps.get_results.outputs.to_ts }}&live=false)
 
             ${{ steps.get_results.outputs.result }}
 

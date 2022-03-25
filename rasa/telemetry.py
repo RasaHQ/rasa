@@ -570,7 +570,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 
 def filter_errors(
-    event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None
+    event: Optional[Dict[Text, Any]], hint: Optional[Dict[Text, Any]] = None
 ) -> Optional[Dict[Text, Any]]:
     """Filter errors.
 
@@ -583,7 +583,7 @@ def filter_errors(
         an `ImportError` which should be discarded.
     """
     if hint and "exc_info" in hint:
-        exc_type, exc_value, tb = hint.get("exc_info")
+        exc_type, exc_value, tb = hint["exc_info"]
         if isinstance(exc_value, ImportError):
             return None
     return event
@@ -602,9 +602,8 @@ def before_send(
         the event without any sensitive / PII data or `None` if the event should
         be discarded.
     """
-    event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
-    event = filter_errors(event, _unused_hint)
-    return event
+    cleaned_event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
+    return filter_errors(cleaned_event, _unused_hint)
 
 
 def strip_sensitive_data_from_sentry_event(
@@ -986,10 +985,15 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
         e2e: indicator if tests running in end to end mode
         agent: Agent of the model getting tested
     """
+    if agent.processor is None:
+        project_fingerprint = ""
+    else:
+        project_fingerprint = agent.processor.model_metadata.project_fingerprint
+
     _track(
         TELEMETRY_TEST_CORE_EVENT,
         {
-            "project": agent.processor.model_metadata.project_fingerprint,
+            "project": project_fingerprint,
             "end_to_end": e2e,
             "num_story_steps": num_story_steps,
         },

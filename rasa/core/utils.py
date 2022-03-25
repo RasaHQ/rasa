@@ -117,7 +117,7 @@ def list_routes(app: Sanic) -> Dict[Text, Text]:
         for arg in route._params:
             options[arg] = f"[{arg}]"
 
-        handlers = [(list(route.methods)[0], route.name.replace("rasa.server.", ""))]
+        handlers = [(list(route.methods)[0], route.name.replace("rasa_server.", ""))]
 
         for method, name in handlers:
             full_endpoint = "/" + "/".join(endpoint)
@@ -204,7 +204,7 @@ class AvailableEndpoints:
 
 
 def read_endpoints_from_path(
-    endpoints_path: Union[Path, Text, None] = None
+    endpoints_path: Optional[Union[Path, Text]] = None
 ) -> AvailableEndpoints:
     """Get `AvailableEndpoints` object from specified path.
 
