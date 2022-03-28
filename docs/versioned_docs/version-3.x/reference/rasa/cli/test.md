@@ -26,7 +26,7 @@ Run core tests.
 #### run\_nlu\_test\_async
 
 ```python
-async run_nlu_test_async(config: Optional[Union[Text, List[Text]]], data_path: Text, models_path: Text, output_dir: Text, cross_validation: bool, percentages: List[int], runs: int, no_errors: bool, all_args: Dict[Text, Any]) -> None
+async run_nlu_test_async(config: Optional[Union[Text, List[Text]]], data_path: Text, models_path: Text, output_dir: Text, cross_validation: bool, percentages: List[int], runs: int, no_errors: bool, domain_path: Text, all_args: Dict[Text, Any]) -> None
 ```
 
 Runs NLU tests.
@@ -44,6 +44,7 @@ Runs NLU tests.
   or not.
 - `percentages` - defines the exclusion percentage of the training data.
 - `runs` - number of comparison runs to make.
+- `domain_path` - path to domain.
 - `no_errors` - indicates if incorrect predictions should be written to a file
   or not.
 

@@ -10,6 +10,23 @@ class TrackerWithCachedStates(DialogueStateTracker)
 
 A tracker wrapper that caches the state creation of the tracker.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(sender_id: Text, slots: Optional[Iterable[Slot]], max_event_history: Optional[int] = None, domain: Optional[Domain] = None, is_augmented: bool = False, is_rule_tracker: bool = False) -> None
+```
+
+Initializes a tracker with cached states.
+
+#### from\_events
+
+```python
+ | @classmethod
+ | from_events(cls, sender_id: Text, evts: List[Event], slots: Optional[Iterable[Slot]] = None, max_event_history: Optional[int] = None, sender_source: Optional[Text] = None, domain: Optional[Domain] = None, is_rule_tracker: bool = False) -> "TrackerWithCachedStates"
+```
+
+Initializes a tracker with given events.
+
 #### past\_states\_for\_hashing
 
 ```python
@@ -80,7 +97,7 @@ will be replayed.
 #### update
 
 ```python
- | update(event: Event, skip_states: bool = False) -> None
+ | update(event: Event, domain: Optional[Domain] = None) -> None
 ```
 
 Modify the state of the tracker according to an ``Event``.

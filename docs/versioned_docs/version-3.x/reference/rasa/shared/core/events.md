@@ -1155,7 +1155,7 @@ Returns event as string for debugging.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Optional[Text]
+ | __str__() -> Text
 ```
 
 Returns event as human readable string.

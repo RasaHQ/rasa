@@ -147,3 +147,20 @@ Checks whether the given file path is a Rasa config file.
 
   `True` if it&#x27;s a Rasa config file, otherwise `False`.
 
+## TrainingType Objects
+
+```python
+class TrainingType(Enum)
+```
+
+Enum class for defining explicitly what training types exist.
+
+#### model\_type
+
+```python
+ | @property
+ | model_type() -> Text
+```
+
+Returns the type of model which this training yields.
+

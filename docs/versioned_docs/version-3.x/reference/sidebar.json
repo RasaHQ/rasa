@@ -9,6 +9,7 @@
             "reference/rasa/cli/arguments/evaluate",
             "reference/rasa/cli/arguments/interactive",
             "reference/rasa/cli/arguments/run",
+            "reference/rasa/cli/arguments/test",
             "reference/rasa/cli/arguments/train",
             "reference/rasa/cli/arguments/visualize"
           ],
@@ -157,6 +158,7 @@
         {
           "items": [
             "reference/rasa/engine/recipes/default_recipe",
+            "reference/rasa/engine/recipes/graph_recipe",
             "reference/rasa/engine/recipes/recipe"
           ],
           "label": "rasa.engine.recipes",
@@ -239,6 +241,7 @@
             "reference/rasa/nlu/classifiers/diet_classifier",
             "reference/rasa/nlu/classifiers/fallback_classifier",
             "reference/rasa/nlu/classifiers/keyword_intent_classifier",
+            "reference/rasa/nlu/classifiers/logistic_regression_classifier",
             "reference/rasa/nlu/classifiers/mitie_intent_classifier",
             "reference/rasa/nlu/classifiers/regex_message_handler",
             "reference/rasa/nlu/classifiers/sklearn_intent_classifier"
@@ -387,7 +390,6 @@
         },
         {
           "items": [
-            "reference/rasa/shared/importers/autoconfig",
             "reference/rasa/shared/importers/importer",
             "reference/rasa/shared/importers/multi_project",
             "reference/rasa/shared/importers/rasa",

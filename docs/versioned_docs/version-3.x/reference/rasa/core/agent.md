@@ -53,7 +53,7 @@ getting the next action, and handling a channel.
 #### \_\_init\_\_
 
 ```python
- | __init__(domain: Optional[Union[Text, Domain]] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, fingerprint: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, http_interpreter: Optional[RasaNLUHttpInterpreter] = None)
+ | __init__(domain: Optional[Domain] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, fingerprint: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, http_interpreter: Optional[RasaNLUHttpInterpreter] = None)
 ```
 
 Initializes an `Agent`.
@@ -62,7 +62,7 @@ Initializes an `Agent`.
 
 ```python
  | @classmethod
- | load(cls, model_path: Union[Text, Path], domain: Optional[Union[Text, Domain]] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, fingerprint: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, http_interpreter: Optional[RasaNLUHttpInterpreter] = None) -> Agent
+ | load(cls, model_path: Union[Text, Path], domain: Optional[Domain] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, fingerprint: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, http_interpreter: Optional[RasaNLUHttpInterpreter] = None) -> Agent
 ```
 
 Constructs a new agent and loads the processer and model.

@@ -18,6 +18,15 @@ Default `TrainingFileImporter` implementation.
 
 Retrieves model config (see parent class for full docstring).
 
+#### get\_config\_file\_for\_auto\_config
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | get_config_file_for_auto_config() -> Optional[Text]
+```
+
+Returns config file path for auto-config only if there is a single one.
+
 #### get\_stories
 
 ```python
