@@ -229,6 +229,11 @@ jobs:
         python-version: [ 3.7, 3.8, 3.9 ]
 
     steps:
+    - name: Read current Rasa version
+      run: |
+        RASA_VERSION=$(python -c "import sys; import os; sys.path.append('rasa/'); from version import __version__; print(__version__)")
+        echo "RASA_VERSION=$RASA_VERSION" >> $GITHUB_ENV
+
     - name: Run DataDog Agent
       if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
       uses: datadog/agent-github-action@9e911781db79c5128ea2890f4ab2538123a7e5bd
@@ -236,7 +241,7 @@ jobs:
         api_key: ${{ secrets.DD_API_KEY }}
         image_name: datadog/agent
         datadog_site: datadoghq.eu
-        extra_env: GITHUB_ACTIONS=true, CI=true
+        extra_env: GITHUB_ACTIONS=true, CI=true, DD_VERSION=${{ env.RASA_VERSION }}, HOST_NAME=${{ matrix.os }}, BRANCH_NAME=${{ env.GITHUB_REF_NAME }}
 
 
     - name: Checkout git repository 🕝
