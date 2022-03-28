@@ -1413,7 +1413,7 @@ psutil = "*"
 name = "mongomock"
 version = "3.23.0"
 description = "Fake pymongo stub for testing simple MongoDB-dependent code"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -1425,7 +1425,7 @@ six = "*"
 name = "mongomock-motor"
 version = "0.0.3"
 description = "Library for mocking AsyncIOMotorClient built on top of mongomock."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -2601,7 +2601,7 @@ python-versions = "*"
 name = "sentinels"
 version = "1.0.0"
 description = "Various objects to denote special meanings in python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -3487,7 +3487,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "885aa0797aeb6518f5c3880d4837711cb0d7c6d30ef184bc2dae8b4a01cc18d4"
+content-hash = "6f7192e37702d0b7846c39db87999e5b542624b4135d3aa95e0f22204a03c5c9"
 
 [metadata.files]
 absl-py = [

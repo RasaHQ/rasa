@@ -127,7 +127,6 @@ CacheControl = "^0.12.9"
 randomname = "^0.1.5"
 sanic-routing = "^0.7.2"
 motor = "2.1.0"
-mongomock-motor = "^0.0.3"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
@@ -166,6 +165,7 @@ analytics-python = "^1.4.0"
 datadog-api-client = "^1.7.0"
 datadog = "^0.43.0"
 types-redis = "^4.1.16"
+mongomock-motor = "0.0.3"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
