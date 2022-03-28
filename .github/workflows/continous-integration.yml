@@ -236,9 +236,7 @@ jobs:
         api_key: ${{ secrets.DD_API_KEY }}
         image_name: datadog/agent
         datadog_site: datadoghq.eu
-        extra_env:
-          - GITHUB_ACTIONS=true
-          - CI=true
+        extra_env: GITHUB_ACTIONS=true, CI=true
 
 
     - name: Checkout git repository 🕝
