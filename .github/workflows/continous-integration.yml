@@ -234,6 +234,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Read current Rasa version
+      shell: bash
       run: |
         RASA_VERSION=$(python -c "import sys; import os; sys.path.append('rasa/'); from version import __version__; print(__version__)")
         echo "RASA_VERSION=$RASA_VERSION" >> $GITHUB_ENV
@@ -245,7 +246,7 @@ jobs:
         api_key: ${{ secrets.DD_API_KEY }}
         image_name: datadog/agent
         datadog_site: datadoghq.eu
-        extra_env: GITHUB_ACTIONS=true, CI=true, DD_VERSION=${{ env.RASA_VERSION }}, HOST_NAME=${{ matrix.os }}, BRANCH_NAME=${{ env.GITHUB_REF_NAME }}
+        extra_env: GITHUB_ACTIONS=true, CI=true, DD_ENV=CI, DD_VERSION=${{ env.RASA_VERSION }}, DD_HOSTNAME=${{ matrix.os }}, BRANCH_NAME=${{ env.GITHUB_REF_NAME }}
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
