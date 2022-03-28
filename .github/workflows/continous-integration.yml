@@ -338,7 +338,7 @@ jobs:
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
         DD_VERSION: ${{ env.RASA_VERSION }}
-        DD_TAGS: git_commit_sha=${{ env.GITHUB_SHA }}, git_branch=${{ env.GITHUB_REF_NAME }}
+        DD_TAGS: git_commit_sha:${{ env.GITHUB_SHA }}, git_branch:${{ env.GITHUB_REF_NAME }}
         DD_ARGS: --ddtrace --ddtrace-patch-all
         DD_PROFILING_ENABLED: true
       run: |
