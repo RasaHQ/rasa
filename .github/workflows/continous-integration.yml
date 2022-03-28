@@ -333,6 +333,7 @@ jobs:
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
         DD_ARGS: --ddtrace --ddtrace-patch-all
+        DD_PROFILING_ENABLED: true
       run: |
         make ${{ matrix.test }}
         if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
