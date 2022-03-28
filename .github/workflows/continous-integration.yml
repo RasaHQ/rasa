@@ -229,6 +229,10 @@ jobs:
         python-version: [ 3.7, 3.8, 3.9 ]
 
     steps:
+    - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/checkout@v3
+
     - name: Read current Rasa version
       run: |
         RASA_VERSION=$(python -c "import sys; import os; sys.path.append('rasa/'); from version import __version__; print(__version__)")
@@ -242,11 +246,6 @@ jobs:
         image_name: datadog/agent
         datadog_site: datadoghq.eu
         extra_env: GITHUB_ACTIONS=true, CI=true, DD_VERSION=${{ env.RASA_VERSION }}, HOST_NAME=${{ matrix.os }}, BRANCH_NAME=${{ env.GITHUB_REF_NAME }}
-
-
-    - name: Checkout git repository 🕝
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
