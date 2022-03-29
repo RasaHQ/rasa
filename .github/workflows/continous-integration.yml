@@ -328,6 +328,7 @@ jobs:
       run: poetry run pip install -U ddtrace
 
     - name: Read current Rasa version
+      if: needs.changes.outputs.backend == 'true'
       run: |
         RASA_VERSION=$(python -c "import sys; import os; sys.path.append('rasa/'); from version import __version__; print(__version__)")
         echo "RASA_VERSION=$RASA_VERSION" >> $GITHUB_ENV
@@ -340,8 +341,8 @@ jobs:
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
         DD_VERSION: ${{ env.RASA_VERSION }}
-        DD_TAGS: git_commit_sha:${{ env.GITHUB_SHA }}, git_branch:${{ env.GITHUB_REF_NAME }}
         DD_ARGS: --ddtrace --ddtrace-patch-all
+        DD_PROFILING_TAGS: git_commit_sha:${{ env.GITHUB_SHA }}, git_branch:${{ env.GITHUB_REF_NAME }}
         DD_PROFILING_ENABLED: true
       run: |
         make ${{ matrix.test }}
