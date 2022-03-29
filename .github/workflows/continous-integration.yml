@@ -238,7 +238,7 @@ jobs:
 
     - name: Run DataDog Agent
       if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9))
-      uses: datadog/agent-github-action@9e911781db79c5128ea2890f4ab2538123a7e5bd
+      uses: datadog/agent-github-action@28867afa48210e03595c323ff993d339d5508cfc
       with:
         api_key: ${{ secrets.DD_API_KEY }}
         image_name: datadog/agent
