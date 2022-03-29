@@ -237,7 +237,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Run DataDog Agent
-      if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9))
+      if: needs.changes.outputs.backend == 'true'
       uses: datadog/agent-github-action@28867afa48210e03595c323ff993d339d5508cfc
       with:
         api_key: ${{ secrets.DD_API_KEY }}
