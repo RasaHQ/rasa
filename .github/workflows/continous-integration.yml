@@ -338,11 +338,10 @@ jobs:
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
-        DD_ENV: ${{ matrix.test }}
-        DD_SERVICE: rasa
+        DD_ENV: rasa-ci
+        DD_SERVICE: rasa-${{ matrix.test }}
         DD_VERSION: ${{ env.RASA_VERSION }}
         DD_ARGS: --ddtrace --ddtrace-patch-all
-        DD_PROFILING_TAGS: git_commit_sha:${{ env.GITHUB_SHA }}, git_branch:${{ env.GITHUB_REF_NAME }}
         DD_PROFILING_ENABLED: true
       run: |
         make ${{ matrix.test }}
