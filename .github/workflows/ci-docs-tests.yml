@@ -45,7 +45,7 @@ jobs:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
     - name: Set up Node 12.x 🦙
-      uses: actions/setup-node@v2.3.0
+      uses: actions/setup-node@v3
       with:
         node-version: '12.x'
 
