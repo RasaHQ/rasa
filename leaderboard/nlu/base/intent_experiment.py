@@ -99,7 +99,10 @@ class IntentExperiment(BaseExperiment):
             domain_path=absolute_path(self.config.data.domain_path),
         )
         full_data = self.preprocess_data(full_data)
-        return self.split_data(full_data)
+        train, test = self.split_data(full_data)
+        percentage = self.config.exclusion_percentage
+        _, train_included = train.train_test_split(percentage / 100)
+        return train_included, test
 
     def run(self, train: TrainingData, test: Optional[TrainingData]) -> None:
 
@@ -109,11 +112,9 @@ class IntentExperiment(BaseExperiment):
         report_path = self.out_dir / "report"
         report_path.mkdir()
 
-        # modify and store training data
-        percentage = self.config.exclusion_percentage
-        _, train_included = train.train_test_split(percentage / 100)
+        #  store training data
         train_split_path = data_path / "train.yml"
-        rasa_io_utils.write_text_file(train_included.nlu_as_yaml(), train_split_path)
+        rasa_io_utils.write_text_file(train.nlu_as_yaml(), train_split_path)
         # TODO log stats for training data
 
         # train model
@@ -173,15 +174,16 @@ def multirun(
         ",exclude:${exclusion_percentage}"
         "__${now:%Y-%m-%d_%H-%M-%S}"
     )
+    script_name = os.path.basename(__file__).replace(".py", "")
     full_pattern = os.path.join(
         out_dir,
-        "intent_experiment__${data.name}",
+        f"{script_name}" + "__${data.name}",
         experiment_pattern,
     )
 
     command = [
         "python",
-        os.path.abspath("../../../leaderboard/nlu/base/intent_experiment.py"),
+        os.path.abspath(__file__),
         f"hydra.run.dir='{full_pattern}'",
     ]
 
