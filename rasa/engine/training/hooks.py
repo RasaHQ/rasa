@@ -7,6 +7,8 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import PrecomputedValueProvider
 import rasa.shared.utils.io
 from rasa.engine.training import fingerprinting
+from rasa.engine.constants import node_runtimes
+from time import time
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +115,7 @@ class LoggingHook(GraphNodeHook):
 
         if not self._is_cached_node(node) and self._does_node_train(node):
             logger.info(f"Starting to train component '{node.uses.__name__}'.")
-
+            execution_context.start_time = time()
         return {}
 
     @staticmethod
@@ -148,3 +150,4 @@ class LoggingHook(GraphNodeHook):
             )
         else:
             logger.info(f"Finished training component '{node.uses.__name__}'.")
+            node_runtimes[node_name] = time() - execution_context.start_time

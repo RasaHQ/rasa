@@ -138,6 +138,7 @@ class ModelMetadata:
     nlu_target: Text
     language: Optional[Text]
     training_type: TrainingType = TrainingType.BOTH
+    component_runtimes: Optional[Dict[Text, float]] = None
 
     def __post_init__(self) -> None:
         """Raises an exception when the meta data indicates an unsupported version.
@@ -165,6 +166,7 @@ class ModelMetadata:
             "core_target": self.core_target,
             "nlu_target": self.nlu_target,
             "language": self.language,
+            "component_runtimes": self.component_runtimes,
         }
 
     @classmethod
@@ -191,4 +193,5 @@ class ModelMetadata:
             core_target=serialized["core_target"],
             nlu_target=serialized["nlu_target"],
             language=serialized["language"],
+            component_runtimes=serialized.get("component_runtimes", None),
         )

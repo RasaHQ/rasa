@@ -12,3 +12,5 @@ RESERVED_PLACEHOLDERS = {
     PLACEHOLDER_MESSAGE: List[UserMessage],
     PLACEHOLDER_TRACKER: DialogueStateTracker,
 }
+
+node_runtimes = {}

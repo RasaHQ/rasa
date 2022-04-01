@@ -307,6 +307,7 @@ class ExecutionContext:
     is_finetuning: bool = False
     # This is set by the `GraphNode` before it is passed to the `GraphComponent`.
     node_name: Optional[Text] = None
+    start_time: Optional[float] = None
 
 
 class GraphNode:

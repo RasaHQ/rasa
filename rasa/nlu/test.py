@@ -1839,6 +1839,16 @@ async def compare_nlu(
                         model_output_path,
                         fixed_model_name=model_name,
                     )
+
+                    # just an inefficient way of showing
+                    # how to get training times from the
+                    # persisted model tar. if we skip the
+                    # model loading, it will be much faster.
+                    training_times = MessageProcessor._load_model(model_path)[
+                        1
+                    ].component_runtimes
+                    print(training_times)
+
                 except Exception as e:  # skipcq: PYL-W0703
                     # general exception catching needed to continue evaluating other
                     # model configurations

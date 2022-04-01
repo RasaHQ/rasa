@@ -15,6 +15,7 @@ from rasa.engine.training.components import (
 )
 from rasa.engine.training.hooks import TrainingHook, LoggingHook
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.engine.constants import node_runtimes
 
 logger = logging.getLogger(__name__)
 
@@ -90,13 +91,15 @@ class GraphTrainer:
             ),
         ]
 
+        execution_context = ExecutionContext(
+            graph_schema=model_configuration.train_schema,
+            is_finetuning=is_finetuning,
+        )
+
         graph_runner = self._graph_runner_class.create(
             graph_schema=pruned_training_schema,
             model_storage=self._model_storage,
-            execution_context=ExecutionContext(
-                graph_schema=model_configuration.train_schema,
-                is_finetuning=is_finetuning,
-            ),
+            execution_context=execution_context,
             hooks=hooks,
         )
 
@@ -105,7 +108,7 @@ class GraphTrainer:
         graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
         return self._model_storage.create_model_package(
-            output_filename, model_configuration, domain
+            output_filename, model_configuration, domain, node_runtimes
         )
 
     def fingerprint(

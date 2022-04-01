@@ -8,7 +8,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Generator, Tuple, Union
+from typing import Text, Generator, Tuple, Union, Dict
 
 import rasa.utils.common
 import rasa.shared.utils.io
@@ -154,6 +154,7 @@ class LocalModelStorage(ModelStorage):
         model_archive_path: Union[Text, Path],
         model_configuration: GraphModelConfiguration,
         domain: Domain,
+        component_runtimes: Dict[Text, float] = {},
     ) -> ModelMetadata:
         """Creates model package (see parent class for full docstring)."""
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
@@ -165,7 +166,9 @@ class LocalModelStorage(ModelStorage):
                 self._storage_path, temporary_directory / MODEL_ARCHIVE_COMPONENTS_DIR
             )
 
-            model_metadata = self._create_model_metadata(domain, model_configuration)
+            model_metadata = self._create_model_metadata(
+                domain, model_configuration, component_runtimes
+            )
             self._persist_metadata(model_metadata, temporary_directory)
 
             if isinstance(model_archive_path, str):
@@ -190,7 +193,9 @@ class LocalModelStorage(ModelStorage):
 
     @staticmethod
     def _create_model_metadata(
-        domain: Domain, model_configuration: GraphModelConfiguration
+        domain: Domain,
+        model_configuration: GraphModelConfiguration,
+        component_runtimes={},
     ) -> ModelMetadata:
         return ModelMetadata(
             trained_at=datetime.utcnow(),
@@ -204,4 +209,5 @@ class LocalModelStorage(ModelStorage):
             language=model_configuration.language,
             core_target=model_configuration.core_target,
             nlu_target=model_configuration.nlu_target,
+            component_runtimes=component_runtimes,
         )
