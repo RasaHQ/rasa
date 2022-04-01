@@ -86,5 +86,7 @@ rasa/segment_key
 rasa/keys
 .rasa
 /results/
+**/multirun
+**/outputs
 # Local Netlify folder
 .netlify
