@@ -3,6 +3,7 @@ language: en
 
 pipeline:
   - name: WhitespaceTokenizer
-  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+    token_pattern: (?u)\b\w+\b
   - name: DIETClassifier
     epochs: 1

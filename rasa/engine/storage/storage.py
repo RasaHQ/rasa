@@ -16,7 +16,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.data import TrainingType
 
 if typing.TYPE_CHECKING:
-    from rasa.engine.graph import GraphSchema, GraphModelConfiguration
+    from rasa.engine.graph import GraphSchema, GraphModelConfiguration, ExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +109,7 @@ class ModelStorage(abc.ABC):
         model_archive_path: Union[Text, Path],
         model_configuration: GraphModelConfiguration,
         domain: Domain,
+        execution_context: ExecutionContext,
     ) -> ModelMetadata:
         """Creates a model archive containing all data to load and run the model.
 
@@ -116,6 +117,7 @@ class ModelStorage(abc.ABC):
             model_archive_path: The path to the archive which should be created.
             model_configuration: The model configuration (schemas, language, etc.)
             domain: The `Domain` which was used to train the model.
+            execution_context: The execution context of the given model.
 
         Returns:
             The model metadata.
@@ -123,7 +125,7 @@ class ModelStorage(abc.ABC):
         ...
 
 
-@dataclass()
+@dataclass
 class ModelMetadata:
     """Describes a trained model."""
 
@@ -138,7 +140,8 @@ class ModelMetadata:
     nlu_target: Text
     language: Optional[Text]
     training_type: TrainingType = TrainingType.BOTH
-    component_runtimes: Optional[Dict[Text, float]] = None
+    start_times: Optional[Dict[str, float]] = None
+    durations: Optional[Dict[str, float]] = None
 
     def __post_init__(self) -> None:
         """Raises an exception when the meta data indicates an unsupported version.
@@ -166,7 +169,8 @@ class ModelMetadata:
             "core_target": self.core_target,
             "nlu_target": self.nlu_target,
             "language": self.language,
-            "component_runtimes": self.component_runtimes,
+            "start_times": self.start_times,
+            "durations": self.durations,
         }
 
     @classmethod
@@ -193,5 +197,6 @@ class ModelMetadata:
             core_target=serialized["core_target"],
             nlu_target=serialized["nlu_target"],
             language=serialized["language"],
-            component_runtimes=serialized.get("component_runtimes", None),
+            start_times=serialized["start_times"],
+            durations=serialized["durations"],
         )

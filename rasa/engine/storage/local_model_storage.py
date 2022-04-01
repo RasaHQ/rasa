@@ -13,7 +13,7 @@ from typing import Text, Generator, Tuple, Union, Dict
 import rasa.utils.common
 import rasa.shared.utils.io
 from rasa.engine.storage.storage import ModelMetadata, ModelStorage
-from rasa.engine.graph import GraphModelConfiguration
+from rasa.engine.graph import GraphModelConfiguration, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.core.domain import Domain
@@ -154,7 +154,7 @@ class LocalModelStorage(ModelStorage):
         model_archive_path: Union[Text, Path],
         model_configuration: GraphModelConfiguration,
         domain: Domain,
-        component_runtimes: Dict[Text, float] = {},
+        execution_context: ExecutionContext,
     ) -> ModelMetadata:
         """Creates model package (see parent class for full docstring)."""
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
@@ -167,7 +167,7 @@ class LocalModelStorage(ModelStorage):
             )
 
             model_metadata = self._create_model_metadata(
-                domain, model_configuration, component_runtimes
+                domain, model_configuration, execution_context
             )
             self._persist_metadata(model_metadata, temporary_directory)
 
@@ -195,7 +195,7 @@ class LocalModelStorage(ModelStorage):
     def _create_model_metadata(
         domain: Domain,
         model_configuration: GraphModelConfiguration,
-        component_runtimes={},
+        execution_context: ExecutionContext,
     ) -> ModelMetadata:
         return ModelMetadata(
             trained_at=datetime.utcnow(),
@@ -209,5 +209,6 @@ class LocalModelStorage(ModelStorage):
             language=model_configuration.language,
             core_target=model_configuration.core_target,
             nlu_target=model_configuration.nlu_target,
-            component_runtimes=component_runtimes,
+            start_times=execution_context.start_times,
+            durations=execution_context.durations,
         )

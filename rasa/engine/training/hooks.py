@@ -7,10 +7,20 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import PrecomputedValueProvider
 import rasa.shared.utils.io
 from rasa.engine.training import fingerprinting
-from rasa.engine.constants import node_runtimes
-from time import time
+import time
 
 logger = logging.getLogger(__name__)
+
+
+def _does_node_train(node: SchemaNode) -> bool:
+    # Nodes which train are always targets so that they store their output in the
+    # model storage. `is_input` filters out nodes which don't really train but e.g.
+    # persist some training data.
+    return node.is_target and not node.is_input
+
+
+def _is_cached_node(node: SchemaNode) -> bool:
+    return node.uses == PrecomputedValueProvider
 
 
 class TrainingHook(GraphNodeHook):
@@ -51,6 +61,10 @@ class TrainingHook(GraphNodeHook):
             inputs=received_inputs,
         )
 
+        node = self._pruned_schema.nodes[node_name]
+        if not _is_cached_node(node) and _does_node_train(node):
+            execution_context.start_times[node_name] = time.time()
+
         return {"fingerprint_key": fingerprint_key}
 
     def on_after_node(
@@ -83,6 +97,10 @@ class TrainingHook(GraphNodeHook):
             model_storage=self._model_storage,
         )
 
+        start_time = execution_context.start_times.get(node_name)
+        if start_time is not None:
+            execution_context.durations[node_name] = time.time() - start_time
+
     @staticmethod
     def _get_graph_component_class(
         execution_context: ExecutionContext, node_name: Text
@@ -113,21 +131,9 @@ class LoggingHook(GraphNodeHook):
         """Logs the training start of a graph node."""
         node = self._pruned_schema.nodes[node_name]
 
-        if not self._is_cached_node(node) and self._does_node_train(node):
+        if not _is_cached_node(node) and _does_node_train(node):
             logger.info(f"Starting to train component '{node.uses.__name__}'.")
-            execution_context.start_time = time()
         return {}
-
-    @staticmethod
-    def _does_node_train(node: SchemaNode) -> bool:
-        # Nodes which train are always targets so that they store their output in the
-        # model storage. `is_input` filters out nodes which don't really train but e.g.
-        # persist some training data.
-        return node.is_target and not node.is_input
-
-    @staticmethod
-    def _is_cached_node(node: SchemaNode) -> bool:
-        return node.uses == PrecomputedValueProvider
 
     def on_after_node(
         self,
@@ -140,14 +146,13 @@ class LoggingHook(GraphNodeHook):
         """Logs when a component finished its training."""
         node = self._pruned_schema.nodes[node_name]
 
-        if not self._does_node_train(node):
+        if not _does_node_train(node):
             return
 
-        if self._is_cached_node(node):
+        if _is_cached_node(node):
             actual_component = execution_context.graph_schema.nodes[node_name]
             logger.info(
                 f"Restored component '{actual_component.uses.__name__}' from cache."
             )
         else:
             logger.info(f"Finished training component '{node.uses.__name__}'.")
-            node_runtimes[node_name] = time() - execution_context.start_time

@@ -1,4 +1,5 @@
 import asyncio
+import glob
 import shutil
 import subprocess
 from pathlib import Path
@@ -27,7 +28,7 @@ from leaderboard.nlu.base.base_experiment import (
     BaseExperiment,
     ExperimentConfiguration,
 )
-from leaderboard.utils import hydra_utils
+from leaderboard.utils import hydra_utils, rasa_utils
 
 logger = logging.getLogger(__file__)
 
@@ -105,6 +106,8 @@ class IntentExperiment(BaseExperiment):
         # as before, train and test used in the experiment are persisted
         data_path = self.out_dir / "data"
         data_path.mkdir(parents=True)
+        report_path = self.out_dir / "report"
+        report_path.mkdir()
 
         # modify and store training data
         percentage = self.config.exclusion_percentage
@@ -121,20 +124,22 @@ class IntentExperiment(BaseExperiment):
             output=model_output_path,
             fixed_model_name=self.config.model.name,
         )
-        # TODO log stats for training data
+
+        # extract training meta data
+        model_archive = model_output_path / (self.config.model.name + ".tar.gz")
+        rasa_utils.extract_metadata(model_archive, report_path)
 
         # test model
         if test is not None:
             test_split_path = data_path / "test.yml"
             rasa_io_utils.write_text_file(test.nlu_as_yaml(), test_split_path)
 
-            output_path = self.out_dir / "report"
             processor = Agent.load(model_path=model_path).processor
             _ = asyncio.run(
                 run_evaluation(
                     test_split_path,
                     processor,
-                    output_directory=output_path,
+                    output_directory=report_path,
                     errors=True,
                 )
             )
