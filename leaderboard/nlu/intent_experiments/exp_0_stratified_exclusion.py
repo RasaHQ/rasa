@@ -1,21 +1,22 @@
 """
-simple intent experiment
+exp_0_stratified_exclusion
 ---------------------------
-- using rasa's split function
-- additionally helps to exclude a fixed percentage of examples via
-  rasa's split function
-- shoud mimic rasa test (i.e. no rng is passed on, the split functions
-  use the given seed to initiate an rng)
+- avoid whatever test data splitting is doing with responses and just use
+  sklearns stratified shuffle split
 """
+
 import asyncio
 import shutil
 import subprocess
 from pathlib import Path
+import random
 from typing import Tuple, Optional, List
 from dataclasses import dataclass
 import logging
 import os
 
+import numpy as np
+from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm import tqdm
 import hydra
 from hydra.core.config_store import ConfigStore
@@ -45,7 +46,8 @@ logger = logging.getLogger(__file__)
 class IntentExperimentConfiguration(ExperimentConfiguration):
     drop_intents_with_less_than: int = 5
     exclusion_percentage: float = 0.0
-    random_seed: Optional[int] = 1234
+    test_fraction: float = 0.2
+    random_seed: int = 42
 
 
 ConfigStore.instance().store(name="config", node=IntentExperimentConfiguration)
@@ -53,7 +55,7 @@ ConfigStore.instance().store(name="config", node=IntentExperimentConfiguration)
 
 @dataclass
 class IntentExperiment(BaseExperiment):
-    """Base Intent Classifier Experiment."""
+    """ntent Classifier Experiment."""
 
     out_dir: Path
     config: IntentExperimentConfiguration
@@ -69,14 +71,18 @@ class IntentExperiment(BaseExperiment):
             ),
             schema_path=CONFIG_SCHEMA_FILE,
         )
+        self.rng = random.Random(self.config.random_seed)
 
     def get_description(self):
         """Return a description that will be logged as reminder what this is about."""
         return (
-            "Experiment where we 1. exclude all intents with less than a fixed "
-            "number of "
-            "examples and 2. during training also remove a fixed percentage of the "
-            "training examples before training."
+            "Experiment where we \n"
+            "1. exclude all intents with less than a fixed number of "
+            "examples and \n"
+            "2. create train and test via sklearn stratified shuffle split using the "
+            "messages intents\n"
+            "3. during training also remove a fixed percentage of the "
+            "training examples before training using the same method as in 2."
         )
 
     @classmethod
@@ -98,10 +104,36 @@ class IntentExperiment(BaseExperiment):
         )
         return nlu_data
 
-    def split_data(self, nlu_data: TrainingData) -> Tuple[TrainingData, TrainingData]:
+    def split_data(
+        self, nlu_data: TrainingData, test_fraction: float
+    ) -> Tuple[TrainingData, TrainingData]:
         """Split given data into train and test."""
-        # NOTE: can't use rng with rasa functions...
-        return nlu_data.train_test_split(random_seed=self.config.random_seed)
+
+        data_messages = nlu_data.intent_examples
+        data_indices = np.arange(len(data_messages))
+        labels_str = [message.get("intent") for message in data_messages]
+
+        sss = StratifiedShuffleSplit(
+            n_splits=1,
+            test_size=test_fraction,
+            random_state=self.config.random_seed,
+        )
+        indices_per_split = next(sss.split(data_indices, labels_str))
+
+        splits = []
+        for split_name, indices in zip(["train", "test"], indices_per_split):
+            split_messages = [data_messages[data_indices[idx]] for idx in indices]
+            split_responses = nlu_data._needed_responses_for_examples(split_messages)
+            split_data = TrainingData(
+                split_messages,
+                entity_synonyms=nlu_data.entity_synonyms,
+                regex_features=nlu_data.regex_features,
+                lookup_tables=nlu_data.lookup_tables,
+                responses=split_responses,
+            )
+            splits.append(split_data)
+
+        return splits
 
     def load_splits(self) -> Tuple[TrainingData, TrainingData]:
         full_data = self.load_data(
@@ -109,11 +141,12 @@ class IntentExperiment(BaseExperiment):
             domain_path=absolute_path(self.config.data.domain_path),
         )
         full_data = self.preprocess_data(full_data)
-        train, test = self.split_data(full_data)
+        train, test = self.split_data(
+            full_data, test_fraction=self.config.test_fraction
+        )
         percentage = self.config.exclusion_percentage
-        _, train_included = train.train_test_split(percentage / 100,
-                                                   random_seed=self.config.random_seed)
-        return train_included, test
+        _, train = train.train_test_split(percentage / 100)
+        return train, test
 
     def run(self, train: TrainingData, test: Optional[TrainingData]) -> None:
 
@@ -123,7 +156,7 @@ class IntentExperiment(BaseExperiment):
         report_path = self.out_dir / "report"
         report_path.mkdir()
 
-        #  store training data
+        # modify and store training data
         train_split_path = data_path / "train.yml"
         rasa_io_utils.write_text_file(train.nlu_as_yaml(), train_split_path)
         # TODO log stats for training data
@@ -182,6 +215,7 @@ def multirun(
 
     experiment_pattern = (
         "config:${model.name}"
+        ",test:${test_fraction}"
         ",drop:${drop_intents_with_less_than}"
         ",exclude:${exclusion_percentage}"
         ",seed:${random_seed}"
@@ -211,7 +245,7 @@ def multirun(
             command + args, **captured
         )
         if result.returncode != 0:
-            logger.error("Configuration {config} could not be evaluated.")
+            logger.error(f"Configuration {config} could not be evaluated.")
 
 
 if __name__ == "__main__":
