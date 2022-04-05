@@ -1,0 +1,37 @@
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/nlu/components/
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: LanguageModelFeaturizer
+    alias: "lmf"
+  - name: RegexFeaturizer
+    alias: "rf"
+  - name: LexicalSyntacticFeaturizer
+    alias: "lsf"
+  - name: CountVectorsFeaturizer
+    alias: "cvf_w"
+  - name: CountVectorsFeaturizer
+    analyzer: char
+    min_ngram: 1
+    max_ngram: 4
+    alias: "cvf_c"
+  - name: CRFEntityExtractor
+    features: [
+      [ "low", "title", "upper" ],
+      [
+        "bias",
+        "low",
+        "prefix5",
+        "prefix2",
+        "suffix5",
+        "suffix3",
+        "suffix2",
+        "upper",
+        "title",
+        "digit",
+        "pattern",
+        "text_dense_features"
+      ],
+      [ "low", "title", "upper" ],
+    ]

@@ -101,5 +101,6 @@ class IntentExperiment(BaseNLUExperiment):
             )
         return train, test
 
+
 if __name__ == "__main__":
     get_runner(config_class=Config, experiment_class=IntentExperiment)()

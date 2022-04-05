@@ -35,6 +35,7 @@ class Config(ExperimentConfiguration):
             ]
         )
 
+
 @dataclass
 class IntentExperiment(BaseNLUExperiment):
     """Intent experiment using intent names only for stratification.
@@ -55,8 +56,9 @@ class IntentExperiment(BaseNLUExperiment):
     def split(self, nlu_data: TrainingData) -> Tuple[TrainingData, TrainingData]:
 
         train, test = nlu_data.train_test_split(
-            train_frac=1.-self.config.test_fraction,
-                                    random_seed=self.config.random_seed)
+            train_frac=1.0 - self.config.test_fraction,
+            random_seed=self.config.random_seed,
+        )
         if self.config.exclusion_percentage > 0:
             train, _ = self._split(
                 nlu_data=train,
@@ -64,6 +66,7 @@ class IntentExperiment(BaseNLUExperiment):
                 random_seed=self.config.random_seed + 1,
             )
         return train, test
+
 
 if __name__ == "__main__":
     get_runner(config_class=Config, experiment_class=IntentExperiment)()

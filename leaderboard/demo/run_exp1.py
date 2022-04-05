@@ -45,6 +45,6 @@ for name, config_path in variations.items():
 
 base_experiment.multirun(
     experiment_module=exp_1_stratify_intents_and_responses,
-    configs=configs, 
+    configs=configs,
     out_dir=tmp_dir,
 )
