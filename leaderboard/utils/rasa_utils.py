@@ -13,12 +13,10 @@ def extract_metadata(model_archive_path: Path, out_folder: Path) -> None:
         raise RuntimeError(f"Output file {timings_file} exists already")
 
     with open(timings_file, "w") as f:
-        f.write("name, start_time, duration(min), duration(sec)\n")
+        f.write("name,start_time,duration(min),duration(sec)\n")
         for node in meta_data.start_times:
             date_time = time.strftime(
                 "%Y-%m-%d %H:%M:%S", time.localtime(meta_data.start_times[node])
             )
             duration_min = round(meta_data.durations[node] / 60, 4)
-            f.write(
-                f"{node}, {date_time}, {duration_min}, {meta_data.durations[node]}\n"
-            )
+            f.write(f"{node},{date_time},{duration_min},{meta_data.durations[node]}\n")

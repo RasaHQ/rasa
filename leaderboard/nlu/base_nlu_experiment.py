@@ -40,18 +40,6 @@ class BaseNLUExperiment(BaseExperiment):
     config: ExperimentConfiguration
     out_dir: Path
 
-    def __post_init__(self) -> None:
-        if not self.out_dir.is_dir():
-            raise ValueError(f"Working directory {self.out_dir} does not exist.")
-
-        # run Rasa's configuration validation
-        validation.validate_yaml_schema(
-            yaml_file_content=rasa_io_utils.read_file(
-                absolute_path(self.config.model.config_path)
-            ),
-            schema_path=CONFIG_SCHEMA_FILE,
-        )
-
     def load_data(self) -> TrainingData:
         """Load data from disk."""
         data_path = absolute_path(self.config.data.data_path)

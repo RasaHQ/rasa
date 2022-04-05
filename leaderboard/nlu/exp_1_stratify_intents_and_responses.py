@@ -18,9 +18,10 @@ logger = logging.getLogger(__file__)
 @dataclass
 class Config(ExperimentConfiguration):
     drop_intents_with_less_than: int = 5
-    exclusion_percentage: float = 0.0
+    exclusion_fraction: float = 0.0
+    exclusion_seed: int = (345,)
     test_fraction: float = 0.2
-    random_seed: int = 42
+    test_seed: int = 42
 
     @staticmethod
     def to_pattern() -> None:
@@ -29,7 +30,7 @@ class Config(ExperimentConfiguration):
                 "model:${model.name}",
                 "data:${data.name}",
                 "drop:${drop_intents_with_less_than}",
-                "exclude:${exclusion_percentage}",
+                "exclude:${exclusion_fraction}",
                 "test:${test_fraction}",
                 "seed:${random_seed}",
             ]
@@ -57,13 +58,12 @@ class IntentExperiment(BaseNLUExperiment):
 
         train, test = nlu_data.train_test_split(
             train_frac=1.0 - self.config.test_fraction,
-            random_seed=self.config.random_seed,
+            random_seed=self.config.test_seed,
         )
-        if self.config.exclusion_percentage > 0:
-            train, _ = self._split(
-                nlu_data=train,
-                test_fraction=self.config.exclusion_percentage,
-                random_seed=self.config.random_seed + 1,
+        if self.config.exclusion_fraction > 0:
+            train, _ = train.train_test_split(
+                train_frac=1.0 - self.config.exclusion_fraction,
+                random_seed=self.config.exclusion_seed,
             )
         return train, test
 
