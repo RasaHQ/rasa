@@ -1,0 +1,19 @@
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/nlu/components/
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+    alias: "cvf_w"
+  - name: CountVectorsFeaturizer
+    analyzer: char
+    min_ngram: 1
+    max_ngram: 4
+    alias: "cvf_c"
+  - name: RegexFeaturizer
+    alias: "rf"
+  - name: LexicalSyntacticFeaturizer
+    alias: "lsf"
+  - name: DIETClassifier
+    epochs: 50
+    random_seed: 42

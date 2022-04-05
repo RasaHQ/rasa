@@ -8,7 +8,7 @@ from leaderboard.nlu.intent_experiments import exp_0_stratified_exclusion
 
 ### Remove results from last test run
 
-tmp_dir = 'test2'
+tmp_dir = "test2"
 if os.path.exists(tmp_dir):
     shutil.rmtree(tmp_dir)
 
@@ -16,7 +16,7 @@ if os.path.exists(tmp_dir):
 ### Chose Configurations
 
 base_config = exp_0_stratified_exclusion.IntentExperimentConfiguration(
-    exclusion_percentage=0.,
+    exclusion_percentage=0.0,
     drop_intents_with_less_than=2,
     random_seed=1,
     test_fraction=0.2,
@@ -30,8 +30,8 @@ base_config = exp_0_stratified_exclusion.IntentExperimentConfiguration(
 )
 
 variations = {
-    "interesting-config-name1" : "./config2.yml" ,
-    "another-very-interesting-config-because-reasons" : "./config1.yml" ,
+    "interesting-config-name1": "./config2.yml",
+    "another-very-interesting-config-because-reasons": "./config1.yml",
 }
 
 configs = []

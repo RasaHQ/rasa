@@ -1,0 +1,33 @@
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/nlu/components/
+language: en
+pipeline:
+  - name: SpacyNLP
+    model: "en_core_web_md"
+    case_sensitive: False
+  - name: SpacyTokenizer
+  - name: SpacyFeaturizer
+    alias: "sf"
+  - name: RegexFeaturizer
+    alias: "rf"
+  - name: LexicalSyntacticFeaturizer
+    alias: "lsf"
+  - name: CountVectorsFeaturizer
+    alias: "cvf_w"
+  - name: CountVectorsFeaturizer
+    analyzer: char
+    min_ngram: 1
+    max_ngram: 4
+    alias: "cvf_c"
+  - name: DIETClassifier
+    epochs: 200
+    random_seed: 42
+    hidden_layers_sizes:
+      text: [ 256,128 ]
+      label: [ ]
+    dense_dimension:
+      text: 256
+      label: 20
+    number_of_transformer_layers: 0
+    entity_recognition: False
+    BILOU_flag: False

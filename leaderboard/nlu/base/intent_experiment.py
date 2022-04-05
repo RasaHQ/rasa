@@ -111,8 +111,9 @@ class IntentExperiment(BaseExperiment):
         full_data = self.preprocess_data(full_data)
         train, test = self.split_data(full_data)
         percentage = self.config.exclusion_percentage
-        _, train_included = train.train_test_split(percentage / 100,
-                                                   random_seed=self.config.random_seed)
+        _, train_included = train.train_test_split(
+            percentage / 100, random_seed=self.config.random_seed
+        )
         return train_included, test
 
     def run(self, train: TrainingData, test: Optional[TrainingData]) -> None:
@@ -204,12 +205,12 @@ def multirun(
     for config in configs:
         config.validate()
 
-    captured = dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) if capture else {}
+    captured = (
+        dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) if capture else {}
+    )
     for config in tqdm(configs):
         args = hydra_utils.to_hydra_cli_args(OmegaConf.structured(config))
-        result = subprocess.run(
-            command + args, **captured
-        )
+        result = subprocess.run(command + args, **captured)
         if result.returncode != 0:
             logger.error("Configuration {config} could not be evaluated.")
 

@@ -238,12 +238,12 @@ def multirun(
     for config in configs:
         config.validate()
 
-    captured = dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) if capture else {}
+    captured = (
+        dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) if capture else {}
+    )
     for config in tqdm(configs):
         args = hydra_utils.to_hydra_cli_args(OmegaConf.structured(config))
-        result = subprocess.run(
-            command + args, **captured
-        )
+        result = subprocess.run(command + args, **captured)
         if result.returncode != 0:
             logger.error(f"Configuration {config} could not be evaluated.")
 
