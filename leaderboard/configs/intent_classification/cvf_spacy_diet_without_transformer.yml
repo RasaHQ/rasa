@@ -23,8 +23,8 @@ pipeline:
     epochs: 200
     random_seed: 42
     hidden_layers_sizes:
-      text: [ 256,128 ]
-      label: [ ]
+      text: [256,128]
+      label: []
     dense_dimension:
       text: 256
       label: 20
