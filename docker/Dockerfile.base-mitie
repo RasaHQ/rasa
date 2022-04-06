@@ -1,5 +1,5 @@
 # The base image used for all images that require a MITIE model
-FROM alpine:latest
+FROM alpine:3.15.4
 
 RUN apk add --update make wget
 
