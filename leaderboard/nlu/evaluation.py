@@ -130,7 +130,9 @@ def results2df(
         row.setdefault("exp", {}).update({"script": script, "data": data_name})
         df_row = collection_to_df(row)
         results.append(df_row)
-    return pd.concat(results)
+    df = pd.concat(results)
+    add_total_train_times(df)
+    return df
 
 
 def add_total_train_times(df: pd.DataFrame) -> None:

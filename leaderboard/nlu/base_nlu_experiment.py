@@ -6,21 +6,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Tuple, Optional
 
-import rasa.cli.utils as rasa_cli_utils
 import rasa.model_training as model_training
 import rasa.shared.utils.io as rasa_io_utils
+from leaderboard.utils import rasa_utils
 from leaderboard.utils.base_experiment import (
     absolute_path,
     BaseExperiment,
     ExperimentConfiguration,
 )
-from leaderboard.utils import rasa_utils
 from rasa.core.agent import Agent
 from rasa.nlu.test import run_evaluation
-from rasa.shared.constants import DEFAULT_DATA_PATH, CONFIG_SCHEMA_FILE
-from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.utils import validation
 
 logger = logging.getLogger(__file__)
 
@@ -42,42 +38,45 @@ class BaseNLUExperiment(BaseExperiment):
 
     def load_data(self) -> TrainingData:
         """Load data from disk."""
-        data_path = absolute_path(self.config.data.data_path)
-        domain_path = absolute_path(self.config.data.domain_path)
-        data_path = rasa_cli_utils.get_validated_path(
-            data_path, "nlu", DEFAULT_DATA_PATH
+        return rasa_utils.load_nlu_data(
+            data_path=self.config.data.data_path,
+            domain_path=self.config.data.domain_path,
         )
-        test_data_importer = TrainingDataImporter.load_from_dict(
-            training_data_paths=[str(data_path)], domain_path=domain_path
-        )
-        nlu_data = test_data_importer.get_nlu_data()
-        return nlu_data
 
     @abstractmethod
     def preprocess(self, nlu_data: TrainingData) -> TrainingData:
+        """Preprocessing applied to **all** data points, i.e. the loaded data."""
         ...
 
     @abstractmethod
-    def split(self, nlu_data: TrainingData) -> Tuple[TrainingData, TrainingData]:
+    def split(
+        self, nlu_data: TrainingData
+    ) -> Tuple[TrainingData, Optional[TrainingData]]:
+        """Split given data points into a train and test split."""
         ...
 
-    def load_train_test(self) -> Tuple[TrainingData, TrainingData]:
-        data = self.load_data()
-        data = self.preprocess(data)
+    def to_train_test_split(
+        self, nlu_data: TrainingData
+    ) -> Tuple[TrainingData, Optional[TrainingData]]:
+        """Preprocess and then split the data.
+
+        Yes, you could just override this method. But it is easier to follow what
+        happens in an experiment if we keep preprocessing and splitting separate.
+        """
+        data = self.preprocess(nlu_data)
         return self.split(data)
 
     def run(self, train: TrainingData, test: Optional[TrainingData]) -> None:
 
-        # as before, train and test used in the experiment are persisted
+        # create sub-folders
         data_path = self.out_dir / "data"
         data_path.mkdir(parents=True)
         report_path = self.out_dir / "report"
         report_path.mkdir()
 
-        #  store training data
+        # save train data
         train_split_path = data_path / "train.yml"
         rasa_io_utils.write_text_file(train.nlu_as_yaml(), train_split_path)
-        # TODO log stats for training data
 
         # train model
         model_output_path = self.out_dir / "model"
@@ -92,11 +91,13 @@ class BaseNLUExperiment(BaseExperiment):
         model_archive = model_output_path / (self.config.model.name + ".tar.gz")
         rasa_utils.extract_metadata(model_archive, report_path)
 
-        # test model
         if test is not None:
+
+            # save test data
             test_split_path = data_path / "test.yml"
             rasa_io_utils.write_text_file(test.nlu_as_yaml(), test_split_path)
 
+            # evaluate
             processor = Agent.load(model_path=model_path).processor
             _ = asyncio.run(
                 run_evaluation(
@@ -106,6 +107,9 @@ class BaseNLUExperiment(BaseExperiment):
                     errors=True,
                 )
             )
+
+        # save some stats on the data
+        rasa_utils.extract_nlu_stats(train=train, test=test, report_path=report_path)
 
         if self.config.clear_rasa_cache:
             shutil.rmtree(self.out_dir / ".rasa")

@@ -12,14 +12,18 @@ from leaderboard.nlu.exp_0_stratify_intents import Config, IntentExperiment
 
 logger = logging.getLogger(__file__)
 
+# TODO: check e.g. ([4, 2], 0.1, 0., [90, 180], [10, 20]),  raises
+
 
 @pytest.mark.parametrize(
-    "counts, test_fraction, exclude_fraction, expected_train, expected_test",
+    "counts, test_fraction, exclude_fraction, expected_train, expected_test, drop",
     [
-        ([100, 200], 0.1, 0.5, [45, 90], [10, 20]),
+        ([100, 200, 4], 0.1, 0.5, [45, 90], [10, 20], 4),
+        ([100, 200, 4], 0.1, 0.0, [90, 180], [10, 20], 4),
+        ([4, 2], 0.1, 0.0, [4, 2], [0, 0], 0),
     ],
 )
-def test_split(
+def test_to_train_test_split(
     tmp_path: Path,
     counts: List[int],
     test_fraction: float,
@@ -39,7 +43,8 @@ def test_split(
 
         experiment = IntentExperiment(
             config=Config(
-                exclusion_fraction=exclude_fraction,
+                remove_data_for_intents_with_num_examples_leq=4,
+                train_exclusion_fraction=exclude_fraction,
                 test_fraction=test_fraction,
                 test_seed=2345,  # fixed
                 exclusion_seed=seed,
@@ -48,7 +53,7 @@ def test_split(
             ),
             out_dir=tmp_path,
         )
-        train, test = experiment.split(nlu_data=nlu_data)
+        train, test = experiment.to_train_test_split(nlu_data=nlu_data)
         results_per_seed.append((train, test))
 
         for split, expected_distribution in [

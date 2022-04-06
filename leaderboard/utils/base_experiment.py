@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import subprocess
@@ -5,7 +6,7 @@ from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import Optional, Tuple, Type, Callable, List
+from typing import Optional, Tuple, Type, Callable, List, Any, Dict
 import inspect
 
 import hydra
@@ -83,7 +84,13 @@ class BaseExperiment(ABC):
     """Base Experiment."""
 
     @abstractmethod
-    def load_train_test(self) -> Tuple[TrainingData, TrainingData]:
+    def load_data(self) -> TrainingData:
+        ...
+
+    @abstractmethod
+    def to_train_test_split(
+        self, data: TrainingData
+    ) -> Tuple[TrainingData, TrainingData]:
         ...
 
     @abstractmethod
@@ -93,8 +100,9 @@ class BaseExperiment(ABC):
     def execute(self) -> None:
         script = inspect.getmodule(self.__class__).__file__
         logger.info(f"Running: {script}")
-        train, test = self.load_train_test()
-        self.run(train, test)
+        data = self.load_data()
+        train, test = self.to_train_test_split(data)
+        self.run(train=train, test=test)
 
 
 def get_runner(
@@ -168,3 +176,20 @@ def multirun(
         result = subprocess.run(command + args, **captured)
         if result.returncode != 0:
             logger.error("Configuration {config} could not be evaluated.")
+
+
+def create_variations(
+    base_configs: List[ExperimentConfiguration],
+    variations: List[Dict[Tuple[str], Any]],
+) -> List[ExperimentConfiguration]:
+    configs = []
+    for base_config in base_configs:
+        for variation in variations:
+            config = copy.deepcopy(base_config)
+            for attributes, value in variation.items():
+                sub_config = config
+                for attr in attributes[:-1]:
+                    sub_config = sub_config.__getattribute__(attr)
+                sub_config.__setattr__(attributes[-1], value)
+            configs.append(config)
+    return configs

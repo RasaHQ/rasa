@@ -2,13 +2,8 @@ import logging
 from dataclasses import dataclass
 from typing import Tuple
 
-import numpy as np
-from sklearn.model_selection import StratifiedShuffleSplit
-
 from leaderboard.utils.base_experiment import ExperimentConfiguration, get_runner
-from leaderboard.nlu.base_nlu_experiment import (
-    BaseNLUExperiment,
-)
+from leaderboard.nlu.base_nlu_experiment import BaseNLUExperiment
 from rasa.nlu.test import drop_intents_below_freq
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
@@ -17,9 +12,9 @@ logger = logging.getLogger(__file__)
 
 @dataclass
 class Config(ExperimentConfiguration):
-    drop_intents_with_less_than: int = 5
-    exclusion_fraction: float = 0.0
-    exclusion_seed: int = (345,)
+    remove_data_for_intents_with_num_examples_leq: int = 5
+    train_exclusion_fraction: float = 0.0
+    exclusion_seed: int = 345
     test_fraction: float = 0.2
     test_seed: int = 42
 
@@ -29,28 +24,28 @@ class Config(ExperimentConfiguration):
             [
                 "model:${model.name}",
                 "data:${data.name}",
-                "drop:${drop_intents_with_less_than}",
-                "exclude:${exclusion_fraction}",
+                "drop:${remove_data_for_intents_with_num_examples_leq}",
+                "exclude:${train_exclusion_fraction}",
                 "test:${test_fraction}",
-                "seed:${random_seed}",
+                "test_seed:${test_seed}",
+                "exclusion_seed:${exclusion_seed}",
             ]
         )
 
 
 @dataclass
 class IntentExperiment(BaseNLUExperiment):
-    """Intent experiment using intent names only for stratification.
+    """Intent experiment using intent names + responses for stratification.
 
     Notes:
-    - stratified splits computed based on intent names only - responses are ignored
-    - i.e. intent prediction should be more difficult than in the usual rasa test
-      (see also exp_1) where stratification takes the responses in to account
+    - stratified splits computed based on intent names + responses (if present)
+    - rasa's stratification method is used
     """
 
     def preprocess(self, nlu_data: TrainingData) -> TrainingData:
         """Preprocessing applied to **all** data points."""
         nlu_data = drop_intents_below_freq(
-            nlu_data, cutoff=self.config.drop_intents_with_less_than
+            nlu_data, cutoff=self.config.remove_data_for_intents_with_num_examples_leq
         )
         return nlu_data
 
@@ -60,9 +55,9 @@ class IntentExperiment(BaseNLUExperiment):
             train_frac=1.0 - self.config.test_fraction,
             random_seed=self.config.test_seed,
         )
-        if self.config.exclusion_fraction > 0:
+        if self.config.train_exclusion_fraction > 0:
             train, _ = train.train_test_split(
-                train_frac=1.0 - self.config.exclusion_fraction,
+                train_frac=1.0 - self.config.train_exclusion_fraction,
                 random_seed=self.config.exclusion_seed,
             )
         return train, test
