@@ -1,9 +1,7 @@
 import abc
-from typing import Optional
-
-from pip._vendor.pkg_resources import Distribution
 
 from pip._internal.index.package_finder import PackageFinder
+from pip._internal.metadata.base import BaseDistribution
 from pip._internal.req import InstallRequirement
 
 
@@ -28,7 +26,7 @@ class AbstractDistribution(metaclass=abc.ABCMeta):
         self.req = req
 
     @abc.abstractmethod
-    def get_pkg_resources_distribution(self) -> Optional[Distribution]:
+    def get_metadata_distribution(self) -> BaseDistribution:
         raise NotImplementedError()
 
     @abc.abstractmethod

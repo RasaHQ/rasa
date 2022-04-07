@@ -1,9 +1,11 @@
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from pip._internal.req.req_install import InstallRequirement
 from pip._internal.req.req_set import RequirementSet
 
-InstallRequirementProvider = Callable[[str, InstallRequirement], InstallRequirement]
+InstallRequirementProvider = Callable[
+    [str, Optional[InstallRequirement]], InstallRequirement
+]
 
 
 class BaseResolver:
