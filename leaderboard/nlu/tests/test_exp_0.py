@@ -8,25 +8,31 @@ from typing import List
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from leaderboard.nlu.exp_1_stratify_intents_via_rasa import (
-    Config,
-    IntentExperiment,
-)
+from leaderboard.nlu.exp_0_stratify_intents import Config, IntentExperiment
 
 logger = logging.getLogger(__file__)
-
-# TODO: test with responses (not needed yet)
 
 
 @pytest.mark.parametrize(
     "counts, test_fraction, exclude_fraction, expected_train, expected_test, drop",
     [
-        ([100, 200, 4], 0.1, 0.5, [45, 90], [10, 20], 4),
-        ([100, 200, 4], 0.1, 0.0, [90, 180], [10, 20], 4),
-        ([4, 2], 0.1, 0.0, [3, 1], [1, 1], 0),
+        ([100, 200, 4], 0.1, 0.5, [45, 90], [10, 20], 5),
+        ([100, 200, 4], 0.1, 0.0, [90, 180], [10, 20], 5),
+        (
+            [4, 2],
+            0.1,
+            0.0,
+            [
+                3,
+            ],
+            [
+                1,
+            ],
+            4,
+        ),
     ],
 )
-def test_to_train_test_split_without_responses(
+def test_to_train_test_split(
     tmp_path: Path,
     counts: List[int],
     test_fraction: float,
@@ -47,7 +53,7 @@ def test_to_train_test_split_without_responses(
 
         experiment = IntentExperiment(
             config=Config(
-                remove_data_for_intents_with_num_examples_leq=drop,
+                remove_data_for_intents_with_num_examples_below=drop,
                 train_exclusion_fraction=exclude_fraction,
                 test_fraction=test_fraction,
                 test_seed=2345,  # fixed
@@ -57,7 +63,7 @@ def test_to_train_test_split_without_responses(
             ),
             out_dir=tmp_path,
         )
-        train, test = experiment.to_train_test_split(nlu_data=nlu_data)
+        train, test = experiment.data_to_train_test_split(data=nlu_data)
         results_per_seed.append((train, test))
 
         for split, expected_distribution in [
@@ -65,10 +71,13 @@ def test_to_train_test_split_without_responses(
             (test, expected_test),
         ]:
             for intent_idx, expected_count in enumerate(expected_distribution):
-                assert (
-                    split.number_of_examples_per_intent[f"{intent_idx}"]
-                    == expected_count
-                )
+                try:
+                    assert (
+                        split.number_of_examples_per_intent[f"{intent_idx}"]
+                        == expected_count
+                    )
+                except:
+                    breakpoint()
 
     # test splits are global
     assert set(

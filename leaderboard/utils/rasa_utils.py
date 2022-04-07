@@ -4,7 +4,7 @@ from typing import Optional
 
 import pandas as pd
 
-from leaderboard.utils.base_experiment import absolute_path
+from leaderboard.utils.experiment import absolute_path
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -15,14 +15,11 @@ TAG_ENTITY = "entity"
 
 def load_nlu_data(
     data_path: str,
-    domain_path: Optional[str],
 ) -> TrainingData:
     """Load nlu training data."""
     data_path = absolute_path(data_path)
-    if domain_path is not None:
-        domain_path = absolute_path(domain_path)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[str(data_path)], domain_path=domain_path
+        training_data_paths=[str(data_path)], domain_path=None
     )
     nlu_data = test_data_importer.get_nlu_data()
     return nlu_data
@@ -57,12 +54,13 @@ def extract_nlu_stats(
             continue
         stats[split] = dict()
         stats[split]["len"] = len(data.nlu_examples)
-        for description, counts in [
+        for tag, counts in [
             (TAG_ENTITY, data.number_of_examples_per_entity),
             (TAG_INTENT, data.number_of_examples_per_intent),
         ]:
             for key, count in counts.items():
-                split_dict = stats[f"{TAG_INTENT}_{key}"].setdefault(split, {})
+                tag_dict = stats.setdefault(f"{tag}_{key}", {})
+                split_dict = tag_dict.setdefault(split, {})
                 split_dict[split] = count
 
     out_file = report_path / f"stats.csv"

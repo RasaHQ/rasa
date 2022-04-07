@@ -1,6 +1,6 @@
-from typing import Tuple, List
-
+from typing import Tuple, List, Optional
 import numpy as np
+
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -8,11 +8,14 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 
 def stratified_split_for_nlu_data(
     nlu_data: TrainingData, labels: List, test_fraction: float, random_seed: int
-) -> Tuple[Tuple[TrainingData, TrainingData], Tuple[np.ndarray, np.ndarray]]:
+) -> Tuple[Tuple[TrainingData, Optional[TrainingData]], Tuple[np.ndarray, np.ndarray]]:
     """Split given data into train and test."""
 
     data_messages = nlu_data.intent_examples
     data_indices = np.arange(len(data_messages))
+
+    if test_fraction <= 0:
+        return (nlu_data, None), (data_indices, np.ndarray([]))
 
     sss = StratifiedShuffleSplit(
         n_splits=1,

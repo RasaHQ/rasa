@@ -1,8 +1,10 @@
 import copy
 import logging
 import os
+import shutil
 import subprocess
 from abc import abstractmethod, ABC
+import dataclasses
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -27,7 +29,7 @@ HYDRA_CONFIG = "config"
 
 def absolute_path(relative_path: Path) -> Path:
     """Use hydra to convert a relative to an absolute path."""
-    return Path(hydra.utils.to_absolute_path(relative_path)).resolve()
+    return Path(hydra.utils.to_absolute_path(str(relative_path))).resolve()
 
 
 @dataclass
@@ -42,7 +44,7 @@ class ModelConfig:
             # run Rasa's configuration validation
             validation.validate_yaml_schema(
                 yaml_file_content=rasa_io_utils.read_file(
-                    absolute_path(self.config_path)
+                    absolute_path(Path(self.config_path))
                 ),
                 schema_path=CONFIG_SCHEMA_FILE,
             )
@@ -53,30 +55,51 @@ class DataConfig:
     """Basic Rasa data configuration needed for our experiments."""
 
     name: str = MISSING
-    domain_path: str = MISSING
     data_path: str = MISSING
 
     def validate(self) -> None:
-        for path in [self.domain_path, self.data_path]:
-            if path is not MISSING:
-                assert Path(path).is_file(), f"File {path} not found"
+        if self.data_path is not MISSING:
+            assert Path(self.data_path).is_file(), f"File {self.data_path} not found"
 
 
 @dataclass
 class ExperimentConfiguration:
     """Configuration of a basic intent classifier experiment."""
 
+    script: str = MISSING
     model: ModelConfig = ModelConfig()
     data: DataConfig = DataConfig()
     clear_rasa_cache: bool = True
+
+    def __post_init__(self):
+        self.script = inspect.getmodule(self.__class__).__file__
+
+    @staticmethod
+    def to_pattern() -> str:
+        """For nicer experiment run folder names.
+
+        It is not necessary to define all hyperparameters in the folder name.
+        We will log (and read) the full experiment configuration from the run's
+        `.hydra/config.yaml` file later.
+        """
+        return "model:${model.name},data:${data.name}"
 
     def validate(self) -> None:
         self.model.validate()
         self.data.validate()
 
-    @staticmethod
-    def to_pattern() -> None:
-        return "model:${model.name},data:${data.name}"
+    def validate_no_missing(self) -> None:
+        def _validate(sub_dict: Dict) -> bool:
+            for key, value in sub_dict.items():
+                if isinstance(value, dict):
+                    if not _validate(value):
+                        return False
+                else:
+                    if value is MISSING:
+                        return False
+            return True
+
+        assert _validate(dataclasses.asdict(self))
 
 
 @dataclass
@@ -84,13 +107,7 @@ class BaseExperiment(ABC):
     """Base Experiment."""
 
     @abstractmethod
-    def load_data(self) -> TrainingData:
-        ...
-
-    @abstractmethod
-    def to_train_test_split(
-        self, data: TrainingData
-    ) -> Tuple[TrainingData, TrainingData]:
+    def load_train_test_split(self) -> Tuple[TrainingData, TrainingData]:
         ...
 
     @abstractmethod
@@ -98,11 +115,10 @@ class BaseExperiment(ABC):
         ...
 
     def execute(self) -> None:
-        script = inspect.getmodule(self.__class__).__file__
-        logger.info(f"Running: {script}")
-        data = self.load_data()
-        train, test = self.to_train_test_split(data)
+        train, test = self.load_train_test_split()
         self.run(train=train, test=test)
+        if self.config.clear_rasa_cache:
+            shutil.rmtree(".rasa")
 
 
 def get_runner(
@@ -166,6 +182,7 @@ def multirun(
 
     # validate all configs before starting anything...
     for config in configs:
+        config.validate_no_missing()
         config.validate()
 
     captured = (

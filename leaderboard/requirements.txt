@@ -1,0 +1,3 @@
+hydra-core
+omegaconf
+pandas

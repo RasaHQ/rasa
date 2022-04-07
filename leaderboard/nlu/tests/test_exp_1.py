@@ -8,11 +8,14 @@ from typing import List
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from leaderboard.nlu.exp_0_stratify_intents import Config, IntentExperiment
+from leaderboard.nlu.exp_1_stratify_intents_via_rasa import (
+    Config,
+    IntentExperiment,
+)
 
 logger = logging.getLogger(__file__)
 
-# TODO: check e.g. ([4, 2], 0.1, 0., [90, 180], [10, 20]),  raises
+# TODO: test with responses (not needed yet)
 
 
 @pytest.mark.parametrize(
@@ -20,16 +23,17 @@ logger = logging.getLogger(__file__)
     [
         ([100, 200, 4], 0.1, 0.5, [45, 90], [10, 20], 4),
         ([100, 200, 4], 0.1, 0.0, [90, 180], [10, 20], 4),
-        ([4, 2], 0.1, 0.0, [4, 2], [0, 0], 0),
+        ([4, 2], 0.1, 0.0, [3, 1], [1, 1], 0),
     ],
 )
-def test_to_train_test_split(
+def test_to_train_test_split_without_responses(
     tmp_path: Path,
     counts: List[int],
     test_fraction: float,
     exclude_fraction: float,
     expected_train: List[int],
     expected_test: List[int],
+    drop: int,
 ):
     messages = [
         Message(data={TEXT: f"{intent_idx}-{message_idx}", INTENT: f"{intent_idx}"})
@@ -43,7 +47,7 @@ def test_to_train_test_split(
 
         experiment = IntentExperiment(
             config=Config(
-                remove_data_for_intents_with_num_examples_leq=4,
+                remove_data_for_intents_with_num_examples_below=drop,
                 train_exclusion_fraction=exclude_fraction,
                 test_fraction=test_fraction,
                 test_seed=2345,  # fixed
@@ -53,7 +57,7 @@ def test_to_train_test_split(
             ),
             out_dir=tmp_path,
         )
-        train, test = experiment.to_train_test_split(nlu_data=nlu_data)
+        train, test = experiment.data_to_train_test_split(data=nlu_data)
         results_per_seed.append((train, test))
 
         for split, expected_distribution in [

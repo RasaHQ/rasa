@@ -4,11 +4,14 @@ import json
 from pathlib import Path
 from typing import Union, Dict, Any
 
+from ruamel import yaml
 import pandas as pd
 
 REPORT_FOLDER = "report"
 TRAIN_TIME_FILENAME = "training_metadata__times.csv"
 INTENT_REPORT_FILENAME = "intent_report.json"
+HYDRA_FOLDER = ".hydra"
+CONFIG_YAML = "config.yaml"
 
 TAG_EXPERIMENT = "exp"
 TAG_HYPERPARAM = "param"
@@ -52,16 +55,11 @@ def collect_run(
         a nested dict with exactly two levels
     """
     row = {}
-
-    params, timestamp = os.path.basename(run_dir).split("__")
-    params_split = [param.split(":") for param in params.split(",")]
-    params_split = [
-        (param[0], _format_hyperparameter(param[1])) for param in params_split
-    ]
+    _, timestamp = os.path.basename(run_dir).split("__")
     row[TAG_EXPERIMENT] = {"timestamp": timestamp}
-    row[TAG_HYPERPARAM] = {f"{param[0]}": param[1] for param in params_split}
 
     for flag, collector in [
+        (True, collect_config),
         (intents, collect_intent_report),
         (timings, collect_timings),
     ]:
@@ -69,6 +67,18 @@ def collect_run(
             # NOTE: top keys are mutually distinct
             row.update(collector(run_dir))
 
+    return row
+
+
+def collect_config(run_dir: str) -> Dict[str, Dict[str, Any]]:
+    row = {}
+    config_yaml = os.path.join(run_dir, HYDRA_FOLDER, CONFIG_YAML)
+    if os.path.exists(config_yaml):
+        with open(config_yaml, "r") as f:
+            config = yaml.safe_load(f)
+        for key in ["model", "data"]:
+            row[key] = config.pop(key)
+        row[TAG_HYPERPARAM] = config
     return row
 
 
@@ -126,12 +136,14 @@ def results2df(
     script, data_name = Path(experiment_dir).name.split("__")
     results = []
     for run_dir in glob.glob(os.path.join(experiment_dir, "*")):
-        row = collect_run(run_dir)
+        row = collect_run(run_dir, timings=timings, intents=intents)
         row.setdefault("exp", {}).update({"script": script, "data": data_name})
         df_row = collection_to_df(row)
         results.append(df_row)
     df = pd.concat(results)
     add_total_train_times(df)
+    df.sort_index(inplace=True, axis=1)
+    df.reset_index(inplace=True, drop=True)
     return df
 
 

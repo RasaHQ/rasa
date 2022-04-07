@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os.path
 import shutil
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -9,7 +10,7 @@ from typing import Tuple, Optional
 import rasa.model_training as model_training
 import rasa.shared.utils.io as rasa_io_utils
 from leaderboard.utils import rasa_utils
-from leaderboard.utils.base_experiment import (
+from leaderboard.utils.experiment import (
     absolute_path,
     BaseExperiment,
     ExperimentConfiguration,
@@ -36,59 +37,38 @@ class BaseNLUExperiment(BaseExperiment):
     config: ExperimentConfiguration
     out_dir: Path
 
-    def load_data(self) -> TrainingData:
-        """Load data from disk."""
-        return rasa_utils.load_nlu_data(
-            data_path=self.config.data.data_path,
-            domain_path=self.config.data.domain_path,
-        )
-
-    @abstractmethod
-    def preprocess(self, nlu_data: TrainingData) -> TrainingData:
-        """Preprocessing applied to **all** data points, i.e. the loaded data."""
-        ...
-
-    @abstractmethod
-    def split(
-        self, nlu_data: TrainingData
-    ) -> Tuple[TrainingData, Optional[TrainingData]]:
-        """Split given data points into a train and test split."""
-        ...
-
-    def to_train_test_split(
-        self, nlu_data: TrainingData
-    ) -> Tuple[TrainingData, Optional[TrainingData]]:
-        """Preprocess and then split the data.
-
-        Yes, you could just override this method. But it is easier to follow what
-        happens in an experiment if we keep preprocessing and splitting separate.
-        """
-        data = self.preprocess(nlu_data)
-        return self.split(data)
-
     def run(self, train: TrainingData, test: Optional[TrainingData]) -> None:
 
         # create sub-folders
         data_path = self.out_dir / "data"
-        data_path.mkdir(parents=True)
         report_path = self.out_dir / "report"
-        report_path.mkdir()
+        model_path = self.out_dir / "model"
+        for sub_dir in [data_path, report_path, model_path]:
+            sub_dir.mkdir(parents=True)
 
         # save train data
         train_split_path = data_path / "train.yml"
         rasa_io_utils.write_text_file(train.nlu_as_yaml(), train_split_path)
 
+        # save model config
+        model_config_file_name = os.path.basename(self.config.model.config_path)
+        shutil.copy(
+            src=absolute_path(self.config.model.config_path),
+            dst=model_path / model_config_file_name,
+        )
+
+        # TODO: double-check here whether random seeds are fixed in model config?
+
         # train model
-        model_output_path = self.out_dir / "model"
-        model_path = model_training.train_nlu(
+        _ = model_training.train_nlu(
             config=absolute_path(self.config.model.config_path),
             nlu_data=train_split_path,
-            output=model_output_path,
+            output=model_path,
             fixed_model_name=self.config.model.name,
         )
 
         # extract training meta data
-        model_archive = model_output_path / (self.config.model.name + ".tar.gz")
+        model_archive = model_path / (self.config.model.name + ".tar.gz")
         rasa_utils.extract_metadata(model_archive, report_path)
 
         if test is not None:
@@ -110,6 +90,3 @@ class BaseNLUExperiment(BaseExperiment):
 
         # save some stats on the data
         rasa_utils.extract_nlu_stats(train=train, test=test, report_path=report_path)
-
-        if self.config.clear_rasa_cache:
-            shutil.rmtree(self.out_dir / ".rasa")
