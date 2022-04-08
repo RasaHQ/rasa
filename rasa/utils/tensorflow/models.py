@@ -3,7 +3,9 @@ import numpy as np
 import logging
 import random
 from collections import defaultdict
-from typing import List, Text, Dict, Tuple, Union, Optional, Any
+from typing import List, Text, Dict, Tuple, Union, Optional, Any, TYPE_CHECKING
+
+from keras.utils import tf_utils
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
@@ -41,9 +43,13 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
 )
-from keras.utils import tf_utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
+
+
+if TYPE_CHECKING:
+    from tensorflow.python.types.core import GenericFunction
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +70,8 @@ class RasaModel(TmpKerasModel):
     Cannot be used as tf.keras.Model.
     """
 
+    _training: Optional[bool]
+
     def __init__(self, random_seed: Optional[int] = None, **kwargs: Any) -> None:
         """Initialize the RasaModel.
 
@@ -82,7 +90,7 @@ class RasaModel(TmpKerasModel):
         self.random_seed = random_seed
         self._set_random_seed()
 
-        self._tf_predict_step = None
+        self._tf_predict_step: Optional["GenericFunction"] = None
         self.prepared_for_prediction = False
 
     def _set_random_seed(self) -> None:
@@ -294,7 +302,7 @@ class RasaModel(TmpKerasModel):
         Returns:
             Model outputs corresponding to the inputs fed.
         """
-        outputs = {}
+        outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]] = {}
         (data_generator, _) = rasa.utils.train_utils.create_data_generators(
             model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False
         )

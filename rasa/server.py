@@ -13,6 +13,7 @@ from http import HTTPStatus
 from typing import (
     Any,
     Callable,
+    DefaultDict,
     List,
     Optional,
     Text,
@@ -44,7 +45,8 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
+from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
@@ -80,7 +82,7 @@ if TYPE_CHECKING:
     ]
     SanicView = Callable[
         [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
-        SanicResponse,
+        Coroutine[Any, Any, SanicResponse],
     ]
 
 
@@ -167,10 +169,12 @@ def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
 
     def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
-        def decorated(request: Request, *args: Any, **kwargs: Any) -> "SanicResponse":
+        async def decorated(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> "SanicResponse":
             conversation_id = kwargs["conversation_id"]
-            if request.app.ctx.agent.tracker_store.exists(conversation_id):
-                return f(request, *args, **kwargs)
+            if await request.app.ctx.agent.tracker_store.exists(conversation_id):
+                return await f(request, *args, **kwargs)
             else:
                 raise ErrorResponse(
                     HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found."
@@ -287,7 +291,7 @@ def event_verbosity_parameter(
         )
 
 
-def get_test_stories(
+async def get_test_stories(
     processor: "MessageProcessor",
     conversation_id: Text,
     until_time: Optional[float],
@@ -307,9 +311,11 @@ def get_test_stories(
         The stories for `conversation_id` in test format.
     """
     if fetch_all_sessions:
-        trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+        trackers = await processor.get_trackers_for_all_conversation_sessions(
+            conversation_id
+        )
     else:
-        trackers = [processor.get_tracker(conversation_id)]
+        trackers = [await processor.get_tracker(conversation_id)]
 
     if until_time is not None:
         trackers = [tracker.travel_back_in_time(until_time) for tracker in trackers]
@@ -354,7 +360,7 @@ async def update_conversation_with_events(
         The tracker for `conversation_id` with the updated events.
     """
     if rasa.shared.core.events.do_events_begin_with_session_start(events):
-        tracker = processor.get_tracker(conversation_id)
+        tracker = await processor.get_tracker(conversation_id)
     else:
         tracker = await processor.fetch_tracker_with_initial_session(conversation_id)
 
@@ -754,9 +760,7 @@ def create_app(
                     await processor.execute_side_effects(
                         events, tracker, output_channel
                     )
-
-                app.ctx.agent.tracker_store.save(tracker)
-
+                await app.ctx.agent.tracker_store.save(tracker)
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -805,7 +809,7 @@ def create_app(
                 )
 
                 # will override an existing tracker with the same id!
-                app.ctx.agent.tracker_store.save(tracker)
+                await app.ctx.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -828,7 +832,7 @@ def create_app(
         )
 
         try:
-            stories = get_test_stories(
+            stories = await get_test_stories(
                 app.ctx.agent.processor,
                 conversation_id,
                 until_time,
@@ -848,6 +852,12 @@ def create_app(
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
     async def execute_action(request: Request, conversation_id: Text) -> HTTPResponse:
+        rasa.shared.utils.io.raise_warning(
+            'The "POST /conversations/<conversation_id>/execute"'
+            " endpoint is deprecated. Inserting actions to the tracker externally"
+            " should be avoided. Actions should be predicted by the policies only.",
+            category=FutureWarning,
+        )
         request_params = request.json
 
         action_to_execute = request_params.get("name", None)
@@ -1015,7 +1025,7 @@ def create_app(
                 tracker = await app.ctx.agent.processor.run_action_extract_slots(
                     user_message.output_channel, tracker
                 )
-                app.ctx.agent.processor.save_tracker(tracker)
+                await app.ctx.agent.processor.save_tracker(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -1156,7 +1166,8 @@ def create_app(
             )
 
         try:
-            evaluation = await test_coroutine
+            if test_coroutine is not None:
+                evaluation = await test_coroutine
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -1229,7 +1240,7 @@ def create_app(
             "response_selection_evaluation": response_selector_report,
         }
 
-        result = defaultdict(dict)
+        result: DefaultDict[Text, Any] = defaultdict(dict)
         for evaluation_name, evaluation in eval_name_mapping.items():
             report = evaluation.evaluation.get("report", {})
             averages = report.get("weighted avg", {})
@@ -1357,7 +1368,10 @@ def create_app(
     @ensure_loaded_agent(app)
     async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
-        accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
+        # FIXME: this is a false positive mypy error after upgrading to 0.931
+        accepts = request.headers.get(  # type: ignore[call-overload]
+            "Accept", default=JSON_CONTENT_TYPE
+        )
         if accepts.endswith("json"):
             domain = app.ctx.agent.domain.as_dict()
             return response.json(domain)

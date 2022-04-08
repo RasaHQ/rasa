@@ -3,6 +3,9 @@ from pathlib import Path
 import rasa.shared.utils.io
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.resource import Resource
+
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from typing import Dict, List, Optional, Set, Text, Any, Tuple, Type
 import re
@@ -10,8 +13,8 @@ import re
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
+from rasa.engine.graph import GraphComponent, ExecutionContext, GraphSchema, SchemaNode
 
-from rasa.engine.graph import GraphComponent, GraphSchema, SchemaNode
 from rasa.graph_components.validators.default_recipe_validator import (
     POLICY_CLASSSES,
     DefaultV1RecipeValidator,
@@ -38,7 +41,7 @@ from rasa.core.policies.policy import Policy
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ENTITY_ATTRIBUTE_GROUP,
@@ -52,6 +55,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.validation import YamlValidationException
 import rasa.utils.common
 
 
@@ -77,6 +81,9 @@ class DummyImporter(TrainingDataImporter):
 
     def get_stories(self) -> StoryGraph:
         return StoryGraph([])
+
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        return "config.yml"
 
 
 def _test_validation_warnings_with_default_configs(
@@ -456,7 +463,7 @@ def test_nlu_raise_if_more_than_one_tokenizer(nodes: Dict[Text, SchemaNode]):
 
 def test_nlu_do_not_raise_if_two_tokenizers_with_end_to_end():
     config = rasa.shared.utils.io.read_yaml_file(
-        "rasa/shared/importers/default_config.yml"
+        "rasa/engine/recipes/config_files/default_config.yml"
     )
     graph_config = DefaultV1Recipe().graph_config_for_recipe(
         config, cli_parameters={}, training_type=TrainingType.END_TO_END
@@ -916,6 +923,27 @@ def test_core_warn_if_policy_priorities_are_not_unique(
         assert len(records) == 0
 
 
+def test_core_raise_if_policy_has_no_priority():
+    class PolicyWithoutPriority(Policy, GraphComponent):
+        def __init__(
+            self,
+            config: Dict[Text, Any],
+            model_storage: ModelStorage,
+            resource: Resource,
+            execution_context: ExecutionContext,
+        ) -> None:
+            super().__init__(config, model_storage, resource, execution_context)
+
+    nodes = {"policy": SchemaNode("", PolicyWithoutPriority, "", "", {})}
+    graph_schema = GraphSchema(nodes)
+    importer = DummyImporter()
+    validator = DefaultV1RecipeValidator(graph_schema)
+    with pytest.raises(
+        InvalidConfigException, match="Every policy must have a priority value"
+    ):
+        validator.validate(importer)
+
+
 @pytest.mark.parametrize("policy_type_consuming_rule_data", [RulePolicy])
 def test_core_warn_if_rule_data_missing(policy_type_consuming_rule_data: Type[Policy]):
 
@@ -991,18 +1019,30 @@ def test_no_warnings_with_default_project(tmp_path: Path):
         training_data_paths=[str(tmp_path / "data")],
     )
 
+    config, _missing_keys, _configured_keys = DefaultV1Recipe.auto_configure(
+        importer.get_config_file_for_auto_config(),
+        importer.get_config(),
+        TrainingType.END_TO_END,
+    )
     graph_config = DefaultV1Recipe().graph_config_for_recipe(
-        importer.get_config(), cli_parameters={}, training_type=TrainingType.END_TO_END
+        config, cli_parameters={}, training_type=TrainingType.END_TO_END
     )
     validator = DefaultV1RecipeValidator(graph_config.train_schema)
 
-    with pytest.warns(
-        UserWarning, match="Slot auto-fill has been removed in 3.0"
-    ) as records:
+    with pytest.warns(None) as records:
         validator.validate(importer)
-    assert all(
-        [
-            warn.message.args[0].startswith("Slot auto-fill has been removed")
-            for warn in records.list
-        ]
-    )
+    assert len(records) == 0
+
+
+def test_importer_with_invalid_model_config(tmp_path: Path):
+    invalid = {"version": "2.0", "policies": ["name"]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(invalid, config_file)
+
+    with pytest.raises(YamlValidationException):
+        importer = TrainingDataImporter.load_from_config(str(config_file))
+        DefaultV1Recipe.auto_configure(
+            importer.get_config_file_for_auto_config(),
+            importer.get_config(),
+            TrainingType.END_TO_END,
+        )

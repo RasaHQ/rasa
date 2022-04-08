@@ -1,0 +1,13 @@
+version: "3.1"
+
+intents:
+  - play:
+      use_entities:
+        - ball
+        - chess
+  - stow_away:
+      use_entities: true
+
+entities:
+  - ball
+  - chess

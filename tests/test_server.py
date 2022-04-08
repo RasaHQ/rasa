@@ -70,6 +70,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     PREDICTED_CONFIDENCE_KEY,
 )
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import AsyncMock, with_model_id, with_model_ids
@@ -576,8 +577,8 @@ def assert_trained_model(
 async def test_train_with_yaml(
     rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory
 ):
-    training_data = """
-version: "3.0"
+    training_data = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
 stories:
 - story: My story
@@ -1527,7 +1528,7 @@ async def test_unload_model_error(rasa_app: SanicASGITestClient):
     assert response.status == HTTPStatus.NO_CONTENT
 
 
-async def test_get_domain(rasa_app: SanicASGITestClient):
+async def test_get_domain(rasa_app: SanicASGITestClient, domain_path: Text):
     _, response = await rasa_app.get(
         "/domain", headers={"accept": rasa.server.JSON_CONTENT_TYPE}
     )
@@ -1535,12 +1536,10 @@ async def test_get_domain(rasa_app: SanicASGITestClient):
     content = response.json
 
     assert response.status == HTTPStatus.OK
-    assert "config" in content
-    assert "intents" in content
-    assert "entities" in content
-    assert "slots" in content
-    assert "responses" in content
-    assert "actions" in content
+    # assert only keys in `domain_path` fixture
+    original_domain_dict = Domain.load(domain_path).as_dict()
+    for key in original_domain_dict.keys():
+        assert key in content
 
 
 async def test_get_domain_invalid_accept_header(rasa_app: SanicASGITestClient):
@@ -1811,7 +1810,7 @@ def test_app_when_app_has_no_input_channels():
             ],
             None,
             True,
-            """version: "3.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1834,7 +1833,7 @@ stories:
             ],
             None,
             True,
-            """version: "3.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID, story 1
   steps:
@@ -1864,7 +1863,7 @@ stories:
             ],
             None,
             False,
-            """version: "3.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1888,7 +1887,7 @@ stories:
             ],
             None,
             None,
-            """version: "3.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1911,7 +1910,7 @@ stories:
             ],
             4,
             True,
-            """version: "3.0"
+            f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1921,7 +1920,7 @@ stories:
   - action: utter_greet""",
         ),
         # empty conversation
-        ([], None, True, 'version: "3.0"'),
+        ([], None, True, f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"'),
         # Conversation with slot
         (
             [
@@ -1933,7 +1932,7 @@ stories:
             ],
             None,
             True,
-            """version: "3.0"
+            f"""version: "{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1959,7 +1958,7 @@ async def test_get_story(
     tracker_store = InMemoryTrackerStore(Domain.empty())
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
@@ -2023,7 +2022,7 @@ async def test_get_story_does_not_update_conversation_session(
 
     tracker_store = InMemoryTrackerStore(domain)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
@@ -2037,7 +2036,7 @@ async def test_get_story_does_not_update_conversation_session(
     # expected story is returned
     assert (
         response.content.decode().strip()
-        == """version: "3.0"
+        == f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-conversation-ID
   steps:
@@ -2116,9 +2115,9 @@ async def test_update_conversation_with_events(
     model_id = agent.model_id
 
     if initial_tracker_events:
-        tracker = agent.processor.get_tracker(conversation_id)
+        tracker = await agent.processor.get_tracker(conversation_id)
         tracker.update_with_events(initial_tracker_events, domain)
-        tracker_store.save(tracker)
+        await tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append

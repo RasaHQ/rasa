@@ -59,6 +59,7 @@ def test_process_does_not_do_anything(
         responses={},
         action_names=[],
         forms={},
+        data={},
     )
 
     parsed_messages = regex_message_handler.process([message], domain)
