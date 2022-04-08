@@ -1,7 +1,18 @@
 from collections import defaultdict, deque
 
 import random
-from typing import Any, Text, List, Dict, Optional, Set, TYPE_CHECKING, Union, cast
+from typing import (
+    Any,
+    Text,
+    List,
+    Deque,
+    Dict,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Union,
+    cast,
+)
 
 import rasa.shared.utils.io
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
@@ -88,7 +99,7 @@ def _fingerprint_node(
 
     # the candidate list contains all node paths that haven't been
     # extended till `max_history` length yet.
-    candidates = deque()
+    candidates: Deque = deque()
     candidates.append([node])
     continuations = []
     while len(candidates) > 0:
@@ -335,14 +346,15 @@ def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> in
     )
 
     for i, e in enumerate(t_cleaned):
+        o = o_cleaned[i]
         if i == len(o_cleaned):
             break
-        elif isinstance(e, UserUttered) and isinstance(o_cleaned[i], UserUttered):
+        elif isinstance(e, UserUttered) and isinstance(o, UserUttered):
             continue
         elif (
             isinstance(e, ActionExecuted)
-            and isinstance(o_cleaned[i], ActionExecuted)
-            and o_cleaned[i].action_name == e.action_name
+            and isinstance(o, ActionExecuted)
+            and o.action_name == e.action_name
         ):
             num_common_actions += 1
         else:
@@ -443,7 +455,7 @@ def visualize_neighborhood(
                 break
             if isinstance(el, UserUttered):
                 message = el.parse_data
-                message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"
+                message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"  # type: ignore[misc]  # noqa: E501
             elif (
                 isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
@@ -473,11 +485,14 @@ def visualize_neighborhood(
                 and event_idx.action_name == ACTION_LISTEN_NAME
             ):
                 next_node_idx += 1
+                if message is None:
+                    label = "  ?  "
+                else:
+                    intent = cast(dict, message).get("intent", {})
+                    label = intent.get("name", "  ?  ")
                 graph.add_node(
                     next_node_idx,
-                    label="  ?  "
-                    if not message
-                    else message.get("intent", {}).get("name", "  ?  "),
+                    label=label,
                     shape="rect",
                     **{"class": "intent dashed active"},
                 )

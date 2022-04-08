@@ -292,7 +292,7 @@ class Agent:
 
     def __init__(
         self,
-        domain: Optional[Union[Text, Domain]] = None,
+        domain: Optional[Domain] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
         lock_store: Optional[LockStore] = None,
@@ -320,7 +320,7 @@ class Agent:
     def load(
         cls,
         model_path: Union[Text, Path],
-        domain: Optional[Union[Text, Domain]] = None,
+        domain: Optional[Domain] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
         lock_store: Optional[LockStore] = None,
@@ -405,7 +405,8 @@ class Agent:
 
         """
         message = UserMessage(message_data)
-        return await self.processor.parse_message(message)
+
+        return await self.processor.parse_message(message)  # type: ignore[union-attr]
 
     async def handle_message(
         self, message: UserMessage
@@ -416,14 +417,18 @@ class Agent:
             return None
 
         async with self.lock_store.lock(message.sender_id):
-            return await self.processor.handle_message(message)
+            return await self.processor.handle_message(  # type: ignore[union-attr]
+                message
+            )
 
     @agent_must_be_ready
     async def predict_next_for_sender_id(
         self, sender_id: Text
     ) -> Optional[Dict[Text, Any]]:
         """Predict the next action for a sender id."""
-        return await self.processor.predict_next_for_sender_id(sender_id)
+        return await self.processor.predict_next_for_sender_id(  # type: ignore[union-attr] # noqa:E501
+            sender_id
+        )
 
     @agent_must_be_ready
     def predict_next_with_tracker(
@@ -432,12 +437,14 @@ class Agent:
         verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART,
     ) -> Optional[Dict[Text, Any]]:
         """Predicts the next action."""
-        return self.processor.predict_next_with_tracker(tracker, verbosity)
+        return self.processor.predict_next_with_tracker(  # type: ignore[union-attr]
+            tracker, verbosity
+        )
 
     @agent_must_be_ready
     async def log_message(self, message: UserMessage) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
-        return await self.processor.log_message(message)
+        return await self.processor.log_message(message)  # type: ignore[union-attr]
 
     @agent_must_be_ready
     async def execute_action(
@@ -452,7 +459,7 @@ class Agent:
         prediction = PolicyPrediction.for_action_name(
             self.domain, action, policy, confidence or 0.0
         )
-        return await self.processor.execute_action(
+        return await self.processor.execute_action(  # type: ignore[union-attr]
             sender_id, action, output_channel, self.nlg, prediction
         )
 
@@ -465,7 +472,7 @@ class Agent:
         tracker: DialogueStateTracker,
     ) -> None:
         """Trigger a user intent, e.g. triggered by an external event."""
-        await self.processor.trigger_external_user_uttered(
+        await self.processor.trigger_external_user_uttered(  # type: ignore[union-attr]
             intent_name, entities, tracker, output_channel
         )
 

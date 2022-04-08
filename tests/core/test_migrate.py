@@ -800,7 +800,7 @@ def test_migrate_domain_raises_exception_for_non_domain_file(tmp_path: Path):
 
     with pytest.raises(
         RasaException,
-        match=f"The file '{str(domain_file)}' could not "
+        match=f"The file '{domain_file.as_posix()}' could not "
         f"be validated as a domain file.",
     ):
         migrate.migrate_domain_format(domain_file, new_domain_file)
@@ -831,8 +831,9 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
 
     with pytest.raises(
         RasaException,
-        match=f"The domain directory '{domain_dir}' does not contain any domain files. "
-        f"Please make sure to include these for a successful migration.",
+        match=f"The domain directory '{domain_dir.as_posix()}' does not contain any "
+        f"domain files. Please make sure to include these for a successful "
+        f"migration.",
     ):
         migrate.migrate_domain_format(domain_dir, None)
 
@@ -865,8 +866,8 @@ def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path):
     domain_dir.mkdir()
     prepare_domain_path(
         domain_dir,
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents: []
         """,
         "domain.yml",

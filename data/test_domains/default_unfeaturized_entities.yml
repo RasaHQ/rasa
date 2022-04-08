@@ -1,5 +1,5 @@
 intents:
- - greet: {use_entities: [name]}
+ - greet: {use_entities: [name, used_entity]}
  - default: {ignore_entities : [unrelated_recognized_entity]}
  - goodbye: {use_entities: null}
  - thank: {use_entities: False}
@@ -11,6 +11,10 @@ entities:
  - name
  - unrelated_recognized_entity
  - other
+ - used_entity:
+    influence_conversation: true
+ - unused_entity:
+    influence_conversation: false
 
 responses:
   utter_greet:

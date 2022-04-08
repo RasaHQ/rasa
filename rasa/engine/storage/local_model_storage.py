@@ -8,7 +8,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Text, ContextManager, Tuple, Union
+from typing import Text, Generator, Tuple, Union
 
 import rasa.utils.common
 import rasa.shared.utils.io
@@ -51,16 +51,18 @@ class LocalModelStorage(ModelStorage):
             )
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            temporary_directory = Path(temporary_directory)
+            temporary_directory_path = Path(temporary_directory)
 
-            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
-            logger.debug(f"Extracted model to '{temporary_directory}'.")
+            cls._extract_archive_to_directory(
+                model_archive_path, temporary_directory_path
+            )
+            logger.debug(f"Extracted model to '{temporary_directory_path}'.")
 
             cls._initialize_model_storage_from_model_archive(
-                temporary_directory, storage_path
+                temporary_directory_path, storage_path
             )
 
-            metadata = cls._load_metadata(temporary_directory)
+            metadata = cls._load_metadata(temporary_directory_path)
 
             return (cls(storage_path), metadata)
 
@@ -70,10 +72,12 @@ class LocalModelStorage(ModelStorage):
     ) -> ModelMetadata:
         """Retrieves metadata from archive (see parent class for full docstring)."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-            temporary_directory = Path(temporary_directory)
+            temporary_directory_path = Path(temporary_directory)
 
-            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
-            metadata = cls._load_metadata(temporary_directory)
+            cls._extract_archive_to_directory(
+                model_archive_path, temporary_directory_path
+            )
+            metadata = cls._load_metadata(temporary_directory_path)
 
             return metadata
 
@@ -86,7 +90,7 @@ class LocalModelStorage(ModelStorage):
         LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
 
     @staticmethod
-    def _assert_not_rasa2_archive(temporary_directory: Path) -> None:
+    def _assert_not_rasa2_archive(temporary_directory: Union[Text, Path]) -> None:
         fingerprint_file = Path(temporary_directory) / "fingerprint.json"
         if fingerprint_file.is_file():
             serialized_fingerprint = rasa.shared.utils.io.read_json_file(
@@ -112,7 +116,7 @@ class LocalModelStorage(ModelStorage):
         return ModelMetadata.from_dict(serialized_metadata)
 
     @contextmanager
-    def write_to(self, resource: Resource) -> ContextManager[Path]:
+    def write_to(self, resource: Resource) -> Generator[Path, None, None]:
         """Persists data for a resource (see parent class for full docstring)."""
         logger.debug(f"Resource '{resource.name}' was requested for writing.")
         directory = self._directory_for_resource(resource)
@@ -128,7 +132,7 @@ class LocalModelStorage(ModelStorage):
         return self._storage_path / resource.name
 
     @contextmanager
-    def read_from(self, resource: Resource) -> ContextManager[Path]:
+    def read_from(self, resource: Resource) -> Generator[Path, None, None]:
         """Provides the data of a `Resource` (see parent class for full docstring)."""
         logger.debug(f"Resource '{resource.name}' was requested for reading.")
         directory = self._directory_for_resource(resource)
@@ -163,6 +167,9 @@ class LocalModelStorage(ModelStorage):
 
             model_metadata = self._create_model_metadata(domain, model_configuration)
             self._persist_metadata(model_metadata, temporary_directory)
+
+            if isinstance(model_archive_path, str):
+                model_archive_path = Path(model_archive_path)
 
             if not model_archive_path.parent.exists():
                 model_archive_path.parent.mkdir(parents=True)

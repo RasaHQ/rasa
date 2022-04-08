@@ -173,6 +173,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        **kwargs: Any,
     ) -> GraphComponent:
         """Loads trained component (see parent class for full docstring)."""
         try:

@@ -36,7 +36,7 @@ jobs:
 
     steps:
     - name: Checkout main
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Download gomplate
       run: |-
@@ -65,7 +65,7 @@ jobs:
         echo "::set-output name=dataset_branch::${DATASET_BRANCH}"
 
     - name: Checkout dataset
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: ${{ secrets.DATASET_REPOSITORY }}
         token: ${{ secrets.ML_TEST_SA_PAT }}
@@ -163,7 +163,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download gomplate
         run: |-
@@ -186,7 +186,7 @@ jobs:
           GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
-          
+
           num_max_replicas=3
           matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
           if [[ $matrix_length -gt $num_max_replicas ]]; then
@@ -220,7 +220,7 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@e0f83f24f541c30f1e9fe3c966963a10b8e647f5
+      - uses: google-github-actions/setup-gcloud@37a9333538a8350a13fe9d8fa03e0d4742a1ad2e
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -253,10 +253,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Checkout dataset
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
@@ -327,8 +327,11 @@ jobs:
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
+          HOST_NAME=`hostname`
+          echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
+
       - name: Checkout dataset - external
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'
         with:
           repository: ${{ env.DATASET }}
@@ -347,7 +350,7 @@ jobs:
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
-          DATASET: "${{ matrix.dataset }}"
+          DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
@@ -355,15 +358,16 @@ jobs:
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
+          INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -382,7 +386,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -494,10 +498,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Checkout dataset
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
@@ -509,7 +513,7 @@ jobs:
           sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
-      - name: Set DATASET and CONFIG variables
+      - name: Set env variables
         id: set_dataset_config_vars
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
@@ -568,8 +572,11 @@ jobs:
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
+          HOST_NAME=`hostname`
+          echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
+
       - name: Checkout dataset - external
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'
         with:
           repository: ${{ env.DATASET }}
@@ -588,7 +595,7 @@ jobs:
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
-          DATASET: "${{ matrix.dataset }}"
+          DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
@@ -596,15 +603,16 @@ jobs:
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -623,7 +631,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -746,12 +754,12 @@ jobs:
           echo "::set-output name=success_status::$success_status"
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Get reports
         uses: actions/download-artifact@v2
@@ -803,7 +811,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download report from last on-schedule regression test
         run: |
@@ -895,7 +903,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@e0f83f24f541c30f1e9fe3c966963a10b8e647f5
+      - uses: google-github-actions/setup-gcloud@37a9333538a8350a13fe9d8fa03e0d4742a1ad2e
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
