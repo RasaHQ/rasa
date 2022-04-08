@@ -21,7 +21,9 @@ def test_to_train_test_split(
     tmp_path: Path,
 ):
 
-    entities = [(1, 2),] * 10 + [(2,)] * 20
+    entities = [
+        (1, 2),
+    ] * 10 + [(2,)] * 20
 
     messages = [
         Message(
@@ -55,9 +57,11 @@ def test_to_train_test_split(
 
     assert test is None
 
-    entities_in_train = [tuple(sorted(entity['entity'] for entity in message.get(
-        ENTITIES)) ) for message in train.nlu_examples]
+    entities_in_train = [
+        tuple(sorted(entity["entity"] for entity in message.get(ENTITIES)))
+        for message in train.nlu_examples
+    ]
     entity_counts = Counter(entities_in_train)
 
-    assert entity_counts[(1,2)] == 9
+    assert entity_counts[(1, 2)] == 9
     assert entity_counts[(2,)] == 18

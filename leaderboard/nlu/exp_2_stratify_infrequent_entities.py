@@ -55,8 +55,9 @@ class Experiment(BaseNLUExperiment):
         """Remove entities with too few examples."""
         self.counts = copy.deepcopy(nlu_data.number_of_examples_per_entity)
         # WHO DOES THAT?! ... WHY?! ...
-        self.counts = {entity[len("entity '"):-1] : count for entity, count in
-                       self.counts.items()}
+        self.counts = {
+            entity[len("entity '") : -1]: count for entity, count in self.counts.items()
+        }
         messages_with_filtered_entities = [
             Message(
                 data={
@@ -65,7 +66,7 @@ class Experiment(BaseNLUExperiment):
                     "entities": [
                         entity
                         for entity in message.get("entities")
-                        if self.counts.get(entity["entity"], 0)
+                        if self.counts.get(str(entity["entity"]), 0)
                         >= self.config.remove_data_for_entities_with_num_examples_below
                     ],
                 }
@@ -78,12 +79,9 @@ class Experiment(BaseNLUExperiment):
         """Use the (globally) most infrequent annotation as label."""
         return [
             min(
-                [
-                    (entity["entity"], self.counts[str(entity["entity"])]) # !!!
-                    for entity in message.get("entities")
-                ],
-                key=lambda item: item[1],
-            )[0]
+                [entity["entity"] for entity in message.get("entities")],
+                key=lambda entity_entity: self.counts[str(entity_entity)],
+            )
             if message.get("entities")
             else ""
             for message in nlu_data.nlu_examples
