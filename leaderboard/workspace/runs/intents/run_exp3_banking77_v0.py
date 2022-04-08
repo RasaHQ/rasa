@@ -15,8 +15,6 @@ from leaderboard.nlu import exp_3_stratify_intents_only_for_exclusion as experim
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-DRY_RUN = False
-
 # =============================================================
 # Directories
 # =============================================================
@@ -32,6 +30,7 @@ config_dir = os.path.join(rasa_dir, "leaderboard", "configs", "intent_classifica
 for folder in [rasa_dir, train_data_dir, out_dir, config_dir]:
     assert Path(folder).exists(), f"Expected a directory at {folder}"
 
+
 logging.info(f"Rasa Repo: {rasa_dir}")
 logging.info(f"Training Data Repo: {train_data_dir}")
 logging.info(f"Output Directory: {out_dir}")
@@ -40,8 +39,8 @@ logging.info(f"Output Directory: {out_dir}")
 # Configurations
 # =============================================================
 
-data_dir = os.path.join(train_data_dir, "public", "HERMIT", "KFold_1")
-data_name = "HERMIT-KFold-1"
+data_dir = os.path.join(train_data_dir, "public", "banking77")
+data_name = "banking77"
 train_data = os.path.join(data_dir, "train", "train.yml")
 test_data = os.path.join(data_dir, "test", "test.yml")
 
@@ -97,10 +96,9 @@ logging.info(f"=> Total # of Configurations = {len(configs)}")
 if click.confirm("Do you want to continue?", default=True):
     logging.info("Let's run!")
 
-    if not DRY_RUN:
-        experiment.multirun(
-            experiment_module=experiment_type,
-            configs=configs,
-            out_dir=str(out_dir),
-            capture=False,
-        )
+    experiment.multirun(
+        experiment_module=experiment_type,
+        configs=configs,
+        out_dir=str(out_dir),
+        capture=False,
+    )
