@@ -11,7 +11,9 @@ import sys
 from omegaconf import MISSING
 
 from leaderboard.utils import experiment
-from leaderboard.nlu import exp_3_stratify_intents_only_for_exclusion as experiment_type
+from leaderboard.nlu import (
+    exp_4_stratify_infrequent_entities_only_for_exclusion as experiment_type,
+)
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
