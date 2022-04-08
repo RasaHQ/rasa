@@ -15,7 +15,7 @@ from leaderboard.nlu import exp_3_stratify_intents_only_for_exclusion as experim
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-DRY_RUN = True
+DRY_RUN = False
 
 # =============================================================
 # Directories
@@ -74,16 +74,16 @@ rng = random.Random(345)
 
 variations = [
     [
+        {("exclusion_seed",): value}
+        for value in [rng.randint(1, 1000) for _ in range(10)]
+    ],
+    [{("train_exclusion_fraction",): value} for value in [0.0, 0.75, 0.25, 0.5, 0.25]],
+    [
         {
             ("model", "name"): Path(config_file).name.replace(".yml", ""),
             ("model", "config_path"): config_file,
         }
         for config_file in config_files
-    ],
-    [{("train_exclusion_fraction",): value} for value in [0.0, 0.2, 0.5, 0.75]],
-    [
-        {("exclusion_seed",): value}
-        for value in [rng.randint(1, 1000) for _ in range(10)]
     ],
 ]
 
