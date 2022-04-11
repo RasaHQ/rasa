@@ -31,6 +31,7 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> N
 
     parser.add_argument("-l", "--language", default="en", help="Language of data.")
 
+
 def set_lint_arguments(parser: argparse.ArgumentParser) -> None:
     """Sets Yaml lint arguments."""
     parser.add_argument(
