@@ -16,6 +16,37 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.0.10] - 2022-03-15## [3.0.10] - 2022-03-15                          
+### Bugfixes
+- [#10675](https://github.com/rasahq/rasa/issues/10675): Fix broken conversion from Rasa JSON NLU data to Rasa YAML NLU data.
+
+
+## [3.0.9] - 2022-03-11                         
+### Bugfixes
+- [#10412](https://github.com/rasahq/rasa/issues/10412): Fix Socket IO connection issues by upgrading sanic to v21.12. 
+
+  The bug is caused by [an invalid function signature](https://github.com/sanic-org/sanic/issues/2272) and is fixed in [v21.12](https://sanic.readthedocs.io/en/v21.12.1/sanic/changelog.html#version-21-12-0).
+
+  This update brings some deprecations in `sanic`:
+
+  - Sanic and Blueprint may no longer have arbitrary properties attached to them
+      - Fixed this by moving user defined properties to the `instance.ctx` object
+  - Sanic and Blueprint forced to have compliant names
+      - Fixed this by using string literal names instead of the module's name via _\_name\_\_
+  - `sanic.exceptions.abort` is Deprecated
+      - Fixed by replacing it with `sanic.exceptions.SanicException`
+  - `sanic.response.StreamingHTTPResponse` is deprecated
+      - Fixed by replacing it with sanic.response.ResponseStream
+- [#10447](https://github.com/rasahq/rasa/issues/10447): Update `rasa data validate` to not fail when `active_loop` is `null`
+
+### Improved Documentation
+- [#10798](https://github.com/rasahq/rasa/issues/10798): Updated the `model_confidence` parameter in `TEDPolicy` and `DIETClassifier`. The `linear_norm` is removed
+  as it is no longer supported.
+- [#10940](https://github.com/rasahq/rasa/issues/10940): Added an additional step to `Receiving Messages` section in slack.mdx documentation. After a slack update this 
+  additional step is needed to allow direct messages to the bot.
+- [#10957](https://github.com/rasahq/rasa/issues/10957): Backport the updated deployment docs to 3.0.x.
+
+
 ## [3.0.8] - 2022-02-11
 ### Improvements
 - [#10394](https://github.com/rasahq/rasa/issues/10394): Allow single tokens in rasa end-to-end test files to be annotated with multiple entities.
