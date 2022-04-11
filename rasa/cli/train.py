@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-from typing import List, Optional, Text, Dict
+from typing import Dict, List, Optional, Text, TYPE_CHECKING, Union
 
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
@@ -18,6 +18,9 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def add_subparser(
@@ -215,7 +218,7 @@ def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
 
 
 def _get_valid_config(
-    config: Optional[Text],
+    config: Optional[Union[Text, "Path"]],
     mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
@@ -249,4 +252,4 @@ def _get_valid_config(
         )
         sys.exit(1)
 
-    return config
+    return str(config)
