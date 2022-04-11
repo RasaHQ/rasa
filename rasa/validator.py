@@ -2,11 +2,7 @@ import itertools
 import logging
 import queue
 from collections import defaultdict
-from platform import node
-from re import A
 from typing import Set, Text, Optional, Dict, Any, List
-
-from numpy import False_
 
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
@@ -100,7 +96,7 @@ class Validator:
                 everything_is_alright = False
 
         return everything_is_alright
-    
+
     def verify_loop_in_intents(
         self, ignore_warnings: bool = True
     ) -> bool:
@@ -109,9 +105,7 @@ class Validator:
         visited = dict()
         loops_cp = []
         stories = []
-        
         everything_is_alright = True
-        
         for story in self.story_graph.story_steps:
             start_cp = story.start_checkpoints[0].name
             if start_cp not in nodes:
@@ -136,13 +130,11 @@ class Validator:
                     everything_is_alright = ignore_warnings and everything_is_alright
                 else:
                     row.put(node)
-        
         if(len(loops_cp) > 0):
             rasa.shared.utils.io.raise_warning(
                 f"These stories '{stories}' "
                 f"with this checkpoint {loops_cp} is causing loop "
             )
-        
         return everything_is_alright
 
     def verify_example_repetition_in_intents(
@@ -380,7 +372,6 @@ class Validator:
         there_is_no_duplication = self.verify_example_repetition_in_intents(
             ignore_warnings
         )
-        
         logger.info("Validating loop of checkpoints...")
         loop_in_checkpoint = self.verify_loop_in_intents(ignore_warnings)
 
