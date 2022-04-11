@@ -47,7 +47,7 @@ def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunR
     )
 
     simple_test_story_yaml = """
-version: "3.0"
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: unlikely path
   steps:
@@ -59,7 +59,7 @@ stories:
   - intent: affirm
   - action: utter_happy
 """
-    with open("tests/test_stories.yaml", "w") as f:
+    with open("tests/test_stories.yml", "w") as f:
         f.write(simple_test_story_yaml)
 
     run_in_simple_project_with_model("test", "core", "--no-warnings")

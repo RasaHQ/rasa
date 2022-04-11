@@ -3,13 +3,15 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
+
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.featurizers.featurizer import Featurizer
 
 import numpy as np
 import scipy.sparse
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, TypeVar, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -113,6 +115,9 @@ LABEL_KEY = LABEL
 LABEL_SUB_KEY = IDS
 
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
+
+
+DIETClassifierT = TypeVar("DIETClassifierT", bound="DIETClassifier")
 
 
 @DefaultV1Recipe.register(
@@ -666,7 +671,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[FeatureArray]:
-        feature_arrays: List[FeatureArray] = self._label_data.get(LABEL, SENTENCE)
+        if self._label_data is None:
+            return []
+
+        feature_arrays = self._label_data.get(LABEL, SENTENCE)
         all_label_features = feature_arrays[0]
         return [
             FeatureArray(
@@ -887,6 +895,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
         else:
+            if self.model is None:
+                raise ModelNotFound("Model could not be found. ")
+
             self.model.adjust_for_incremental_training(
                 data_example=self._data_example,
                 new_sparse_feature_sizes=model_data.get_sparse_feature_sizes(),
@@ -946,7 +957,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
         label: Dict[Text, Any] = {"name": None, "confidence": 0.0}
-        label_ranking = []
+        label_ranking: List[Dict[Text, Any]] = []
 
         if predict_out is None:
             return label, label_ranking
@@ -1058,7 +1069,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 self._sparse_feature_sizes,
             )
             io_utils.pickle_dump(
-                model_path / f"{file_name}.label_data.pkl", dict(self._label_data.data)
+                model_path / f"{file_name}.label_data.pkl",
+                dict(self._label_data.data) if self._label_data is not None else {},
             )
             io_utils.json_pickle(
                 model_path / f"{file_name}.index_label_id_mapping.json",
@@ -1076,13 +1088,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     @classmethod
     def load(
-        cls,
+        cls: Type[DIETClassifierT],
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> DIETClassifier:
+    ) -> DIETClassifierT:
         """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
@@ -1098,13 +1110,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     @classmethod
     def _load(
-        cls,
+        cls: Type[DIETClassifierT],
         model_path: Path,
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "DIETClassifier":
+    ) -> DIETClassifierT:
         """Loads the trained model from the provided directory."""
         (
             index_label_id_mapping,

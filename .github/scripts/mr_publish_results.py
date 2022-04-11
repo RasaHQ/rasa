@@ -1,4 +1,4 @@
-# Send model regression test results to Segment and Datadog
+# Send model regression test results to Datadog
 # with a summary of all test results.
 # Also write them into a report file.
 import copy
@@ -7,7 +7,6 @@ import json
 import os
 from typing import Any, Dict, List, Text, Tuple
 
-import analytics
 from datadog_api_client.v1 import ApiClient, Configuration
 from datadog_api_client.v1.api.metrics_api import MetricsApi
 from datadog_api_client.v1.model.metrics_payload import MetricsPayload
@@ -28,14 +27,6 @@ TASK_MAPPING = {
     "story_report.json": "story_prediction",
 }
 
-TASK_MAPPING_SEGMENT = {
-    "intent_report.json": "Intent Classification",
-    "CRFEntityExtractor_report.json": "Entity Prediction",
-    "DIETClassifier_report.json": "Entity Prediction",
-    "response_selection_report.json": "Response Selection",
-    "story_report.json": "Story Prediction",
-}
-
 METRICS = {
     "test_run_time": "TEST_RUN_TIME",
     "train_run_time": "TRAIN_RUN_TIME",
@@ -44,7 +35,7 @@ METRICS = {
 
 MAIN_TAGS = {
     "config": "CONFIG",
-    "dataset": "DATASET",
+    "dataset": "DATASET_NAME",
 }
 
 OTHER_TAGS = {
@@ -53,6 +44,7 @@ OTHER_TAGS = {
     "accelerator_type": "ACCELERATOR_TYPE",
     "type": "TYPE",
     "index_repetition": "INDEX_REPETITION",
+    "host_name": "HOST_NAME",
 }
 
 GIT_RELATED_TAGS = {
@@ -226,27 +218,6 @@ def send_to_datadog(results: List[Dict[Text, Any]]) -> None:
             print(response)
 
 
-def _send_to_segment(context: Dict[Text, Any]) -> None:
-    jobID = os.environ["GITHUB_RUN_ID"]
-    analytics.identify(
-        jobID, {"name": "model-regression-tests", "created_at": datetime.datetime.now()}
-    )
-
-    analytics.track(
-        jobID,
-        "results",
-        {
-            "config_repository": CONFIG_REPOSITORY,
-            **prepare_datasetrepo_and_external_tags(),
-            **create_dict_of_env(METRICS),
-            **create_dict_of_env(MAIN_TAGS),
-            **create_dict_of_env(OTHER_TAGS),
-            **create_dict_of_env(GIT_RELATED_TAGS),
-            **context,
-        },
-    )
-
-
 def read_results(file: Text) -> Dict[Text, Any]:
     with open(file) as json_file:
         data = json.load(json_file)
@@ -270,12 +241,6 @@ def get_result(file_name: Text, file: Text) -> Dict[Text, Any]:
     return result
 
 
-def _push_results_to_segment(file_name: Text, file: Text) -> None:
-    result = get_result(file_name, file)
-    result["task"] = TASK_MAPPING_SEGMENT[file_name]
-    _send_to_segment(result)
-
-
 def send_all_to_datadog() -> None:
     results = []
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
@@ -286,20 +251,9 @@ def send_all_to_datadog() -> None:
     send_to_datadog(results)
 
 
-def send_all_results_to_segment() -> None:
-    analytics.write_key = os.environ["SEGMENT_TOKEN"]
-    for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
-        for f in files:
-            if any(
-                f.endswith(valid_name) for valid_name in TASK_MAPPING_SEGMENT.keys()
-            ):
-                _push_results_to_segment(f, os.path.join(dirpath, f))
-    analytics.flush()
-
-
 def generate_json(file: Text, task: Text, data: dict) -> dict:
     config = os.environ["CONFIG"]
-    dataset = os.environ["DATASET"]
+    dataset = os.environ["DATASET_NAME"]
 
     if dataset not in data:
         data = {dataset: {config: []}, **data}
@@ -336,5 +290,4 @@ def create_report_file() -> None:
 
 if __name__ == "__main__":
     send_all_to_datadog()
-    send_all_results_to_segment()
     create_report_file()

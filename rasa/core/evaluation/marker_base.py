@@ -11,8 +11,10 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    TYPE_CHECKING,
     Union,
     Any,
+    AsyncIterator,
 )
 
 from pathlib import Path
@@ -35,6 +37,9 @@ from rasa.shared.constants import DOCS_URL_MARKERS
 import logging
 import csv
 import os.path
+
+if TYPE_CHECKING:
+    from rasa.core.evaluation.marker import OrMarker
 
 logger = logging.getLogger(__name__)
 
@@ -273,9 +278,7 @@ class Marker(ABC):
         """Gets the maximum depth from this point in the marker tree."""
         ...
 
-    def evaluate_events(
-        self, events: List[Event], recursive: bool = False
-    ) -> List[SessionEvaluation]:
+    def evaluate_events(self, events: List[Event]) -> List[SessionEvaluation]:
         """Resets the marker, tracks all events, and collects some information.
 
         The collected information includes:
@@ -285,21 +288,15 @@ class Marker(ABC):
         If this marker is the special `ANY_MARKER` (identified by its name), then
         results will be collected for all (immediate) sub-markers.
 
-        If `recursive` is set to `True`, then all included markers are evaluated.
-
         Args:
             events: a list of events describing a conversation
-            recursive: set this to `True` to collect evaluations for all markers that
-               this marker consists of
         Returns:
             a list that contains, for each session contained in the tracker, a
             dictionary mapping that maps marker names to meta data of relevant
             events
         """
         # determine which marker to extract results from
-        if recursive:
-            markers_to_be_evaluated = [marker for marker in self]
-        elif isinstance(self, OperatorMarker) and self.name == Marker.ANY_MARKER:
+        if isinstance(self, OperatorMarker) and self.name == Marker.ANY_MARKER:
             markers_to_be_evaluated = self.sub_markers
         else:
             markers_to_be_evaluated = [self]
@@ -395,7 +392,7 @@ class Marker(ABC):
         return [idx for (idx, applies) in enumerate(self.history) if applies]
 
     @classmethod
-    def from_path(cls, path: Union[Path, Text]) -> Marker:
+    def from_path(cls, path: Union[Path, Text]) -> "OrMarker":
         """Loads markers from one config file or all config files in a directory tree.
 
         Each config file should contain a dictionary mapping marker names to the
@@ -493,7 +490,7 @@ class Marker(ABC):
 
     @staticmethod
     def _collect_configs_from_yaml_files(yaml_files: List[Text]) -> Dict[Text, Dict]:
-        marker_names = set()
+        marker_names: Set[Text] = set()
         loaded_configs: Dict[Text, Dict] = {}
         for yaml_file in yaml_files:
             loaded_config = rasa.shared.utils.io.read_yaml_file(yaml_file)
@@ -566,27 +563,25 @@ class Marker(ABC):
 
         tag, _ = MarkerRegistry.get_non_negated_tag(tag_or_negated_tag=tag)
         if tag in MarkerRegistry.operator_tag_to_marker_class:
-            marker = OperatorMarker.from_tag_and_sub_config(
+            return OperatorMarker.from_tag_and_sub_config(
                 tag=tag, sub_config=sub_marker_config, name=name
             )
         elif tag in MarkerRegistry.condition_tag_to_marker_class:
-            marker = ConditionMarker.from_tag_and_sub_config(
+            return ConditionMarker.from_tag_and_sub_config(
                 tag=tag, sub_config=sub_marker_config, name=name
             )
-        else:
-            raise InvalidMarkerConfig(
-                f"Expected a marker configuration with a key that specifies"
-                f" an operator or a condition but found {tag}. "
-                f"Available conditions and operators are: "
-                f"{sorted(MarkerRegistry.all_tags)}. "
-                f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
-            )
 
-        return marker
+        raise InvalidMarkerConfig(
+            f"Expected a marker configuration with a key that specifies"
+            f" an operator or a condition but found {tag}. "
+            f"Available conditions and operators are: "
+            f"{sorted(MarkerRegistry.all_tags)}. "
+            f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+        )
 
-    def evaluate_trackers(
+    async def evaluate_trackers(
         self,
-        trackers: Iterator[Optional[DialogueStateTracker]],
+        trackers: AsyncIterator[Optional[DialogueStateTracker]],
         output_file: Path,
         session_stats_file: Optional[Path] = None,
         overall_stats_file: Optional[Path] = None,
@@ -616,7 +611,7 @@ class Marker(ABC):
 
         # Apply marker to each session stored in each tracker and save the results.
         processed_trackers: Dict[Text, List[SessionEvaluation]] = {}
-        for tracker in trackers:
+        async for tracker in trackers:
             if tracker:
                 tracker_result = self.evaluate_events(tracker.events)
                 processed_trackers[tracker.sender_id] = tracker_result

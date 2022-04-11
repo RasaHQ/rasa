@@ -104,7 +104,7 @@ class MemoizationPolicy(Policy):
         Returns:
             lookup dictionary
         """
-        lookup = {}
+        lookup: Dict[Text, Text] = {}
 
         if not trackers_as_states:
             return lookup
@@ -141,7 +141,10 @@ class MemoizationPolicy(Policy):
 
         return lookup
 
-    def _create_feature_key(self, states: List[State]) -> Text:
+    def _create_feature_key(self, states: List[State]) -> Optional[Text]:
+        if not states:
+            return None
+
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
@@ -213,7 +216,10 @@ class MemoizationPolicy(Policy):
     ) -> List[float]:
         result = self._default_predictions(domain)
         if action_name:
-            if self.config["use_nlu_confidence_as_score"]:
+            if (
+                self.config["use_nlu_confidence_as_score"]
+                and tracker.latest_message is not None
+            ):
                 # the memoization will use the confidence of NLU on the latest
                 # user message to set the confidence of the action
                 score = tracker.latest_message.intent.get("confidence", 1.0)
@@ -405,9 +411,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         logger.debug("Launch DeLorean...")
 
         # Truncate the tracker based on `max_history`
-        truncated_tracker = _trim_tracker_by_max_history(
-            tracker, self.config[POLICY_MAX_HISTORY]
-        )
+        truncated_tracker: Optional[
+            DialogueStateTracker
+        ] = _trim_tracker_by_max_history(tracker, self.config[POLICY_MAX_HISTORY])
         truncated_tracker = self._strip_leading_events_until_action_executed(
             truncated_tracker
         )

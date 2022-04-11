@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import typing
-from typing import Optional, Text, Callable, Dict, Any
+from typing import Optional, Text, Callable, Dict, Any, List
 
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.formats.dialogflow import (
@@ -54,13 +54,13 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
         files = rasa.shared.utils.io.list_files(resource_name)
 
     data_sets = [_load(f, language) for f in files]
-    data_sets = [ds for ds in data_sets if ds]
-    if len(data_sets) == 0:
+    training_data_sets: List[TrainingData] = [ds for ds in data_sets if ds]
+    if len(training_data_sets) == 0:
         training_data = TrainingData()
-    elif len(data_sets) == 1:
-        training_data = data_sets[0]
+    elif len(training_data_sets) == 1:
+        training_data = training_data_sets[0]
     else:
-        training_data = data_sets[0].merge(*data_sets[1:])
+        training_data = training_data_sets[0].merge(*training_data_sets[1:])
 
     return training_data
 
@@ -75,7 +75,7 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
         DialogflowReader,
     )
 
-    reader = None
+    reader: Optional["TrainingDataReader"] = None
     if fformat == LUIS:
         reader = LuisReader()
     elif fformat == WIT:
