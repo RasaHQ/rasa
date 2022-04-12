@@ -18,7 +18,7 @@ logger = logging.getLogger(__file__)
 @dataclass
 class Config(ExperimentConfiguration):
     train_exclusion_fraction: float = 0.0
-    exclusion_ignore_leq = 10
+    exclusion_ignore_leq: int = 10
     exclusion_seed: int = 345
     test_data_path: str = MISSING
 
