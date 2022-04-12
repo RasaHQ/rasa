@@ -69,7 +69,7 @@ jobs:
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
