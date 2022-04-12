@@ -52,6 +52,7 @@ for file in [train_data, test_data]:
 
 base_config = experiment_type.Config(
     train_exclusion_fraction=MISSING,
+    exclusion_ignore_leq=10,
     data=experiment.DataConfig(
         name=f"{data_name}",
         data_path=train_data,

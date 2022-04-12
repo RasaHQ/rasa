@@ -150,14 +150,15 @@ def results2df(
 def add_total_train_times(df: pd.DataFrame) -> None:
     """Adds total training times for classifiers - and non-classifiers."""
     train_time_cols = [
-        col
-        for col in df.columns
-        if col[0].startswith("train_") and col[1].strip() == "duration(sec)"
+        (top_level, low_level)
+        for top_level, low_level in df.columns
+        if top_level.startswith("train_") and low_level.strip() == "duration(sec)"
     ]
-    df["train_non_classifiers"] = sum(
+    top_level = "times"
+    df[(top_level, "train_non_classifiers")] = sum(
         df[col].fillna(0) for col in train_time_cols if "Classifier" not in col[0]
     )
-    df["train_all_classifiers"] = sum(
+    df[(top_level, "train_all_classifiers")] = sum(
         df[col].fillna(0) for col in train_time_cols if "Classifier" in col[0]
     )
-    df["train_all"] = sum(df[col].fillna(0) for col in train_time_cols)
+    df[(top_level, "train_all")] = sum(df[col].fillna(0) for col in train_time_cols)

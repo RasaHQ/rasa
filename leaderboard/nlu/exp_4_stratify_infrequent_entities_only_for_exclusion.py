@@ -18,6 +18,7 @@ logger = logging.getLogger(__file__)
 @dataclass
 class Config(ExperimentConfiguration):
     train_exclusion_fraction: float = 0.0
+    exclusion_ignore_leq = 10
     exclusion_seed: int = 345
     test_data_path: str = MISSING
 
@@ -34,6 +35,7 @@ class Config(ExperimentConfiguration):
                 "model:${model.name}",
                 "data:${data.name}",
                 "exclude:${train_exclusion_fraction}",
+                "exclusion_ignore_leq:${exclusion_ignore_leq}",
                 "exclusion_seed:${exclusion_seed}",
             ]
         )
@@ -51,18 +53,34 @@ class EntityExperiment(BaseNLUExperiment):
 
     def _pseudo_labels(self, nlu_data: TrainingData):
         """Use the (globally) most infrequent annotation as label."""
+        # count how often each entity appears - and filter
+        # entity counts according to the minimum count given
+        # by the `exclusion_ignore_leq` parameter
         counts = copy.deepcopy(nlu_data.number_of_examples_per_entity)
         counts = {
-            entity[len("entity '") : -1]: count for entity, count in counts.items()
+            entity[len("entity '") : -1]: count
+            for entity, count in counts.items()
+            if count > self.config.exclusion_ignore_leq
         }
+        # for each message, return the entity with the smallest
+        # count (if that count is >= the `exclusion_ignore_leq`
+        # parameter, or '' otherwise)
+        filtered_entities_per_message = [
+            [
+                entity["entity"]
+                for entity in message.get("entities", [])
+                if str(entity["entity"]) in counts
+            ]
+            for message in nlu_data.nlu_examples
+        ]
         return [
             min(
-                [entity["entity"] for entity in message.get("entities")],
+                entities,
                 key=lambda entity_entity: counts[str(entity_entity)],
             )
-            if message.get("entities")
+            if entities
             else ""
-            for message in nlu_data.nlu_examples
+            for entities in filtered_entities_per_message
         ]
 
     def exclude_data(self, nlu_data: TrainingData) -> TrainingData:

@@ -1,3 +1,4 @@
 hydra-core
 omegaconf
 pandas
+seaborn
