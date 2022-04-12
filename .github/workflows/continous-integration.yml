@@ -127,7 +127,7 @@ jobs:
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -261,7 +261,7 @@ jobs:
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -475,7 +475,7 @@ jobs:
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
