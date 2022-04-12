@@ -2315,11 +2315,11 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.1.1"
+version = "3.2.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
-python-versions = ">=3.7,<3.10"
+python-versions = ">=3.7,<3.11"
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
