@@ -10,8 +10,10 @@ if typing.TYPE_CHECKING:
 
 
 class StoryWriter:
-    @staticmethod
+    """Writes story training data to file."""
+
     def dumps(
+        self,
         story_steps: List["StoryStep"],
         is_appendable: bool = False,
         is_test_story: bool = False,
@@ -30,8 +32,8 @@ class StoryWriter:
         """
         raise NotImplementedError
 
-    @staticmethod
     def dump(
+        self,
         target: Union[Text, Path, yaml.StringIO],
         story_steps: List["StoryStep"],
         is_appendable: bool = False,

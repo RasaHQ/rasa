@@ -1,4 +1,5 @@
 import copy
+import dataclasses
 import logging
 import os
 import time
@@ -12,6 +13,7 @@ from typing import (
     Iterator,
     Generator,
     Type,
+    TypeVar,
     List,
     Deque,
     Iterable,
@@ -19,6 +21,7 @@ from typing import (
     FrozenSet,
     Tuple,
     TYPE_CHECKING,
+    cast,
 )
 
 import rasa.shared.utils.io
@@ -40,9 +43,6 @@ from rasa.shared.core.constants import (
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    LOOP_REJECTED,
-    TRIGGER_MESSAGE,
-    LOOP_INTERRUPTED,
     ACTION_SESSION_START_NAME,
     FOLLOWUP_ACTION,
 )
@@ -61,26 +61,24 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import AnySlot, Slot
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict
-
     from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 
-    # precise type definition for `DialogueStateTracker.active_loop`
-    TrackerActiveLoop = TypedDict(
-        "TrackerActiveLoop",
-        {
-            LOOP_NAME: Optional[Text],
-            LOOP_INTERRUPTED: bool,
-            LOOP_REJECTED: bool,
-            TRIGGER_MESSAGE: Dict,
-        },
-        total=False,
-    )
+    EventTypeAlias = TypeVar("EventTypeAlias", bound=Event)
+
+
+@dataclasses.dataclass
+class TrackerActiveLoop:
+    """Dataclass for `DialogueStateTracker.active_loop`."""
+
+    name: Optional[Text]
+    is_interrupted: bool
+    rejected: bool
+    trigger_message: Optional[Dict]
 
 
 logger = logging.getLogger(__name__)
@@ -115,10 +113,10 @@ class AnySlotDict(dict):
     e.g. properly featurizing the slot."""
 
     def __missing__(self, key: Text) -> Slot:
-        value = self[key] = Slot(key, mappings=[])
+        value = self[key] = AnySlot(key, mappings=[])
         return value
 
-    def __contains__(self, key: Text) -> bool:
+    def __contains__(self, key: Any) -> bool:
         return True
 
 
@@ -133,13 +131,14 @@ class DialogueStateTracker:
         cls,
         sender_id: Text,
         events_as_dict: List[Dict[Text, Any]],
-        slots: Optional[List[Slot]] = None,
+        slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
     ) -> "DialogueStateTracker":
         """Create a tracker from dump.
 
         The dump should be an array of dumped events. When restoring
-        the tracker, these events will be replayed to recreate the state."""
+        the tracker, these events will be replayed to recreate the state.
+        """
         evts = events.deserialise_events(events_as_dict)
 
         return cls.from_events(sender_id, evts, slots, max_event_history)
@@ -213,13 +212,13 @@ class DialogueStateTracker:
         # if tracker is paused, no actions should be taken
         self._paused = False
         # A deterministically scheduled action to be executed next
-        self.followup_action = ACTION_LISTEN_NAME
-        self.latest_action = None
+        self.followup_action: Optional[Text] = ACTION_LISTEN_NAME
+        self.latest_action: Optional[Dict[Text, Text]] = None
         # Stores the most recent message sent by the user
         self.latest_message: Optional[UserUttered] = None
-        self.latest_bot_utterance = None
+        self.latest_bot_utterance: Optional[BotUttered] = None
         self._reset()
-        self.active_loop: "TrackerActiveLoop" = {}
+        self.active_loop: Optional[TrackerActiveLoop] = None
 
         # Optional model_id to add to all events.
         self.model_id: Optional[Text] = None
@@ -231,9 +230,8 @@ class DialogueStateTracker:
         self, event_verbosity: EventVerbosity = EventVerbosity.NONE
     ) -> Dict[Text, Any]:
         """Returns the current tracker state as an object."""
-        _events = self._events_for_verbosity(event_verbosity)
-        if _events:
-            _events = [e.as_dict() for e in _events]
+        events = self._events_for_verbosity(event_verbosity)
+        events_as_dict = [e.as_dict() for e in events] if events is not None else None
         latest_event_time = None
         if len(self.events) > 0:
             latest_event_time = self.events[-1].timestamp
@@ -245,9 +243,11 @@ class DialogueStateTracker:
             "latest_event_time": latest_event_time,
             FOLLOWUP_ACTION: self.followup_action,
             "paused": self.is_paused(),
-            "events": _events,
+            "events": events_as_dict,
             "latest_input_channel": self.get_latest_input_channel(),
-            ACTIVE_LOOP: self.active_loop,
+            ACTIVE_LOOP: (
+                dataclasses.asdict(self.active_loop) if self.active_loop else {}
+            ),
             "latest_action": self.latest_action,
             "latest_action_name": self.latest_action_name,
         }
@@ -271,7 +271,7 @@ class DialogueStateTracker:
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[misc]  # noqa: E501
 
         return parse_data_with_nlu_state
 
@@ -328,14 +328,14 @@ class DialogueStateTracker:
             loop_name: The name of loop which should be marked as active.
         """
         if loop_name is not None:
-            self.active_loop = {
-                LOOP_NAME: loop_name,
-                LOOP_INTERRUPTED: False,
-                LOOP_REJECTED: False,
-                TRIGGER_MESSAGE: self.latest_message.parse_data,
-            }
+            self.active_loop = TrackerActiveLoop(
+                loop_name,
+                False,
+                False,
+                self.latest_message.parse_data if self.latest_message else None,
+            )
         else:
-            self.active_loop = {}
+            self.active_loop = None
 
     def interrupt_loop(self, is_interrupted: bool) -> None:
         """Interrupt loop and mark that we entered an unhappy path in the conversation.
@@ -343,12 +343,13 @@ class DialogueStateTracker:
         Args:
             is_interrupted: `True` if the loop was run after an unhappy path.
         """
-        self.active_loop[LOOP_INTERRUPTED] = is_interrupted
+        if self.active_loop is not None:
+            self.active_loop.is_interrupted = is_interrupted
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active loop that it was rejected."""
-        if action_name == self.active_loop_name:
-            self.active_loop[LOOP_REJECTED] = True
+        if self.active_loop is not None and action_name == self.active_loop_name:
+            self.active_loop.rejected = True
 
     def set_latest_action(self, action: Dict[Text, Text]) -> None:
         """Sets latest action name or text.
@@ -359,21 +360,23 @@ class DialogueStateTracker:
             action: Serialized action event.
         """
         self.latest_action = action
-        if self.active_loop_name:
+        if self.active_loop is not None and self.active_loop_name:
             # reset form validation if some loop is active
-            self.active_loop[LOOP_INTERRUPTED] = False
+            self.active_loop.is_interrupted = False
 
-        if action.get(ACTION_NAME) == self.active_loop_name:
+        if (
+            self.active_loop is not None
+            and action.get(ACTION_NAME) == self.active_loop_name
+        ):
             # reset loop rejection if it was predicted again
-            self.active_loop[LOOP_REJECTED] = False
+            self.active_loop.rejected = False
 
     def current_slot_values(self) -> Dict[Text, Any]:
-        """Return the currently set values of the slots"""
+        """Return the currently set values of the slots."""
         return {key: slot.value for key, slot in self.slots.items()}
 
     def get_slot(self, key: Text) -> Optional[Any]:
         """Retrieves the value of a slot."""
-
         if key in self.slots:
             return self.slots[key].value
         else:
@@ -401,9 +404,11 @@ class DialogueStateTracker:
         Returns:
             Entity values.
         """
+        if self.latest_message is None:
+            return iter([])
 
         return (
-            x.get(ENTITY_ATTRIBUTE_VALUE)
+            cast(Text, x[ENTITY_ATTRIBUTE_VALUE])
             for x in self.latest_message.entities
             if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
             and x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group
@@ -479,7 +484,7 @@ class DialogueStateTracker:
             if isinstance(event, ActiveLoop) and event.name
         ]
 
-        applied_events = []
+        applied_events: List[Event] = []
 
         for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):
@@ -717,11 +722,11 @@ class DialogueStateTracker:
 
     def get_last_event_for(
         self,
-        event_type: Union[Type[Event], Tuple[Type, ...]],
+        event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"], ...]],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
         event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
-    ) -> Optional[Event]:
+    ) -> Optional["EventTypeAlias"]:
         """Gets the last event of a given type which was actually applied.
 
         Args:
@@ -735,7 +740,6 @@ class DialogueStateTracker:
         Returns:
             event which matched the query or `None` if no event matched.
         """
-
         to_exclude = action_names_to_exclude or []
 
         def filter_function(e: Event) -> bool:
@@ -762,7 +766,6 @@ class DialogueStateTracker:
         Returns:
             `True` if last executed action had name `name`, otherwise `False`.
         """
-
         last: Optional[ActionExecuted] = self.get_last_event_for(
             ActionExecuted, action_names_to_exclude=[ACTION_LISTEN_NAME], skip=skip
         )
@@ -775,18 +778,16 @@ class DialogueStateTracker:
     ###
     def _reset(self) -> None:
         """Reset tracker to initial state - doesn't delete events though!."""
-
         self._reset_slots()
         self._paused = False
         self.latest_action = {}
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
-        self.active_loop = {}
+        self.active_loop = None
 
     def _reset_slots(self) -> None:
         """Set all the slots to their initial value."""
-
         for slot in self.slots.values():
             slot.reset()
 
@@ -832,10 +833,10 @@ class DialogueStateTracker:
 
         Returns: `None` if no active loop or the name of the currently active loop.
         """
-        if not self.active_loop or self.active_loop.get(LOOP_NAME) == SHOULD_NOT_BE_SET:
+        if not self.active_loop or self.active_loop.name == SHOULD_NOT_BE_SET:
             return None
 
-        return self.active_loop.get(LOOP_NAME)
+        return self.active_loop.name
 
     @property
     def latest_action_name(self) -> Optional[Text]:
@@ -843,9 +844,22 @@ class DialogueStateTracker:
 
         Returns: name of the previously executed action or text of e2e action
         """
+        if self.latest_action is None:
+            return None
+
         return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
             ACTION_TEXT
         )
+
+    @property
+    def is_active_loop_rejected(self) -> bool:
+        """Return True if there is an active loop and it's rejected."""
+        return self.active_loop is not None and self.active_loop.rejected
+
+    @property
+    def is_active_loop_interrupted(self) -> bool:
+        """Return True if there is an active loop and it's interrupted."""
+        return self.active_loop is not None and self.active_loop.is_interrupted
 
     def fingerprint(self) -> Text:
         """Returns a unique hash for the tracker which is stable across python runs.
@@ -866,7 +880,7 @@ class DialogueStateTracker:
 
 def get_active_loop_name(
     state: State,
-) -> Optional[Union[Text, Tuple[Union[float, Text]]]]:
+) -> Optional[Text]:
     """Get the name of current active loop.
 
     Args:
@@ -881,7 +895,9 @@ def get_active_loop_name(
     ):
         return None
 
-    return state[ACTIVE_LOOP].get(LOOP_NAME)
+    # FIXME: better type annotation for `State` would require
+    # a larger refactoring (e.g. switch to dataclass)
+    return cast(Optional[Text], state[ACTIVE_LOOP].get(LOOP_NAME))
 
 
 def is_prev_action_listen_in_state(state: State) -> bool:

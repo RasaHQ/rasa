@@ -197,7 +197,6 @@ def validate_stories(args: argparse.Namespace) -> None:
 def _validate_domain(validator: "Validator") -> bool:
     return (
         validator.verify_domain_validity()
-        and validator.verify_domain_duplicates()
         and validator.verify_actions_in_stories_rules()
         and validator.verify_forms_in_stories_rules()
         and validator.verify_form_slots()
@@ -225,7 +224,7 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
     import rasa.nlu.convert
 
-    if args.format == "json":
+    if args.format in ["json", "yaml"]:
         rasa.nlu.convert.convert_training_data(
             args.data, args.out, args.format, args.language
         )

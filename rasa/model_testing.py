@@ -1,7 +1,16 @@
 import copy
 import logging
 import os
-from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
+from typing import (
+    Text,
+    Dict,
+    Optional,
+    List,
+    Any,
+    Iterable,
+    Tuple,
+    Union,
+)
 from pathlib import Path
 
 from rasa.core.agent import Agent
@@ -17,6 +26,7 @@ import rasa.shared.nlu.training_data.loading
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.model
+
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +201,7 @@ async def test_nlu(
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
+    domain_path: Optional[Text] = None,
 ) -> None:
     """Tests the NLU Model."""
     from rasa.nlu.test import run_evaluation
@@ -214,7 +225,11 @@ async def test_nlu(
         )
         _agent = Agent.load(model_path=model)
         await run_evaluation(
-            nlu_data, _agent.processor, output_directory=output_directory, **kwargs
+            nlu_data,
+            _agent.processor,
+            output_directory=output_directory,
+            domain_path=domain_path,
+            **kwargs,
         )
     else:
         rasa.shared.utils.cli.print_error(
@@ -244,7 +259,7 @@ async def compare_nlu_models(
     bases = [os.path.basename(nlu_config) for nlu_config in configs]
     model_names = [os.path.splitext(base)[0] for base in bases]
 
-    f1_score_results = {
+    f1_score_results: Dict[Text, List[List[float]]] = {
         model_name: [[] for _ in range(runs)] for model_name in model_names
     }
 
