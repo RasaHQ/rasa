@@ -762,7 +762,7 @@ jobs:
           python-version: 3.9
 
       - name: Get reports
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           path: reports/
 
@@ -833,7 +833,7 @@ jobs:
           unzip report.json.zip && mv report.json report_main.json
 
       - name: Download the report
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: report.json
 
