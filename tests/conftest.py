@@ -9,6 +9,7 @@ import pytest
 import sys
 import uuid
 
+from _pytest.legacypath import TempdirFactory
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.python import Function
 from spacy import Language
@@ -21,7 +22,7 @@ from sanic.request import Request
 
 from typing import Iterator, Callable
 
-from _pytest.tmpdir import TempPathFactory, TempdirFactory
+from _pytest.tmpdir import TempPathFactory
 from pathlib import Path
 from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
