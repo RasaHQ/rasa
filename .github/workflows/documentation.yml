@@ -161,7 +161,7 @@ jobs:
 
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -179,7 +179,7 @@ jobs:
       run: poetry config virtualenvs.in-project true
 
     - name: Load Yarn Cached Packages ⬇
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: docs/node_modules
         key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
@@ -257,7 +257,7 @@ jobs:
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -277,7 +277,7 @@ jobs:
 
     - name: Load Yarn Cached Packages ⬇
       if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: docs/node_modules
         key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
@@ -330,7 +330,7 @@ jobs:
         node-version: '12.x'
 
     - name: Load Yarn Cached Packages ⬇
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: docs/node_modules
         key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
