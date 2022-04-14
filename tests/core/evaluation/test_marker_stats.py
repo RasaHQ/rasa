@@ -135,10 +135,11 @@ def test_process_results_per_session(seed: int):
                 preceding_user_turn_numbers_used_per_marker[marker][idx]
             )
             for stat_name, stat_value in expected_stats.items():
-                assert np.isclose(
-                    stats.session_results[marker][stat_name][idx],
-                    stat_value,
-                    equal_nan=True,
+                assert (
+                    pytest.approx(
+                        stats.session_results[marker][stat_name][idx], nan_ok=True
+                    )
+                    == stat_value
                 )
     for idx in range(num_sessions):
         assert stats.session_identifier[idx] == (sender_ids[idx], session_indices[idx])
