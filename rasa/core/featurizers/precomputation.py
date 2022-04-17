@@ -1,14 +1,11 @@
 from __future__ import annotations
-import typing
 from typing import Optional, Text, Dict, List, Union, Iterable, Any
 from collections.abc import ValuesView, KeysView
 
 from rasa.engine.graph import GraphComponent
-
-if typing.TYPE_CHECKING:
-    from rasa.engine.storage.storage import ModelStorage
-    from rasa.engine.storage.resource import Resource
-    from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.resource import Resource
+from rasa.engine.graph import ExecutionContext
 from rasa.shared.core.domain import Domain, SubState
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -327,7 +324,7 @@ class CoreFeaturizationInputConverter(GraphComponent):
         return cls()
 
     def convert_for_training(
-        self, domain: Domain, story_graph: StoryGraph,
+        self, domain: Domain, story_graph: StoryGraph
     ) -> TrainingData:
         """Creates de-duplicated training data.
 

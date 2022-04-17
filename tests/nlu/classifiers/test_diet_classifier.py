@@ -3,10 +3,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from unittest.mock import Mock
 from typing import Callable, List, Optional, Text, Dict, Any, Tuple
-from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.utils.common
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -19,6 +18,8 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    PREDICTED_CONFIDENCE_KEY,
+    INTENT_NAME_KEY,
 )
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
@@ -26,6 +27,7 @@ from rasa.utils.tensorflow.constants import (
     RANKING_LENGTH,
     EPOCHS,
     MASKED_LM,
+    RENORMALIZE_CONFIDENCES,
     TENSORBOARD_LOG_LEVEL,
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
@@ -36,21 +38,19 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
+    HIDDEN_LAYERS_SIZES,
 )
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
-from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
-    CountVectorsFeaturizerGraphComponent,
+    CountVectorsFeaturizer,
 )
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
-    LexicalSyntacticFeaturizerGraphComponent,
+    LexicalSyntacticFeaturizer,
 )
-from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
-    RegexFeaturizerGraphComponent,
-)
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
@@ -66,18 +66,20 @@ def create_diet(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     default_diet_resource: Resource,
-) -> Callable[..., DIETClassifierGraphComponent]:
+) -> Callable[..., DIETClassifier]:
     def inner(
         config: Dict[Text, Any], load: bool = False, finetune: bool = False
-    ) -> DIETClassifierGraphComponent:
+    ) -> DIETClassifier:
         if load:
-            constructor = DIETClassifierGraphComponent.load
+            constructor = DIETClassifier.load
         else:
-            constructor = DIETClassifierGraphComponent.create
+            constructor = DIETClassifier.create
 
         default_execution_context.is_finetuning = finetune
         return constructor(
-            config={**DIETClassifierGraphComponent.get_default_config(), **config},
+            config=rasa.utils.common.override_defaults(
+                DIETClassifier.get_default_config(), config
+            ),
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=default_diet_resource,
@@ -89,7 +91,7 @@ def create_diet(
 @pytest.fixture()
 def create_train_load_and_process_diet(
     nlu_data_path: Text,
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
     train_load_and_process_diet: Callable[..., Message],
 ) -> Callable[..., Message]:
     def inner(
@@ -116,11 +118,11 @@ def train_load_and_process_diet(
     nlu_data_path: Text,
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
     default_model_storage: ModelStorage,
 ) -> Callable[..., Message]:
     def inner(
-        diet: DIETClassifierGraphComponent,
+        diet: DIETClassifier,
         pipeline: Optional[List[Dict[Text, Any]]] = None,
         training_data: str = nlu_data_path,
         message_text: Text = "Rasa is great!",
@@ -129,8 +131,8 @@ def train_load_and_process_diet(
 
         if not pipeline:
             pipeline = [
-                {"component": WhitespaceTokenizerGraphComponent},
-                {"component": CountVectorsFeaturizerGraphComponent},
+                {"component": WhitespaceTokenizer},
+                {"component": CountVectorsFeaturizer},
             ]
 
         training_data, loaded_pipeline = train_and_preprocess(pipeline, training_data)
@@ -152,7 +154,8 @@ def train_load_and_process_diet(
         classified_message2 = loaded_diet.process([message2])[0]
 
         assert classified_message2.fingerprint() == classified_message.fingerprint()
-        return classified_message
+
+        return loaded_diet, classified_message
 
     return inner
 
@@ -165,9 +168,7 @@ def test_compute_default_label_features():
         Message(data={TEXT: "test d"}),
     ]
 
-    output = DIETClassifierGraphComponent._compute_default_label_features(
-        label_features
-    )
+    output = DIETClassifier._compute_default_label_features(label_features)
 
     output = output[0]
 
@@ -225,9 +226,7 @@ def test_compute_default_label_features():
     ],
 )
 def test_check_labels_features_exist(
-    messages: List[Message],
-    expected: bool,
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    messages: List[Message], expected: bool, create_diet: Callable[..., DIETClassifier]
 ):
     attribute = TEXT
     classifier = create_diet({})
@@ -246,7 +245,7 @@ def test_check_labels_features_exist(
                         ENTITIES: [
                             {"start": 0, "end": 4, "value": "test", "entity": "test"}
                         ],
-                    },
+                    }
                 ),
                 Message(
                     data={
@@ -255,15 +254,15 @@ def test_check_labels_features_exist(
                         ENTITIES: [
                             {"start": 0, "end": 4, "value": "test", "entity": "test"}
                         ],
-                    },
+                    }
                 ),
             ],
             True,
         ),
         (
             [
-                Message(data={TEXT: "test a", INTENT: "intent a"},),
-                Message(data={TEXT: "test b", INTENT: "intent b"},),
+                Message(data={TEXT: "test a", INTENT: "intent a"}),
+                Message(data={TEXT: "test b", INTENT: "intent b"}),
             ],
             False,
         ),
@@ -272,55 +271,67 @@ def test_check_labels_features_exist(
 def test_model_data_signature_with_entities(
     messages: List[Message],
     entity_expected: bool,
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
 ):
     classifier = create_diet({"BILOU_flag": False})
     training_data = TrainingData(messages)
 
-    # create tokens for entity parsing inside DIET
-    tokenizer = WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    )
-    tokenizer.process_training_data(training_data)
-
+    # create tokens and features for entity parsing inside DIET
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, training_data)
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()
+
     assert entity_exists == entity_expected
 
 
 @pytest.mark.skip_on_windows
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(240, func_only=True)
 async def test_train_persist_load_with_different_settings_non_windows(
     create_train_load_and_process_diet: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
 ):
     pipeline = [
         {
-            "component": WhitespaceTokenizerGraphComponent,
+            "component": WhitespaceTokenizer,
             "intent_tokenization_flag": True,
             "intent_split_symbol": "+",
         },
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": CountVectorsFeaturizer},
     ]
     config = {MASKED_LM: True, EPOCHS: 1}
     create_train_load_and_process_diet(config, pipeline)
     create_diet(config, load=True, finetune=True)
 
 
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(240, func_only=True)
 async def test_train_persist_load_with_different_settings(
     create_train_load_and_process_diet: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
 ):
     config = {LOSS_TYPE: "margin", EPOCHS: 1}
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 
 
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(240, func_only=True)
+async def test_train_persist_load_with_nested_dict_config(
+    create_train_load_and_process_diet: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
+):
+    config = {HIDDEN_LAYERS_SIZES: {"text": [256, 512]}, ENTITY_RECOGNITION: False}
+    create_train_load_and_process_diet(config)
+    create_diet(config, load=True, finetune=True)
+
+
+@pytest.mark.timeout(210, func_only=True)
 async def test_train_persist_load_with_only_entity_recognition(
     create_train_load_and_process_diet: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
 ):
     config = {ENTITY_RECOGNITION: True, INTENT_CLASSIFICATION: False, EPOCHS: 1}
     create_train_load_and_process_diet(
@@ -334,10 +345,10 @@ async def test_train_persist_load_with_only_entity_recognition(
 @pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_only_intent_classification(
     create_train_load_and_process_diet: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
 ):
     create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1,},
+        {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1}
     )
     create_diet({MASKED_LM: True, EPOCHS: 1}, load=True, finetune=True)
 
@@ -346,35 +357,47 @@ async def test_train_persist_load_with_only_intent_classification(
     "classifier_params, data_path, output_length, output_should_sum_to_1",
     [
         (
-            {RANDOM_SEED: 42, EPOCHS: 1},
-            "data/test/many_intents.yml",
-            10,
-            True,
-        ),  # default config
-        (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1},
+            {},
             "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
             False,
-        ),  # no normalization
+        ),  # (num_intents > default ranking_length)
         (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 3, EPOCHS: 1},
-            "data/test/many_intents.yml",
-            3,
-            True,
-        ),  # lower than default ranking_length
-        (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 12, EPOCHS: 1},
+            {RENORMALIZE_CONFIDENCES: True},
             "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
-            False,
-        ),  # higher than default ranking_length
+            True,
+        ),  # (num_intents > default ranking_length) + renormalize
         (
-            {RANDOM_SEED: 42, EPOCHS: 1},
+            {RANKING_LENGTH: 0},
+            "data/test/many_intents.yml",
+            16,
+            True,
+        ),  # (ranking_length := num_intents)
+        (
+            {RANKING_LENGTH: 0, RENORMALIZE_CONFIDENCES: True},
+            "data/test/many_intents.yml",
+            16,
+            True,
+        ),  # (ranking_length := num_intents) + (unnecessary) renormalize
+        (
+            {RANKING_LENGTH: LABEL_RANKING_LENGTH + 1},
+            "data/test/many_intents.yml",
+            LABEL_RANKING_LENGTH + 1,
+            False,
+        ),  # (num_intents > specified ranking_length)
+        (
+            {RANKING_LENGTH: LABEL_RANKING_LENGTH + 1, RENORMALIZE_CONFIDENCES: True},
+            "data/test/many_intents.yml",
+            LABEL_RANKING_LENGTH + 1,
+            True,
+        ),  # (num_intents > specified ranking_length) + renormalize
+        (
+            {},
             "data/test_moodbot/data/nlu.yml",
             7,
             True,
-        ),  # less intents than default ranking_length
+        ),  # (num_intents < default ranking_length)
     ],
 )
 async def test_softmax_normalization(
@@ -384,8 +407,11 @@ async def test_softmax_normalization(
     output_should_sum_to_1,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
+    classifier_params[RANDOM_SEED] = 42
+    classifier_params[EPOCHS] = 1
+    classifier_params[EVAL_NUM_EPOCHS] = 1
 
-    parsed_message = create_train_load_and_process_diet(
+    _, parsed_message = create_train_load_and_process_diet(
         classifier_params, training_data=data_path
     )
     parse_data = parsed_message.data
@@ -404,23 +430,21 @@ async def test_softmax_normalization(
 
 
 async def test_margin_loss_is_not_normalized(
-    monkeypatch: MonkeyPatch, create_train_load_and_process_diet: Callable[..., Message]
+    create_train_load_and_process_diet: Callable[..., Message]
 ):
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
 
-    parsed_message = create_train_load_and_process_diet(
-        {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1},
+    _, parsed_message = create_train_load_and_process_diet(
+        {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, EVAL_NUM_EPOCHS: 1},
         training_data="data/test/many_intents.yml",
     )
     parse_data = parsed_message.data
     intent_ranking = parse_data.get("intent_ranking")
 
-    # check that the output was not normalized
-    mock.normalize.assert_not_called()
-
     # check that the output was correctly truncated
     assert len(intent_ranking) == LABEL_RANKING_LENGTH
+
+    # check that output was not normalized
+    assert [item["confidence"] for item in intent_ranking] != pytest.approx(1)
 
     # make sure top ranking is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
@@ -432,12 +456,18 @@ async def test_set_random_seed(
 ):
     """test if train result is the same for two runs of tf embedding"""
 
-    parsed_message1 = create_train_load_and_process_diet({RANDOM_SEED: 1, EPOCHS: 1},)
+    _, parsed_message1 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
+    )
 
-    parsed_message2 = create_train_load_and_process_diet({RANDOM_SEED: 1, EPOCHS: 1},)
+    _, parsed_message2 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
+    )
 
     # Different random seed
-    parsed_message3 = create_train_load_and_process_diet({RANDOM_SEED: 2, EPOCHS: 1},)
+    _, parsed_message3 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1}
+    )
 
     assert (
         parsed_message1.data["intent"]["confidence"]
@@ -460,9 +490,9 @@ async def test_train_tensorboard_logging(
     assert not tensorboard_log_dir.exists()
 
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": WhitespaceTokenizer},
         {
-            "component": CountVectorsFeaturizerGraphComponent,
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 3,
             "max_ngram": 17,
@@ -496,24 +526,25 @@ async def test_train_model_checkpointing(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
     create_train_load_and_process_diet(
-        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True},
+        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True}
     )
-
     with default_model_storage.read_from(default_diet_resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
-
-        assert checkpoint_dir.is_dir()
-
-        """
-        Tricky to validate the *exact* number of files that should be there, however
-        there must be at least the following:
-            - metadata.json
-            - checkpoint
-            - component_1_CountVectorsFeaturizer (as per the pipeline above)
-            - component_2_DIETClassifier files (more than 1 file)
-        """
         all_files = list(model_dir.rglob("*.*"))
-        assert len(all_files) > 4
+        assert any(["from_checkpoint" in str(filename) for filename in all_files])
+
+
+async def test_process_unfeaturized_input(
+    create_train_load_and_process_diet: Callable[..., Message],
+):
+    classifier, _ = create_train_load_and_process_diet(diet_config={EPOCHS: 1})
+    message_text = "message text"
+    unfeaturized_message = Message(data={TEXT: message_text})
+    classified_message = classifier.process([unfeaturized_message])[0]
+
+    assert classified_message.get(TEXT) == message_text
+    assert not classified_message.get(INTENT)[INTENT_NAME_KEY]
+    assert classified_message.get(INTENT)[PREDICTED_CONFIDENCE_KEY] == 0.0
+    assert not classified_message.get(ENTITIES)
 
 
 async def test_train_model_not_checkpointing(
@@ -521,16 +552,15 @@ async def test_train_model_not_checkpointing(
     default_diet_resource: Resource,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    create_train_load_and_process_diet({EPOCHS: 2, CHECKPOINT_MODEL: False})
+    create_train_load_and_process_diet({EPOCHS: 1, CHECKPOINT_MODEL: False})
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
-
-        assert not checkpoint_dir.is_dir()
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
 async def test_train_fails_with_zero_eval_num_epochs(
-    create_diet: Callable[..., DIETClassifierGraphComponent]
+    create_diet: Callable[..., DIETClassifier]
 ):
     with pytest.raises(InvalidConfigException):
         with pytest.warns(UserWarning) as warning:
@@ -551,7 +581,7 @@ async def test_train_fails_with_zero_eval_num_epochs(
 
 
 async def test_doesnt_checkpoint_with_zero_eval_num_examples(
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
     default_model_storage: ModelStorage,
     default_diet_resource: Resource,
     train_load_and_process_diet: Callable[..., Message],
@@ -576,11 +606,11 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
     train_load_and_process_diet(classifier)
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
-        assert not checkpoint_dir.is_dir()
 
-
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "classifier_params",
     [
@@ -588,7 +618,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(300, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params: Dict[Text, Any],
     create_train_load_and_process_diet: Callable[..., Message],
@@ -607,15 +637,15 @@ async def test_process_gives_diagnostic_data(
     should_add_diagnostic_data: bool,
 ):
     default_execution_context.should_add_diagnostic_data = should_add_diagnostic_data
-    default_execution_context.node_name = "DIETClassifierGraphComponent_node_name"
-    processed_message = create_train_load_and_process_diet({EPOCHS: 1})
+    default_execution_context.node_name = "DIETClassifier_node_name"
+    _, processed_message = create_train_load_and_process_diet({EPOCHS: 1})
 
     if should_add_diagnostic_data:
         # Tests if processing a message returns attention weights as numpy array.
         diagnostic_data = processed_message.get(DIAGNOSTIC_DATA)
 
-        # DIETClassifierGraphComponent should add attention weights
-        name = "DIETClassifierGraphComponent_node_name"
+        # DIETClassifier should add attention weights
+        name = "DIETClassifier_node_name"
         assert isinstance(diagnostic_data, dict)
         assert name in diagnostic_data
         assert "attention_weights" in diagnostic_data[name]
@@ -650,7 +680,7 @@ def test_removing_label_sparse_feature_sizes(
     label_attribute: Text,
 ):
     """Tests if label attribute is removed from sparse feature sizes collection."""
-    feature_sizes = DIETClassifierGraphComponent._remove_label_sparse_feature_sizes(
+    feature_sizes = DIETClassifier._remove_label_sparse_feature_sizes(
         sparse_feature_sizes=initial_sparse_feature_sizes,
         label_attribute=label_attribute,
     )
@@ -659,34 +689,34 @@ def test_removing_label_sparse_feature_sizes(
 
 @pytest.mark.timeout(120)
 async def test_adjusting_layers_incremental_training(
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
     train_load_and_process_diet: Callable[..., Message],
 ):
     """Tests adjusting sparse layers of `DIETClassifier` to increased sparse
-       feature sizes during incremental training.
+    feature sizes during incremental training.
 
-       Testing is done by checking the layer sizes.
-       Checking if they were replaced correctly is also important
-       and is done in `test_replace_dense_for_sparse_layers`
-       in `test_rasa_layers.py`.
+    Testing is done by checking the layer sizes.
+    Checking if they were replaced correctly is also important
+    and is done in `test_replace_dense_for_sparse_layers`
+    in `test_rasa_layers.py`.
     """
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
-        {"component": LexicalSyntacticFeaturizerGraphComponent},
-        {"component": RegexFeaturizerGraphComponent},
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": WhitespaceTokenizer},
+        {"component": LexicalSyntacticFeaturizer},
+        {"component": RegexFeaturizer},
+        {"component": CountVectorsFeaturizer},
         {
-            "component": CountVectorsFeaturizerGraphComponent,
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
         },
     ]
     classifier = create_diet({EPOCHS: 1})
-    processed_message = train_load_and_process_diet(
-        classifier, pipeline=pipeline, training_data=iter1_data_path,
+    _, processed_message = train_load_and_process_diet(
+        classifier, pipeline=pipeline, training_data=iter1_data_path
     )
 
     old_data_signature = classifier.model.data_signature
@@ -715,8 +745,8 @@ async def test_adjusting_layers_incremental_training(
 
     finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
     assert finetune_classifier.finetune_mode
-    processed_message_finetuned = train_load_and_process_diet(
-        finetune_classifier, pipeline=pipeline, training_data=iter2_data_path,
+    _, processed_message_finetuned = train_load_and_process_diet(
+        finetune_classifier, pipeline=pipeline, training_data=iter2_data_path
     )
 
     new_sparse_feature_sizes = processed_message_finetuned.get_sparse_feature_sizes(
@@ -794,6 +824,8 @@ async def test_adjusting_layers_incremental_training(
     test_data_signatures(new_predict_data_signature, old_predict_data_signature)
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(120)
 @pytest.mark.parametrize(
     "iter1_path, iter2_path, should_raise_exception",
@@ -814,16 +846,16 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     iter1_path: Text,
     iter2_path: Text,
     should_raise_exception: bool,
-    create_diet: Callable[..., DIETClassifierGraphComponent],
+    create_diet: Callable[..., DIETClassifier],
     train_load_and_process_diet: Callable[..., Message],
 ):
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
-        {"component": LexicalSyntacticFeaturizerGraphComponent},
-        {"component": RegexFeaturizerGraphComponent},
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": WhitespaceTokenizer},
+        {"component": LexicalSyntacticFeaturizer},
+        {"component": RegexFeaturizer},
+        {"component": CountVectorsFeaturizer},
         {
-            "component": CountVectorsFeaturizerGraphComponent,
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
@@ -832,9 +864,7 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
 
     classifier = create_diet({EPOCHS: 1})
     assert not classifier.finetune_mode
-    train_load_and_process_diet(
-        classifier, pipeline=pipeline, training_data=iter1_path,
-    )
+    train_load_and_process_diet(classifier, pipeline=pipeline, training_data=iter1_path)
 
     finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
     assert finetune_classifier.finetune_mode
@@ -842,10 +872,10 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     if should_raise_exception:
         with pytest.raises(Exception) as exec_info:
             train_load_and_process_diet(
-                finetune_classifier, pipeline=pipeline, training_data=iter2_path,
+                finetune_classifier, pipeline=pipeline, training_data=iter2_path
             )
         assert "Sparse feature sizes have decreased" in str(exec_info.value)
     else:
         train_load_and_process_diet(
-            finetune_classifier, pipeline=pipeline, training_data=iter2_path,
+            finetune_classifier, pipeline=pipeline, training_data=iter2_path
         )

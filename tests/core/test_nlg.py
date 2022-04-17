@@ -13,7 +13,7 @@ from rasa.core.agent import Agent
 
 def nlg_app(base_url="/"):
 
-    app = Sanic(__name__)
+    app = Sanic("test_nlg")
 
     @app.route(base_url, methods=["POST"])
     async def generate(request):
@@ -62,11 +62,11 @@ def http_nlg(loop, sanic_client):
     return loop.run_until_complete(sanic_client(nlg_app()))
 
 
-async def test_nlg(http_nlg, trained_rasa_model):
+async def test_nlg(http_nlg, trained_rasa_model: Text):
     sender = str(uuid.uuid1())
 
     nlg_endpoint = EndpointConfig.from_dict({"url": http_nlg.make_url("/")})
-    agent = Agent.load(trained_rasa_model, None, generator=nlg_endpoint)
+    agent = Agent.load(trained_rasa_model, generator=nlg_endpoint)
 
     response = await agent.handle_text("/greet", sender_id=sender)
     assert len(response) == 1

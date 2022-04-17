@@ -18,12 +18,12 @@ def test_retrieve_tar_archive_with_s3_namespace():
     with mock_s3():
         model = "/my/s3/project/model.tar.gz"
         destination = "dst"
-        with patch.object(persistor.AWSPersistor, "_decompress") as decompress:
+        with patch.object(persistor.AWSPersistor, "_copy") as copy:
             with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
                 persistor.AWSPersistor("rasa-test", region_name="foo").retrieve(
                     model, destination
                 )
-            decompress.assert_called_once_with("model.tar.gz", destination)
+            copy.assert_called_once_with("model.tar.gz", destination)
             retrieve.assert_called_once_with(model)
 
 
@@ -65,7 +65,7 @@ def test_raise_exception_in_get_external_persistor():
     "model, archive", [("model.tar.gz", "model.tar.gz"), ("model", "model.tar.gz")]
 )
 def test_retrieve_tar_archive(model: Text, archive: Text):
-    with patch.object(TestPersistor, "_decompress") as f:
+    with patch.object(TestPersistor, "_copy") as f:
         with patch.object(TestPersistor, "_retrieve_tar") as f:
             TestPersistor().retrieve(model, "dst")
         f.assert_called_once_with(archive)

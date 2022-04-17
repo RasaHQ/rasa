@@ -1,7 +1,7 @@
 from __future__ import annotations
 import functools
 import logging
-from typing import Any, List, Dict, Text, Optional, Set, Tuple
+from typing import Any, List, DefaultDict, Dict, Text, Optional, Set, Tuple, cast
 
 from tqdm import tqdm
 import numpy as np
@@ -9,18 +9,15 @@ import json
 from collections import defaultdict
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_RULES
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
-from rasa.shared.core.events import (
-    LoopInterrupted,
-    UserUttered,
-    ActionExecuted,
-)
+from rasa.shared.core.events import LoopInterrupted, UserUttered, ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.policies.memoization import MemoizationPolicyGraphComponent
+from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
@@ -46,7 +43,6 @@ from rasa.shared.core.constants import (
     RULE_SNIPPET_ACTION_NAME,
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
-    LOOP_REJECTED,
     LOOP_NAME,
     SLOTS,
     ACTIVE_LOOP,
@@ -56,14 +52,10 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
-import rasa.core.training.training
-from rasa.core.policies._rule_policy import RulePolicy
+from rasa.core.training.training import create_action_fingerprints, ActionFingerprint
 
 logger = logging.getLogger(__name__)
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-RulePolicy = RulePolicy
 
 # These are Rasa Open Source default actions and overrule everything at any time.
 DEFAULT_ACTION_MAPPINGS = {
@@ -98,7 +90,10 @@ class InvalidRule(RasaException):
         )
 
 
-class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
+class RulePolicy(MemoizationPolicy):
     """Policy which handles all the rules."""
 
     # rules use explicit json strings
@@ -156,21 +151,38 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         config[POLICY_MAX_HISTORY] = None
 
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer, lookup,
+            config, model_storage, resource, execution_context, featurizer, lookup
         )
 
         self._fallback_action_name = config["core_fallback_action_name"]
         self._enable_fallback_prediction = config["enable_fallback_prediction"]
         self._check_for_contradictions = config["check_for_contradictions"]
 
-        self._rules_sources = defaultdict(list)
+        self._rules_sources: DefaultDict[Text, List[Tuple[Text, Text]]] = defaultdict(
+            list
+        )
 
-    def _validate_against_domain(self, domain: Domain) -> None:
-        if self._fallback_action_name not in domain.action_names_or_texts:
+    @classmethod
+    def raise_if_incompatible_with_domain(
+        cls, config: Dict[Text, Any], domain: Domain
+    ) -> None:
+        """Checks whether the domains action names match the configured fallback.
+
+        Args:
+            config: configuration of a `RulePolicy`
+            domain: a domain
+        Raises:
+            `InvalidDomain` if this policy is incompatible with the domain
+        """
+        fallback_action_name = config.get("core_fallback_action_name", None)
+        if (
+            fallback_action_name
+            and fallback_action_name not in domain.action_names_or_texts
+        ):
             raise InvalidDomain(
-                f"The fallback action '{self._fallback_action_name}' which was "
-                f"configured for the {RulePolicy.__name__} must be present in the "
-                f"domain."
+                f"The fallback action '{fallback_action_name}' which was "
+                f"configured for the {RulePolicy.__name__} must be "
+                f"present in the domain."
             )
 
     @staticmethod
@@ -179,7 +191,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         return prev_action_name == RULE_SNIPPET_ACTION_NAME
 
     def _create_feature_key(self, states: List[State]) -> Optional[Text]:
-        new_states = []
+        new_states: List[State] = []
         for state in reversed(states):
             if self._is_rule_snippet_state(state):
                 # remove all states before RULE_SNIPPET_ACTION_NAME
@@ -290,18 +302,18 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
 
     @staticmethod
     def _expected_but_missing_slots(
-        fingerprint: Dict[Text, List[Text]], state: State
+        fingerprint: ActionFingerprint, state: State
     ) -> Set[Text]:
-        expected_slots = set(fingerprint.get(SLOTS, {}))
+        expected_slots = set(fingerprint.slots)
         current_slots = set(state.get(SLOTS, {}).keys())
         # report all slots that are expected but aren't set in current slots
         return expected_slots.difference(current_slots)
 
     @staticmethod
     def _check_active_loops_fingerprint(
-        fingerprint: Dict[Text, List[Text]], state: State
-    ) -> Set[Text]:
-        expected_active_loops = set(fingerprint.get(ACTIVE_LOOP, {}))
+        fingerprint: ActionFingerprint, state: State
+    ) -> Set[Optional[Text]]:
+        expected_active_loops = set(fingerprint.active_loop)
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         current_active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
@@ -352,13 +364,11 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
     ) -> None:
         logger.debug("Started checking if some rules are incomplete.")
         # we need to use only fingerprints from rules
-        rule_fingerprints = rasa.core.training.training.create_action_fingerprints(
-            rule_trackers, domain
-        )
+        rule_fingerprints = create_action_fingerprints(rule_trackers, domain)
         if not rule_fingerprints:
             return
 
-        error_messages = []
+        error_messages: List[Text] = []
         for tracker in rule_trackers:
             states = tracker.past_states(domain)
             # the last action is always action listen
@@ -396,9 +406,9 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
                 )
 
         if error_messages:
-            error_messages = "\n".join(error_messages)
+            error_text = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nIncomplete rules found🚨\n\n{error_messages}\n"
+                f"\nIncomplete rules found🚨\n\n{error_text}\n"
                 f"Please note that if some slots or active loops should not be set "
                 f"during prediction you need to explicitly set them to 'null' in the "
                 f"rules."
@@ -415,7 +425,10 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         for states in trackers_as_states:
             for state in states:
                 slots.update(set(state.get(SLOTS, {}).keys()))
-                active_loop: Optional[Text] = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+                # FIXME: ideally we have better annotation for State, TypedDict
+                # could work but support in mypy is very limited. Dataclass are
+                # another option
+                active_loop = cast(Text, state.get(ACTIVE_LOOP, {}).get(LOOP_NAME))
                 if active_loop:
                     loops.add(active_loop)
         return slots, loops
@@ -481,14 +494,16 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         self,
         tracker: TrackerWithCachedStates,
         predicted_action_name: Optional[Text],
-        gold_action_name: Text,
-        prediction_source: Optional[Text],
+        gold_action_name: Optional[Text],
+        prediction_source: Text,
     ) -> None:
         # we need to remember which action should be predicted by the rule
         # in order to correctly output the names of the contradicting rules
         rule_name = tracker.sender_id
-        if prediction_source.startswith(DEFAULT_RULES) or prediction_source.startswith(
-            LOOP_RULES
+
+        if prediction_source is not None and (
+            prediction_source.startswith(DEFAULT_RULES)
+            or prediction_source.startswith(LOOP_RULES)
         ):
             # the real gold action contradict the one in the rules in this case
             gold_action_name = predicted_action_name
@@ -553,7 +568,14 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         gold_action_name: Text,
         prediction_source: Optional[Text],
     ) -> List[Text]:
-        if not predicted_action_name or predicted_action_name == gold_action_name:
+        # FIXME: `predicted_action_name` and `prediction_source` are
+        # either None together or defined together. This could be improved
+        # by better typing in this class, but requires some refactoring
+        if (
+            not predicted_action_name
+            or not prediction_source
+            or predicted_action_name == gold_action_name
+        ):
             return []
 
         if self._should_delete(prediction_source, tracker, predicted_action_name):
@@ -625,12 +647,13 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
                     running_tracker, domain, gold_action_name
                 )
                 if collect_sources:
-                    self._collect_sources(
-                        running_tracker,
-                        predicted_action_name,
-                        gold_action_name,
-                        prediction_source,
-                    )
+                    if prediction_source:
+                        self._collect_sources(
+                            running_tracker,
+                            predicted_action_name,
+                            gold_action_name,
+                            prediction_source,
+                        )
                 else:
                     # to be able to remove only rules turns from the dialogue history
                     # for ML policies,
@@ -677,7 +700,6 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
             rule_trackers: The list of the rule trackers.
             all_trackers: The list of all trackers.
             domain: The domain.
-            interpreter: Interpreter which can be used by the polices for featurization.
 
         Returns:
              Rules that are not present in the stories.
@@ -699,9 +721,9 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
 
         logger.setLevel(logger_level)  # reset logger level
         if error_messages:
-            error_messages = "\n".join(error_messages)
+            error_text = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nContradicting rules or stories found 🚨\n\n{error_messages}\n"
+                f"\nContradicting rules or stories found 🚨\n\n{error_text}\n"
                 f"Please update your stories and rules so that they don't contradict "
                 f"each other."
             )
@@ -772,7 +794,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         Returns:
             The resource which can be used to load the trained policy.
         """
-        self._validate_against_domain(domain)
+        self.raise_if_incompatible_with_domain(self.config, domain)
 
         # only consider original trackers (no augmented ones)
         training_trackers = [
@@ -933,9 +955,10 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         if active_loop_name is None:
             return None, None
 
-        active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
+        active_loop_rejected = tracker.is_active_loop_rejected
         should_predict_loop = (
             not active_loop_rejected
+            and tracker.latest_action
             and tracker.latest_action.get(ACTION_NAME) != active_loop_name
         )
         should_predict_listen = (
@@ -1080,7 +1103,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         domain: Domain,
         rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
-    ) -> "PolicyPrediction":
+    ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
         prediction, _ = self._predict(tracker, domain)
         return prediction
@@ -1222,9 +1245,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
             )
 
     def _metadata(self) -> Dict[Text, Any]:
-        return {
-            "lookup": self.lookup,
-        }
+        return {"lookup": self.lookup}
 
     @classmethod
     def _metadata_filename(cls) -> Text:

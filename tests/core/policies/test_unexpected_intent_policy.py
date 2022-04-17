@@ -1,5 +1,6 @@
+import json
 from pathlib import Path
-from typing import Optional, List, Dict, Text, Type
+from typing import Optional, List, Dict, Type
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -8,18 +9,17 @@ from _pytest.logging import LogCaptureFixture
 import logging
 
 from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.unexpected_intent_policy import (
-    UnexpecTEDIntentPolicyGraphComponent as UnexpecTEDIntentPolicy,
+    UnexpecTEDIntentPolicy,
+    RankingCandidateMetadata,
 )
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -44,11 +44,6 @@ from rasa.utils.tensorflow.constants import (
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
     RANKING_KEY,
-    SCORE_KEY,
-    THRESHOLD_KEY,
-    SEVERITY_KEY,
-    QUERY_INTENT_KEY,
-    NAME,
     RANKING_LENGTH,
 )
 from rasa.shared.nlu.constants import INTENT
@@ -81,17 +76,24 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             trained_policy.config, model_storage, resource, execution_context
         )
 
-    @pytest.mark.skip
-    def test_normalization(
+    def test_ranking_length(self, trained_policy: UnexpecTEDIntentPolicy):
+        assert trained_policy.config[RANKING_LENGTH] == LABEL_RANKING_LENGTH
+
+    def test_ranking_length_and_renormalization(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         tracker: DialogueStateTracker,
         default_domain: Domain,
-        monkeypatch: MonkeyPatch,
     ):
-        # No normalization is done for UnexpecTEDIntentPolicy and
-        # hence this test is overridden to do nothing.
-        assert True
+        precomputations = None
+        prediction_metadata = trained_policy.predict_action_probabilities(
+            tracker, default_domain, precomputations
+        ).action_metadata
+        assert (
+            prediction_metadata is None
+            or len(prediction_metadata[RANKING_KEY])
+            == trained_policy.config[RANKING_LENGTH]
+        )
 
     def test_label_data_assembly(
         self, trained_policy: UnexpecTEDIntentPolicy, default_domain: Domain
@@ -135,8 +137,8 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     ):
         stories = tmp_path / "stories.yml"
         stories.write_text(
-            """
-            version: "2.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             stories:
             - story: test path
               steps:
@@ -168,7 +170,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain, stories_path, augmentation_factor=0
         )
         training_model_data, _ = trained_policy._prepare_for_training(
-            training_trackers, default_domain, precomputations=None,
+            training_trackers, default_domain, precomputations=None
         )
 
         data_for_prediction = trained_policy._prepare_data_for_prediction(
@@ -181,7 +183,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         label_ids = np.array([[0, 1], [1, -1], [2, -1]])
         outputs = {
             "similarities": np.array(
-                [[[1.2, 0.3, 0.2]], [[0.5, 0.2, 1.6]], [[0.01, 0.1, 1.7]],]
+                [[[1.2, 0.3, 0.2]], [[0.5, 0.2, 1.6]], [[0.01, 0.1, 1.7]]]
             )
         }
         label_id_similarities = UnexpecTEDIntentPolicy._collect_label_id_grouped_scores(
@@ -310,7 +312,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain, stories_path, augmentation_factor=0
         )
         training_model_data, label_ids = trained_policy._prepare_for_training(
-            training_trackers, default_domain, precomputations=None,
+            training_trackers, default_domain, precomputations=None
         )
 
         trained_policy.compute_label_quantiles_post_training(
@@ -518,9 +520,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         resource: Resource,
         execution_context: ExecutionContext,
         default_domain: Domain,
-        predicted_similarity,
-        threshold_value,
-        is_unlikely,
+        predicted_similarity: float,
+        threshold_value: float,
+        is_unlikely: bool,
         monkeypatch: MonkeyPatch,
         tmp_path: Path,
     ):
@@ -540,7 +542,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
 
         tracker.update_with_events(
-            [UserUttered(text="hello", intent={"name": query_intent})], default_domain,
+            [UserUttered(text="hello", intent={"name": query_intent})], default_domain
         )
 
         # Preset the model predictions to the similarity values
@@ -569,6 +571,8 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             # of the metadata is tested separately and
             # not as part of this test.
             assert prediction.action_metadata is not None
+            # Assert metadata is serializable
+            assert json.dumps(prediction.action_metadata)
 
     @pytest.mark.parametrize(
         "tracker_events, should_skip",
@@ -629,17 +633,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         should_skip: bool,
         tmp_path: Path,
     ):
-        caplog.set_level(logging.DEBUG)
+        """Skips predictions to prevent loop."""
         loaded_policy = self.persist_and_load_policy(
             trained_policy, model_storage, resource, execution_context
         )
         precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
-
-        prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations
-        )
+        with caplog.at_level(logging.DEBUG):
+            prediction = loaded_policy.predict_action_probabilities(
+                tracker, default_domain, precomputations
+            )
 
         assert (
             "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
@@ -649,6 +653,59 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             assert prediction.probabilities == loaded_policy._default_predictions(
                 default_domain
             )
+
+    @pytest.mark.parametrize(
+        "tracker_events",
+        [
+            [
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+            ],
+            [
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+                EntitiesAdded([{"name": "dummy"}]),
+            ],
+            [
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+                SlotSet("name"),
+            ],
+            [
+                ActiveLoop("loop"),
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+                ActionExecutionRejected("loop"),
+            ],
+        ],
+    )
+    def test_skip_predictions_if_new_intent(
+        self,
+        trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        default_domain: Domain,
+        caplog: LogCaptureFixture,
+        tracker_events: List[Event],
+    ):
+        """Skips predictions if there's a new intent created."""
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
+        tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
+        tracker.update_with_events(tracker_events, default_domain)
+
+        with caplog.at_level(logging.DEBUG):
+            prediction = loaded_policy.predict_action_probabilities(
+                tracker, default_domain, precomputations=None
+            )
+
+        assert "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
+
+        assert prediction.probabilities == loaded_policy._default_predictions(
+            default_domain
+        )
 
     @pytest.mark.parametrize(
         "tracker_events_with_action, tracker_events_without_action",
@@ -672,7 +729,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                     ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("utter_greet"),
                     UserUttered(text="sad", intent={"name": "thank_you"}),
@@ -680,7 +737,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                     ActionExecuted("utter_greet"),
                     UserUttered(text="sad", intent={"name": "thank_you"}),
                 ],
@@ -794,7 +851,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         )
 
         def test_individual_label_metadata(
-            label_metadata: Dict[Text, Optional[float]],
+            label_metadata: RankingCandidateMetadata,
             all_thresholds: Dict[int, float],
             all_similarities: np.array,
             label_index: int,
@@ -808,9 +865,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                 expected_threshold - expected_score if expected_threshold else None
             )
 
-            assert label_metadata.get(SCORE_KEY) == expected_score
-            assert label_metadata.get(THRESHOLD_KEY) == expected_threshold
-            assert label_metadata.get(SEVERITY_KEY) == expected_severity
+            assert label_metadata.score == expected_score
+            assert label_metadata.threshold == expected_threshold
+            assert label_metadata.severity == expected_severity
 
         # Monkey-patch certain attributes of the policy to make the testing easier.
         label_thresholds = {0: 1.2, 1: -0.3, 4: -2.3, 5: 0.2}
@@ -826,18 +883,10 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain, similarities, query_intent=query_intent
         )
 
-        # Expected outer-most keys
-        assert sorted(list(metadata.keys())) == sorted([QUERY_INTENT_KEY, RANKING_KEY])
-
-        # Schema validation for query intent key
-        assert sorted(list(metadata[QUERY_INTENT_KEY].keys())) == sorted(
-            [NAME, SCORE_KEY, THRESHOLD_KEY, SEVERITY_KEY]
-        )
-
         # Test all elements of metadata for query intent
-        assert metadata[QUERY_INTENT_KEY].get(NAME) == query_intent
+        assert metadata.query_intent.name == query_intent
         test_individual_label_metadata(
-            metadata.get(QUERY_INTENT_KEY),
+            metadata.query_intent,
             label_thresholds,
             similarities,
             query_intent_index,
@@ -857,13 +906,13 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain.intents[index] for index, _ in sorted_label_similarities
         ]
         collected_label_rankings = [
-            label_metadata.get(NAME) for label_metadata in metadata.get(RANKING_KEY)
+            label_metadata.name for label_metadata in metadata.ranking
         ]
         assert collected_label_rankings == expected_label_rankings
 
         # Test all elements of metadata for all labels in ranking
-        for label_metadata in metadata.get(RANKING_KEY):
-            label_index = default_domain.intents.index(label_metadata.get(NAME))
+        for label_metadata in metadata.ranking:
+            label_index = default_domain.intents.index(label_metadata.name)
             test_individual_label_metadata(
                 label_metadata, label_thresholds, similarities, label_index
             )
@@ -906,7 +955,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
             ),
             # Filter because of no action name
@@ -946,7 +995,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
             ),
             # Filter because of no intent
@@ -984,7 +1033,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
             ),
             # No filter needed
@@ -1000,7 +1049,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
                 [
                     [
@@ -1013,7 +1062,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
             ),
             # Filter to return empty list of trackers
@@ -1029,7 +1078,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted(action_text="Great!"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
                 [],
             ),
@@ -1097,7 +1146,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                     UserUttered(text="happy to make it work"),
                     ActionExecuted(action_text="Great!"),
                     ActionExecuted(ACTION_LISTEN_NAME),
-                ],
+                ]
             ],
             True,
         ),
@@ -1111,7 +1160,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                     UserUttered(text="happy to make it work"),
                     ActionExecuted("utter_goodbye"),
                     ActionExecuted(ACTION_LISTEN_NAME),
-                ],
+                ]
             ],
             True,
         ),
@@ -1127,7 +1176,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                     ),
                     ActionExecuted(action_text="Great!"),
                     ActionExecuted(ACTION_LISTEN_NAME),
-                ],
+                ]
             ],
             True,
         ),

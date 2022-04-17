@@ -26,7 +26,7 @@ from rasa.core.constants import (
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
 from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
-from rasa.core.agent import Agent
+from rasa.core.agent import Agent, load_agent
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.exceptions import RasaException
 
@@ -51,7 +51,7 @@ async def trained_restaurantbot(trained_async: Callable) -> Path:
 
 @pytest.fixture(scope="module")
 async def restaurantbot_agent(trained_restaurantbot: Path) -> Agent:
-    return Agent.load_local_model(str(trained_restaurantbot))
+    return await load_agent(str(trained_restaurantbot))
 
 
 async def test_evaluation_file_creation(
@@ -116,7 +116,7 @@ async def test_end_to_end_evaluation_script(
     ]
 
     assert story_evaluation.evaluation_store.serialise()[0] == serialised_store
-    assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+    assert not story_evaluation.evaluation_store.check_prediction_target_mismatch()
     assert len(story_evaluation.failed_stories) == 0
     assert num_stories == 3
 
@@ -135,7 +135,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
         completed_trackers, default_agent
     )
 
-    assert story_evaluation.evaluation_store.has_prediction_target_mismatch()
+    assert story_evaluation.evaluation_store.check_prediction_target_mismatch()
     assert len(story_evaluation.failed_stories) == 1
     assert num_stories == 1
 
@@ -153,7 +153,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
         test_stories, form_bot_agent
     )
 
-    assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+    assert not story_evaluation.evaluation_store.check_prediction_target_mismatch()
 
 
 async def test_source_in_failed_stories(
@@ -184,7 +184,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
 ):
     config = textwrap.dedent(
         f"""
-    version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     policies:
     - name: MemoizationPolicy
       max_history: 11
@@ -201,7 +201,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
         e2e_story_file_trips_circuit_breaker_path,
     )
 
-    agent = Agent.load_local_model(model_path)
+    agent = await load_agent(model_path)
     generator = _create_data_generator(
         e2e_story_file_trips_circuit_breaker_path,
         agent,
@@ -311,7 +311,7 @@ def test_event_has_proper_implementation(
 )
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
     generator = _create_data_generator(
-        test_file, response_selector_agent, use_conversation_test_files=True,
+        test_file, response_selector_agent, use_conversation_test_files=True
     )
     test_stories = generator.generate_story_trackers()
 
@@ -319,7 +319,7 @@ async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text)
         test_stories, response_selector_agent
     )
     # check that test story can either specify base intent or full retrieval intent
-    assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+    assert not story_evaluation.evaluation_store.check_prediction_target_mismatch()
 
 
 @pytest.mark.parametrize(
@@ -348,6 +348,8 @@ async def test_retrieval_intent_wrong_prediction(
     assert "# predicted: chitchat/ask_name" in failed_stories
 
 
+# FIXME: these tests take too long to run in the CI, disabling them for now
+@pytest.mark.skip_on_ci
 @pytest.mark.timeout(240, func_only=True)
 async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
     test_file = "data/test_e2ebot/tests/test_stories.yml"
@@ -426,6 +428,7 @@ stories:
                     "f1-score": 0.0,
                     "support": 1,
                 },
+                "accuracy": 0.75,
                 "micro avg": {
                     "precision": 1.0,
                     "recall": 0.75,
@@ -451,7 +454,7 @@ stories:
                     "with_warnings": 0,
                 },
             },
-        ],
+        ]
     ],
 )
 async def test_story_report(
@@ -475,9 +478,7 @@ async def test_story_report(
     assert actual_results == expected_results
 
 
-async def test_story_report_with_empty_stories(
-    tmpdir: Path, core_agent: Agent,
-) -> None:
+async def test_story_report_with_empty_stories(tmpdir: Path, core_agent: Agent) -> None:
     stories_path = tmpdir / "stories.yml"
     stories_path.write_text("", "utf8")
     out_directory = tmpdir / "results"
@@ -494,15 +495,15 @@ async def test_story_report_with_empty_stories(
 @pytest.mark.parametrize(
     "skip_field,skip_value",
     [
-        [None, None,],
-        ["precision", None,],
-        ["f1", None,],
-        ["in_training_data_fraction", None,],
-        ["report", None,],
-        ["include_report", False,],
+        [None, None],
+        ["precision", None],
+        ["f1", None],
+        ["in_training_data_fraction", None],
+        ["report", None],
+        ["include_report", False],
     ],
 )
-def test_log_evaluation_table(caplog, skip_field, skip_value):
+async def test_log_evaluation_table(caplog, skip_field, skip_value):
     """Check that _log_evaluation_table correctly omits/includes optional args."""
     arr = [1, 1, 1, 0]
     acc = 0.75
@@ -544,6 +545,7 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
         assert "Classification report:" not in caplog.text
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "test_file, correct_intent, correct_entity",
     [
@@ -617,8 +619,9 @@ async def test_wrong_predictions_with_intent_and_entities(
         assert failed_stories.count("\n") == 9
 
 
+@pytest.mark.skip_on_windows
 async def test_failed_entity_extraction_comment(
-    tmpdir: Path, restaurantbot_agent: Agent,
+    tmpdir: Path, restaurantbot_agent: Agent
 ):
     test_file = "data/test_yaml_stories/test_failed_entity_extraction_comment.yml"
     stories_path = str(tmpdir / FAILED_STORIES_FILE)

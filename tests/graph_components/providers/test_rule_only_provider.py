@@ -1,5 +1,5 @@
 import rasa.core.training
-from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -16,8 +16,8 @@ def test_provide(
     domain = Domain.load("examples/rules/domain.yml")
     trackers = rasa.core.training.load_data("examples/rules/data/rules.yml", domain)
 
-    policy = RulePolicyGraphComponent.create(
-        RulePolicyGraphComponent.get_default_config(),
+    policy = RulePolicy.create(
+        RulePolicy.get_default_config(),
         default_model_storage,
         resource,
         default_execution_context,

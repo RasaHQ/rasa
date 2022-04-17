@@ -7,7 +7,10 @@ import pytest
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import (
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 
 from rasa.core import training
 from rasa.core.actions.action import ActionDefaultFallback
@@ -43,11 +46,7 @@ from rasa.shared.core.events import (
     FollowupAction,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.policies.rule_policy import (
-    RulePolicyGraphComponent as RulePolicy,
-    InvalidRule,
-    RULES,
-)
+from rasa.core.policies.rule_policy import RulePolicy, InvalidRule, RULES
 from rasa.graph_components.providers.rule_only_provider import RuleOnlyDataProvider
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -153,7 +152,7 @@ def test_potential_contradiction_resolved_by_conversation_start(policy: RulePoli
     utter_anti_greet_action = "utter_anti_greet"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -206,7 +205,7 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
     some_slot_initial_value = "slot1value"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -216,6 +215,8 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
           {some_slot}:
             type: text
             initial_value: {some_slot_initial_value}
+            mappings:
+            - type: from_text
         """
     )
     greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
@@ -277,7 +278,7 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
     some_slot_initial_value = "slot1value"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -287,6 +288,8 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
           {some_slot}:
             type: text
             initial_value: {some_slot_initial_value}
+            mappings:
+            - type: from_text
         """
     )
 
@@ -340,7 +343,7 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
 def test_restrict_multiple_user_inputs_in_rules(policy: RulePolicy):
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -372,7 +375,7 @@ def test_incomplete_rules_due_to_slots(policy: RulePolicy):
     some_slot = "some_slot"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -380,6 +383,8 @@ def test_incomplete_rules_due_to_slots(policy: RulePolicy):
         slots:
           {some_slot}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
 
@@ -440,7 +445,7 @@ def test_no_incomplete_rules_due_to_slots_after_listen(policy: RulePolicy):
     some_slot = "some_slot"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -450,6 +455,8 @@ def test_no_incomplete_rules_due_to_slots_after_listen(policy: RulePolicy):
         slots:
           {some_slot}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
 
@@ -500,7 +507,7 @@ def test_no_incomplete_rules_due_to_additional_slots_set(policy: RulePolicy):
     some_other_slot_value = "value2"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -508,8 +515,12 @@ def test_no_incomplete_rules_due_to_additional_slots_set(policy: RulePolicy):
         slots:
           {some_slot}:
             type: text
+            mappings:
+            - type: from_text
           {some_other_slot}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
 
@@ -551,11 +562,12 @@ def test_incomplete_rules_due_to_loops(policy: RulePolicy):
     some_form = "some_form"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         forms:
-          {some_form}: {{}}
+          {some_form}:
+            required_slots: []
         """
     )
 
@@ -615,7 +627,7 @@ def test_contradicting_rules(policy: RulePolicy):
     utter_anti_greet_action = "utter_anti_greet"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -655,7 +667,7 @@ def test_contradicting_rules_and_stories(policy: RulePolicy):
     utter_anti_greet_action = "utter_anti_greet"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -799,7 +811,7 @@ def test_rule_policy_contradicting_rule_finetune(
 def test_faq_rule(policy: RulePolicy):
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -826,7 +838,7 @@ async def test_predict_form_action_if_in_form(policy: RulePolicy):
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -835,8 +847,11 @@ async def test_predict_form_action_if_in_form(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -868,7 +883,7 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule(policy: Rule
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -877,8 +892,11 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule(policy: Rule
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {loop_name}: {{}}
+          {loop_name}:
+            required_slots: []
         """
     )
     e2e_rule = TrackerWithCachedStates.from_events(
@@ -921,7 +939,7 @@ async def test_predict_form_action_if_multiple_turns(policy: RulePolicy):
     other_intent = "bye"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {other_intent}
@@ -931,8 +949,11 @@ async def test_predict_form_action_if_multiple_turns(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -979,6 +1000,8 @@ slots:
       - v1
       - v2
     initial_value: v1
+    mappings:
+    - type: from_text
 """
     )
 
@@ -1027,6 +1050,8 @@ slots:
       - v1
       - v2
     initial_value: v1
+    mappings:
+    - type: from_text
 """
     )
 
@@ -1049,7 +1074,7 @@ slots:
 
     form_conversation = DialogueStateTracker.from_events(
         "slot rule test",
-        evts=[ActionExecuted(ACTION_LISTEN_NAME), UserUttered(intent={"name": "i1"}),],
+        evts=[ActionExecuted(ACTION_LISTEN_NAME), UserUttered(intent={"name": "i1"})],
         domain=domain,
         slots=domain.slots,
     )
@@ -1063,7 +1088,7 @@ async def test_predict_action_listen_after_form(policy: RulePolicy):
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1072,8 +1097,11 @@ async def test_predict_action_listen_after_form(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1107,7 +1135,7 @@ async def test_dont_predict_form_if_already_finished(policy: RulePolicy):
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1116,8 +1144,11 @@ async def test_dont_predict_form_if_already_finished(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1155,7 +1186,7 @@ async def test_form_unhappy_path(policy: RulePolicy):
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1164,8 +1195,11 @@ async def test_form_unhappy_path(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1197,7 +1231,7 @@ async def test_form_unhappy_path_from_general_rule(policy: RulePolicy):
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1206,8 +1240,11 @@ async def test_form_unhappy_path_from_general_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1251,7 +1288,7 @@ async def test_form_unhappy_path_from_in_form_rule(policy: RulePolicy):
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1261,8 +1298,11 @@ async def test_form_unhappy_path_from_in_form_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1324,7 +1364,7 @@ async def test_form_unhappy_path_from_story(policy: RulePolicy):
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1334,8 +1374,11 @@ async def test_form_unhappy_path_from_story(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1398,7 +1441,7 @@ async def test_form_unhappy_path_no_validation_from_rule(
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1408,8 +1451,11 @@ async def test_form_unhappy_path_no_validation_from_rule(
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1486,7 +1532,7 @@ async def test_form_unhappy_path_no_validation_from_story(policy: RulePolicy):
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1496,8 +1542,11 @@ async def test_form_unhappy_path_no_validation_from_story(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1553,7 +1602,7 @@ async def test_form_unhappy_path_without_rule(policy: RulePolicy):
     other_intent = "bye"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {other_intent}
@@ -1563,8 +1612,11 @@ async def test_form_unhappy_path_without_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1596,7 +1648,7 @@ async def test_form_activation_rule(policy: RulePolicy):
     other_intent = "bye"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {other_intent}
@@ -1606,8 +1658,11 @@ async def test_form_activation_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1634,7 +1689,7 @@ async def test_failing_form_activation_due_to_no_rule(policy: RulePolicy):
     other_intent = "bye"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {other_intent}
@@ -1644,8 +1699,11 @@ async def test_failing_form_activation_due_to_no_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1672,7 +1730,7 @@ def test_form_submit_rule(policy: RulePolicy):
     submit_action_name = "utter_submit"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1682,8 +1740,11 @@ def test_form_submit_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1723,7 +1784,7 @@ def test_immediate_submit(policy: RulePolicy):
     slot = "some_slot"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1733,10 +1794,15 @@ def test_immediate_submit(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
           {slot}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         entities:
         - {entity}
         """
@@ -1824,7 +1890,7 @@ async def test_rule_policy_slot_filling_from_text(
 async def test_one_stage_fallback_rule(policy: RulePolicy):
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {DEFAULT_NLU_FALLBACK_INTENT_NAME}
@@ -1859,7 +1925,7 @@ async def test_one_stage_fallback_rule(policy: RulePolicy):
         is_rule_tracker=True,
     )
     policy.train(
-        [greet_rule_which_only_applies_at_start, fallback_recover_rule], domain,
+        [greet_rule_which_only_applies_at_start, fallback_recover_rule], domain
     )
 
     # RulePolicy predicts fallback action
@@ -1907,7 +1973,7 @@ def test_default_actions(
 ):
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1935,7 +2001,7 @@ def test_default_actions(
 def test_e2e_beats_default_actions(intent_name: Text, policy: RulePolicy):
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         actions:
@@ -1996,7 +2062,7 @@ def test_predict_core_fallback(
     other_intent = "other"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {other_intent}
@@ -2029,7 +2095,7 @@ def test_predict_nothing_if_fallback_disabled(
     other_intent = "other"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {other_intent}
@@ -2056,7 +2122,7 @@ def test_hide_rule_turn(policy: RulePolicy):
     action_chitchat = "action_chitchat"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {chitchat}
@@ -2136,7 +2202,7 @@ def test_hide_rule_turn_with_slots(
     some_other_slot_value = "value2"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {some_intent}
         - {some_other_intent}
@@ -2146,8 +2212,12 @@ def test_hide_rule_turn_with_slots(
         slots:
           {slot_which_is_only_in_rule}:
             type: text
+            mappings:
+            - type: from_text
           {slot_which_is_also_in_story}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
 
@@ -2259,7 +2329,7 @@ def test_hide_rule_turn_no_last_action_listen(
     followup_on_chitchat = "followup_on_chitchat"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {chitchat}
         actions:
@@ -2268,6 +2338,8 @@ def test_hide_rule_turn_no_last_action_listen(
         slots:
           {followup_on_chitchat}:
             type: bool
+            mappings:
+            - type: from_text
         """
     )
     simple_rule_no_last_action_listen = TrackerWithCachedStates.from_events(
@@ -2345,7 +2417,7 @@ def test_hide_rule_turn_with_loops(
     action_chitchat = "action_chitchat"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {activate_form}
@@ -2357,9 +2429,13 @@ def test_hide_rule_turn_with_loops(
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
-          {another_form_name}: {{}}
+          {form_name}:
+            required_slots: []
+          {another_form_name}:
+            required_slots: []
         """
     )
 
@@ -2449,14 +2525,17 @@ def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
     activate_form = "activate_form"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {activate_form}
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -2464,9 +2543,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
     form_activation_story = form_activation_rule.copy()
     form_activation_story.is_rule_tracker = False
 
-    policy.train(
-        [form_activation_rule, form_activation_story], domain,
-    )
+    policy.train([form_activation_rule, form_activation_story], domain)
     assert policy.lookup[RULE_ONLY_LOOPS] == []
 
     conversation_events = [
@@ -2503,7 +2580,7 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
     activate_form = "activate_form"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {GREET_INTENT_NAME}
         - {activate_form}
@@ -2512,8 +2589,11 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -2521,9 +2601,7 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
     form_activation_story = form_activation_rule.copy()
     form_activation_story.is_rule_tracker = False
 
-    policy.train(
-        [form_activation_rule, GREET_RULE, form_activation_story], domain,
-    )
+    policy.train([form_activation_rule, GREET_RULE, form_activation_story], domain)
     assert policy.lookup[RULE_ONLY_LOOPS] == []
 
     conversation_events = [
@@ -2606,7 +2684,7 @@ def test_remove_action_listen_prediction_if_contradicts_with_story(policy: RuleP
     utter_2 = "utter_2"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {intent_1}
         actions:
@@ -2651,7 +2729,7 @@ def test_keep_action_listen_prediction_after_predictable_action(policy: RulePoli
     utter_3 = "utter_3"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {intent_1}
         actions:
@@ -2697,7 +2775,7 @@ def test_keep_action_listen_prediction_if_last_prediction(policy: RulePolicy):
     utter_2 = "utter_2"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {intent_1}
         actions:
@@ -2738,7 +2816,7 @@ def test_keep_action_listen_prediction_if_contradicts_with_rule(policy: RulePoli
     utter_2 = "utter_2"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {intent_1}
         actions:
@@ -2781,7 +2859,7 @@ def test_raise_contradiction_if_rule_contradicts_with_story(policy: RulePolicy):
     utter_2 = "utter_2"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {intent_1}
         actions:
@@ -2823,7 +2901,7 @@ def test_rule_with_multiple_entities(policy: RulePolicy):
     utter_1 = "utter_1"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {intent_1}
         entities:
@@ -2887,7 +2965,7 @@ def test_rule_with_multiple_slots(policy: RulePolicy):
     slot_2 = "slot_2"
     domain = Domain.from_yaml(
         f"""
-            version: "2.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intents:
             - {intent_1}
             actions:
@@ -2900,11 +2978,15 @@ def test_rule_with_multiple_slots(policy: RulePolicy):
                 values:
                  - {value_1}
                  - {value_2}
+                mappings:
+                - type: from_text
               {slot_2}:
                 type: categorical
                 values:
                  - {value_1}
                  - {value_2}
+                mappings:
+                - type: from_text
             """
     )
     rule = TrackerWithCachedStates.from_events(
@@ -2914,7 +2996,7 @@ def test_rule_with_multiple_slots(policy: RulePolicy):
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": intent_1},),
+            UserUttered(intent={"name": intent_1}),
             SlotSet(slot_1, value_1),
             SlotSet(slot_2, value_2),
             ActionExecuted(utter_1),
@@ -2927,7 +3009,7 @@ def test_rule_with_multiple_slots(policy: RulePolicy):
     # the order of slots set doesn't matter for prediction
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("haha", intent={"name": intent_1},),
+        UserUttered("haha", intent={"name": intent_1}),
         SlotSet(slot_2, value_2),
         SlotSet(slot_1, value_1),
     ]
@@ -2951,7 +3033,7 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
     slot_2 = "slot_2"
     domain = Domain.from_yaml(
         f"""
-                version: "2.0"
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
                 intents:
                 - {intent_1}
                 actions:
@@ -2964,11 +3046,15 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
                     values:
                      - {value_1}
                      - {value_2}
+                    mappings:
+                    - type: from_text
                   {slot_2}:
                     type: categorical
                     values:
                      - {value_1}
                      - {value_2}
+                    mappings:
+                    - type: from_text
                 """
     )
     rule_1 = TrackerWithCachedStates.from_events(
@@ -2978,7 +3064,7 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": intent_1},),
+            UserUttered(intent={"name": intent_1}),
             SlotSet(slot_1, value_1),
             SlotSet(slot_2, value_2),
             ActionExecuted(utter_1),
@@ -3010,7 +3096,7 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
     # ignore action_unlikely_intent.
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("haha", intent={"name": intent_1},),
+        UserUttered("haha", intent={"name": intent_1}),
         SlotSet(slot_2, value_2),
         SlotSet(slot_1, value_1),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
@@ -3027,7 +3113,7 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
     # anywhere else also triggers utter_2
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("dummy", intent={"name": intent_2},),
+        UserUttered("dummy", intent={"name": intent_2}),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
     ]
     prediction = policy.predict_action_probabilities(
@@ -3044,3 +3130,9 @@ def test_invalid_fallback_action_name(policy_with_config: Callable[..., RulePoli
 
     with pytest.raises(InvalidDomain):
         policy.train([], Domain.empty())
+
+
+def test_raise_if_incompatible_with_domain():
+    config = {"core_fallback_action_name": "bla bla"}
+    with pytest.raises(InvalidDomain):
+        RulePolicy.raise_if_incompatible_with_domain(config, Domain.empty())

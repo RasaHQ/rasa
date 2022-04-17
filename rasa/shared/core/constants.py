@@ -1,4 +1,8 @@
+from __future__ import annotations
+from enum import Enum
+
 import rasa.shared.constants as constants
+
 
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
@@ -30,6 +34,8 @@ ACTION_BACK_NAME = "action_back"
 ACTION_TWO_STAGE_FALLBACK_NAME = "action_two_stage_fallback"
 ACTION_UNLIKELY_INTENT_NAME = "action_unlikely_intent"
 RULE_SNIPPET_ACTION_NAME = "..."
+ACTION_EXTRACT_SLOTS = "action_extract_slots"
+ACTION_VALIDATE_SLOT_MAPPINGS = "action_validate_slot_mappings"
 
 DEFAULT_ACTION_NAMES = [
     ACTION_LISTEN_NAME,
@@ -44,6 +50,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_UNLIKELY_INTENT_NAME,
     ACTION_BACK_NAME,
     RULE_SNIPPET_ACTION_NAME,
+    ACTION_EXTRACT_SLOTS,
 ]
 
 # rules allow setting a value of slots or active_loops to None;
@@ -73,6 +80,41 @@ SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
 SLOT_LAST_OBJECT = "knowledge_base_last_object"
 SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
 DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
+
+DEFAULT_SLOT_NAMES = {
+    REQUESTED_SLOT,
+    SESSION_START_METADATA_SLOT,
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_OBJECT,
+    SLOT_LAST_OBJECT_TYPE,
+}
+
+
+SLOT_MAPPINGS = "mappings"
+MAPPING_CONDITIONS = "conditions"
+MAPPING_TYPE = "type"
+
+
+class SlotMappingType(Enum):
+    """Slot mapping types."""
+
+    FROM_ENTITY = "from_entity"
+    FROM_INTENT = "from_intent"
+    FROM_TRIGGER_INTENT = "from_trigger_intent"
+    FROM_TEXT = "from_text"
+    CUSTOM = "custom"
+
+    def __str__(self) -> str:
+        """Returns the string representation that should be used in config files."""
+        return self.value
+
+    def is_predefined_type(self) -> bool:
+        """Returns True iff the mapping type is predefined.
+
+        That is, to evaluate the mapping no custom action execution is needed.
+        """
+        return self != SlotMappingType.CUSTOM
+
 
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a `SubState`

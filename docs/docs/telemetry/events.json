@@ -3,6 +3,7 @@
     "Model Training",
     "Model Testing",
     "Model Serving",
+    "Markers Extraction",
     "Data Handling",
     "Miscellaneous"
   ],
@@ -29,17 +30,32 @@
         },
         "pipeline": {
           "oneOf": [
+            {"type": "null"},
             {"type": "string"},
             {"type": "array", "items": {"type": "object"}}
           ],
           "description": "List of the pipeline configurations used for training."
         },
         "policies": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          },
+          "oneOf": [
+            {"type": "null"},
+            {"type": "array", "items": {"type": "object"}}
+          ],
           "description": "List of the policy configurations used for training."
+        },
+        "train_schema": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object"}
+          ],
+          "description": "Training graph schema for graph recipe"
+        },
+        "predict_schema": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object"}
+          ],
+          "description": "Predict graph schema for graph recipe"
         },
         "num_intent_examples": {
           "type": "integer",
@@ -60,6 +76,18 @@
         "num_conditional_response_variations": {
           "type": "integer",
           "description": "Number of conditional response variations defined in the domain."
+        },
+        "num_slot_mappings": {
+          "type": "integer",
+          "description": "Number of total slot mappings defined in the domain."
+        },
+        "num_custom_slot_mappings": {
+          "type": "integer",
+          "description": "Number of custom slot mappings defined in the domain."
+        },
+        "num_conditional_slot_mappings": {
+          "type": "integer",
+          "description": "Number of slot mappings with conditions attached defined in the domain."
         },
         "num_slots": {
           "type": "integer",
@@ -96,6 +124,10 @@
         "is_finetuning": {
           "type": "boolean",
           "description": "True if a model is trained by finetuning an existing model."
+        },
+        "recipe": {
+          "type": "string",
+          "description": "Recipe used in training the model, either 'default.v1' or 'graph.v1'."
         }
       },
       "additionalProperties": false,
@@ -105,6 +137,8 @@
         "type",
         "pipeline",
         "policies",
+        "train_schema",
+        "predict_schema",
         "num_intent_examples",
         "num_entity_examples",
         "num_actions",
@@ -409,6 +443,91 @@
         "num_lookup_tables",
         "num_synonyms",
         "num_regexes"
+      ]
+    },
+    "Markers Extraction Initiated": {
+      "description": "Triggered when marker extraction has been initiated.",
+      "type": "object",
+      "section": "Markers Extraction",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "Strategy to use when selecting trackers to extract from."
+        },
+        "only_extract": {
+          "type": "boolean",
+          "description": "Indicates if path to write out statistics hasn't been specified."
+        },
+        "seed": {
+          "type": "boolean",
+          "description": "The seed to initialise the random number generator for use with the 'sample' strategy."
+        },
+        "count": {
+          "type": ["integer", "null"],
+          "description": "Number of trackers to extract from (for any strategy except 'all')."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "strategy",
+        "only_extract",
+        "seed",
+        "count"
+      ]
+    },
+    "Markers Extracted": {
+      "description": "Triggered when markers have been extracted.",
+      "type": "object",
+      "section": "Markers Extraction",
+      "properties": {
+        "trackers_count": {
+          "type": "integer",
+          "description": "Number of processed trackers."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "trackers_count"
+      ]
+    },
+    "Markers Parsed": {
+      "description": "Triggered when markers have been successfully parsed.",
+      "type": "object",
+      "section": "Markers Extraction",
+      "properties": {
+        "marker_count": {
+          "type": "integer",
+          "description": "Number of parsed markers."
+        },
+        "max_depth": {
+          "type": "integer",
+          "description": "Maximum depth of the parsed markers."
+        },
+        "branching_factor": {
+          "type": "integer",
+          "description": "Maximum number of children of any of the parsed markers."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "marker_count",
+        "max_depth",
+        "branching_factor"
+      ]
+    },
+    "Markers Statistics Computed": {
+      "description": "Triggered when marker statistics have been computed.",
+      "type": "object",
+      "section": "Markers Extraction",
+      "properties": {
+        "trackers_count": {
+          "type": "integer",
+          "description": "Number of processed trackers."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "trackers_count"
       ]
     }
   }

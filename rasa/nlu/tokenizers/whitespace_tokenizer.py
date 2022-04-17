@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Any, Dict, List, Optional, Text
 
 import regex
@@ -6,20 +7,18 @@ import rasa.shared.utils.io
 import rasa.utils.io
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.training_data.message import Message
 
-from rasa.nlu.tokenizers._whitespace_tokenizer import WhitespaceTokenizer
 
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-WhitespaceTokenizer = WhitespaceTokenizer
-
-
-class WhitespaceTokenizerGraphComponent(TokenizerGraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
+)
+class WhitespaceTokenizer(Tokenizer):
     """Creates features for entity extraction."""
 
     @staticmethod
@@ -58,7 +57,7 @@ class WhitespaceTokenizerGraphComponent(TokenizerGraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "WhitespaceTokenizerGraphComponent":
+    ) -> WhitespaceTokenizer:
         """Creates a new component (see parent class for full docstring)."""
         # Path to the dictionaries on the local filesystem.
         return cls(config)

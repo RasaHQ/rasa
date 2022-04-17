@@ -2,9 +2,12 @@ import logging
 from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
+
+# TODO: The following is not (yet) available via tf.keras
+from keras.utils.control_flow_util import smart_cond
+import tensorflow.keras.backend as K
+
 import rasa.utils.tensorflow.crf
-from tensorflow.python.keras.utils import tf_utils
-from tensorflow.python.keras import backend as K
 from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     MARGIN,
@@ -15,16 +18,8 @@ from rasa.utils.tensorflow.constants import (
     LABEL_PAD_ID,
 )
 from rasa.core.constants import DIALOGUE
-from rasa.shared.nlu.constants import (
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
-)
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
-    ACTION_NAME,
-    ACTION_TEXT,
-)
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME, ACTION_TEXT
 
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 import rasa.utils.tensorflow.layers_utils as layers_utils
@@ -87,9 +82,7 @@ class SparseDropout(tf.keras.layers.Dropout):
             to_retain = tf.greater_equal(to_retain_prob, self.rate)
             return tf.sparse.retain(inputs, to_retain)
 
-        outputs = tf_utils.smart_cond(
-            training, dropped_inputs, lambda: tf.identity(inputs)
-        )
+        outputs = smart_cond(training, dropped_inputs, lambda: tf.identity(inputs))
         # need to explicitly recreate sparse tensor, because otherwise the shape
         # information will be lost after `retain`
         # noinspection PyProtectedMember
@@ -414,7 +407,7 @@ class Ffnn(tf.keras.layers.Layer):
                 RandomlyConnectedDense(
                     units=layer_size,
                     density=density,
-                    activation=tfa.activations.gelu,
+                    activation=tf.nn.gelu,
                     kernel_regularizer=l2_regularizer,
                     name=f"hidden_layer_{layer_name_suffix}_{i}",
                 )
@@ -424,6 +417,7 @@ class Ffnn(tf.keras.layers.Layer):
     def call(
         self, x: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None
     ) -> tf.Tensor:
+        """Apply feed-forward network layer."""
         for layer in self._ffn_layers:
             x = layer(x, training=training)
 
@@ -555,10 +549,7 @@ class InputMask(tf.keras.layers.Layer):
 
             return tf.where(tf.tile(lm_mask_bool, (1, 1, x.shape[-1])), x_other, x)
 
-        return (
-            tf_utils.smart_cond(training, x_masked, lambda: tf.identity(x)),
-            lm_mask_bool,
-        )
+        return (smart_cond(training, x_masked, lambda: tf.identity(x)), lm_mask_bool)
 
 
 def _scale_loss(log_likelihood: tf.Tensor) -> tf.Tensor:
@@ -570,7 +561,6 @@ def _scale_loss(log_likelihood: tf.Tensor) -> tf.Tensor:
     Returns:
         Scaling tensor.
     """
-
     p = tf.math.exp(log_likelihood)
     # only scale loss if some examples are already learned
     return tf.cond(
@@ -1167,7 +1157,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
             )
 
     # noinspection PyMethodOverriding
-    def call(
+    def call(  # type: ignore[override]
         self,
         inputs_embed: tf.Tensor,
         labels_embed: tf.Tensor,
@@ -1266,7 +1256,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             model_confidence=model_confidence,
         )
 
-    def call(
+    def call(  # type: ignore[override]
         self,
         batch_inputs_embed: tf.Tensor,
         batch_labels_embed: tf.Tensor,
@@ -1441,7 +1431,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         pos_labels_embed = tf.expand_dims(
-            batch_labels_embed, axis=1, name="expand_pos_labels",
+            batch_labels_embed, axis=1, name="expand_pos_labels"
         )
 
         # Pick random examples from the batch
@@ -1459,7 +1449,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         # Get binary indicators of whether a candidate is positive or not
         pos_neg_indicators = self._get_pos_neg_indicators(
-            all_labels_ids, batch_labels_ids, candidate_ids,
+            all_labels_ids, batch_labels_ids, candidate_ids
         )
 
         return (

@@ -8,7 +8,6 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.runner.interface import ExecutionContext
 from rasa.core.policies.policy import PolicyPrediction
-from rasa.core.policies._ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
@@ -18,18 +17,8 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.core.policies.rule_policy import RulePolicyGraphComponent
-from rasa.core.policies.memoization import (
-    MemoizationPolicyGraphComponent,
-    AugmentedMemoizationPolicyGraphComponent,
-)
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-SimplePolicyEnsemble = SimplePolicyEnsemble
-PolicyEnsemble = PolicyEnsemble
 
 
 def is_not_in_training_data(
@@ -45,13 +34,19 @@ def is_not_in_training_data(
         `False` if and only if an action was predicted (i.e. `max_confidence` > 0) by
         a `MemoizationPolicy`
     """
+    from rasa.core.policies.rule_policy import RulePolicy
+    from rasa.core.policies.memoization import (
+        MemoizationPolicy,
+        AugmentedMemoizationPolicy,
+    )
+
     if not policy_name:
         return True
 
     memorizing_policies = [
-        RulePolicyGraphComponent.__name__,
-        MemoizationPolicyGraphComponent.__name__,
-        AugmentedMemoizationPolicyGraphComponent.__name__,
+        RulePolicy.__name__,
+        MemoizationPolicy.__name__,
+        AugmentedMemoizationPolicy.__name__,
     ]
     is_memorized = any(
         policy_name.endswith(f"_{memoizing_policy}")
@@ -105,7 +100,7 @@ class PolicyPredictionEnsemble(ABC):
             value for value in kwargs.values() if isinstance(value, PolicyPrediction)
         ]
         return self.combine_predictions(
-            predictions=predictions, tracker=tracker, domain=domain,
+            predictions=predictions, tracker=tracker, domain=domain
         )
 
     @abstractmethod
@@ -183,7 +178,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         Returns:
             The index of the best prediction
         """
-        best_confidence = (-1, -1)
+        best_confidence = (-1.0, -1)
         best_index = -1
 
         # different type of predictions have different priorities

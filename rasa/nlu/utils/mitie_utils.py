@@ -4,21 +4,17 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-import rasa.nlu.utils._mitie_utils
 from rasa.shared.exceptions import InvalidConfigException
 
 if typing.TYPE_CHECKING:
     import mitie
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MitieNLP = rasa.nlu.utils._mitie_utils.MitieNLP
-
 
 class MitieModel:
-    """Wraps `MitieNLPGraphComponent` output to make it fingerprintable."""
+    """Wraps `MitieNLP` output to make it fingerprintable."""
 
     def __init__(
         self,
@@ -45,7 +41,10 @@ class MitieModel:
         return str(self.model_path)
 
 
-class MitieNLPGraphComponent(GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MODEL_LOADER, is_trainable=False
+)
+class MitieNLP(GraphComponent):
     """Component which provides the common configuration and loaded model to others.
 
     This is used to avoid loading the Mitie model multiple times. Instead the Mitie
@@ -82,12 +81,12 @@ class MitieNLPGraphComponent(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> MitieNLPGraphComponent:
+    ) -> MitieNLP:
         """Creates component (see parent class for full docstring)."""
         import mitie
 
         model_file = config.get("model")
-        if not model_file or not Path(model_file).is_file():
+        if not model_file:
             raise InvalidConfigException(
                 "The MITIE component 'MitieNLP' needs "
                 "the configuration value for 'model'."
@@ -95,6 +94,13 @@ class MitieNLPGraphComponent(GraphComponent):
                 "documentation in the pipeline section "
                 "to get more info about this "
                 "parameter."
+            )
+        if not Path(model_file).is_file():
+            raise InvalidConfigException(
+                "The model file configured in the MITIE "
+                "component cannot be found. "
+                "Please ensure the directory path and/or "
+                "filename, '{}', are correct.".format(model_file)
             )
         extractor = mitie.total_word_feature_extractor(str(model_file))
 

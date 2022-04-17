@@ -444,6 +444,7 @@ def test_validate_config_file(config_file: Path):
 def test_validate_config_file_with_extra_keys(tmp_path: Path):
     content = textwrap.dedent(
         """
+        recipe: default.v1
         language: en
         pipeline:
         policies:

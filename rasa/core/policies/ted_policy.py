@@ -1,29 +1,25 @@
 from __future__ import annotations
 import logging
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.core.domain import Domain
-import shutil
+
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from pathlib import Path
 from collections import defaultdict
-from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
+import contextlib
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_addons as tfa
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
+from rasa.nlu.extractors.extractor import EntityTagSpec, EntityExtractorMixin
 import rasa.core.actions.action
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
@@ -38,11 +34,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.core.policies.policy import (
-    PolicyPrediction,
-    PolicyGraphComponent,
-    SupportedData,
-)
+from rasa.core.policies.policy import PolicyPrediction, Policy, SupportedData
 from rasa.core.constants import (
     DIALOGUE,
     POLICY_MAX_HISTORY,
@@ -55,9 +47,12 @@ from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.events import EntitiesAdded, Event
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.features import Features
 import rasa.shared.utils.io
 import rasa.utils.io
-import rasa.utils.train_utils
+from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.model_data import (
@@ -79,6 +74,7 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     LEARNING_RATE,
     RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     LOSS_TYPE,
     SIMILARITY_TYPE,
     NUM_NEG,
@@ -124,17 +120,11 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
     EPOCH_OVERRIDE,
+    USE_GPU,
 )
-from rasa.core.policies._ted_policy import TEDPolicy
-
-from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-TEDPolicy = TEDPolicy
 
 E2E_CONFIDENCE_THRESHOLD = "e2e_confidence_threshold"
 LABEL_KEY = LABEL
@@ -152,7 +142,10 @@ STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
 
 
-class TEDPolicyGraphComponent(PolicyGraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+)
+class TEDPolicy(Policy):
     """Transformer Embedding Dialogue (TED) Policy.
 
     The model architecture is described in
@@ -258,10 +251,16 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             SIMILARITY_TYPE: AUTO,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
-            # Number of top actions to normalize scores for. Applicable with
-            # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-            # to turn off normalization.
-            RANKING_LENGTH: 10,
+            # Number of top actions for which confidences should be predicted.
+            # The number of  Set to `0` if confidences for all actions should be
+            # predicted. The confidences for all other actions will be set to 0.
+            RANKING_LENGTH: 0,
+            # Determines wether the confidences of the chosen top actions should be
+            # renormalized so that they sum up to 1. By default, we do not renormalize
+            # and return the confidences for the top actions as is.
+            # Note that renormalization only makes sense if confidences are generated
+            # via `softmax`.
+            RENORMALIZE_CONFIDENCES: False,
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
             # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -344,6 +343,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
+            USE_GPU: True,
         }
 
     def __init__(
@@ -359,13 +359,11 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
     ) -> None:
         """Declares instance variables with default values."""
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer=featurizer,
+            config, model_storage, resource, execution_context, featurizer=featurizer
         )
-
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             config[SPLIT_ENTITIES_BY_COMMA], SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-
         self._load_params(config)
 
         self.model = model
@@ -416,7 +414,11 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
     ) -> Tuple[RasaModelData, List[Dict[Text, List[Features]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_labels(domain, precomputations)
+        encoded_all_labels = (
+            state_featurizer.encode_all_labels(domain, precomputations)
+            if state_featurizer is not None
+            else []
+        )
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -620,7 +622,11 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         )
 
         if self.config[ENTITY_RECOGNITION]:
-            self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
+            self._entity_tag_specs = (
+                self.featurizer.state_featurizer.entity_tag_specs
+                if self.featurizer.state_featurizer is not None
+                else []
+            )
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
@@ -669,6 +675,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
         )
+
+        if self.model is None:
+            raise ModelNotFound("No model was detected prior to training.")
+
         self.model.fit(
             data_generator,
             epochs=self.config[EPOCHS],
@@ -684,6 +694,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        **kwargs: Any,
     ) -> Resource:
         """Trains the policy (see parent class for full docstring)."""
         if not training_trackers:
@@ -701,7 +712,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         )
 
         model_data, label_ids = self._prepare_for_training(
-            training_trackers, domain, precomputations,
+            training_trackers, domain, precomputations
         )
 
         if model_data.is_empty():
@@ -714,7 +725,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             )
             return self._resource
 
-        self.run_training(model_data, label_ids)
+        with (
+            contextlib.nullcontext() if self.config["use_gpu"] else tf.device("/cpu:0")
+        ):
+            self.run_training(model_data, label_ids)
 
         self.persist()
 
@@ -800,8 +814,8 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""
@@ -823,11 +837,15 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             confidences, similarities, domain
         )
 
-        if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
-            # TODO: This should be removed in 3.0 when softmax as
-            #  model confidence and normalization is completely deprecated.
-            confidence = rasa.utils.train_utils.normalize(
-                confidence, self.config[RANKING_LENGTH]
+        # rank and mask the confidence (if we need to)
+        ranking_length = self.config[RANKING_LENGTH]
+        if 0 < ranking_length < len(confidence):
+            renormalize = (
+                self.config[RENORMALIZE_CONFIDENCES]
+                and self.config[MODEL_CONFIDENCE] == SOFTMAX
+            )
+            _, confidence = train_utils.rank_and_mask(
+                confidence, ranking_length=ranking_length, renormalize=renormalize
             )
 
         optional_events = self._create_optional_event_for_entities(
@@ -876,13 +894,13 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
 
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
-        text = tracker.latest_message.text
+        text = tracker.latest_message.text if tracker.latest_message is not None else ""
         if precomputations is not None:
             parsed_message = precomputations.lookup_message(user_text=text)
         else:
             parsed_message = Message(data={TEXT: text})
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
-        entities = EntityExtractor.convert_predictions_into_entities(
+        entities = EntityExtractorMixin.convert_predictions_into_entities(
             text,
             tokens,
             predicted_tags,
@@ -913,8 +931,13 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
 
             self.featurizer.persist(model_path)
 
-            if self.config[CHECKPOINT_MODEL]:
-                shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+            if self.config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
+                self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                # Save an empty file to flag that this model has been
+                # produced using checkpointing
+                checkpoint_marker = model_path / f"{model_filename}.from_checkpoint.pkl"
+                checkpoint_marker.touch()
+
             self.model.save(str(tf_model_file))
 
             self.persist_model_utilities(model_path)
@@ -930,14 +953,17 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             model_path / f"{model_filename}.priority.pkl", self.priority
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.data_example.pkl", self.data_example,
+            model_path / f"{model_filename}.meta.pkl", self.config
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.fake_features.pkl", self.fake_features,
+            model_path / f"{model_filename}.data_example.pkl", self.data_example
+        )
+        rasa.utils.io.pickle_dump(
+            model_path / f"{model_filename}.fake_features.pkl", self.fake_features
         )
         rasa.utils.io.pickle_dump(
             model_path / f"{model_filename}.label_data.pkl",
-            dict(self._label_data.data),
+            dict(self._label_data.data) if self._label_data is not None else {},
         )
         entity_tag_specs = (
             [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
@@ -945,7 +971,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs,
+            model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs
         )
 
     @classmethod
@@ -985,6 +1011,9 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             )
             for tag_spec in entity_tag_specs
         ]
+        model_config = rasa.utils.io.pickle_load(
+            model_path / f"{cls._metadata_filename()}.meta.pkl"
+        )
 
         return {
             "tf_model_file": tf_model_file,
@@ -993,6 +1022,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             "label_data": label_data,
             "priority": priority,
             "entity_tag_specs": entity_tag_specs,
+            "model_config": model_config,
         }
 
     @classmethod
@@ -1003,19 +1033,19 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> TEDPolicyGraphComponent:
+    ) -> TEDPolicy:
         """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
                 return cls._load(
-                    model_path, config, model_storage, resource, execution_context,
+                    model_path, config, model_storage, resource, execution_context
                 )
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-            return cls(config, model_storage, resource, execution_context,)
+            return cls(config, model_storage, resource, execution_context)
 
     @classmethod
     def _load(
@@ -1025,7 +1055,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> TEDPolicyGraphComponent:
+    ) -> TEDPolicy:
         featurizer = TrackerFeaturizer.load(model_path)
 
         if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
@@ -1048,14 +1078,16 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             predict_data_example,
         ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
-        model = cls._load_tf_model(
-            config,
-            model_utilities,
-            model_data_example,
-            predict_data_example,
-            featurizer,
-            execution_context.is_finetuning,
-        )
+        model = None
+
+        with (contextlib.nullcontext() if config["use_gpu"] else tf.device("/cpu:0")):
+            model = cls._load_tf_model(
+                model_utilities,
+                model_data_example,
+                predict_data_example,
+                featurizer,
+                execution_context.is_finetuning,
+            )
 
         return cls._load_policy_with_model(
             config,
@@ -1077,7 +1109,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         featurizer: TrackerFeaturizer,
         model: TED,
         model_utilities: Dict[Text, Any],
-    ) -> TEDPolicyGraphComponent:
+    ) -> TEDPolicy:
         return cls(
             config,
             model_storage,
@@ -1092,7 +1124,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
     @classmethod
     def _load_tf_model(
         cls,
-        config: Dict[Text, Any],
         model_utilities: Dict[Text, Any],
         model_data_example: RasaModelData,
         predict_data_example: RasaModelData,
@@ -1104,7 +1135,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             model_data_example,
             predict_data_example,
             data_signature=model_data_example.get_signature(),
-            config=config,
+            config=model_utilities["model_config"],
             max_history_featurizer_is_used=isinstance(
                 featurizer, MaxHistoryTrackerFeaturizer
             ),
@@ -1395,7 +1426,7 @@ class TED(TransformerRasaModel):
         dialogue_transformed, attention_weights = self._tf_layers[
             f"transformer.{DIALOGUE}"
         ](dialogue_in, 1 - mask, self._training)
-        dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
+        dialogue_transformed = tf.nn.gelu(dialogue_transformed)
 
         if self.max_history_featurizer_is_used:
             # pick last vector if max history featurizer is used, since we inverted
@@ -1623,7 +1654,7 @@ class TED(TransformerRasaModel):
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = tf.expand_dims(
                 self._last_token(
-                    attribute_features, combined_sentence_sequence_feature_lengths,
+                    attribute_features, combined_sentence_sequence_feature_lengths
                 ),
                 axis=1,
             )

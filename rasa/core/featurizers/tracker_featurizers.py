@@ -6,9 +6,20 @@ import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
+from typing import (
+    Tuple,
+    List,
+    Optional,
+    Dict,
+    Text,
+    Union,
+    Any,
+    Iterator,
+    Set,
+    DefaultDict,
+    cast,
+)
 import numpy as np
-
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
@@ -27,21 +38,10 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
-from rasa.core.featurizers import _tracker_featurizers
 
 FEATURIZER_FILE = "featurizer.json"
 
 logger = logging.getLogger(__name__)
-
-# All code outside this module will continue to use the old `tracker_featurizer` module
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-TrackerFeaturizer = _tracker_featurizers.TrackerFeaturizer
-MaxHistoryTrackerFeaturizer = _tracker_featurizers.MaxHistoryTrackerFeaturizer
-IntentMaxHistoryTrackerFeaturizer = (
-    _tracker_featurizers.IntentMaxHistoryTrackerFeaturizer
-)
-FullDialogueTrackerFeaturizer = _tracker_featurizers.FullDialogueTrackerFeaturizer
 
 
 class InvalidStory(RasaException):
@@ -60,7 +60,7 @@ class InvalidStory(RasaException):
         return self.message
 
 
-class TrackerFeaturizer2:
+class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
@@ -117,13 +117,16 @@ class TrackerFeaturizer2:
         Returns:
             Featurized tracker states.
         """
-        return [
-            [
-                self.state_featurizer.encode_state(state, precomputations)
-                for state in tracker_states
+        if self.state_featurizer is None:
+            return [[{}]]
+        else:
+            return [
+                [
+                    self.state_featurizer.encode_state(state, precomputations)
+                    for state in tracker_states
+                ]
+                for tracker_states in trackers_as_states
             ]
-            for tracker_states in trackers_as_states
-        ]
 
     @staticmethod
     def _convert_labels_to_ids(
@@ -164,15 +167,18 @@ class TrackerFeaturizer2:
         Returns:
             Trackers as entity features.
         """
-        return [
-            [
-                self.state_featurizer.encode_entities(
-                    entity_data, precomputations, bilou_tagging,
-                )
-                for entity_data in trackers_entities
+        if self.state_featurizer is None:
+            return [[{}]]
+        else:
+            return [
+                [
+                    self.state_featurizer.encode_entities(
+                        entity_data, precomputations, bilou_tagging
+                    )
+                    for entity_data in trackers_entities
+                ]
+                for trackers_entities in trackers_as_entities
             ]
-            for trackers_entities in trackers_as_entities
-        ]
 
     @staticmethod
     def _entity_data(event: UserUttered) -> Dict[Text, Any]:
@@ -268,7 +274,7 @@ class TrackerFeaturizer2:
         )
 
     def prepare_for_featurization(
-        self, domain: Domain, bilou_tagging: bool = False,
+        self, domain: Domain, bilou_tagging: bool = False
     ) -> None:
         """Ensures that the featurizer is ready to be called during training.
 
@@ -455,7 +461,7 @@ class TrackerFeaturizer2:
 
         # entity tags are persisted in TED policy, they are not needed for prediction
         if self.state_featurizer is not None:
-            self.state_featurizer.entity_tag_specs = None
+            self.state_featurizer.entity_tag_specs = []
 
         # noinspection PyTypeChecker
         rasa.shared.utils.io.write_text_file(
@@ -463,7 +469,7 @@ class TrackerFeaturizer2:
         )
 
     @staticmethod
-    def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer2]:
+    def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer]:
         """Loads the featurizer from file.
 
         Args:
@@ -502,7 +508,7 @@ class TrackerFeaturizer2:
         ]
 
 
-class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2):
+class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     """Creates full dialogue training data for time distributed architectures.
 
     Creates training data that uses each time output for prediction.
@@ -514,9 +520,7 @@ class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2):
         domain: Domain,
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
-    ) -> Tuple[
-        List[List[State]], List[List[Optional[Text]]], List[List[Dict[Text, Any]]]
-    ]:
+    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms trackers to states, action labels, and entity data.
 
         Args:
@@ -567,7 +571,9 @@ class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2):
                 if not event.unpredictable:
                     # only actions which can be
                     # predicted at a stories start
-                    actions.append(event.action_name or event.action_text)
+                    action = event.action_name or event.action_text
+                    if action is not None:
+                        actions.append(action)
                     entities.append(entity_data)
                 else:
                     # unpredictable actions can be
@@ -640,7 +646,7 @@ class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2):
         return trackers_as_states
 
 
-class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2):
+class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     """Truncates the tracker history into `max_history` long sequences.
 
     Creates training data from trackers where actions are the output prediction
@@ -819,7 +825,7 @@ class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2):
                 sliced_states = self.slice_state_history(
                     tracker_states[:label_index], self.max_history
                 )
-                label = [event.action_name or event.action_text]
+                label = cast(List[Text], [event.action_name or event.action_text])
                 entities = [entity_data]
 
                 yield sliced_states, label, entities
@@ -881,7 +887,7 @@ class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2):
         return trackers_as_states
 
 
-class IntentMaxHistoryTrackerFeaturizer2(MaxHistoryTrackerFeaturizer2):
+class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     """Truncates the tracker history into `max_history` long sequences.
 
     Creates training data from trackers where intents are the output prediction
@@ -972,7 +978,7 @@ class IntentMaxHistoryTrackerFeaturizer2(MaxHistoryTrackerFeaturizer2):
         hashed_examples = set()
         # Mapping of example state hash to set of
         # positive labels associated with the state.
-        state_hash_to_label_set: defaultdict[int, Set[Text]] = defaultdict(set)
+        state_hash_to_label_set: DefaultDict[int, Set[Text]] = defaultdict(set)
 
         logger.debug(
             f"Creating states and {self.LABEL_NAME} label examples from "
@@ -1067,8 +1073,8 @@ class IntentMaxHistoryTrackerFeaturizer2(MaxHistoryTrackerFeaturizer2):
                 sliced_states = self.slice_state_history(
                     tracker_states[:label_index], self.max_history
                 )
-                label = [event.intent_name or event.text]
-                entities = [{}]
+                label = cast(List[Text], [event.intent_name or event.text])
+                entities: List[Dict[Text, Any]] = [{}]
 
                 yield sliced_states, label, entities
 

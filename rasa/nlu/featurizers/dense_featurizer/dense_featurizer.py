@@ -2,12 +2,12 @@ from abc import ABC
 from typing import Text
 import numpy as np
 
-from rasa.nlu.featurizers.featurizer import Featurizer2
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 from rasa.shared.exceptions import InvalidConfigException
 
 
-class DenseFeaturizer2(Featurizer2[np.ndarray], ABC):
+class DenseFeaturizer(Featurizer[np.ndarray], ABC):
     """Base class for all dense featurizers."""
 
     @staticmethod

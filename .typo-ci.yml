@@ -86,6 +86,7 @@ excluded_words:
   - extractor
   - fbmessenger
   - featurization
+  - featurize
   - featurized
   - featurizer
   - featurizers

@@ -92,8 +92,9 @@ Slots with the property `influence_conversation` set to `false` can only store
 information. Slots with the property `influence_conversation` set to `true` can affect
 the dialogue flow based on the information stored in it.
 
-Slots which influence the conversation need to be added to your stories or rules. This also
-applies for the case if the slot was set by a [custom action](./actions.mdx).
+Slots can be set after every user message based on [slot mappings](./domain.mdx#slot-mappings).
+They can also be set by a [custom action](./actions.mdx) run in response to a user message.
+All slots which influence the conversation need to be added to your stories or rules.
 For example, you can use a boolean slot set by a custom action to control the dialogue
 flow based on its value using the following stories:
 
@@ -216,7 +217,7 @@ and creating too many checkpoints can make your stories hard to understand.
 
 #### OR statements
 
-In stories where different intents are handled by your bot in the same way,
+In stories where different intents or slot events are handled by your bot in the same way,
 you can use OR statements as an alternative to creating a new story.
 
 For example, you can merge these two stories:
@@ -547,7 +548,6 @@ be given the chance to correct the prediction before continuing:
    0.00 action_default_fallback
    0.00 action_listen
    0.00 action_restart
-   0.00 action_revert_fallback_events
    0.00 action_session_start
    0.00 action_two_stage_fallback
    0.00 utter_cheer_up

@@ -140,23 +140,12 @@ in the shell and in interactive learning.
 :::
 
 
-### Conditional Response Variations (experimental)
-
-:::caution
-This feature is currently experimental and might change or be removed in the future.
-Share your feedback on it in the [forum](https://forum.rasa.com) to help
-us make this feature ready for production.
-:::
+### Conditional Response Variations
 
 Specific response variations can also be selected based on one or more slot values using a conditional
 response variation. A conditional response variation is defined in the domain or responses YAML files
 similarly to a standard response variation but with an additional `condition` key. This key specifies
 a list of slot `name` and `value` constraints.
-
-:::note
-Because the feature is currently experimental, it is recommended to set the `influence_conversation`
-slot setting to `False` for the slot mappings which are part of conditions.
-:::
 
 When a response is triggered during a dialogue, the constraints of each conditional response variation
 are checked against the current dialogue state. If all constraint slot values are equal to the corresponding
@@ -178,9 +167,13 @@ slots:
   logged_in:
     type: bool
     influence_conversation: False
+    mappings:
+    - type: custom
   name:
     type: text
     influence_conversation: False
+    mappings:
+    - type: custom
 
 responses:
   utter_greet:
@@ -247,9 +240,13 @@ slots:
   logged_in:
     type: bool
     influence_conversation: False
+    mappings:
+    - type: custom
   name:
     type: text
     influence_conversation: False
+    mappings:
+    - type: custom
 
 responses:
   utter_greet:

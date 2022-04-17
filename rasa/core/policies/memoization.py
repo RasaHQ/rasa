@@ -12,23 +12,16 @@ from pathlib import Path
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 from rasa.shared.exceptions import FileIOException
-from rasa.core.policies.policy import (
-    PolicyPrediction,
-    PolicyGraphComponent,
-    SupportedData,
-)
+from rasa.core.policies.policy import PolicyPrediction, Policy, SupportedData
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
@@ -38,20 +31,15 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
 )
-from rasa.core.policies._memoization import (
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy,
-)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MemoizationPolicy = MemoizationPolicy
-AugmentedMemoizationPolicy = AugmentedMemoizationPolicy
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 
 logger = logging.getLogger(__name__)
 
 
-class MemoizationPolicyGraphComponent(PolicyGraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
+class MemoizationPolicy(Policy):
     """A policy that follows exact examples of `max_history` turns in training stories.
 
     Since `slots` that are set some time in the past are
@@ -99,9 +87,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         lookup: Optional[Dict] = None,
     ) -> None:
         """Initialize the policy."""
-        super().__init__(
-            config, model_storage, resource, execution_context, featurizer,
-        )
+        super().__init__(config, model_storage, resource, execution_context, featurizer)
         self.lookup = lookup or {}
 
     def _create_lookup_from_states(
@@ -118,7 +104,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         Returns:
             lookup dictionary
         """
-        lookup = {}
+        lookup: Dict[Text, Text] = {}
 
         if not trackers_as_states:
             return lookup
@@ -155,7 +141,10 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
 
         return lookup
 
-    def _create_feature_key(self, states: List[State]) -> Text:
+    def _create_feature_key(self, states: List[State]) -> Optional[Text]:
+        if not states:
+            return None
+
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
@@ -175,7 +164,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         **kwargs: Any,
-    ) -> None:
+    ) -> Resource:
         # only considers original trackers (no augmented ones)
         training_trackers = [
             t
@@ -196,6 +185,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
         self.persist()
+        return self._resource
 
     def _recall_states(self, states: List[State]) -> Optional[Text]:
         return self.lookup.get(self._create_feature_key(states))
@@ -226,7 +216,10 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
     ) -> List[float]:
         result = self._default_predictions(domain)
         if action_name:
-            if self.config["use_nlu_confidence_as_score"]:
+            if (
+                self.config["use_nlu_confidence_as_score"]
+                and tracker.latest_message is not None
+            ):
                 # the memoization will use the confidence of NLU on the latest
                 # user message to set the confidence of the action
                 score = tracker.latest_message.intent.get("confidence", 1.0)
@@ -297,7 +290,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> MemoizationPolicyGraphComponent:
+    ) -> MemoizationPolicy:
         """Loads a trained policy (see parent class for full docstring)."""
         featurizer = None
         lookup = None
@@ -327,7 +320,10 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         )
 
 
-class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
+class AugmentedMemoizationPolicy(MemoizationPolicy):
     """The policy that remembers examples from training stories for `max_history` turns.
 
     If it is needed to recall turns from training dialogues
@@ -344,12 +340,20 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
     """
 
     @staticmethod
-    def _back_to_the_future(
+    def _strip_leading_events_until_action_executed(
         tracker: DialogueStateTracker, again: bool = False
     ) -> Optional[DialogueStateTracker]:
-        """Send Marty to the past to get
-        the new featurization for the future"""
+        """Truncates the tracker to begin at the next `ActionExecuted` event.
 
+        Args:
+            tracker: The tracker to truncate.
+            again: When true, truncate tracker at the second action.
+                Otherwise truncate to the first action.
+
+        Returns:
+            The truncated tracker if there were actions present.
+            If none are found, returns `None`.
+        """
         idx_of_first_action = None
         idx_of_second_action = None
 
@@ -357,7 +361,6 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
 
         # we need to find second executed action
         for e_i, event in enumerate(applied_events):
-            # find second ActionExecuted
             if isinstance(event, ActionExecuted):
                 if idx_of_first_action is None:
                     idx_of_first_action = e_i
@@ -375,23 +378,25 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         if not events:
             return None
 
-        mcfly_tracker = tracker.init_copy()
+        truncated_tracker = tracker.init_copy()
         for e in events:
-            mcfly_tracker.update(e)
+            truncated_tracker.update(e)
 
-        return mcfly_tracker
+        return truncated_tracker
 
-    def _recall_using_delorean(
+    def _recall_using_truncation(
         self,
         old_states: List[State],
         tracker: DialogueStateTracker,
         domain: Domain,
         rule_only_data: Optional[Dict[Text, Any]],
     ) -> Optional[Text]:
-        """Applies to the future idea to change the past and get the new future.
+        """Attempts to match memorized states to progressively shorter trackers.
 
-        Recursively go to the past to correctly forget slots,
-        and then back to the future to recall.
+        This method iteratively removes the oldest events up to the next action
+        executed and checks if the truncated event sequence matches some memorized
+        states, until a match has been found or until the even sequence has been
+        exhausted.
 
         Args:
             old_states: List of states.
@@ -406,13 +411,15 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         logger.debug("Launch DeLorean...")
 
         # Truncate the tracker based on `max_history`
-        mcfly_tracker = _trim_tracker_by_max_history(
-            tracker, self.config[POLICY_MAX_HISTORY]
+        truncated_tracker: Optional[
+            DialogueStateTracker
+        ] = _trim_tracker_by_max_history(tracker, self.config[POLICY_MAX_HISTORY])
+        truncated_tracker = self._strip_leading_events_until_action_executed(
+            truncated_tracker
         )
-        mcfly_tracker = self._back_to_the_future(mcfly_tracker)
-        while mcfly_tracker is not None:
+        while truncated_tracker is not None:
             states = self._prediction_states(
-                mcfly_tracker, domain, rule_only_data=rule_only_data
+                truncated_tracker, domain, rule_only_data=rule_only_data
             )
 
             if old_states != states:
@@ -424,7 +431,9 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
                 old_states = states
 
             # go back again
-            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True)
+            truncated_tracker = self._strip_leading_events_until_action_executed(
+                truncated_tracker, again=True
+            )
 
         # No match found
         logger.debug(f"Current tracker state {old_states}")
@@ -455,7 +464,7 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(
+            return self._recall_using_truncation(
                 states, tracker, domain, rule_only_data=rule_only_data
             )
         else:
@@ -463,16 +472,20 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
 
 
 def _get_max_applied_events_for_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
+    tracker: DialogueStateTracker, max_history: Optional[int]
 ) -> Optional[int]:
     """Computes the number of events in the tracker that correspond to max_history.
+
+    To ensure that the last user utterance is correctly included in the prediction
+    states, return the index of the most recent `action_listen` event occuring
+    before the tracker would be truncated according to the value of `max_history`.
 
     Args:
         tracker: Some tracker holding the events
         max_history: The number of actions to count
 
     Returns:
-        The number of actions, as counted from the end of the event list, that should
+        The number of events, as counted from the end of the event list, that should
         be taken into accout according to the `max_history` setting. If all events
         should be taken into account, the return value is `None`.
     """
@@ -484,13 +497,13 @@ def _get_max_applied_events_for_max_history(
         num_events += 1
         if isinstance(event, ActionExecuted):
             num_actions += 1
-        if num_actions > max_history:
-            return num_events
+            if num_actions > max_history and event.action_name == ACTION_LISTEN_NAME:
+                return num_events
     return None
 
 
 def _trim_tracker_by_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
+    tracker: DialogueStateTracker, max_history: Optional[int]
 ) -> DialogueStateTracker:
     """Removes events from the tracker until it has `max_history` actions.
 

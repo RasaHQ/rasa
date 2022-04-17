@@ -2,19 +2,19 @@ from __future__ import annotations
 from typing import List, Text, Dict, Any
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.message import Message
 
 from rasa.shared.utils.io import DEFAULT_ENCODING
-from rasa.nlu.tokenizers._mitie_tokenizer import MitieTokenizer
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-MitieTokenizer = MitieTokenizer
 
 
-class MitieTokenizerGraphComponent(TokenizerGraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
+)
+class MitieTokenizer(Tokenizer):
     """Tokenizes messages using the `mitie` library.."""
 
     @staticmethod
@@ -41,7 +41,7 @@ class MitieTokenizerGraphComponent(TokenizerGraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> MitieTokenizerGraphComponent:
+    ) -> MitieTokenizer:
         """Creates a new component (see parent class for full docstring)."""
         return cls(config)
 

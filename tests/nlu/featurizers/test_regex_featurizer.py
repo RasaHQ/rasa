@@ -7,15 +7,13 @@ import pytest
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
-    RegexFeaturizerGraphComponent,
-)
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import SPACY_DOCS, TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 
 
 @pytest.fixture()
@@ -28,14 +26,14 @@ def create_featurizer(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     resource: Resource,
-) -> Callable[..., RegexFeaturizerGraphComponent]:
+) -> Callable[..., RegexFeaturizer]:
     def inner(
         config: Dict[Text, Any] = None,
         known_patterns: Optional[List[Dict[Text, Any]]] = None,
-    ) -> RegexFeaturizerGraphComponent:
+    ) -> RegexFeaturizer:
         config = config or {}
-        return RegexFeaturizerGraphComponent(
-            {**RegexFeaturizerGraphComponent.get_default_config(), **config},
+        return RegexFeaturizer(
+            {**RegexFeaturizer.get_default_config(), **config},
             default_model_storage,
             resource,
             default_execution_context,
@@ -75,13 +73,13 @@ def create_featurizer(
         ),
         (
             "blah balh random eh",
-            [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0],],
+            [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
             [0.0, 0.0, 0.0],
             [],
         ),
         (
             "a 1 digit number",
-            [[0.0, 0.0, 0.0], [1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0],],
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
             [1.0, 0.0, 1.0],
             [1, 1],
         ),
@@ -93,8 +91,8 @@ def test_regex_featurizer(
     expected_sentence_features: List[float],
     labeled_tokens: List[int],
     spacy_nlp: Any,
-    create_featurizer: Callable[..., RegexFeaturizerGraphComponent],
-    spacy_tokenizer: SpacyTokenizerGraphComponent,
+    create_featurizer: Callable[..., RegexFeaturizer],
+    spacy_tokenizer: SpacyTokenizer,
 ):
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
@@ -173,13 +171,13 @@ def test_lookup_tables_without_use_word_boundaries(
     expected_sequence_features: List[float],
     expected_sentence_features: List[float],
     labeled_tokens: List[float],
-    create_featurizer: Callable[..., RegexFeaturizerGraphComponent],
+    create_featurizer: Callable[..., RegexFeaturizer],
 ):
     from rasa.nlu.tokenizers.tokenizer import Token
 
     lookups = [
-        {"name": "cites", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
-        {"name": "dates", "elements": ["昨天", "今天", "明天", "后天"],},
+        {"name": "cites", "elements": ["北京", "上海", "广州", "深圳", "杭州"]},
+        {"name": "dates", "elements": ["昨天", "今天", "明天", "后天"]},
     ]
     ftr = create_featurizer({"use_word_boundaries": False})
     training_data = TrainingData()
@@ -223,7 +221,7 @@ def test_lookup_tables_without_use_word_boundaries(
         ),
         (
             "Is burrito my favorite food?",
-            [[0.0, 0.0], [0.0, 1.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0],],
+            [[0.0, 0.0], [0.0, 1.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
             [0.0, 1.0],
             [1.0],
         ),
@@ -236,10 +234,9 @@ def test_lookup_tables(
     expected_sentence_features: List[float],
     labeled_tokens: List[float],
     spacy_nlp: Any,
-    spacy_tokenizer: SpacyTokenizerGraphComponent,
+    spacy_tokenizer: SpacyTokenizer,
+    create_featurizer: Callable[..., RegexFeaturizer],
 ):
-    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-
     lookups = [
         {
             "name": "drinks",
@@ -247,10 +244,11 @@ def test_lookup_tables(
         },
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
-    ftr = RegexFeaturizer()
+    ftr = create_featurizer()
     training_data = TrainingData()
     training_data.lookup_tables = lookups
     ftr.train(training_data)
+    ftr.process_training_data(training_data)
 
     # adds tokens to the message
     message = Message(data={TEXT: sentence})
@@ -288,8 +286,8 @@ def test_regex_featurizer_no_sequence(
     expected_sequence_features: List[float],
     expected_sentence_features: List[float],
     spacy_nlp: Any,
-    create_featurizer: Callable[..., RegexFeaturizerGraphComponent],
-    spacy_tokenizer: SpacyTokenizerGraphComponent,
+    create_featurizer: Callable[..., RegexFeaturizer],
+    spacy_tokenizer: SpacyTokenizer,
 ):
 
     patterns = [
@@ -314,8 +312,8 @@ def test_regex_featurizer_no_sequence(
 
 
 def test_regex_featurizer_train(
-    create_featurizer: Callable[..., RegexFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., RegexFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
@@ -386,8 +384,8 @@ def test_regex_featurizer_case_sensitive(
     expected_sentence_features: List[float],
     case_sensitive: bool,
     spacy_nlp: Any,
-    create_featurizer: Callable[..., RegexFeaturizerGraphComponent],
-    spacy_tokenizer: SpacyTokenizerGraphComponent,
+    create_featurizer: Callable[..., RegexFeaturizer],
+    spacy_tokenizer: SpacyTokenizer,
 ):
 
     patterns = [
@@ -395,9 +393,7 @@ def test_regex_featurizer_case_sensitive(
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
         {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
-    ftr = create_featurizer(
-        {"case_sensitive": case_sensitive}, known_patterns=patterns,
-    )
+    ftr = create_featurizer({"case_sensitive": case_sensitive}, known_patterns=patterns)
 
     # adds tokens to the message
     message = Message(data={TEXT: sentence})
@@ -434,8 +430,8 @@ def test_lookup_with_and_without_boundaries(
     labeled_tokens: List[float],
     use_word_boundaries: bool,
     spacy_nlp: Any,
-    create_featurizer: Callable[..., RegexFeaturizerGraphComponent],
-    spacy_tokenizer: SpacyTokenizerGraphComponent,
+    create_featurizer: Callable[..., RegexFeaturizer],
+    spacy_tokenizer: SpacyTokenizer,
 ):
     ftr = create_featurizer({"use_word_boundaries": use_word_boundaries})
     training_data = TrainingData()
@@ -481,11 +477,11 @@ def test_lookup_with_and_without_boundaries(
 
 
 def test_persist_load_for_finetuning(
-    create_featurizer: Callable[..., RegexFeaturizerGraphComponent],
+    create_featurizer: Callable[..., RegexFeaturizer],
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     resource: Resource,
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
@@ -504,8 +500,8 @@ def test_persist_load_for_finetuning(
 
     featurizer.train(training_data)
 
-    loaded_featurizer = RegexFeaturizerGraphComponent.load(
-        RegexFeaturizerGraphComponent.get_default_config(),
+    loaded_featurizer = RegexFeaturizer.load(
+        RegexFeaturizer.get_default_config(),
         default_model_storage,
         resource,
         dataclasses.replace(default_execution_context, is_finetuning=True),
@@ -527,11 +523,11 @@ def test_persist_load_for_finetuning(
 
 
 def test_vocabulary_expand_for_finetuning(
-    create_featurizer: Callable[..., RegexFeaturizerGraphComponent],
+    create_featurizer: Callable[..., RegexFeaturizer],
     default_model_storage: ModelStorage,
     resource: Resource,
     default_execution_context: ExecutionContext,
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
@@ -565,8 +561,8 @@ def test_vocabulary_expand_for_finetuning(
     assert np.all(seq_vecs.toarray()[0] == expected)
     assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
-    loaded_featurizer = RegexFeaturizerGraphComponent.load(
-        RegexFeaturizerGraphComponent.get_default_config(),
+    loaded_featurizer = RegexFeaturizer.load(
+        RegexFeaturizer.get_default_config(),
         default_model_storage,
         resource,
         dataclasses.replace(default_execution_context, is_finetuning=True),

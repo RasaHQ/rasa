@@ -1,6 +1,4 @@
-from rasa.nlu.extractors.spacy_entity_extractor import (
-    SpacyEntityExtractorGraphComponent,
-)
+from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
@@ -16,16 +14,14 @@ def test_spacy_ner_extractor(spacy_nlp):
         }
     )
 
-    component = SpacyEntityExtractorGraphComponent(
-        SpacyEntityExtractorGraphComponent.get_default_config()
-    )
+    component = SpacyEntityExtractor(SpacyEntityExtractor.get_default_config())
 
     component.process([example], model=SpacyModel(model=spacy_nlp, model_name=""))
 
     assert len(example.get("entities", [])) == 1
     assert example.get("entities")[0] == {
         "start": 16,
-        "extractor": "SpacyEntityExtractorGraphComponent",
+        "extractor": "SpacyEntityExtractor",
         "end": 20,
         "value": "U.K.",
         "entity": "GPE",
@@ -42,13 +38,13 @@ def test_spacy_ner_extractor(spacy_nlp):
         }
     )
 
-    component = SpacyEntityExtractorGraphComponent({"dimensions": ["PERSON"]})
+    component = SpacyEntityExtractor({"dimensions": ["PERSON"]})
     component.process([example], model=SpacyModel(model=spacy_nlp, model_name=""))
 
     assert len(example.get("entities", [])) == 1
     assert example.get("entities")[0] == {
         "start": 26,
-        "extractor": "SpacyEntityExtractorGraphComponent",
+        "extractor": "SpacyEntityExtractor",
         "end": 41,
         "value": "Sebastian Thrun",
         "entity": "PERSON",

@@ -16,9 +16,11 @@ DEFAULT_CORE_FALLBACK_THRESHOLD = 0.3
 
 DEFAULT_MAX_HISTORY = None  # Core policy history is unbounded by default.
 
+DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
+
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
-DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
+DEFAULT_STREAM_READING_TIMEOUT = 10  # in seconds
 
 DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
@@ -70,3 +72,7 @@ STORIES_WITH_WARNINGS_FILE = "stories_with_warnings.yml"
 POLICY_PRIORITY = "priority"
 POLICY_FEATURIZER = "featurizer"
 POLICY_MAX_HISTORY = "max_history"
+
+DEFAULT_PROTOCOL = "UDP"
+DEFAULT_SYSLOG_HOST = "localhost"
+DEFAULT_SYSLOG_PORT = 514
