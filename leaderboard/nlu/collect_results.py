@@ -122,11 +122,8 @@ def collect_reports(run_dir: str) -> Dict[str, Dict[str, Any]]:
 
     report_files = glob.glob(os.path.join(run_dir, REPORT_FOLDER, "*_report.json"))
 
-    def format_report_key(key: str, tag: str) -> str:
-        if key.endswith(" avg"):
-            return key
-        else:
-            return f"{tag}_{key}"
+    def _format_report_key(key: str, prefix: str) -> str:
+        return f"{prefix}_{key}"
 
     for report_file in report_files:
 
@@ -141,21 +138,21 @@ def collect_reports(run_dir: str) -> Dict[str, Dict[str, Any]]:
 
         row.update(
             {
-                format_report_key(key=key, tag=tag): value
+                _format_report_key(key=key, prefix=tag): value
                 for key, value in report.items()
                 if isinstance(value, dict)
             }
         )
         row.update(
             {
-                format_report_key(key=key, tag=tag): {"-": value}
+                _format_report_key(key=key, prefix=tag): {"-": value}
                 for key, value in report.items()
                 if not isinstance(value, dict)
             }
         )
         row.update(
             {
-                format_report_key(key="labels", tag=tag): {
+                _format_report_key(key="labels", prefix=tag): {
                     "-": len(
                         [
                             key
