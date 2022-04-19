@@ -16,6 +16,53 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.27] - 2022-04-05
+### Deprecations and Removals
+- [#11048](https://github.com/rasahq/rasa/issues/11048): Removed Python 3.6 support as [it reached its end of life in December 2021](https://www.python.org/dev/peps/pep-0494/#lifespan).
+
+
+## [2.8.26] - 2022-03-15
+### Bugfixes
+- [#10675](https://github.com/rasahq/rasa/issues/10675): Fix broken conversion from Rasa JSON NLU data to Rasa YAML NLU data.
+
+
+## [2.8.25] - 2022-02-11
+### Bugfixes
+- [#10808](https://github.com/rasahq/rasa/issues/10808): Fix the importing of retrieval intents when using a multidomain file with entity roles and groups.
+
+
+## [2.8.24] - 2022-02-10
+### Improvements
+- [#10394](https://github.com/rasahq/rasa/issues/10394): Allow single tokens in rasa end-to-end test files to be annotated with multiple entities.
+
+  Some entity extractors (s.a. `RegexEntityExtractor`) can generate multiple entities from a single expression. Before this change, `rasa test` would fail in this case, because test stories could not be annotated correctly.
+  New annotation option is  
+  ```YAML
+  stories:
+    - story: Some story
+      steps:
+        - user: |
+            cancel my [iphone][{"entity":"iphone", "value":"iphone"},{"entity":"smartphone", "value":"true"}{"entity":"mobile_service", "value":"true"}] 
+          intent: cancel_contract
+  ```
+
+
+## [2.8.23] - 2022-02-01
+### Bugfixes
+- [#10728](https://github.com/rasahq/rasa/issues/10728): Use `tf.function` for model prediction to improve inference speed.
+- [#10743](https://github.com/rasahq/rasa/issues/10743): Fix `rasa test core` error from running test story that contains an entity but no user utterance text.
+- [#10768](https://github.com/rasahq/rasa/issues/10768): Merge domain entities as lists of dicts, not lists of lists to support entity roles and groups across multiple domains.
+
+### Miscellaneous internal changes
+- [#10740](https://github.com/rasahq/rasa/issues/10740)
+
+
+## [2.8.22] - 2022-01-19
+### Bugfixes
+- [#10606](https://github.com/rasahq/rasa/issues/10606): Fix `max_history` truncation in `AugmentedMemoizationPolicy` to preserve the most recent `UserUttered` event.
+  Previously, `AugmentedMemoizationPolicy` failed to predict next action after long sequences of actions (longer than `max_history`) because the policy did not have access to the most recent user message.
+
+
 ## [2.8.21] - 2022-01-07
 ### Bugfixes
 - [#10634](https://github.com/rasahq/rasa/issues/10634): Add `RASA_ENVIRONMENT` header in Kafka only if the environmental variable is set.

@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3.0"
 session_config:
   session_expiration_time: 360
   carry_over_slots_to_new_session: True
@@ -7,6 +7,7 @@ intents:
 - run_finish
 - run_finish_recent
 - run_finished
+- chitchat
 
 actions: 
 - utter_run_finish
@@ -15,8 +16,15 @@ actions:
 
 entities:
 - pistachio_robot
-- caramel_robot
-- rum_and_raisin_robot
+- caramel_robot:
+    roles:
+      - sauce
+      - chips
+- rum_and_raisin_robot:
+    groups:
+      - rum
+      - raisin
+
 
 forms:
   robot_form:

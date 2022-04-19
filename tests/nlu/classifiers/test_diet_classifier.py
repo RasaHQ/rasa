@@ -1,9 +1,13 @@
+from dataclasses import dataclass
+import itertools
 from pathlib import Path
+import copy
 
 import numpy as np
 import pytest
 from unittest.mock import Mock
-from typing import List, Text, Dict, Any
+
+from typing import List, Set, Text, Dict, Any, Tuple
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
@@ -12,19 +16,29 @@ from rasa.shared.nlu.training_data.features import Features
 import rasa.nlu.train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.constants import (
+    BILOU_ENTITIES,
+    TOKENS_NAMES,
+)
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.utils.tensorflow.constants import (
+    FEATURIZERS,
     LOSS_TYPE,
+    MASK,
     RANDOM_SEED,
     RANKING_LENGTH,
     EPOCHS,
     MASKED_LM,
+    SENTENCE,
+    SEQUENCE,
+    SEQUENCE_LENGTH,
     TENSORBOARD_LOG_LEVEL,
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
@@ -46,7 +60,18 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data.loading import load_data
+from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
+from rasa.utils.tensorflow.models import LABEL_KEY, LABEL_SUB_KEY
+from tests.nlu.dummy_data.dummy_features import (
+    ConcatenatedFeaturizations,
+    DummyFeatures,
+    FeaturizerDescription,
+)
+from tests.nlu.dummy_data.dummy_nlu_data import (
+    TextIntentAndEntitiesDummy,
+    IntentAndEntitiesEncodings,
+)
 
 
 def test_compute_default_label_features():
@@ -1043,3 +1068,341 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
             model_to_finetune=loaded,
         )
         assert trained.pipeline
+
+
+class TextIntentAndEntitiesTestRuns:
+    """Describes all test cases using the `TextIntentAndEntitiesDummy`."""
+
+    CONFIGURATIONS = [
+        {
+            "component_config": {
+                INTENT_CLASSIFICATION: intent_classification,
+                ENTITY_RECOGNITION: entity_recognition,
+                FEATURIZERS: used_featurizers,
+                BILOU_FLAG: bilou_tagging,
+                EPOCHS: 1,
+                CONSTRAIN_SIMILARITIES: True,
+            },
+            "input_contains_features_for_intent": featurize_intent,
+            "attributes_without_sentence_features": skip_sentence_features,
+        }
+        for skip_sentence_features in [set(), {TEXT}, {INTENT}, {TEXT, INTENT}]
+        for used_featurizers in [None, ["3", "1"]]  # switch order and skip one
+        for (
+            featurize_intent,
+            intent_classification,
+            entity_recognition,
+            bilou_tagging,
+        ) in itertools.product([True, False], repeat=4)
+        # skip if there's no goal
+        if (intent_classification or entity_recognition)
+        # skip bilou tagging without entities enabled
+        and not (bilou_tagging and not entity_recognition)
+        # skip intent featurization tests if we don't do intent featurization
+        and not (not intent_classification and featurize_intent)
+        # skip when we want to skip sentence features for intents but there are none
+        and not (INTENT in skip_sentence_features and not featurize_intent)
+        # skip some more (no interesting combinations)
+        and not (len(skip_sentence_features) > 0 and used_featurizers is None)
+    ]
+
+    @dataclass
+    class TestRunData:
+        # generator used to create dummy data and features
+        meta: TextIntentAndEntitiesDummy
+        # dummy data used for this test run
+        messages: List[Message]
+        # features created for each message as used by the intent classifier
+        # (i.e. features of `used_featurizers` are concatenated per feature type and
+        # sparseness property)
+        concatenated_features: List[ConcatenatedFeaturizations]
+        trained_model: DIETClassifier
+        # Each test run prepares data for training, `label_data` and prediction.
+        # We collect the results for each of these tasks separately, i.e. the
+        # used messages (inputs), resulting rasa model data (output) and the
+        # expected results (e.g. which indices from the input are to be used).
+        sub_results: Dict[
+            Text, Tuple[List[Message], RasaModelData, IntentAndEntitiesEncodings]
+        ]
+
+    @staticmethod
+    def run(
+        component_config: Dict[Text, Any],
+        input_contains_features_for_intent: bool,
+        attributes_without_sentence_features: Set[Text],
+    ) -> TestRunData:
+        """Creates a model and prepares `TextIntentAndEntitiesData` dummy data."""
+        # Create dummy data
+        dummy_data = TextIntentAndEntitiesDummy(
+            featurize_intents=input_contains_features_for_intent,
+            no_sentence_features=attributes_without_sentence_features,
+        )
+        original_messages = dummy_data.create_messages()
+        dummy_data.featurize_messages(original_messages)
+        concatenated_features = dummy_data.create_and_concatenate_features(
+            messages=original_messages, used_featurizers=component_config[FEATURIZERS],
+        )
+        expected_results = dummy_data.intent_classifier_usage()
+
+        # Create the model
+        model = DIETClassifier(component_config=component_config)
+
+        # Preprocess training data
+        messages_for_training = copy.deepcopy(original_messages)
+        model_data_for_training = model.preprocess_train_data(
+            training_data=TrainingData(messages_for_training)
+        )
+
+        # Imitate creation of model data during inference time
+        messages_for_prediction = copy.deepcopy(original_messages)
+        model_data_for_prediction = model._create_model_data(
+            messages_for_prediction, training=False,
+        )
+
+        return TextIntentAndEntitiesTestRuns.TestRunData(
+            meta=dummy_data,
+            messages=original_messages,
+            concatenated_features=concatenated_features,
+            trained_model=model,
+            sub_results={
+                "training": (
+                    messages_for_training,
+                    model_data_for_training,
+                    expected_results["training"],
+                ),
+                "label_data": (
+                    original_messages,
+                    model._label_data,
+                    expected_results["label_data"],
+                ),
+                "prediction": (
+                    messages_for_prediction,
+                    model_data_for_prediction,
+                    expected_results["prediction"],
+                ),
+            },
+        )
+
+
+@pytest.mark.parametrize("config", TextIntentAndEntitiesTestRuns.CONFIGURATIONS)
+def test_create_data_label_mapping(config: Dict[Text, Any]):
+    # 1. Note that this mapping is needed by predict, so we test this separately.
+    # 2. Observe that the current version *always* computes this mapping, even if
+    #    intent classification is switched off.
+    test_run = TextIntentAndEntitiesTestRuns.run(**config)
+    _, _, expected_result = test_run.sub_results["label_data"]
+    # Note: we strip spaces here
+    expected = {
+        intent_index: test_run.messages[message_index].get(INTENT).strip()
+        for intent_index, message_index in enumerate(expected_result.indices)
+    }
+    assert test_run.trained_model.index_label_id_mapping == expected
+
+
+@pytest.mark.parametrize("config", TextIntentAndEntitiesTestRuns.CONFIGURATIONS)
+def test_create_data_subkey_text(config: Dict[Text, Any]):
+    test_run = TextIntentAndEntitiesTestRuns.run(**config)
+
+    for key in test_run.sub_results:
+
+        used_messages, model_data, expected_results = test_run.sub_results[key]
+
+        # no TEXT features
+        if key == "label_data":
+            assert TEXT not in model_data.keys()
+            continue
+
+        # subkeys for TEXT
+        text_features = model_data.get(TEXT)
+        expected_text_sub_keys = {MASK, SEQUENCE, SEQUENCE_LENGTH}
+        if TEXT not in config["attributes_without_sentence_features"]:
+            expected_text_sub_keys.add(SENTENCE)
+        assert set(text_features.keys()) == expected_text_sub_keys
+
+        # subkey: mask (this is a "turn" mask)
+        mask_features_array = text_features.get(MASK)
+        assert len(mask_features_array) == 1
+        mask = np.array(mask_features_array[0])
+        assert mask.shape == (len(expected_results.indices), 1, 1)
+        assert np.all(
+            mask.flatten()
+            == [
+                1.0 if used_messages[idx].get(TEXT, None) else 0.0
+                for idx in expected_results.indices
+            ]
+        )
+
+        # subkey: sequence-length
+        length_features_array = text_features.get(SEQUENCE_LENGTH)
+        assert len(length_features_array) == 1
+        lengths = np.array(length_features_array[0])
+        assert lengths.shape == (len(expected_results.indices),)
+        expected_lengths = [
+            len(used_messages[idx].get(TOKENS_NAMES[TEXT], []))
+            for idx in expected_results.indices
+        ]
+        assert np.all(lengths == expected_lengths)
+
+        # subkey: sequence and possibly sentence (see above)
+        DummyFeatures.compare_with_feature_arrays(
+            expected=[
+                test_run.concatenated_features[TEXT][idx]
+                for idx in expected_results.indices
+            ],
+            actual=text_features,
+        )
+
+        # sparse feature sizes
+        used_featurizer_names = config["component_config"][FEATURIZERS]
+        all_featurizers: List[FeaturizerDescription] = test_run.meta.featurizers
+        sparse_used_featurizers = [
+            d
+            for d in all_featurizers
+            if d.is_sparse
+            and ((used_featurizer_names is None) or (d.name in used_featurizer_names))
+        ]
+        actual_sizes_by_type = model_data.sparse_feature_sizes[TEXT]
+        assert np.all(
+            actual_sizes_by_type[FEATURE_TYPE_SEQUENCE]
+            == [d.sequence_dim for d in sparse_used_featurizers]
+        )
+        if SENTENCE in expected_text_sub_keys:
+            assert np.all(
+                actual_sizes_by_type[FEATURE_TYPE_SENTENCE]
+                == [d.sentence_dim for d in sparse_used_featurizers]
+            )
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        config
+        for config in TextIntentAndEntitiesTestRuns.CONFIGURATIONS
+        if config["component_config"].get(INTENT_CLASSIFICATION)
+    ],
+)
+def test_create_data_subkey_label(config: Dict[Text, Any]):
+    test_run = TextIntentAndEntitiesTestRuns.run(**config)
+    input_contains_features_for_intent = config["input_contains_features_for_intent"]
+
+    for key in test_run.sub_results:
+
+        used_messages, model_data, expected_results = test_run.sub_results[key]
+        has_mask_features = key != "label_data"
+
+        # no label data
+        if key == "prediction":
+            # ... even though there is intent information in the data
+            assert any(INTENT in message.data for message in used_messages)
+            assert LABEL_KEY not in model_data.keys()
+            continue
+
+        # subkeys for label
+        expected_label_subkeys = {LABEL_SUB_KEY}
+        if has_mask_features:
+            expected_label_subkeys.add(MASK)
+        if input_contains_features_for_intent:
+            expected_label_subkeys.update({SEQUENCE, SEQUENCE_LENGTH})
+            if INTENT not in config["attributes_without_sentence_features"]:
+                expected_label_subkeys.add(SENTENCE)
+        else:
+            expected_label_subkeys.update({SENTENCE})
+        label_features = model_data.get(LABEL_KEY)
+        assert set(label_features.keys()) == expected_label_subkeys
+
+        # subkey: mask (this is a "turn" mask, hence all masks are just "[1]")
+        if has_mask_features:
+            assert len(label_features.get(MASK)) == 1
+            mask = np.array(label_features.get(MASK)[0])
+            assert np.all(mask == [1] * len(expected_results.indices))
+
+        # subkey: label_sub_key / id
+        id_features_array = label_features.get(LABEL_SUB_KEY)
+        assert len(id_features_array) == 1
+        id_features = np.array(id_features_array[0])
+        assert np.all(id_features == [[id] for id in expected_results.intents_ids])
+
+        # - subkey: sentence
+        if not input_contains_features_for_intent:
+            # - subkey: sequence and sequence length
+            assert SEQUENCE not in label_features
+            assert SEQUENCE_LENGTH not in label_features
+            # - subkey: sentence
+            sentence_feature_array = label_features.get(SENTENCE)
+            assert len(sentence_feature_array) == 1
+            generated_label_features = np.array(sentence_feature_array[0])
+            assert np.all(generated_label_features == expected_results.intents_mhot)
+        else:
+            # - subkey: sequence-length
+            length_feature_array = label_features.get(SEQUENCE_LENGTH)
+            assert len(length_feature_array) == 1
+            lengths = np.array(length_feature_array[0])
+            expected_lengths = [
+                len(used_messages[idx].get(TOKENS_NAMES[INTENT], []))
+                for idx in expected_results.indices
+            ]
+            assert np.all(lengths == expected_lengths)
+            # - subkeys: sequence and possibly sentence (see above)
+            DummyFeatures.compare_with_feature_arrays(
+                expected=[
+                    test_run.concatenated_features[INTENT][idx]
+                    for idx in expected_results.indices
+                ],
+                actual=label_features,
+            )
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        config
+        for config in TextIntentAndEntitiesTestRuns.CONFIGURATIONS
+        if config["component_config"].get(ENTITY_RECOGNITION)
+    ],
+)
+def test_create_data_subkey_entities(config: Dict[Text, Any]):
+    test_run = TextIntentAndEntitiesTestRuns.run(**config)
+    component_config = config["component_config"]
+
+    for key in test_run.sub_results:
+        used_messages, model_data, expected_results = test_run.sub_results[key]
+
+        # no entities
+        if key in ["label_data", "prediction"]:
+            assert any(ENTITIES in message.data for message in used_messages)
+            assert ENTITIES not in model_data.keys()
+            continue
+
+        # sub-keys for ENTITIES
+        expected_entity_sub_keys = {ENTITY_ATTRIBUTE_TYPE, MASK}
+        entity_features = model_data.get(ENTITIES)
+        assert entity_features
+        assert set(entity_features.keys()) == expected_entity_sub_keys
+        for key in entity_features:
+            assert len(entity_features.get(key)) == 1
+            assert isinstance(entity_features.get(key)[0], FeatureArray)
+
+        # subkey: mask  (this is a "turn" mask, hence all masks are just "[1]")
+        mask = np.array(entity_features.get(MASK)[0])
+        expected_mask = [1] * len(used_messages)
+        assert np.all(mask == expected_mask)
+
+        # subkey: entities
+        entity_sub_features = entity_features[ENTITY_ATTRIBUTE_TYPE][0]
+        assert len(entity_sub_features) == len(expected_results.indices)
+        for idx, orig_idx in enumerate(expected_results.indices):
+            if component_config.get(BILOU_FLAG):
+                assert np.all(
+                    np.array(entity_sub_features[idx]).flatten()
+                    == expected_results.entities_bilou_ids[idx]
+                )
+                assert (
+                    used_messages[orig_idx].get(BILOU_ENTITIES)
+                    == expected_results.entities_bilou_tags[idx]
+                )
+            else:
+                assert np.all(
+                    np.array(entity_sub_features[idx]).flatten()
+                    == expected_results.entities_ids[idx]
+                )
+                assert not used_messages[orig_idx].get(BILOU_ENTITIES)

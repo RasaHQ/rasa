@@ -686,6 +686,7 @@ def test_domain_from_multiple_files():
         "are_you_there",
         "back",
         "bot_challenge",
+        "chitchat",
         "cure_network",
         "delay",
         "deny",
@@ -826,7 +827,7 @@ def test_domain_from_multiple_files():
         domain_slots.append(slot.name)
 
     assert expected_intents == domain.intents
-    assert expected_entities == domain.entities
+    assert expected_entities == sorted(domain.entities)
     assert expected_actions == domain.user_actions
     assert expected_responses == domain.responses
     assert expected_forms == domain.forms

@@ -49,7 +49,33 @@ class Message:
             self.output_properties = set()
         self.output_properties.add(TEXT)
 
+    def __repr__(self) -> Text:
+        return (
+            f"{self.__class__.__name__}("
+            f"data={self.data}, "
+            f"output_properties={self.output_properties}, "
+            f"time={self.time}, "
+            f"features={self.features}"
+            f")"
+        )
+
+    def __str__(self) -> Text:
+        features_str = "".join(str(features) for features in self.features)
+        return (
+            f"{self.__class__.__name__}("
+            f"data={self.data}, "
+            f"output_properties={self.output_properties}, "
+            f"time={self.time}, "
+            f"features={features_str}"
+            f")"
+        )
+
     def add_features(self, features: Optional["Features"]) -> None:
+        """Adds the given features to the message.
+
+        Args:
+            features: the features to be added
+        """
         if features is not None:
             self.features.append(features)
 
