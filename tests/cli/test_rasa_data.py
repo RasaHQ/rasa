@@ -57,6 +57,7 @@ def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
 
 
 def test_data_convert_nlu_json(run_in_simple_project: Callable[..., RunResult]):
+
     result = run_in_simple_project(
         "data",
         "convert",
