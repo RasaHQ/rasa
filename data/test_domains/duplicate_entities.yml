@@ -2,18 +2,24 @@ intents:
  - greet
  - default
  - goodbye
- - default
- - goodbye
 
 slots:
   cuisine:
     type: text
+    mappings:
+      - type: from_entity
+        entity: cuisine
   location:
     type: text
+    mappings:
+      - type: from_entity
+        entity: location
 
 entities:
  - name
  - name
+ - cuisine
+ - location
 
 responses:
   utter_greet:

@@ -5,17 +5,13 @@ import pytest
 from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
-from rasa.core.policies import SimplePolicyEnsemble
-from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import ClientResponseError
 
 
 @pytest.mark.timeout(300, func_only=True)
-async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
-    agent = Agent.load(unpacked_trained_moodbot_path)
+async def test_moodbot_example(trained_moodbot_path: Text):
+    agent = Agent.load(trained_moodbot_path)
 
     responses = await agent.handle_text("/greet")
     assert responses[0]["text"] == "Hey! How are you?"
@@ -33,14 +29,6 @@ async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     assert agent.domain.responses == moodbot_domain.responses
     assert [s.name for s in agent.domain.slots] == [
         s.name for s in moodbot_domain.slots
-    ]
-
-    # test policies
-    assert isinstance(agent.policy_ensemble, SimplePolicyEnsemble)
-    assert [type(p) for p in agent.policy_ensemble.policies] == [
-        TEDPolicy,
-        MemoizationPolicy,
-        RulePolicy,
     ]
 
 

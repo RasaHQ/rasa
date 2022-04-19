@@ -123,8 +123,8 @@ class FileReader(GraphComponent):
 
 
 class ExecutionContextAware(GraphComponent):
-    def __init__(self, model_id: Text) -> None:
-        self.model_id = model_id
+    def __init__(self, execution_context: ExecutionContext) -> None:
+        self._execution_context = execution_context
 
     @classmethod
     def create(
@@ -135,10 +135,10 @@ class ExecutionContextAware(GraphComponent):
         execution_context: ExecutionContext,
         **kwargs: Any,
     ) -> ExecutionContextAware:
-        return cls(execution_context.model_id)
+        return cls(execution_context)
 
-    def get_model_id(self) -> Text:
-        return self.model_id
+    def get_execution_context(self) -> ExecutionContext:
+        return self._execution_context
 
 
 class PersistableTestComponent(GraphComponent):
@@ -226,7 +226,11 @@ class CacheableText:
 
     @classmethod
     def from_cache(
-        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+        cls,
+        node_name: Text,
+        directory: Path,
+        model_storage: ModelStorage,
+        output_fingerprint: Text,
     ) -> CacheableText:
         text = rasa.shared.utils.io.read_file(directory / "my_file.txt")
         return cls(text=text)
@@ -258,4 +262,4 @@ class CacheableComponent(GraphComponent):
         return cls(config["prefix"])
 
     def run(self, suffix: Text):
-        return CacheableText(self.prefix + suffix)
+        return CacheableText(self.prefix + str(suffix))

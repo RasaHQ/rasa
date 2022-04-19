@@ -12,7 +12,7 @@ import platform
 import sys
 import textwrap
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text, Union
+from typing import Any, Callable, Dict, List, Optional, Text
 import uuid
 import requests
 from terminaltables import SingleTable
@@ -25,6 +25,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
@@ -93,6 +94,10 @@ TELEMETRY_RASA_X_LOCAL_STARTED_EVENT = "Rasa X Local Started"
 TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
+TELEMETRY_MARKERS_EXTRACTION_INITIATED_EVENT = "Markers Extraction Initiated"
+TELEMETRY_MARKERS_EXTRACTED_EVENT = "Markers Extracted"
+TELEMETRY_MARKERS_STATS_COMPUTED_EVENT = "Markers Statistics Computed"
+TELEMETRY_MARKERS_PARSED_COUNT = "Markers Parsed"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -266,6 +271,7 @@ def _fetch_write_key(tool: Text, environment_variable: Text) -> Optional[Text]:
 
 def telemetry_write_key() -> Optional[Text]:
     """Read the Segment write key from the segment key text file.
+
     The segment key text file should by present only in wheel/sdist packaged
     versions of Rasa Open Source. This avoids running telemetry locally when
     developing on Rasa or when running CI builds.
@@ -275,7 +281,6 @@ def telemetry_write_key() -> Optional[Text]:
     Returns:
         Segment write key, if the key file was present.
     """
-
     return _fetch_write_key("segment", TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE)
 
 
@@ -285,7 +290,6 @@ def sentry_write_key() -> Optional[Text]:
     Returns:
         Sentry write key, if the key file was present.
     """
-
     return _fetch_write_key("sentry", EXCEPTION_WRITE_KEY_ENVIRONMENT_VARIABLE)
 
 
@@ -373,6 +377,7 @@ def _send_event(
     context: Dict[Text, Any],
 ) -> None:
     """Report the contents segmentof an event to the /track Segment endpoint.
+
     Documentation: https://.com/docs/sources/server/http/
 
     Do not call this function from outside telemetry.py! This function does not
@@ -384,7 +389,6 @@ def _send_event(
         properties: Values to report along the event.
         context: Context information about the event.
     """
-
     payload = segment_request_payload(distinct_id, event_name, properties, context)
 
     if _is_telemetry_debug_enabled():
@@ -449,10 +453,11 @@ def _is_docker() -> bool:
 
 
 def with_default_context_fields(
-    context: Optional[Dict[Text, Any]] = None,
+    context: Optional[Dict[Text, Any]] = None
 ) -> Dict[Text, Any]:
-    """Return a new context dictionary that contains the default field values merged
-    with the provided ones. The default fields contain only the OS information for now.
+    """Return a new context dictionary with default and provided field values merged.
+
+    The default fields contain only the OS information for now.
 
     Args:
         context: Context information about the event.
@@ -471,7 +476,6 @@ def _default_context_fields() -> Dict[Text, Any]:
     Return:
         A new context containing information about the runtime environment.
     """
-
     global TELEMETRY_CONTEXT
 
     if not TELEMETRY_CONTEXT:
@@ -531,12 +535,12 @@ def _track(
 
 def get_telemetry_id() -> Optional[Text]:
     """Return the unique telemetry identifier for this Rasa Open Source install.
+
     The identifier can be any string, but it should be a UUID.
 
     Returns:
         The identifier, if it is configured correctly.
     """
-
     try:
         telemetry_config = (
             rasa_utils.read_global_config_value(CONFIG_FILE_TELEMETRY_KEY) or {}
@@ -555,7 +559,6 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
         is_enabled: `True` if the telemetry reporting should be enabled,
             `False` otherwise.
     """
-
     configuration = rasa_utils.read_global_config_value(CONFIG_FILE_TELEMETRY_KEY)
 
     if configuration:
@@ -564,6 +567,43 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
         configuration = _default_telemetry_configuration(is_enabled)
 
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
+
+
+def filter_errors(
+    event: Optional[Dict[Text, Any]], hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    """Filter errors.
+
+    Args:
+        event: event to be logged to sentry
+        hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data or `None` if the event constitutes
+        an `ImportError` which should be discarded.
+    """
+    if hint and "exc_info" in hint:
+        exc_type, exc_value, tb = hint["exc_info"]
+        if isinstance(exc_value, ImportError):
+            return None
+    return event
+
+
+def before_send(
+    event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    """Strips the sensitive data and filters errors before sending to sentry.
+
+    Args:
+        event: event to be logged to sentry
+        _unused_hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
+    """
+    cleaned_event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
+    return filter_errors(cleaned_event, _unused_hint)
 
 
 def strip_sensitive_data_from_sentry_event(
@@ -612,7 +652,8 @@ def initialize_error_reporting() -> None:
     Exceptions are reported to sentry. We avoid sending any metadata (local
     variables, paths, ...) to make sure we don't compromise any data. Only the
     exception and its stacktrace is logged and only if the exception origins
-    from the `rasa` package."""
+    from the `rasa` package.
+    """
     import sentry_sdk
     from sentry_sdk import configure_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
@@ -634,7 +675,7 @@ def initialize_error_reporting() -> None:
     # and line numbers).
     sentry_sdk.init(
         f"https://{key}.ingest.sentry.io/2801673",
-        before_send=strip_sensitive_data_from_sentry_event,
+        before_send=before_send,
         integrations=[
             ExcepthookIntegration(),
             DedupeIntegration(),
@@ -702,6 +743,11 @@ def track_model_training(
     nlu_data = training_data.get_nlu_data()
     domain = training_data.get_domain()
     count_conditional_responses = domain.count_conditional_response_variations()
+    (
+        count_total_mappings,
+        count_custom_mappings,
+        count_conditional_mappings,
+    ) = domain.count_slot_mapping_statistics()
 
     training_id = uuid.uuid4().hex
 
@@ -715,6 +761,8 @@ def track_model_training(
             "type": model_type,
             "pipeline": config.get("pipeline"),
             "policies": config.get("policies"),
+            "train_schema": config.get("train_schema"),
+            "predict_schema": config.get("predict_schema"),
             "num_intent_examples": len(nlu_data.intent_examples),
             "num_entity_examples": len(nlu_data.entity_examples),
             "num_actions": len(domain.action_names_or_texts),
@@ -722,6 +770,9 @@ def track_model_training(
             # 'templates' in the domain
             "num_templates": len(domain.responses),
             "num_conditional_response_variations": count_conditional_responses,
+            "num_slot_mappings": count_total_mappings,
+            "num_custom_slot_mappings": count_custom_mappings,
+            "num_conditional_slot_mappings": count_conditional_mappings,
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),
@@ -731,6 +782,7 @@ def track_model_training(
             "num_synonyms": len(nlu_data.entity_synonyms),
             "num_regexes": len(nlu_data.regex_features),
             "is_finetuning": is_finetuning,
+            "recipe": config.get("recipe"),
         },
     )
     start = datetime.now()
@@ -835,7 +887,7 @@ def track_server_start(
     number_of_workers: int,
     is_api_enabled: bool,
 ) -> None:
-    """Track when a user starts a rasa server.
+    """Tracks when a user starts a rasa server.
 
     Args:
         input_channels: Used input channels
@@ -848,16 +900,18 @@ def track_server_start(
 
     def project_fingerprint_from_model(
         _model_directory: Optional[Text],
-    ) -> Optional[Union[Text, List[Text], int, float]]:
-        """Get project fingerprint from an app's loaded model."""
-        if _model_directory:
-            try:
-                with model.get_model(_model_directory) as unpacked_model:
-                    fingerprint = model.fingerprint_from_path(unpacked_model)
-                    return fingerprint.get(model.FINGERPRINT_PROJECT)
-            except Exception:
-                return None
-        return None
+    ) -> Optional[Text]:
+        """Gets project fingerprint from an app's loaded model."""
+        if not model_directory:
+            return None
+
+        try:
+            model_archive = model.get_local_model(_model_directory)
+            metadata = LocalModelStorage.metadata_from_archive(model_archive)
+
+            return metadata.project_fingerprint
+        except Exception:
+            return None
 
     if not endpoints:
         endpoints = AvailableEndpoints()
@@ -905,7 +959,8 @@ def track_shell_started(model_type: Text) -> None:
     """Track when a user starts a bot using rasa shell.
 
     Args:
-        model_type: Type of the model, core / nlu or rasa."""
+        model_type: Type of the model, core / nlu or rasa.
+    """
     _track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type})
 
 
@@ -930,11 +985,18 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
         e2e: indicator if tests running in end to end mode
         agent: Agent of the model getting tested
     """
-    fingerprint = model.fingerprint_from_path(agent.model_directory or "")
-    project = fingerprint.get(model.FINGERPRINT_PROJECT)
+    if agent.processor is None:
+        project_fingerprint = ""
+    else:
+        project_fingerprint = agent.processor.model_metadata.project_fingerprint
+
     _track(
         TELEMETRY_TEST_CORE_EVENT,
-        {"project": project, "end_to_end": e2e, "num_story_steps": num_story_steps},
+        {
+            "project": project_fingerprint,
+            "end_to_end": e2e,
+            "num_story_steps": num_story_steps,
+        },
     )
 
 
@@ -953,5 +1015,70 @@ def track_nlu_model_test(test_data: "TrainingData") -> None:
             "num_lookup_tables": len(test_data.lookup_tables),
             "num_synonyms": len(test_data.entity_synonyms),
             "num_regexes": len(test_data.regex_features),
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_extraction_initiated(
+    strategy: Text, only_extract: bool, seed: bool, count: Optional[int]
+) -> None:
+    """Track when a user tries to extract success markers.
+
+    Args:
+        strategy: The strategy the user is using for tracker selection
+        only_extract: Indicates if the user is only extracting markers or also
+                      producing stats
+        seed: Indicates if the user used a seed for this attempt
+        count: (Optional) The number of trackers the user is trying to select.
+    """
+    _track(
+        TELEMETRY_MARKERS_EXTRACTION_INITIATED_EVENT,
+        {
+            "strategy": strategy,
+            "only_extract": only_extract,
+            "seed": seed,
+            "count": count,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_extracted(trackers_count: int) -> None:
+    """Track when markers have been extracted by a user.
+
+    Args:
+        trackers_count: The actual number of trackers processed
+    """
+    _track(TELEMETRY_MARKERS_EXTRACTED_EVENT, {"trackers_count": trackers_count})
+
+
+@ensure_telemetry_enabled
+def track_markers_stats_computed(trackers_count: int) -> None:
+    """Track when stats over markers have been computed by a user.
+
+    Args:
+        trackers_count: The actual number of trackers processed
+    """
+    _track(TELEMETRY_MARKERS_STATS_COMPUTED_EVENT, {"trackers_count": trackers_count})
+
+
+@ensure_telemetry_enabled
+def track_markers_parsed_count(
+    marker_count: int, max_depth: int, branching_factor: int
+) -> None:
+    """Track when markers have been successfully parsed from config.
+
+    Args:
+        marker_count: The number of markers found in the config
+        max_depth: The maximum depth of any marker in the config
+        branching_factor: The maximum number of children of any marker in the config.
+    """
+    _track(
+        TELEMETRY_MARKERS_PARSED_COUNT,
+        {
+            "marker_count": marker_count,
+            "max_depth": max_depth,
+            "branching_factor": branching_factor,
         },
     )

@@ -103,6 +103,8 @@ mapping:
                 sequence:
                 - type: "map"
                   mapping: *intent_and_entities
+                - type: "map"
+                  mapping: *slot_was_set_seq
   rules:
     type: "seq"
     matching: "any"

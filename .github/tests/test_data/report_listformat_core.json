@@ -1,0 +1,70 @@
+{
+  "RasaHQ/retail-demo": {
+    "Rules + Memo + TED": [{
+      "accelerator_type": "GPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "8226b51b4312aa4d3723098cf6d4028feea040b4",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "external_dataset_repository": true,
+      "story_prediction": {
+        "accuracy": 1.0,
+        "conversation_accuracy": {
+          "accuracy": 1.0,
+          "correct": 9,
+          "total": 9,
+          "with_warnings": 0
+        },
+        "macro avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 67
+        },
+        "weighted avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 67
+        }
+      },
+      "test_run_time": "31s",
+      "total_run_time": "4m57s",
+      "train_run_time": "4m27s",
+      "type": "core"
+    },
+    {
+      "accelerator_type": "GPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "8226b51b4312aa4d3723098cf6d4028feea040b4",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "external_dataset_repository": true,
+      "story_prediction": {
+        "accuracy": 1.0,
+        "conversation_accuracy": {
+          "accuracy": 1.0,
+          "correct": 9,
+          "total": 9,
+          "with_warnings": 0
+        },
+        "macro avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 67
+        },
+        "weighted avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 67
+        }
+      },
+      "test_run_time": "41s",
+      "total_run_time": "5m57s",
+      "train_run_time": "5m27s",
+      "type": "core"
+    }]
+  }
+}

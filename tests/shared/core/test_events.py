@@ -49,7 +49,7 @@ from rasa.shared.core.events import (
     LegacyFormValidation,
     format_message,
 )
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
 
 
@@ -172,6 +172,20 @@ def test_json_parse_user():
     )
 
 
+def test_json_parse_action_executed_with_no_hide_rule():
+    evt = {
+        "event": "action",
+        "name": "action_listen",
+        "policy": None,
+        "confidence": None,
+        "timestamp": None,
+    }
+    deserialised: ActionExecuted = Event.from_parameters(evt)
+    expected = ActionExecuted("action_listen")
+    assert deserialised == expected
+    assert deserialised.hide_rule_turn == expected.hide_rule_turn
+
+
 def test_json_parse_bot():
     evt = {"event": "bot", "text": "Hey there!", "data": {}}
     assert Event.from_parameters(evt) == BotUttered("Hey there!", {})
@@ -291,34 +305,41 @@ def test_correct_timestamp_setting(event_class):
 @pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
 def test_event_metadata_dict(event_class: Type[Event]):
     metadata = {"foo": "bar", "quux": 42}
+    parameters = {
+        "metadata": metadata,
+        "event": event_class.type_name,
+        "parse_data": {},
+        "date_time": "2019-11-20T16:09:16Z",
+    }
+    # `ActionExecuted` class and its subclasses require either that action_name
+    # is not None if it is not an end-to-end predicted action
+    if event_class.type_name in ["action", "wrong_action", "warning_predicted"]:
+        parameters["name"] = "test"
 
     # Create the event from a `dict` that will be accepted by the
     # `_from_parameters` method of any `Event` subclass (the values themselves
     # are not important).
-    event = Event.from_parameters(
-        {
-            "metadata": metadata,
-            "event": event_class.type_name,
-            "parse_data": {},
-            "date_time": "2019-11-20T16:09:16Z",
-        }
-    )
+    event = Event.from_parameters(parameters)
     assert event.as_dict()["metadata"] == metadata
 
 
 @pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
 def test_event_default_metadata(event_class: Type[Event]):
+    parameters = {
+        "event": event_class.type_name,
+        "parse_data": {},
+        "date_time": "2019-11-20T16:09:16Z",
+    }
+    # `ActionExecuted` class and its subclasses require either that action_name
+    # is not None if it is not an end-to-end predicted action
+    if event_class.type_name in ["action", "wrong_action", "warning_predicted"]:
+        parameters["name"] = "test"
+
     # Create an event without metadata. When converting the `Event` to a
     # `dict`, it should not include a `metadata` property - unless it's a
     # `UserUttered` or a `BotUttered` event (or subclasses of them), in which
     # case the metadata should be included with a default value of {}.
-    event = Event.from_parameters(
-        {
-            "event": event_class.type_name,
-            "parse_data": {},
-            "date_time": "2019-11-20T16:09:16Z",
-        }
-    )
+    event = Event.from_parameters(parameters)
 
     if isinstance(event, BotUttered) or isinstance(event, UserUttered):
         assert event.as_dict()["metadata"] == {}
@@ -357,19 +378,19 @@ def test_md_format_message_using_short_entity_syntax():
 
 def test_md_format_message_using_short_entity_syntax_no_start_end():
     formatted = format_message(
-        "hello", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+        "hello", intent="location", entities=[{"entity": "city", "value": "Berlin"}]
     )
     assert formatted == "hello"
 
 
 def test_md_format_message_no_text():
-    formatted = format_message("", intent="location", entities=[],)
+    formatted = format_message("", intent="location", entities=[])
     assert formatted == ""
 
 
 def test_md_format_message_using_short_entity_syntax_no_start_end_or_text():
     formatted = format_message(
-        "", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+        "", intent="location", entities=[{"entity": "city", "value": "Berlin"}]
     )
     assert formatted == ""
 
@@ -401,7 +422,7 @@ def test_md_format_message_using_long_entity_syntax_no_start_end():
         intent="location",
         entities=[
             {"start": 10, "end": 16, "entity": "city", "value": "Berlin"},
-            {"entity": "country", "value": "Germany", "role": "destination",},
+            {"entity": "country", "value": "Germany", "role": "destination"},
         ],
     )
     assert formatted == "I am from [Berlin](city)."
@@ -541,16 +562,31 @@ def test_split_events(
             ],
             True,
         ),
+        # also a session start, but with metadata
+        (
+            [
+                ActionExecuted(
+                    ACTION_SESSION_START_NAME,
+                    timestamp=1,
+                    metadata={METADATA_MODEL_ID: "123"},
+                ),
+                SessionStarted(timestamp=2, metadata={METADATA_MODEL_ID: "123"}),
+                ActionExecuted(
+                    ACTION_LISTEN_NAME, timestamp=3, metadata={METADATA_MODEL_ID: "123"}
+                ),
+            ],
+            True,
+        ),
         # providing a single `action_listen` is not a session start
-        ([ActionExecuted(ACTION_LISTEN_NAME, timestamp=3)], False,),
+        ([ActionExecuted(ACTION_LISTEN_NAME, timestamp=3)], False),
         # providing a single `action_session_start` is not a session start
-        ([ActionExecuted(ACTION_SESSION_START_NAME)], False,),
+        ([ActionExecuted(ACTION_SESSION_START_NAME)], False),
         # providing no events is not a session start
-        ([], False,),
+        ([], False),
     ],
 )
 def test_events_begin_with_session_start(
-    test_events: List[Event], begin_with_session_start: bool,
+    test_events: List[Event], begin_with_session_start: bool
 ):
     assert (
         rasa.shared.core.events.do_events_begin_with_session_start(test_events)
@@ -570,7 +606,7 @@ def test_events_begin_with_session_start(
         ),
     ],
 )
-def test_print_end_to_end_events_in_markdown(end_to_end_event: Event):
+def test_print_end_to_end_events(end_to_end_event: Event):
     with pytest.raises(UnsupportedFeatureException):
         end_to_end_event.as_story_string()
 
@@ -623,9 +659,7 @@ def test_print_end_to_end_events_in_markdown(end_to_end_event: Event):
         ),
     ],
 )
-def test_event_executed_comparison(
-    events: List[Event], comparison_result: bool,
-):
+def test_event_executed_comparison(events: List[Event], comparison_result: bool):
     result = all(event == events[0] for event in events)
     assert result == comparison_result
 
@@ -678,7 +712,7 @@ tested_events = [
     UserUttered(
         text="hello",
         parse_data={
-            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
+            "intent": {"name": "greet", "confidence": 0.9604260921478271},
             "entities": [
                 {"entity": "city", "value": "London"},
                 {"entity": "count", "value": 1},
@@ -687,18 +721,14 @@ tested_events = [
             "message_id": "3f4c04602a4947098c574b107d3ccc50",
             "metadata": {},
             "intent_ranking": [
-                {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
-                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748,},
-                {"id": 0, "name": "deny", "confidence": 0.011255578137934208,},
-                {"id": 3, "name": "bot_challenge", "confidence": 0.004019865766167641,},
-                {"id": 4, "name": "affirm", "confidence": 0.002524246694520116,},
-                {"id": 5, "name": "mood_great", "confidence": 0.002214624546468258,},
-                {"id": 6, "name": "chitchat", "confidence": 0.0009614597074687481,},
-                {
-                    "id": 7,
-                    "name": "mood_unhappy",
-                    "confidence": 0.00024030178610701114,
-                },
+                {"name": "greet", "confidence": 0.9604260921478271},
+                {"name": "goodbye", "confidence": 0.01835782080888748},
+                {"name": "deny", "confidence": 0.011255578137934208},
+                {"name": "bot_challenge", "confidence": 0.004019865766167641},
+                {"name": "affirm", "confidence": 0.002524246694520116},
+                {"name": "mood_great", "confidence": 0.002214624546468258},
+                {"name": "chitchat", "confidence": 0.0009614597074687481},
+                {"name": "mood_unhappy", "confidence": 0.00024030178610701114},
             ],
             "response_selector": {
                 "all_retrieval_intents": [],
@@ -740,7 +770,7 @@ tested_events = [
         action_name_target="demo",
         action_text_target="example",
     ),
-    WarningPredictedAction(action_name_prediction="test"),
+    WarningPredictedAction(action_name="action_listen", action_name_prediction="test"),
 ]
 
 
@@ -760,12 +790,14 @@ def test_event_subclasses_are_tested(event_class: Type[Event]):
     assert event_class in subclasses
 
 
-@pytest.mark.parametrize(
-    "event", tested_events,
-)
+@pytest.mark.parametrize("event", tested_events)
 def test_event_fingerprint_uniqueness(event: Event):
     f1 = event.fingerprint()
     event.type_name = "test"
     f2 = event.fingerprint()
 
     assert f1 != f2
+
+
+def test_session_started_event_is_not_serialised():
+    assert SessionStarted().as_story_string() is None

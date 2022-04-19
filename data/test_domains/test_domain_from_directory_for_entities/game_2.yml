@@ -1,0 +1,17 @@
+version: "3.1"
+
+intents:
+  - support_encouraging:
+      use_entities:
+        - automatic_cupcakes
+        - anti_freeze_blankets
+  - certify:
+      use_entities: true
+  - vacationing:
+      ignore_entities:
+        - tornadoes
+
+entities:
+  - automatic_cupcakes
+  - anti_freeze_blankets
+  - tornadoes

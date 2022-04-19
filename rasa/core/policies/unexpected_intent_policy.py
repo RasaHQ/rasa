@@ -1,30 +1,43 @@
+import dataclasses
 import logging
+from pathlib import Path
+from typing import Any, List, Optional, Text, Dict, Type
+
 import numpy as np
 import tensorflow as tf
-from pathlib import Path
-from typing import Any, List, Optional, Text, Dict, Type, TYPE_CHECKING
-
+import rasa.utils.common
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.events import UserUttered, ActionExecuted
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
     ACTION_NAME,
+    SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    IntentMaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import UNLIKELY_INTENT_POLICY_PRIORITY, DIALOGUE
+from rasa.core.constants import (
+    DIALOGUE,
+    POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
+    UNLIKELY_INTENT_POLICY_PRIORITY,
+)
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
@@ -86,46 +99,40 @@ from rasa.utils.tensorflow.constants import (
     LABEL_PAD_ID,
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
-    RANKING_KEY,
-    SCORE_KEY,
-    THRESHOLD_KEY,
-    SEVERITY_KEY,
-    QUERY_INTENT_KEY,
-    NAME,
+    USE_GPU,
 )
 from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.model_data import (
-    RasaModelData,
-    FeatureArray,
-    Data,
-)
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
 
 import rasa.utils.io as io_utils
 from rasa.core.exceptions import RasaCoreException
 from rasa.shared.utils import common
 
-if TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.features import Features
-    from typing_extensions import TypedDict
 
-    RankingCandidateMetadata = TypedDict(
-        "RankingCandidateMetadata",
-        {
-            NAME: Text,
-            SCORE_KEY: float,
-            THRESHOLD_KEY: Optional[float],
-            SEVERITY_KEY: Optional[float],
-        },
-    )
+@dataclasses.dataclass
+class RankingCandidateMetadata:
+    """Dataclass to represent metada for a candidate intent."""
 
-    UnexpecTEDIntentPolicyMetadata = TypedDict(
-        "UnexpecTEDIntentPolicyMetadata",
-        {QUERY_INTENT_KEY: Text, RANKING_KEY: List["RankingCandidateMetadata"]},
-    )
+    name: Text
+    score: float
+    threshold: Optional[float]
+    severity: Optional[float]
+
+
+@dataclasses.dataclass
+class UnexpecTEDIntentPolicyMetadata:
+    """Dataclass to represent policy metadata."""
+
+    query_intent: RankingCandidateMetadata
+    ranking: List[RankingCandidateMetadata]
+
 
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+)
 class UnexpecTEDIntentPolicy(TEDPolicy):
     """`UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
 
@@ -135,148 +142,178 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
     according to the training stories and conversation context.
     """
 
-    # please make sure to update the docs when changing a default parameter
-    defaults = {
-        # ## Architecture of the used neural network
-        # Hidden layer sizes for layers before the embedding layers for user message
-        # and labels.
-        # The number of hidden layers is equal to the length of the corresponding list.
-        HIDDEN_LAYERS_SIZES: {TEXT: []},
-        # Dense dimension to use for sparse features.
-        DENSE_DIMENSION: {
-            TEXT: 128,
-            INTENT: 20,
-            ACTION_NAME: 20,
-            ENTITIES: 20,
-            SLOTS: 20,
-            ACTIVE_LOOP: 20,
-            f"{LABEL}_{INTENT}": 20,
-        },
-        # Default dimension to use for concatenating sequence and sentence features.
-        CONCAT_DIMENSION: {TEXT: 128},
-        # Dimension size of embedding vectors before the dialogue transformer encoder.
-        ENCODING_DIMENSION: 50,
-        # Number of units in transformer encoders
-        TRANSFORMER_SIZE: {TEXT: 128, DIALOGUE: 128,},
-        # Number of layers in transformer encoders
-        NUM_TRANSFORMER_LAYERS: {TEXT: 1, DIALOGUE: 1,},
-        # Number of attention heads in transformer
-        NUM_HEADS: 4,
-        # If 'True' use key relative embeddings in attention
-        KEY_RELATIVE_ATTENTION: False,
-        # If 'True' use value relative embeddings in attention
-        VALUE_RELATIVE_ATTENTION: False,
-        # Max position for relative embeddings. Only in effect if key- or value relative
-        # attention are turned on
-        MAX_RELATIVE_POSITION: 5,
-        # Use a unidirectional or bidirectional encoder
-        # for `text`, `action_text`, and `label_action_text`.
-        UNIDIRECTIONAL_ENCODER: False,
-        # ## Training parameters
-        # Initial and final batch sizes:
-        # Batch size will be linearly increased for each epoch.
-        BATCH_SIZES: [64, 256],
-        # Strategy used when creating batches.
-        # Can be either 'sequence' or 'balanced'.
-        BATCH_STRATEGY: BALANCED,
-        # Number of epochs to train
-        EPOCHS: 1,
-        # Set random seed to any 'int' to get reproducible results
-        RANDOM_SEED: None,
-        # Initial learning rate for the optimizer
-        LEARNING_RATE: 0.001,
-        # ## Parameters for embeddings
-        # Dimension size of embedding vectors
-        EMBEDDING_DIMENSION: 20,
-        # The number of incorrect labels. The algorithm will minimize
-        # their similarity to the user input during training.
-        NUM_NEG: 20,
-        # Number of intents to store in ranking key of predicted action metadata.
-        # Set this to `0` to include all intents.
-        RANKING_LENGTH: 10,
-        # If 'True' scale loss inverse proportionally to the confidence
-        # of the correct prediction
-        SCALE_LOSS: True,
-        # ## Regularization parameters
-        # The scale of regularization
-        REGULARIZATION_CONSTANT: 0.001,
-        # Dropout rate for embedding layers of dialogue features.
-        DROP_RATE_DIALOGUE: 0.1,
-        # Dropout rate for embedding layers of utterance level features.
-        DROP_RATE: 0.0,
-        # Dropout rate for embedding layers of label, e.g. action, features.
-        DROP_RATE_LABEL: 0.0,
-        # Dropout rate for attention.
-        DROP_RATE_ATTENTION: 0.0,
-        # Fraction of trainable weights in internal layers.
-        CONNECTION_DENSITY: 0.2,
-        # If 'True' apply dropout to sparse input tensors
-        SPARSE_INPUT_DROPOUT: True,
-        # If 'True' apply dropout to dense input tensors
-        DENSE_INPUT_DROPOUT: True,
-        # If 'True' random tokens of the input message will be masked. Since there is no
-        # related loss term used inside TED, the masking effectively becomes just input
-        # dropout applied to the text of user utterances.
-        MASKED_LM: False,
-        # ## Evaluation parameters
-        # How often calculate validation accuracy.
-        # Small values may hurt performance, e.g. model accuracy.
-        EVAL_NUM_EPOCHS: 20,
-        # How many examples to use for hold out validation set
-        # Large values may hurt performance, e.g. model accuracy.
-        EVAL_NUM_EXAMPLES: 0,
-        # If you want to use tensorboard to visualize training and validation metrics,
-        # set this option to a valid output directory.
-        TENSORBOARD_LOG_DIR: None,
-        # Define when training metrics for tensorboard should be logged.
-        # Either after every epoch or for every training step.
-        # Valid values: 'epoch' and 'batch'
-        TENSORBOARD_LOG_LEVEL: "epoch",
-        # Perform model checkpointing
-        CHECKPOINT_MODEL: False,
-        # Specify what features to use as sequence and sentence features.
-        # By default all features in the pipeline are used.
-        FEATURIZERS: [],
-        # List of intents to ignore for `action_unlikely_intent` prediction.
-        IGNORE_INTENTS_LIST: [],
-        # Tolerance for prediction of `action_unlikely_intent`.
-        # For each intent, the tolerance is the percentage of
-        # negative training instances (trackers for which
-        # the corresponding intent is not the correct label) that
-        # would be ignored by `UnexpecTEDIntentPolicy`. This is converted
-        # into a similarity threshold by identifying the similarity
-        # score for the (1 - tolerance) percentile of negative
-        # examples. Any tracker with a similarity score below this
-        # threshold will trigger an `action_unlikely_intent`.
-        # Higher values of `tolerance` means the policy is more
-        # "tolerant" to surprising paths in conversations and
-        # hence will result in lesser number of `action_unlikely_intent`
-        # triggers. Acceptable values are between 0.0 and 1.0 (inclusive).
-        TOLERANCE: 0.0,
-    }
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the default config (see parent class for full docstring)."""
+        return {
+            # ## Architecture of the used neural network
+            # Hidden layer sizes for layers before the embedding layers for user message
+            # and labels.
+            # The number of hidden layers is equal to the length
+            # of the corresponding list.
+            HIDDEN_LAYERS_SIZES: {TEXT: []},
+            # Dense dimension to use for sparse features.
+            DENSE_DIMENSION: {
+                TEXT: 128,
+                INTENT: 20,
+                ACTION_NAME: 20,
+                ENTITIES: 20,
+                SLOTS: 20,
+                ACTIVE_LOOP: 20,
+                f"{LABEL}_{INTENT}": 20,
+            },
+            # Default dimension to use for concatenating sequence and sentence features.
+            CONCAT_DIMENSION: {TEXT: 128},
+            # Dimension size of embedding vectors before
+            # the dialogue transformer encoder.
+            ENCODING_DIMENSION: 50,
+            # Number of units in transformer encoders
+            TRANSFORMER_SIZE: {TEXT: 128, DIALOGUE: 128},
+            # Number of layers in transformer encoders
+            NUM_TRANSFORMER_LAYERS: {TEXT: 1, DIALOGUE: 1},
+            # Number of attention heads in transformer
+            NUM_HEADS: 4,
+            # If 'True' use key relative embeddings in attention
+            KEY_RELATIVE_ATTENTION: False,
+            # If 'True' use value relative embeddings in attention
+            VALUE_RELATIVE_ATTENTION: False,
+            # Max position for relative embeddings. Only in effect
+            # if key- or value relative attention are turned on
+            MAX_RELATIVE_POSITION: 5,
+            # Use a unidirectional or bidirectional encoder
+            # for `text`, `action_text`, and `label_action_text`.
+            UNIDIRECTIONAL_ENCODER: False,
+            # ## Training parameters
+            # Initial and final batch sizes:
+            # Batch size will be linearly increased for each epoch.
+            BATCH_SIZES: [64, 256],
+            # Strategy used when creating batches.
+            # Can be either 'sequence' or 'balanced'.
+            BATCH_STRATEGY: BALANCED,
+            # Number of epochs to train
+            EPOCHS: 1,
+            # Set random seed to any 'int' to get reproducible results
+            RANDOM_SEED: None,
+            # Initial learning rate for the optimizer
+            LEARNING_RATE: 0.001,
+            # ## Parameters for embeddings
+            # Dimension size of embedding vectors
+            EMBEDDING_DIMENSION: 20,
+            # The number of incorrect labels. The algorithm will minimize
+            # their similarity to the user input during training.
+            NUM_NEG: 20,
+            # Number of intents to store in ranking key of predicted action metadata.
+            # Set this to `0` to include all intents.
+            RANKING_LENGTH: LABEL_RANKING_LENGTH,
+            # If 'True' scale loss inverse proportionally to the confidence
+            # of the correct prediction
+            SCALE_LOSS: True,
+            # ## Regularization parameters
+            # The scale of regularization
+            REGULARIZATION_CONSTANT: 0.001,
+            # Dropout rate for embedding layers of dialogue features.
+            DROP_RATE_DIALOGUE: 0.1,
+            # Dropout rate for embedding layers of utterance level features.
+            DROP_RATE: 0.0,
+            # Dropout rate for embedding layers of label, e.g. action, features.
+            DROP_RATE_LABEL: 0.0,
+            # Dropout rate for attention.
+            DROP_RATE_ATTENTION: 0.0,
+            # Fraction of trainable weights in internal layers.
+            CONNECTION_DENSITY: 0.2,
+            # If 'True' apply dropout to sparse input tensors
+            SPARSE_INPUT_DROPOUT: True,
+            # If 'True' apply dropout to dense input tensors
+            DENSE_INPUT_DROPOUT: True,
+            # If 'True' random tokens of the input message will be masked.
+            # Since there is no related loss term used inside TED, the masking
+            # effectively becomes just input dropout applied to the text of user
+            # utterances.
+            MASKED_LM: False,
+            # ## Evaluation parameters
+            # How often calculate validation accuracy.
+            # Small values may hurt performance, e.g. model accuracy.
+            EVAL_NUM_EPOCHS: 20,
+            # How many examples to use for hold out validation set
+            # Large values may hurt performance, e.g. model accuracy.
+            EVAL_NUM_EXAMPLES: 0,
+            # If you want to use tensorboard to visualize training and validation
+            # metrics, set this option to a valid output directory.
+            TENSORBOARD_LOG_DIR: None,
+            # Define when training metrics for tensorboard should be logged.
+            # Either after every epoch or for every training step.
+            # Valid values: 'epoch' and 'batch'
+            TENSORBOARD_LOG_LEVEL: "epoch",
+            # Perform model checkpointing
+            CHECKPOINT_MODEL: False,
+            # Specify what features to use as sequence and sentence features.
+            # By default all features in the pipeline are used.
+            FEATURIZERS: [],
+            # List of intents to ignore for `action_unlikely_intent` prediction.
+            IGNORE_INTENTS_LIST: [],
+            # Tolerance for prediction of `action_unlikely_intent`.
+            # For each intent, the tolerance is the percentage of
+            # negative training instances (trackers for which
+            # the corresponding intent is not the correct label) that
+            # would be ignored by `UnexpecTEDIntentPolicy`. This is converted
+            # into a similarity threshold by identifying the similarity
+            # score for the (1 - tolerance) percentile of negative
+            # examples. Any tracker with a similarity score below this
+            # threshold will trigger an `action_unlikely_intent`.
+            # Higher values of `tolerance` means the policy is more
+            # "tolerant" to surprising paths in conversations and
+            # hence will result in lesser number of `action_unlikely_intent`
+            # triggers. Acceptable values are between 0.0 and 1.0 (inclusive).
+            TOLERANCE: 0.0,
+            # Split entities by comma, this makes sense e.g. for a list of
+            # ingredients in a recipe, but it doesn't make sense for the parts of
+            # an address
+            SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
+            SIMILARITY_TYPE: INNER,
+            # If set to true, entities are predicted in user utterances.
+            ENTITY_RECOGNITION: False,
+            # 'BILOU_flag' determines whether to use BILOU tagging or not.
+            # If set to 'True' labelling is more rigorous, however more
+            # examples per entity are required.
+            # Rule of thumb: you should have more than 100 examples per entity.
+            BILOU_FLAG: False,
+            # The type of the loss function, either 'cross_entropy' or 'margin'.
+            LOSS_TYPE: CROSS_ENTROPY,
+            # Determines the importance of policies, higher values take precedence
+            POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
+            USE_GPU: True,
+        }
 
     def __init__(
         self,
-        featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = UNLIKELY_INTENT_POLICY_PRIORITY,
-        max_history: Optional[int] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         model: Optional[RasaModel] = None,
-        fake_features: Optional[Dict[Text, List["Features"]]] = None,
+        featurizer: Optional[TrackerFeaturizer] = None,
+        fake_features: Optional[Dict[Text, List[Features]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
-        should_finetune: bool = False,
         label_quantiles: Optional[Dict[int, List[float]]] = None,
-        **kwargs: Any,
-    ) -> None:
+    ):
         """Declares instance variables with default values."""
+        # Set all invalid / non configurable parameters
+        config[ENTITY_RECOGNITION] = False
+        config[BILOU_FLAG] = False
+        config[SIMILARITY_TYPE] = INNER
+        config[LOSS_TYPE] = CROSS_ENTROPY
+        self.config = config
+
         super().__init__(
-            featurizer,
-            priority,
-            max_history,
+            self.config,
+            model_storage,
+            resource,
+            execution_context,
             model,
+            featurizer,
             fake_features,
             entity_tag_specs,
-            should_finetune,
-            **kwargs,
         )
 
         self.label_quantiles = label_quantiles or {}
@@ -287,18 +324,12 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         )
         self.ignore_intent_list = self.config[IGNORE_INTENTS_LIST]
 
-        # Set all invalid / non configurable parameters
-        self.config[ENTITY_RECOGNITION] = False
-        self.config[BILOU_FLAG] = False
-        self.config[SIMILARITY_TYPE] = INNER
-        self.config[LOSS_TYPE] = CROSS_ENTROPY
-
         common.mark_as_experimental_feature("UnexpecTED Intent Policy")
 
-    @staticmethod
-    def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
+    def _standard_featurizer(self) -> IntentMaxHistoryTrackerFeaturizer:
         return IntentMaxHistoryTrackerFeaturizer(
-            IntentTokenizerSingleStateFeaturizer(), max_history=max_history
+            IntentTokenizerSingleStateFeaturizer(),
+            max_history=self.config.get(POLICY_MAX_HISTORY),
         )
 
     @staticmethod
@@ -312,7 +343,6 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     def _auto_update_configuration(self) -> None:
         self.config = train_utils.update_evaluation_parameters(self.config)
-        self.config = train_utils.update_deprecated_sparsity_to_density(self.config)
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
@@ -337,7 +367,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
         label_data.add_lengths(
-            f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE,
+            f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE
         )
         label_ids = np.arange(len(domain.intents))
         label_data.add_features(
@@ -389,7 +419,11 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         # Hence, we first filter out the attributes inside `model_data`
         # to keep only those which should be present during prediction.
         model_prediction_data = self._prepare_data_for_prediction(model_data)
-        prediction_scores = self.model.run_bulk_inference(model_prediction_data)
+        prediction_scores = (
+            self.model.run_bulk_inference(model_prediction_data)
+            if self.model is not None
+            else {}
+        )
         label_id_scores = self._collect_label_id_grouped_scores(
             prediction_scores, label_ids
         )
@@ -454,7 +488,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array, query_intent: Text
-    ) -> "UnexpecTEDIntentPolicyMetadata":
+    ) -> UnexpecTEDIntentPolicyMetadata:
         """Collects metadata to be attached to the predicted action.
 
         Metadata schema looks like this:
@@ -487,23 +521,21 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         query_intent_index = domain.intents.index(query_intent)
 
         def _compile_metadata_for_label(
-            label_name: Text, similarity_score: float, threshold: Optional[float],
-        ) -> "RankingCandidateMetadata":
-            severity = threshold - similarity_score if threshold else None
-            return {
-                NAME: label_name,
-                SCORE_KEY: similarity_score,
-                THRESHOLD_KEY: threshold,
-                SEVERITY_KEY: severity,
-            }
-
-        metadata: "UnexpecTEDIntentPolicyMetadata" = {
-            QUERY_INTENT_KEY: _compile_metadata_for_label(
-                query_intent,
-                similarities[0][domain.intents.index(query_intent)],
-                self.label_thresholds.get(query_intent_index),
+            label_name: Text, similarity_score: float, threshold: Optional[float]
+        ) -> RankingCandidateMetadata:
+            severity = float(threshold - similarity_score) if threshold else None
+            return RankingCandidateMetadata(
+                label_name,
+                float(similarity_score),
+                float(threshold) if threshold else None,
+                severity,
             )
-        }
+
+        query_intent_metadata = _compile_metadata_for_label(
+            query_intent,
+            similarities[0][domain.intents.index(query_intent)],
+            self.label_thresholds.get(query_intent_index),
+        )
 
         # Ranking in descending order of predicted similarities
         sorted_similarities = sorted(
@@ -514,7 +546,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         if self.config[RANKING_LENGTH] > 0:
             sorted_similarities = sorted_similarities[: self.config[RANKING_LENGTH]]
 
-        metadata[RANKING_KEY] = [
+        ranking_metadata = [
             _compile_metadata_for_label(
                 domain.intents[intent_index],
                 similarity,
@@ -523,13 +555,14 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             for intent_index, similarity in sorted_similarities
         ]
 
-        return metadata
+        return UnexpecTEDIntentPolicyMetadata(query_intent_metadata, ranking_metadata)
 
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -537,8 +570,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         Args:
             tracker: Tracker containing past conversation events.
             domain: Domain of the assistant.
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
+            precomputations: Contains precomputed features and attributes.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
@@ -548,13 +582,14 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         # Prediction through the policy is skipped if:
         # 1. If the tracker does not contain any event of type `UserUttered`
-        #    till now.
+        #    till now or the intent of such event is not in domain.
         # 2. There is at least one event of type `ActionExecuted`
         #    after the last `UserUttered` event.
-        if self._should_skip_prediction(tracker):
+        if self._should_skip_prediction(tracker, domain):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
-                f"as either there is no event of type `UserUttered` or "
+                f"as either there is no event of type `UserUttered`, "
+                f"event's intent is new and not in domain or "
                 f"there is an event of type `ActionExecuted` after "
                 f"the last `UserUttered`."
             )
@@ -562,7 +597,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         # create model data from tracker
         tracker_state_features = self._featurize_for_prediction(
-            tracker, domain, interpreter
+            tracker, domain, precomputations, rule_only_data=rule_only_data
         )
 
         model_data = self._create_model_data(tracker_state_features)
@@ -573,7 +608,12 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         sequence_similarities = all_similarities[:, -1, :]
 
         # Check for unlikely intent
-        query_intent = tracker.get_last_event_for(UserUttered).intent_name
+        last_user_uttered_event = tracker.get_last_event_for(UserUttered)
+        query_intent = (
+            last_user_uttered_event.intent_name
+            if last_user_uttered_event is not None
+            else ""
+        )
         is_unlikely_intent = self._check_unlikely_intent(
             domain, sequence_similarities, query_intent
         )
@@ -585,20 +625,25 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         return self._prediction(
             confidences,
-            action_metadata=self._collect_action_metadata(
-                domain, sequence_similarities, query_intent
+            action_metadata=dataclasses.asdict(
+                self._collect_action_metadata(
+                    domain, sequence_similarities, query_intent
+                )
             ),
         )
 
     @staticmethod
-    def _should_skip_prediction(tracker: DialogueStateTracker) -> bool:
+    def _should_skip_prediction(tracker: DialogueStateTracker, domain: Domain) -> bool:
         """Checks if the policy should skip making a prediction.
 
         A prediction can be skipped if:
             1. There is no event of type `UserUttered` in the tracker.
-            2. There is an event of type `ActionExecuted` after the last
+            2. If the `UserUttered` event's intent is new and not in domain
+                (a new intent can be created from rasa interactive and not placed in
+                domain yet)
+            3. There is an event of type `ActionExecuted` after the last
                 `UserUttered` event. This is to prevent the dialogue manager
-                 from getting stuck in a prediction loop.
+                from getting stuck in a prediction loop.
                 For example, if the last `ActionExecuted` event
                 contained `action_unlikely_intent` predicted by
                 `UnexpecTEDIntentPolicy` and
@@ -616,6 +661,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             if isinstance(event, ActionExecuted):
                 return True
             elif isinstance(event, UserUttered):
+                if event.intent_name not in domain.intents:
+                    return True
                 return False
         # No event of type `ActionExecuted` and `UserUttered` means
         # that there is nothing for `UnexpecTEDIntentPolicy` to predict on.
@@ -711,7 +758,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     @staticmethod
     def _collect_label_id_grouped_scores(
-        output_scores: Dict[Text, np.ndarray], label_ids: np.ndarray,
+        output_scores: Dict[Text, np.ndarray], label_ids: np.ndarray
     ) -> Dict[int, Dict[Text, List[float]]]:
         """Collects similarities predicted for each label id.
 
@@ -731,7 +778,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         if LABEL_PAD_ID in unique_label_ids:
             unique_label_ids.remove(LABEL_PAD_ID)
 
-        label_id_scores = {
+        label_id_scores: Dict[int, Dict[Text, List[float]]] = {
             label_id: {POSITIVE_SCORES_KEY: [], NEGATIVE_SCORES_KEY: []}
             for label_id in unique_label_ids
         }
@@ -846,26 +893,30 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = train_utils.override_defaults(cls.defaults, meta)
+        meta = rasa.utils.common.override_defaults(cls.get_default_config(), meta)
         return meta
 
     @classmethod
     def _load_policy_with_model(
         cls,
-        model: "IntentTED",
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         featurizer: TrackerFeaturizer,
+        model: "IntentTED",
         model_utilities: Dict[Text, Any],
-        should_finetune: bool,
     ) -> "UnexpecTEDIntentPolicy":
         return cls(
-            featurizer=featurizer,
-            priority=model_utilities["priority"],
+            config,
+            model_storage,
+            resource,
+            execution_context,
             model=model,
+            featurizer=featurizer,
             fake_features=model_utilities["fake_features"],
             entity_tag_specs=model_utilities["entity_tag_specs"],
-            should_finetune=should_finetune,
             label_quantiles=model_utilities["label_quantiles"],
-            **model_utilities["meta"],
         )
 
 
@@ -877,7 +928,7 @@ class IntentTED(TED):
     """
 
     def _prepare_dot_product_loss(
-        self, name: Text, scale_loss: bool, prefix: Text = "loss",
+        self, name: Text, scale_loss: bool, prefix: Text = "loss"
     ) -> None:
         self._tf_layers[f"{prefix}.{name}"] = self.dot_product_loss_layer(
             self.config[NUM_NEG],

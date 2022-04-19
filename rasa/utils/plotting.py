@@ -221,7 +221,7 @@ def plot_paired_histogram(
     title: Text,
     output_file: Optional[Text] = None,
     num_bins: int = 25,
-    colors: Tuple[Text, Text] = ("#009292", "#920000",),  # (dark cyan, dark red)
+    colors: Tuple[Text, Text] = ("#009292", "#920000"),  # (dark cyan, dark red)
     axes_label: Tuple[Text, Text] = ("Correct", "Wrong"),
     frame_label: Tuple[Text, Text] = ("Number of Samples", "Confidence"),
     density: bool = False,
@@ -258,7 +258,7 @@ def plot_paired_histogram(
             x_pad_fraction=x_pad_fraction,
             y_pad_fraction=y_pad_fraction,
         )
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         rasa.shared.utils.io.raise_warning(
             f"Unable to plot paired histogram '{title}': {e}"
         )

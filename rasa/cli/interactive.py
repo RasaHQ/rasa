@@ -1,17 +1,21 @@
 import argparse
 import logging
 import os
-from typing import List, Optional, Text
+from pathlib import Path
+from typing import List, Optional, Text, Union
 
 from rasa import model
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import interactive as arguments
 import rasa.cli.train as train
 import rasa.cli.utils
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
+from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.cli
 import rasa.utils.common
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +46,7 @@ def add_subparser(
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Starts an interactive learning session model to create new training data "
-        "for a Rasa Core model by chatting. Uses the 'RegexInterpreter', i.e. "
+        "for a Rasa Core model by chatting. Uses the 'RegexMessageHandler', i.e. "
         "`/<intent>` input format.",
     )
     interactive_core_parser.set_defaults(func=interactive, core_only=True)
@@ -65,7 +69,7 @@ def interactive(args: argparse.Namespace) -> None:
                 "data or a model containing core data."
             )
 
-        zipped_model = (
+        zipped_model: Optional[Union[Text, Path]] = (
             train.run_core_training(args)
             if args.core_only
             else train.run_training(args)
@@ -97,7 +101,9 @@ def _set_not_required_args(args: argparse.Namespace) -> None:
 
 
 def perform_interactive_learning(
-    args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter
+    args: argparse.Namespace,
+    zipped_model: Union[Text, "Path"],
+    file_importer: TrainingDataImporter,
 ) -> None:
     """Performs interactive learning.
 
@@ -108,28 +114,27 @@ def perform_interactive_learning(
     """
     from rasa.core.train import do_interactive_learning
 
-    args.model = zipped_model
+    args.model = str(zipped_model)
 
-    with model.unpack_model(zipped_model) as model_path:
-        args.core, args.nlu = model.get_model_subdirectories(model_path)
-        if args.core is None:
-            rasa.shared.utils.cli.print_error_and_exit(
-                "Can not run interactive learning on an NLU-only model."
-            )
-
-        args.endpoints = rasa.cli.utils.get_validated_path(
-            args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+    metadata = LocalModelStorage.metadata_from_archive(zipped_model)
+    if metadata.training_type == TrainingType.NLU:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Can not run interactive learning on an NLU-only model."
         )
 
-        do_interactive_learning(args, file_importer)
+    args.endpoints = rasa.cli.utils.get_validated_path(
+        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+    )
+
+    do_interactive_learning(args, file_importer)
 
 
-def get_provided_model(arg_model: Text) -> Optional[Text]:
+def get_provided_model(arg_model: Text) -> Optional[Union[Text, Path]]:
+    """Checks model path input and selects model from it."""
     model_path = rasa.cli.utils.get_validated_path(
         arg_model, "model", DEFAULT_MODELS_PATH
     )
 
-    if os.path.isdir(model_path):
-        model_path = model.get_latest_model(model_path)
-
-    return model_path
+    return (
+        model.get_latest_model(model_path) if os.path.isdir(model_path) else model_path
+    )

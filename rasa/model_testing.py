@@ -1,24 +1,44 @@
+import copy
 import logging
 import os
-from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
+from typing import (
+    Text,
+    Dict,
+    Optional,
+    List,
+    Any,
+    Iterable,
+    Tuple,
+    Union,
+)
 from pathlib import Path
 
+from rasa.core.agent import Agent
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.common
 from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
-from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.exceptions import ModelNotFound
+from rasa.shared.constants import DEFAULT_RESULTS_PATH
 import rasa.shared.nlu.training_data.loading
-import rasa.shared.importers.autoconfig
+from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
+import rasa.model
 
 
 logger = logging.getLogger(__name__)
 
 
-def test_core_models_in_directory(
+class ClassificationReportException(Exception):
+    """Raised when clf_report doesn't correctly set accuracy and/or micro avg.
+
+    sklearn.metrics.classification_report should provide either accuracy or micro avg.
+    """
+
+
+async def test_core_models_in_directory(
     model_directory: Text,
     stories: Text,
     output: Text,
@@ -37,13 +57,11 @@ def test_core_models_in_directory(
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
-    rasa.utils.common.run_in_loop(
-        compare_models_in_dir(
-            model_directory,
-            stories,
-            output,
-            use_conversation_test_files=use_conversation_test_files,
-        )
+    await compare_models_in_dir(
+        model_directory,
+        stories,
+        output,
+        use_conversation_test_files=use_conversation_test_files,
     )
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
@@ -86,7 +104,6 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     Returns: The adjusted model_directory that should be used in
         `test_core_models_in_directory`.
     """
-    import rasa.model
 
     p = Path(model_directory)
     if p.is_file():
@@ -100,7 +117,7 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     return model_directory
 
 
-def test_core_models(
+async def test_core_models(
     models: List[Text],
     stories: Text,
     output: Text,
@@ -117,17 +134,12 @@ def test_core_models(
     """
     from rasa.core.test import compare_models
 
-    rasa.utils.common.run_in_loop(
-        compare_models(
-            models,
-            stories,
-            output,
-            use_conversation_test_files=use_conversation_test_files,
-        )
+    await compare_models(
+        models, stories, output, use_conversation_test_files=use_conversation_test_files
     )
 
 
-def test_core(
+async def test_core(
     model: Optional[Text] = None,
     stories: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
@@ -135,18 +147,8 @@ def test_core(
     use_conversation_test_files: bool = False,
 ) -> None:
     """Tests a trained Core model against a set of test stories."""
-    import rasa.model
-    from rasa.shared.nlu.interpreter import RegexInterpreter
-    from rasa.core.agent import Agent
-
-    if additional_arguments is None:
-        additional_arguments = {}
-
-    if output:
-        rasa.shared.utils.io.create_directory(output)
-
     try:
-        unpacked_model = rasa.model.get_model(model)
+        model = rasa.model.get_local_model(model)
     except ModelNotFound:
         rasa.shared.utils.cli.print_error(
             "Unable to test: could not find a model. Use 'rasa train' to train a "
@@ -154,21 +156,34 @@ def test_core(
         )
         return
 
-    _agent = Agent.load(unpacked_model)
-
-    if _agent.policy_ensemble is None:
+    metadata = LocalModelStorage.metadata_from_archive(model)
+    if metadata.training_type == TrainingType.NLU:
         rasa.shared.utils.cli.print_error(
-            "Unable to test: could not find a Core model. Use 'rasa train' to train a "
+            "Unable to test: no core model found. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
-
-    if isinstance(_agent.interpreter, RegexInterpreter):
+    elif metadata.training_type == TrainingType.CORE and use_conversation_test_files:
         rasa.shared.utils.cli.print_warning(
-            "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
+            "No NLU model found. Using default 'RegexMessageHandler' for end-to-end "
             "evaluation. If you added actual user messages to your test stories "
             "this will likely lead to the tests failing. In that case, you need "
             "to train a NLU model first, e.g. using `rasa train`."
         )
+
+    if additional_arguments is None:
+        additional_arguments = {}
+
+    if output:
+        rasa.shared.utils.io.create_directory(output)
+
+    _agent = Agent.load(model_path=model)
+
+    if not _agent.is_ready():
+        rasa.shared.utils.cli.print_error(
+            "Unable to test: processor not loaded. Use 'rasa train' to train a "
+            "Rasa model and provide it via the '--model' argument."
+        )
+        return
 
     from rasa.core.test import test as core_test
 
@@ -176,29 +191,25 @@ def test_core(
         additional_arguments, core_test, ["stories", "agent", "e2e"]
     )
 
-    rasa.utils.common.run_in_loop(
-        core_test(
-            stories,
-            _agent,
-            e2e=use_conversation_test_files,
-            out_directory=output,
-            **kwargs,
-        )
+    await core_test(
+        stories, _agent, e2e=use_conversation_test_files, out_directory=output, **kwargs
     )
 
 
-def test_nlu(
+async def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
+    domain_path: Optional[Text] = None,
 ) -> None:
     """Tests the NLU Model."""
     from rasa.nlu.test import run_evaluation
-    from rasa.model import get_model
+
+    rasa.shared.utils.io.create_directory(output_directory)
 
     try:
-        unpacked_model = get_model(model)
+        model = rasa.model.get_local_model(model)
     except ModelNotFound:
         rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
@@ -206,15 +217,20 @@ def test_nlu(
         )
         return
 
-    rasa.shared.utils.io.create_directory(output_directory)
+    metadata = LocalModelStorage.metadata_from_archive(model)
 
-    nlu_model = os.path.join(unpacked_model, "nlu")
-
-    if os.path.exists(nlu_model):
+    if os.path.exists(model) and metadata.training_type != TrainingType.CORE:
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
-        run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
+        _agent = Agent.load(model_path=model)
+        await run_evaluation(
+            nlu_data,
+            _agent.processor,
+            output_directory=output_directory,
+            domain_path=domain_path,
+            **kwargs,
+        )
     else:
         rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
@@ -243,7 +259,7 @@ async def compare_nlu_models(
     bases = [os.path.basename(nlu_config) for nlu_config in configs]
     model_names = [os.path.splitext(base)[0] for base in bases]
 
-    f1_score_results = {
+    f1_score_results: Dict[Text, List[List[float]]] = {
         model_name: [[] for _ in range(runs)] for model_name in model_names
     }
 
@@ -283,7 +299,7 @@ def plot_nlu_results(output_directory: Text, number_of_examples: List[int]) -> N
     )
 
 
-def perform_nlu_cross_validation(
+async def perform_nlu_cross_validation(
     config: Dict[Text, Any],
     data: TrainingData,
     output: Text,
@@ -298,7 +314,6 @@ def perform_nlu_cross_validation(
         additional_arguments: Additional arguments which are passed to the
             cross-validation, like number of `disable_plotting`.
     """
-    import rasa.nlu.config
     from rasa.nlu.test import (
         drop_intents_below_freq,
         cross_validate,
@@ -314,7 +329,7 @@ def perform_nlu_cross_validation(
         additional_arguments, cross_validate
     )
 
-    results, entity_results, response_selection_results = cross_validate(
+    results, entity_results, response_selection_results = await cross_validate(
         data, folds, config, output, **kwargs
     )
     logger.info(f"CV evaluation (n={folds})")
@@ -370,7 +385,48 @@ def get_evaluation_metrics(
     f1 = metrics.f1_score(targets, predictions, labels=labels, average="weighted")
     accuracy = metrics.accuracy_score(targets, predictions)
 
+    if output_dict:
+        report = make_classification_report_complete(report, accuracy)
+
     return report, precision, f1, accuracy
+
+
+def make_classification_report_complete(report: dict, accuracy: float) -> dict:
+    """Completes the sklearn classification report with accuracy xor micro avg.
+
+    Args:
+        report: Report generated by metrics.classification_report with output_dict=True
+        accuracy: Model accuracy
+
+    Raises:
+        Exception: When sklearn.metrics.classification_report
+            behaves different to our expectation.
+
+    Returns:
+        report: Report generated by metrics.classification_report
+            enhanced with accuracy xor micro avg.
+    """
+    report = copy.deepcopy(report)
+    if "accuracy" in report and "micro avg" not in report:
+        # micro avg corresponds to accuracy in this case
+        # and is the same for all metrics
+        acc = report["accuracy"]
+        support = report["macro avg"]["support"]
+        report["micro avg"] = {
+            "precision": acc,
+            "recall": acc,
+            "f1-score": acc,
+            "support": support,
+        }
+    elif "accuracy" not in report and "micro avg" in report:
+        # Due to provided labels, micro avg can have recall != precision
+        # The accuracy therefore has to be inferred separately
+        report["accuracy"] = accuracy
+    else:
+        raise ClassificationReportException(
+            "This cannot happen according to classification_report's docs"
+        )
+    return report
 
 
 def clean_labels(labels: Iterable[Text]) -> List[Text]:

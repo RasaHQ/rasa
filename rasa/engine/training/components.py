@@ -18,9 +18,7 @@ class PrecomputedValueProvider(GraphComponent):
     - values which were provided during the fingerprint run by input nodes
     """
 
-    def __init__(
-        self, output: Cacheable,
-    ):
+    def __init__(self, output: Cacheable):
         """Initializes a `PrecomputedValueProvider`.
 
         Args:
@@ -37,7 +35,7 @@ class PrecomputedValueProvider(GraphComponent):
         execution_context: ExecutionContext,
     ) -> PrecomputedValueProvider:
         """Creates instance (see parent class for full docstring)."""
-        return cls(output=config["output"],)
+        return cls(output=config["output"])
 
     def get_value(self) -> Cacheable:
         """Returns the precomputed output."""
@@ -135,7 +133,10 @@ class FingerprintComponent(GraphComponent):
         """
         fingerprint_key = fingerprinting.calculate_fingerprint_key(
             graph_component_class=self._class_of_replaced_component,
-            config=self._config_of_replaced_component,
+            config={
+                **self._class_of_replaced_component.get_default_config(),
+                **self._config_of_replaced_component,
+            },
             inputs=kwargs,
         )
 

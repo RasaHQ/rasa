@@ -9,7 +9,7 @@ updates:
       separator: "-"
     open-pull-requests-limit: 10
     reviewers:
-      - RasaHQ/enable-squad
+      - RasaHQ/atom-squad
     labels:
       - type:dependencies
     ignore:

@@ -1,0 +1,77 @@
+version: "3.1"
+nlu:
+- intent: affirm
+  examples: |
+    - yes
+    - yep
+    - yeah
+    - indeed
+    - that's right
+    - ok
+    - great
+    - right, thank you
+    - correct
+    - great choice
+    - sounds really good
+- intent: goodbye
+  examples: |
+    - bye
+    - goodbye
+    - good bye
+    - stop
+    - end
+    - farewell
+    - Bye bye
+    - have a good one
+- intent: greet
+  examples: |
+    - hey
+    - howdy
+    - hey there
+    - hello
+    - hi
+    - good morning
+    - good evening
+    - dear sir
+- intent: chitchat/ask_name
+  examples: |
+    - What's your name?
+    - What can I call you?
+- intent: chitchat/ask_weather
+  examples: |
+    - How's the weather?
+    - Is it too hot outside?
+- intent: restaurant_search
+  examples: |
+    - i'm looking for a place in the north of town
+    - show me chinese restaurants
+    - show me chines restaurants in the north
+    - show me a mexican place in the centre
+    - i am looking for an indian spot called olaolaolaolaolaola
+    - anywhere in the west
+    - anywhere near 18328
+    - I am looking for asian fusion food
+    - I am looking a restaurant in 29432
+    - I am looking for mexican indian fusion
+    - central indian restaurant
+    - mexican restaurant in Berlin
+    - are there any indian restaurants in the centre
+    - show me chinese restaurants near the city centre
+    - I am looking for mexican food
+    - I want chinese food
+    - Do you know of any indian places near 18328?
+- synonym: chinese
+  examples: |
+    - chines
+    - Chines
+    - Chinese
+- synonym: vegetarian
+  examples: |
+    - vegg
+    - veggie
+- regex: greet
+  examples: |
+    - hey[^\s]*
+- regex: zipcode
+  examples: |
+    - [0-9]{5}

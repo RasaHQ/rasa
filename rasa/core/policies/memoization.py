@@ -1,3 +1,4 @@
+from __future__ import annotations
 import zlib
 
 import base64
@@ -6,25 +7,38 @@ import logging
 
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
+from pathlib import Path
 
 import rasa.utils.io
 import rasa.shared.utils.io
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
-)
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy, PolicyPrediction
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
+from rasa.shared.exceptions import FileIOException
+from rasa.core.policies.policy import PolicyPrediction, Policy, SupportedData
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
-from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY, DEFAULT_MAX_HISTORY
+from rasa.core.constants import (
+    MEMOIZATION_POLICY_PRIORITY,
+    DEFAULT_MAX_HISTORY,
+    POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
+)
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
 class MemoizationPolicy(Policy):
     """A policy that follows exact examples of `max_history` turns in training stories.
 
@@ -45,44 +59,36 @@ class MemoizationPolicy(Policy):
     training stories for this, use AugmentedMemoizationPolicy.
     """
 
-    ENABLE_FEATURE_STRING_COMPRESSION = True
-
-    USE_NLU_CONFIDENCE_AS_SCORE = False
-
     @staticmethod
-    def _standard_featurizer(
-        max_history: Optional[int] = None,
-    ) -> MaxHistoryTrackerFeaturizer:
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the default config (see parent class for full docstring)."""
+        # please make sure to update the docs when changing a default parameter
+        return {
+            "enable_feature_string_compression": True,
+            "use_nlu_confidence_as_score": False,
+            POLICY_PRIORITY: MEMOIZATION_POLICY_PRIORITY,
+            POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
+        }
+
+    def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=None, max_history=max_history
+            state_featurizer=None, max_history=self.config[POLICY_MAX_HISTORY]
         )
 
     def __init__(
         self,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = MEMOIZATION_POLICY_PRIORITY,
-        max_history: Optional[int] = DEFAULT_MAX_HISTORY,
         lookup: Optional[Dict] = None,
-        **kwargs: Any,
     ) -> None:
-        """Initialize the policy.
-
-        Args:
-            featurizer: tracker featurizer
-            priority: the priority of the policy
-            max_history: maximum history to take into account when featurizing trackers
-            lookup: a dictionary that stores featurized tracker states and
-                predicted actions for them
-        """
-        if not featurizer:
-            featurizer = self._standard_featurizer(max_history)
-
-        super().__init__(featurizer, priority, **kwargs)
-
-        self.max_history = self.featurizer.max_history
-        self.lookup = lookup if lookup is not None else {}
+        """Initialize the policy."""
+        super().__init__(config, model_storage, resource, execution_context, featurizer)
+        self.lookup = lookup or {}
 
     def _create_lookup_from_states(
         self,
@@ -98,8 +104,7 @@ class MemoizationPolicy(Policy):
         Returns:
             lookup dictionary
         """
-
-        lookup = {}
+        lookup: Dict[Text, Text] = {}
 
         if not trackers_as_states:
             return lookup
@@ -136,12 +141,15 @@ class MemoizationPolicy(Policy):
 
         return lookup
 
-    def _create_feature_key(self, states: List[State]) -> Text:
+    def _create_feature_key(self, states: List[State]) -> Optional[Text]:
+        if not states:
+            return None
+
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
-        if self.ENABLE_FEATURE_STRING_COMPRESSION:
+        if self.config["enable_feature_string_compression"]:
             compressed = zlib.compress(
                 bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
             )
@@ -155,15 +163,18 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> None:
+    ) -> Resource:
         # only considers original trackers (no augmented ones)
         training_trackers = [
             t
             for t in training_trackers
             if not hasattr(t, "is_augmented") or not t.is_augmented
         ]
+        training_trackers = SupportedData.trackers_for_supported_data(
+            self.supported_data(), training_trackers
+        )
+
         (
             trackers_as_states,
             trackers_as_actions,
@@ -173,11 +184,18 @@ class MemoizationPolicy(Policy):
         )
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
+        self.persist()
+        return self._resource
+
     def _recall_states(self, states: List[State]) -> Optional[Text]:
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -185,6 +203,8 @@ class MemoizationPolicy(Policy):
             states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             The name of the action.
@@ -196,7 +216,10 @@ class MemoizationPolicy(Policy):
     ) -> List[float]:
         result = self._default_predictions(domain)
         if action_name:
-            if self.USE_NLU_CONFIDENCE_AS_SCORE:
+            if (
+                self.config["use_nlu_confidence_as_score"]
+                and tracker.latest_message is not None
+            ):
                 # the memoization will use the confidence of NLU on the latest
                 # user message to set the confidence of the action
                 score = tracker.latest_message.intent.get("confidence", 1.0)
@@ -211,7 +234,7 @@ class MemoizationPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -219,17 +242,19 @@ class MemoizationPolicy(Policy):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
         """
         result = self._default_predictions(domain)
 
-        states = self._prediction_states(tracker, domain)
+        states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
         logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
-        predicted_action_name = self.recall(states, tracker, domain)
+        predicted_action_name = self.recall(
+            states, tracker, domain, rule_only_data=rule_only_data
+        )
         if predicted_action_name is not None:
             logger.debug(f"There is a memorised next action '{predicted_action_name}'")
             result = self._prediction_result(predicted_action_name, tracker, domain)
@@ -239,20 +264,67 @@ class MemoizationPolicy(Policy):
         return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
-        return {
-            "priority": self.priority,
-            "max_history": self.max_history,
-            "lookup": self.lookup,
-        }
+        return {"lookup": self.lookup}
 
     @classmethod
     def _metadata_filename(cls) -> Text:
         return "memorized_turns.json"
 
+    def persist(self) -> None:
+        """Persists the policy to storage."""
+        with self._model_storage.write_to(self._resource) as path:
+            # not all policies have a featurizer
+            if self.featurizer is not None:
+                self.featurizer.persist(path)
 
+            file = Path(path) / self._metadata_filename()
+
+            rasa.shared.utils.io.create_directory_for_file(file)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
+
+    @classmethod
+    def load(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> MemoizationPolicy:
+        """Loads a trained policy (see parent class for full docstring)."""
+        featurizer = None
+        lookup = None
+
+        try:
+            with model_storage.read_from(resource) as path:
+                metadata_file = Path(path) / cls._metadata_filename()
+                metadata = rasa.shared.utils.io.read_json_file(metadata_file)
+                lookup = metadata["lookup"]
+
+                if (Path(path) / FEATURIZER_FILE).is_file():
+                    featurizer = TrackerFeaturizer.load(path)
+
+        except (ValueError, FileNotFoundError, FileIOException):
+            logger.warning(
+                f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
+                f"metadata couldn't be loaded."
+            )
+
+        return cls(
+            config,
+            model_storage,
+            resource,
+            execution_context,
+            featurizer=featurizer,
+            lookup=lookup,
+        )
+
+
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
 class AugmentedMemoizationPolicy(MemoizationPolicy):
-    """The policy that remembers examples from training stories
-    for `max_history` turns.
+    """The policy that remembers examples from training stories for `max_history` turns.
 
     If it is needed to recall turns from training dialogues
     where some slots might not be set during prediction time,
@@ -268,18 +340,27 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     """
 
     @staticmethod
-    def _back_to_the_future(
+    def _strip_leading_events_until_action_executed(
         tracker: DialogueStateTracker, again: bool = False
     ) -> Optional[DialogueStateTracker]:
-        """Send Marty to the past to get
-        the new featurization for the future"""
+        """Truncates the tracker to begin at the next `ActionExecuted` event.
 
+        Args:
+            tracker: The tracker to truncate.
+            again: When true, truncate tracker at the second action.
+                Otherwise truncate to the first action.
+
+        Returns:
+            The truncated tracker if there were actions present.
+            If none are found, returns `None`.
+        """
         idx_of_first_action = None
         idx_of_second_action = None
 
+        applied_events = tracker.applied_events()
+
         # we need to find second executed action
-        for e_i, event in enumerate(tracker.applied_events()):
-            # find second ActionExecuted
+        for e_i, event in enumerate(applied_events):
             if isinstance(event, ActionExecuted):
                 if idx_of_first_action is None:
                     idx_of_first_action = e_i
@@ -293,37 +374,53 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             return None
 
         # make second ActionExecuted the first one
-        events = tracker.applied_events()[idx_to_use:]
+        events = applied_events[idx_to_use:]
         if not events:
             return None
 
-        mcfly_tracker = tracker.init_copy()
+        truncated_tracker = tracker.init_copy()
         for e in events:
-            mcfly_tracker.update(e)
+            truncated_tracker.update(e)
 
-        return mcfly_tracker
+        return truncated_tracker
 
-    def _recall_using_delorean(
-        self, old_states: List[State], tracker: DialogueStateTracker, domain: Domain,
+    def _recall_using_truncation(
+        self,
+        old_states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> Optional[Text]:
-        """Applies to the future idea to change the past and get the new future.
+        """Attempts to match memorized states to progressively shorter trackers.
 
-        Recursively go to the past to correctly forget slots,
-        and then back to the future to recall.
+        This method iteratively removes the oldest events up to the next action
+        executed and checks if the truncated event sequence matches some memorized
+        states, until a match has been found or until the even sequence has been
+        exhausted.
 
         Args:
             old_states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             The name of the action.
         """
         logger.debug("Launch DeLorean...")
 
-        mcfly_tracker = self._back_to_the_future(tracker)
-        while mcfly_tracker is not None:
-            states = self._prediction_states(mcfly_tracker, domain,)
+        # Truncate the tracker based on `max_history`
+        truncated_tracker: Optional[
+            DialogueStateTracker
+        ] = _trim_tracker_by_max_history(tracker, self.config[POLICY_MAX_HISTORY])
+        truncated_tracker = self._strip_leading_events_until_action_executed(
+            truncated_tracker
+        )
+        while truncated_tracker is not None:
+            states = self._prediction_states(
+                truncated_tracker, domain, rule_only_data=rule_only_data
+            )
 
             if old_states != states:
                 # check if we like new futures
@@ -334,14 +431,20 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 old_states = states
 
             # go back again
-            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True)
+            truncated_tracker = self._strip_leading_events_until_action_executed(
+                truncated_tracker, again=True
+            )
 
         # No match found
         logger.debug(f"Current tracker state {old_states}")
         return None
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -352,6 +455,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             The name of the action.
@@ -359,6 +464,63 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(states, tracker, domain,)
+            return self._recall_using_truncation(
+                states, tracker, domain, rule_only_data=rule_only_data
+            )
         else:
             return predicted_action_name
+
+
+def _get_max_applied_events_for_max_history(
+    tracker: DialogueStateTracker, max_history: Optional[int]
+) -> Optional[int]:
+    """Computes the number of events in the tracker that correspond to max_history.
+
+    To ensure that the last user utterance is correctly included in the prediction
+    states, return the index of the most recent `action_listen` event occuring
+    before the tracker would be truncated according to the value of `max_history`.
+
+    Args:
+        tracker: Some tracker holding the events
+        max_history: The number of actions to count
+
+    Returns:
+        The number of events, as counted from the end of the event list, that should
+        be taken into accout according to the `max_history` setting. If all events
+        should be taken into account, the return value is `None`.
+    """
+    if not max_history:
+        return None
+    num_events = 0
+    num_actions = 0
+    for event in reversed(tracker.applied_events()):
+        num_events += 1
+        if isinstance(event, ActionExecuted):
+            num_actions += 1
+            if num_actions > max_history and event.action_name == ACTION_LISTEN_NAME:
+                return num_events
+    return None
+
+
+def _trim_tracker_by_max_history(
+    tracker: DialogueStateTracker, max_history: Optional[int]
+) -> DialogueStateTracker:
+    """Removes events from the tracker until it has `max_history` actions.
+
+    Args:
+        tracker: Some tracker.
+        max_history: Number of actions to keep.
+
+    Returns:
+        A new tracker with up to `max_history` actions, or the same tracker if
+        `max_history` is `None`.
+    """
+    max_applied_events = _get_max_applied_events_for_max_history(tracker, max_history)
+    if not max_applied_events:
+        return tracker
+
+    applied_events = tracker.applied_events()[-max_applied_events:]
+    new_tracker = tracker.init_copy()
+    for event in applied_events:
+        new_tracker.update(event)
+    return new_tracker

@@ -36,10 +36,8 @@ def nlg_request_format(
     """Create the json body for the NLG json body for the request."""
     tracker_state = tracker.current_state(EventVerbosity.ALL)
 
-    # TODO: Remove `template` by Rasa Open Source 3.0.
     return {
         "response": utter_action,
-        "template": utter_action,
         "arguments": kwargs,
         "tracker": tracker_state,
         "channel": {"name": output_channel},

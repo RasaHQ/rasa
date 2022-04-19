@@ -2,10 +2,9 @@ import json
 import logging
 import os
 import typing
-from typing import Optional, Text, Callable, Dict, Any
+from typing import Optional, Text, Callable, Dict, Any, List
 
 import rasa.shared.utils.io
-from rasa.shared.nlu.training_data.formats import MarkdownReader, NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -25,10 +24,8 @@ logger = logging.getLogger(__name__)
 WIT = "wit"
 LUIS = "luis"
 RASA = "rasa_nlu"
-MARKDOWN = "md"
 RASA_YAML = "rasa_yml"
 UNK = "unk"
-MARKDOWN_NLG = "nlg.md"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
 _json_format_heuristics: Dict[Text, Callable[[Any, Text], bool]] = {
@@ -57,13 +54,13 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
         files = rasa.shared.utils.io.list_files(resource_name)
 
     data_sets = [_load(f, language) for f in files]
-    data_sets = [ds for ds in data_sets if ds]
-    if len(data_sets) == 0:
+    training_data_sets: List[TrainingData] = [ds for ds in data_sets if ds]
+    if len(training_data_sets) == 0:
         training_data = TrainingData()
-    elif len(data_sets) == 1:
-        training_data = data_sets[0]
+    elif len(training_data_sets) == 1:
+        training_data = training_data_sets[0]
     else:
-        training_data = data_sets[0].merge(*data_sets[1:])
+        training_data = training_data_sets[0].merge(*training_data_sets[1:])
 
     return training_data
 
@@ -72,15 +69,13 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     """Generates the appropriate reader class based on the file format."""
     from rasa.shared.nlu.training_data.formats import (
         RasaYAMLReader,
-        MarkdownReader,
         WitReader,
         LuisReader,
         RasaReader,
         DialogflowReader,
-        NLGMarkdownReader,
     )
 
-    reader = None
+    reader: Optional["TrainingDataReader"] = None
     if fformat == LUIS:
         reader = LuisReader()
     elif fformat == WIT:
@@ -89,10 +84,6 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
         reader = DialogflowReader()
     elif fformat == RASA:
         reader = RasaReader()
-    elif fformat == MARKDOWN:
-        reader = MarkdownReader()
-    elif fformat == MARKDOWN_NLG:
-        reader = NLGMarkdownReader()
     elif fformat == RASA_YAML:
         reader = RasaYAMLReader()
     return reader
@@ -133,11 +124,7 @@ def guess_format(filename: Text) -> Text:
         content = rasa.shared.utils.io.read_file(filename)
         js = json.loads(content)
     except ValueError:
-        if MarkdownReader.is_markdown_nlu_file(filename):
-            guess = MARKDOWN
-        elif NLGMarkdownReader.is_markdown_nlg_file(filename):
-            guess = MARKDOWN_NLG
-        elif RasaYAMLReader.is_yaml_nlu_file(filename):
+        if RasaYAMLReader.is_yaml_nlu_file(filename):
             guess = RASA_YAML
     else:
         for file_format, format_heuristic in _json_format_heuristics.items():
