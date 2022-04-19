@@ -199,7 +199,7 @@ def test_convert_featurizer_token_edge_cases(
     create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     text: Text,
     expected_tokens: List[Text],
-    expected_indices: List[Tuple[int]],
+    expected_indices: List[Tuple[int, int]],
     monkeypatch: MonkeyPatch,
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
