@@ -441,7 +441,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def batch_to_model_data_format(
-        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
     ) -> Dict[Text, Dict[Text, List[tf.Tensor]]]:
         """Convert input batch tensors into batch data format.
@@ -508,7 +508,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def _convert_sparse_features(
-        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,
@@ -890,7 +890,7 @@ class TransformerRasaModel(RasaModel):
         return loss, f1, logits
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -903,7 +903,7 @@ class TransformerRasaModel(RasaModel):
         raise NotImplementedError
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 
