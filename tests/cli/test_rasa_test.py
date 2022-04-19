@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 from shutil import copyfile
 
-from _pytest.legacypath import Testdir
+from pytest import Testdir, RunResult, Pytester, ExitCode
 
 from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
@@ -13,7 +13,6 @@ from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.shared.utils.io import list_files, write_yaml, write_text_file
 from typing import Callable
-from _pytest.pytester import RunResult, Pytester, ExitCode
 
 
 def test_test_core(run_in_simple_project: Callable[..., RunResult]):

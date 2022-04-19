@@ -5,7 +5,7 @@ import copy
 
 import re
 
-from _pytest.legacypath import Testdir
+from pytest import Testdir
 
 from rasa.__main__ import create_argument_parser
 import rasa.cli.data
