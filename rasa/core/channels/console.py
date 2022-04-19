@@ -18,7 +18,6 @@ from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_SERVER_URL, DEFAULT_STREAM_READING_TIMEOUT
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.utils.io import DEFAULT_ENCODING
-import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
