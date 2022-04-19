@@ -128,31 +128,27 @@ def collect_reports(run_dir: str) -> Dict[str, Dict[str, Any]]:
     for report_file in report_files:
 
         prefix = os.path.basename(report_file).replace("_report.json", "")
-        if prefix == "intent":
-            tag = "report"
-        else:
-            tag = prefix
 
         with open(report_file, "r") as f:
             report = json.load(f)
 
         row.update(
             {
-                _format_report_key(key=key, prefix=tag): value
+                _format_report_key(key=key, prefix=prefix): value
                 for key, value in report.items()
                 if isinstance(value, dict)
             }
         )
         row.update(
             {
-                _format_report_key(key=key, prefix=tag): {"-": value}
+                _format_report_key(key=key, prefix=prefix): {"-": value}
                 for key, value in report.items()
                 if not isinstance(value, dict)
             }
         )
         row.update(
             {
-                _format_report_key(key="labels", prefix=tag): {
+                _format_report_key(key="labels", prefix=prefix): {
                     "-": len(
                         [
                             key
