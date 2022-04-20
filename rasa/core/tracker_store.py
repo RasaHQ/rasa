@@ -289,21 +289,24 @@ class TrackerStore:
 
     async def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker."""
+        if self.event_broker is None:
+            return None
+
         offset = await self.number_of_existing_events(tracker.sender_id)
         events = tracker.events
         new_events = list(itertools.islice(events, offset, len(events)))
 
-        await self.stream_new_events(new_events, tracker.sender_id)
+        await self._stream_new_events(new_events, tracker.sender_id, self.event_broker)
 
-    async def stream_new_events(self, new_events: List[Event], sender_id: Text) -> None:
+    @staticmethod
+    async def _stream_new_events(
+        new_events: List[Event], sender_id: Text, event_broker: EventBroker
+    ) -> None:
         """Publishes new tracker events to a message broker."""
-        if self.event_broker is None:
-            return None
-
         for event in new_events:
             body = {"sender_id": sender_id}
             body.update(event.as_dict())
-            self.event_broker.publish(body)
+            event_broker.publish(body)
 
     async def number_of_existing_events(self, sender_id: Text) -> int:
         """Return number of stored events for a given sender id."""
