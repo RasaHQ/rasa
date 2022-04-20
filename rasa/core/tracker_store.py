@@ -296,11 +296,13 @@ class TrackerStore:
         events = tracker.events
         new_events = list(itertools.islice(events, offset, len(events)))
 
-        await self._stream_new_events(new_events, tracker.sender_id, self.event_broker)
+        await self._stream_new_events(self.event_broker, new_events, tracker.sender_id)
 
-    @staticmethod
     async def _stream_new_events(
-        new_events: List[Event], sender_id: Text, event_broker: EventBroker
+        self,
+        event_broker: EventBroker,
+        new_events: List[Event],
+        sender_id: Text,
     ) -> None:
         """Publishes new tracker events to a message broker."""
         for event in new_events:
