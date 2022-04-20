@@ -16,6 +16,172 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.1.0] - 2022-03-25                         
+### Features
+- [#10203](https://github.com/rasahq/rasa/issues/10203): Add configuration options (via env variables) for library logging.
+- [#10473](https://github.com/rasahq/rasa/issues/10473): Support other recipe types.
+
+  This pull request also adds support for graph recipes, see details at
+  https://rasa.com/docs/rasa/model-configuration and check Graph Recipe page.
+
+  Graph recipe is a raw format for specifying executed graph directly. This is
+  useful if you need a more powerful way to specify your model creation.
+- [#10545](https://github.com/rasahq/rasa/issues/10545): Added optional `ssl_keyfile`, `ssl_certfile`, and `ssl_ca_certs` parameters to the Redis tracker store.
+- [#10650](https://github.com/rasahq/rasa/issues/10650): Added `LogisticRegressionClassifier` to the NLU classifiers.
+
+  This model is lightweight and might help in early prototyping. The training times typically decrease substantially, but the accuracy might be a bit lower too.
+- [#8762](https://github.com/rasahq/rasa/issues/8762): Added support for Python 3.9.
+
+### Improvements
+- [#10378](https://github.com/rasahq/rasa/issues/10378): Bump TensorFlow version to 2.7.
+
+  :::caution
+  We can't guarantee the exact same output and hence model performance if your 
+  configuration uses `LanguageModelFeaturizer`. This applies to the case where the 
+  model is re-trained with the new rasa open source version without changing the 
+  configuration, random seeds, and data as well as to the case where a model trained with 
+  a previous version of rasa open source is loaded with this new version for inference.
+
+  We suggest training a new model if you are upgrading to this version of Rasa Open Source.
+- [#10444](https://github.com/rasahq/rasa/issues/10444): Make `rasa data validate` check for duplicated intents, forms, responses 
+  and slots when using domains split between multiple files.
+- [#10899](https://github.com/rasahq/rasa/issues/10899): Add an `influence_conversation` flag to entites to provide a shorthand for ignoring an entity for all intents.
+- [#9789](https://github.com/rasahq/rasa/issues/9789): Add `--request-timeout` command line argument to `rasa shell`, allowing users to configure the time a request can take before it's terminated.
+
+### Bugfixes
+- [#10376](https://github.com/rasahq/rasa/issues/10376): Validate regular expressions in nlu training data configuration.
+- [#10409](https://github.com/rasahq/rasa/issues/10409): Unset the default values for `num_threads` and `finetuning_epoch_fraction` to `None` in order 
+  to fix cases when CLI defaults override the data from config.
+- [#10447](https://github.com/rasahq/rasa/issues/10447): Update `rasa data validate` to not fail when `active_loop` is `null`
+- [#10570](https://github.com/rasahq/rasa/issues/10570): Fixes Domain loading when domain config uses multiple yml files.
+
+  Previously not all configures attributes were necessarily known when merging Domains, and in the case of `entities` were not being properly assigned to `intents`.
+- [#10606](https://github.com/rasahq/rasa/issues/10606): Fix `max_history` truncation in `AugmentedMemoizationPolicy` to preserve the most recent `UserUttered` event.
+  Previously, `AugmentedMemoizationPolicy` failed to predict next action after long sequences of actions (longer than `max_history`) because the policy did not have access to the most recent user message.
+- [#10634](https://github.com/rasahq/rasa/issues/10634): Add `RASA_ENVIRONMENT` header in Kafka only if the environmental variable is set.
+- [#10767](https://github.com/rasahq/rasa/issues/10767): Merge domain entities as lists of dicts, not lists of lists to support entity roles and groups across multiple domains.
+- [#9351](https://github.com/rasahq/rasa/issues/9351): Add an option to specify `--domain` for `rasa test nlu` CLI command.
+
+### Improved Documentation
+- [#10553](https://github.com/rasahq/rasa/issues/10553): Fixed an over-indent in the Tokenizers section of the Components page of the docs.
+
+### Miscellaneous internal changes
+- [#10143](https://github.com/rasahq/rasa/issues/10143), [#10507](https://github.com/rasahq/rasa/issues/10507), [#10568](https://github.com/rasahq/rasa/issues/10568), [#10601](https://github.com/rasahq/rasa/issues/10601), [#10658](https://github.com/rasahq/rasa/issues/10658), [#10746](https://github.com/rasahq/rasa/issues/10746), [#10807](https://github.com/rasahq/rasa/issues/10807), [#9094](https://github.com/rasahq/rasa/issues/9094), [#9096](https://github.com/rasahq/rasa/issues/9096), [#9097](https://github.com/rasahq/rasa/issues/9097), [#9098](https://github.com/rasahq/rasa/issues/9098)
+
+
+## [3.0.10] - 2022-03-15## [3.0.10] - 2022-03-15                          
+### Bugfixes
+- [#10675](https://github.com/rasahq/rasa/issues/10675): Fix broken conversion from Rasa JSON NLU data to Rasa YAML NLU data.
+
+
+## [3.0.9] - 2022-03-11                         
+### Bugfixes
+- [#10412](https://github.com/rasahq/rasa/issues/10412): Fix Socket IO connection issues by upgrading sanic to v21.12. 
+
+  The bug is caused by [an invalid function signature](https://github.com/sanic-org/sanic/issues/2272) and is fixed in [v21.12](https://sanic.readthedocs.io/en/v21.12.1/sanic/changelog.html#version-21-12-0).
+
+  This update brings some deprecations in `sanic`:
+
+  - Sanic and Blueprint may no longer have arbitrary properties attached to them
+      - Fixed this by moving user defined properties to the `instance.ctx` object
+  - Sanic and Blueprint forced to have compliant names
+      - Fixed this by using string literal names instead of the module's name via _\_name\_\_
+  - `sanic.exceptions.abort` is Deprecated
+      - Fixed by replacing it with `sanic.exceptions.SanicException`
+  - `sanic.response.StreamingHTTPResponse` is deprecated
+      - Fixed by replacing it with sanic.response.ResponseStream
+- [#10447](https://github.com/rasahq/rasa/issues/10447): Update `rasa data validate` to not fail when `active_loop` is `null`
+
+### Improved Documentation
+- [#10798](https://github.com/rasahq/rasa/issues/10798): Updated the `model_confidence` parameter in `TEDPolicy` and `DIETClassifier`. The `linear_norm` is removed
+  as it is no longer supported.
+- [#10940](https://github.com/rasahq/rasa/issues/10940): Added an additional step to `Receiving Messages` section in slack.mdx documentation. After a slack update this 
+  additional step is needed to allow direct messages to the bot.
+- [#10957](https://github.com/rasahq/rasa/issues/10957): Backport the updated deployment docs to 3.0.x.
+
+
+## [3.0.8] - 2022-02-11
+### Improvements
+- [#10394](https://github.com/rasahq/rasa/issues/10394): Allow single tokens in rasa end-to-end test files to be annotated with multiple entities.
+
+  Some entity extractors (s.a. `RegexEntityExtractor`) can generate multiple entities from a single expression. Before this change, `rasa test` would fail in this case, because test stories could not be annotated correctly.
+  New annotation option is
+  ```YAML
+  stories:
+    - story: Some story
+      steps:
+        - user: |
+            cancel my [iphone][{"entity":"iphone", "value":"iphone"},{"entity":"smartphone", "value":"true"}{"entity":"mobile_service", "value":"true"}]
+          intent: cancel_contract
+  ```
+
+### Bugfixes
+- [#10865](https://github.com/rasahq/rasa/issues/10865): Fixed a bug where the `POST /conversations/<conversation_id>/tracker/events` endpoint repeated
+  session start events when appending events to a new tracker.
+
+
+## [3.0.7] - 2022-02-09
+### Bugfixes
+- [#10516](https://github.com/rasahq/rasa/issues/10516): Checkpoint weights were never loaded before. Implements overwriting checkpoint weights to the final model weights after training of `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
+- [#10782](https://github.com/rasahq/rasa/issues/10782): Allow arbitrary keys under each slot in the domain to allow for custom slot types.
+- [#10840](https://github.com/rasahq/rasa/issues/10840): Fix issue with missing running event loop in `MainThread` when starting Rasa Open 
+  Source for Rasa X with JWT secrets.
+
+
+## [3.0.6] - 2022-01-28
+### Deprecations and Removals
+- [#10590](https://github.com/rasahq/rasa/issues/10590): Removed CompositionView.
+
+### Bugfixes
+- [#10504](https://github.com/rasahq/rasa/issues/10504): Fixes a bug which was caused by `DIETClassifier` (`ResponseSelector`, `SklearnIntentClassifier` and `CRFEntityExtractor` have the same issue) trying to process message which didn't have required features. Implements removing unfeaturized messages for the above-mentioned components before training and prediction.
+- [#10540](https://github.com/rasahq/rasa/issues/10540): Enable slots with `from_entity` mapping that are not part of a form's required slots to be set during active loop.
+- [#10673](https://github.com/rasahq/rasa/issues/10673): Catch `ValueError` for any port values that cannot be cast to integer and re-raise as `RasaException` during the initialisation of `SQLTrackerStore`.
+- [#10728](https://github.com/rasahq/rasa/issues/10728): Use `tf.function` for model prediction to improve inference speed.
+- [#10761](https://github.com/rasahq/rasa/issues/10761): Tie prompt-toolkit to ^2.0 to fix `rasa-shell`.
+
+### Improved Documentation
+- [#10536](https://github.com/rasahq/rasa/issues/10536): Update dynamic form behaviour docs section with an example on how to override `required_slots` in case of removal of a form required slot.
+
+
+## [3.0.5] - 2022-01-19
+### Bugfixes
+- [#10519](https://github.com/rasahq/rasa/issues/10519): Corrects `transformer_size` parameter value (`None` by default) with a default size during loading in case `ResponseSelector` contains transformer layers.
+
+### Miscellaneous internal changes
+- [#10385](https://github.com/rasahq/rasa/issues/10385), [#592](https://github.com/rasahq/rasa/issues/592)
+
+
+## [3.0.4] - 2021-12-22
+                       
+
+### Miscellaneous internal changes
+- [#10572](https://github.com/rasahq/rasa/issues/10572)
+
+
+## [3.0.3] - 2021-12-16
+### Bugfixes
+- [#10448](https://github.com/rasahq/rasa/issues/10448): Copy lookup tables to train and test folds in cross validation. Before, the generated folds did not have a copy of
+  the lookup tables from the original NLU data, so that `RegexEntityExtractor` could not recognize any entities during 
+  the evaluation.
+- [#7645](https://github.com/rasahq/rasa/issues/7645): Do not print warning when subintent actions have response.
+
+### Miscellaneous internal changes
+- [#9945](https://github.com/rasahq/rasa/issues/9945)
+
+
+## [3.0.2] - 2021-12-09
+### Bugfixes
+- [#10374](https://github.com/rasahq/rasa/issues/10374): Update SQLAlchemy version to a compatible one in case other dependencies force
+  a lower version.
+- [#10391](https://github.com/rasahq/rasa/issues/10391): Fix overriding of default config with custom config containing nested dictionaries. Before,
+   the keys of a nested dictionary in the default config that were not specified in the 
+  custom config got lost.
+- [#10401](https://github.com/rasahq/rasa/issues/10401): Add `UserWarning` to alert users trying to run `rasa x` CLI command with rasa version 3.0 or higher that rasa-x currently doesn't support rasa 3.x.
+
+### Improved Documentation
+- [#10291](https://github.com/rasahq/rasa/issues/10291): Added note to the slot mappings section of the migration guide to recommend checking dynamic form behavior on migrated assistants.
+
+
 ## [3.0.1] - 2021-12-02
 ### Bugfixes
 - [#10235](https://github.com/rasahq/rasa/issues/10235): Fix previous slots getting filled after a restart. Previously events were
@@ -284,6 +450,26 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 ### Miscellaneous internal changes
 - [#10065](https://github.com/rasahq/rasa/issues/10065), [#10084](https://github.com/rasahq/rasa/issues/10084), [#10086](https://github.com/rasahq/rasa/issues/10086), [#10131](https://github.com/rasahq/rasa/issues/10131), [#9078](https://github.com/rasahq/rasa/issues/9078), [#9131](https://github.com/rasahq/rasa/issues/9131), [#9135](https://github.com/rasahq/rasa/issues/9135), [#9557](https://github.com/rasahq/rasa/issues/9557)
 
+
+## [2.8.16] - 2021-12-09
+### Improvements
+- [#10413](https://github.com/rasahq/rasa/issues/10413): The value of the `RASA_ENVIRONMENT` environmental variable is sent as a header in messages logged by `KafkaEventBroker`.
+  This value was previously only made available by `PikaEventConsumer`.
+
+### Bugfixes
+- [#10458](https://github.com/rasahq/rasa/issues/10458): Make `action_metadata` json serializable and make it available on the tracker. This is a backport of a fix in 3.0.0.
+
+
+## [2.8.15] - 2021-11-25
+### Bugfixes
+- [#10381](https://github.com/rasahq/rasa/issues/10381): Validate regular
+  expressions in nlu training data configuration.
+
+## [2.8.14] - 2021-11-18
+### Bugfixes
+- [#10241](https://github.com/rasahq/rasa/issues/10241): Bump TensorFlow version to 2.6.2. _We have plans to port this
+  change to 3.x (see [this issue](https://github.com/RasaHQ/rasa/issues/10378))_.
+- [#10257](https://github.com/rasahq/rasa/issues/10257): Downgrade google-auth to <2.
 
 ## [2.8.13] - 2021-11-11
 ### Bugfixes
@@ -2949,7 +3135,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   `1.8.0`. Since version `1.8.0` the Rasa SDK Docker images does not longer run as
   `root` user by default. For commands which require `root` user usage, you have to
   switch back to the `root` user in your Docker image as described in
-  Building an Action Server Image.
+  [Building an Action Server Image](https://rasa.com/docs/action-server/deploy-action-server#building-an-action-server-image).
 
 * [#5402](https://github.com/RasaHQ/rasa/issues/5402): Made improvements to Building Assistants tutorial
 

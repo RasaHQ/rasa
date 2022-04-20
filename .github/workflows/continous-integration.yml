@@ -35,7 +35,7 @@ env:
 
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
-  DEFAULT_PYTHON_VERSION: '3.7'
+  DEFAULT_PYTHON_VERSION: '3.9'
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
@@ -52,7 +52,7 @@ jobs:
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
@@ -104,11 +104,11 @@ jobs:
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -125,12 +125,25 @@ jobs:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
-        path: ~/.cache/pypoetry/virtualenvs
+        path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+      run: rm -r .venv
+
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      if: needs.changes.outputs.backend == 'true'
+      run: poetry config virtualenvs.in-project true
 
     - name: Install Dependencies 📦
       if: needs.changes.outputs.backend == 'true'
@@ -179,7 +192,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
@@ -212,12 +225,12 @@ jobs:
         - test-full-model-training
         - test-other-unit-tests
         - test-performance
-        os: [ ubuntu-latest, windows-latest ]
-        python-version: [ 3.7, 3.8 ]
+        os: [ ubuntu-latest, windows-2019 ]
+        python-version: [ 3.7, 3.8, 3.9 ]
 
     steps:
     - name: Run DataDog Agent
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
       run: |
         docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
         docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
@@ -225,11 +238,11 @@ jobs:
 
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -248,7 +261,7 @@ jobs:
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -282,7 +295,7 @@ jobs:
         make prepare-tests-ubuntu
 
     - name: Install Dependencies (Windows) 📦
-      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
       # Restoring cache doesn't work properly on Windows due to symlinks.
       # We create symlinks for spacy models, that's why we need to clean them up
       # before caching the dependencies directory.
@@ -309,25 +322,8 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       run: poetry run pip install -U ddtrace
 
-    - name: Test Code 🔍 (monothread)
-      # This is a temporary workaround for OOM on Windows caused by increased memory
-      # consumption associated with the upgrade of our tensorflow dependency
-      # see https://github.com/RasaHQ/rasa/issues/9734 for more information.
-      # Once the memory issues have been addressed, all configurations should be run on
-      # multiple threads
-      if: needs.changes.outputs.backend == 'true' && (matrix.os == 'windows-latest' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
-      env:
-        JOBS: 1
-        PYTHONIOENCODING: "utf-8"
-        DD_ENV: ${{ matrix.test }}
-        DD_SERVICE: rasa
-        DD_ARGS: --ddtrace --ddtrace-patch-all
-      run: |
-        make ${{ matrix.test }}
-        poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
-
-    - name: Test Code 🔍 (multithread)
-      if: needs.changes.outputs.backend == 'true' && !(matrix.os == 'windows-latest' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
+    - name: Test Code 🔍 (multi-process)
+      if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
@@ -336,7 +332,10 @@ jobs:
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
-        mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        fi
+      shell: bash  # bash shell is a way to make code run for both Linux and Windows
 
     - name: Store coverage reports
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
@@ -358,16 +357,16 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           path: ${{ github.workspace }}/tests_coverage
 
@@ -453,11 +452,11 @@ jobs:
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -476,7 +475,7 @@ jobs:
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -545,13 +544,13 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
     - name: Checkout pull request HEAD commit instead of merge commit 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name == 'pull_request'
       with:
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name != 'pull_request'
 
     - name: Read Poetry Version 🔢
@@ -705,13 +704,13 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
     - name: Checkout pull request HEAD commit instead of merge commit 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name == 'pull_request'
       with:
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name != 'pull_request'
 
     - name: Free disk space
@@ -789,12 +788,12 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
-    - name: Set up Python 3.7 🐍
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+    - name: Set up Python 3.9 🐍
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
-        python-version: 3.7
+        python-version: 3.9
 
     - name: Read Poetry Version 🔢
       run: |
@@ -817,7 +816,7 @@ jobs:
       run: poetry build
 
     - name: Publish to PyPI 📦
-      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+      uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
@@ -846,3 +845,22 @@ jobs:
         pip install -U github3.py pep440-version-utils
         python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
+
+
+  send_slack_notification_for_release_on_failure:
+    name: Notify Slack & Publish Release Notes
+    runs-on: ubuntu-20.04
+    # run this job when the workflow is triggered by a tag push
+    if: always() && github.repository == 'RasaHQ/rasa' && github.ref_type == 'tag'
+    needs:
+      - deploy
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'deploy' is skipped (previous needed job failed) or failed
+        if: needs.deploy.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Rasa Open Source* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

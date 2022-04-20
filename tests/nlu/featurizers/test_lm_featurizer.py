@@ -11,10 +11,7 @@ from _pytest.logging import LogCaptureFixture
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    NUMBER_OF_SUB_TOKENS,
-)
+from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -36,7 +33,7 @@ def create_language_model_featurizer(
 ) -> Callable[[Dict[Text, Any]], LanguageModelFeaturizer]:
     def inner(config: Dict[Text, Any]) -> LanguageModelFeaturizer:
         return LanguageModelFeaturizer.create(
-            config={**LanguageModelFeaturizer.get_default_config(), **config,},
+            config={**LanguageModelFeaturizer.get_default_config(), **config},
             model_storage=default_model_storage,
             resource=resource_language_model_featurizer,
             execution_context=default_execution_context,
@@ -45,7 +42,7 @@ def create_language_model_featurizer(
     return inner
 
 
-def skip_on_CI(model_name: Text, model_weights: Text) -> bool:
+def skip_on_CI_with_bert(model_name: Text, model_weights: Text) -> bool:
     """Checks whether to skip this configuration on CI.
 
     Only applies when skip_model_load=False
@@ -70,7 +67,7 @@ def create_pretrained_transformers_config(
         model_name: model name
         model_weights: model weights name
     """
-    if skip_on_CI(model_name, model_weights):
+    if skip_on_CI_with_bert(model_name, model_weights):
         pytest.skip(
             "Reason: this model is too large, loading it results in"
             "crashing of GH action workers."
@@ -90,7 +87,7 @@ def process_training_text(
     ],
     whitespace_tokenizer: WhitespaceTokenizer,
 ) -> List[Message]:
-    """ Creates a featurizer and process training data """
+    """Creates a featurizer and process training data"""
     config = create_pretrained_transformers_config(model_name, model_weights)
     lm_featurizer = create_language_model_featurizer(config)
 
@@ -111,7 +108,7 @@ def process_messages(
     ],
     whitespace_tokenizer: WhitespaceTokenizer,
 ) -> List[Message]:
-    """ Creates a featurizer and processes messages """
+    """Creates a featurizer and processes messages"""
     config = create_pretrained_transformers_config(model_name, model_weights)
     lm_featurizer = create_language_model_featurizer(config)
 
@@ -162,29 +159,29 @@ def process_messages(
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
-                [-0.0630323737859726, 0.4029877185821533],
+                [-0.06324312090873718, 0.4072571396827698],
                 [
-                    0.8072432279586792,
-                    -0.08990508317947388,
-                    0.9985930919647217,
-                    -0.38779014348983765,
-                    0.08921952545642853,
+                    0.8041259050369263,
+                    -0.08877559006214142,
+                    0.9976294636726379,
+                    -0.38815218210220337,
+                    0.08530596643686295,
                 ],
             ],
             [
                 [
-                    0.16997766494750977,
-                    0.1493849903345108,
-                    0.39421725273132324,
-                    -0.5753618478775024,
-                    0.05096133053302765,
+                    0.1720070093870163,
+                    0.1511477530002594,
+                    0.39497435092926025,
+                    -0.5745484828948975,
+                    0.05334469676017761,
                 ],
                 [
-                    0.41056010127067566,
-                    -0.1169343888759613,
-                    -0.3019704818725586,
-                    -0.40207183361053467,
-                    0.6289798021316528,
+                    0.4095669686794281,
+                    -0.11725597828626633,
+                    -0.30236583948135376,
+                    -0.4023253917694092,
+                    0.6285617351531982,
                 ],
             ],
         ),
@@ -220,29 +217,29 @@ def process_messages(
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
-                [1.7612367868423462, 2.5819129943847656],
+                [1.7588920593261719, 2.578641176223755],
                 [
-                    0.784195065498352,
-                    0.7068007588386536,
-                    1.5883606672286987,
-                    1.891886591911316,
-                    2.5209126472473145,
+                    0.7821242213249207,
+                    0.6983698606491089,
+                    1.5819640159606934,
+                    1.891527533531189,
+                    2.511735200881958,
                 ],
             ],
             [
                 [
-                    2.171574831008911,
-                    -1.5377449989318848,
-                    -3.2671749591827393,
-                    0.22520869970321655,
-                    -1.598855972290039,
+                    2.168766498565674,
+                    -1.5277889966964722,
+                    -3.2499680519104004,
+                    0.23829853534698486,
+                    -1.603652000427246,
                 ],
                 [
-                    1.6516317129135132,
-                    0.021670114248991013,
-                    -2.5114030838012695,
-                    1.447351098060608,
-                    -2.5866634845733643,
+                    1.643880844116211,
+                    0.023089325055480003,
+                    -2.497927665710449,
+                    1.4621683359146118,
+                    -2.5919559001922607,
                 ],
             ],
         ),
@@ -357,7 +354,7 @@ class TestShapeValuesTrainAndProcess:
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
-        expected_shape: List[Tuple[int]],
+        expected_shape: List[Tuple[int, int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
         create_language_model_featurizer: Callable[
@@ -382,7 +379,7 @@ class TestShapeValuesTrainAndProcess:
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
-        expected_shape: List[Tuple[int]],
+        expected_shape: List[Tuple[int, int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
         create_language_model_featurizer: Callable[
@@ -554,7 +551,7 @@ class TestSubTokensTrainAndProcess:
         expected_number_of_sub_tokens: List[List[float]],
         whitespace_tokenizer: WhitespaceTokenizer,
     ):
-        """ Checks that we get the correct number of sub tokens """
+        """Checks that we get the correct number of sub tokens"""
         for index, message in enumerate(messages):
             assert [
                 t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
@@ -576,7 +573,7 @@ class TestSubTokensTrainAndProcess:
         whitespace_tokenizer: WhitespaceTokenizer,
     ):
         """Tests the number of sub tokens when calling the function
-        process training data """
+        process training data"""
         messages = process_training_text(
             texts,
             model_name,
@@ -601,7 +598,7 @@ class TestSubTokensTrainAndProcess:
         whitespace_tokenizer: WhitespaceTokenizer,
     ):
         """Tests the number of sub tokens when calling the function
-        process (messages) """
+        process (messages)"""
         messages = process_messages(
             texts,
             model_name,
@@ -627,9 +624,7 @@ def test_sequence_length_overflow_train(
     ],
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        LanguageModelFeaturizer, "_load_model_instance", lambda _: None,
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
     component = create_language_model_featurizer({"model_name": model_name})
     message = Message.build(text=" ".join(["hi"] * input_sequence_length))
     if should_overflow:
@@ -661,9 +656,7 @@ def test_long_sequences_extra_padding(
     ],
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        LanguageModelFeaturizer, "_load_model_instance", lambda _: None,
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
     component = create_language_model_featurizer({"model_name": model_name})
     modified_sequence_embeddings = component._add_extra_padding(
         sequence_embeddings, actual_sequence_lengths
@@ -700,9 +693,7 @@ def test_input_padding(
     ],
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        LanguageModelFeaturizer, "_load_model_instance", lambda _: None,
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
     component = create_language_model_featurizer({"model_name": "bert"})
     component.pad_token_id = 0
     padded_input = component._add_padding_to_batch(token_ids, max_sequence_length_model)
@@ -758,9 +749,7 @@ def test_attention_mask(
     ],
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        LanguageModelFeaturizer, "_load_model_instance", lambda _: None,
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
     component = create_language_model_featurizer({"model_name": "bert"})
 
     attention_mask = component._compute_attention_mask(
@@ -792,10 +781,7 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     ],
 ):
 
-    config = {
-        "model_name": "bert",
-        "model_weights": "bert-base-chinese",
-    }
+    config = {"model_name": "bert", "model_weights": "bert-base-chinese"}
 
     lm_featurizer = create_language_model_featurizer(config)
 

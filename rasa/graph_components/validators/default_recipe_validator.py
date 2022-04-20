@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from typing import Iterable, List, Dict, Text, Any, Set, Type
+from typing import Iterable, List, Dict, Text, Any, Set, Type, cast
 
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
@@ -22,6 +22,7 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.constants import POLICY_PRIORITY
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -44,17 +45,9 @@ import rasa.shared.utils.io
 
 
 # TODO: Can we replace this with the registered types from the regitry?
-TRAINABLE_EXTRACTORS = [
-    MitieEntityExtractor,
-    CRFEntityExtractor,
-    DIETClassifier,
-]
+TRAINABLE_EXTRACTORS = [MitieEntityExtractor, CRFEntityExtractor, DIETClassifier]
 # TODO: replace these once the Recipe is merged (used in tests)
-POLICY_CLASSSES = {
-    TEDPolicy,
-    MemoizationPolicy,
-    RulePolicy,
-}
+POLICY_CLASSSES = {TEDPolicy, MemoizationPolicy, RulePolicy}
 
 
 def _types_to_str(types: Iterable[Type]) -> Text:
@@ -180,7 +173,7 @@ class DefaultV1RecipeValidator(GraphComponent):
                 )
 
         if training_data.regex_features and self._component_types.isdisjoint(
-            [RegexFeaturizer, RegexEntityExtractor],
+            [RegexFeaturizer, RegexEntityExtractor]
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data with regexes, but "
@@ -194,7 +187,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
         if training_data.lookup_tables and self._component_types.isdisjoint(
-            [RegexFeaturizer, RegexEntityExtractor],
+            [RegexFeaturizer, RegexEntityExtractor]
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data consisting of lookup tables, but "
@@ -354,7 +347,7 @@ class DefaultV1RecipeValidator(GraphComponent):
                 docs=f"{DOCS_URL_COMPONENTS}#regexentityextractor",
             )
 
-    def _raise_if_featurizers_are_not_compatible(self,) -> None:
+    def _raise_if_featurizers_are_not_compatible(self) -> None:
         """Raises or warns if there are problems regarding the featurizers.
 
         Raises:
@@ -392,7 +385,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         self._warn_if_no_rule_policy_is_contained()
         self._raise_if_domain_contains_form_names_but_no_rule_policy_given(domain)
         self._raise_if_a_rule_policy_is_incompatible_with_domain(domain)
-        self._warn_if_priorities_are_not_unique()
+        self._validate_policy_priorities()
         self._warn_if_rule_based_data_is_unused_or_missing(story_graph=story_graph)
 
     def _warn_if_no_rule_policy_is_contained(self) -> None:
@@ -408,7 +401,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
     def _raise_if_domain_contains_form_names_but_no_rule_policy_given(
-        self, domain: Domain,
+        self, domain: Domain
     ) -> None:
         """Validates that there exists a rule policy if forms are defined.
 
@@ -430,7 +423,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
     def _raise_if_a_rule_policy_is_incompatible_with_domain(
-        self, domain: Domain,
+        self, domain: Domain
     ) -> None:
         """Validates the rule policies against the domain.
 
@@ -443,12 +436,26 @@ class DefaultV1RecipeValidator(GraphComponent):
                     config=schema_node.config, domain=domain
                 )
 
-    def _warn_if_priorities_are_not_unique(self) -> None:
-        """Warns if the priorities of the policies are not unique."""
+    def _validate_policy_priorities(self) -> None:
+        """Checks if every policy has a valid priority value.
+
+        A policy must have a priority value. The priority values of
+        the policies used in the configuration should be unique.
+
+        Raises:
+            `InvalidConfigException` if any of the policies doesn't have a priority
+        """
         priority_dict = defaultdict(list)
         for schema_node in self._policy_schema_nodes:
-            default_priority = schema_node.uses.get_default_config()["priority"]
-            priority = schema_node.config.get("priority", default_priority)
+            default_config = schema_node.uses.get_default_config()
+            if POLICY_PRIORITY not in default_config:
+                raise InvalidConfigException(
+                    f"Found a policy {schema_node.uses.__name__} which has no "
+                    f"priority. Every policy must have a priority value which you "
+                    f"can set in the `get_default_config` method of your policy."
+                )
+            default_priority = default_config[POLICY_PRIORITY]
+            priority = schema_node.config.get(POLICY_PRIORITY, default_priority)
             priority_dict[priority].append(schema_node.uses)
 
         for k, v in priority_dict.items():
@@ -470,7 +477,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             story_graph: a story graph (core training data)
         """
         consuming_rule_data = any(
-            policy_node.uses.supported_data()
+            cast(Policy, policy_node.uses).supported_data()
             in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
             for policy_node in self._policy_schema_nodes
         )

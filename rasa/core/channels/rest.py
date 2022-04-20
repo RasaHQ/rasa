@@ -5,8 +5,8 @@ import logging
 from asyncio import Queue, CancelledError
 from sanic import Blueprint, response
 from sanic.request import Request
-from sanic.response import HTTPResponse
-from typing import Text, Dict, Any, Optional, Callable, Awaitable, NoReturn
+from sanic.response import HTTPResponse, ResponseStream
+from typing import Text, Dict, Any, Optional, Callable, Awaitable, NoReturn, Union
 
 import rasa.utils.endpoints
 from rasa.core.channels.channel import (
@@ -67,7 +67,7 @@ class RestInput(InputChannel):
         metadata: Optional[Dict[Text, Any]],
     ) -> Callable[[Any], Awaitable[None]]:
         async def stream(resp: Any) -> None:
-            q = Queue()
+            q: Queue = Queue()
             task = asyncio.ensure_future(
                 self.on_message_wrapper(
                     on_new_message, text, q, sender_id, input_channel, metadata
@@ -86,9 +86,16 @@ class RestInput(InputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
+        """Groups the collection of endpoints used by rest channel."""
+        module_type = inspect.getmodule(self)
+        if module_type is not None:
+            module_name = module_type.__name__
+        else:
+            module_name = None
+
         custom_webhook = Blueprint(
             "custom_webhook_{}".format(type(self).__name__),
-            inspect.getmodule(self).__name__,
+            module_name,
         )
 
         # noinspection PyUnusedLocal
@@ -97,7 +104,7 @@ class RestInput(InputChannel):
             return response.json({"status": "ok"})
 
         @custom_webhook.route("/webhook", methods=["POST"])
-        async def receive(request: Request) -> HTTPResponse:
+        async def receive(request: Request) -> Union[ResponseStream, HTTPResponse]:
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
             should_use_stream = rasa.utils.endpoints.bool_arg(
@@ -145,8 +152,13 @@ class QueueOutputChannel(CollectingOutputChannel):
 
     (doesn't send them anywhere, just collects them)."""
 
+    # FIXME: this is breaking Liskov substitution principle
+    # and would require some user-facing refactoring to address
+    messages: Queue  # type: ignore[assignment]
+
     @classmethod
     def name(cls) -> Text:
+        """Name of QueueOutputChannel."""
         return "queue"
 
     # noinspection PyMissingConstructor

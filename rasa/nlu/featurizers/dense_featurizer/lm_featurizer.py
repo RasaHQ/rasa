@@ -3,6 +3,7 @@ import numpy as np
 import logging
 
 from typing import Any, Text, List, Dict, Tuple, Type
+import tensorflow as tf
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -20,10 +21,7 @@ from rasa.nlu.constants import (
     NUMBER_OF_SUB_TOKENS,
     TOKENS_NAMES,
 )
-from rasa.shared.nlu.constants import (
-    TEXT,
-    ACTION_TEXT,
-)
+from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
 from rasa.utils import train_utils
 
 logger = logging.getLogger(__name__)
@@ -57,7 +55,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         return [Tokenizer]
 
     def __init__(
-        self, config: Dict[Text, Any], execution_context: ExecutionContext,
+        self, config: Dict[Text, Any], execution_context: ExecutionContext
     ) -> None:
         """Initializes the featurizer with the model in the config."""
         super(LanguageModelFeaturizer, self).__init__(
@@ -152,7 +150,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
-        self.model = model_class_dict[self.model_name].from_pretrained(
+        self.model = model_class_dict[self.model_name].from_pretrained(  # type: ignore[no-untyped-call] # noqa: E501
             self.model_weights, cache_dir=self.cache_dir
         )
 
@@ -467,7 +465,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             Sequence level representations from the language model.
         """
         model_outputs = self.model(
-            np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
+            tf.convert_to_tensor(padded_token_ids),
+            attention_mask=tf.convert_to_tensor(batch_attention_mask),
         )
 
         # sequence hidden states is always the first output from all models
@@ -701,7 +700,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         return batch_docs
 
-    def process_training_data(self, training_data: TrainingData,) -> TrainingData:
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
         """Computes tokens and dense features for each message in training data.
 
         Args:

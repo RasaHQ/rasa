@@ -46,6 +46,7 @@ mapping:
     mapping:
       regex;([A-Za-z]+):
         type: "map"
+        allowempty: True
         mapping:
           influence_conversation:
             type: "bool"

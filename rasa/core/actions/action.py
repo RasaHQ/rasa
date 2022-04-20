@@ -1,7 +1,17 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING, Tuple, Set, Union
+from typing import (
+    List,
+    Text,
+    Optional,
+    Dict,
+    Any,
+    TYPE_CHECKING,
+    Tuple,
+    Set,
+    cast,
+)
 
 import aiohttp
 import rasa.core
@@ -38,8 +48,7 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
-    PREDEFINED_MAPPINGS,
-    LOOP_REJECTED,
+    SlotMappingType,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -387,11 +396,16 @@ class ActionRetrieveResponse(ActionBotResponse):
             Full retrieval name of the action if the last user utterance
             contains a response selector output, `None` otherwise.
         """
-        if RESPONSE_SELECTOR_PROPERTY_NAME not in tracker.latest_message.parse_data:
+        latest_message = tracker.latest_message
+
+        if latest_message is None:
             return None
 
-        response_selector_properties = tracker.latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME
+        if RESPONSE_SELECTOR_PROPERTY_NAME not in latest_message.parse_data:
+            return None
+
+        response_selector_properties = latest_message.parse_data[
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
         ]
 
         if (
@@ -418,8 +432,13 @@ class ActionRetrieveResponse(ActionBotResponse):
         domain: "Domain",
     ) -> List[Event]:
         """Query the appropriate response and create a bot utterance with that."""
-        response_selector_properties = tracker.latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME
+        latest_message = tracker.latest_message
+
+        if latest_message is None:
+            return []
+
+        response_selector_properties = latest_message.parse_data[
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
         ]
 
         if (
@@ -719,7 +738,7 @@ class RemoteAction(Action):
             logger.debug(
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
-            response = await self.action_endpoint.request(
+            response: Any = await self.action_endpoint.request(
                 json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
             )
 
@@ -727,12 +746,12 @@ class RemoteAction(Action):
 
             events_json = response.get("events", [])
             responses = response.get("responses", [])
-            bot_messages: List[Event] = await self._utter_responses(
+            bot_messages = await self._utter_responses(
                 responses, output_channel, nlg, tracker
             )
 
             evts = events.deserialise_events(events_json)
-            return bot_messages + evts
+            return cast(List[Event], bot_messages) + evts
 
         except ClientResponseError as e:
             if e.status == 400:
@@ -860,7 +879,9 @@ def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
         raise TypeError("Cannot find last event to revert to.")
 
     last_user_event = copy.deepcopy(last_user_event)
-    last_user_event.parse_data["intent"]["confidence"] = 1.0
+    # FIXME: better type annotation for `parse_data` would require
+    # a larger refactoring (e.g. switch to dataclass)
+    last_user_event.parse_data["intent"]["confidence"] = 1.0  # type: ignore[typeddict-item]  # noqa: E501
 
     return revert_events + [last_user_event]
 
@@ -923,14 +944,17 @@ class ActionDefaultAskAffirmation(Action):
 
         intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
 
-        intent_ranking: List["IntentPrediction"] = latest_message.parse_data.get(
-            INTENT_RANKING_KEY
-        ) or []
+        # FIXME: better type annotation for `parse_data` would require
+        # a larger refactoring (e.g. switch to dataclass)
+        intent_ranking = cast(
+            List["IntentPrediction"],
+            latest_message.parse_data.get(INTENT_RANKING_KEY) or [],
+        )
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[misc]
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
@@ -986,8 +1010,7 @@ class ActionExtractSlots(Action):
             return True
 
         if (
-            tracker.active_loop
-            and tracker.active_loop.get(LOOP_REJECTED)
+            tracker.is_active_loop_rejected
             and tracker.get_slot(REQUESTED_SLOT) == slot_name
         ):
             return False
@@ -1009,8 +1032,8 @@ class ActionExtractSlots(Action):
     def _verify_mapping_conditions(
         mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
     ) -> bool:
-        if mapping.get(MAPPING_CONDITIONS) and mapping.get(MAPPING_TYPE) != str(
-            SlotMapping.FROM_TRIGGER_INTENT
+        if mapping.get(MAPPING_CONDITIONS) and mapping[MAPPING_TYPE] != str(
+            SlotMappingType.FROM_TRIGGER_INTENT
         ):
             if not ActionExtractSlots._matches_mapping_conditions(
                 mapping, tracker, slot_name
@@ -1076,7 +1099,7 @@ class ActionExtractSlots(Action):
             return [], executed_custom_actions
 
         slot_events = await self._run_custom_action(
-            custom_action, output_channel, nlg, tracker, domain,
+            custom_action, output_channel, nlg, tracker, domain
         )
 
         executed_custom_actions.add(custom_action)
@@ -1091,7 +1114,7 @@ class ActionExtractSlots(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        slot_events: List[Union[Event, SlotSet]] = [
+        slot_events: List[SlotSet] = [
             event for event in extraction_events if isinstance(event, SlotSet)
         ]
 
@@ -1099,11 +1122,11 @@ class ActionExtractSlots(Action):
         logger.debug(f"Validating extracted slots: {slot_candidates}")
 
         if ACTION_VALIDATE_SLOT_MAPPINGS not in domain.user_actions:
-            return slot_events
+            return cast(List[Event], slot_events)
 
         _tracker = DialogueStateTracker.from_events(
             tracker.sender_id,
-            tracker.events_after_latest_restart() + slot_events,
+            tracker.events_after_latest_restart() + cast(List[Event], slot_events),
             slots=domain.slots,
         )
         validate_events = await self._run_custom_action(
@@ -1129,7 +1152,7 @@ class ActionExtractSlots(Action):
     ) -> bool:
         from rasa.core.actions.forms import FormAction
 
-        if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
+        if mapping[MAPPING_TYPE] != str(SlotMappingType.FROM_ENTITY):
             return False
 
         form_name = tracker.active_loop_name
@@ -1141,6 +1164,9 @@ class ActionExtractSlots(Action):
             return False
 
         form = FormAction(form_name, self._action_endpoint)
+
+        if slot_name not in form.required_slots(domain):
+            return False
 
         if form.entity_mapping_is_unique(mapping, domain):
             return False
@@ -1156,7 +1182,7 @@ class ActionExtractSlots(Action):
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         slot_events: List[Event] = []
-        executed_custom_actions = set()
+        executed_custom_actions: Set[Text] = set()
 
         user_slots = [
             slot for slot in domain.slots if slot.name not in DEFAULT_SLOT_NAMES
@@ -1164,7 +1190,14 @@ class ActionExtractSlots(Action):
 
         for slot in user_slots:
             for mapping in slot.mappings:
-                if not SlotMapping.check_mapping_validity(slot.name, mapping, domain):
+                mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
+
+                if not SlotMapping.check_mapping_validity(
+                    slot_name=slot.name,
+                    mapping_type=mapping_type,
+                    mapping=mapping,
+                    domain=domain,
+                ):
                     continue
 
                 intent_is_desired = SlotMapping.intent_is_desired(
@@ -1184,8 +1217,10 @@ class ActionExtractSlots(Action):
                 ):
                     continue
 
-                if mapping.get(MAPPING_TYPE) in PREDEFINED_MAPPINGS:
-                    value = extract_slot_value_from_predefined_mapping(mapping, tracker)
+                if mapping_type.is_predefined_type():
+                    value = extract_slot_value_from_predefined_mapping(
+                        mapping_type, mapping, tracker
+                    )
                 else:
                     value = None
 
@@ -1196,9 +1231,7 @@ class ActionExtractSlots(Action):
                     if tracker.get_slot(slot.name) != value:
                         slot_events.append(SlotSet(slot.name, value))
 
-                should_fill_custom_slot = mapping.get(MAPPING_TYPE) == str(
-                    SlotMapping.CUSTOM
-                )
+                should_fill_custom_slot = mapping_type == SlotMappingType.CUSTOM
 
                 if should_fill_custom_slot:
                     (
@@ -1222,23 +1255,26 @@ class ActionExtractSlots(Action):
 
 
 def extract_slot_value_from_predefined_mapping(
-    mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+    mapping_type: SlotMappingType,
+    mapping: Dict[Text, Any],
+    tracker: "DialogueStateTracker",
 ) -> List[Any]:
     """Extracts slot value if slot has an applicable predefined mapping."""
-    should_fill_entity_slot = mapping.get(MAPPING_TYPE) == str(
-        SlotMapping.FROM_ENTITY
-    ) and SlotMapping.entity_is_desired(mapping, tracker,)
+    should_fill_entity_slot = (
+        mapping_type == SlotMappingType.FROM_ENTITY
+        and SlotMapping.entity_is_desired(mapping, tracker)
+    )
 
-    should_fill_intent_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT)
+    should_fill_intent_slot = mapping_type == SlotMappingType.FROM_INTENT
 
-    should_fill_text_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_TEXT)
+    should_fill_text_slot = mapping_type == SlotMappingType.FROM_TEXT
 
     active_loops_in_mapping_conditions = [
         active_loop.get(ACTIVE_LOOP)
         for active_loop in mapping.get(MAPPING_CONDITIONS, [])
     ]
     should_fill_trigger_slot = (
-        mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_TRIGGER_INTENT)
+        mapping_type == SlotMappingType.FROM_TRIGGER_INTENT
         and tracker.active_loop_name not in active_loops_in_mapping_conditions
     )
 
@@ -1254,6 +1290,8 @@ def extract_slot_value_from_predefined_mapping(
     elif should_fill_intent_slot or should_fill_trigger_slot:
         value = [mapping.get("value")]
     elif should_fill_text_slot:
-        value = [tracker.latest_message.text]
+        value = [
+            tracker.latest_message.text if tracker.latest_message is not None else None
+        ]
 
     return value

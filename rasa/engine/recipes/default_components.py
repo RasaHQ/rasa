@@ -1,6 +1,9 @@
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
+from rasa.nlu.classifiers.logistic_regression_classifier import (
+    LogisticRegressionClassifier,
+)
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
@@ -30,10 +33,7 @@ from rasa.nlu.utils.spacy_utils import SpacyNLP
 
 
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.memoization import (
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy,
-)
+from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 
@@ -44,6 +44,7 @@ DEFAULT_COMPONENTS = [
     KeywordIntentClassifier,
     MitieIntentClassifier,
     SklearnIntentClassifier,
+    LogisticRegressionClassifier,
     # Response Selectors
     ResponseSelector,
     # Message Entity Extractors

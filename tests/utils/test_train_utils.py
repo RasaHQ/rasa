@@ -114,7 +114,7 @@ def test_rank_and_mask(
     ],
 )
 def test_init_split_entities_config(
-    split_entities_config: Any, expected_initialized_config: Dict[(str, bool)],
+    split_entities_config: Any, expected_initialized_config: Dict[(str, bool)]
 ):
     assert (
         train_utils.init_split_entities(
@@ -241,9 +241,7 @@ def test_update_confidence_type(
         ({}, False),
     ],
 )
-def test_tolerance_setting(
-    component_config: Dict[Text, float], raises_exception: bool,
-):
+def test_tolerance_setting(component_config: Dict[Text, float], raises_exception: bool):
     if raises_exception:
         with pytest.raises(InvalidConfigException):
             train_utils._check_tolerance_setting(component_config)
@@ -293,8 +291,9 @@ def test_warning_eval_num_epochs_greater_than_epochs(
     component_config: Dict[Text, Text]
 ):
     warning = (
-        f"the value of '{EVAL_NUM_EPOCHS}' is greater than the value of "
-        f"'{EPOCHS}'. No evaluation will occur."
+        f"'{EVAL_NUM_EPOCHS}={component_config[EVAL_NUM_EPOCHS]}' is "
+        f"greater than '{EPOCHS}={component_config[EPOCHS]}'."
+        f" No evaluation will occur."
     )
     with pytest.warns(UserWarning) as record:
         train_utils._check_evaluation_setting(component_config)

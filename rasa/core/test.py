@@ -3,9 +3,8 @@ import os
 from pathlib import Path
 import tempfile
 import warnings as pywarnings
-import typing
 from collections import defaultdict, namedtuple
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, TYPE_CHECKING, cast
 
 from rasa import telemetry
 from rasa.core.constants import (
@@ -63,11 +62,11 @@ from rasa.exceptions import ActionLimitReached
 
 from rasa.core.actions.action import ActionRetrieveResponse
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
-    from rasa.shared.core.events import EntityPrediction
+    from rasa.shared.core.events import Event, EntityPrediction
 
 logger = logging.getLogger(__name__)
 
@@ -300,14 +299,14 @@ class EvaluationStore:
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
                 ),
-                key=lambda x: x[ENTITY_ATTRIBUTE_START],
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],  # type: ignore[misc]
             )
             entity_predictions = sorted(
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
                     self.entity_predictions,
                 ),
-                key=lambda x: x[ENTITY_ATTRIBUTE_START],
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],  # type: ignore[misc]
             )
 
             i_pred, i_target = 0, 0
@@ -434,7 +433,8 @@ def _create_data_generator(
     from rasa.shared.core.generator import TrainingDataGenerator
 
     tmp_domain_path = Path(tempfile.mkdtemp()) / "domain.yaml"
-    agent.domain.persist(tmp_domain_path)
+    domain = agent.domain if agent.domain is not None else Domain.empty()
+    domain.persist(tmp_domain_path)
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[resource_name], domain_path=str(tmp_domain_path)
     )
@@ -459,7 +459,7 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}
+        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}  # type: ignore[misc]  # noqa E501
         for k in (
             ENTITY_ATTRIBUTE_START,
             ENTITY_ATTRIBUTE_END,
@@ -471,7 +471,7 @@ def _clean_entity_results(
                     # convert values to strings for evaluation as
                     # target values are all of type string
                     r[k] = str(r[k])
-                cleaned_entity[k] = r[k]
+                cleaned_entity[k] = r[k]  # type: ignore[misc]
         cleaned_entities.append(cleaned_entity)
 
     return cleaned_entities
@@ -591,7 +591,7 @@ def emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None:
     """
     from rasa.shared.core.events import ActionExecutionRejected
 
-    rejected_action_name: Text = partial_tracker.active_loop_name
+    rejected_action_name = partial_tracker.active_loop_name
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
@@ -600,7 +600,7 @@ async def _get_e2e_entity_evaluation_result(
     tracker: DialogueStateTracker,
     prediction: PolicyPrediction,
 ) -> Optional[EntityEvaluationResult]:
-    previous_event = tracker.events[-1]
+    previous_event: Optional["Event"] = tracker.events[-1]
 
     if isinstance(previous_event, SlotSet):
         # UserUttered events with entities can be followed by SlotSet events
@@ -823,14 +823,25 @@ async def _predict_tracker_actions(
 ]:
 
     processor = agent.processor
+    if agent.processor is not None:
+        processor = agent.processor
+    else:
+        raise RasaException(
+            "The agent's processor has not been instantiated. "
+            "The processor needs to be defined before running "
+            "prediction."
+        )
+
     tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
 
+    slots = agent.domain.slots if agent.domain is not None else []
+
     partial_tracker = DialogueStateTracker.from_events(
         tracker.sender_id,
         events[:1],
-        agent.domain.slots,
+        slots,
         sender_source=tracker.sender_source,
     )
     tracker_actions = []
@@ -843,7 +854,7 @@ async def _predict_tracker_actions(
                 prediction,
                 entity_result,
             ) = await _collect_action_executed_predictions(
-                processor, partial_tracker, event, fail_on_prediction_errors,
+                processor, partial_tracker, event, fail_on_prediction_errors
             )
             if entity_result:
                 policy_entity_results.append(entity_result)
@@ -863,7 +874,9 @@ async def _predict_tracker_actions(
             # so we can skip the NLU part and take the parse data directly.
             # Indirectly that means that the test story was in YAML format.
             if not event.text:
-                predicted = event.parse_data
+                # FIXME: better type annotation for `parse_data` would require
+                # a larger refactoring (e.g. switch to dataclass)
+                predicted = cast(Dict[Text, Any], event.parse_data)
             # Indirectly that means that the test story was either:
             # in YAML format containing a user message, or in Markdown format.
             # Leaving that as it is because Markdown is in legacy mode.
@@ -993,9 +1006,7 @@ async def _collect_story_predictions(
     else:
         accuracy = 0
 
-    _log_evaluation_table(
-        [1] * len(completed_trackers), "CONVERSATION", accuracy,
-    )
+    _log_evaluation_table([1] * len(completed_trackers), "CONVERSATION", accuracy)
 
     return (
         StoryEvaluation(
@@ -1095,11 +1106,10 @@ async def test(
 
         targets, predictions = evaluation_store.serialise()
 
+        report, precision, f1, action_accuracy = get_evaluation_metrics(
+            targets, predictions, output_dict=True
+        )
         if out_directory:
-            report, precision, f1, action_accuracy = get_evaluation_metrics(
-                targets, predictions, output_dict=True
-            )
-
             # Add conversation level accuracy to story report.
             num_failed = len(story_evaluation.failed_stories)
             num_correct = len(story_evaluation.successful_stories)
@@ -1116,11 +1126,6 @@ async def test(
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
             rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
-
-        else:
-            report, precision, f1, action_accuracy = get_evaluation_metrics(
-                targets, predictions, output_dict=True
-            )
 
         evaluate_entities(
             entity_results,

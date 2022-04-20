@@ -1,10 +1,11 @@
+from __future__ import annotations
 import asyncio
+from contextlib import asynccontextmanager
 import json
 import logging
 import os
 
-from async_generator import asynccontextmanager
-from typing import Text, Union, Optional, AsyncGenerator
+from typing import AsyncGenerator, Dict, Optional, Text, Union
 
 from rasa.shared.exceptions import RasaException, ConnectionException
 import rasa.shared.utils.common
@@ -37,10 +38,11 @@ class LockError(RasaException):
 
 
 class LockStore:
-    @staticmethod
-    def create(obj: Union["LockStore", EndpointConfig, None]) -> "LockStore":
-        """Factory to create a lock store."""
+    """Base class for ticket locks."""
 
+    @staticmethod
+    def create(obj: Union[LockStore, EndpointConfig, None]) -> LockStore:
+        """Factory to create a lock store."""
         if isinstance(obj, LockStore):
             return obj
 
@@ -52,22 +54,18 @@ class LockStore:
     @staticmethod
     def create_lock(conversation_id: Text) -> TicketLock:
         """Create a new `TicketLock` for `conversation_id`."""
-
         return TicketLock(conversation_id)
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         """Fetch lock for `conversation_id` from storage."""
-
         raise NotImplementedError
 
     def delete_lock(self, conversation_id: Text) -> None:
         """Delete lock for `conversation_id` from storage."""
-
         raise NotImplementedError
 
     def save_lock(self, lock: TicketLock) -> None:
         """Commit `lock` to storage."""
-
         raise NotImplementedError
 
     def issue_ticket(
@@ -274,27 +272,30 @@ class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
     def __init__(self) -> None:
-        self.conversation_locks = {}
+        """Initialise dictionary of locks."""
+        self.conversation_locks: Dict[Text, TicketLock] = {}
         super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
+        """Get lock for conversation if it exists."""
         return self.conversation_locks.get(conversation_id)
 
     def delete_lock(self, conversation_id: Text) -> None:
+        """Delete lock for conversation."""
         deleted_lock = self.conversation_locks.pop(conversation_id, None)
         self._log_deletion(
             conversation_id, deletion_successful=deleted_lock is not None
         )
 
     def save_lock(self, lock: TicketLock) -> None:
+        """Save lock in store."""
         self.conversation_locks[lock.conversation_id] = lock
 
 
 def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig] = None,
-) -> "LockStore":
+) -> LockStore:
     """Given an endpoint configuration, create a proper `LockStore` object."""
-
     if (
         endpoint_config is None
         or endpoint_config.type is None
@@ -302,7 +303,7 @@ def _create_from_endpoint_config(
     ):
         # this is the default type if no lock store type is set
 
-        lock_store = InMemoryLockStore()
+        lock_store: LockStore = InMemoryLockStore()
     elif endpoint_config.type == "redis":
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
     else:
@@ -315,9 +316,8 @@ def _create_from_endpoint_config(
 
 def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,
-) -> "LockStore":
+) -> LockStore:
     """Retrieve a `LockStore` based on its class name."""
-
     try:
         lock_store_class = rasa.shared.utils.common.class_from_module_path(
             endpoint_config.type

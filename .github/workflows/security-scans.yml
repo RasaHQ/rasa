@@ -17,7 +17,7 @@ jobs:
       docker: ${{ steps.filter.outputs.docker }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         id: filter
         with:
@@ -28,7 +28,7 @@ jobs:
     name: Detecting hardcoded secrets
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         # Fetch all history for all tags and branches
         fetch-depth: '0'
@@ -46,13 +46,13 @@ jobs:
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
-    - name: Set up Python 3.7 🐍
+    - name: Set up Python 3.9 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
-        python-version: 3.7
+        python-version: 3.9
 
     - name: Read Poetry Version 🔢
       if: needs.changes.outputs.backend == 'true'
@@ -66,17 +66,26 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
+    - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-3.9
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')
+      run: rm -r .venv
+
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')) && needs.changes.outputs.backend == 'true'
+      run: python -m venv create .venv
+
     - name: Set up virtual environment
       if: needs.changes.outputs.backend == 'true'
       run: poetry config virtualenvs.in-project true
-
-    - name: Load Poetry Cached Libraries ⬇
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v1
-      with:
-        path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true'
@@ -89,7 +98,7 @@ jobs:
   snyk:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Run Snyk Open Source to check for Python vulnerabilities
         uses: snyk/actions/python-3.8@master
         continue-on-error: true

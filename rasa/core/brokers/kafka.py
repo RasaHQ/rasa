@@ -1,13 +1,18 @@
+import os
 import json
 import logging
 from asyncio import AbstractEventLoop
-from typing import Any, Text, List, Optional, Union, Dict
+from typing import Any, Text, List, Optional, Union, Dict, TYPE_CHECKING
 import time
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.exceptions import RasaException
+import rasa.shared.utils.common
+
+if TYPE_CHECKING:
+    from kafka import KafkaProducer
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +38,6 @@ class KafkaEventBroker(EventBroker):
         ssl_keyfile: Optional[Text] = None,
         ssl_check_hostname: bool = False,
         security_protocol: Text = "SASL_PLAINTEXT",
-        loglevel: Union[int, Text] = logging.ERROR,
         **kwargs: Any,
     ) -> None:
         """Kafka event broker.
@@ -67,7 +71,6 @@ class KafkaEventBroker(EventBroker):
                 should verify that the certificate matches the brokers hostname.
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
-            loglevel: Logging level of the kafka logger.
         """
         import kafka
 
@@ -84,8 +87,6 @@ class KafkaEventBroker(EventBroker):
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
-
-        logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
     async def from_endpoint_config(
@@ -107,7 +108,7 @@ class KafkaEventBroker(EventBroker):
     ) -> None:
         """Publishes events."""
         if self.producer is None:
-            self._create_producer()
+            self.producer = self._create_producer()
             connected = self.producer.bootstrap_connected()
             if connected:
                 logger.debug("Connection to kafka successful.")
@@ -127,7 +128,7 @@ class KafkaEventBroker(EventBroker):
                 if not connected:
                     self._close()
                     logger.debug("Connection to kafka lost, reconnecting...")
-                    self._create_producer()
+                    self.producer = self._create_producer()
                     connected = self.producer.bootstrap_connected()
                     if connected:
                         logger.debug("Reconnection to kafka successful")
@@ -137,12 +138,12 @@ class KafkaEventBroker(EventBroker):
 
         logger.error("Failed to publish Kafka event.")
 
-    def _create_producer(self) -> None:
+    def _create_producer(self) -> "KafkaProducer":
         import kafka
 
         if self.security_protocol == "PLAINTEXT":
             authentication_params = dict(
-                security_protocol=self.security_protocol, ssl_check_hostname=False,
+                security_protocol=self.security_protocol, ssl_check_hostname=False
             )
         elif self.security_protocol == "SASL_PLAINTEXT":
             authentication_params = dict(
@@ -177,7 +178,7 @@ class KafkaEventBroker(EventBroker):
             )
 
         try:
-            self.producer = kafka.KafkaProducer(
+            return kafka.KafkaProducer(
                 client_id=self.client_id,
                 bootstrap_servers=self.url,
                 value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
@@ -194,10 +195,30 @@ class KafkaEventBroker(EventBroker):
         else:
             partition_key = None
 
+        headers = []
+        if self.rasa_environment:
+            headers = [
+                (
+                    "RASA_ENVIRONMENT",
+                    bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
+                )
+            ]
+
         logger.debug(
-            f"Calling kafka send({self.topic}, value={event}, key={partition_key!s})"
+            f"Calling kafka send({self.topic}, value={event},"
+            f" key={partition_key!s}, headers={headers})"
         )
-        self.producer.send(self.topic, value=event, key=partition_key)
+
+        if self.producer is not None:
+            self.producer.send(
+                self.topic, value=event, key=partition_key, headers=headers
+            )
 
     def _close(self) -> None:
-        self.producer.close()
+        if self.producer is not None:
+            self.producer.close()
+
+    @rasa.shared.utils.common.lazy_property
+    def rasa_environment(self) -> Optional[Text]:
+        """Get value of the `RASA_ENVIRONMENT` environment variable."""
+        return os.environ.get("RASA_ENVIRONMENT", "RASA_ENVIRONMENT_NOT_SET")

@@ -69,7 +69,7 @@ class Persistor(abc.ABC):
         self._copy(os.path.basename(tar_name), target_path)
 
     @abc.abstractmethod
-    def _retrieve_tar(self, filename: Text) -> Text:
+    def _retrieve_tar(self, filename: Text) -> None:
         """Downloads a model previously persisted to cloud storage."""
         raise NotImplementedError
 
@@ -162,7 +162,10 @@ class GCSPersistor(Persistor):
     Fetches them when needed, instead of storing them on the local disk."""
 
     def __init__(self, bucket_name: Text) -> None:
-        from google.cloud import storage
+        """Initialise class with client and bucket."""
+        # there are no type hints in this repo for now
+        # https://github.com/googleapis/python-storage/issues/393
+        from google.cloud import storage  # type: ignore[attr-defined]
 
         super().__init__()
 

@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, Text
 
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
@@ -12,11 +13,55 @@ from rasa.shared.utils.io import json_to_string
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
 
 class RasaReader(JsonTrainingDataReader):
+    """Reader for Rasa NLU training data in JSON format.
+
+    Example:
+        {
+          "rasa_nlu_data": {
+            "regex_features": [
+              {
+                "name": "zipcode",
+                "pattern": "[0-9]{5}"
+              }
+            ],
+            "entity_synonyms": [
+              {
+                "value": "chinese",
+                "synonyms": ["Chinese", "Chines", "chines"]
+              }
+            ],
+            "common_examples": [
+              {
+                "text": "hey",
+                "intent": "greet",
+                "entities": []
+              },
+              {
+                "text": "howdy",
+                "intent": "greet",
+                "entities": []
+              }
+            ]
+          }
+        }
+    """
+
+    def __init__(self) -> None:
+        """Creates reader."""
+        super().__init__()
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "NLU data in Rasa JSON format is deprecated and will be removed in Rasa "
+            "Open Source 4.0.0. Please convert your JSON NLU data to the "
+            "Rasa YAML format.",
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
     def read_from_json(self, js: Dict[Text, Any], **_: Any) -> "TrainingData":
         """Loads training data stored in the rasa NLU data format."""
         import rasa.shared.nlu.training_data.schemas.data_schema as schema
@@ -49,9 +94,20 @@ class RasaReader(JsonTrainingDataReader):
 
 
 class RasaWriter(TrainingDataWriter):
+    """Dumps NLU data as Rasa JSON string."""
+
+    def __init__(self) -> None:
+        """Creates writer."""
+        super().__init__()
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "NLU data in Rasa JSON format is deprecated and will be removed in Rasa "
+            "Open Source 4.0.0. Please convert your JSON NLU data to the "
+            "Rasa YAML format.",
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
     def dumps(self, training_data: "TrainingData", **kwargs: Any) -> Text:
         """Writes Training Data to a string in json format."""
-
         js_entity_synonyms = defaultdict(list)
         for k, v in training_data.entity_synonyms.items():
             if k != v:

@@ -6,10 +6,13 @@ import pytest
 from collections import namedtuple
 from typing import Callable, Text
 
+from _pytest.fixtures import FixtureRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.validator import Validator
 import rasa.shared.utils.io
 
@@ -53,8 +56,9 @@ def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
         assert yml_file.exists(), f"{yml_file} file does not exist"
 
 
-def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
-    run_in_simple_project(
+def test_data_convert_nlu_json(run_in_simple_project: Callable[..., RunResult]):
+
+    result = run_in_simple_project(
         "data",
         "convert",
         "nlu",
@@ -66,7 +70,43 @@ def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
         "json",
     )
 
+    assert "NLU data in Rasa JSON format is deprecated" in str(result.stderr)
     assert os.path.exists("out_nlu_data.json")
+
+
+def test_data_convert_nlu_yml(
+    run: Callable[..., RunResult], tmp_path: Path, request: FixtureRequest
+):
+
+    target_file = tmp_path / "out.yml"
+
+    # The request rootdir is required as the `testdir` fixture in `run` changes the
+    # working directory
+    test_data_dir = Path(request.config.rootdir, "data", "examples", "rasa")
+    source_file = (test_data_dir / "demo-rasa.json").absolute()
+    result = run(
+        "data",
+        "convert",
+        "nlu",
+        "--data",
+        str(source_file),
+        "--out",
+        str(target_file),
+        "-f",
+        "yaml",
+    )
+
+    assert result.ret == 0
+    assert target_file.exists()
+
+    actual_data = RasaYAMLReader().read(target_file)
+    expected = RasaYAMLReader().read(test_data_dir / "demo-rasa.yml")
+
+    assert len(actual_data.training_examples) == len(expected.training_examples)
+    assert len(actual_data.entity_synonyms) == len(expected.entity_synonyms)
+    assert len(actual_data.regex_features) == len(expected.regex_features)
+    assert len(actual_data.lookup_tables) == len(expected.lookup_tables)
+    assert actual_data.entities == expected.entities
 
 
 def test_data_split_help(run: Callable[..., RunResult]):
@@ -156,7 +196,7 @@ def test_validate_files_action_not_found_invalid_domain(
     file_name = tmp_path / f"{file_type}.yml"
     file_name.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         {file_type}:
         - {data_type}: test path
           steps:
@@ -183,7 +223,7 @@ def test_validate_files_form_not_found_invalid_domain(
     file_name = tmp_path / f"{file_type}.yml"
     file_name.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         {file_type}:
         - {data_type}: test path
           steps:
@@ -202,11 +242,42 @@ def test_validate_files_form_not_found_invalid_domain(
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
 
+@pytest.mark.parametrize(
+    ("file_type", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+def test_validate_files_with_active_loop_null(
+    file_type: Text, data_type: Text, tmp_path: Path
+):
+    file_name = tmp_path / f"{file_type}.yml"
+    file_name.write_text(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        {file_type}:
+        - {data_type}: test path
+          steps:
+            - intent: request_restaurant
+            - action: restaurant_form
+            - active_loop: restaurant_form
+            - active_loop: null
+            - action: action_search_restaurants
+        """
+    )
+    args = {
+        "domain": "data/test_domains/restaurant_form.yml",
+        "data": [file_name],
+        "max_history": None,
+        "config": None,
+        "fail_on_warnings": False,
+    }
+    with pytest.warns(None):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
 def test_validate_files_form_slots_not_matching(tmp_path: Path):
     domain_file_name = tmp_path / "domain.yml"
     domain_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         forms:
           name_form:
             required_slots:
@@ -266,7 +337,7 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
     slot_name = "started_booking_form"
     domain.write_text(
         f"""
-            version: "3.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intents:
             - activate_booking
             entities:
@@ -290,11 +361,6 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
                 - location
                 """
     )
-    args = {
-        "domain": str(domain),
-        "data": None,
-        "max_history": None,
-        "config": None,
-    }
+    args = {"domain": str(domain), "data": None, "max_history": None, "config": None}
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))

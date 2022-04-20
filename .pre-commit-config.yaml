@@ -1,10 +1,11 @@
 repos:
 - repo: https://github.com/ambv/black
-  rev: 19.10b0
+  rev: 21.7b0
   hooks:
   - id: black
+    args: [--line-length=88]
 - repo: https://github.com/thlorenz/doctoc
-  rev: master
+  rev: v2.1.0
   hooks:
   -   id: doctoc
       files: "CONTRIBUTING.md"
@@ -16,3 +17,4 @@ repos:
       language: system
       types: [python]
       pass_filenames: false
+      

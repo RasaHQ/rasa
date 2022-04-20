@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import uuid
+from enum import Enum
 from pathlib import Path
 from typing import Text, Optional, Union, List, Callable, Set, Iterable
 
@@ -56,7 +57,7 @@ def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     return _copy_files_to_new_dir(core_files)
 
 
-def get_nlu_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
+def get_nlu_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     """Recursively collects all NLU training files from a list of paths.
 
     Args:
@@ -81,7 +82,6 @@ def get_data_files(
     Returns:
         Paths of training data files.
     """
-
     data_files = set()
 
     if paths is None:
@@ -172,3 +172,21 @@ def _copy_files_to_new_dir(files: Iterable[Text]) -> Text:
         shutil.copy2(f, os.path.join(directory, unique_file_name))
 
     return directory
+
+
+class TrainingType(Enum):
+    """Enum class for defining explicitly what training types exist."""
+
+    NLU = 1
+    CORE = 2
+    BOTH = 3
+    END_TO_END = 4
+
+    @property
+    def model_type(self) -> Text:
+        """Returns the type of model which this training yields."""
+        if self == TrainingType.NLU:
+            return "nlu"
+        if self == TrainingType.CORE:
+            return "core"
+        return "rasa"

@@ -17,7 +17,7 @@ class StoryReader:
     """Helper class to read a story file."""
 
     def __init__(
-        self, domain: Optional[Domain] = None, source_name: Optional[Text] = None,
+        self, domain: Optional[Domain] = None, source_name: Optional[Text] = None
     ) -> None:
         """Constructor for the StoryReader.
 
@@ -25,7 +25,7 @@ class StoryReader:
             domain: Domain object.
             source_name: Name of the training data source.
         """
-        self.story_steps = []
+        self.story_steps: List[StoryStep] = []
         self.current_step_builder: Optional[StoryStepBuilder] = None
         self.domain = domain
         self.source_name = source_name
@@ -91,6 +91,8 @@ class StoryReader:
 
     def _add_event(self, event_name: Text, parameters: Dict[Text, Any]) -> None:
         parsed_events = self._parse_events(event_name, parameters)
+        if parsed_events is None:
+            parsed_events = []
 
         if self.current_step_builder is None:
             raise StoryParseError(
