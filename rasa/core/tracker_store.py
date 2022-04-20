@@ -299,7 +299,7 @@ class TrackerStore:
         """Publishes new tracker events to a message broker."""
         if self.event_broker is None:
             return None
-        
+
         for event in new_events:
             body = {"sender_id": sender_id}
             body.update(event.as_dict())
