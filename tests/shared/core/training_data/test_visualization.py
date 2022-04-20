@@ -140,7 +140,8 @@ async def test_graph_labels(domain: Domain, tmp_path: Path):
 
     expected_labels = [
         "START",
-        "affirm",
+        "affirm,\n(name)",
+        "Slot: name==foo",
         "utter_default",
         "goodbye",
         "utter_goodbye",

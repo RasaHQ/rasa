@@ -2,6 +2,10 @@ stories:
 - story: simple story to test rasa data visualize
   steps:
   - intent: affirm
+    entities:
+    - name: foo
+  - slot_was_set:
+    - name: foo
   - action: utter_default
   - intent: goodbye
   - action: utter_goodbye
