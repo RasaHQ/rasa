@@ -120,3 +120,33 @@ async def test_merge_nodes(domain: Domain, tmp_path: Path):
         should_merge_nodes=True,
     )
     assert isfile(out_file)
+
+
+async def test_graph_labels(domain: Domain, tmp_path: Path):
+    import rasa.shared.core.training_data.loading as core_loading
+    import networkx as nx
+
+    story_steps = await core_loading.load_data_from_resource(
+        "data/test_yaml_stories/story_visualize.yml", domain
+    )
+    out_file = str(tmp_path / "graph.html")
+    g = await visualization.visualize_stories(
+        story_steps,
+        domain,
+        output_file=out_file,
+        max_history=3,
+        should_merge_nodes=False,
+    )
+
+    expected_labels = [
+        "START",
+        "affirm",
+        "utter_default",
+        "goodbye",
+        "utter_goodbye",
+        "END",
+    ]
+
+    actual_labels = [g.nodes[i]["label"] for i in nx.dfs_preorder_nodes(g)]
+
+    assert expected_labels == actual_labels

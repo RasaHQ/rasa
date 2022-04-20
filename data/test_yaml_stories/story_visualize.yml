@@ -1,0 +1,7 @@
+stories:
+- story: simple story to test rasa data visualize
+  steps:
+  - intent: affirm
+  - action: utter_default
+  - intent: goodbye
+  - action: utter_goodbye
