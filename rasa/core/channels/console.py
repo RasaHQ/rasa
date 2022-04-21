@@ -87,7 +87,7 @@ def _print_bot_output(
     if "custom" in message:
         rasa.shared.utils.cli.print_color("Custom json:", color=color)
         rasa.shared.utils.cli.print_color(
-            json.dumps(message["custom"], indent=2), color=color
+            rasa.shared.utils.io.json_to_string(message["custom"]), color=color
         )
 
     return None
