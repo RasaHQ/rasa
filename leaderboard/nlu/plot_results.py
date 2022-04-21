@@ -12,13 +12,13 @@ import numpy as np
 from leaderboard.nlu import collect_results
 
 REPORTED_TIMES = [
-    ("times-train_all", "training time (all components)"),
-    ("times-train_all_classifiers", "training time (classifiers only)"),
+    ("times-train_all", "training time"),
+    ("times-train_all_classifiers", "training time for classifiers"),
 ]
 # suffixes of measurements that are recorded per rasa component
 # i.e. for "intent" or an entity extractor
 REPORTED_PER_COMPONENT = [
-    ("labels--", "number of classes (i.e. unique intents or entities)"),
+    ("labels--", "number of classes"),
     ("weighted avg-f1-score", "weighted avg. F1 score"),
     ("weighted avg-precision", "weighted avg. precision"),
     ("weighted avg-recall", "weighted avg. recall"),
@@ -46,7 +46,7 @@ PLOT_TYPES = ["scatter", "lines", "boxes"]
 # experiments (with the 1st and 2nd level of column name concatenated by '-')
 # to proper names to be used in plots
 COL_HYPERPARAM_TO_NAME = {
-    "param-train_exclusion_fraction": "Fraction of Excluded Training Data",
+    "param-train_exclusion_fraction": "fraction of excluded training data",
 }
 
 
@@ -69,11 +69,11 @@ def sort_config_names(config_names: List[str]) -> List[str]:
     return sorted(config_names, key=lambda name: (conditions(name).index(True), name))
 
 
-def _convert_to_label(component_prefix: str, col_suffix_y: str) -> str:
+def _convert_to_title(component_prefix: str, label_suffix_y: str, label_x : str) -> str:
     if component_prefix == "intent":
-        return f"Intent Classification / {col_suffix_y}"
+        return f"Intent Classification\n{label_suffix_y} vs. {label_x}"
     else:
-        return f"Entity Extraction via {component_prefix} / {col_suffix_y}"
+        return f"Entity Extraction ({component_prefix})\n{label_suffix_y} vs. {label_x}"
 
 
 def generate_plots(
@@ -142,6 +142,7 @@ def generate_plots(
                 col_y=col_y,
                 label_y=label_y,
                 context=context,
+                title = 'Training Times',
                 **common_kwargs,
             )
 
@@ -161,7 +162,7 @@ def generate_plots(
     out_file = get_output_file("metrics")
     with (nullcontext() if not save else PdfPages(out_file)) as context:
 
-        # Determine order of plots
+        # (1) Determine order of plots
         plot_order = []
         # ... first list all plots regarding intents ...
         if "intent" in component_prefixes:
@@ -186,11 +187,11 @@ def generate_plots(
                     kwargs[plot_type] = True  # only this.
                     plot_order.append((component_prefix, col_label, kwargs))
 
-        # Plot them!
-        for component_prefix, (col_suffix_y, label_suffix_y), kwargs in plot_order:
+        # (2) Plot them!
+        for component_prefix, (col_suffix_y, label_y), kwargs in plot_order:
 
             col_y = f"{component_prefix}_{col_suffix_y}"
-            label_y = _convert_to_label(component_prefix, label_suffix_y)
+            title = _convert_to_title(component_prefix, label_y, label_x)
 
             # special case: for the sanity check of the number of classes, we
             # just do a scatter plot - always
@@ -207,6 +208,7 @@ def generate_plots(
                 col_y=col_y,
                 context=context,
                 label_y=label_y,
+                title=title,
                 **kwargs_tweaked,
             )
 
@@ -215,15 +217,16 @@ def generate_plots(
         with (nullcontext() if not save else PdfPages(out_file)) as context:
 
             for component_prefix in component_prefixes:
-                for col_suffix_y, label_suffix_y in REPORTED_PER_COMPONENT:
+                for col_suffix_y, label_y in REPORTED_PER_COMPONENT:
                     col_y = f"{component_prefix}_{col_suffix_y}"
-                    label_y = _convert_to_label(component_prefix, col_suffix_y)
+                    title = _convert_to_title(component_prefix, label_y, label_x)
                     _generate_plots(
                         df=df_report,
                         col_x=col_x,
                         label_x=label_x,
                         col_y=col_y,
                         label_y=label_y,
+                        title = title,
                         context=context,
                         num_observations=True,
                     )
@@ -244,6 +247,7 @@ def _generate_plots(
     label_x: str,
     col_y: str,
     label_y: str,
+    title: str,
     context: Union[PdfPages, nullcontext],
     scatter: bool = False,
     lines: bool = False,
@@ -259,6 +263,7 @@ def _generate_plots(
         col_y: name of column in `sub_df`
         label_x: name to be used in plots instead of `col_x`
         label_y: name to be used in plots instead of `col_y`
+        title: plot title
         context: either a null context (then plots are only shown) or PdfPages context
           (used for generating output files)
         scatter: set to True to produce scatter plot
@@ -278,13 +283,14 @@ def _generate_plots(
     if num_observations:
         num_y_per_x_and_model = sub_df[[COL_MODEL_NAME, col_x]].value_counts()
         pd.DataFrame(num_y_per_x_and_model).plot.bar(
-            title=f"number of observations ({col_y})"
+            title=f"number of observations ({label_y})"
         )
         _show_or_save(context=context)
 
     title = (
-        f"{label_y} / varying sizes of training data\n"
-        f"(showing {len(sub_df)} observations in total / found {nans} NaNs)"
+        f"{title}\n"
+        f"({len(sub_df)} measurements, " 
+        f"{nans} missing values)"
     )
 
     if scatter:
