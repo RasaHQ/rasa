@@ -200,6 +200,7 @@ class SocketIOInput(InputChannel):
 
         @sio.on("connect", namespace=self.namespace)
         async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:
+            logger.debug(f"connect, environ: {environ}")
             if self.jwt_key:
                 jwt_payload = None
                 if auth and auth.get("token"):
@@ -250,7 +251,7 @@ class SocketIOInput(InputChannel):
                 sender_id = sid
 
             message = UserMessage(
-                data["message"], output_channel, sender_id, input_channel=self.name()
+                data["message"], output_channel, sender_id, input_channel=self.name(), metadata=data.get("message", "")
             )
             await on_new_message(message)
 
