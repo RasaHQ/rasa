@@ -2082,7 +2082,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "pytelegrambotapi"
-version = "3.8.3"
+version = "4.4.1"
 description = "Python Telegram bot api."
 category = "main"
 optional = false
@@ -3483,7 +3483,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "c70a570deb43ded7178f28d551f3e693b0d97fa8185c77c8fe57b4d3d206f8c2"
+content-hash = "a91d4ee32de2b8214fd784f5ef3b8d6eacb047bf5e9af5509b9933498c748e5e"
 
 [metadata.files]
 absl-py = [
@@ -5053,7 +5053,7 @@ pyrsistent = [
     {file = "pyrsistent-0.18.1.tar.gz", hash = "sha256:d4d61f8b993a7255ba714df3aca52700f8125289f84f704cf80916517c46eb96"},
 ]
 pytelegrambotapi = [
-    {file = "pyTelegramBotAPI-3.8.3.tar.gz", hash = "sha256:afdd887fff42a963f13d09a1f4f5fd24aef08f4b8a594f2ac11e0a29022f1518"},
+    {file = "pyTelegramBotAPI-4.4.1.tar.gz", hash = "sha256:dd0a69a7f5032a2182867bcc3a05bc10aca023be60633bf7edcd1cb44c662be8"},
 ]
 pytest = [
     {file = "pytest-7.1.1-py3-none-any.whl", hash = "sha256:92f723789a8fdd7180b6b06483874feca4c48a5c76968e03bb3e7f806a1869ea"},
