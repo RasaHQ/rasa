@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import scipy.sparse
-from typing import Text
+from typing import Text, List
 
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -68,6 +68,56 @@ def test_text_featurizer(sentence, expected_features):
     assert sen_vec is None
 
     assert np.all(seq_vec.toarray() == expected_features[:-1])
+
+
+@pytest.mark.parametrize(
+    "sentence, expected_features",
+    [
+        (
+            "goodbye Goodbye GOODBYE gOoDbyE",
+            [
+                [1.0, 1.0,],  # check if all
+                [1.0, 1.0,],  # spellings of
+                [1.0, 1.0,],  # goodbye are
+                [1.0, 1.0,],  # featurized the same.
+            ],
+        ),
+        ("a A", [[1.0, 1.0,], [1.0, 1.0,],],),  # is A  # equal to a?
+    ],
+)
+def test_text_featurizer_case_insensitive(
+    sentence: Text, expected_features: List[float]
+):
+    featurizer = LexicalSyntacticFeaturizer(
+        {
+            "features": [[], ["prefix2", "suffix2"], [],],
+            "prefix_suffix_case_sensitive": False,
+        }
+    )
+
+    train_message = Message(data={TEXT: sentence})
+    test_message = Message(data={TEXT: sentence})
+
+    WhitespaceTokenizer().process(train_message)
+    WhitespaceTokenizer().process(test_message)
+
+    featurizer.train(TrainingData([train_message]))
+
+    featurizer.process(test_message)
+
+    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
+    if seq_vec:
+        seq_vec = seq_vec.features
+    if sen_vec:
+        sen_vec = sen_vec.features
+
+    assert isinstance(seq_vec, scipy.sparse.coo_matrix)
+    assert sen_vec is None
+    assert np.all(seq_vec.toarray() == expected_features)
+
+    # check pairwise equality of features
+    for i in range(seq_vec.shape[0] - 1):
+        assert np.all(seq_vec.toarray()[i] == seq_vec.toarray()[i + 1])
 
 
 @pytest.mark.parametrize(
