@@ -198,7 +198,7 @@ class SocketIOInput(InputChannel):
         Returns:
             Metadata which was extracted from the request.
         """
-        metadata=data.get(self.metadata_key, {})
+        metadata = data.get(self.metadata_key, {})
         logger.debug(f"returning metadata: {metadata}")
         return metadata
 
@@ -273,7 +273,11 @@ class SocketIOInput(InputChannel):
 
             metadata = self.get_metadata(data)
             message = UserMessage(
-                data["message"], output_channel, sender_id, input_channel=self.name(), metadata=metadata
+                data["message"],
+                output_channel,
+                sender_id,
+                input_channel=self.name(),
+                metadata=metadata,
             )
             await on_new_message(message)
 
