@@ -144,6 +144,7 @@ class SocketIOInput(InputChannel):
             credentials.get("socketio_path", "/socket.io"),
             credentials.get("jwt_key"),
             credentials.get("jwt_method", "HS256"),
+            credentials.get("metadata_key", "metadata"),
         )
 
     def __init__(
@@ -155,6 +156,7 @@ class SocketIOInput(InputChannel):
         socketio_path: Optional[Text] = "/socket.io",
         jwt_key: Optional[Text] = None,
         jwt_method: Optional[Text] = "HS256",
+        metadata_key: Optional[Text] = "metadata",
     ):
         """Creates a ``SocketIOInput`` object."""
         self.bot_message_evt = bot_message_evt
@@ -163,6 +165,8 @@ class SocketIOInput(InputChannel):
         self.namespace = namespace
         self.socketio_path = socketio_path
         self.sio = None
+        self.metadata_key = metadata_key
+        self.environ = None
 
         self.jwt_key = jwt_key
         self.jwt_algorithm = jwt_method
@@ -179,6 +183,23 @@ class SocketIOInput(InputChannel):
             )
             return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
+
+    def get_metadata(self, data: Dict) -> Dict[Text, Any]:
+        """Extracts additional information from the incoming request.
+
+         Implementing this function is not required. However, it can be used to extract
+         metadata from the request. The return value is passed on to the
+         ``UserMessage`` object and stored in the conversation tracker.
+
+        Args:
+            request: incoming request with the message of the user
+
+        Returns:
+            Metadata which was extracted from the request.
+        """
+        metadata=data.get(self.metadata_key, {})
+        logger.debug(f"returning metadata: {metadata}")
+        return metadata
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -200,6 +221,7 @@ class SocketIOInput(InputChannel):
 
         @sio.on("connect", namespace=self.namespace)
         async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:
+            self.environ = environ
             logger.debug(f"connect, environ: {environ}")
             if self.jwt_key:
                 jwt_payload = None
@@ -250,8 +272,9 @@ class SocketIOInput(InputChannel):
             else:
                 sender_id = sid
 
+            metadata = self.get_metadata(data)
             message = UserMessage(
-                data["message"], output_channel, sender_id, input_channel=self.name(), metadata=data.get("message", "")
+                data["message"], output_channel, sender_id, input_channel=self.name(), metadata=metadata
             )
             await on_new_message(message)
 
