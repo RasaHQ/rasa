@@ -64,6 +64,43 @@ def test_train(run_in_simple_project: Callable[..., RunResult], tmp_path: Path):
     )
 
 
+def test_train_with_endpoints(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    temp_dir = os.getcwd()
+
+    run_in_simple_project(
+        "train",
+        "-c",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--data",
+        "data",
+        "--out",
+        "train_models",
+        "--fixed-model-name",
+        "test-model",
+        "--endpoints",
+        "endpoints.yml",
+    )
+
+    models_dir = Path(temp_dir, "train_models")
+    assert models_dir.is_dir()
+
+    models = list(models_dir.glob("*"))
+    assert len(models) == 1
+
+    model = models[0]
+    assert model.name == "test-model.tar.gz"
+
+    _, metadata = LocalModelStorage.from_model_archive(tmp_path, model)
+    assert metadata.model_id
+    assert (
+        metadata.domain.as_dict() == Domain.load(Path(temp_dir, "domain.yml")).as_dict()
+    )
+
+
 def test_train_finetune(
     run_in_simple_project: Callable[..., RunResult], capsys: CaptureFixture
 ):
@@ -422,7 +459,7 @@ def test_train_help(run: Callable[..., RunResult]):
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force] [--finetune [FINETUNE]]
-                  [--epoch-fraction EPOCH_FRACTION]
+                  [--epoch-fraction EPOCH_FRACTION] [--endpoints ENDPOINTS]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")
