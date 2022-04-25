@@ -35,6 +35,7 @@ import rasa.utils.io
     "optional_arguments",
     [
         ["--endpoints", "endpoints.yml"],
+        ["--endpoints", "non_existent_endpoints.yml"],
         [],
     ],
 )
