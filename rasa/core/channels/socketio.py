@@ -184,23 +184,6 @@ class SocketIOInput(InputChannel):
             return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
-    def get_metadata(self, data: Dict) -> Dict[Text, Any]:
-        """Extracts additional information from the incoming request.
-
-         Implementing this function is not required. However, it can be used to extract
-         metadata from the request. The return value is passed on to the
-         ``UserMessage`` object and stored in the conversation tracker.
-
-        Args:
-            request: incoming request with the message of the user
-
-        Returns:
-            Metadata which was extracted from the request.
-        """
-        metadata = data.get(self.metadata_key, {})
-        logger.debug(f"returning metadata: {metadata}")
-        return metadata
-
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -272,7 +255,8 @@ class SocketIOInput(InputChannel):
             else:
                 sender_id = sid
 
-            metadata = self.get_metadata(data)
+            metadata = data.get(self.metadata_key, {})
+            logger.debug(f"returning metadata: {metadata}")
             message = UserMessage(
                 data["message"],
                 output_channel,
