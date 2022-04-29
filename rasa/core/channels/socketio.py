@@ -166,7 +166,6 @@ class SocketIOInput(InputChannel):
         self.socketio_path = socketio_path
         self.sio = None
         self.metadata_key = metadata_key
-        self.environ = None
 
         self.jwt_key = jwt_key
         self.jwt_algorithm = jwt_method
@@ -204,8 +203,6 @@ class SocketIOInput(InputChannel):
 
         @sio.on("connect", namespace=self.namespace)
         async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:
-            self.environ = environ
-            logger.debug(f"connect, environ: {environ}")
             if self.jwt_key:
                 jwt_payload = None
                 if auth and auth.get("token"):
