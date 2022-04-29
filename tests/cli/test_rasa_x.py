@@ -1,6 +1,7 @@
 import sys
 import argparse
 from pathlib import Path
+import warnings
 
 import pytest
 from typing import Callable, Dict
@@ -13,6 +14,7 @@ import rasa.shared.utils.io
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
+import rasa.version
 
 
 def test_x_help(run: Callable[..., RunResult]):
@@ -163,22 +165,34 @@ async def test_pull_runtime_config_from_server():
         assert rasa.shared.utils.io.read_file(credentials_path) == credentials
 
 
-def test_rasa_x_raises_warning_above_version_3(
-    monkeypatch: MonkeyPatch, run: Callable[..., RunResult]
-):
+def test_rasa_x_raises_warning_above_version_3(monkeypatch: MonkeyPatch):
     def mock_run_locally(args):
         return None
 
     monkeypatch.setattr(x, "run_locally", mock_run_locally)
-    monkeypatch.setattr(rasa.version, "__version__", "3.0.0")
 
     args = argparse.Namespace(loglevel=None, log_file=None, production=None)
     with pytest.warns(
         UserWarning,
-        match="Your version of rasa '3.0.0' is currently not supported by Rasa X.",
+        match=f"Your version of rasa '{rasa.version.__version__}' is currently not supported by Rasa X.",
     ):
         x.rasa_x(args)
 
     monkeypatch.setattr(target=rasa.version, name="__version__", value="2.8.0")
     with pytest.warns(None):
+        x.rasa_x(args)
+
+
+def test_rasa_x_does_not_raise_warning_above_version_3_with_production_flag(
+    monkeypatch: MonkeyPatch,
+):
+    def mock_run_in_production(args):
+        return None
+
+    monkeypatch.setattr(x, "run_in_production", mock_run_in_production)
+
+    args = argparse.Namespace(loglevel=None, log_file=None, production=True)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         x.rasa_x(args)
