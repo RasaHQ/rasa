@@ -1,7 +1,6 @@
 import sys
 import argparse
 from pathlib import Path
-import warnings
 
 import pytest
 from typing import Callable, Dict
