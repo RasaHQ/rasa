@@ -4,7 +4,6 @@ import importlib.util
 import logging
 from multiprocessing.process import BaseProcess
 from multiprocessing import get_context
-from packaging import version
 import os
 import signal
 import sys

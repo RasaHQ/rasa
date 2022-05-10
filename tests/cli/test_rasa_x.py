@@ -174,7 +174,9 @@ def test_rasa_x_raises_warning_above_version_3(monkeypatch: MonkeyPatch):
     args = argparse.Namespace(loglevel=None, log_file=None, production=None)
     with pytest.warns(
         UserWarning,
-        match=f"Your version of rasa '{rasa.version.__version__}' is currently not supported by Rasa X.",
+        match=f"Your version of rasa '{rasa.version.__version__}' is currently "
+        f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
+        f"version higher or equal to 3.0.0 will result in errors.",
     ):
         x.rasa_x(args)
 
@@ -193,6 +195,5 @@ def test_rasa_x_does_not_raise_warning_above_version_3_with_production_flag(
 
     args = argparse.Namespace(loglevel=None, log_file=None, production=True)
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
+    with pytest.warns(None):
         x.rasa_x(args)
