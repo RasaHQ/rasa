@@ -163,7 +163,7 @@ class Features:
     def filter(
         features_list: List[Features],
         attributes: Optional[Iterable[Text]] = None,
-        type: Optional[Text] = None,
+        feature_type: Optional[Text] = None,
         origin: Optional[List[Text]] = None,
         is_sparse: Optional[bool] = None,
     ) -> List[Features]:
@@ -173,7 +173,7 @@ class Features:
           features_list: list of features to be filtered
           attributes: List of attributes that we're interested in. Set this to `None`
             to disable this filter.
-          type: The type of feature we're interested in. Set this to `None`
+          feature_type: The type of feature we're interested in. Set this to `None`
             to disable this filter.
           origin: If specified, this method will check that the exact order of origins
             matches the given list of origins. The reason for this is that if
@@ -197,8 +197,8 @@ class Features:
                 if (f.origin if not isinstance(f.origin, Text) else list([f.origin]))
                 == origin
             ]
-        if type is not None:
-            filtered = [f for f in filtered if f.type == type]
+        if feature_type is not None:
+            filtered = [f for f in filtered if f.type == feature_type]
         if is_sparse is not None:
             filtered = [f for f in filtered if f.is_sparse() == is_sparse]
         return filtered
@@ -235,58 +235,14 @@ class Features:
         return extracted
 
     @staticmethod
-    def combine(
-        features_list: List[Features], expected_origins: Optional[List[Text]] = None
-    ) -> Features:
-        """Combine features of the same type and level that describe the same attribute.
-
-        If sequence features are to be combined, then they must have the same
-        sequence dimension.
-
-        Args:
-          features: Non-empty list of Features  of the same type and level that
-            describe the same attribute.
-          expected_origins: The expected origins of the given features. This method
-            will check that the origin information of each feature is as expected, i.e.
-            the origin of the i-th feature in the given list is the i-th origin
-            in this list of origins.
+    def assert_consistency(features_list: List[Features]) -> None:
+        """Assert that all features have the same form and describe the same attribute.
 
         Raises:
-          `ValueError` will be raised
-           - if the given list is empty
-           - if there are inconsistencies in the given list of `Features`
-           - if the origins aren't as expected
+          `ValueError` will be raised if features with different properties are found
         """
-        if len(features_list) == 0:
-            raise ValueError("Expected a non-empty list of Features.")
-        if len(features_list) == 1:
-            # nothing to combine here
-            return features_list[0]
-
-        # Un-Pack the Origin information
-        origin_of_combination = [f.origin for f in features_list]
-        origin_of_combination = [
-            featurizer_name
-            for origin in origin_of_combination
-            for featurizer_name in (origin if isinstance(origin, List) else [origin])
-        ]
-
-        # Sanity Checks
-        # (1) origins must be as expected
-        if expected_origins is not None:
-            if origin_of_combination is not None:
-                for idx, (expected, actual) in enumerate(
-                    itertools.zip_longest(expected_origins, origin_of_combination)
-                ):
-                    if expected != actual:
-                        raise ValueError(
-                            f"Expected '{expected}' to be the origin of the {idx}-th "
-                            f"feature (because of `origin_of_combination`) but found a "
-                            f"feature from '{actual}'."
-                        )
-        # (2) attributes (is_sparse, type, attribute) must coincide
-        # Note: we could also use `filter` for this check, but then the error msgs
-        # aren't as nice.
+        if len(features_list) <= 1:
+            return
         sparseness: Set[bool] = set(f.is_sparse() for f in features_list)
         if len(sparseness) > 1:
             raise ValueError(
@@ -305,21 +261,76 @@ class Features:
                 f"Expected all Features to describe the same attribute but found "
                 f"attributes: {attributes}."
             )
-        # (3) dimensions must match
-        # Note: We shouldn't have to check sentence-level features here but it doesn't
-        # hurt either.
-        dimensions = set(f.features.shape[0] for f in features_list)
-        if len(dimensions) > 1:
+        sequence_lengths = set(f.features.shape[0] for f in features_list)
+        if len(sequence_lengths) > 1:
             raise ValueError(
-                f"Expected all sequence dimensions to match but found {dimensions}."
+                f"Expected all sequence lenghts to match but found {sequence_lengths}."
             )
+
+    @staticmethod
+    def combine(
+        features_list: List[Features],
+        expected_origins: Optional[List[Text]] = None,
+        horizontal: bool = True,
+    ) -> Features:
+        """Combine a list of features into one.
+
+        Note that you can use `assert_consistency` to check that all Features are of
+        the same type and level and describe the same attribute.
+
+        Args:
+          features_list: Non-empty list of Features
+          expected_origins: The expected origins of the given features. This method
+            will check that the origin information of each feature is as expected, i.e.
+            the origin of the i-th feature in the given list is the i-th origin
+            in this list of origins.
+          horizontal: determines axis for concatenation
+
+         Raises:
+          `ValueError` will be raised
+           - if the given list is empty
+           - if the origins aren't as expected
+        """
+        if len(features_list) == 0:
+            raise ValueError("Expected a non-empty list of Features.")
+        if len(features_list) == 1 and expected_origins is None:
+            # nothing to combine here
+            return features_list[0]
+
+        # Un-Pack the Origin information
+        origin_of_combination = [
+            featurizer_name
+            for f in features_list
+            for featurizer_name in (
+                f.origin if isinstance(f.origin, List) else [f.origin]
+            )
+        ]
+
+        # Check Origins
+        if expected_origins is not None:
+            if origin_of_combination is not None:
+                for idx, (expected, actual) in enumerate(
+                    itertools.zip_longest(expected_origins, origin_of_combination)
+                ):
+                    if expected != actual:
+                        raise ValueError(
+                            f"Expected '{expected}' to be the origin of the {idx}-th "
+                            f"feature but found a feature from '{actual}'."
+                        )
 
         # Combine the features
         arbitrary_feature = features_list[0]
+        array_list = [f.features for f in features_list]
         if not arbitrary_feature.is_sparse():
-            features = np.concatenate([f.features for f in features_list], axis=-1)
+            if horizontal:
+                features = np.concatenate(array_list, axis=-1)
+            else:
+                features = np.concatenate(array_list, axis=0)
         else:
-            features = scipy.sparse.hstack([f.features for f in features_list])
+            if horizontal:
+                features = scipy.sparse.hstack(array_list)
+            else:
+                features = scipy.sparse.vstack(array_list)
         return Features(
             features=features,
             feature_type=arbitrary_feature.type,
@@ -357,11 +368,13 @@ class Features:
         output = []
         for is_sparse in [True, False]:
             # all sparse features before all dense features
-            for type in [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]:
+            for feature_type in [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]:
                 # sequence feature that is (not) sparse before sentence feature that is
                 # (not) sparse
                 sublist = Features.filter(
-                    features_list=features_list, type=type, is_sparse=is_sparse
+                    features_list=features_list,
+                    feature_type=feature_type,
+                    is_sparse=is_sparse,
                 )
                 if sublist:
                     combined_feature = Features.combine(

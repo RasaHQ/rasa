@@ -1009,7 +1009,10 @@ class SimpleTED(TransformerRasaModel):
     def _process_batch_data(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> tf.Tensor:
-        """Encodes batch data; combines intent and text and action name and action text if both are present
+        """Encodes batch dat.
+
+        Ccombines intent and text and action name and action text if both are present.
+
         Args:
             tf_batch_data: dictionary mapping every attribute to its features and masks
         Returns:

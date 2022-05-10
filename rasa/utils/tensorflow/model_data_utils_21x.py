@@ -6,7 +6,7 @@ from collections import defaultdict, OrderedDict
 import scipy.sparse
 
 from rasa.utils.tensorflow.model_data import FeatureArray, Data
-from rasa.utils.tensorflow.constants import SEQUENCE
+from rasa.utils.tensorflow.constants import SEQUENCE, SENTENCE
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -152,7 +152,7 @@ def _features_for_attribute(
     state_to_tracker_features: Dict[Text, List[List[List["Features"]]]],
     training: bool,
     zero_state_features: Dict[Text, List["Features"]],
-) -> Dict[Text, List[np.ndarray]]:
+) -> Dict[Text, List[FeatureArray]]:
     """Create the features for the given attribute from the tracker features.
     Args:
         attribute: the attribute
@@ -178,55 +178,39 @@ def _features_for_attribute(
         tracker_features, zero_state_features[attribute]
     )
 
-    sparse_features = defaultdict(list)
-    dense_features = defaultdict(list)
-
-    # vstack serves as removing dimension
-    # TODO check vstack for sequence features
-    for key, values in _sparse_features.items():
-        sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
-    for key, values in _dense_features.items():
-        dense_features[key] = [np.vstack(value) for value in values]
-
-    attribute_features = {MASK: [np.array(attribute_masks)]}
-
-    feature_types = set()
-    feature_types.update(list(dense_features.keys()))
-    feature_types.update(list(sparse_features.keys()))
-
-    for feature_type in feature_types:
-        if feature_type == SEQUENCE:
-            # TODO we don't take sequence features because that makes us deal
-            #  with 4D sparse tensors
-            # FIXME: ... why are they collected and stacked then?
+    list_of_collated_sentence_feature_batches: List[FeatureArray] = []
+    for feature_batch_collection in [
+        _sparse_features,
+        _dense_features,
+    ]:
+        batch_of_feature_lists = feature_batch_collection.get(SENTENCE, None)
+        if not batch_of_feature_lists:
             continue
+        # For each record, stack all the features of the same kind, and wrap the
+        # resulting batch of stacked features into a feature array.
+        collated_sentence_features = FeatureArray(
+            np.array(
+                [
+                    Features.combine(feature_list, horizontal=False).features
+                    for feature_list in batch_of_feature_lists
+                ]
+            ),
+            number_of_dimensions=3,
+        )
+        list_of_collated_sentence_feature_batches.append(collated_sentence_features)
 
-        attribute_features[feature_type] = []
-        if feature_type in sparse_features:
-            attribute_features[feature_type].append(
-                np.array(sparse_features[feature_type])
-            )
-        if feature_type in dense_features:
-            attribute_features[feature_type].append(
-                np.array(dense_features[feature_type])
-            )
-
-    # NEW: added to 2.1.x version to ensure compatibility with new model_data
-    for feature_type, list_of_arrays in attribute_features.items():
-        attribute_features[feature_type] = [
-            FeatureArray(array, number_of_dimensions=3)
-            for array in attribute_features[feature_type]
-        ]
-
-    return attribute_features
+    return {
+        MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=3)],
+        SENTENCE: list_of_collated_sentence_feature_batches,
+    }
 
 
 def map_tracker_features(
-    tracker_features: List[List[List["Features"]]], zero_features: List["Features"]
+    tracker_features: List[List[List[Features]]], zero_features: List[Features]
 ) -> Tuple[
     List[np.ndarray],
-    Dict[Text, List[List["Features"]]],
-    Dict[Text, List[List["Features"]]],
+    Dict[Text, List[List[Features]]],
+    Dict[Text, List[List[Features]]],
 ]:
     """Create masks for all attributes of the given features and split the features
     into sparse and dense features.
@@ -260,9 +244,9 @@ def map_tracker_features(
             for features in list_of_features:
                 # all features should have the same types
                 if features.is_sparse():
-                    dialogue_sparse_features[features.type].append(features.features)
+                    dialogue_sparse_features[features.type].append(features)
                 else:
-                    dialogue_dense_features[features.type].append(features.features)
+                    dialogue_dense_features[features.type].append(features)
 
         for key, value in dialogue_sparse_features.items():
             sparse_features[key].append(value)
