@@ -349,6 +349,7 @@ def create_common_callbacks(
     tensorboard_log_dir: Optional[Text] = None,
     tensorboard_log_level: Optional[Text] = None,
     checkpoint_dir: Optional[Path] = None,
+    profile_batch: Union[int, Tuple[int, int]] = 0,
 ) -> List["Callback"]:
     """Create common callbacks.
 
@@ -363,6 +364,8 @@ def create_common_callbacks(
         tensorboard_log_level: defines when training metrics for tensorboard should be
                                logged. Valid values: 'epoch' and 'batch'.
         checkpoint_dir: optional directory that should be used for model checkpointing
+        profile_batch: optional profiling of these batch(es) to sample compute
+            characteristics
 
     Returns:
         A list of callbacks.
@@ -379,6 +382,7 @@ def create_common_callbacks(
                 write_graph=True,
                 write_images=True,
                 histogram_freq=10,
+                profile_batch=profile_batch,
             )
         )
 

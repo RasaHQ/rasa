@@ -80,6 +80,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     CROSS_ENTROPY,
     LEARNING_RATE,
+    TENSORBOARD_PROFILE_BATCH,
 )
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
@@ -237,6 +238,10 @@ class SimpleTEDPolicy(Policy):
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
             USE_GPU: True,
+            # Define for which batches profiling should be enabled. For more
+            # information take a look at the tensorflow API.
+            # Set to 0 for no profiling.
+            TENSORBOARD_PROFILE_BATCH: 0,
         }
 
     @staticmethod
@@ -454,6 +459,7 @@ class SimpleTEDPolicy(Policy):
             self.config[TENSORBOARD_LOG_DIR],
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
+            profile_batch=self.config[TENSORBOARD_PROFILE_BATCH],
         )
 
         self.model.fit(
