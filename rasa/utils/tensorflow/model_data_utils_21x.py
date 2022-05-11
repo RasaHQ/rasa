@@ -7,16 +7,14 @@ import scipy.sparse
 
 from rasa.utils.tensorflow.model_data import FeatureArray, Data
 from rasa.utils.tensorflow.constants import SEQUENCE, SENTENCE
-
-if typing.TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.features import Features
 
 MASK = "mask"
 
 
 def surface_attributes(
-    tracker_state_features: List[List[Dict[Text, List["Features"]]]]
-) -> Dict[Text, List[List[List["Features"]]]]:
+    tracker_state_features: List[List[Dict[Text, List[Features]]]]
+) -> Dict[Text, List[List[List[Features]]]]:
     """Restructure the input.
     Args:
         tracker_state_features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
@@ -53,8 +51,8 @@ def surface_attributes(
 
 
 def create_zero_features(
-    tracker_features: List[List[List["Features"]]],
-) -> List["Features"]:
+    tracker_features: List[List[List[Features]]],
+) -> List[Features]:
     # all features should have the same types
     """
     Computes default feature values for an attribute;
@@ -91,10 +89,10 @@ def create_zero_features(
 
 def convert_to_data_format(
     tracker_state_features: Union[
-        List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
+        List[List[Dict[Text, List[Features]]]], List[Dict[Text, List[Features]]]
     ],
-    zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
-) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
+    zero_state_features: Optional[Dict[Text, List[Features]]] = None,
+) -> Tuple[Data, Optional[Dict[Text, List[Features]]]]:
     """Converts the input into "Data" format.
     Args:
         tracker_state_features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
@@ -149,9 +147,9 @@ def convert_to_data_format(
 def _features_for_attribute(
     attribute: Text,
     empty_features: List[Any],
-    state_to_tracker_features: Dict[Text, List[List[List["Features"]]]],
+    state_to_tracker_features: Dict[Text, List[List[List[Features]]]],
     training: bool,
-    zero_state_features: Dict[Text, List["Features"]],
+    zero_state_features: Dict[Text, List[Features]],
 ) -> Dict[Text, List[FeatureArray]]:
     """Create the features for the given attribute from the tracker features.
     Args:
