@@ -99,8 +99,8 @@ endif
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
 
 lint-changelog:
-# Lint changelog filenames to avoid merging of incorrectly named changelog fragment files
-# For more info about proper changelog file naming, see https://github.com/RasaHQ/rasa/blob/main/changelog/README.md
+	# Lint changelog filenames to avoid merging of incorrectly named changelog fragment files
+	# For more info about proper changelog file naming, see https://github.com/RasaHQ/rasa/blob/main/changelog/README.md
 	poetry run flake8 --exclude=*.feature.md,*.improvement.md,*.bugfix.md,*.doc.md,*.removal.md,*.misc.md,README.md,_template.md.jinja2  changelog/* -q
 
 lint-security:
