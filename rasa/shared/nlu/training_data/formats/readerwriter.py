@@ -34,12 +34,11 @@ def _raise_on_same_start_and_different_end_positions(
         aggregated_entities: Entities for each start position
     """
      for entity_list in aggregated_entities.values():
-        if len(entity_list) > 0:
-            end = entity_list[0].get("end", None)
+            end = entity_list[0].get("end")
             for entity in entity_list[1:]:
                 # By construction, start positions of all entities in `entity_list` are
                 # identical
-                if entity.get("end", None) != end:
+                if entity.get("end") != end:
                     raise ValueError(
                         f"Entities '{entity}' and "
                         f"'{entity_list[0]}' have identical "
