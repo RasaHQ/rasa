@@ -33,17 +33,17 @@ def _raise_on_same_start_and_different_end_positions(
     Args:
         aggregated_entities: Entities for each start position
     """
-     for entity_list in aggregated_entities.values():
-            end = entity_list[0].get("end")
-            for entity in entity_list[1:]:
-                # By construction, start positions of all entities in `entity_list` are
-                # identical
-                if entity.get("end") != end:
-                    raise ValueError(
-                        f"Entities '{entity}' and "
-                        f"'{entity_list[0]}' have identical "
-                        f"start but different end positions"
-                    )
+    for entity_list in aggregated_entities.values():
+        end = entity_list[0].get("end")
+        for entity in entity_list[1:]:
+            # By construction, start positions of all entities in `entity_list` are
+            # identical
+            if entity.get("end") != end:
+                raise ValueError(
+                    f"Entities '{entity}' and "
+                    f"'{entity_list[0]}' have identical "
+                    f"start but different end positions"
+                )
 
 
 class TrainingDataReader(abc.ABC):
