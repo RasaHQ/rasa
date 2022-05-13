@@ -1036,8 +1036,6 @@ class TEDPolicy(Policy):
             predict_data_example,
         ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
-        model = None
-
         with (
             contextlib.nullcontext()
             if model_utilities["meta"][USE_GPU]
