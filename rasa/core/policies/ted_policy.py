@@ -1038,7 +1038,11 @@ class TEDPolicy(Policy):
 
         model = None
 
-        with (contextlib.nullcontext() if config[USE_GPU] else tf.device("/cpu:0")):
+        with (
+            contextlib.nullcontext()
+            if model_utilities["meta"][USE_GPU]
+            else tf.device("/cpu:0")
+        ):
             model = cls._load_tf_model(
                 model_utilities,
                 model_data_example,
