@@ -211,6 +211,10 @@ If you want to fine-tune your model, start by modifying the following parameters
 
   Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to [handle actions predicted with low confidence](./fallback-handoff.mdx#handling-low-action-confidence).
 
+* `use_gpu`:
+  This parameter defines whether a GPU (if available) will be used training. By default, `TEDPolicy` will be trained on GPU
+  if a GPU is available (i.e. `use_gpu` is `True`). To enforce that `TEDPolicy` uses only the CPU for training, set `use_gpu` to `False`.
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -386,6 +390,10 @@ However, additional parameters exist that can be adapted.
 |                                       |                        |   split_entities_by_comma:                                   |
 |                                       |                        |     address: True                                            |
 |                                       |                        | ```                                                          |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_gpu                               | True                   | This parameter defines whether a GPU (if available) will     |
+|                                       |                        | be used during training. By default, GPU will be used if     |
+|                                       |                        | its available.                                               |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 ```
 
@@ -591,6 +599,11 @@ If you want to fine-tune model's performance, start by modifying the following p
     trigger `action_unlikely_intent` for any of the negative examples that it has encountered
     during training.
 
+* `use_gpu`:
+  This parameter defines whether a GPU (if available) will be used training. By default, `TEDPolicy` will be trained on GPU
+  if a GPU is available (i.e. `use_gpu` is `True`). To enforce that `TEDPolicy` uses only the CPU for training, set `use_gpu` to `False`.
+
+
 The above configuration parameters are the ones you should try tweaking according to your use case and training data.
 However, additional parameters exist that you could adapt.
 
@@ -729,6 +742,10 @@ However, additional parameters exist that you could adapt.
 |                                       |                        | these negative examples from your training data by picking a |
 |                                       |                        | random story part and pairing it with a random intent that   |
 |                                       |                        | doesn't occur at this point.                                 |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_gpu                               | True                   | This parameter defines whether a GPU (if available) will     |
+|                                       |                        | be used during training. By default, GPU will be used if     |
+|                                       |                        | its available.                                               |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 ```
 

@@ -92,6 +92,7 @@ from rasa.utils.tensorflow.constants import (
     SEVERITY_KEY,
     QUERY_INTENT_KEY,
     NAME,
+    USE_GPU,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import (
@@ -252,6 +253,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         # hence will result in lesser number of `action_unlikely_intent`
         # triggers. Acceptable values are between 0.0 and 1.0 (inclusive).
         TOLERANCE: 0.0,
+        # This parameter defines whether a GPU (if available) will be
+        # used during training. By default, GPU will be used if its available.
+        USE_GPU: True,
     }
 
     def __init__(

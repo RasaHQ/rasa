@@ -2,6 +2,7 @@ import logging
 import shutil
 from pathlib import Path
 from collections import defaultdict
+import contextlib
 
 import numpy as np
 
@@ -107,6 +108,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
     BILOU_FLAG,
+    USE_GPU,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -307,6 +309,9 @@ class TEDPolicy(Policy):
         # ingredients in a recipe, but it doesn't make sense for the parts of
         # an address
         SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+        # This parameter defines whether a GPU (if available) will be
+        # used during training. By default, GPU will be used if its available.
+        USE_GPU: True,
     }
 
     @staticmethod
@@ -702,7 +707,10 @@ class TEDPolicy(Policy):
             )
             return
 
-        self.run_training(model_data, label_ids)
+        with (
+            contextlib.nullcontext() if self.config[USE_GPU] else tf.device("/cpu:0")
+        ):
+            self.run_training(model_data, label_ids)
 
     def _featurize_tracker_for_e2e(
         self,
@@ -1028,13 +1036,18 @@ class TEDPolicy(Policy):
             predict_data_example,
         ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
-        model = cls._load_tf_model(
-            model_utilities,
-            model_data_example,
-            predict_data_example,
-            featurizer,
-            should_finetune,
-        )
+        with (
+            contextlib.nullcontext()
+            if model_utilities["meta"][USE_GPU]
+            else tf.device("/cpu:0")
+        ):
+            model = cls._load_tf_model(
+                model_utilities,
+                model_data_example,
+                predict_data_example,
+                featurizer,
+                should_finetune,
+            )
 
         return cls._load_policy_with_model(
             model, featurizer, model_utilities, should_finetune
