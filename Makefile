@@ -178,34 +178,42 @@ endif
 
 test-cli: PYTEST_MARKER=category_cli
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
+test-cli: DD_TRACT_RUN_ARG := $(or $(DD_TRACT_RUN_ARG),)
 test-cli: test-marker
 
 test-core-featurizers: PYTEST_MARKER=category_core_featurizers
 test-core-featurizers: DD_ARGS := $(or $(DD_ARGS),)
+test-core-featurizers: DD_TRACT_RUN_ARG := $(or $(DD_TRACT_RUN_ARG),)
 test-core-featurizers: test-marker
 
 test-policies: PYTEST_MARKER=category_policies
 test-policies: DD_ARGS := $(or $(DD_ARGS),)
+test_policies: DD_TRACT_RUN_ARG := $(or $(DD_TRACT_RUN_ARG),)
 test-policies: test-marker
 
 test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
+test-nlu-featurizers: DD_TRACT_RUN_ARG := $(or $(DD_TRACT_RUN_ARG),)
 test-nlu-featurizers: test-marker
 
 test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
+test-nlu-predictors: DD_TRACT_RUN_ARG := $(or $(DD_TRACT_RUN_ARG),)
 test-nlu-predictors: test-marker
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
+test_full-model-training: DD_TRACT_RUN_ARG := $(or $(DD_TRACT_RUN_ARG),)
 test-full-model-training: test-marker
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
+test-other-unit-tests: DD_TRACT_RUN_ARG := $(or $(DD_TRACT_RUN_ARG),)
 test-other-unit-tests: test-marker
 
 test-performance: PYTEST_MARKER=category_performance
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
+test-performance: DD_TRACT_RUN_ARG := $(or $(DD_TRACT_RUN_ARG),)
 test-performance: test-marker
 
 test-gh-actions:
@@ -214,7 +222,7 @@ test-gh-actions:
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run ddtrace-run pytest tests -n $(JOBS) -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run $(DD_TRACT_RUN_ARG) pytest tests -n $(JOBS) -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
