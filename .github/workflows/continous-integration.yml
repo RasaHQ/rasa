@@ -242,7 +242,7 @@ jobs:
 
     - name: Run DataDog Agent
       if: needs.changes.outputs.backend == 'true'
-      uses: datadog/agent-github-action@28867afa48210e03595c323ff993d339d5508cfc
+      uses: datadog/agent-github-action@9e31e08e9eebe3eb04401dd3e5a1dedefe989d97
       with:
         api_key: ${{ secrets.DD_API_KEY }}
         image_name: datadog/agent
