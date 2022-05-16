@@ -178,6 +178,10 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       run: make types
 
+    - name: Lint Changelog Filenames 📝
+      if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
+      run: make lint-changelog
+
     - name: Test CLI 🖥
       if: needs.changes.outputs.backend == 'true'
       # makes sure we catch any dependency error early. they will create strange
