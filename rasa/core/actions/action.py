@@ -769,7 +769,8 @@ class RemoteAction(Action):
         except aiohttp.ClientConnectionError as e:
             logger.error(
                 f"Failed to run custom action '{self.name()}'. Couldn't connect "
-                f"to the server at '{self.action_endpoint.url}'. Is the server running? "
+                f"to the server at '{self.action_endpoint.url}'. "
+                f"Is the server running? "
                 f"Error: {e}"
             )
             raise RasaException(
