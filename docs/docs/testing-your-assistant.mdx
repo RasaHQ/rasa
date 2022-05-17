@@ -205,8 +205,21 @@ for them and include these tests in your [CI/CD pipeline](./setting-up-ci-cd.mdx
 In addition to testing stories, you can also test the natural language understanding (NLU) model separately.
 Once your assistant is deployed in the real world, it will be processing messages that it hasn't seen
 in the training data. To simulate this, you should always set aside some part of your data for testing.
-You can [split your NLU data](./command-line-interface.mdx#rasa-data-split)
-into train and test sets using:
+You can either:
+
+1) [use a held out test set](#using-a-held-out-test-set) by shuffling and splitting your NLU data
+
+2) [use cross-validation](#using-cross-validation), which automatically creates
+multiple train/test splits
+
+### Using a Held-Out Test Set
+
+If you use the train-test
+set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#rasa-data-split)
+using `rasa data split` every time you evaluate your model, as
+opposed to using a static NLU test set, which can easily become outdated.
+
+You can split your NLU data into train and test sets using: 
 
 ```bash
 rasa data split nlu
@@ -220,35 +233,43 @@ rasa test nlu
     --nlu train_test_split/test_data.yml
 ```
 
-To test your model more extensively, use cross-validation, which automatically creates
-multiple train/test splits:
 
-```bash {3}
-rasa test nlu
-    --nlu data/nlu.yml
-    --cross-validation
-```
-
-### Comparing NLU Performance
+### Using Cross-Validation
 
 If you've made significant changes to your NLU training data (e.g.
 splitting an intent into two intents or adding a lot of training examples), you should run a
-[full NLU evaluation](./testing-your-assistant.mdx#evaluating-an-nlu-model). You'll want to compare
-the performance of the NLU model without your changes to an NLU model with your
-changes.
+full NLU evaluation using cross-validation. Cross-validation automatically creates
+multiple train/test splits and averages the results of evaluations on each train/test split.
+This means all your data is evaluated during cross-validation, making cross-validation the most
+thorough way to automatically test your NLU model.
 
-You can do this by running NLU testing in cross-validation mode:
 
-```bash
-rasa test nlu --cross-validation
+To run NLU testing in cross-validation mode run: 
+
+```bash {3}
+rasa test nlu
+    --nlu data/nlu
+    --cross-validation
 ```
 
-You could also train a model on a training set and testing it on a test set. If you use the train-test
-set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#rasa-data-split) using `rasa data split` as part of this CI step, as
-opposed to using a static NLU test set, which can easily become outdated.
+You can specify the number of test/train splits used with the `-f/--folds` flag:
 
-You can find the full list of options in the
-[CLI documentation on `rasa test`](command-line-interface.mdx#rasa-test).
+
+```bash {4}
+rasa test nlu
+    --nlu data/nlu
+    --cross-validation
+    --folds 5
+```
+
+Note that during cross-validation, the NLU model will be trained for each fold,
+so cross-validation with a large data set and a high number of folds can be time-consuming.
+On a small data set, a high number of folds can result in too few examples per intent being available for each test split.
+
+On the other hand, if you specify a low number of folds, your data will be split into much larger chunks,
+and there will be proportionally less data to train on for each fold.
+
+Choose a number of folds that balances both considerations for your dataset size.
 
 :::tip hyperparameter tuning
 To further improve your model check out this
