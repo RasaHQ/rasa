@@ -62,6 +62,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import AnySlot, Slot
+from rasa.shared.utils.schemas.events import RESTARTED
 
 if TYPE_CHECKING:
     from rasa.shared.core.events import NLUPredictionData
@@ -940,3 +941,33 @@ def get_trackers_for_conversation_sessions(
         )
         for evts in split_conversations
     ]
+
+
+def get_events_before_restart(
+    tracker: DialogueStateTracker,
+) -> DialogueStateTracker:
+    """Returns the tracker including all events before the first `restart` event.
+
+    If no `restart` is present, returns tracker with all events.
+
+    Args:
+        tracker: Instance of `DialogueStateTracker`.
+
+    Returns:
+        The tracker up until the first restart event.
+    """
+    split_conversations = events.split_events(
+        tracker.events,
+        Restarted,
+        include_splitting_event=False,
+    )
+    if len(split_conversations) == 0:
+        return tracker
+
+    events_to_include = split_conversations[0]
+    return DialogueStateTracker.from_events(
+        tracker.sender_id,
+        events_to_include,
+        tracker.slots.values(),
+        sender_source=tracker.sender_source,
+    )

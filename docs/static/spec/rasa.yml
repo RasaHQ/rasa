@@ -81,19 +81,9 @@ paths:
                 type: object
                 properties:
                   model_id:
-                    type: object
-                    description: Fingerprint of the loaded model
-                    example:
-                      config:
-                        - 7625d69d93053ac8520a544d0852c626
-                      domain:
-                        - 229b51e41876bbcbbbfbeddf79548d5a
-                      messages:
-                        - cf7eda7edcae128a75ee8c95d3bbd680
-                      stories:
-                        - b5facea681fd00bc7ecc6818c70d9639
-                      trained_at: 1556527123.42784
-                      version: 1.0.0
+                    type: string
+                    description: ID of the loaded model
+                    example: 75a985b7b86d442ca013d61ea4781b22
                   model_file:
                     type: string
                     description: Path of the loaded model
@@ -178,9 +168,7 @@ paths:
             schema:
               oneOf:
               - $ref: '#/components/schemas/Event'
-              - type: array
-                items:
-                  $ref: '#/components/schemas/Event'
+              - $ref: '#/components/schemas/EventList'
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
@@ -626,12 +614,6 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                rasa_nlu_data:
-                  $ref: '#/components/schemas/RasaNLUData'
           application/x-yaml:
             schema:
               type: string
@@ -645,6 +627,11 @@ paths:
                     - hey
                     - hello
                     - hi
+                - intent: bye
+                  examples: |
+                    - goodbye
+                    - bye
+                    - cheers
 
                 pipeline:
                 - name: KeywordIntentClassifier
@@ -893,7 +880,13 @@ components:
     all_sessions:
       in: query
       name: all_sessions
-      description: Fetch test stories for all conversation sessions
+      description: >-
+          Whether to fetch all sessions in a conversation, or only the latest session
+          
+          * `true` - fetch all conversation sessions.
+
+          * `false` - [default] fetch only the latest conversation session.
+
       example: false
       schema:
         type: boolean
@@ -921,20 +914,33 @@ components:
       description: >-
         Specify which events of the tracker the response
         should contain.
+
+        * `ALL` - every logged event.
+
+        * `APPLIED` - only events that contribute to the trackers state. This excludes reverted utterances and actions that got undone.
+
+        * `AFTER_RESTART` -  all events since the last `restarted` event.
+          This includes utterances that got reverted and actions that got undone.
+
+        * `NONE` - no events.
+
       example: AFTER_RESTART
       schema:
         type: string
         default: AFTER_RESTART
         enum:
-          - AFTER_RESTART
           - ALL
           - APPLIED
+          - AFTER_RESTART
           - NONE
     emulation_mode:
       in: query
       name: emulation_mode
       description: >-
-        Specify the emulation mode.
+        Specify the emulation mode to use.
+        Emulation mode transforms the response JSON to the format expected by the service specified as the emulation_mode.
+        Requests must still be sent in the regular Rasa format.
+
       example: LUIS
       schema:
         type: string
@@ -1237,6 +1243,32 @@ components:
         Latest bot action.
 
     Event:
+      oneOf:
+        - $ref: '#/components/schemas/UserEvent'
+        - $ref: '#/components/schemas/BotEvent'
+        - $ref: '#/components/schemas/SessionStartedEvent'
+        - $ref: '#/components/schemas/ActionEvent'
+        - $ref: '#/components/schemas/SlotEvent'
+        - $ref: '#/components/schemas/ResetSlotsEvent'
+        - $ref: '#/components/schemas/RestartEvent'
+        - $ref: '#/components/schemas/ReminderEvent'
+        - $ref: '#/components/schemas/CancelReminderEvent'
+        - $ref: '#/components/schemas/PauseEvent'
+        - $ref: '#/components/schemas/ResumeEvent'
+        - $ref: '#/components/schemas/FollowupEvent'
+        - $ref: '#/components/schemas/ExportEvent'
+        - $ref: '#/components/schemas/UndoEvent'
+        - $ref: '#/components/schemas/RewindEvent'
+        - $ref: '#/components/schemas/AgentEvent'
+        - $ref: '#/components/schemas/EntitiesEvent'
+        - $ref: '#/components/schemas/UserFeaturizationEvent'
+        - $ref: '#/components/schemas/ActionExecutionRejectedEvent'
+        - $ref: '#/components/schemas/FormValidationEvent'
+        - $ref: '#/components/schemas/LoopInterruptedEvent'
+        - $ref: '#/components/schemas/FormEvent'
+        - $ref: '#/components/schemas/ActiveLoopEvent'
+
+    BasicEvent:
       type: object
       properties:
         event:
@@ -1246,8 +1278,412 @@ components:
         timestamp:
           type: integer
           description: Time of application
-          example: 1559744410
+          example: null
+        metadata:
+           type: object
+           properties: {}
+           example:
+            arbitrary_metadata_key: "some string"
+            more_metadata: 1.0
       required: ["event"]
+
+    UserEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          description: >-
+            Event for incoming user message.
+          properties:
+            event:
+              enum:
+              - user
+              example: "user"
+            text:
+              type:
+                - string
+                - 'null'
+              description: Text of user message.
+            input_channel:
+              type:
+                - string
+                - 'null'
+            message_id:
+              type:
+                - string
+                - 'null'
+            parse_data:
+              type: object
+              properties:
+                text:
+                  type:
+                    - string
+                    - 'null'
+                intent_ranking:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      confidence:
+                        type: number
+                intent:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    confidence:
+                      type: number
+                entities:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      start:
+                        type: integer
+                      end:
+                        type: integer
+                      entity:
+                        type: string
+                      confidence:
+                        type: number
+                      extractor:
+                        type:
+                          - string
+                          - 'null'
+                      value: {}
+                      role:
+                        type:
+                          - string
+                          - 'null'
+                      group:
+                        type:
+                          - string
+                          - 'null'
+                    required:
+                      - entity
+                      - value
+                response_selector:
+                  type: object
+                  oneOf:
+                    - properties:
+                        all_retrieval_intents:
+                          type: array
+                    - patternProperties:
+                        '[\w/]':
+                          type: object
+                          properties:
+                            response:
+                              type: object
+                              properties:
+                                responses:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      text:
+                                        type: string
+                                response_templates:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      text:
+                                        type: string
+                                confidence:
+                                  type: number
+                                intent_response_key:
+                                  type: string
+                                utter_action:
+                                  type: string
+                                template_name:
+                                  type: string
+                            ranking:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id:
+                                    type: number
+                                  confidence:
+                                    type: number
+                                  intent_response_key:
+                                    type: string
+
+    ActionEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - action
+              example: "action"
+            policy:
+              type:
+                - string
+                - 'null'
+            confidence:
+              type:
+                - number
+                - 'null'
+            name:
+              type:
+                - string
+                - 'null'
+            hide_rule_turn:
+              type: boolean
+            action_text:
+              type:
+                - string
+                - 'null'
+
+    SlotEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - slot
+              example: "slot"
+            name:
+              type: string
+            value: {}
+            required:
+              - name
+              - value
+
+    EntitiesEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - entities
+              example: "entities"
+            entities:
+              type: array
+              items:
+                type: object
+                properties:
+                  start:
+                    type: integer
+                  end:
+                    type: integer
+                  entity:
+                    type: string
+                  confidence:
+                    type: number
+                  extractor:
+                    type:
+                      - string
+                      - 'null'
+                  value: {}
+                  role:
+                    type:
+                      - string
+                      - 'null'
+                  group:
+                    type:
+                      - string
+                      - 'null'
+                required:
+                  - entity
+                  - value
+            required:
+              - entities
+
+    UserFeaturizationEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - user_featurization
+              example: "user_featurization"
+
+    CancelReminderEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - cancel_reminder
+              example: "cancel_reminder"
+
+    ReminderEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - reminder
+              example: "reminder"
+
+    ActionExecutionRejectedEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - action_execution_rejected
+              example: "action_execution_rejected"
+
+    FormValidationEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - form_validation
+              example: "form_validation"
+
+    LoopInterruptedEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - loop_interrupted
+              example: "loop_interrupted"
+
+    FormEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - form
+              example: "form"
+
+    ActiveLoopEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - active_loop
+              example: "active_loop"
+
+    ResetSlotsEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - reset_slots
+              example: "reset_slots"
+
+    ResumeEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - resume
+              example: "resume"
+
+    PauseEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - pause
+              example: "pause"
+
+    FollowupEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - followup
+              example: "followup"
+
+    ExportEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - export
+              example: "export"
+
+    RestartEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - restart
+              example: "restart"
+
+    UndoEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - undo
+              example: "undo"
+
+    RewindEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - rewind
+              example: "rewind"
+
+    BotEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - bot
+              example: "bot"
+
+    SessionStartedEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - session_started
+              example: "session_started"
+
+    AgentEvent:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvent'
+        - type: object
+          properties:
+            event:
+              enum:
+              - agent
+              example: "agent"
 
     EventList:
       type: array
@@ -1358,10 +1794,8 @@ components:
           description: Bot is paused
           example: false
         events:
-          type: array
           description: Event history
-          items:
-            $ref: '#/components/schemas/Event'
+          $ref: '#/components/schemas/EventList'
         latest_input_channel:
           type: string
           description: Communication channel

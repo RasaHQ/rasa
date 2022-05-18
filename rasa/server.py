@@ -64,7 +64,11 @@ from rasa.core.channels.channel import (
 import rasa.shared.core.events
 from rasa.shared.core.events import Event
 from rasa.core.test import test
-from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import (
+    DialogueStateTracker,
+    EventVerbosity,
+    get_events_before_restart,
+)
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 import rasa.nlu.test
@@ -316,6 +320,8 @@ async def get_test_stories(
         )
     else:
         trackers = [await processor.get_tracker(conversation_id)]
+
+    trackers = [get_events_before_restart(tracker) for tracker in trackers]
 
     if until_time is not None:
         trackers = [tracker.travel_back_in_time(until_time) for tracker in trackers]
@@ -1152,13 +1158,11 @@ def create_app(
                     test_data, config_file, int(cross_validation_folds)
                 )
         else:
-            test_data = _test_data_file_from_payload(request, temporary_directory)
-            if cross_validation_folds:
-                raise ErrorResponse(
-                    HTTPStatus.BAD_REQUEST,
-                    "TestingError",
-                    "Cross-validation is only supported for YAML data.",
-                )
+            raise ErrorResponse(
+                HTTPStatus.BAD_REQUEST,
+                "TestingError",
+                "NLU evaluation is only supported for YAML data.",
+            )
 
         if not cross_validation_folds:
             test_coroutine = _evaluate_model_using_test_set(
