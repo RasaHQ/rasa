@@ -33,7 +33,7 @@ class PikaEventBroker(EventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queues: Union[List[Text], Tuple[Text], Text, None] = None,
+        queues: Union[List[Text], Tuple[Text, ...], Text, None] = None,
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         event_loop: Optional[AbstractEventLoop] = None,
@@ -91,8 +91,8 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None]
-    ) -> Union[List[Text], Tuple[Text]]:
+        queues_arg: Union[List[Text], Tuple[Text, ...], Text, None]
+    ) -> Union[List[Text], Tuple[Text, ...]]:
         """Get queues for this event broker.
 
         The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should

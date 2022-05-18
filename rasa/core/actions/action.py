@@ -762,15 +762,21 @@ class RemoteAction(Action):
                 logger.error(exception.message)
                 raise exception
             else:
-                raise RasaException("Failed to execute custom action.") from e
+                raise RasaException(
+                    f"Failed to execute custom action '{self.name()}'"
+                ) from e
 
         except aiohttp.ClientConnectionError as e:
             logger.error(
-                "Failed to run custom action '{}'. Couldn't connect "
-                "to the server at '{}'. Is the server running? "
-                "Error: {}".format(self.name(), self.action_endpoint.url, e)
+                f"Failed to run custom action '{self.name()}'. Couldn't connect "
+                f"to the server at '{self.action_endpoint.url}'. "
+                f"Is the server running? "
+                f"Error: {e}"
             )
-            raise RasaException("Failed to execute custom action.")
+            raise RasaException(
+                f"Failed to execute custom action '{self.name()}'. Couldn't connect "
+                f"to the server at '{self.action_endpoint.url}."
+            )
 
         except aiohttp.ClientError as e:
             # not all errors have a status attribute, but
