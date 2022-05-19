@@ -118,6 +118,12 @@ The following arguments can be used to configure the training process:
 ```text [rasa train --help]
 ```
 
+See the section on [data augmentation](./policies.mdx#data-augmentation) for info on how data augmentation works
+and how to choose a value for the flag. Note that `TEDPolicy` is the only policy affected by data augmentation.
+
+See the following section on [incremental training](#incremental-training) for more information about the `--epoch-fraction` argument.
+
+
 ### Incremental training
 
 :::info New in 2.2
@@ -241,10 +247,17 @@ as the first message. Otherwise, the session start behavior will begin as descri
 [Session configuration](./domain.mdx#session-configuration).
 :::
 
-The following arguments can be used to configure the command:
+The following arguments can be used to configure the command.
+Most arguments overlap with `rasa run`; see the [following section](#rasa-run) for more info on those arguments.
+
+Note that the `--connector` argument will always be set to `cmdline` when running `rasa shell`.
+This means all credentials in your credentials file will be ignored,
+and if you provide your own value for the `--connector` argument it will also be ignored.
+
 
 ```text [rasa shell --help]
 ```
+
 
 ## rasa run
 
@@ -270,6 +283,17 @@ network interface using the `-i` command line option.
 ```bash
 rasa run -i 192.168.69.150
 ```
+
+Rasa will by default connect to all channels specified in your credentials file.
+To connect to a single channel and ignore all other channels in your credentials file,
+specify the name of the channel in the `--connector` argument.
+
+```bash
+rasa run --connector rest
+```
+
+The name of the channel should match the name you specify in your credentials file.
+For supported channels see [the page about messaging and voice channels](./messaging-and-voice-channels.mdx).
 
 The following arguments can be used to configure your Rasa server:
 
@@ -320,8 +344,9 @@ This will test your latest trained model on any end-to-end stories you have
 defined in files with the `test_` prefix.
 If you want to use a different model, you can specify it using the `--model` flag.
 
-If you want to evaluate the dialogue and NLU
-models separately, you can use the commands below:
+To evaluate the dialogue and NLU
+models separately, use the commands below:
+
 ```bash
 rasa test core
 ```
@@ -331,9 +356,9 @@ and
 rasa test nlu
 ```
 
-You can find more details in
+You can find more details on specific arguments for each testing type in
 [Evaluating an NLU Model](./testing-your-assistant.mdx#evaluating-an-nlu-model) and
-[Evaluating a Core Model](./testing-your-assistant.mdx#evaluating-a-dialogue-model).
+[Evaluating a Dialogue Management Model](./testing-your-assistant.mdx#evaluating-a-dialogue-model).
 
 The following arguments are available for `rasa test`:
 
