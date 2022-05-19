@@ -393,6 +393,8 @@ class CollectingOutputChannel(OutputChannel):
         buttons: List[Dict[Text, Any]],
         **kwargs: Any,
     ) -> None:
+        """Sends text message with buttons."""
+
         message_parts: List[Text] = text.strip().split("\n\n")
         last_message_id: int = len(message_parts)
 
