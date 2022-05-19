@@ -62,7 +62,6 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import AnySlot, Slot
-from rasa.shared.utils.schemas.events import RESTARTED
 
 if TYPE_CHECKING:
     from rasa.shared.core.events import NLUPredictionData
