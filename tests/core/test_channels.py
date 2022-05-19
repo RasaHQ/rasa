@@ -45,9 +45,9 @@ async def test_send_response(default_channel, default_tracker):
     multiline_text_message_with_buttons = {
         **multiline_text_message,
         "buttons": [
-            {"title": "some title 1", "payload": '/some_payload1'},
-            {"title": "some title 2", "payload": '/some_payload2'}
-        ]
+            {"title": "some title 1", "payload": "/some_payload1"},
+            {"title": "some title 2", "payload": "/some_payload2"},
+        ],
     }
     image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
     text_and_image_message = {
@@ -97,9 +97,9 @@ async def test_send_response(default_channel, default_tracker):
         "recipient_id": "my-sender",
         "text": "This is message two  \nThis as well",
         "buttons": [
-            {"title": "some title 1", "payload": '/some_payload1'},
-            {"title": "some title 2", "payload": '/some_payload2'}
-        ]
+            {"title": "some title 1", "payload": "/some_payload1"},
+            {"title": "some title 2", "payload": "/some_payload2"},
+        ],
     }
 
     # image only message
