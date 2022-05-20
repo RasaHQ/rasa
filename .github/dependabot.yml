@@ -8,8 +8,6 @@ updates:
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 10
-    reviewers:
-      - RasaHQ/atom-squad
     labels:
       - type:dependencies
     ignore:
