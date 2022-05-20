@@ -1299,25 +1299,21 @@ components:
               - user
               example: "user"
             text:
-              type:
-                - string
-                - 'null'
+              type: string
+              nullable: true
               description: Text of user message.
             input_channel:
-              type:
-                - string
-                - 'null'
+              type: string
+              nullable: true
             message_id:
-              type:
-                - string
-                - 'null'
+              type: string
+              nullable: true
             parse_data:
               type: object
               properties:
                 text:
-                  type:
-                    - string
-                    - 'null'
+                  type: string
+                  nullable: true
                 intent_ranking:
                   type: array
                   items:
@@ -1348,18 +1344,15 @@ components:
                       confidence:
                         type: number
                       extractor:
-                        type:
-                          - string
-                          - 'null'
+                        type: string
+                        nullable: true
                       value: {}
                       role:
-                        type:
-                          - string
-                          - 'null'
+                        type: string
+                        nullable: true
                       group:
-                        type:
-                          - string
-                          - 'null'
+                        type: string
+                        nullable: true
                     required:
                       - entity
                       - value
@@ -1420,23 +1413,19 @@ components:
               - action
               example: "action"
             policy:
-              type:
-                - string
-                - 'null'
+              type: string
+              nullable: true
             confidence:
-              type:
-                - number
-                - 'null'
+              type: number
+              nullable: true
             name:
-              type:
-                - string
-                - 'null'
+              type: string
+              nullable: true
             hide_rule_turn:
               type: boolean
             action_text:
-              type:
-                - string
-                - 'null'
+              type: string
+              nullable: true
 
     SlotEvent:
       allOf:
@@ -1477,18 +1466,15 @@ components:
                   confidence:
                     type: number
                   extractor:
-                    type:
-                      - string
-                      - 'null'
+                    type: string
+                    nullable: true
                   value: {}
                   role:
-                    type:
-                      - string
-                      - 'null'
+                    type: string
+                    nullable: true
                   group:
-                    type:
-                      - string
-                      - 'null'
+                    type: string
+                    nullable: true
                 required:
                   - entity
                   - value
