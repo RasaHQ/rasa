@@ -1439,9 +1439,9 @@ components:
             name:
               type: string
             value: {}
-            required:
-              - name
-              - value
+          required:
+            - name
+            - value
 
     EntitiesEvent:
       allOf:
@@ -1478,8 +1478,8 @@ components:
                 required:
                   - entity
                   - value
-            required:
-              - entities
+          required:
+            - entities
 
     UserFeaturizationEvent:
       allOf:
