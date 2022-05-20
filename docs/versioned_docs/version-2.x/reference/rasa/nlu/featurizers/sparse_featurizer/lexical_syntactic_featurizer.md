@@ -13,6 +13,19 @@ Creates features for entity extraction.
 Moves with a sliding window over every token in the user message and creates
 features according to the configuration.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(component_config: Dict[Text, Any], feature_to_idx_dict: Optional[Dict[Text, Any]] = None)
+```
+
+Creates a LexicalSyntacticFeaturizer.
+
+**Arguments**:
+
+- `component_config` - Component config as defined in config.yml
+- `feature_to_idx_dict` - Prepared feature to idx for loading from disk
+
 #### load
 
 ```python
