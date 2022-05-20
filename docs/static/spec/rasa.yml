@@ -1243,7 +1243,7 @@ components:
         Latest bot action.
 
     Event:
-      oneOf:
+      anyOf:
         - $ref: '#/components/schemas/UserEvent'
         - $ref: '#/components/schemas/BotEvent'
         - $ref: '#/components/schemas/SessionStartedEvent'
@@ -1285,7 +1285,8 @@ components:
            example:
             arbitrary_metadata_key: "some string"
             more_metadata: 1.0
-      required: ["event"]
+      required: 
+        - event
 
     UserEvent:
       allOf:
@@ -1309,99 +1310,7 @@ components:
               type: string
               nullable: true
             parse_data:
-              type: object
-              properties:
-                text:
-                  type: string
-                  nullable: true
-                intent_ranking:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      confidence:
-                        type: number
-                intent:
-                  type: object
-                  properties:
-                    name:
-                      type: string
-                    confidence:
-                      type: number
-                entities:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      start:
-                        type: integer
-                      end:
-                        type: integer
-                      entity:
-                        type: string
-                      confidence:
-                        type: number
-                      extractor:
-                        type: string
-                        nullable: true
-                      value: {}
-                      role:
-                        type: string
-                        nullable: true
-                      group:
-                        type: string
-                        nullable: true
-                    required:
-                      - entity
-                      - value
-                response_selector:
-                  type: object
-                  oneOf:
-                    - properties:
-                        all_retrieval_intents:
-                          type: array
-                    - patternProperties:
-                        '[\w/]':
-                          type: object
-                          properties:
-                            response:
-                              type: object
-                              properties:
-                                responses:
-                                  type: array
-                                  items:
-                                    type: object
-                                    properties:
-                                      text:
-                                        type: string
-                                response_templates:
-                                  type: array
-                                  items:
-                                    type: object
-                                    properties:
-                                      text:
-                                        type: string
-                                confidence:
-                                  type: number
-                                intent_response_key:
-                                  type: string
-                                utter_action:
-                                  type: string
-                                template_name:
-                                  type: string
-                            ranking:
-                              type: array
-                              items:
-                                type: object
-                                properties:
-                                  id:
-                                    type: number
-                                  confidence:
-                                    type: number
-                                  intent_response_key:
-                                    type: string
+              $ref: '#/components/schemas/ParseResult'
 
     ActionEvent:
       allOf:
