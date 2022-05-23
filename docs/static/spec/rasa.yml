@@ -1352,7 +1352,7 @@ components:
             - name
             - value
 
-    EntitiesEvent:
+    EntitiesAddedEvent:
       allOf:
         - $ref: '#/components/schemas/BasicEvent'
         - type: object
