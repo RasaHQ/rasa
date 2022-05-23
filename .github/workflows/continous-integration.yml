@@ -345,6 +345,7 @@ jobs:
         DD_ENV: rasa-ci
         DD_SERVICE: rasa-${{ matrix.test }}
         DD_VERSION: ${{ env.RASA_VERSION }}
+        DD_TAGS: git_commit_sha:${{ github.sha }},git_branch:${{ github.ref_name }}
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         # multi-process profiling on windows does not work becuase it requires os.register_at_fork(), which only supports Unix
