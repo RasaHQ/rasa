@@ -351,8 +351,8 @@ jobs:
         # multi-process profiling on windows does not work becuase it requires os.register_at_fork(), which only supports Unix
         # Source: https://docs.python.org/3.8/library/os.html#os.register_at_fork
         if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-          DD_TRACT_RUN_ARG="ddtrace-run"
-          DD_PROFILING_ENABLED=true
+          export DD_TRACT_RUN_ARG=ddtrace-run
+          export DD_PROFILING_ENABLED=true
         fi
 
         make ${{ matrix.test }}
