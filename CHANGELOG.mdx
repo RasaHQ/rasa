@@ -16,6 +16,12 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.28] - 2022-05-19
+### Improvements
+- [#10482](https://github.com/rasahq/rasa/issues/10482): Adds a new optional config argument `prefix_suffix_case_sensitive` which can be set to `False` to ignore cases in prefix and suffix functions.
+- [#11122](https://github.com/rasahq/rasa/issues/11122): Added flag `use_gpu` to `TEDPolicy` and `UnexpecTEDIntentPolicy` that can be used to enable training on CPU even when a GPU is available.
+
+
 ## [2.8.27] - 2022-04-05
 ### Deprecations and Removals
 - [#11048](https://github.com/rasahq/rasa/issues/11048): Removed Python 3.6 support as [it reached its end of life in December 2021](https://www.python.org/dev/peps/pep-0494/#lifespan).
