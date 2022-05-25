@@ -1,6 +1,8 @@
 import asyncio
 import datetime
 from http import HTTPStatus
+import os.path
+import shutil
 import textwrap
 from pathlib import Path
 
@@ -110,13 +112,14 @@ async def test_parsing(default_processor: MessageProcessor):
 async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "Joe"}')
     old_domain = default_processor.domain
-    new_domain = Domain.from_dict(old_domain.as_dict())
-    new_domain.intent_properties = {
-        name: intent
-        for name, intent in new_domain.intent_properties.items()
-        if name != "greet"
-    }
-    new_domain.entities = [e for e in new_domain.entities if e != "name"]
+    dict_for_new_domain = old_domain.as_dict()
+    dict_for_new_domain["intents"] = [
+        intent for intent in dict_for_new_domain["intents"] if intent != "greet"
+    ]
+    dict_for_new_domain["entities"] = [
+        entity for entity in dict_for_new_domain["entities"] if entity != "name"
+    ]
+    new_domain = Domain.from_dict(dict_for_new_domain)
     default_processor.domain = new_domain
 
     parsed = await default_processor.parse_message(message)
@@ -221,18 +224,18 @@ async def test_reminder_scheduled(
     sender_id = uuid.uuid4().hex
 
     reminder = ReminderScheduled("remind", datetime.datetime.now())
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     tracker.update(UserUttered("test"))
     tracker.update(ActionExecuted("action_schedule_reminder"))
     tracker.update(reminder)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
     # retrieve the updated tracker
-    t = default_processor.tracker_store.retrieve(sender_id)
+    t = await default_processor.tracker_store.retrieve(sender_id)
 
     assert t.events[1] == UserUttered("test")
     assert t.events[2] == ActionExecuted("action_schedule_reminder")
@@ -253,13 +256,13 @@ async def test_reminder_lock(
         sender_id = uuid.uuid4().hex
 
         reminder = ReminderScheduled("remind", datetime.datetime.now())
-        tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+        tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
         tracker.update(UserUttered("test"))
         tracker.update(ActionExecuted("action_schedule_reminder"))
         tracker.update(reminder)
 
-        default_processor.tracker_store.save(tracker)
+        await default_processor.tracker_store.save(tracker)
 
         await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
@@ -270,7 +273,7 @@ async def test_trigger_external_latest_input_channel(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
     input_channel = "test_input_channel_external"
 
     tracker.update(UserUttered("test1"))
@@ -280,7 +283,7 @@ async def test_trigger_external_latest_input_channel(
         "test3", None, tracker, default_channel
     )
 
-    tracker = default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve(sender_id)
 
     assert tracker.get_latest_input_channel() == input_channel
 
@@ -293,16 +296,16 @@ async def test_reminder_aborted(
     reminder = ReminderScheduled(
         "utter_greet", datetime.datetime.now(), kill_on_user_message=True
     )
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     tracker.update(reminder)
     tracker.update(UserUttered("test"))  # cancels the reminder
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
     await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
     # retrieve the updated tracker
-    t = default_processor.tracker_store.retrieve(sender_id)
+    t = await default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 3  # nothing should have been executed
 
 
@@ -327,7 +330,7 @@ async def test_reminder_cancelled_multi_user(
     sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
     trackers = []
     for sender_id in sender_ids:
-        tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+        tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
         tracker.update(UserUttered("test"))
         tracker.update(ActionExecuted("action_reminder_reminder"))
@@ -342,7 +345,7 @@ async def test_reminder_cancelled_multi_user(
     trackers[0].update(ReminderCancelled())
 
     for tracker in trackers:
-        default_processor.tracker_store.save(tracker)
+        await default_processor.tracker_store.save(tracker)
         await default_processor._schedule_reminders(
             tracker.events, tracker, default_channel
         )
@@ -357,7 +360,7 @@ async def test_reminder_cancelled_multi_user(
     # execute the jobs
     await wait_until_all_jobs_were_executed(timeout_after_seconds=5.0)
 
-    tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
+    tracker_0 = await default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
     assert (
         UserUttered(
@@ -367,7 +370,7 @@ async def test_reminder_cancelled_multi_user(
         not in tracker_0.events
     )
 
-    tracker_1 = default_processor.tracker_store.retrieve(sender_ids[1])
+    tracker_1 = await default_processor.tracker_store.retrieve(sender_ids[1])
     # there should be utter_greet action
     assert (
         UserUttered(
@@ -504,17 +507,17 @@ async def test_reminder_restart(
     reminder = ReminderScheduled(
         "utter_greet", datetime.datetime.now(), kill_on_user_message=False
     )
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     tracker.update(reminder)
     tracker.update(Restarted())  # cancels the reminder
     tracker.update(UserUttered("test"))
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
     await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
     # retrieve the updated tracker
-    t = default_processor.tracker_store.retrieve(sender_id)
+    t = await default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 4  # nothing should have been executed
 
 
@@ -545,7 +548,7 @@ async def test_has_session_expired(
         session_expiration_time_in_minutes, True
     )
     # create new tracker without events
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.events.clear()
 
     # apply desired event
@@ -565,7 +568,7 @@ async def test_update_tracker_session(
     monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
     # does something
@@ -574,10 +577,10 @@ async def test_update_tracker_session(
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
-    default_processor._save_tracker(tracker)
+    await default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
-    tracker = default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve(sender_id)
 
     assert list(tracker.events) == [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -588,7 +591,7 @@ async def test_update_tracker_session(
 
 
 async def test_update_tracker_session_with_metadata(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
+    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
     sender_id = uuid.uuid4().hex
@@ -601,11 +604,11 @@ async def test_update_tracker_session_with_metadata(
     )
     await default_processor.handle_message(message)
 
-    tracker = default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve(sender_id)
     events = list(tracker.events)
 
     assert events[0] == with_model_id(
-        SlotSet(SESSION_START_METADATA_SLOT, message_metadata,), model_id
+        SlotSet(SESSION_START_METADATA_SLOT, message_metadata), model_id
     )
     assert tracker.slots[SESSION_START_METADATA_SLOT].value == message_metadata
 
@@ -673,7 +676,7 @@ async def test_update_tracker_session_with_slots(
     monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # apply a user uttered and five slots
     user_event = UserUttered("some utterance")
@@ -691,10 +694,10 @@ async def test_update_tracker_session_with_slots(
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
-    default_processor._save_tracker(tracker)
+    await default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
-    tracker = default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve(sender_id)
     events = list(tracker.events)
 
     # the first three events should be up to the user utterance
@@ -704,10 +707,7 @@ async def test_update_tracker_session_with_slots(
     assert events[2:7] == slot_set_events
 
     # the next two events are the session start sequence
-    assert events[7:9] == [
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-    ]
+    assert events[7:9] == [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()]
     assert events[9:14] == slot_set_events
 
     # finally an action listen, this should also be the last event
@@ -763,7 +763,7 @@ async def test_fetch_tracker_with_initial_session(
 
     tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     tracker = await default_processor.fetch_tracker_with_initial_session(
         conversation_id, default_channel
@@ -808,7 +808,7 @@ async def test_fetch_tracker_with_initial_session_does_not_update_session(
 
     tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     tracker = await default_processor.fetch_tracker_with_initial_session(
         conversation_id, default_channel
@@ -850,7 +850,7 @@ async def test_handle_message_with_session_start(
         UserMessage(f"/greet{json.dumps(slot_2)}", default_channel, sender_id)
     )
 
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # make sure the sequence of events is as expected
     expected = with_model_ids(
@@ -874,7 +874,7 @@ async def test_handle_message_with_session_start(
             SlotSet(entity, slot_1[entity]),
             DefinePrevUserUtteredFeaturization(False),
             ActionExecuted("utter_greet"),
-            BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"},),
+            BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"}),
             ActionExecuted(ACTION_LISTEN_NAME),
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
@@ -930,7 +930,7 @@ async def test_should_predict_another_action(
 
 async def test_action_unlikely_intent_metadata(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
-        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME),],
+        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
     )
     domain = Domain.empty()
     metadata = {"key1": 1, "key2": "2"}
@@ -977,7 +977,7 @@ async def test_restart_triggers_session_start(
         UserMessage("/restart", default_channel, sender_id)
     )
 
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     expected = with_model_ids(
         [
@@ -1000,7 +1000,7 @@ async def test_restart_triggers_session_start(
             SlotSet(entity, slot_1[entity]),
             DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
             ActionExecuted("utter_greet"),
-            BotUttered("hey there name1!", metadata={"utter_action": "utter_greet"},),
+            BotUttered("hey there name1!", metadata={"utter_action": "utter_greet"}),
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("/restart", {INTENT_NAME_KEY: "restart", "confidence": 1.0}),
             DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
@@ -1035,7 +1035,7 @@ async def test_handle_message_if_action_manually_rejects(
     monkeypatch.setattr(ActionBotResponse, ActionBotResponse.run.__name__, mocked_run)
     await default_processor.handle_message(message)
 
-    tracker = default_processor.tracker_store.retrieve(conversation_id)
+    tracker = await default_processor.tracker_store.retrieve(conversation_id)
 
     logged_events = list(tracker.events)
 
@@ -1103,7 +1103,7 @@ async def test_policy_events_are_applied_to_tracker(
 
     assert action_received_events
 
-    tracker = default_processor.get_tracker(conversation_id)
+    tracker = await default_processor.get_tracker(conversation_id)
     # The action was logged on the tracker as well
     expected_events.append(with_model_id(ActionExecuted(ACTION_LISTEN_NAME), model_id))
 
@@ -1157,13 +1157,13 @@ async def test_policy_events_not_applied_if_rejected(
         UserMessage(user_message, sender_id=conversation_id)
     )
 
-    tracker = default_processor.get_tracker(conversation_id)
+    tracker = await default_processor.get_tracker(conversation_id)
     expected_events = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(user_message, intent={"name": "greet"},),
+            UserUttered(user_message, intent={"name": "greet"}),
             ActionExecutionRejected(ACTION_LISTEN_NAME),
         ],
         model_id,
@@ -1173,7 +1173,7 @@ async def test_policy_events_not_applied_if_rejected(
 
 
 async def test_logging_of_end_to_end_action(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
+    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
     end_to_end_action = "hi, how are you?"
@@ -1185,6 +1185,7 @@ async def test_logging_of_end_to_end_action(
         action_names=[],
         forms={},
         action_texts=[end_to_end_action],
+        data={},
     )
 
     default_processor.domain = new_domain
@@ -1220,13 +1221,13 @@ async def test_logging_of_end_to_end_action(
         UserMessage(user_message, sender_id=conversation_id)
     )
 
-    tracker = default_processor.tracker_store.retrieve(conversation_id)
+    tracker = await default_processor.tracker_store.retrieve(conversation_id)
     expected_events = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(user_message, intent={"name": "greet"},),
+            UserUttered(user_message, intent={"name": "greet"}),
             ActionExecuted(action_text=end_to_end_action),
             BotUttered("hi, how are you?", {}, {}, 123),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -1248,7 +1249,7 @@ async def test_predict_next_action_with_hidden_rules(
     story_slot = "story_slot"
     domain_content = textwrap.dedent(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {rule_intent}
         - {story_intent}
@@ -1368,14 +1369,14 @@ def test_predict_next_action_raises_limit_reached_exception(
 
 
 async def test_processor_logs_text_tokens_in_tracker(
-    mood_agent: Agent, whitespace_tokenizer: WhitespaceTokenizer
+    default_agent: Agent, whitespace_tokenizer: WhitespaceTokenizer
 ):
     text = "Hello there"
     tokens = whitespace_tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [(t.start, t.end) for t in tokens]
 
     message = UserMessage(text)
-    processor = mood_agent.processor
+    processor = default_agent.processor
     tracker = await processor.log_message(message)
     event = tracker.get_last_event_for(event_type=UserUttered)
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
@@ -1383,20 +1384,20 @@ async def test_processor_logs_text_tokens_in_tracker(
     assert event_tokens == indices
 
 
-async def test_processor_valid_slot_setting(form_bot_agent: Agent):
-    processor = form_bot_agent.processor
+async def test_processor_valid_slot_setting(default_agent: Agent):
+    processor = default_agent.processor
     message = UserMessage(
-        "that's correct",
+        "Hiya Peter",
         CollectingOutputChannel(),
         "test",
         parse_data={
-            "intent": {"name": "affirm"},
-            "entities": [{"entity": "seating", "value": True}],
+            "intent": {"name": "greet"},
+            "entities": [{"entity": "name", "value": "Peter"}],
         },
     )
     await processor.handle_message(message)
-    tracker = processor.get_tracker("test")
-    assert SlotSet("outdoor_seating", True) in tracker.events
+    tracker = await processor.get_tracker("test")
+    assert SlotSet("name", "Peter") in tracker.events
 
 
 async def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
@@ -1471,22 +1472,53 @@ def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
     assert result["policy"] == "MemoizationPolicy"
 
 
-def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
+async def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
     model_id = default_processor.model_metadata.model_id
-    tracker = default_processor.get_tracker("bloop")
+    tracker = await default_processor.get_tracker("bloop")
     assert tracker.model_id == model_id
 
 
+# FIXME: these tests take too long to run in the CI, disabling them for now
+@pytest.mark.skip_on_ci
 async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
     processor = e2e_bot_agent.processor
-    message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test",)
+    message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test")
     with caplog.at_level(logging.DEBUG):
         await processor.handle_message(message)
 
-    tracker = processor.get_tracker("test")
+    tracker = await processor.get_tracker("test")
     assert SlotSet("mood", "sad") in tracker.events
     assert any(
         "An end-to-end prediction was made which has triggered the 2nd execution of "
         "the default action 'action_extract_slots'." in message
         for message in caplog.messages
     )
+
+
+async def test_model_name_is_available(trained_rasa_model: Text):
+    processor = Agent.load(model_path=trained_rasa_model).processor
+    assert len(processor.model_filename) > 0
+    assert "/" not in processor.model_filename
+
+
+async def test_loads_correct_model_from_path(
+    trained_core_model: Text, trained_nlu_model: Text, tmp_path: Path
+):
+    # We move both models to the same directory to prove we can load models by name
+    # from a directory with multiple models.
+    model_dir = tmp_path / "models"
+    os.makedirs(model_dir)
+
+    trained_core_model_name = os.path.basename(trained_core_model)
+    shutil.copy2(trained_core_model, model_dir)
+
+    trained_nlu_model_name = os.path.basename(trained_nlu_model)
+    shutil.copy2(trained_nlu_model, model_dir)
+
+    core_processor = Agent.load(
+        model_path=model_dir / trained_core_model_name
+    ).processor
+    nlu_processor = Agent.load(model_path=model_dir / trained_nlu_model_name).processor
+
+    assert core_processor.model_filename == trained_core_model_name
+    assert nlu_processor.model_filename == trained_nlu_model_name

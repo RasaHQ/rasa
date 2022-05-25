@@ -2,9 +2,9 @@ from __future__ import annotations
 import logging
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-import shutil
 from pathlib import Path
 from collections import defaultdict
+import contextlib
 
 import numpy as np
 import tensorflow as tf
@@ -13,6 +13,7 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityTagSpec, EntityExtractorMixin
 import rasa.core.actions.action
@@ -33,11 +34,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.core.policies.policy import (
-    PolicyPrediction,
-    Policy,
-    SupportedData,
-)
+from rasa.core.policies.policy import PolicyPrediction, Policy, SupportedData
 from rasa.core.constants import (
     DIALOGUE,
     POLICY_MAX_HISTORY,
@@ -123,6 +120,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
     EPOCH_OVERRIDE,
+    USE_GPU,
 )
 
 
@@ -345,6 +343,7 @@ class TEDPolicy(Policy):
             POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
+            USE_GPU: True,
         }
 
     def __init__(
@@ -360,13 +359,11 @@ class TEDPolicy(Policy):
     ) -> None:
         """Declares instance variables with default values."""
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer=featurizer,
+            config, model_storage, resource, execution_context, featurizer=featurizer
         )
-
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             config[SPLIT_ENTITIES_BY_COMMA], SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-
         self._load_params(config)
 
         self.model = model
@@ -417,7 +414,11 @@ class TEDPolicy(Policy):
     ) -> Tuple[RasaModelData, List[Dict[Text, List[Features]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_labels(domain, precomputations)
+        encoded_all_labels = (
+            state_featurizer.encode_all_labels(domain, precomputations)
+            if state_featurizer is not None
+            else []
+        )
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -621,7 +622,11 @@ class TEDPolicy(Policy):
         )
 
         if self.config[ENTITY_RECOGNITION]:
-            self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
+            self._entity_tag_specs = (
+                self.featurizer.state_featurizer.entity_tag_specs
+                if self.featurizer.state_featurizer is not None
+                else []
+            )
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
@@ -670,6 +675,10 @@ class TEDPolicy(Policy):
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
         )
+
+        if self.model is None:
+            raise ModelNotFound("No model was detected prior to training.")
+
         self.model.fit(
             data_generator,
             epochs=self.config[EPOCHS],
@@ -685,6 +694,7 @@ class TEDPolicy(Policy):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        **kwargs: Any,
     ) -> Resource:
         """Trains the policy (see parent class for full docstring)."""
         if not training_trackers:
@@ -702,7 +712,7 @@ class TEDPolicy(Policy):
         )
 
         model_data, label_ids = self._prepare_for_training(
-            training_trackers, domain, precomputations,
+            training_trackers, domain, precomputations
         )
 
         if model_data.is_empty():
@@ -715,7 +725,10 @@ class TEDPolicy(Policy):
             )
             return self._resource
 
-        self.run_training(model_data, label_ids)
+        with (
+            contextlib.nullcontext() if self.config["use_gpu"] else tf.device("/cpu:0")
+        ):
+            self.run_training(model_data, label_ids)
 
         self.persist()
 
@@ -801,8 +814,8 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""
@@ -881,7 +894,7 @@ class TEDPolicy(Policy):
 
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
-        text = tracker.latest_message.text
+        text = tracker.latest_message.text if tracker.latest_message is not None else ""
         if precomputations is not None:
             parsed_message = precomputations.lookup_message(user_text=text)
         else:
@@ -918,8 +931,13 @@ class TEDPolicy(Policy):
 
             self.featurizer.persist(model_path)
 
-            if self.config[CHECKPOINT_MODEL]:
-                shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+            if self.config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
+                self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                # Save an empty file to flag that this model has been
+                # produced using checkpointing
+                checkpoint_marker = model_path / f"{model_filename}.from_checkpoint.pkl"
+                checkpoint_marker.touch()
+
             self.model.save(str(tf_model_file))
 
             self.persist_model_utilities(model_path)
@@ -938,14 +956,14 @@ class TEDPolicy(Policy):
             model_path / f"{model_filename}.meta.pkl", self.config
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.data_example.pkl", self.data_example,
+            model_path / f"{model_filename}.data_example.pkl", self.data_example
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.fake_features.pkl", self.fake_features,
+            model_path / f"{model_filename}.fake_features.pkl", self.fake_features
         )
         rasa.utils.io.pickle_dump(
             model_path / f"{model_filename}.label_data.pkl",
-            dict(self._label_data.data),
+            dict(self._label_data.data) if self._label_data is not None else {},
         )
         entity_tag_specs = (
             [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
@@ -953,7 +971,7 @@ class TEDPolicy(Policy):
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs,
+            model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs
         )
 
     @classmethod
@@ -1020,14 +1038,14 @@ class TEDPolicy(Policy):
         try:
             with model_storage.read_from(resource) as model_path:
                 return cls._load(
-                    model_path, config, model_storage, resource, execution_context,
+                    model_path, config, model_storage, resource, execution_context
                 )
         except ValueError:
             logger.debug(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-            return cls(config, model_storage, resource, execution_context,)
+            return cls(config, model_storage, resource, execution_context)
 
     @classmethod
     def _load(
@@ -1060,13 +1078,16 @@ class TEDPolicy(Policy):
             predict_data_example,
         ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
-        model = cls._load_tf_model(
-            model_utilities,
-            model_data_example,
-            predict_data_example,
-            featurizer,
-            execution_context.is_finetuning,
-        )
+        model = None
+
+        with (contextlib.nullcontext() if config["use_gpu"] else tf.device("/cpu:0")):
+            model = cls._load_tf_model(
+                model_utilities,
+                model_data_example,
+                predict_data_example,
+                featurizer,
+                execution_context.is_finetuning,
+            )
 
         return cls._load_policy_with_model(
             config,
@@ -1633,7 +1654,7 @@ class TED(TransformerRasaModel):
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = tf.expand_dims(
                 self._last_token(
-                    attribute_features, combined_sentence_sequence_feature_lengths,
+                    attribute_features, combined_sentence_sequence_feature_lengths
                 ),
                 axis=1,
             )
@@ -1935,7 +1956,7 @@ class TED(TransformerRasaModel):
         return labels_embed
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -2001,7 +2022,7 @@ class TED(TransformerRasaModel):
         _, self.all_labels_embed = self._create_all_labels_embed()
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 

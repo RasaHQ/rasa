@@ -5,6 +5,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import TextSlot, AnySlot, CategoricalSlot, BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -250,7 +251,7 @@ async def test_nlg_conditional_response_variations_with_diff_slot_types(
 async def test_nlg_non_matching_channel():
     domain = Domain.from_yaml(
         """
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     responses:
         utter_hi:
         - text: "Hello"
@@ -266,8 +267,8 @@ async def test_nlg_non_matching_channel():
 
 async def test_nlg_conditional_response_variations_with_none_slot():
     domain = Domain.from_yaml(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         responses:
             utter_action:
             - text: "text A"
@@ -288,8 +289,8 @@ async def test_nlg_conditional_response_variations_with_none_slot():
 
 async def test_nlg_conditional_response_variations_with_slot_not_a_constraint():
     domain = Domain.from_yaml(
-        """
-            version: "3.0"
+        f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             responses:
                 utter_action:
                 - text: "text A"
@@ -310,8 +311,8 @@ async def test_nlg_conditional_response_variations_with_slot_not_a_constraint():
 
 async def test_nlg_conditional_response_variations_with_null_slot():
     domain = Domain.from_yaml(
-        """
-                version: "3.0"
+        f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
                 responses:
                     utter_action:
                     - text: "text for null"
@@ -336,8 +337,8 @@ async def test_nlg_conditional_response_variations_with_null_slot():
 
 async def test_nlg_conditional_response_variations_channel_no_condition_met():
     domain = Domain.from_yaml(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         responses:
            utter_action:
              - text: "example with channel"
@@ -357,8 +358,8 @@ async def test_nlg_conditional_response_variations_channel_no_condition_met():
 
 async def test_nlg_conditional_response_variation_condition_met_channel_mismatch():
     domain = Domain.from_yaml(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         responses:
            utter_action:
              - text: "example with channel"
@@ -390,7 +391,7 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
                     mappings=[{}],
                     initial_value="B",
                     influence_conversation=False,
-                ),
+                )
             ],
             "app",
             "condition example B no channel",
@@ -402,7 +403,7 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
                     mappings=[{}],
                     initial_value="C",
                     influence_conversation=False,
-                ),
+                )
             ],
             "",
             "default",
@@ -414,7 +415,7 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
                     mappings=[{}],
                     initial_value="D",
                     influence_conversation=False,
-                ),
+                )
             ],
             "app",
             "default",
@@ -423,8 +424,8 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
 )
 async def test_nlg_conditional_edgecases(slots, channel, expected_response):
     domain = Domain.from_yaml(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         responses:
            utter_action:
              - text: "condition example A with channel"
@@ -466,8 +467,8 @@ async def test_nlg_conditional_response_variations_condition_logging(
     caplog: LogCaptureFixture,
 ):
     domain = Domain.from_yaml(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         responses:
            utter_action:
              - text: "example"

@@ -98,6 +98,11 @@ endif
 	# Diff of uncommitted changes for running locally
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
 
+lint-changelog:
+	# Lint changelog filenames to avoid merging of incorrectly named changelog fragment files
+	# For more info about proper changelog file naming, see https://github.com/RasaHQ/rasa/blob/main/changelog/README.md
+	poetry run flake8 --exclude=*.feature.md,*.improvement.md,*.bugfix.md,*.doc.md,*.removal.md,*.misc.md,README.md,_template.md.jinja2  changelog/* -q
+
 lint-security:
 	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
 
@@ -125,9 +130,10 @@ endif
 	rm data/MITIE*.bz2
 
 prepare-transformers:
-	CACHE_DIR=$(HOME)/.cache/torch/transformers;\
+	if [ $(OS) = "Windows_NT" ]; then HOME_DIR="$(HOMEDRIVE)$(HOMEPATH)"; else HOME_DIR=$(HOME); fi;\
+	CACHE_DIR=$$HOME_DIR/.cache/torch/transformers;\
 	mkdir -p "$$CACHE_DIR";\
-    i=0;\
+	i=0;\
 	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
 
 prepare-tests-files: prepare-spacy prepare-mitie install-mitie prepare-transformers
@@ -202,6 +208,9 @@ test-performance: PYTEST_MARKER=category_performance
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker
 
+test-gh-actions:
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest .github/tests --cov .github/scripts
+
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
@@ -230,6 +239,12 @@ docs: prepare-docs
 
 livedocs:
 	cd docs/ && poetry run yarn start
+
+preview-docs:
+	cd docs/ && yarn build && yarn deploy-preview --alias=${PULL_REQUEST_NUMBER} --message="Preview for Pull Request #${PULL_REQUEST_NUMBER}"
+
+publish-docs:
+	cd docs/ && yarn build && yarn deploy
 
 release:
 	poetry run python scripts/release.py

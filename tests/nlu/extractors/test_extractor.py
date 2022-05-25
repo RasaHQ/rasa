@@ -1,6 +1,7 @@
 from typing import Any, Text, Dict, List
 
 import pytest
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 from rasa.shared.nlu.constants import TEXT, SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.nlu.training_data.message import Message
@@ -252,9 +253,9 @@ def test_convert_tags_to_entities(
                     "address",
                     "address",
                     "address",
-                ],
+                ]
             },
-            {"entity": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89, 1.0, 1.0, 1.0],},
+            {"entity": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89, 1.0, 1.0, 1.0]},
             [
                 {
                     "entity": "address",
@@ -419,7 +420,7 @@ def test_split_entities_by_comma(
     "text, warnings",
     [
         (
-            'version: "3.0"\n'
+            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -427,7 +428,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            'version: "3.0"\n'
+            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -435,7 +436,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            'version: "3.0"\n'
+            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -444,7 +445,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            'version: "3.0"\n'
+            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -453,7 +454,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            'version: "3.0"\n'
+            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"

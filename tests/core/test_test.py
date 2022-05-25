@@ -40,7 +40,7 @@ def _probabilities_with_action_unlikely_intent_for(
     _original = DefaultPolicyPredictionEnsemble.combine_predictions_from_kwargs
 
     def combine_predictions_from_kwargs(
-        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any
     ) -> PolicyPrediction:
         latest_event = tracker.events[-1]
         if (
@@ -73,9 +73,7 @@ def _probabilities_with_action_unlikely_intent_for(
 
 def _custom_prediction_states_for_rules(
     ignore_action_unlikely_intent: bool = False,
-) -> Callable[
-    [RulePolicy, DialogueStateTracker, Domain, bool], List[State],
-]:
+) -> Callable[[RulePolicy, DialogueStateTracker, Domain, bool], List[State],]:
     """Creates prediction states for `RulePolicy`.
 
     `RulePolicy` does not ignore `action_unlikely_intent` in reality.
@@ -126,9 +124,7 @@ async def test_testing_warns_if_action_unknown(
 
 
 async def test_testing_with_utilizing_retrieval_intents(
-    response_selector_agent: Agent,
-    response_selector_test_stories: Path,
-    tmp_path: Path,
+    response_selector_agent: Agent, response_selector_test_stories: Path, tmp_path: Path
 ):
     result = await rasa.core.test.test(
         stories=response_selector_test_stories,
@@ -252,8 +248,8 @@ async def test_action_unlikely_intent_warning(
 
     file_name = tmp_path / "test_action_unlikely_intent_1.yml"
     file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: unlikely path
             steps:
@@ -301,8 +297,8 @@ async def test_action_unlikely_intent_correctly_predicted(
 
     file_name = tmp_path / "test_action_unlikely_intent_2.yml"
     file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: unlikely path (with action_unlikely_intent)
             steps:
@@ -346,8 +342,8 @@ async def test_wrong_action_after_action_unlikely_intent(
 
     test_file_name = tmp_path / "test.yml"
     test_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -364,8 +360,8 @@ async def test_wrong_action_after_action_unlikely_intent(
 
     train_file_name = tmp_path / "train.yml"
     train_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -415,8 +411,8 @@ async def test_action_unlikely_intent_not_found(
 ):
     test_file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
     test_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -434,8 +430,8 @@ async def test_action_unlikely_intent_not_found(
 
     train_file_name = tmp_path / "train_without_action_unlikely_intent.yml"
     train_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -482,8 +478,8 @@ async def test_action_unlikely_intent_warning_and_story_error(
 
     test_file_name = tmp_path / "test.yml"
     test_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -500,8 +496,8 @@ async def test_action_unlikely_intent_warning_and_story_error(
 
     train_file_name = tmp_path / "train.yml"
     train_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -522,7 +518,7 @@ async def test_action_unlikely_intent_warning_and_story_error(
     agent = await _train_rule_based_agent(train_file_name, True)
 
     result = await rasa.core.test.test(
-        str(test_file_name), agent, out_directory=str(tmp_path),
+        str(test_file_name), agent, out_directory=str(tmp_path)
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 0
@@ -549,8 +545,8 @@ async def test_fail_on_prediction_errors(
 
     file_name = tmp_path / "test_action_unlikely_intent_2.yml"
     file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: unlikely path (with action_unlikely_intent)
             steps:

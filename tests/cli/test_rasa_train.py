@@ -1,10 +1,11 @@
 import os
 import tempfile
+import sys
 from pathlib import Path
 
 from _pytest.capture import CaptureFixture
 import pytest
-from typing import Callable
+from typing import Callable, List
 from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
 
@@ -14,10 +15,7 @@ from rasa.core.policies.policy import Policy
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-from rasa.model_training import (
-    CODE_NEEDS_TO_BE_RETRAINED,
-    CODE_FORCED_TRAINING,
-)
+from rasa.model_training import CODE_NEEDS_TO_BE_RETRAINED, CODE_FORCED_TRAINING
 
 # noinspection PyProtectedMember
 from rasa.cli.train import _get_valid_config
@@ -33,7 +31,19 @@ from rasa.shared.nlu.training_data.training_data import (
 import rasa.utils.io
 
 
-def test_train(run_in_simple_project: Callable[..., RunResult], tmp_path: Path):
+@pytest.mark.parametrize(
+    "optional_arguments",
+    [
+        ["--endpoints", "endpoints.yml"],
+        ["--endpoints", "non_existent_endpoints.yml"],
+        [],
+    ],
+)
+def test_train(
+    run_in_simple_project: Callable[..., RunResult],
+    tmp_path: Path,
+    optional_arguments: List,
+):
     temp_dir = os.getcwd()
 
     run_in_simple_project(
@@ -48,6 +58,7 @@ def test_train(run_in_simple_project: Callable[..., RunResult], tmp_path: Path):
         "train_models",
         "--fixed-model-name",
         "test-model",
+        *optional_arguments,
     )
 
     models_dir = Path(temp_dir, "train_models")
@@ -69,9 +80,7 @@ def test_train(run_in_simple_project: Callable[..., RunResult], tmp_path: Path):
 def test_train_finetune(
     run_in_simple_project: Callable[..., RunResult], capsys: CaptureFixture
 ):
-    run_in_simple_project(
-        "train", "--finetune",
-    )
+    run_in_simple_project("train", "--finetune")
 
     output = capsys.readouterr().out
     assert "No model for finetuning found" in output
@@ -426,7 +435,7 @@ def test_train_help(run: Callable[..., RunResult]):
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force] [--finetune [FINETUNE]]
-                  [--epoch-fraction EPOCH_FRACTION]
+                  [--epoch-fraction EPOCH_FRACTION] [--endpoints ENDPOINTS]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -456,7 +465,19 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
 def test_train_core_help(run: Callable[..., RunResult]):
     output = run("train", "core", "--help")
 
-    help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
+    if sys.version_info.minor >= 9:
+        # This is required because `argparse` behaves differently on
+        # Python 3.9 and above. The difference is the changed formatting of help
+        # output for CLI arguments with `nargs="*"
+        help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
+                       [-c CONFIG [CONFIG ...]] [--out OUT]
+                       [--augmentation AUGMENTATION] [--debug-plots] [--force]
+                       [--fixed-model-name FIXED_MODEL_NAME]
+                       [--percentages [PERCENTAGES ...]] [--runs RUNS]
+                       [--finetune [FINETUNE]]
+                       [--epoch-fraction EPOCH_FRACTION]"""
+    else:
+        help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
                        [-c CONFIG [CONFIG ...]] [--out OUT]
                        [--augmentation AUGMENTATION] [--debug-plots] [--force]
                        [--fixed-model-name FIXED_MODEL_NAME]

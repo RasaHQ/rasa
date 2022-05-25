@@ -482,12 +482,61 @@ paths:
         description: >-
           The training data should be in YAML format.
         content:
-          application/json:
+          application/yaml:
             schema:
-              $ref: '#/components/schemas/JSONTrainingRequest'
-          application/x-yaml:
-            schema:
-              type: string
+              $ref: '#/components/schemas/YAMLTrainingRequest'
+            example: |
+              pipeline: []
+
+              policies: []
+
+              intents:
+                - greet
+                - goodbye
+
+              entities: []
+              slots: {}
+              actions: []
+              forms: {}
+              e2e_actions: []
+
+              responses:
+                utter_greet:
+                - text: "Hey! How are you?"
+
+                utter_goodbye:
+                - text: "Bye"
+
+              session_config:
+                session_expiration_time: 60
+                carry_over_slots_to_new_session: true
+
+              nlu:
+              - intent: greet
+                examples: |
+                  - hey
+                  - hello
+
+              - intent: goodbye
+                examples: |
+                  - bye
+                  - goodbye
+
+              rules:
+
+              - rule: Say goodbye anytime the user says goodbye
+                steps:
+                - intent: goodbye
+                - action: utter_goodbye
+
+              stories:
+
+              - story: happy path
+                steps:
+                - intent: greet
+                - action: utter_greet
+                - intent: goodbye
+                - action: utter_goodbye
 
       responses:
         200:
@@ -718,7 +767,8 @@ paths:
       summary: Replace the currently loaded model
       description: >-
         Updates the currently loaded model.
-        First, tries to load the model from the local storage system.
+        First, tries to load the model from the local (note: local to Rasa server)
+        storage system.
         Secondly, tries to load the model from the provided model server configuration.
         Last, tries to load the model from the provided remote storage.
       requestBody:
@@ -1052,7 +1102,7 @@ components:
         model_file:
           type: string
           description: Path to model file
-          example: "/models/20190512.tar.gz"
+          example: "/absolute-path-to-models-directory/models/20190512.tar.gz"
         model_server:
           $ref: '#/components/schemas/EndpointConfig'
         remote_storage:
@@ -1407,19 +1457,53 @@ components:
           type: integer
           description: Time to wait between pulls from model server
 
-    JSONTrainingRequest:
+    YAMLTrainingRequest:
       type: object
       properties:
-        domain:
-          $ref: '#/components/schemas/DomainFile'
-        config:
-          $ref: '#/components/schemas/ConfigFile'
-        nlu:
-          $ref: '#/components/schemas/NLUTrainingData'
+        pipeline:
+          description: Pipeline list
+          type: array
+        policies:
+          description: Policies list
+          type: array
+        entities:
+          description: Entity list
+          type: array
+        slots:
+          description: Slots list
+          type: array
+        actions:
+          description: Action list
+          type: array
+        forms:
+          description: Forms list
+          type: array
+        e2e_actions:
+          description: E2E Action list
+          type: array
         responses:
-          $ref: '#/components/schemas/RetrievalIntentsTrainingData'
+          description: Bot response templates
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TemplateDescription'
+        session_config:
+          description: Session configuration options
+          type: object
+          properties:
+            session_expiration_time:
+              type: integer
+            carry_over_slots_to_new_session:
+              type: boolean
+        nlu:
+          description: Rasa NLU data, array of intents
+          type: array
+        rules:
+          description: Rule list
+          type: array
         stories:
-          $ref: '#/components/schemas/StoriesTrainingData'
+          description: Rasa Core stories in YAML format
+          type: array
+
         force:
           type: boolean
           description: >-
@@ -1432,46 +1516,6 @@ components:
             If `true` (default) the trained model will be saved in the default model
             directory, if `false` it will be saved in a temporary directory
           deprecated: True
-      required: ["config"]
-
-    NLUTrainingData:
-      type: string
-      description: Rasa NLU training data in YAML format
-      example:  >-
-        - intent: greet
-          examples: |
-            - hey
-            - hello
-            - hi
-
-        - intent: goodbye
-          examples: |
-            - bye
-            - goodbye
-            - have a nice day
-            - see you
-
-        - intent: affirm
-          examples: |
-            - yes
-            - indeed
-
-        - intent: deny
-          examples: |
-            - no
-            - never
-
-        - intent: mood_great
-          examples: |
-            - perfect
-            - very good
-            - great
-
-        - intent: mood_unhappy
-          examples: |
-            - sad
-            - not good
-            - unhappy
 
     RetrievalIntentsTrainingData:
       type: string
@@ -1517,48 +1561,6 @@ components:
           steps:
           - intent: goodbye
           - action: utter_goodbye
-
-    DomainFile:
-      type: string
-      description: Rasa domain in plain text
-      example: >-
-        intents:
-          - greet
-          - goodbye
-          - affirm
-          - deny
-          - mood_great
-          - mood_unhappy
-
-        responses:
-          utter_greet:
-          - text: "Hey! How are you?"
-
-          utter_cheer_up:
-          - text: "Here is something to cheer you up:"
-            image: "https://i.imgur.com/nGF1K8f.jpg"
-
-          utter_did_that_help:
-          - text: "Did that help you?"
-
-          utter_happy:
-          - text: "Great carry on!"
-
-          utter_goodbye:
-          - text: "Bye"
-
-    ConfigFile:
-      type: string
-      description: Rasa config in plain text
-      example: >-
-        recipe: default.v1
-        language: en
-
-        pipeline: supervised_embeddings
-
-        policies:
-          - name: MemoizationPolicy
-          - name: TEDPolicy
 
     TrainingResult:
       type: string

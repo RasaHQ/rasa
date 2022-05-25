@@ -43,8 +43,8 @@ def _generate_random_example_for_one_session_and_one_marker(
         the plain list of numbers used as "preceding user turns" in that extraction
         result
     """
-    applies = int(rng.choice(10))
-    all_preceding_user_turn_numbers = [int(rng.choice(20)) for _ in range(applies)]
+    applied = int(rng.choice(10))
+    all_preceding_user_turn_numbers = [int(rng.choice(20)) for _ in range(applied)]
     event_list = [
         EventMetaData(
             idx=int(rng.choice(100)), preceding_user_turns=preceding_user_turns
@@ -135,14 +135,17 @@ def test_process_results_per_session(seed: int):
                 preceding_user_turn_numbers_used_per_marker[marker][idx]
             )
             for stat_name, stat_value in expected_stats.items():
-                assert pytest.approx(
-                    stats.session_results[marker][stat_name][idx], stat_value
+                assert (
+                    pytest.approx(
+                        stats.session_results[marker][stat_name][idx], nan_ok=True
+                    )
+                    == stat_value
                 )
     for idx in range(num_sessions):
-        assert stats.session_identifier[idx] == (sender_ids[idx], session_indices[idx],)
+        assert stats.session_identifier[idx] == (sender_ids[idx], session_indices[idx])
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234])
 def test_process_results_overall(seed: int):
     rng = np.random.default_rng(seed=seed)
     (
@@ -164,9 +167,9 @@ def test_process_results_overall(seed: int):
     for marker in markers:
         # count how often we generated some results for a session:
         number_lists = preceding_user_turn_numbers_used_per_marker[marker]
-        applies_at_least_once = sum(len(sub_list) > 0 for sub_list in number_lists)
+        applied_at_least_once = sum(len(sub_list) > 0 for sub_list in number_lists)
         # and compare that to the expected count:
-        assert stats.count_if_applied_at_least_once[marker] == applies_at_least_once
+        assert stats.count_if_applied_at_least_once[marker] == applied_at_least_once
         # check if we collected the all the "preceding user turn numbers"
         concatenated_numbers = list(
             itertools.chain.from_iterable(
@@ -176,7 +179,7 @@ def test_process_results_overall(seed: int):
         assert stats.num_preceding_user_turns_collected[marker] == concatenated_numbers
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234])
 def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
     rng = np.random.default_rng(seed=seed)
     (
@@ -218,7 +221,7 @@ def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
             "sender_id": "all",
             "session_idx": "nan",
             "marker": marker_name,
-            "statistic": "number_of_sessions_where_marker_applies_at_least_once",
+            "statistic": "number_of_sessions_where_marker_applied_at_least_once",
             "value": str(stats.count_if_applied_at_least_once[marker_name]),
         }
         row_idx += 1
@@ -226,7 +229,7 @@ def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
             "sender_id": "all",
             "session_idx": "nan",
             "marker": marker_name,
-            "statistic": "percentage_of_sessions_where_marker_applies_at_least_once",
+            "statistic": "percentage_of_sessions_where_marker_applied_at_least_once",
             "value": str(
                 round(
                     stats.count_if_applied_at_least_once[marker_name]
@@ -253,7 +256,7 @@ def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
             row_idx += 1
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234])
 def test_per_session_statistics_to_csv(tmp_path: Path, seed: int):
 
     rng = np.random.default_rng(seed=seed)

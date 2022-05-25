@@ -14,7 +14,7 @@ from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -93,27 +93,39 @@ class MessageProcessor:
         self.max_number_of_predictions = max_number_of_predictions
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
-        self.model_metadata, self.graph_runner = self._load_model(model_path)
+        self.model_filename, self.model_metadata, self.graph_runner = self._load_model(
+            model_path
+        )
         self.model_path = Path(model_path)
-        self.model_filename = os.path.basename(get_latest_model(Path(model_path)) or "")
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter
 
     @staticmethod
-    def _load_model(model_path: Union[Text, Path]) -> Tuple[ModelMetadata, GraphRunner]:
+    def _load_model(
+        model_path: Union[Text, Path]
+    ) -> Tuple[Text, ModelMetadata, GraphRunner]:
         """Unpacks a model from a given path using the graph model loader."""
-        model_tar = get_latest_model(model_path)
-        if not model_tar:
-            raise ModelNotFound(f"No model found at path '{model_path}'.")
+        try:
+            if os.path.isfile(model_path):
+                model_tar = model_path
+            else:
+                model_file_path = get_latest_model(model_path)
+                if not model_file_path:
+                    raise ModelNotFound(f"No model found at path '{model_path}'.")
+                model_tar = model_file_path
+        except TypeError:
+            raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
+        logger.info(f"Loading model {model_tar}...")
         with tempfile.TemporaryDirectory() as temporary_directory:
             try:
-                return loader.load_predict_graph_runner(
+                metadata, runner = loader.load_predict_graph_runner(
                     Path(temporary_directory),
                     Path(model_tar),
                     LocalModelStorage,
                     DaskGraphRunner,
                 )
+                return os.path.basename(model_tar), metadata, runner
             except tarfile.ReadError:
                 raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
@@ -125,29 +137,38 @@ class MessageProcessor:
         tracker = await self.log_message(message, should_save_tracker=False)
 
         if self.model_metadata.training_type == TrainingType.NLU:
-            self._save_tracker(tracker)
+            await self.save_tracker(tracker)
             rasa.shared.utils.io.raise_warning(
                 "No core model. Skipping action prediction and execution.",
                 docs=DOCS_URL_POLICIES,
             )
             return None
 
-        tracker = await self._run_action_extract_slots(message.output_channel, tracker)
+        tracker = await self.run_action_extract_slots(message.output_channel, tracker)
 
         await self._run_prediction_loop(message.output_channel, tracker)
 
-        self._save_tracker(tracker)
+        await self.save_tracker(tracker)
 
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
 
         return None
 
-    async def _run_action_extract_slots(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker,
+    async def run_action_extract_slots(
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ) -> DialogueStateTracker:
+        """Run action to extract slots and update the tracker accordingly.
+
+        Args:
+            output_channel: Output channel associated with the incoming user message.
+            tracker: A tracker representing a conversation state.
+
+        Returns:
+            the given (updated) tracker
+        """
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
-            ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
+            ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint
         )
         extraction_events = await action_extract_slots.run(
             output_channel, self.nlg, tracker, self.domain
@@ -176,7 +197,7 @@ class MessageProcessor:
         result = self.predict_next_with_tracker(tracker)
 
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        await self.save_tracker(tracker)
 
         return result
 
@@ -272,7 +293,7 @@ class MessageProcessor:
         Returns:
               Tracker for `sender_id`.
         """
-        tracker = self.get_tracker(sender_id)
+        tracker = await self.get_tracker(sender_id)
 
         await self._update_tracker_session(tracker, output_channel, metadata)
 
@@ -295,7 +316,7 @@ class MessageProcessor:
         Returns:
               Tracker for `sender_id`.
         """
-        tracker = self.get_tracker(sender_id)
+        tracker = await self.get_tracker(sender_id)
 
         # run session start only if the tracker is empty
         if not tracker.events:
@@ -303,7 +324,7 @@ class MessageProcessor:
 
         return tracker
 
-    def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
+    async def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
         """Get the tracker for a conversation.
 
         In contrast to `fetch_tracker_and_update_session` this does not add any
@@ -320,13 +341,13 @@ class MessageProcessor:
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
-        tracker = self.tracker_store.get_or_create_tracker(
+        tracker = await self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )
         tracker.model_id = self.model_metadata.model_id
         return tracker
 
-    def get_trackers_for_all_conversation_sessions(
+    async def get_trackers_for_all_conversation_sessions(
         self, conversation_id: Text
     ) -> List[DialogueStateTracker]:
         """Fetches all trackers for a conversation.
@@ -343,7 +364,7 @@ class MessageProcessor:
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
-        tracker = self.tracker_store.retrieve_full_tracker(conversation_id)
+        tracker = await self.tracker_store.retrieve_full_tracker(conversation_id)
 
         return rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
 
@@ -363,7 +384,7 @@ class MessageProcessor:
         await self._handle_message_with_tracker(message, tracker)
 
         if should_save_tracker:
-            self._save_tracker(tracker)
+            await self.save_tracker(tracker)
 
         return tracker
 
@@ -399,7 +420,7 @@ class MessageProcessor:
         await self._run_action(action, tracker, output_channel, nlg, prediction)
 
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        await self.save_tracker(tracker)
 
         return tracker
 
@@ -491,7 +512,7 @@ class MessageProcessor:
                 )
             else:
                 intent = reminder_event.intent
-                entities = reminder_event.entities or {}
+                entities: Union[List[Dict], Dict] = reminder_event.entities or {}
                 await self.trigger_external_user_uttered(
                     intent, entities, tracker, output_channel
                 )
@@ -540,11 +561,11 @@ class MessageProcessor:
             self.domain,
         )
 
-        tracker = await self._run_action_extract_slots(output_channel, tracker)
+        tracker = await self.run_action_extract_slots(output_channel, tracker)
 
         await self._run_prediction_loop(output_channel, tracker)
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        await self.save_tracker(tracker)
 
     @staticmethod
     def _log_slots(tracker: DialogueStateTracker) -> None:
@@ -685,13 +706,14 @@ class MessageProcessor:
 
     @staticmethod
     def _should_handle_message(tracker: DialogueStateTracker) -> bool:
-        return (
-            not tracker.is_paused()
-            or tracker.latest_message.intent.get(INTENT_NAME_KEY) == USER_INTENT_RESTART
+        return not tracker.is_paused() or (
+            tracker.latest_message is not None
+            and tracker.latest_message.intent.get(INTENT_NAME_KEY)
+            == USER_INTENT_RESTART
         )
 
     def is_action_limit_reached(
-        self, tracker: DialogueStateTracker, should_predict_another_action: bool,
+        self, tracker: DialogueStateTracker, should_predict_another_action: bool
     ) -> bool:
         """Check whether the maximum number of predictions has been met.
 
@@ -718,7 +740,7 @@ class MessageProcessor:
         )
 
     async def _run_prediction_loop(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker,
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -743,7 +765,7 @@ class MessageProcessor:
                     f"An end-to-end prediction was made which has triggered the 2nd "
                     f"execution of the default action '{ACTION_EXTRACT_SLOTS}'."
                 )
-                tracker = await self._run_action_extract_slots(output_channel, tracker)
+                tracker = await self.run_action_extract_slots(output_channel, tracker)
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, prediction
@@ -936,8 +958,13 @@ class MessageProcessor:
 
         return has_expired
 
-    def _save_tracker(self, tracker: DialogueStateTracker) -> None:
-        self.tracker_store.save(tracker)
+    async def save_tracker(self, tracker: DialogueStateTracker) -> None:
+        """Save the given tracker to the tracker store.
+
+        Args:
+            tracker: Tracker to be saved.
+        """
+        await self.tracker_store.save(tracker)
 
     def _predict_next_with_tracker(
         self, tracker: DialogueStateTracker
@@ -963,7 +990,7 @@ class MessageProcessor:
             raise ValueError("Cannot predict next action if there is no core target.")
 
         results = self.graph_runner.run(
-            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target],
+            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]
         )
         policy_prediction = results[target]
         return policy_prediction

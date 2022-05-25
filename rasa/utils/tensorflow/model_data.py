@@ -1,11 +1,7 @@
 import logging
-
-import numpy as np
-import scipy.sparse
-
-from sklearn.model_selection import train_test_split
 from typing import (
     Optional,
+    DefaultDict,
     Dict,
     Text,
     List,
@@ -14,8 +10,14 @@ from typing import (
     Union,
     NamedTuple,
     ItemsView,
+    overload,
 )
 from collections import defaultdict, OrderedDict
+
+import numpy as np
+import scipy.sparse
+from sklearn.model_selection import train_test_split
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +88,7 @@ class FeatureArray(np.ndarray):
             return
 
         self.units = getattr(obj, "units", None)
-        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)
+        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)  # type: ignore[assignment] # noqa:E501
         self.is_sparse = getattr(obj, "is_sparse", None)
 
         default_attributes = {
@@ -264,7 +266,15 @@ class RasaModelData:
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
-        self.sparse_feature_sizes = {}
+        self.sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]] = {}
+
+    @overload
+    def get(self, key: Text, sub_key: Text) -> List[FeatureArray]:
+        ...
+
+    @overload
+    def get(self, key: Text, sub_key: None = ...) -> Dict[Text, List[FeatureArray]]:
+        ...
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
@@ -331,7 +341,7 @@ class RasaModelData:
         Returns:
             The simplified data.
         """
-        out_data = {}
+        out_data: Data = {}
         for key, attribute_data in self.data.items():
             out_data[key] = {}
             for sub_key, features in attribute_data.items():
@@ -427,7 +437,7 @@ class RasaModelData:
         units = 0
         for features in self.data[key][sub_key]:
             if len(features) > 0:
-                units += features.units
+                units += features.units  # type: ignore[operator]
 
         return units
 
@@ -579,7 +589,7 @@ class RasaModelData:
                 for data in attribute_data.values()
                 for v in data
             ]
-            solo_values = [
+            solo_values: List[Any] = [
                 []
                 for attribute_data in self.data.values()
                 for data in attribute_data.values()
@@ -705,7 +715,9 @@ class RasaModelData:
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: DefaultDict[
+            Text, DefaultDict[Text, List[List[FeatureArray]]]
+        ] = defaultdict(lambda: defaultdict(list))
 
         while min(num_data_cycles) == 0:
             if shuffle:
@@ -856,8 +868,12 @@ class RasaModelData:
         Returns:
             The test and train RasaModelData
         """
-        data_train = defaultdict(lambda: defaultdict(list))
-        data_val = defaultdict(lambda: defaultdict(list))
+        data_train: DefaultDict[
+            Text, DefaultDict[Text, List[FeatureArray]]
+        ] = defaultdict(lambda: defaultdict(list))
+        data_val: DefaultDict[Text, DefaultDict[Text, List[Any]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
 
         # output_values = x_train, x_val, y_train, y_val, z_train, z_val, etc.
         # order is kept, e.g. same order as model data keys

@@ -53,14 +53,25 @@ from the user:
 - whether they want to sit outside or not
 
 
-You define a form in your domain by specifying [slot mappings](forms.mdx#slot-mappings) for each
-piece of required information. Slot mappings define both which
-slots are required, and how each slot can be filled:
+You define a form in your domain by specifying a list of required slots under the form name:
+
+```yaml-rasa title="domain.yml"
+forms:
+  restaurant_form:
+    required_slots:
+        - cuisine
+        - num_people
+        - outdoor_seating
+```
+
+These slots need to be added to your domain's `slots` section, along with [slot mappings](domain.mdx#slot-mappings) which define how the slots can be filled. For any slot filled `from_entity`, the entity also needs to be added
+to the domain. Slots filled by forms should usually not influence
+the conversation, so set `influence_conversation` to `false:
 
 ```yaml-rasa title="domain.yml"
 entities:
-- cuisine
-- number
+  - cuisine
+  - number
 slots:
   cuisine:
     type: text
@@ -78,28 +89,19 @@ slots:
     - type: from_intent
       intent: affirm
       value: true
+      conditions:
+       - active_loop: restaurant_form
+         requested_slot: outdoor_seating
     - type: from_intent
       intent: deny
       value: false
-forms:
-  restaurant_form:
-    required_slots:
-        - cuisine
-        - num_people
-        - outdoor_seating
+      conditions:
+      - active_loop: restaurant_form
+        requested_slot: outdoor_seating
 ```
 
-For any slot filled `from_entity`, the entity needs to be added
-to the domain.
-
-```yaml-rasa title="domain.yml"
-entities:
-  - cuisine
-  - number
-```
-
-Entities like numbers
-can be extracted by the [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add  DucklingEntityExtractor
+The `number` slot is filled from an entity. Entities like numbers
+can be extracted by [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add  DucklingEntityExtractor
 to your NLU pipeline:
 
 ```yaml-rasa title="config.yml"
@@ -110,42 +112,17 @@ pipeline:
   dimensions: ["number"]
 ```
 
+##### Slot Mappings with Conditions
 
 The `outdoor_seating` slot is
 filled based on the user's intent: If it is `affirm`, it'll be `true`, if it is
-`deny`, it'll be `false`.
+`deny`, it'll be `false`. 
 
+However, the slot should only be set to `true` or `false` if the user was responding to the question, `Do you want to sit outside?`.
+To enforce this condition, the `conditions` for the `outdoor_seating` slot requires that `restaurant_form` is active and that the requested slot is `outdoor_seating`. 
+If there were no conditions and the user had sent a message with the `affirm` or `deny` intent earlier in the conversation,
+the `outdoor_seating` slot would already be filled when the form was activated. Therefore the form would not prompt the user for their outdoor seating preference. See [mapping conditions](./domain.mdx#mapping-conditions) for more information.
 
-Since the form relies on certain [slots](domain.mdx#slots) being available, you need
-to add these slots to the domain. Slots filled by forms should usually not influence
-the conversation. Set `influence_conversation` to `false` to ignore their values during
-the conversation:
-
-```yaml-rasa title="domain.yml"
-slots:
-  cuisine:
-    type: text
-    influence_conversation: false
-    mappings:
-    - type: from_entity
-      entity: cuisine
-  num_people:
-    type: float
-    influence_conversation: false
-    mappings:
-    - type: from_entity
-      entity: number
-  outdoor_seating:
-    type: text
-    influence_conversation: false
-    mappings:
-    - type: from_intent
-      intent: affirm
-      value: true
-    - type: from_intent
-      intent: deny
-      value: false
-```
 
 #### Validating Slots
 
@@ -323,8 +300,8 @@ information. To define a minimal form like the restaurant search
 example above, this is a summary of what you'll need to do:
 
 - [ ] Add the RulePolicy to `config.yml`
-- [ ] Define the form with slot mappings in the domain
-- [ ] Add all required slots to the domain
+- [ ] Define the form with required slots in the domain
+- [ ] Add slot mappings for all required slots in the domain
 - [ ] Add rules for activating and submitting the form
 - [ ] Add examples for the intent(s) to activate your form
 - [ ] Add examples for the intent(s) to fill the required slots

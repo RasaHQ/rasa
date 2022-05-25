@@ -1,23 +1,6 @@
-from typing import Optional, Text
+from typing import Text
 
 from rasa.shared.exceptions import RasaCoreException
-
-
-class UnsupportedDialogueModelError(RasaCoreException):
-    """Raised when a model is too old to be loaded.
-
-    Attributes:
-        message -- explanation of why the model is invalid
-    """
-
-    def __init__(self, message: Text, model_version: Optional[Text] = None) -> None:
-        """Initialize message and model_version attributes."""
-        self.message = message
-        self.model_version = model_version
-        super(UnsupportedDialogueModelError, self).__init__()
-
-    def __str__(self) -> Text:
-        return self.message
 
 
 class AgentNotReady(RasaCoreException):

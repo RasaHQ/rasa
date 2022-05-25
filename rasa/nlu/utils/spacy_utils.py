@@ -5,7 +5,6 @@ import typing
 import logging
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -71,7 +70,7 @@ class SpacyNLP(GraphComponent):
             # retrieve the same vector, if set to `False`. For some
             # applications and models it makes sense to differentiate
             # between these two words, therefore setting this to `True`.
-            "case_sensitive": False,
+            "case_sensitive": False
         }
 
     @staticmethod
@@ -86,7 +85,7 @@ class SpacyNLP(GraphComponent):
                 f"For example:\n"
                 f"- name: SpacyNLP\n"
                 f"  model: en_core_web_md\n"
-                f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
+                f"More information can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
 
         try:
@@ -97,7 +96,7 @@ class SpacyNLP(GraphComponent):
                 f"Please confirm that {spacy_model_name} is an available spaCy model. "
                 f"You need to download one upfront. For example:\n"
                 f"python -m spacy download en_core_web_md\n"
-                f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
+                f"More information can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
 
     @classmethod
@@ -271,9 +270,7 @@ class SpacyNLP(GraphComponent):
         self, training_data: TrainingData, model: SpacyModel
     ) -> TrainingData:
         """Adds SpaCy tokens and features to training data messages."""
-        model = model.model
-
-        attribute_docs = self._docs_for_training_data(model, training_data)
+        attribute_docs = self._docs_for_training_data(model.model, training_data)
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
@@ -289,13 +286,12 @@ class SpacyNLP(GraphComponent):
 
     def process(self, messages: List[Message], model: SpacyModel) -> List[Message]:
         """Adds SpaCy tokens and features to messages."""
-        model = model.model
         for message in messages:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 if message.get(attribute):
                     message.set(
                         SPACY_DOCS[attribute],
-                        self._doc_for_text(model, message.get(attribute)),
+                        self._doc_for_text(model.model, message.get(attribute)),
                     )
 
         return messages

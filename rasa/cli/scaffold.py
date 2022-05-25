@@ -128,7 +128,7 @@ def init_project(args: argparse.Namespace, path: Text) -> None:
     """Inits project."""
     os.chdir(path)
     create_initial_project(".")
-    print("Created project directory at '{}'.".format(os.path.abspath(path)))
+    print(f"Created project directory at '{os.getcwd()}'.")
     print_train_or_instructions(args)
 
 
@@ -208,7 +208,7 @@ def run(args: argparse.Namespace) -> None:
         path = (
             questionary.text(
                 "Please enter a path where the project will be "
-                "created [default: current directory]",
+                "created [default: current directory]"
             )
             .skip_if(args.no_prompt, default="")
             .ask()

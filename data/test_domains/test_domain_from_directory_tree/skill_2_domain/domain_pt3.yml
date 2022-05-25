@@ -1,0 +1,7 @@
+version: "3.1"
+
+intents:
+  - utter_skill_2
+
+utter_did_that_help:
+  - text: "Did that help you?"

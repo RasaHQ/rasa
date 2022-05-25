@@ -4,19 +4,19 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py37", "py38",]
+target-version = [ "py37", "py38", "py39",]
 exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.0.0rc1"
+version = "3.1.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
 homepage = "https://rasa.com"
 repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
-classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Programming Language :: Python", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Programming Language :: Python :: 3.8", "Topic :: Software Development :: Libraries",]
+classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Topic :: Software Development :: Libraries",]
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
 include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
 readme = "README.md"
@@ -63,7 +63,7 @@ name = "Miscellaneous internal changes"
 showcontent = false
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.9"
+python = ">=3.7,<3.10"
 boto3 = "^1.12"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.4"
@@ -85,16 +85,16 @@ slackclient = "^2.0.0"
 twilio = ">=6.26,<6.51"
 webexteamssdk = ">=1.1.1,<1.7.0"
 mattermostwrapper = "~2.2"
-rocketchat_API = ">=0.6.31,<1.17.0"
+rocketchat_API = ">=0.6.31,<1.26.0"
 colorhash = "~1.0.2"
-jsonschema = "~3.2"
+jsonschema = ">=3.2,<4.5"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2022.0"
-rasa-sdk = "^3.0.0rc1"
+rasa-sdk = "~3.1.1"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
-sanic = "^21.6.0"
-sanic-cors = "^1.0.0"
+sanic = "~21.12"
+sanic-cors = "^2.0.0"
 sanic-jwt = "^1.6.0"
 cloudpickle = ">=1.2,<1.7"
 aiohttp = ">=3.6,<3.8,!=3.7.4.post0"
@@ -103,46 +103,42 @@ prompt-toolkit = "^2.0"
 python-socketio = ">=4.4,<6"
 python-engineio = ">=4,<6,!=5.0.0"
 pydot = "~1.4"
-async_generator = "~1.10"
-SQLAlchemy = ">=1.3.3,<1.5.0"
+SQLAlchemy = ">=1.4.0,<1.5.0"
 sklearn-crfsuite = "~0.3"
 psycopg2-binary = ">=2.8.2,<2.10.0"
 python-dateutil = "~2.8"
-tensorflow = ">=2.6,<2.6.2"
-tensorflow_hub = ">=0.10,<0.13"
-tensorflow-addons = "~0.14"
-tensorflow-estimator = "~2.6"
-tensorflow-probability = ">=0.11,<0.14"
+tensorflow = "~2.7.0"
+tensorflow_hub = "~0.12.0"
+tensorflow-addons = "~0.15.0"
 setuptools = ">=41.0.0"
 kafka-python = ">=1.4,<3.0"
-ujson = ">=1.35,<5.0"
-regex = ">=2020.6,<2021.9"
+ujson = ">=1.35,<6.0"
+regex = ">=2020.6,<2022.5"
 joblib = ">=0.15.1,<1.1.0"
 sentry-sdk = ">=0.17.0,<1.4.0"
 aio-pika = "^6.7.1"
 pyTelegramBotAPI = "^3.7.3"
-dask = "2021.7.2"
+dask = "2021.11.2"
 typing-extensions = "^3.7.4"
 typing-utils = "^0.1.0"
 tarsafe = "^0.0.3"
-google-auth = "^2.3.3"
+google-auth = "<2"
 CacheControl = "^0.12.9"
 randomname = "^0.1.5"
-keras = "<2.7.0"
 sanic-routing = "^0.7.2"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
 pytest-asyncio = "^0.14.0"
 pytest-xdist = "^2.2.1"
-pytest = "^6.2.2"
+pytest = "^7.1.1"
 freezegun = "^1.0.0"
-responses = "^0.13.3"
+responses = "^0.20.0"
 aioresponses = "^0.7.2"
 moto = "~=2.2.6"
 fakeredis = "^1.5.2"
 mongomock = "^3.18.0"
-black = "^19.10b0"
+black = "21.7b0"
 flake8 = "^3.8.3"
 flake8-docstrings = "^1.5.0"
 google-cloud-storage = "^1.40.0"
@@ -153,23 +149,27 @@ toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
 pydoc-markdown = "^3.10.3"
 pytest-timeout = "^1.4.2"
-mypy = "^0.910"
+mypy = "^0.931"
 bandit = "^1.6.3"
 types-pkg-resources = "^0.1.3"
 types-pytz = "^2021.1.0"
-types-python-dateutil = "^0.1.4"
+types-python-dateutil = "^2.8.12"
 types-requests = "^2.25.0"
 types-setuptools = "^57.0.0"
 memory-profiler = "^0.58.0"
 psutil = "^5.8.0"
 mypy-extensions = "^0.4.3"
-sanic-testing = "^0.7.0"
+sanic-testing = "^0.8.0"
+analytics-python = "^1.4.0"
+datadog-api-client = "^1.7.0"
+datadog = "^0.43.0"
+types-redis = "^4.1.16"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
 jieba = [ "jieba",]
-transformers = [ "transformers",]
-full = [ "spacy", "transformers", "jieba",]
+transformers = [ "transformers", "sentencepiece",]
+full = [ "spacy", "transformers", "sentencepiece", "jieba",]
 gh-release-notes = [ "github3.py",]
 
 [tool.poetry.scripts]
@@ -188,7 +188,7 @@ version = "^3.1"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
-version = "~2.6"
+version = "^2.7.0"
 markers = "sys_platform!='win32'"
 
 [tool.poetry.dependencies."github3.py"]
@@ -196,8 +196,13 @@ version = "~1.3.0"
 optional = true
 
 [tool.poetry.dependencies.transformers]
-version = ">=2.4,<2.12"
+version = "~4.13.0"
 optional = true
+
+[tool.poetry.dependencies.sentencepiece]
+version = "~0.1.96"
+optional = true
+extras = [ "sentencepiece",]
 
 [tool.poetry.dependencies.jieba]
 version = ">=0.39, <0.43"
