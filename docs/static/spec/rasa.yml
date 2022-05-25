@@ -1260,7 +1260,7 @@ components:
         - $ref: '#/components/schemas/UndoEvent'
         - $ref: '#/components/schemas/RewindEvent'
         - $ref: '#/components/schemas/AgentEvent'
-        - $ref: '#/components/schemas/EntitiesEvent'
+        - $ref: '#/components/schemas/EntitiesAddedEvent'
         - $ref: '#/components/schemas/UserFeaturizationEvent'
         - $ref: '#/components/schemas/ActionExecutionRejectedEvent'
         - $ref: '#/components/schemas/FormValidationEvent'
