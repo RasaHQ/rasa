@@ -6,14 +6,14 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Tuple, Union, Text, ContextManager, Dict, Any, Optional
+from typing import Tuple, Union, Text, Generator, Dict, Any, Optional
 from packaging import version
 
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.exceptions import UnsupportedModelVersionError
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 
 if typing.TYPE_CHECKING:
     from rasa.engine.graph import GraphSchema, GraphModelConfiguration
@@ -74,7 +74,7 @@ class ModelStorage(abc.ABC):
 
     @contextmanager
     @abc.abstractmethod
-    def write_to(self, resource: Resource) -> ContextManager[Path]:
+    def write_to(self, resource: Resource) -> Generator[Path, None, None]:
         """Persists data for a given resource.
 
         This `Resource` can then be accessed in dependent graph nodes via
@@ -90,7 +90,7 @@ class ModelStorage(abc.ABC):
 
     @contextmanager
     @abc.abstractmethod
-    def read_from(self, resource: Resource) -> ContextManager[Path]:
+    def read_from(self, resource: Resource) -> Generator[Path, None, None]:
         """Provides the data of a persisted `Resource`.
 
         Args:

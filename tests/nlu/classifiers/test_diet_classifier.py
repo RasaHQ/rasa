@@ -18,6 +18,8 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    PREDICTED_CONFIDENCE_KEY,
+    INTENT_NAME_KEY,
 )
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
@@ -152,7 +154,8 @@ def train_load_and_process_diet(
         classified_message2 = loaded_diet.process([message2])[0]
 
         assert classified_message2.fingerprint() == classified_message.fingerprint()
-        return classified_message
+
+        return loaded_diet, classified_message
 
     return inner
 
@@ -269,16 +272,20 @@ def test_model_data_signature_with_entities(
     messages: List[Message],
     entity_expected: bool,
     create_diet: Callable[..., DIETClassifier],
-    whitespace_tokenizer: WhitespaceTokenizer,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
 ):
     classifier = create_diet({"BILOU_flag": False})
     training_data = TrainingData(messages)
 
-    # create tokens for entity parsing inside DIET
-    whitespace_tokenizer.process_training_data(training_data)
-
+    # create tokens and features for entity parsing inside DIET
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, training_data)
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()
+
     assert entity_exists == entity_expected
 
 
@@ -404,7 +411,7 @@ async def test_softmax_normalization(
     classifier_params[EPOCHS] = 1
     classifier_params[EVAL_NUM_EPOCHS] = 1
 
-    parsed_message = create_train_load_and_process_diet(
+    _, parsed_message = create_train_load_and_process_diet(
         classifier_params, training_data=data_path
     )
     parse_data = parsed_message.data
@@ -426,7 +433,7 @@ async def test_margin_loss_is_not_normalized(
     create_train_load_and_process_diet: Callable[..., Message]
 ):
 
-    parsed_message = create_train_load_and_process_diet(
+    _, parsed_message = create_train_load_and_process_diet(
         {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, EVAL_NUM_EPOCHS: 1},
         training_data="data/test/many_intents.yml",
     )
@@ -449,16 +456,16 @@ async def test_set_random_seed(
 ):
     """test if train result is the same for two runs of tf embedding"""
 
-    parsed_message1 = create_train_load_and_process_diet(
+    _, parsed_message1 = create_train_load_and_process_diet(
         {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
     )
 
-    parsed_message2 = create_train_load_and_process_diet(
+    _, parsed_message2 = create_train_load_and_process_diet(
         {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
     )
 
     # Different random seed
-    parsed_message3 = create_train_load_and_process_diet(
+    _, parsed_message3 = create_train_load_and_process_diet(
         {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1}
     )
 
@@ -521,22 +528,23 @@ async def test_train_model_checkpointing(
     create_train_load_and_process_diet(
         {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True}
     )
-
     with default_model_storage.read_from(default_diet_resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
-
-        assert checkpoint_dir.is_dir()
-
-        """
-        Tricky to validate the *exact* number of files that should be there, however
-        there must be at least the following:
-            - metadata.json
-            - checkpoint
-            - component_1_CountVectorsFeaturizer (as per the pipeline above)
-            - component_2_DIETClassifier files (more than 1 file)
-        """
         all_files = list(model_dir.rglob("*.*"))
-        assert len(all_files) > 4
+        assert any(["from_checkpoint" in str(filename) for filename in all_files])
+
+
+async def test_process_unfeaturized_input(
+    create_train_load_and_process_diet: Callable[..., Message],
+):
+    classifier, _ = create_train_load_and_process_diet(diet_config={EPOCHS: 1})
+    message_text = "message text"
+    unfeaturized_message = Message(data={TEXT: message_text})
+    classified_message = classifier.process([unfeaturized_message])[0]
+
+    assert classified_message.get(TEXT) == message_text
+    assert not classified_message.get(INTENT)[INTENT_NAME_KEY]
+    assert classified_message.get(INTENT)[PREDICTED_CONFIDENCE_KEY] == 0.0
+    assert not classified_message.get(ENTITIES)
 
 
 async def test_train_model_not_checkpointing(
@@ -544,12 +552,11 @@ async def test_train_model_not_checkpointing(
     default_diet_resource: Resource,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    create_train_load_and_process_diet({EPOCHS: 2, CHECKPOINT_MODEL: False})
+    create_train_load_and_process_diet({EPOCHS: 1, CHECKPOINT_MODEL: False})
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
-
-        assert not checkpoint_dir.is_dir()
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
 async def test_train_fails_with_zero_eval_num_epochs(
@@ -599,11 +606,11 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
     train_load_and_process_diet(classifier)
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
-        assert not checkpoint_dir.is_dir()
 
-
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "classifier_params",
     [
@@ -631,7 +638,7 @@ async def test_process_gives_diagnostic_data(
 ):
     default_execution_context.should_add_diagnostic_data = should_add_diagnostic_data
     default_execution_context.node_name = "DIETClassifier_node_name"
-    processed_message = create_train_load_and_process_diet({EPOCHS: 1})
+    _, processed_message = create_train_load_and_process_diet({EPOCHS: 1})
 
     if should_add_diagnostic_data:
         # Tests if processing a message returns attention weights as numpy array.
@@ -708,7 +715,7 @@ async def test_adjusting_layers_incremental_training(
         },
     ]
     classifier = create_diet({EPOCHS: 1})
-    processed_message = train_load_and_process_diet(
+    _, processed_message = train_load_and_process_diet(
         classifier, pipeline=pipeline, training_data=iter1_data_path
     )
 
@@ -738,7 +745,7 @@ async def test_adjusting_layers_incremental_training(
 
     finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
     assert finetune_classifier.finetune_mode
-    processed_message_finetuned = train_load_and_process_diet(
+    _, processed_message_finetuned = train_load_and_process_diet(
         finetune_classifier, pipeline=pipeline, training_data=iter2_data_path
     )
 
@@ -817,6 +824,8 @@ async def test_adjusting_layers_incremental_training(
     test_data_signatures(new_predict_data_signature, old_predict_data_signature)
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(120)
 @pytest.mark.parametrize(
     "iter1_path, iter2_path, should_raise_exception",

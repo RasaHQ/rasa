@@ -23,13 +23,13 @@ class StoryStepBuilder:
     ) -> None:
         self.name = name
         self.source_name = source_name
-        self.story_steps = []
-        self.current_steps = []
-        self.start_checkpoints = []
+        self.story_steps: List[StoryStep] = []
+        self.current_steps: List[StoryStep] = []
+        self.start_checkpoints: List[Checkpoint] = []
         self.is_rule = is_rule
 
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
-
+        """Add a checkpoint to story steps."""
         # Depending on the state of the story part this
         # is either a start or an end check point
         if not self.current_steps:
@@ -149,7 +149,7 @@ class StoryStepBuilder:
         start_checkpoint_names = sorted(
             list({chk.name for s in self.current_steps for chk in s.start_checkpoints})
         )
-        events = [str(e) for s in self.current_steps for e in s.events]
+        event_names = [str(e) for s in self.current_steps for e in s.events]
         # name: to identify the current story or rule
         # events: to identify what has happened so far
         #         within the current story/rule
@@ -158,7 +158,7 @@ class StoryStepBuilder:
         #                         multiple internal checkpoints
         # messages texts or intents: identifying the members of the or statement
         unique_id = (
-            f"{self.name}_<>_{'@@@'.join(events)}"
+            f"{self.name}_<>_{'@@@'.join(event_names)}"
             f"_<>_{'@@@'.join(start_checkpoint_names)}"
             f"_<>_{'@@@'.join(sorted_events)}"
         )

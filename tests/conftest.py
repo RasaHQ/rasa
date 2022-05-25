@@ -9,8 +9,7 @@ import pytest
 import sys
 import uuid
 
-from _pytest.monkeypatch import MonkeyPatch
-from _pytest.python import Function
+from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
 from spacy import Language
 
 from rasa.engine.caching import LocalTrainingCache
@@ -21,7 +20,6 @@ from sanic.request import Request
 
 from typing import Iterator, Callable
 
-from _pytest.tmpdir import TempPathFactory, TempdirFactory
 from pathlib import Path
 from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
@@ -95,7 +93,7 @@ def nlu_data_path() -> Text:
 
 @pytest.fixture(scope="session")
 def config_path() -> Text:
-    return "rasa/shared/importers/default_config.yml"
+    return "rasa/engine/recipes/config_files/default_config.yml"
 
 
 @pytest.fixture(scope="session")
@@ -154,6 +152,29 @@ def domain_path() -> Text:
 
 
 @pytest.fixture(scope="session")
+def simple_config_path(tmp_path_factory: TempPathFactory) -> Text:
+    project_path = tmp_path_factory.mktemp(uuid.uuid4().hex)
+
+    config = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        pipeline:
+        - name: WhitespaceTokenizer
+        - name: KeywordIntentClassifier
+        - name: RegexEntityExtractor
+        policies:
+        - name: AugmentedMemoizationPolicy
+          max_history: 3
+        - name: RulePolicy
+        """
+    )
+    config_path = project_path / "config.yml"
+    rasa.shared.utils.io.write_text_file(config, config_path)
+
+    return str(config_path)
+
+
+@pytest.fixture(scope="session")
 def story_file_trips_circuit_breaker_path() -> Text:
     return "data/test_evaluations/test_stories_trip_circuit_breaker.yml"
 
@@ -180,30 +201,14 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 @pytest.fixture(scope="session")
 async def trained_default_agent_model(
-    tmp_path_factory: TempPathFactory,
     stories_path: Text,
     domain_path: Text,
     nlu_data_path: Text,
     trained_async: Callable,
+    simple_config_path: Text,
 ) -> Text:
-    project_path = tmp_path_factory.mktemp(uuid.uuid4().hex)
-
-    config = textwrap.dedent(
-        f"""
-    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-    pipeline:
-    - name: KeywordIntentClassifier
-    - name: RegexEntityExtractor
-    policies:
-    - name: AugmentedMemoizationPolicy
-      max_history: 3
-    - name: RulePolicy
-    """
-    )
-    config_path = project_path / "config.yml"
-    rasa.shared.utils.io.write_text_file(config, config_path)
     model_path = await trained_async(
-        domain_path, str(config_path), [stories_path, nlu_data_path]
+        domain_path, simple_config_path, [stories_path, nlu_data_path]
     )
 
     return model_path
@@ -621,6 +626,10 @@ def pytest_runtest_setup(item: Function) -> None:
         and sys.platform == "win32"
     ):
         pytest.skip("cannot run on Windows")
+    if "skip_on_ci" in [mark.name for mark in item.iter_markers()] and os.environ.get(
+        "CI"
+    ) in ["true", "True", "yes", "t", "1"]:
+        pytest.skip("cannot run on CI")
 
 
 class MockExporter(Exporter):

@@ -24,7 +24,6 @@ from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.utils.validation import YamlValidationException
 
 
 @pytest.fixture()
@@ -36,20 +35,6 @@ def default_importer(project: Text) -> TrainingDataImporter:
     return TrainingDataImporter.load_from_dict(
         {}, config_path, domain_path, [default_data_path]
     )
-
-
-def test_use_of_interface():
-    importer = TrainingDataImporter()
-
-    functions_to_test = [
-        lambda: importer.get_config(),
-        lambda: importer.get_stories(),
-        lambda: importer.get_nlu_data(),
-        lambda: importer.get_domain(),
-    ]
-    for f in functions_to_test:
-        with pytest.raises(NotImplementedError):
-            f()
 
 
 @pytest.mark.parametrize(
@@ -145,17 +130,19 @@ def test_import_nlu_training_data_from_e2e_stories(
     stories = StoryGraph(
         [
             StoryStep(
+                "name",
                 events=[
                     SlotSet("some slot", "doesn't matter"),
                     UserUttered(intent={"name": "greet_from_stories"}),
                     ActionExecuted("utter_greet_from_stories"),
-                ]
+                ],
             ),
             StoryStep(
+                "name",
                 events=[
                     UserUttered("how are you doing?"),
                     ActionExecuted(action_text="Hi Joey."),
-                ]
+                ],
             ),
         ]
     )
@@ -196,19 +183,21 @@ def test_different_story_order_doesnt_change_nlu_training_data(
 ):
     stories = [
         StoryStep(
+            "name",
             events=[
                 UserUttered(intent={"name": "greet"}),
                 ActionExecuted("utter_greet_from_stories"),
                 ActionExecuted("hi", action_text="hi"),
-            ]
+            ],
         ),
         StoryStep(
+            "name",
             events=[
                 UserUttered("bye", {"name": "bye"}),
                 ActionExecuted("utter_greet"),
                 ActionExecuted("hi", action_text="hi"),
                 ActionExecuted("bye", action_text="bye"),
-            ]
+            ],
         ),
     ]
 
@@ -258,12 +247,14 @@ def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
     stories = StoryGraph(
         [
             StoryStep(
+                "name",
                 events=[
                     UserUttered("greet_from_stories", {"name": "greet_from_stories"}),
                     ActionExecuted("utter_greet_from_stories"),
-                ]
+                ],
             ),
             StoryStep(
+                "name",
                 events=[
                     UserUttered("how are you doing?", {"name": "greet_from_stories"}),
                     ActionExecuted(
@@ -275,7 +266,7 @@ def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
                     ActionExecuted(
                         additional_actions[1], action_text=additional_actions[1]
                     ),
-                ]
+                ],
             ),
         ]
     )
@@ -366,15 +357,6 @@ def test_nlu_data_domain_sync_responses(project: Text):
 
     # Responses were sync between "test_responses.yml" and the "domain.yml"
     assert "utter_rasa" in domain.responses.keys()
-
-
-def test_importer_with_invalid_model_config(tmp_path: Path):
-    invalid = {"version": "2.0", "policies": ["name"]}
-    config_file = tmp_path / "config.yml"
-    rasa.shared.utils.io.write_yaml(invalid, config_file)
-
-    with pytest.raises(YamlValidationException):
-        TrainingDataImporter.load_from_config(str(config_file))
 
 
 def test_importer_with_unicode_files():

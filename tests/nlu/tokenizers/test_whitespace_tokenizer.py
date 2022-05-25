@@ -76,6 +76,7 @@ def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceToke
         (":)", [":)"], [(0, 2)]),
         ("Hi :-)", ["Hi"], [(0, 2)]),
         ("👍", ["👍"], [(0, 1)]),
+        ("", [""], [(0, 0)]),
     ],
 )
 def test_whitespace(text, expected_tokens, expected_indices):

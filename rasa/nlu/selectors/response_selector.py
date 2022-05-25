@@ -331,7 +331,9 @@ class ResponseSelector(DIETClassifier):
         return LABEL_SUB_KEY
 
     @staticmethod
-    def model_class(use_text_as_label: bool) -> Type[RasaModel]:
+    def model_class(  # type: ignore[override]
+        use_text_as_label: bool,
+    ) -> Type[RasaModel]:
         """Returns model class."""
         if use_text_as_label:
             return DIET2DIET
@@ -357,7 +359,7 @@ class ResponseSelector(DIETClassifier):
             self.component_config[HIDDEN_LAYERS_SIZES]
             == default_config[HIDDEN_LAYERS_SIZES]
         )
-        config_for_disabling_hidden_layers = {
+        config_for_disabling_hidden_layers: Dict[Text, List[Any]] = {
             k: [] for k, _ in default_config[HIDDEN_LAYERS_SIZES].items()
         }
         # warn if the hidden layers aren't disabled
@@ -662,7 +664,7 @@ class ResponseSelector(DIETClassifier):
         **kwargs: Any,
     ) -> ResponseSelector:
         """Loads the trained model from the provided directory."""
-        model: ResponseSelector = super().load(
+        model = super().load(
             config, model_storage, resource, execution_context, **kwargs
         )
 
@@ -842,7 +844,7 @@ class DIET2DIET(DIET):
         return all_label_ids, all_labels_embed
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -935,7 +937,7 @@ class DIET2DIET(DIET):
         return tf.math.add_n(losses)
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 

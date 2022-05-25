@@ -271,6 +271,7 @@ def _fetch_write_key(tool: Text, environment_variable: Text) -> Optional[Text]:
 
 def telemetry_write_key() -> Optional[Text]:
     """Read the Segment write key from the segment key text file.
+
     The segment key text file should by present only in wheel/sdist packaged
     versions of Rasa Open Source. This avoids running telemetry locally when
     developing on Rasa or when running CI builds.
@@ -280,7 +281,6 @@ def telemetry_write_key() -> Optional[Text]:
     Returns:
         Segment write key, if the key file was present.
     """
-
     return _fetch_write_key("segment", TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE)
 
 
@@ -290,7 +290,6 @@ def sentry_write_key() -> Optional[Text]:
     Returns:
         Sentry write key, if the key file was present.
     """
-
     return _fetch_write_key("sentry", EXCEPTION_WRITE_KEY_ENVIRONMENT_VARIABLE)
 
 
@@ -378,6 +377,7 @@ def _send_event(
     context: Dict[Text, Any],
 ) -> None:
     """Report the contents segmentof an event to the /track Segment endpoint.
+
     Documentation: https://.com/docs/sources/server/http/
 
     Do not call this function from outside telemetry.py! This function does not
@@ -389,7 +389,6 @@ def _send_event(
         properties: Values to report along the event.
         context: Context information about the event.
     """
-
     payload = segment_request_payload(distinct_id, event_name, properties, context)
 
     if _is_telemetry_debug_enabled():
@@ -536,12 +535,12 @@ def _track(
 
 def get_telemetry_id() -> Optional[Text]:
     """Return the unique telemetry identifier for this Rasa Open Source install.
+
     The identifier can be any string, but it should be a UUID.
 
     Returns:
         The identifier, if it is configured correctly.
     """
-
     try:
         telemetry_config = (
             rasa_utils.read_global_config_value(CONFIG_FILE_TELEMETRY_KEY) or {}
@@ -560,7 +559,6 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
         is_enabled: `True` if the telemetry reporting should be enabled,
             `False` otherwise.
     """
-
     configuration = rasa_utils.read_global_config_value(CONFIG_FILE_TELEMETRY_KEY)
 
     if configuration:
@@ -572,7 +570,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 
 def filter_errors(
-    event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None
+    event: Optional[Dict[Text, Any]], hint: Optional[Dict[Text, Any]] = None
 ) -> Optional[Dict[Text, Any]]:
     """Filter errors.
 
@@ -585,7 +583,7 @@ def filter_errors(
         an `ImportError` which should be discarded.
     """
     if hint and "exc_info" in hint:
-        exc_type, exc_value, tb = hint.get("exc_info")
+        exc_type, exc_value, tb = hint["exc_info"]
         if isinstance(exc_value, ImportError):
             return None
     return event
@@ -604,9 +602,8 @@ def before_send(
         the event without any sensitive / PII data or `None` if the event should
         be discarded.
     """
-    event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
-    event = filter_errors(event, _unused_hint)
-    return event
+    cleaned_event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
+    return filter_errors(cleaned_event, _unused_hint)
 
 
 def strip_sensitive_data_from_sentry_event(
@@ -655,7 +652,8 @@ def initialize_error_reporting() -> None:
     Exceptions are reported to sentry. We avoid sending any metadata (local
     variables, paths, ...) to make sure we don't compromise any data. Only the
     exception and its stacktrace is logged and only if the exception origins
-    from the `rasa` package."""
+    from the `rasa` package.
+    """
     import sentry_sdk
     from sentry_sdk import configure_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
@@ -763,6 +761,8 @@ def track_model_training(
             "type": model_type,
             "pipeline": config.get("pipeline"),
             "policies": config.get("policies"),
+            "train_schema": config.get("train_schema"),
+            "predict_schema": config.get("predict_schema"),
             "num_intent_examples": len(nlu_data.intent_examples),
             "num_entity_examples": len(nlu_data.entity_examples),
             "num_actions": len(domain.action_names_or_texts),
@@ -782,6 +782,7 @@ def track_model_training(
             "num_synonyms": len(nlu_data.entity_synonyms),
             "num_regexes": len(nlu_data.regex_features),
             "is_finetuning": is_finetuning,
+            "recipe": config.get("recipe"),
         },
     )
     start = datetime.now()
@@ -958,7 +959,8 @@ def track_shell_started(model_type: Text) -> None:
     """Track when a user starts a bot using rasa shell.
 
     Args:
-        model_type: Type of the model, core / nlu or rasa."""
+        model_type: Type of the model, core / nlu or rasa.
+    """
     _track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type})
 
 
@@ -983,10 +985,15 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
         e2e: indicator if tests running in end to end mode
         agent: Agent of the model getting tested
     """
+    if agent.processor is None:
+        project_fingerprint = ""
+    else:
+        project_fingerprint = agent.processor.model_metadata.project_fingerprint
+
     _track(
         TELEMETRY_TEST_CORE_EVENT,
         {
-            "project": agent.processor.model_metadata.project_fingerprint,
+            "project": project_fingerprint,
             "end_to_end": e2e,
             "num_story_steps": num_story_steps,
         },

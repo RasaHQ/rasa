@@ -41,6 +41,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     INTENT_RESPONSE_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
 from rasa.shared.nlu.training_data.loading import load_data
@@ -48,7 +49,13 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
+from rasa.nlu.constants import (
+    DEFAULT_TRANSFORMER_SIZE,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_RESPONSES_KEY,
+)
 
 
 @pytest.fixture()
@@ -308,7 +315,7 @@ def test_train_model_checkpointing(
     )
 
     config_params = {
-        EPOCHS: 5,
+        EPOCHS: 2,
         MODEL_CONFIDENCE: "softmax",
         CONSTRAIN_SIMILARITIES: True,
         CHECKPOINT_MODEL: True,
@@ -322,15 +329,8 @@ def test_train_model_checkpointing(
     resource = response_selector.train(training_data=training_data)
 
     with default_model_storage.read_from(resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
-        assert checkpoint_dir.is_dir()
-        checkpoint_files = list(checkpoint_dir.rglob("*.*"))
-        """
-        there should be min 2 `tf_model` files in the `checkpoints` directory:
-        - tf_model.data
-        - tf_model.index
-        """
-        assert len(checkpoint_files) >= 2
+        all_files = list(model_dir.rglob("*.*"))
+        assert any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
 @pytest.mark.skip_on_windows
@@ -609,6 +609,36 @@ def test_transformer_size_gets_corrected(train_persist_load_with_different_setti
         pipeline, config_params, False
     )
     assert selector.component_config[TRANSFORMER_SIZE] == DEFAULT_TRANSFORMER_SIZE
+
+
+async def test_process_unfeaturized_input(
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
+):
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, "data/test_selectors"
+    )
+    response_selector = create_response_selector({EPOCHS: 1})
+    response_selector.train(training_data=training_data)
+
+    message_text = "message text"
+    unfeaturized_message = Message(data={TEXT: message_text})
+    classified_message = response_selector.process([unfeaturized_message])[0]
+    output = (
+        classified_message.get(RESPONSE_SELECTOR_PROPERTY_NAME)
+        .get(RESPONSE_SELECTOR_DEFAULT_INTENT)
+        .get(RESPONSE_SELECTOR_PREDICTION_KEY)
+    )
+
+    assert classified_message.get(TEXT) == message_text
+    assert not output.get(RESPONSE_SELECTOR_RESPONSES_KEY)
+    assert output.get(PREDICTED_CONFIDENCE_KEY) == 0.0
+    assert not output.get(INTENT_RESPONSE_KEY)
 
 
 @pytest.mark.timeout(120)

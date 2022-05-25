@@ -12,6 +12,7 @@ import rasa.shared.utils.io
 from rasa.core import migrate
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import RasaException
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 def prepare_domain_path(directory: Path, domain_content: Text, file_name: Text) -> Path:
@@ -80,7 +81,7 @@ def test_migrate_domain_format_with_required_slots(
     migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
 
     migrated_training_data_version = migrated_domain.get("version")
-    assert migrated_training_data_version == '"3.0"'
+    assert migrated_training_data_version == LATEST_TRAINING_DATA_FORMAT_VERSION
 
     migrated_slots = migrated_domain.get("slots")
     expected_slots = {
@@ -348,7 +349,7 @@ def test_migrate_domain_format_from_dir(tmp_path: Path):
         migrated_file = rasa.shared.utils.io.read_yaml_file(file)
 
         migrated_training_data_version = migrated_file.get("version")
-        assert migrated_training_data_version == '"3.0"'
+        assert migrated_training_data_version == LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
@@ -396,7 +397,7 @@ def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
     assert "action_check_time" in migrated_actions
 
     migrated_training_data_version = migrated_domain.get("version")
-    assert migrated_training_data_version == '"3.0"'
+    assert migrated_training_data_version == LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file: Path):
@@ -767,7 +768,7 @@ def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
         migrated = rasa.shared.utils.io.read_yaml_file(file)
 
         migrated_training_data_version = migrated.get("version")
-        assert migrated_training_data_version == '"3.0"'
+        assert migrated_training_data_version == LATEST_TRAINING_DATA_FORMAT_VERSION
 
         if file.name == domain_file_one:
             assert migrated.get("entities") == ["outdoor"]
@@ -799,7 +800,7 @@ def test_migrate_domain_raises_exception_for_non_domain_file(tmp_path: Path):
 
     with pytest.raises(
         RasaException,
-        match=f"The file '{str(domain_file)}' could not "
+        match=f"The file '{domain_file.as_posix()}' could not "
         f"be validated as a domain file.",
     ):
         migrate.migrate_domain_format(domain_file, new_domain_file)
@@ -830,8 +831,9 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
 
     with pytest.raises(
         RasaException,
-        match=f"The domain directory '{domain_dir}' does not contain any domain files. "
-        f"Please make sure to include these for a successful migration.",
+        match=f"The domain directory '{domain_dir.as_posix()}' does not contain any "
+        f"domain files. Please make sure to include these for a successful "
+        f"migration.",
     ):
         migrate.migrate_domain_format(domain_dir, None)
 
@@ -864,8 +866,8 @@ def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path):
     domain_dir.mkdir()
     prepare_domain_path(
         domain_dir,
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents: []
         """,
         "domain.yml",
