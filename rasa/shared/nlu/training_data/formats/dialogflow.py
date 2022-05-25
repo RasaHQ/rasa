@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Any, Dict, Optional, Text, List, Tuple
+from pathlib import Path
+from typing import Any, Dict, Optional, Text, List, Tuple, Union
 
 import rasa.shared.nlu.training_data.util
 from rasa.shared.constants import DOCS_BASE_URL
@@ -24,7 +25,9 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 
 class DialogflowReader(TrainingDataReader):
-    def read(self, fn: Text, **kwargs: Any) -> "TrainingData":
+    """Reader for NLU training data."""
+
+    def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingData":
         """Loads training data stored in the Dialogflow data format."""
         language = kwargs["language"]
         fformat = kwargs["fformat"]
@@ -35,12 +38,16 @@ class DialogflowReader(TrainingDataReader):
                 "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES)
             )
 
-        root_js = rasa.shared.utils.io.read_json_file(fn)
-        examples = self._read_examples(fn, language, fformat)
+        root_js = rasa.shared.utils.io.read_json_file(filename)
+
+        if isinstance(filename, Path):
+            filename = str(filename)
+
+        examples = self._read_examples(filename, language, fformat)
 
         if not examples:
             rasa.shared.utils.io.raise_warning(
-                f"No training examples found for dialogflow file {fn}!",
+                f"No training examples found for dialogflow file {filename}!",
                 docs=DOCS_URL_MIGRATE_GOOGLE,
             )
             return TrainingData()
@@ -53,12 +60,12 @@ class DialogflowReader(TrainingDataReader):
         self, intent: Dict[Text, Any], examples: List[Dict[Text, Any]]
     ) -> "TrainingData":
         """Reads the intent and examples from respective jsons."""
-        intent = intent.get("name")
+        intent_name = intent.get("name")
 
         training_examples = []
         for ex in examples:
             text, entities = self._join_text_chunks(ex["data"])
-            training_examples.append(Message.build(text, intent, entities))
+            training_examples.append(Message.build(text, intent_name, entities))
 
         return TrainingData(training_examples)
 
@@ -130,18 +137,16 @@ class DialogflowReader(TrainingDataReader):
 
         if entity["isRegexp"]:
             regex_features = DialogflowReader._extract_regex_features(entity, examples)
-            return TrainingData([], entity_synonyms, regex_features, [],)
+            return TrainingData([], entity_synonyms, regex_features, [])
         else:
             lookup_tables = DialogflowReader._extract_lookup_tables(entity, examples)
-            return TrainingData([], entity_synonyms, [], lookup_tables,)
+            return TrainingData([], entity_synonyms, [], lookup_tables)
 
     @staticmethod
     def _read_examples(
         fn: Text, language: Text, fformat: Text
     ) -> Optional[List[Dict[Text, Any]]]:
-        """Infer and load the example file based on the root
-        filename and root format."""
-
+        """Infer and load example file based on root filename and root format."""
         if fformat == DIALOGFLOW_INTENT:
             examples_type = "usersays"
         else:

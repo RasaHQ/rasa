@@ -31,7 +31,7 @@ def test_default_predict_complains_if_no_predictions_given(
     default_ensemble: DefaultPolicyPredictionEnsemble,
 ):
     domain = Domain.load("data/test_domains/default.yml")
-    tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=[],)
+    tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=[])
     with pytest.raises(InvalidConfigException):
         default_ensemble.combine_predictions_from_kwargs(domain=domain, tracker=tracker)
 
@@ -40,7 +40,7 @@ def test_default_predict_ignores_other_kwargs(
     default_ensemble: DefaultPolicyPredictionEnsemble,
 ):
     domain = Domain.load("data/test_domains/default.yml")
-    tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=[],)
+    tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=[])
     prediction = PolicyPrediction(
         policy_name="arbitrary", probabilities=[1.0], policy_priority=1
     )
@@ -214,9 +214,9 @@ def test_default_combine_predictions(
     # ... not quite there yet, because old implementation creates a policy with
     # best_policy.priority as priority and the first one is a tuple which then
     # becomes a tuple with a tuple with an int, so...
-    predictions[expected_winner_idx].policy_priority = (
-        predictions[expected_winner_idx].policy_priority,
-    )
+    predictions[expected_winner_idx].policy_priority = predictions[
+        expected_winner_idx
+    ].policy_priority
 
     # now, we can compare:
     assert best_prediction == predictions[expected_winner_idx]

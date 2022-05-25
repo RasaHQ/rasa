@@ -13,7 +13,7 @@ from rasa.shared.nlu.training_data.message import Message
 
 
 def create_spacy_nlp_component(
-    model_name: Text = "en_core_web_md", case_sensitive: Optional[bool] = None,
+    model_name: Text = "en_core_web_md", case_sensitive: Optional[bool] = None
 ) -> SpacyNLP:
     component = SpacyNLP.create(
         {"model": model_name, "case_sensitive": case_sensitive}, None, None, None

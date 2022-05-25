@@ -8,7 +8,7 @@ from rasa.shared.nlu.training_data.message import Message
 
 
 def test_nlu_message_converter_converts_message(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     component = NLUMessageConverter.create(
         {**NLUMessageConverter.get_default_config()},
@@ -28,10 +28,10 @@ def test_nlu_message_converter_converts_message(
 
 
 def test_nlu_message_converter_converts_message_with_metadata(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     component = NLUMessageConverter.create(
-        {}, default_model_storage, Resource("with_metadata"), default_execution_context,
+        {}, default_model_storage, Resource("with_metadata"), default_execution_context
     )
 
     message = UserMessage(text="Hello", metadata={"test_key": "test_value"})
@@ -44,7 +44,7 @@ def test_nlu_message_converter_converts_message_with_metadata(
 
 
 def test_nlu_message_converter_handles_no_user_message(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     component = NLUMessageConverter.create(
         {},

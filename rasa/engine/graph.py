@@ -6,17 +6,14 @@ from dataclasses import dataclass, field
 import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple
 
-from rasa.engine.exceptions import (
-    GraphComponentException,
-    GraphSchemaException,
-)
+from rasa.engine.exceptions import GraphComponentException, GraphSchemaException
 import rasa.shared.utils.common
 import rasa.utils.common
 from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import InvalidConfigException, RasaException
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +75,7 @@ class GraphSchema:
         Returns:
             The graph schema in a format which can be dumped as JSON or other formats.
         """
-        serializable_graph_schema = {"nodes": {}}
+        serializable_graph_schema: Dict[Text, Dict[Text, Any]] = {"nodes": {}}
         for node_name, node in self.nodes.items():
             serializable = dataclasses.asdict(node)
 
@@ -361,7 +358,7 @@ class GraphNode:
             self._component_class, self._constructor_name
         )
         self._component_config: Dict[Text, Any] = rasa.utils.common.override_defaults(
-            self._component_class.get_default_config(), component_config,
+            self._component_class.get_default_config(), component_config
         )
         self._fn_name: Text = fn_name
         self._fn: Callable = getattr(self._component_class, self._fn_name)

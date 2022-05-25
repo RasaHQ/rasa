@@ -27,7 +27,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
@@ -351,8 +351,9 @@ def test_container_derive_messages_from_domain_and_add():
         action_texts=action_texts,
         responses=responses,
         entities=["e_a", "e_b", "e_c"],
-        slots=[Slot(name="s", mappings=[{}])],
+        slots=[TextSlot(name="s", mappings=[{}])],
         forms=forms,
+        data={},
     )
     lookup_table = MessageContainerForCoreFeaturization()
     lookup_table.derive_messages_from_domain_and_add(domain)
@@ -363,7 +364,7 @@ def test_container_derive_messages_from_domain_and_add():
 
 @pytest.fixture
 def input_converter(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     return CoreFeaturizationInputConverter.create(
         CoreFeaturizationInputConverter.get_default_config(),
@@ -382,6 +383,7 @@ def test_converter_for_training(input_converter: CoreFeaturizationInputConverter
         responses=dict(),
         action_names=["action_listen", "utter_greet"],
         forms=dict(),
+        data={},
         action_texts=["Hi how are you?"],
     )
     events = [
@@ -398,7 +400,7 @@ def test_converter_for_training(input_converter: CoreFeaturizationInputConverter
         ),
         ActionExecuted(action_name="action_listen"),
     ]
-    story_graph = StoryGraph([StoryStep(events=events)])
+    story_graph = StoryGraph([StoryStep("name", events=events)])
     # convert!
     training_data = input_converter.convert_for_training(
         domain=domain, story_graph=story_graph
@@ -471,7 +473,7 @@ def test_converter_for_inference(input_converter: CoreFeaturizationInputConverte
 
 @pytest.fixture
 def collector(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     return CoreFeaturizationCollector.create(
         CoreFeaturizationCollector.get_default_config(),

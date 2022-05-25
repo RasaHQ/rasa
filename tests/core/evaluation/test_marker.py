@@ -26,7 +26,7 @@ from rasa.core.evaluation.marker_base import (
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered, SessionStarted
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import TextSlot
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.tracker_store import InMemoryTrackerStore
@@ -264,9 +264,7 @@ def test_operator_occur(negated: bool):
     ]
     events, expected = zip(*events_expected)
     sub_marker = OrMarker(
-        [IntentDetectedMarker("1"), SlotSetMarker("2")],
-        name="or marker",
-        negated=False,
+        [IntentDetectedMarker("1"), SlotSetMarker("2")], name="or marker", negated=False
     )
     marker = OccurrenceMarker([sub_marker], name="marker_name", negated=negated)
     for event in events:
@@ -308,9 +306,7 @@ def test_operator_occur_never_applied_negated():
     ]
     events, expected = zip(*events_expected)
     sub_marker = OrMarker(
-        [IntentDetectedMarker("1"), SlotSetMarker("2")],
-        name="or marker",
-        negated=False,
+        [IntentDetectedMarker("1"), SlotSetMarker("2")], name="or marker", negated=False
     )
     marker = OccurrenceMarker([sub_marker], name="or never occurred", negated=True)
     for event in events:
@@ -332,7 +328,7 @@ def test_operators_nested_simple():
     marker = AndMarker(
         markers=[
             SlotSetMarker("s1"),
-            OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6"),]),
+            OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6")]),
         ],
         name="marker_name",
     )
@@ -500,7 +496,7 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     assert evaluation[1]["my-marker"][0].idx == 8  # i.e. NOT the index in the dialogue
 
 
-def test_markers_cli_results_save_correctly(tmp_path: Path):
+async def test_markers_cli_results_save_correctly(tmp_path: Path):
     domain = Domain.empty()
     store = InMemoryTrackerStore(domain)
 
@@ -512,7 +508,7 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
         tracker.update_with_events(
             [SlotSet(str(5 + j), "slot") for j in range(5)], domain
         )
-        store.save(tracker)
+        await store.save(tracker)
 
     tracker_loader = MarkerTrackerLoader(store, "all")
 
@@ -521,7 +517,7 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
     markers = OrMarker(
         markers=[SlotSetMarker("2", name="marker1"), SlotSetMarker("7", name="marker2")]
     )
-    markers.evaluate_trackers(tracker_loader.load(), results_path)
+    await markers.evaluate_trackers(tracker_loader.load(), results_path)
 
     with open(results_path, "r") as results:
         result_reader = csv.DictReader(results)
@@ -569,10 +565,10 @@ def test_domain_validation_with_valid_marker(depth: int, max_branches: int, seed
         constant_negated=None,
     )
 
-    slots = [Slot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
+    slots = [TextSlot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
     actions = list(_collect_parameters(marker, ActionExecutedMarker))
     intents = _collect_parameters(marker, IntentDetectedMarker)
-    domain = Domain(intents, [], slots, {}, actions, {})
+    domain = Domain(intents, [], slots, {}, actions, {}, {})
 
     assert marker.validate_against_domain(domain)
 
@@ -631,14 +627,12 @@ def test_marker_validation_raises(config: Any):
         Marker.from_config(config)
 
 
-def test_marker_from_path_only_reads_yamls(tmp_path: Path,):
+def test_marker_from_path_only_reads_yamls(tmp_path: Path):
     suffixes = [("yaml", True), ("yml", True), ("yaeml", False), ("config", False)]
     for idx, (suffix, allowed) in enumerate(suffixes):
         config = {f"marker-{idx}": {IntentDetectedMarker.positive_tag(): "intent"}}
         config_file = tmp_path / f"config-{idx}.{suffix}"
-        rasa.shared.utils.io.write_yaml(
-            data=config, target=config_file,
-        )
+        rasa.shared.utils.io.write_yaml(data=config, target=config_file)
     loaded = Marker.from_path(tmp_path)
     assert len(loaded.sub_markers) == sum(allowed for _, allowed in suffixes)
     assert set(sub_marker.name for sub_marker in loaded.sub_markers) == set(
@@ -659,9 +653,7 @@ def test_marker_from_path_only_reads_yamls(tmp_path: Path,):
 def test_marker_from_path_adds_special_or_marker(tmp_path: Path, configs: Any):
 
     yaml_file = tmp_path / "config.yml"
-    rasa.shared.utils.io.write_yaml(
-        data=configs, target=yaml_file,
-    )
+    rasa.shared.utils.io.write_yaml(data=configs, target=yaml_file)
     loaded = Marker.from_path(tmp_path)
     assert isinstance(loaded, OrMarker)
     assert loaded.name == Marker.ANY_MARKER
@@ -719,13 +711,13 @@ def test_marker_from_path_raises(
             AndMarker(
                 markers=[
                     SlotSetMarker("s1"),
-                    OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6"),]),
-                ],
+                    OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6")]),
+                ]
             ),
             3,
         ),
         (SlotSetMarker("s1"), 1),
-        (AndMarker(markers=[SlotSetMarker("s1"), IntentDetectedMarker("6"),],), 2),
+        (AndMarker(markers=[SlotSetMarker("s1"), IntentDetectedMarker("6")]), 2),
     ],
 )
 def test_marker_depth(marker: Marker, expected_depth: int):

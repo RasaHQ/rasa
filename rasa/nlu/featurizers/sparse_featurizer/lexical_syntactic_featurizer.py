@@ -21,10 +21,7 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.spacy_tokenizer import (
-    POS_TAG_KEY,
-    SpacyTokenizer,
-)
+from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY, SpacyTokenizer
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.nlu.constants import TOKENS_NAMES
@@ -102,7 +99,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
 
     @classmethod
     def _extract_raw_features_from_token(
-        cls, feature_name: Text, token: Token, token_position: int, num_tokens: int,
+        cls, feature_name: Text, token: Token, token_position: int, num_tokens: int
     ) -> Text:
         """Extracts a raw feature from the token at the given position.
 
@@ -373,9 +370,9 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
         """
         # Note that this will only sort the top level keys - and we keep
         # doing it to ensure consistently with what was done before)
-        ordered_feature_vocabulary: OrderedDict[
-            Tuple[int, Text], Set[Text]
-        ] = OrderedDict(sorted(feature_vocabulary.items()))
+        ordered_feature_vocabulary: Dict[Tuple[int, Text], Set[Text]] = OrderedDict(
+            sorted(feature_vocabulary.items())
+        )
 
         # create the nested mapping
         feature_to_idx_dict: Dict[Tuple[int, Text], Dict[Text, int]] = {}

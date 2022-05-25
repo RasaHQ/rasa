@@ -404,7 +404,7 @@ class Message:
 
     @staticmethod
     def _combine_features(
-        features: List["Features"], featurizers: Optional[List[Text]] = None
+        features: List["Features"], featurizers: List[Text]
     ) -> Optional["Features"]:
         combined_features = None
 
@@ -454,7 +454,7 @@ class Message:
         self,
     ) -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]:
         """Finds any overlapping entity annotations."""
-        entities = self.get("entities", [])[:]
+        entities = self.get(ENTITIES, [])[:]
         entities_with_location = [
             e
             for e in entities

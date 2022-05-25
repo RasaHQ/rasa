@@ -81,7 +81,7 @@ def test_load_from_none(input_dict: Dict, tmp_path: Path):
     assert actual._imports == list()
 
 
-def test_load_if_subproject_is_more_specific_than_parent(tmp_path: Path,):
+def test_load_if_subproject_is_more_specific_than_parent(tmp_path: Path):
     config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(tmp_path / "config.yml", {})
 
@@ -209,7 +209,7 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
     assert not selector.is_imported(str(not_relevant_file2))
 
 
-def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path,):
+def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path):
     config = {"imports": ["bots/Bot A"]}
     config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
