@@ -2086,7 +2086,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "pytelegrambotapi"
-version = "3.8.3"
+version = "4.5.1"
 description = "Python Telegram bot api."
 category = "main"
 optional = false
@@ -2097,6 +2097,7 @@ requests = "*"
 
 [package.extras]
 PIL = ["pillow"]
+aiohttp = ["aiohttp"]
 json = ["ujson"]
 redis = ["redis (>=3.4.1)"]
 
@@ -3486,7 +3487,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "26852c2e65cb9b41d68f9eca6803eaac74c06a6513c014c39bb0478fb3b3a484"
+content-hash = "e862df2c6ef2053e98e66279539a0a1051aa8c592d46f0dfe51e5ab60c2555ef"
 
 [metadata.files]
 absl-py = [
@@ -5065,7 +5066,7 @@ pyrsistent = [
     {file = "pyrsistent-0.18.1.tar.gz", hash = "sha256:d4d61f8b993a7255ba714df3aca52700f8125289f84f704cf80916517c46eb96"},
 ]
 pytelegrambotapi = [
-    {file = "pyTelegramBotAPI-3.8.3.tar.gz", hash = "sha256:afdd887fff42a963f13d09a1f4f5fd24aef08f4b8a594f2ac11e0a29022f1518"},
+    {file = "pyTelegramBotAPI-4.5.1.tar.gz", hash = "sha256:0a5cdd92f1f5bb3d6a87fab7a6b7e7f27d1ea2c637cb7994b1c6dbe0429b9894"},
 ]
 pytest = [
     {file = "pytest-7.1.1-py3-none-any.whl", hash = "sha256:92f723789a8fdd7180b6b06483874feca4c48a5c76968e03bb3e7f806a1869ea"},
