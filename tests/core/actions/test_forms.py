@@ -47,6 +47,8 @@ slots:
     mappings:
     - type: from_entity
       entity: number
+      conditions:
+      - active_loop: {form_name}
 forms:
   {form_name}:
     {REQUIRED_SLOTS_KEY}:
@@ -90,10 +92,14 @@ async def test_activate_with_prefilled_slot():
         mappings:
         - type: from_entity
           entity: {slot_name}
+          conditions:
+          - active_loop: {form_name}
       {next_slot_to_request}:
         type: text
         mappings:
         - type: from_text
+          conditions:
+          - active_loop: {form_name}
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -676,9 +682,9 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
         )
         tracker.update_with_events(slot_events, domain)
 
-        action = FormAction(form_name, action_server)
+        form_action = FormAction(form_name, action_server)
 
-        events = await action.run(
+        events = await form_action.run(
             CollectingOutputChannel(),
             TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
