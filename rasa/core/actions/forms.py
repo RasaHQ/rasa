@@ -11,6 +11,7 @@ from rasa.shared.core.constants import SlotMappingType, SLOT_MAPPINGS, MAPPING_T
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
+    ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
@@ -583,6 +584,27 @@ class FormAction(LoopAction):
         logger.debug(f"Activated the form '{self.name()}'.")
         # collect values of required slots filled before activation
         prefilled_slots = {}
+
+        # run slot extraction after activation
+        action_extract_slots = action.action_for_name_or_text(
+            ACTION_EXTRACT_SLOTS, domain, self.action_endpoint
+        )
+
+        logger.debug(
+            f"Executing default action '{ACTION_EXTRACT_SLOTS}' " f"at form activation."
+        )
+
+        extraction_events = await action_extract_slots.run(
+            output_channel, nlg, tracker, domain
+        )
+
+        events_as_str = "\n".join([str(e) for e in extraction_events])
+        logger.debug(
+            f"Executed '{ACTION_EXTRACT_SLOTS}' resulted in "
+            f"these events: {events_as_str}."
+        )
+
+        tracker.update_with_events(extraction_events, domain)
 
         for slot_name in self.required_slots(domain):
             if not self._should_request_slot(tracker, slot_name):

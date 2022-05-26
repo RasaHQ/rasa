@@ -22,7 +22,7 @@ class LoopAction(Action, ABC):
         events = []
 
         if not await self.is_activated(output_channel, nlg, tracker, domain):
-            events += self._default_activation_events()
+            tracker.update_with_events(self._default_activation_events(), domain)
             events += await self.activate(output_channel, nlg, tracker, domain)
 
         if not await self.is_done(output_channel, nlg, tracker, domain, events):
