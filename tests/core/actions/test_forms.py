@@ -1677,3 +1677,68 @@ async def test_form_slots_empty_with_restart():
             tracker,
             domain,
         )
+
+
+async def test_extract_slots_with_mapping_conditions_during_form_activation():
+    slot_name = "city"
+    entity_value = "London"
+    entity_name = "location"
+
+    form_name = "test_form"
+
+    domain = Domain.from_yaml(
+        f"""
+    entities:
+    - {entity_name}
+    slots:
+      {slot_name}:
+        type: text
+        mappings:
+        - type: from_entity
+          entity: {entity_name}
+          conditions:
+          - active_loop: {form_name}
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+            - {slot_name}
+    """
+    )
+
+    events = [
+        ActionExecuted("action_listen"),
+        UserUttered(
+            "I live in London",
+            entities=[{"entity": entity_name, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test", evts=events, domain=domain, slots=domain.slots
+    )
+    assert tracker.active_loop_name is None
+
+    action_extract_slots = ActionExtractSlots(None)
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == []
+
+    expected_events = [
+        ActiveLoop(form_name),
+        SlotSet(slot_name, entity_value),
+        SlotSet(REQUESTED_SLOT, None),
+        ActiveLoop(None),
+    ]
+
+    form_action = FormAction(form_name, None)
+    form_events = await form_action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+
+    assert form_events == expected_events

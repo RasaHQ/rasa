@@ -585,13 +585,14 @@ class FormAction(LoopAction):
         # collect values of required slots filled before activation
         prefilled_slots = {}
 
-        # run slot extraction after activation
+        # run slot extraction the second time during form activation
+        # for slots with mapping conditions
         action_extract_slots = action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, domain, self.action_endpoint
         )
 
         logger.debug(
-            f"Executing default action '{ACTION_EXTRACT_SLOTS}' " f"at form activation."
+            f"Executing default action '{ACTION_EXTRACT_SLOTS}' at form activation."
         )
 
         extraction_events = await action_extract_slots.run(
@@ -600,7 +601,7 @@ class FormAction(LoopAction):
 
         events_as_str = "\n".join([str(e) for e in extraction_events])
         logger.debug(
-            f"Executed '{ACTION_EXTRACT_SLOTS}' resulted in "
+            f"The execution of '{ACTION_EXTRACT_SLOTS}' resulted in "
             f"these events: {events_as_str}."
         )
 
@@ -615,9 +616,20 @@ class FormAction(LoopAction):
             return []
 
         logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
-        return await self.validate_slots(
+
+        validate_events = await self.validate_slots(
             prefilled_slots, tracker, domain, output_channel, nlg
         )
+
+        validated_slot_names = [
+            event.key for event in validate_events if isinstance(event, SlotSet)
+        ]
+
+        return validate_events + [
+            event
+            for event in extraction_events
+            if isinstance(event, SlotSet) and event.key not in validated_slot_names
+        ]
 
     async def do(
         self,
@@ -627,6 +639,7 @@ class FormAction(LoopAction):
         domain: "Domain",
         events_so_far: List[Event],
     ) -> List[Event]:
+        """Executes form loop after activation."""
         events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
         if not self._user_rejected_manually(events):
