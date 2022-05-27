@@ -635,6 +635,10 @@ paths:
 
                 pipeline:
                 - name: KeywordIntentClassifier
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RasaNLUData'
+
       responses:
         200:
           description: NLU evaluation result
@@ -834,11 +838,32 @@ components:
       type: apiKey
       in: query
       name: token
+      description: |
+        A plaintext token to secure your server, specified at startup in the argument `--auth-token thisismysecret`
     JWT:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: |
+        A JWT token that is signed using the JWT secret specified at startup in the argument `--jwt-secret thisismysecret`,
+        using the `HS256` algorithm.
 
+        The token's payload must contain an object under the `user` key,
+        which in turn must contain the `username` and `role` attributes.
+        The following is an example payload for a JWT token:
+
+        ```json
+        {
+            "user": {
+                "username": "<sender_id>",
+                "role": "user"
+            }
+        }
+        ```
+
+        If the `role` is `admin`, all endpoints are accessible.
+        If the `role` is `user`, endpoints with a `sender_id` parameter are only accessible
+        if the `sender_id` matches the payload's `username` property.
 
   parameters:
 
@@ -2103,7 +2128,6 @@ components:
             conversation_accuracy:
               $ref: '#/components/schemas/ConversationAccuracyReport'
 
-
     ConversationAccuracyReport:
       type: object
       properties:
@@ -2175,6 +2199,36 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/CommonExample'
+      example:
+        rasa_nlu_data:
+          common_examples:
+          - text: hey
+            intent: greet
+            entities: []
+          - text: dear sir
+            intent: greet
+            entities: []
+          - text: i'm looking for a place to eat
+            intent: restaurant_search
+            entities: []
+          - text: i'm looking for a place in the north of town
+            intent: restaurant_search
+            entities:
+            - start: 31
+              end: 36
+              value: north
+              entity: location
+          - text: show me a mexican place in the centre
+            intent: restaurant_search
+            entities:
+            - start: 31
+              end: 37
+              value: centre
+              entity: location
+            - start: 10
+              end: 17
+              value: mexican
+              entity: cuisine
 
     CommonExample:
       type: object
