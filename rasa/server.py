@@ -1518,18 +1518,6 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
         )
 
 
-def _validate_json_training_payload(json_text: Text) -> None:
-    try:
-        RasaYAMLReader
-    except Exception as e:
-        raise ErrorResponse(
-            HTTPStatus.BAD_REQUEST,
-            "BadRequest",
-            f"The request body does not contain valid YAML. Error: {e}",
-            help_url=DOCS_URL_TRAINING_DATA,
-        )
-
-
 def _extract_core_additional_arguments(request: Request) -> Dict[Text, Any]:
     return {
         "augmentation_factor": rasa.utils.endpoints.int_arg(request, "augmentation", 50)
