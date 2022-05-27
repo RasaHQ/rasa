@@ -454,7 +454,7 @@ class Message:
         self,
     ) -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]:
         """Finds any overlapping entity annotations."""
-        entities = self.get("entities", [])[:]
+        entities = self.get(ENTITIES, [])[:]
         entities_with_location = [
             e
             for e in entities
