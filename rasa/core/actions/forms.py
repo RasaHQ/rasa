@@ -567,9 +567,10 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         """Activate form if the form is called for the first time.
 
-        If activating, validate any required slots that were filled before
-        form activation and return `Form` event with the name of the form, as well
-        as any `SlotSet` events from validation of pre-filled slots.
+        If activating, run action_extract_slots to fill slots with
+        mapping conditions from trigger intents.
+        Validate any required slots that can be filled, and return any `SlotSet`
+        events from the extraction and validation of these pre-filled slots.
 
         Args:
             output_channel: The output channel which can be used to send messages
@@ -585,8 +586,6 @@ class FormAction(LoopAction):
         # collect values of required slots filled before activation
         prefilled_slots = {}
 
-        # run slot extraction the second time during form activation
-        # for slots with mapping conditions
         action_extract_slots = action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, domain, self.action_endpoint
         )

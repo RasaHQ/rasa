@@ -47,6 +47,38 @@ slots:
     mappings:
     - type: from_entity
       entity: number
+forms:
+  {form_name}:
+    {REQUIRED_SLOTS_KEY}:
+        - {slot_name}
+responses:
+    utter_ask_num_people:
+    - text: "How many people?"
+"""
+    domain = Domain.from_yaml(domain)
+
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events[:-1] == [ActiveLoop(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
+    assert isinstance(events[-1], BotUttered)
+
+
+async def test_activate_with_mapping_conditions_slot():
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
+    form_name = "my form"
+    action = FormAction(form_name, None)
+    slot_name = "num_people"
+    domain = f"""
+slots:
+  {slot_name}:
+    type: float
+    mappings:
+    - type: from_entity
+      entity: number
       conditions:
       - active_loop: {form_name}
 forms:
@@ -70,6 +102,47 @@ responses:
 
 
 async def test_activate_with_prefilled_slot():
+    slot_name = "num_people"
+    slot_value = 5
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id="bla", evts=[SlotSet(slot_name, slot_value)]
+    )
+    form_name = "my form"
+    action = FormAction(form_name, None)
+
+    next_slot_to_request = "next slot to request"
+    domain = f"""
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+            - {slot_name}
+            - {next_slot_to_request}
+    slots:
+      {slot_name}:
+        type: any
+        mappings:
+        - type: from_entity
+          entity: {slot_name}
+      {next_slot_to_request}:
+        type: text
+        mappings:
+        - type: from_text
+    """
+    domain = Domain.from_yaml(domain)
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [
+        ActiveLoop(form_name),
+        SlotSet(REQUESTED_SLOT, next_slot_to_request),
+    ]
+
+
+async def test_activate_with_prefilled_slot_with_mapping_conditions():
     slot_name = "num_people"
     slot_value = 5
 
