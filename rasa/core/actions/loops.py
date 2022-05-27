@@ -21,7 +21,10 @@ class LoopAction(Action, ABC):
     ) -> List[Event]:
         events: List[Event] = []
 
-        events = await self._activate_loop(output_channel, nlg, tracker, domain, events)
+        if not await self.is_activated(output_channel, nlg, tracker, domain):
+            events = await self._activate_loop(
+                output_channel, nlg, tracker, domain, events
+            )
 
         if not await self.is_done(output_channel, nlg, tracker, domain, events):
             events += await self.do(output_channel, nlg, tracker, domain, events)
@@ -99,8 +102,7 @@ class LoopAction(Action, ABC):
         domain: "Domain",
         events: List[Event],
     ) -> List[Event]:
-        if not await self.is_activated(output_channel, nlg, tracker, domain):
-            events += self._default_activation_events()
-            events += await self.activate(output_channel, nlg, tracker, domain)
+        events += self._default_activation_events()
+        events += await self.activate(output_channel, nlg, tracker, domain)
 
         return events

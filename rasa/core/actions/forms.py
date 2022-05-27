@@ -699,12 +699,11 @@ class FormAction(LoopAction):
         domain: "Domain",
         events: List[Event],
     ) -> List[Event]:
-        temp_tracker = tracker.copy()
+        default_activation_events = self._default_activation_events()
+        events += default_activation_events
 
-        if not await self.is_activated(output_channel, nlg, tracker, domain):
-            default_activation_events = self._default_activation_events()
-            temp_tracker.update_with_events(default_activation_events, domain)
-            events += default_activation_events
-            events += await self.activate(output_channel, nlg, temp_tracker, domain)
+        temp_tracker = tracker.copy()
+        temp_tracker.update_with_events(default_activation_events, domain)
+        events += await self.activate(output_channel, nlg, temp_tracker, domain)
 
         return events
