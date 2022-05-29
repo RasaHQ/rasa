@@ -1,5 +1,7 @@
 .PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
 
+NAME = dilio007/rasa
+VERSION = latest 
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
 INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
@@ -290,7 +292,10 @@ build-docker-spacy-de:
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \
 	test -f .env || cat .env.example >> .env
-
+	
+push-latest:
+	docker push $(NAME):latest
+	
 run-integration-containers: build-tests-deployment-env ## Run the integration test containers.
 	cd tests_deployment && \
 	docker-compose -f docker-compose.integration.yml up &
