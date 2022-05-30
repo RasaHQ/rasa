@@ -21,7 +21,7 @@ INTERACTIVE_LEARNING_PERMISSION = "clientEvents:create"
 
 
 class RasaChatInput(RestInput):
-    """Chat input channel for Rasa X"""
+    """Chat input channel for Rasa Enterprise"""
 
     @classmethod
     def name(cls) -> Text:
@@ -67,7 +67,7 @@ class RasaChatInput(RestInput):
                     logger.error(
                         "Retrieved json response from URL '{}' but could not find "
                         "'{}' field containing the JWT public key. Please make sure "
-                        "you use an up-to-date version of Rasa X (>= 0.20.2). "
+                        "you use an up-to-date version of Rasa Enterprise (>= 0.20.2). "
                         "Response was: {}"
                         "".format(public_key_url, public_key_field, json.dumps(rjs))
                     )
@@ -88,7 +88,7 @@ class RasaChatInput(RestInput):
             )
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
-        """Fetch user from the Rasa X Admin API."""
+        """Fetch user from the Rasa Enterprise Admin API."""
         jwt_payload = None
         if req.headers.get("Authorization"):
             jwt_payload = await self._decode_bearer_token(req.headers["Authorization"])
