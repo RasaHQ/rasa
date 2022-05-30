@@ -21,10 +21,11 @@ INTERACTIVE_LEARNING_PERMISSION = "clientEvents:create"
 
 
 class RasaChatInput(RestInput):
-    """Chat input channel for Rasa Enterprise"""
+    """Chat input channel for Rasa Enterprise."""
 
     @classmethod
     def name(cls) -> Text:
+        """Name of the channel."""
         return "rasa"
 
     @classmethod
