@@ -38,6 +38,8 @@ from rasa.nlu.emulators.emulator import Emulator
 import rasa.utils.common
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+import rasa.shared.utils.validation
+import rasa.shared.nlu.training_data.schemas.data_schema
 import rasa.utils.endpoints
 import rasa.utils.io
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
@@ -64,7 +66,10 @@ from rasa.core.channels.channel import (
 import rasa.shared.core.events
 from rasa.shared.core.events import Event
 from rasa.core.test import test
-from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import (
+    DialogueStateTracker,
+    EventVerbosity,
+)
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 import rasa.nlu.test
@@ -1152,7 +1157,9 @@ def create_app(
                     test_data, config_file, int(cross_validation_folds)
                 )
         else:
-            test_data = _test_data_file_from_payload(request, temporary_directory)
+            payload = _nlu_training_payload_from_json(request, temporary_directory)
+            test_data = payload.get("training_files")
+
             if cross_validation_folds:
                 raise ErrorResponse(
                     HTTPStatus.BAD_REQUEST,
@@ -1456,6 +1463,33 @@ def _training_payload_from_yaml(
 
     training_data = temp_dir / file_name
     rasa.shared.utils.io.write_text_file(decoded, training_data)
+
+    model_output_directory = str(temp_dir)
+    if rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True):
+        model_output_directory = DEFAULT_MODELS_PATH
+
+    return dict(
+        domain=str(training_data),
+        config=str(training_data),
+        training_files=str(temp_dir),
+        output=model_output_directory,
+        force_training=rasa.utils.endpoints.bool_arg(request, "force_training", False),
+        core_additional_arguments=_extract_core_additional_arguments(request),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
+    )
+
+
+def _nlu_training_payload_from_json(
+    request: Request, temp_dir: Path, file_name: Text = "data.json"
+) -> Dict[Text, Any]:
+    logger.debug("Extracting JSON training data from request body.")
+
+    rasa.shared.utils.validation.validate_training_data(
+        request.json,
+        rasa.shared.nlu.training_data.schemas.data_schema.rasa_nlu_data_schema(),
+    )
+    training_data = temp_dir / file_name
+    rasa.shared.utils.io.dump_obj_as_json_to_file(training_data, request.json)
 
     model_output_directory = str(temp_dir)
     if rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True):
