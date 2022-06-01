@@ -548,7 +548,7 @@ async def test_remote_action_endpoint_not_running(
 
     with pytest.raises(Exception) as execinfo:
         await remote_action.run(default_channel, default_nlg, default_tracker, domain)
-    assert "Failed to execute custom action." in str(execinfo.value)
+    assert "Failed to execute custom action" in str(execinfo.value)
 
 
 async def test_remote_action_endpoint_responds_500(
@@ -564,7 +564,7 @@ async def test_remote_action_endpoint_responds_500(
             await remote_action.run(
                 default_channel, default_nlg, default_tracker, domain
             )
-        assert "Failed to execute custom action." in str(execinfo.value)
+        assert "Failed to execute custom action" in str(execinfo.value)
 
 
 async def test_remote_action_endpoint_responds_400(

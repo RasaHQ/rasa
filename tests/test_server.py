@@ -721,7 +721,28 @@ def test_training_payload_from_yaml_save_to_default_model_directory(
     assert payload.get("output") == expected
 
 
-async def xtest_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Text):
+@pytest.mark.parametrize(
+    "headers, expected",
+    [
+        ({}, rasa.shared.constants.DEFAULT_MODELS_PATH),
+        ({"save_to_default_model_directory": False}, ANY),
+        (
+            {"save_to_default_model_directory": True},
+            rasa.shared.constants.DEFAULT_MODELS_PATH,
+        ),
+    ],
+)
+def test_nlu_training_payload_from_json(headers: Dict, expected: Text, tmp_path: Path):
+    request = Mock()
+    request.json = {"rasa_nlu_data": {"common_examples": []}}
+    request.args = headers
+
+    payload = rasa.server._nlu_training_payload_from_json(request, tmp_path)
+    assert payload.get("output")
+    assert payload.get("output") == expected
+
+
+async def test_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Text):
     stories = rasa.shared.utils.io.read_file(stories_path)
 
     _, response = await rasa_app.post(
@@ -1958,7 +1979,7 @@ async def test_get_story(
     tracker_store = InMemoryTrackerStore(Domain.empty())
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
@@ -2022,7 +2043,7 @@ async def test_get_story_does_not_update_conversation_session(
 
     tracker_store = InMemoryTrackerStore(domain)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
@@ -2115,9 +2136,9 @@ async def test_update_conversation_with_events(
     model_id = agent.model_id
 
     if initial_tracker_events:
-        tracker = agent.processor.get_tracker(conversation_id)
+        tracker = await agent.processor.get_tracker(conversation_id)
         tracker.update_with_events(initial_tracker_events, domain)
-        tracker_store.save(tracker)
+        await tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append

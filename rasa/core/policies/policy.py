@@ -12,8 +12,8 @@ from typing import (
     Text,
     Dict,
     Callable,
-    Union,
     Tuple,
+    TypeVar,
     TYPE_CHECKING,
 )
 
@@ -49,6 +49,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+TrackerListTypeVar = TypeVar(
+    "TrackerListTypeVar", List[DialogueStateTracker], List[TrackerWithCachedStates]
+)
+
 
 class SupportedData(Enum):
     """Enumeration of a policy's supported training data type."""
@@ -65,8 +69,8 @@ class SupportedData(Enum):
     @staticmethod
     def trackers_for_supported_data(
         supported_data: SupportedData,
-        trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
-    ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
+        trackers: TrackerListTypeVar,
+    ) -> TrackerListTypeVar:
         """Return trackers for a given policy.
 
         Args:
@@ -530,7 +534,7 @@ class PolicyPrediction:
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
-        self.policy_priority = (policy_priority,)
+        self.policy_priority = policy_priority
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction

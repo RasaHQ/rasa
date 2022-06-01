@@ -152,7 +152,9 @@ class QueueOutputChannel(CollectingOutputChannel):
 
     (doesn't send them anywhere, just collects them)."""
 
-    messages: Queue
+    # FIXME: this is breaking Liskov substitution principle
+    # and would require some user-facing refactoring to address
+    messages: Queue  # type: ignore[assignment]
 
     @classmethod
     def name(cls) -> Text:
