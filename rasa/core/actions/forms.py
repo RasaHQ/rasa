@@ -598,7 +598,7 @@ class FormAction(LoopAction):
             output_channel, nlg, tracker, domain
         )
 
-        events_as_str = "\n".join([str(e) for e in extraction_events])
+        events_as_str = "\n".join(str(e) for e in extraction_events)
         logger.debug(
             f"The execution of '{ACTION_EXTRACT_SLOTS}' resulted in "
             f"these events: {events_as_str}."
@@ -616,15 +616,15 @@ class FormAction(LoopAction):
 
         logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
 
-        validate_events = await self.validate_slots(
+        validated_events = await self.validate_slots(
             prefilled_slots, tracker, domain, output_channel, nlg
         )
 
         validated_slot_names = [
-            event.key for event in validate_events if isinstance(event, SlotSet)
+            event.key for event in validated_events if isinstance(event, SlotSet)
         ]
 
-        return validate_events + [
+        return validated_events + [
             event
             for event in extraction_events
             if isinstance(event, SlotSet) and event.key not in validated_slot_names
@@ -697,13 +697,11 @@ class FormAction(LoopAction):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
-        events: List[Event],
     ) -> List[Event]:
-        default_activation_events = self._default_activation_events()
-        events += default_activation_events
+        events = self._default_activation_events()
 
         temp_tracker = tracker.copy()
-        temp_tracker.update_with_events(default_activation_events, domain)
+        temp_tracker.update_with_events(events, domain)
         events += await self.activate(output_channel, nlg, temp_tracker, domain)
 
         return events

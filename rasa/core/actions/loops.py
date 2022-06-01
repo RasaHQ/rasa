@@ -22,8 +22,11 @@ class LoopAction(Action, ABC):
         events: List[Event] = []
 
         if not await self.is_activated(output_channel, nlg, tracker, domain):
-            events = await self._activate_loop(
-                output_channel, nlg, tracker, domain, events
+            events += await self._activate_loop(
+                output_channel,
+                nlg,
+                tracker,
+                domain,
             )
 
         if not await self.is_done(output_channel, nlg, tracker, domain, events):
@@ -100,9 +103,8 @@ class LoopAction(Action, ABC):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
-        events: List[Event],
     ) -> List[Event]:
-        events += self._default_activation_events()
+        events = self._default_activation_events()
         events += await self.activate(output_channel, nlg, tracker, domain)
 
         return events

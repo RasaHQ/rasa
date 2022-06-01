@@ -40,21 +40,23 @@ async def test_activate():
     form_name = "my form"
     action = FormAction(form_name, None)
     slot_name = "num_people"
-    domain = f"""
-slots:
-  {slot_name}:
-    type: float
-    mappings:
-    - type: from_entity
-      entity: number
-forms:
-  {form_name}:
-    {REQUIRED_SLOTS_KEY}:
+    domain = textwrap.dedent(
+        f"""
+    slots:
+      {slot_name}:
+        type: float
+        mappings:
+        - type: from_entity
+          entity: number
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
         - {slot_name}
-responses:
-    utter_ask_num_people:
-    - text: "How many people?"
-"""
+    responses:
+      utter_ask_num_people:
+      - text: "How many people?"
+      """
+    )
     domain = Domain.from_yaml(domain)
 
     events = await action.run(
@@ -72,23 +74,25 @@ async def test_activate_with_mapping_conditions_slot():
     form_name = "my form"
     action = FormAction(form_name, None)
     slot_name = "num_people"
-    domain = f"""
-slots:
-  {slot_name}:
-    type: float
-    mappings:
-    - type: from_entity
-      entity: number
-      conditions:
-      - active_loop: {form_name}
-forms:
-  {form_name}:
-    {REQUIRED_SLOTS_KEY}:
+    domain = textwrap.dedent(
+        f"""
+    slots:
+      {slot_name}:
+        type: float
+        mappings:
+        - type: from_entity
+          entity: number
+          conditions:
+          - active_loop: {form_name}
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
         - {slot_name}
-responses:
-    utter_ask_num_people:
-    - text: "How many people?"
-"""
+    responses:
+      utter_ask_num_people:
+      - text: "How many people?"
+      """
+    )
     domain = Domain.from_yaml(domain)
 
     events = await action.run(
