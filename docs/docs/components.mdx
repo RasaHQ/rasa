@@ -1395,9 +1395,12 @@ More details on the parameters can be found on the [scikit-learn documentation p
 
   * `model_confidence`:
     This parameter allows the user to configure how confidences are computed during inference. It can take only 
-    one value as input which is `softmax`. In `softmax`, confidences are in the range `[0, 1]`. The computed 
+    one value as input which is `softmax`[^1]. In `softmax`, confidences are in the range `[0, 1]`. The computed 
     similarities are normalized with the `softmax` activation function.
     
+[^1]: Note that `model_confidence: cosine`is deprecated in 2.3.4 (see [changelog](./changelog.mdx#234---2021-02-26))
+    and cannot be specified in the config, however `model_confidence: cosine` will be used regardless of the config
+    if `loss_type: margin` is specified. 
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
@@ -1457,9 +1460,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'inner'.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
-|                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
-|                                 |                  | "model_confidence=cosine",                                   |
-|                                 |                  | which is deprecated (see changelog for 2.3.4).               |
+|                                 |                  | or 'margin'. If type 'margin' is specified,                  |
+|                                 |                  | "model_confidence=cosine" will be used which is deprecated   |
+|                                 |                  | as of 2.3.4. See footnote (1).                               |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | ranking_length                  | 10               | Number of top intents to report. Set to 0 to report all      |
 |                                 |                  | intents.                                                     |
