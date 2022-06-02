@@ -1052,6 +1052,83 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   ```
 
 
+### LogisticRegressionClassifier
+
+* **Short**
+
+  Logistic regression intent classifier, using the [scikit-learn implementation](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
+
+
+
+* **Outputs**
+
+  `intent` and `intent_ranking`
+
+
+
+* **Requires** 
+
+  Either `sparse_features` or `dense_features` need to be present. 
+
+
+
+* **Output-Example** 
+
+```json
+{
+    "intent": {"name": "greet", "confidence": 0.780},
+    "intent_ranking": [
+        {
+            "confidence": 0.780,
+            "name": "greet"
+        },
+        {
+            "confidence": 0.140,
+            "name": "goodbye"
+        },
+        {
+            "confidence": 0.080,
+            "name": "restaurant_search"
+        }
+    ]
+}
+```
+
+
+* **Description**
+
+  This classifier uses scikit-learn's logistic regression implementation to perform intent classification.
+  It's able to use only sparse features, but will also pick up any dense features that are present. In general,
+  DIET should yield higher accuracy results, but this classifier should train faster and may be used as
+  a lightweight benchmark. Our implementation uses the base settings from scikit-learn, with the exception
+  of the `class_weight` parameter where we assume the `"balanced"` setting.
+
+
+
+* **Configuration**
+
+An example configuration with all the defaults can be found below.
+
+```yaml
+pipeline:
+- name: LogisticRegressionClassifier
+  max_iter: 100
+  solver: lbfgs
+  tol: 0.0001
+  random_state: 42
+```
+
+There configuration parameters are briefly explained below. 
+
+- `max_iter`: Maximum number of iterations taken for the solvers to converge.
+- `solver`: Solver to be used. For very small datasets you might consider `liblinear`.
+- `tol`: Tolerance for stopping criteria of the optimizer.
+- `random_state`: Used to shuffle the data before training.
+
+More details on the parameters can be found on the [scikit-learn documentation page](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
+
+
+
 ### SklearnIntentClassifier
 
 
@@ -1325,12 +1402,13 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     This should help in better generalization of the model to real world test sets.
 
   * `model_confidence`:
-    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
-    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
-    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
-
-    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
-
+    This parameter allows the user to configure how confidences are computed during inference. It can take only 
+    one value as input which is `softmax`[^1]. In `softmax`, confidences are in the range `[0, 1]`. The computed 
+    similarities are normalized with the `softmax` activation function.
+    
+[^1]: Note that `model_confidence: cosine`is deprecated in 2.3.4 (see [changelog](./changelog.mdx#234---2021-02-26))
+    and cannot be specified in the config, however `model_confidence: cosine` will be used regardless of the config
+    if `loss_type: margin` is specified. 
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
@@ -1390,9 +1468,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'inner'.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
-|                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
-|                                 |                  | "model_confidence=cosine",                                   |
-|                                 |                  | which is deprecated (see changelog for 2.3.4).               |
+|                                 |                  | or 'margin'. If type 'margin' is specified,                  |
+|                                 |                  | "model_confidence=cosine" will be used which is deprecated   |
+|                                 |                  | as of 2.3.4. See footnote (1).                               |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | ranking_length                  | 10               | Number of top intents to report. Set to 0 to report all      |
 |                                 |                  | intents.                                                     |
@@ -2609,12 +2687,9 @@ Selectors predict a bot response from a set of candidate responses.
     This should help in better generalization of the model to real world test sets.
 
   * `model_confidence`:
-    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
-    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
-    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
-
-    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
-
+      This parameter allows the user to configure how confidences are computed during inference. It can take only 
+    one value as input which is `softmax`. In `softmax`, confidences are in the range `[0, 1]`. The computed 
+    similarities are normalized with the `softmax` activation function.
 
   The component can also be configured to train a response selector for a particular retrieval intent.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.

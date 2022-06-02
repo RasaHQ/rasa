@@ -1,9 +1,9 @@
 ---
 id: deploy-rasa
-sidebar_label: "Step 1: Deploy Rasa Open Source"
-title: "Step 1: Deploy Rasa Open Source"
-description: The first of three steps to deploy your Rasa assistant
-abstract: This page explains how to deploy Rasa Open Source using Helm. The first of three steps in deploying your Rasa assistant.
+sidebar_label: "Deploy Rasa Open Source"
+title: "Deploy Rasa Open Source"
+description: Deploy a Rasa assistant on Kubernetes/Openshift using Helm
+abstract: This page explains how to deploy Rasa Open Source using Helm.
 ---
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from './../variables.json';
@@ -231,8 +231,8 @@ will block until the Rasa deployment is ready:
 
 ### 5. Access Rasa Open Source Assistant
 
-By default the Rasa deployment is exposed via the `rasa` (`<release name>`) service and accessible only within a Kubernetes cluster. You can get
-the IP address using this command:
+By default the Rasa deployment is exposed via the `rasa` (`<release name>`) service and accessible only within a Kubernetes cluster.
+To access Rasa Open Source Assistant by using `kubectl port-forward`, use these commands:
 
 <Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
   <TabItem value="kubernetes">
@@ -255,21 +255,33 @@ the IP address using this command:
 
 You can then access the deployment on `http://127.0.0.1:${SERVICE_PORT}`
 
+The other option is to expose your deployment on `NodePort` and access it directly.
+
+1. Prepare configuration that switch the rasa service to `NodePort`.
+
+  ```yaml
+  # rasa-values.yaml
+  service:
+    type: "NodePort"
+  ```
+
+2. Upgrade deployment.
+
+  ```text
+  helm upgrade --namespace <NAMESPACE> --reuse-values -f rasa-values.yaml <RELEASE NAME> rasa/rasa
+  ```
+
+3. Get the node port and address for the rasa service
+
+  ```text
+  export NODE_PORT=$(kubectl get --namespace <NAMESPACE> -o jsonpath="{.spec.ports[0].nodePort}" services <RELEASE NAME>)
+
+  $ curl http://127.0.0.1:${NODE_PORT}
+  Hello from Rasa: 2.8.7
+  ```
+
 Visit [the Rasa helm chart README](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#exposing-the-rasa-deployment-to-the-public) to learn other ways to expose your deployment.
 
 ## Next Steps
 
 - Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration
-- Visit [the Rasa X docs](https://rasa.com/docs/rasa-x/) and learn how to [integrate your Rasa Open Source deployment with Rasa X](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#2-connect-rasa-open-source-deployment-the-rasa-helm-chart).
-
-## Alternative Deployment Methods
-
-It is also possible to deploy a Rasa assistant using Rasa Ephemeral Installer, Docker or Docker Compose. Choose one of the alternatives methods listed below to see details.
-
-* [Developing an assistant locally](../installation.mdx)
-
-* [Developing an assistant in a Docker container](../docker/building-in-docker.mdx)
-
-* [Deploying an assistant using the Rasa Ephemeral Installer (REI)](../rei/deploy.mdx)
-
-* [Deploying an assistant with Docker Compose](../docker/deploying-in-docker-compose.mdx)

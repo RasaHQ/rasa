@@ -205,10 +205,10 @@ def test_determine_token_labels_throws_error():
 
 
 def test_determine_token_labels_no_extractors():
-    with pytest.raises(ValueError):
-        determine_token_labels(
-            CH_correct_segmentation[0], [CH_correct_entity, CH_wrong_entity], None
-        )
+    label = determine_token_labels(
+        CH_correct_segmentation[0], [CH_correct_entity, CH_wrong_entity], None
+    )
+    assert label == "direction"
 
 
 def test_determine_token_labels_no_extractors_no_overlap():
@@ -239,7 +239,7 @@ def test_determine_token_labels_with_extractors():
                     "extractor": "EntityExtractorA",
                 }
             ],
-            ["EntityExtractorA"],
+            {"EntityExtractorA"},
             0.0,
         ),
         (Token("pizza", 4), [], ["EntityExtractorA"], 0.0),
@@ -255,7 +255,7 @@ def test_determine_token_labels_with_extractors():
                     "extractor": "CRFEntityExtractor",
                 }
             ],
-            ["CRFEntityExtractor"],
+            {"CRFEntityExtractor"},
             0.87,
         ),
         (
@@ -270,7 +270,7 @@ def test_determine_token_labels_with_extractors():
                     "extractor": "DIETClassifier",
                 }
             ],
-            ["DIETClassifier"],
+            {"DIETClassifier"},
             0.87,
         ),
     ],
@@ -278,7 +278,7 @@ def test_determine_token_labels_with_extractors():
 def test_get_entity_confidences(
     token: Token,
     entities: List[Dict[Text, Any]],
-    extractors: List[Text],
+    extractors: Set[Text],
     expected_confidence: float,
 ):
     confidence = _get_entity_confidences(token, entities, extractors)
@@ -418,6 +418,8 @@ async def test_eval_data(tmp_path: Path, project: Text, trained_rasa_model: Text
     assert len(entity_results) == 46
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     240, func_only=True
 )  # these can take a longer time than the default timeout
@@ -462,6 +464,8 @@ async def test_run_cv_evaluation():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     180, func_only=True
 )  # these can take a longer time than the default timeout
@@ -508,6 +512,8 @@ async def test_run_cv_evaluation_no_entities():
     assert len(entity_results.evaluation) == 0
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     280, func_only=True
 )  # these can take a longer time than the default timeout
@@ -587,6 +593,8 @@ async def test_run_cv_evaluation_with_response_selector():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     280, func_only=True
 )  # these can take a longer time than the default timeout

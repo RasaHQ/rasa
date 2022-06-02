@@ -28,6 +28,13 @@ this new version for inference.
 
 Please check whether your trained model still performs as expected and retrain if needed.
 
+### NLU JSON Format
+
+[NLU training data](nlu-training-data.mdx) in JSON format is deprecated and will be
+removed in Rasa Open Source 4.0.
+Please use `rasa data convert nlu -f yaml --data <path to NLU data>` to convert your
+NLU JSON data to YAML format before support for NLU JSON data is removed.
+
 ## Rasa 2.x to 3.0
 
 ### Markdown Data
@@ -1143,10 +1150,10 @@ configuration.
 
 #### Upgrading `version` from `2.0` to `3.0`
 
-At the top of your training data files, you need to change `version: "2.0"` to `version: "3.0"`.
+At the top of your training data files, you need to change `version: "2.0"` to `version: "3.1"`.
 
 We follow semantic versioning for training data versions. This means breaking changes result in a new
-major version, while new features result in a new minor version.
+major version, while new features result in a new minor version. The latest training data version is 3.1.
 
 The improvements to `slot mappings` in Rasa Open Source 3.0 were breaking changes, so we needed to upgrade
 from major version `2.0` to major version `3.0`.

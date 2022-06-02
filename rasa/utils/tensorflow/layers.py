@@ -18,16 +18,8 @@ from rasa.utils.tensorflow.constants import (
     LABEL_PAD_ID,
 )
 from rasa.core.constants import DIALOGUE
-from rasa.shared.nlu.constants import (
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
-)
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
-    ACTION_NAME,
-    ACTION_TEXT,
-)
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME, ACTION_TEXT
 
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 import rasa.utils.tensorflow.layers_utils as layers_utils
@@ -1165,7 +1157,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
             )
 
     # noinspection PyMethodOverriding
-    def call(
+    def call(  # type: ignore[override]
         self,
         inputs_embed: tf.Tensor,
         labels_embed: tf.Tensor,
@@ -1264,7 +1256,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             model_confidence=model_confidence,
         )
 
-    def call(
+    def call(  # type: ignore[override]
         self,
         batch_inputs_embed: tf.Tensor,
         batch_labels_embed: tf.Tensor,

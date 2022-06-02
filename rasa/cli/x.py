@@ -4,12 +4,12 @@ import importlib.util
 import logging
 from multiprocessing.process import BaseProcess
 from multiprocessing import get_context
-from packaging import version
+from pathlib import Path
 import os
 import signal
 import sys
 import traceback
-from typing import Iterable, List, Optional, Text, Tuple
+from typing import Iterable, List, Optional, Text, Tuple, Union
 
 import aiohttp
 from rasa.exceptions import MissingDependencyException
@@ -106,8 +106,10 @@ def _rasa_service(
 def _prepare_credentials_for_rasa_x(
     credentials_path: Optional[Text], rasa_x_url: Optional[Text] = None
 ) -> Text:
-    credentials_path = rasa.cli.utils.get_validated_path(
-        credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+    credentials_path = str(
+        rasa.cli.utils.get_validated_path(
+            credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+        )
     )
     if credentials_path:
         credentials = rasa.shared.utils.io.read_config_file(credentials_path)
@@ -350,17 +352,15 @@ def rasa_x(args: argparse.Namespace) -> None:
 
     _configure_logging(args)
 
-    if version.parse(rasa.version.__version__) >= version.parse("3.0.0"):
+    if args.production:
+        run_in_production(args)
+    else:
         rasa.shared.utils.io.raise_warning(
             f"Your version of rasa '{rasa.version.__version__}' is currently "
             f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
             f"version higher or equal to 3.0.0 will result in errors.",
             UserWarning,
         )
-
-    if args.production:
-        run_in_production(args)
-    else:
         run_locally(args)
 
 
@@ -369,13 +369,12 @@ async def _pull_runtime_config_from_server(
     attempts: int = 60,
     wait_time_between_pulls: float = 5,
     keys: Iterable[Text] = ("endpoints", "credentials"),
-) -> Optional[List[Text]]:
+) -> List[Text]:
     """Pull runtime config from `config_endpoint`.
 
     Returns a list of paths to yaml dumps, each containing the contents of one of
     `keys`.
     """
-
     while attempts:
         try:
             async with aiohttp.ClientSession() as session:
@@ -426,7 +425,7 @@ def _get_config_path(args: argparse.Namespace) -> Optional[Text]:
         args.config, "config", DEFAULT_CONFIG_PATH
     )
 
-    return config_path
+    return str(config_path)
 
 
 def _get_domain_path(args: argparse.Namespace) -> Optional[Text]:
@@ -434,25 +433,29 @@ def _get_domain_path(args: argparse.Namespace) -> Optional[Text]:
         args.domain, "domain", DEFAULT_DOMAIN_PATH
     )
 
-    return domain_path
+    return str(domain_path)
 
 
 def _get_credentials_and_endpoints_paths(
     args: argparse.Namespace,
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
+    endpoints_config_path: Optional[Union[Path, Text]]
+
     if config_endpoint:
         endpoints_config_path, credentials_path = asyncio.run(
             _pull_runtime_config_from_server(config_endpoint)
         )
-
     else:
         endpoints_config_path = rasa.cli.utils.get_validated_path(
             args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
         credentials_path = None
 
-    return credentials_path, endpoints_config_path
+    return (
+        credentials_path,
+        str(endpoints_config_path) if endpoints_config_path else None,
+    )
 
 
 def _prevent_failure_if_git_is_not_available() -> None:

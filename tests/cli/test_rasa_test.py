@@ -3,6 +3,8 @@ import shutil
 from pathlib import Path
 from shutil import copyfile
 
+from pytest import Testdir, RunResult, Pytester, ExitCode
+
 from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
@@ -11,7 +13,6 @@ from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.shared.utils.io import list_files, write_yaml, write_text_file
 from typing import Callable
-from _pytest.pytester import RunResult, Testdir, Pytester, ExitCode
 
 
 def test_test_core(run_in_simple_project: Callable[..., RunResult]):
@@ -47,7 +48,7 @@ def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunR
     )
 
     simple_test_story_yaml = """
-version: "3.0"
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: unlikely path
   steps:
@@ -59,7 +60,7 @@ stories:
   - intent: affirm
   - action: utter_happy
 """
-    with open("tests/test_stories.yaml", "w") as f:
+    with open("tests/test_stories.yml", "w") as f:
         f.write(simple_test_story_yaml)
 
     run_in_simple_project_with_model("test", "core", "--no-warnings")

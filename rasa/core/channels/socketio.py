@@ -17,12 +17,23 @@ class SocketBlueprint(Blueprint):
     def __init__(
         self, sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any
     ) -> None:
-        self.sio = sio
-        self.socketio_path = socketio_path
+        """Creates a :class:`sanic.Blueprint` for routing socketio connenctions.
+
+        :param sio: Instance of :class:`socketio.AsyncServer` class
+        :param socketio_path: string indicating the route to accept requests on.
+        """
         super().__init__(*args, **kwargs)
+        self.ctx.sio = sio
+        self.ctx.socketio_path = socketio_path
 
     def register(self, app: Sanic, options: Dict[Text, Any]) -> None:
-        self.sio.attach(app, self.socketio_path)
+        """Attach the Socket.IO webserver to the given Sanic instance.
+
+        :param app: Instance of :class:`sanic.app.Sanic` class
+        :param options: Options to be used while registering the
+            blueprint into the app.
+        """
+        self.ctx.sio.attach(app, self.ctx.socketio_path)
         super().register(app, options)
 
 
@@ -69,17 +80,19 @@ class SocketIOOutput(OutputChannel):
         # the `or` makes sure there is at least one message we can attach the quick
         # replies to
         message_parts = text.strip().split("\n\n") or [text]
-        messages = [{"text": message, "quick_replies": []} for message in message_parts]
+        messages: List[Dict[Text, Any]] = [
+            {"text": message, "quick_replies": []} for message in message_parts
+        ]
 
         # attach all buttons to the last text fragment
-        for button in buttons:
-            messages[-1]["quick_replies"].append(
-                {
-                    "content_type": "text",
-                    "title": button["title"],
-                    "payload": button["payload"],
-                }
-            )
+        messages[-1]["quick_replies"] = [
+            {
+                "content_type": "text",
+                "title": button["title"],
+                "payload": button["payload"],
+            }
+            for button in buttons
+        ]
 
         for message in messages:
             await self._send_message(recipient_id, message)
@@ -108,7 +121,7 @@ class SocketIOOutput(OutputChannel):
 
         await self.sio.emit(self.bot_message_evt, **json_message)
 
-    async def send_attachment(
+    async def send_attachment(  # type: ignore[override]
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends an attachment to the user."""
@@ -151,7 +164,7 @@ class SocketIOInput(InputChannel):
         self.user_message_evt = user_message_evt
         self.namespace = namespace
         self.socketio_path = socketio_path
-        self.sio = None
+        self.sio: Optional[AsyncServer] = None
 
         self.jwt_key = jwt_key
         self.jwt_algorithm = jwt_method

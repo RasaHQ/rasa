@@ -9,8 +9,7 @@ import pytest
 import sys
 import uuid
 
-from _pytest.monkeypatch import MonkeyPatch
-from _pytest.python import Function
+from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
 from spacy import Language
 
 from rasa.engine.caching import LocalTrainingCache
@@ -21,7 +20,6 @@ from sanic.request import Request
 
 from typing import Iterator, Callable
 
-from _pytest.tmpdir import TempPathFactory, TempdirFactory
 from pathlib import Path
 from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
@@ -628,6 +626,10 @@ def pytest_runtest_setup(item: Function) -> None:
         and sys.platform == "win32"
     ):
         pytest.skip("cannot run on Windows")
+    if "skip_on_ci" in [mark.name for mark in item.iter_markers()] and os.environ.get(
+        "CI"
+    ) in ["true", "True", "yes", "t", "1"]:
+        pytest.skip("cannot run on CI")
 
 
 class MockExporter(Exporter):

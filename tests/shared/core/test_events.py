@@ -49,7 +49,7 @@ from rasa.shared.core.events import (
     LegacyFormValidation,
     format_message,
 )
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
 
 
@@ -305,34 +305,41 @@ def test_correct_timestamp_setting(event_class):
 @pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
 def test_event_metadata_dict(event_class: Type[Event]):
     metadata = {"foo": "bar", "quux": 42}
+    parameters = {
+        "metadata": metadata,
+        "event": event_class.type_name,
+        "parse_data": {},
+        "date_time": "2019-11-20T16:09:16Z",
+    }
+    # `ActionExecuted` class and its subclasses require either that action_name
+    # is not None if it is not an end-to-end predicted action
+    if event_class.type_name in ["action", "wrong_action", "warning_predicted"]:
+        parameters["name"] = "test"
 
     # Create the event from a `dict` that will be accepted by the
     # `_from_parameters` method of any `Event` subclass (the values themselves
     # are not important).
-    event = Event.from_parameters(
-        {
-            "metadata": metadata,
-            "event": event_class.type_name,
-            "parse_data": {},
-            "date_time": "2019-11-20T16:09:16Z",
-        }
-    )
+    event = Event.from_parameters(parameters)
     assert event.as_dict()["metadata"] == metadata
 
 
 @pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
 def test_event_default_metadata(event_class: Type[Event]):
+    parameters = {
+        "event": event_class.type_name,
+        "parse_data": {},
+        "date_time": "2019-11-20T16:09:16Z",
+    }
+    # `ActionExecuted` class and its subclasses require either that action_name
+    # is not None if it is not an end-to-end predicted action
+    if event_class.type_name in ["action", "wrong_action", "warning_predicted"]:
+        parameters["name"] = "test"
+
     # Create an event without metadata. When converting the `Event` to a
     # `dict`, it should not include a `metadata` property - unless it's a
     # `UserUttered` or a `BotUttered` event (or subclasses of them), in which
     # case the metadata should be included with a default value of {}.
-    event = Event.from_parameters(
-        {
-            "event": event_class.type_name,
-            "parse_data": {},
-            "date_time": "2019-11-20T16:09:16Z",
-        }
-    )
+    event = Event.from_parameters(parameters)
 
     if isinstance(event, BotUttered) or isinstance(event, UserUttered):
         assert event.as_dict()["metadata"] == {}
@@ -555,6 +562,21 @@ def test_split_events(
             ],
             True,
         ),
+        # also a session start, but with metadata
+        (
+            [
+                ActionExecuted(
+                    ACTION_SESSION_START_NAME,
+                    timestamp=1,
+                    metadata={METADATA_MODEL_ID: "123"},
+                ),
+                SessionStarted(timestamp=2, metadata={METADATA_MODEL_ID: "123"}),
+                ActionExecuted(
+                    ACTION_LISTEN_NAME, timestamp=3, metadata={METADATA_MODEL_ID: "123"}
+                ),
+            ],
+            True,
+        ),
         # providing a single `action_listen` is not a session start
         ([ActionExecuted(ACTION_LISTEN_NAME, timestamp=3)], False),
         # providing a single `action_session_start` is not a session start
@@ -748,7 +770,7 @@ tested_events = [
         action_name_target="demo",
         action_text_target="example",
     ),
-    WarningPredictedAction(action_name_prediction="test"),
+    WarningPredictedAction(action_name="action_listen", action_name_prediction="test"),
 ]
 
 

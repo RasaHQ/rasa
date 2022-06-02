@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import random
 from collections import defaultdict
-from typing import List, Text, Dict, Tuple, Union, Optional, Any
+from typing import List, Text, Dict, Tuple, Union, Optional, Any, TYPE_CHECKING
 
 from keras.utils import tf_utils
 
@@ -46,6 +46,11 @@ from rasa.utils.tensorflow.data_generator import (
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
 
+
+if TYPE_CHECKING:
+    from tensorflow.python.types.core import GenericFunction
+
+
 logger = logging.getLogger(__name__)
 
 LABEL_KEY = LABEL
@@ -65,6 +70,8 @@ class RasaModel(TmpKerasModel):
     Cannot be used as tf.keras.Model.
     """
 
+    _training: Optional[bool]
+
     def __init__(self, random_seed: Optional[int] = None, **kwargs: Any) -> None:
         """Initialize the RasaModel.
 
@@ -83,7 +90,7 @@ class RasaModel(TmpKerasModel):
         self.random_seed = random_seed
         self._set_random_seed()
 
-        self._tf_predict_step = None
+        self._tf_predict_step: Optional["GenericFunction"] = None
         self.prepared_for_prediction = False
 
     def _set_random_seed(self) -> None:
@@ -92,7 +99,7 @@ class RasaModel(TmpKerasModel):
         np.random.seed(self.random_seed)
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -114,7 +121,7 @@ class RasaModel(TmpKerasModel):
         pass
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 
@@ -127,7 +134,7 @@ class RasaModel(TmpKerasModel):
         raise NotImplementedError
 
     def train_step(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, float]:
         """Performs a train step using the given batch.
 
@@ -176,7 +183,7 @@ class RasaModel(TmpKerasModel):
         return self._get_metric_results()
 
     def test_step(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, float]:
         """Tests the model using the given batch.
 
@@ -200,7 +207,7 @@ class RasaModel(TmpKerasModel):
         return self._get_metric_results()
 
     def predict_step(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, tf.Tensor]:
         """Predicts the output for the given batch.
 
@@ -222,7 +229,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def _dynamic_signature(
-        batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> List[List[tf.TensorSpec]]:
         element_spec = []
         for tensor in batch_in:
@@ -236,7 +243,7 @@ class RasaModel(TmpKerasModel):
         return [element_spec]
 
     def _rasa_predict(
-        self, batch_in: Tuple[np.ndarray]
+        self, batch_in: Tuple[np.ndarray, ...]
     ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
         """Custom prediction method that builds tf graph on the first call.
 
@@ -295,7 +302,7 @@ class RasaModel(TmpKerasModel):
         Returns:
             Model outputs corresponding to the inputs fed.
         """
-        outputs = {}
+        outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]] = {}
         (data_generator, _) = rasa.utils.train_utils.create_data_generators(
             model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False
         )
@@ -434,7 +441,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def batch_to_model_data_format(
-        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
     ) -> Dict[Text, Dict[Text, List[tf.Tensor]]]:
         """Convert input batch tensors into batch data format.
@@ -501,7 +508,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def _convert_sparse_features(
-        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,
@@ -883,7 +890,7 @@ class TransformerRasaModel(RasaModel):
         return loss, f1, logits
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -896,7 +903,7 @@ class TransformerRasaModel(RasaModel):
         raise NotImplementedError
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 

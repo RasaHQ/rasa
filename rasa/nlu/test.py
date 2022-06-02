@@ -674,7 +674,7 @@ def _calculate_report(
     )
 
     if report_as_dict:
-        report = _add_confused_labels_to_report(
+        report = _add_confused_labels_to_report(  # type: ignore[assignment]
             report,
             confusion_matrix,
             labels,
@@ -1086,21 +1086,33 @@ def determine_entity_for_token(
     """
     if entities is None or len(entities) == 0:
         return None
-    if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
+    if do_any_extractors_not_support_overlap(extractors) and do_entities_overlap(
+        entities
+    ):
         raise ValueError("The possible entities should not overlap.")
 
     candidates = find_intersecting_entities(token, entities)
     return pick_best_entity_fit(token, candidates)
 
 
-def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
-    """Checks if extractors support overlapping entities"""
+def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bool:
+    """Checks if any extractor does not support overlapping entities.
+
+    Args:
+        Names of the entitiy extractors
+
+    Returns:
+        `True` if and only if CRFEntityExtractor or DIETClassifier is in `extractors`
+    """
     if extractors is None:
         return False
 
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+    from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 
-    return CRFEntityExtractor.__name__ not in extractors
+    return not extractors.isdisjoint(
+        {CRFEntityExtractor.__name__, DIETClassifier.__name__}
+    )
 
 
 def align_entity_predictions(
@@ -1361,6 +1373,7 @@ async def run_evaluation(
     errors: bool = False,
     disable_plotting: bool = False,
     report_as_dict: Optional[bool] = None,
+    domain_path: Optional[Text] = None,
 ) -> Dict:  # pragma: no cover
     """Evaluate intent classification, response selection and entity extraction.
 
@@ -1375,6 +1388,7 @@ async def run_evaluation(
             If `False` the report is returned in a human-readable text format. If `None`
             `report_as_dict` is considered as `True` in case an `output_directory` is
             given.
+        domain_path: Path to the domain file(s).
 
     Returns: dictionary containing evaluation results
     """
@@ -1382,7 +1396,8 @@ async def run_evaluation(
     from rasa.shared.constants import DEFAULT_DOMAIN_PATH
 
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH
+        training_data_paths=[data_path],
+        domain_path=domain_path if domain_path else DEFAULT_DOMAIN_PATH,
     )
     test_data = test_data_importer.get_nlu_data()
 
@@ -1718,7 +1733,7 @@ async def compute_metrics(
         response_selection_results
     )
 
-    intent_metrics = {}
+    intent_metrics: IntentMetrics = {}
     if intent_results:
         intent_metrics = _compute_metrics(
             intent_results, "intent_target", "intent_prediction"
@@ -1728,7 +1743,7 @@ async def compute_metrics(
     if entity_results:
         entity_metrics = _compute_entity_metrics(entity_results)
 
-    response_selection_metrics = {}
+    response_selection_metrics: ResponseSelectionMetrics = {}
     if response_selection_results:
         response_selection_metrics = _compute_metrics(
             response_selection_results,
@@ -1750,7 +1765,7 @@ async def compare_nlu(
     configs: List[Text],
     data: TrainingData,
     exclusion_percentages: List[int],
-    f_score_results: Dict[Text, Any],
+    f_score_results: Dict[Text, List[List[float]]],
     model_names: List[Text],
     output: Text,
     runs: int,

@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEFAULT_PYTHON_VERSION: '3.7'
+  DEFAULT_PYTHON_VERSION: '3.9'
 
 jobs:
   changes:
@@ -22,7 +22,7 @@ jobs:
     outputs:
       docs: ${{ steps.filter.outputs.docs }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         id: filter
         with:
@@ -37,10 +37,10 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -55,13 +55,13 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v7
+      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -80,7 +80,7 @@ jobs:
       run: poetry config virtualenvs.in-project true
 
     - name: Load Yarn Cached Packages ⬇
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: docs/node_modules
         key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}

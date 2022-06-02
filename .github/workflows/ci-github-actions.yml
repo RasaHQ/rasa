@@ -9,7 +9,7 @@ on:
   pull_request:
 
 env:
-  DEFAULT_PYTHON_VERSION: '3.7'
+  DEFAULT_PYTHON_VERSION: '3.9'
 
 jobs:
   test:
@@ -20,10 +20,15 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+
+    - name: Download gomplate
+      run: |-
+        sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
+        sudo chmod +x /usr/local/bin/gomplate
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -39,7 +44,7 @@ jobs:
 
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -58,12 +63,12 @@ jobs:
 
     - name: Install Dependencies 📦
       run: |
-        make install
+        make install-full
 
     - name: Lint Code 🎎
       run: |
-        poetry run flake8 .github/scripts --extend-ignore D
-        poetry run black --check .github/scripts
+        poetry run flake8 .github --extend-ignore D
+        poetry run black --check .github
 
     - name: Test Code 🔍
       run: |

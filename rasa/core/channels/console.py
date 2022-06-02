@@ -3,13 +3,12 @@ import asyncio
 import json
 import logging
 import os
+from typing import Any, AsyncGenerator, Dict, List, Optional, Text, overload
 
 import aiohttp
 import questionary
 from aiohttp import ClientTimeout
 from prompt_toolkit.styles import Style
-from typing import Any, Generator
-from typing import Text, Optional, Dict, List
 
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
@@ -88,10 +87,20 @@ def _print_bot_output(
     if "custom" in message:
         rasa.shared.utils.cli.print_color("Custom json:", color=color)
         rasa.shared.utils.cli.print_color(
-            json.dumps(message["custom"], indent=2), color=color
+            rasa.shared.utils.io.json_to_string(message["custom"]), color=color
         )
 
     return None
+
+
+@overload
+def _get_user_input(previous_response: None) -> Text:
+    ...
+
+
+@overload
+def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
+    ...
 
 
 def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
@@ -103,7 +112,7 @@ def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Tex
         response = cli_utils.payload_from_button_question(button_response)
         if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
-            response = _get_user_input({})
+            response = _get_user_input(None)
     else:
         response = questionary.text(
             "",
@@ -130,7 +139,7 @@ async def _send_message_receive_stream(
     sender_id: Text,
     message: Text,
     request_timeout: Optional[int] = None,
-) -> Generator[Dict[Text, Any], None, None]:
+) -> AsyncGenerator[Dict[Text, Any], None]:
     payload = {"sender": sender_id, "message": message}
 
     url = f"{server_url}/webhooks/rest/webhook?stream=true&token={auth_token}"
@@ -189,11 +198,11 @@ async def record_messages(
             break
 
         if use_response_stream:
-            bot_responses = _send_message_receive_stream(
+            bot_responses_stream = _send_message_receive_stream(
                 server_url, auth_token, sender_id, text, request_timeout=request_timeout
             )
             previous_response = None
-            async for response in bot_responses:
+            async for response in bot_responses_stream:
                 if previous_response is not None:
                     _print_bot_output(previous_response)
                 previous_response = response

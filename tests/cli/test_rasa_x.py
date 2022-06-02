@@ -1,3 +1,4 @@
+import sys
 import argparse
 from pathlib import Path
 
@@ -6,33 +7,45 @@ from typing import Callable, Dict
 
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
-
-
 from aioresponses import aioresponses
 
 import rasa.shared.utils.io
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
+import rasa.version
 
 
 def test_x_help(run: Callable[..., RunResult]):
     output = run("x", "--help")
 
-    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA [DATA ...]]
+    if sys.version_info.minor >= 9:
+        # This is required because `argparse` behaves differently on
+        # Python 3.9 and above. The difference is the changed formatting of help
+        # output for CLI arguments with `nargs="*"
+        version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN] [--cors [CORS ...]]
+              [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""
+    else:
+        version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
+              [--cors [CORS [CORS ...]]] [--enable-api]
+              [--response-timeout RESPONSE_TIMEOUT]"""
+
+    help_text = (
+        """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA [DATA ...]]
               [-c CONFIG] [-d DOMAIN] [--no-prompt] [--production]
               [--rasa-x-port RASA_X_PORT] [--config-endpoint CONFIG_ENDPOINT]
               [--log-file LOG_FILE] [--use-syslog]
               [--syslog-address SYSLOG_ADDRESS] [--syslog-port SYSLOG_PORT]
               [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
-              [-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
-              [--cors [CORS [CORS ...]]] [--enable-api]
-              [--response-timeout RESPONSE_TIMEOUT]
+              """
+        + version_dependent
+        + """
               [--remote-storage REMOTE_STORAGE]
               [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
               [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]
               [--credentials CREDENTIALS] [--connector CONNECTOR]
               [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]"""
+    )
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -151,22 +164,35 @@ async def test_pull_runtime_config_from_server():
         assert rasa.shared.utils.io.read_file(credentials_path) == credentials
 
 
-def test_rasa_x_raises_warning_above_version_3(
-    monkeypatch: MonkeyPatch, run: Callable[..., RunResult]
-):
+def test_rasa_x_raises_warning_above_version_3(monkeypatch: MonkeyPatch):
     def mock_run_locally(args):
         return None
 
     monkeypatch.setattr(x, "run_locally", mock_run_locally)
-    monkeypatch.setattr(rasa.version, "__version__", "3.0.0")
 
     args = argparse.Namespace(loglevel=None, log_file=None, production=None)
     with pytest.warns(
         UserWarning,
-        match="Your version of rasa '3.0.0' is currently not supported by Rasa X.",
+        match=f"Your version of rasa '{rasa.version.__version__}' is currently "
+        f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
+        f"version higher or equal to 3.0.0 will result in errors.",
     ):
         x.rasa_x(args)
 
     monkeypatch.setattr(target=rasa.version, name="__version__", value="2.8.0")
+    with pytest.warns(None):
+        x.rasa_x(args)
+
+
+def test_rasa_x_does_not_raise_warning_above_version_3_with_production_flag(
+    monkeypatch: MonkeyPatch,
+):
+    def mock_run_in_production(args):
+        return None
+
+    monkeypatch.setattr(x, "run_in_production", mock_run_in_production)
+
+    args = argparse.Namespace(loglevel=None, log_file=None, production=True)
+
     with pytest.warns(None):
         x.rasa_x(args)

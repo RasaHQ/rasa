@@ -14,13 +14,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, ubuntu-18.04, macos-latest, windows-2019, windows-2022]
-        python-version: [3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Try to install Rasa.

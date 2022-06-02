@@ -25,16 +25,15 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                         |
 |`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                            |
 |`rasa evaluate markers` |Extracts markers from an existing tracker store.                                                                                                |
-|`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
 
 ## Log Level
 
 Rasa produces log messages at several different levels (eg. warning, info, error and so on). You can control which level of logs you would like to see with `--verbose` (same as `-v`) or `--debug` (same as `-vv`) as optional command line arguments. See each command below for more explanation on what these arguments mean.
 
-In addition to CLI arguments, several environment variables allow you to control log output in a more granular way. With these environment variables, you can configure log levels for messages created by external libraries such as matplotlib, pika, and kafka. Currently, following environment variables are supported:
+In addition to CLI arguments, several environment variables allow you to control log output in a more granular way. With these environment variables, you can configure log levels for messages created by external libraries such as Matplotlib, Pika, and Kafka. These variables follow [standard logging level in Python](https://docs.python.org/3/library/logging.html#logging-levels). Currently, following environment variables are supported:
 
-1. LOG_LEVEL_LIBRARIES: This is the general environment variable to configure log level for all libraries.
+1. LOG_LEVEL_LIBRARIES: This is the general environment variable to configure log level for the main libraries Rasa Open Source uses. It covers Tensorflow, `asyncio`, APScheduler, SocketIO, Matplotlib, RabbitMQ, Kafka.
 2. LOG_LEVEL_MATPLOTLIB: This is the specialized environment variable to configure log level only for Matplotlib.
 3. LOG_LEVEL_RABBITMQ: This is the specialized environment variable to configure log level only for AMQP libraries, at the moment it handles log levels from `aio_pika` and `aiormq`.
 4. LOG_LEVEL_KAFKA: This is the specialized environment variable to configure log level only for kafka.
@@ -45,15 +44,19 @@ General configuration (`LOG_LEVEL_LIBRARIES`) has less priority than library lev
 LOG_LEVEL_LIBRARIES=ERROR LOG_LEVEL_MATPLOTLIB=WARNING LOG_LEVEL_KAFKA=DEBUG rasa shell --debug
 ```
 
-Above command run will result seeing `DEBUG` level messages by default (due to `--debug`), `WARNING` level for Matplotlib,`DEBUG` level for kafka and `ERROR` level for other libraries not configured.
+The above command run will result in showing:
+- messages with `DEBUG` level and higher by default (due to `--debug`)
+- messages with `WARNING` level and higher for Matplotlib
+- messages with `DEBUG` level and higher for kafka
+- messages with `ERROR` level and higher for other libraries not configured
 
-Note that CLI config sets the lowest level log messages to be handled, hence following command will set log level to INFO (due to `--verbose`) and no debug messages will be seen (library level configuration will not have an effect):
+Note that CLI config sets the lowest level log messages to be handled, hence the following command will set the log level to `INFO` (due to `--verbose`) and no debug messages will be seen (library level configuration will not have any effect):
 
 ```bash
 LOG_LEVEL_LIBRARIES=DEBUG LOG_LEVEL_MATPLOTLIB=DEBUG rasa shell --verbose
 ```
 
-As an aside, CLI log level sets the level at the root logger (which has the important handler - coloredlogs handler); this means even if an environment variable sets a library logger to a lower level, root logger will reject messages from that library. By default CLI log level is set to `INFO` if not given.
+As an aside, CLI log level sets the level at the root logger (which has the important handler - `coloredlogs` handler); this means even if an environment variable sets a library logger to a lower level, the root logger will reject messages from that library. If not specified, the CLI log level is set to `INFO`.
 
 ## rasa init
 
@@ -114,6 +117,12 @@ The following arguments can be used to configure the training process:
 ```text [rasa train --help]
 ```
 
+See the section on [data augmentation](./policies.mdx#data-augmentation) for info on how data augmentation works
+and how to choose a value for the flag. Note that `TEDPolicy` is the only policy affected by data augmentation.
+
+See the following section on [incremental training](#incremental-training) for more information about the `--epoch-fraction` argument.
+
+
 ### Incremental training
 
 :::info New in 2.2
@@ -160,11 +169,7 @@ from scratch.
 
 ## rasa interactive
 
-You can [use Rasa X in local mode](https://rasa.com/docs/rasa-x) to do interactive learning in a UI,
-check out the [docs](https://rasa.com/docs/rasa-x/user-guide/test-assistant#talk-to-your-bot)
-for more details.
-
-If you'd rather use the command line, you can start an interactive learning session by running:
+You can start an interactive learning session by running:
 
 ```bash
 rasa interactive
@@ -205,11 +210,7 @@ The following arguments can be used to configure the interactive learning sessio
 
 ## rasa shell
 
-You can [use Rasa X in local mode](https://rasa.com/docs/rasa-x) to talk to your assistant in a UI.
-Check out the [Rasa X docs](https://rasa.com/docs/rasa-x/user-guide/test-assistant#talk-to-your-bot)
-for more details.
-
-If you'd rather use the command line, you can start a chat session by running:
+You can start a chat session by running:
 
 ```bash
 rasa shell
@@ -237,10 +238,17 @@ as the first message. Otherwise, the session start behavior will begin as descri
 [Session configuration](./domain.mdx#session-configuration).
 :::
 
-The following arguments can be used to configure the command:
+The following arguments can be used to configure the command.
+Most arguments overlap with `rasa run`; see the [following section](#rasa-run) for more info on those arguments.
+
+Note that the `--connector` argument will always be set to `cmdline` when running `rasa shell`.
+This means all credentials in your credentials file will be ignored,
+and if you provide your own value for the `--connector` argument it will also be ignored.
+
 
 ```text [rasa shell --help]
 ```
+
 
 ## rasa run
 
@@ -266,6 +274,17 @@ network interface using the `-i` command line option.
 ```bash
 rasa run -i 192.168.69.150
 ```
+
+Rasa will by default connect to all channels specified in your credentials file.
+To connect to a single channel and ignore all other channels in your credentials file,
+specify the name of the channel in the `--connector` argument.
+
+```bash
+rasa run --connector rest
+```
+
+The name of the channel should match the name you specify in your credentials file.
+For supported channels see [the page about messaging and voice channels](./messaging-and-voice-channels.mdx).
 
 The following arguments can be used to configure your Rasa server:
 
@@ -316,8 +335,9 @@ This will test your latest trained model on any end-to-end stories you have
 defined in files with the `test_` prefix.
 If you want to use a different model, you can specify it using the `--model` flag.
 
-If you want to evaluate the dialogue and NLU
-models separately, you can use the commands below:
+To evaluate the dialogue and NLU
+models separately, use the commands below:
+
 ```bash
 rasa test core
 ```
@@ -327,9 +347,9 @@ and
 rasa test nlu
 ```
 
-You can find more details in
+You can find more details on specific arguments for each testing type in
 [Evaluating an NLU Model](./testing-your-assistant.mdx#evaluating-an-nlu-model) and
-[Evaluating a Core Model](./testing-your-assistant.mdx#evaluating-a-dialogue-model).
+[Evaluating a Dialogue Management Model](./testing-your-assistant.mdx#evaluating-a-dialogue-model).
 
 The following arguments are available for `rasa test`:
 
@@ -483,9 +503,9 @@ should be published:
 ```text [rasa export --help]
 ```
 
-:::tip Import conversations into Rasa X
-This command is most commonly used to import old conversations into Rasa X to annotate
-them. Read more about [importing conversations into Rasa X](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#1-import-existing-conversations-from-rasa-open-source).
+:::tip Import conversations into Rasa Enterprise
+This command is most commonly used to import old conversations into Rasa Enterprise to annotate
+them. Read more about [importing conversations into Rasa Enterprise](https://rasa.com/docs/rasa-enterprise/installation-and-setup/deploy#1-import-existing-conversations-from-rasa-open-source).
 :::
 
 ## rasa evaluate markers
@@ -534,22 +554,4 @@ Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
   -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default: None)
-```
-
-## rasa x
-
-Rasa X is a tool for practicing Conversation-Driven Development.
-You can find more information about it <a className="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.You can start Rasa X in local mode by executing
-
-```bash
-rasa x
-```
-
-To be able to start Rasa X you need to have Rasa X local mode [installed](https://rasa.com/docs/rasa-x/installation-and-setup/install/local-mode)
-and you need to be in a Rasa project directory.
-
-
-The following arguments are available for `rasa x`:
-
-```text [rasa x --help]
 ```
