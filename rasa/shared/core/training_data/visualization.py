@@ -1,7 +1,18 @@
 from collections import defaultdict, deque
 
 import random
-from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
+from typing import (
+    Any,
+    Text,
+    List,
+    Deque,
+    Dict,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Union,
+    cast,
+)
 
 import rasa.shared.utils.io
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
@@ -88,7 +99,7 @@ def _fingerprint_node(
 
     # the candidate list contains all node paths that haven't been
     # extended till `max_history` length yet.
-    candidates = deque()
+    candidates: Deque = deque()
     candidates.append([node])
     continuations = []
     while len(candidates) > 0:
@@ -256,7 +267,7 @@ def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) ->
 
 
 def _replace_edge_labels_with_nodes(
-    graph: "networkx.MultiDiGraph", next_id: int, nlu_training_data: "TrainingData",
+    graph: "networkx.MultiDiGraph", next_id: int, nlu_training_data: "TrainingData"
 ) -> None:
     """Replaces edge labels with nodes.
 
@@ -324,20 +335,26 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
 
 def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> int:
     """Calculate number of actions that two conversations have in common."""
-
     num_common_actions = 0
-    t_cleaned = [e for e in this if e.type_name in {"user", "action"}]
-    o_cleaned = [e for e in other if e.type_name in {"user", "action"}]
+    t_cleaned = cast(
+        List[Union[ActionExecuted, UserUttered]],
+        [e for e in this if e.type_name in {"user", "action"}],
+    )
+    o_cleaned = cast(
+        List[Union[ActionExecuted, UserUttered]],
+        [e for e in other if e.type_name in {"user", "action"}],
+    )
 
     for i, e in enumerate(t_cleaned):
+        o = o_cleaned[i]
         if i == len(o_cleaned):
             break
-        elif isinstance(e, UserUttered) and isinstance(o_cleaned[i], UserUttered):
+        elif isinstance(e, UserUttered) and isinstance(o, UserUttered):
             continue
         elif (
             isinstance(e, ActionExecuted)
-            and isinstance(o_cleaned[i], ActionExecuted)
-            and o_cleaned[i].action_name == e.action_name
+            and isinstance(o, ActionExecuted)
+            and o.action_name == e.action_name
         ):
             num_common_actions += 1
         else:
@@ -438,7 +455,7 @@ def visualize_neighborhood(
                 break
             if isinstance(el, UserUttered):
                 message = el.parse_data
-                message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"
+                message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"  # type: ignore[misc]  # noqa: E501
             elif (
                 isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
@@ -462,16 +479,20 @@ def visualize_neighborhood(
         # this can either be an ellipsis "...", the conversation end node
         # "END" or a "TMP" node if this is the active conversation
         if is_current:
+            event_idx = events[idx]
             if (
-                isinstance(events[idx], ActionExecuted)
-                and events[idx].action_name == ACTION_LISTEN_NAME
+                isinstance(event_idx, ActionExecuted)
+                and event_idx.action_name == ACTION_LISTEN_NAME
             ):
                 next_node_idx += 1
+                if message is None:
+                    label = "  ?  "
+                else:
+                    intent = cast(dict, message).get("intent", {})
+                    label = intent.get("name", "  ?  ")
                 graph.add_node(
                     next_node_idx,
-                    label="  ?  "
-                    if not message
-                    else message.get("intent", {}).get("name", "  ?  "),
+                    label=label,
                     shape="rect",
                     **{"class": "intent dashed active"},
                 )

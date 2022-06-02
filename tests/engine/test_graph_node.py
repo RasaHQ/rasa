@@ -8,12 +8,7 @@ import rasa.shared
 import rasa.shared.utils
 import rasa.shared.utils.io
 from rasa.engine.exceptions import GraphComponentException
-from rasa.engine.graph import (
-    ExecutionContext,
-    GraphComponent,
-    GraphNode,
-    GraphSchema,
-)
+from rasa.engine.graph import ExecutionContext, GraphComponent, GraphNode, GraphSchema
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 from tests.engine.graph_components_test_classes import (

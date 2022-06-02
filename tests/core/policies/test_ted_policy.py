@@ -55,7 +55,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow import model_data_utils
 from tests.core.test_policies import PolicyTestCollection
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, LATEST_TRAINING_DATA_FORMAT_VERSION
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -65,20 +65,6 @@ intents:
 actions:
 - {UTTER_GREET_ACTION}
 """
-
-
-def get_checkpoint_dir_path(train_path: Path, ted_pos: Optional[int] = 0) -> Path:
-    """
-    Produce the path of the checkpoint directory for TED.
-
-    This is very tightly coupled to the persist methods of PolicyEnsemble, Agent, and
-    TEDPolicy.
-    Args:
-        train_path: the path passed to model_training.train_core for training output.
-        ted_pos: the position of TED in the policies listed in the config.
-    """
-    policy_path = train_path / f"train_TEDPolicy{ted_pos}"
-    return policy_path / "checkpoints"
 
 
 def test_diagnostics(
@@ -104,7 +90,7 @@ def test_diagnostics(
     precomputations = None
     policy.train([GREET_RULE], domain, precomputations)
     prediction = policy.predict_action_probabilities(
-        GREET_RULE, domain, precomputations,
+        GREET_RULE, domain, precomputations
     )
 
     assert prediction.diagnostic_data
@@ -129,12 +115,10 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
         storage_dir = tmp_path_factory.mktemp("storage dir")
-        storage, _ = LocalModelStorage.from_model_archive(
-            storage_dir, tmp_path / "my_model.tar.gz"
-        )
-
-        checkpoint_dir = get_checkpoint_dir_path(storage_dir)
-        assert checkpoint_dir.is_dir()
+        LocalModelStorage.from_model_archive(storage_dir, tmp_path / "my_model.tar.gz")
+        model_dir = storage_dir / "train_TEDPolicy0"
+        all_files = list(model_dir.rglob("*.*"))
+        assert any(["from_checkpoint" in str(filename) for filename in all_files])
 
     def test_doesnt_checkpoint_with_no_checkpointing(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
@@ -148,18 +132,14 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
         storage_dir = tmp_path_factory.mktemp("storage dir")
-        storage, _ = LocalModelStorage.from_model_archive(
-            storage_dir, tmp_path / "my_model.tar.gz"
-        )
-
-        checkpoint_dir = get_checkpoint_dir_path(storage_dir)
-        assert not checkpoint_dir.is_dir()
+        LocalModelStorage.from_model_archive(storage_dir, tmp_path / "my_model.tar.gz")
+        model_dir = storage_dir / "train_TEDPolicy0"
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
     def test_doesnt_checkpoint_with_zero_eval_num_examples(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):
-        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
-        assert not checkpoint_dir.is_dir()
         config_file = "config_ted_policy_model_checkpointing_zero_eval_num_examples.yml"
         with pytest.warns(UserWarning) as warning:
             train_core(
@@ -178,12 +158,10 @@ class TestTEDPolicy(PolicyTestCollection):
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
         storage_dir = tmp_path_factory.mktemp("storage dir")
-        storage, _ = LocalModelStorage.from_model_archive(
-            storage_dir, tmp_path / "my_model.tar.gz"
-        )
-
-        checkpoint_dir = get_checkpoint_dir_path(storage_dir)
-        assert not checkpoint_dir.is_dir()
+        LocalModelStorage.from_model_archive(storage_dir, tmp_path / "my_model.tar.gz")
+        model_dir = storage_dir / "train_TEDPolicy0"
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
     @pytest.mark.parametrize(
         "should_finetune, epoch_override, expected_epoch_value",
@@ -226,9 +204,7 @@ class TestTEDPolicy(PolicyTestCollection):
             "Only values either equal to -1 or greater"
             " than 0 are allowed for this parameter."
         )
-        with pytest.raises(
-            InvalidConfigException, match=match_string,
-        ):
+        with pytest.raises(InvalidConfigException, match=match_string):
             train_core(
                 domain="data/test_domains/default.yml",
                 stories="data/test_yaml_stories/stories_defaultdomain.yml",
@@ -250,8 +226,8 @@ class TestTEDPolicy(PolicyTestCollection):
     ):
         stories = tmp_path / "stories.yml"
         stories.write_text(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             stories:
             - story: test path
               steps:
@@ -289,7 +265,7 @@ class TestTEDPolicy(PolicyTestCollection):
     ):
         precomputations = None
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker, default_domain, precomputations
         )
 
         # first check the output is what we expect
@@ -331,7 +307,7 @@ class TestTEDPolicy(PolicyTestCollection):
         assert assembled_label_data.num_examples == default_domain.num_actions
         assert list(
             assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"].keys()
-        ) == [MASK, SENTENCE,]
+        ) == [MASK, SENTENCE]
         assert list(assembled_label_data_signature[LABEL].keys()) == [IDS]
         assert (
             assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"][SENTENCE][0].units
@@ -346,7 +322,7 @@ class TestTEDPolicy(PolicyTestCollection):
         )
         precomputations = None
         training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
-            training_trackers, default_domain, precomputations,
+            training_trackers, default_domain, precomputations
         )
 
         _, all_labels = trained_policy._create_label_data(
@@ -499,14 +475,14 @@ class TestTEDPolicy(PolicyTestCollection):
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                     ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("utter_greet"),
                 ],
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                     ActionExecuted("utter_greet"),
                 ],
             ),
@@ -548,10 +524,10 @@ class TestTEDPolicy(PolicyTestCollection):
             "test 2", evts=tracker_events_without_action
         )
         prediction_with_action = trained_policy.predict_action_probabilities(
-            tracker_with_action, default_domain, precomputations,
+            tracker_with_action, default_domain, precomputations
         )
         prediction_without_action = trained_policy.predict_action_probabilities(
-            tracker_without_action, default_domain, precomputations,
+            tracker_without_action, default_domain, precomputations
         )
 
         # If the weights didn't change then both trackers
@@ -625,7 +601,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         default_domain: Domain,
     ):
         policy_prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations=None,
+            tracker, default_domain, precomputations=None
         )
         assert sum(policy_prediction.probabilities) != pytest.approx(1)
 
@@ -634,7 +610,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations=None,
+            tracker, default_domain, precomputations=None
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
@@ -678,7 +654,7 @@ class TestTEDPolicyNormalization(TestTEDPolicy):
     ):
         precomputations = None
         predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker, default_domain, precomputations
         ).probabilities
         assert all([confidence >= 0 for confidence in predicted_probabilities])
         assert sum([confidence > 0 for confidence in predicted_probabilities]) == 4
@@ -690,11 +666,7 @@ class TestTEDPolicyLowRankingLength(TestTEDPolicy):
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            RANKING_LENGTH: 3,
-            **config_override,
-        }
+        return {**TEDPolicy.get_default_config(), RANKING_LENGTH: 3, **config_override}
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 3
@@ -705,11 +677,7 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicy):
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            RANKING_LENGTH: 11,
-            **config_override,
-        }
+        return {**TEDPolicy.get_default_config(), RANKING_LENGTH: 11, **config_override}
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 11
@@ -720,10 +688,7 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            **config_override,
-        }
+        return {**TEDPolicy.get_default_config(), **config_override}
 
     def create_policy(
         self,

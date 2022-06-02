@@ -1,0 +1,173 @@
+# The config recipe.
+# https://rasa.com/docs/rasa/model-configuration/
+recipe: graph.v1
+
+language: en
+
+core_target: custom_core_target
+
+nlu_target: custom_nlu_target
+
+train_schema:
+  nodes:
+    # We skip schema_validator node (we only have this for DefaultV1Recipe
+    # since we don't do validation for the GraphV1Recipe)
+    finetuning_validator:
+      needs:
+        importer: __importer__
+      uses: rasa.graph_components.validators.finetuning_validator.FinetuningValidator
+      constructor_name: create
+      fn: validate
+      config:
+        validate_core: true
+        validate_nlu: true
+      eager: false
+      is_target: false
+      is_input: true
+      resource: null
+    nlu_training_data_provider:
+      needs:
+        importer: finetuning_validator
+      uses: rasa.graph_components.providers.nlu_training_data_provider.NLUTrainingDataProvider
+      constructor_name: create
+      fn: provide
+      config:
+        language: en
+        persist: false
+      eager: false
+      is_target: false
+      is_input: true
+      resource: null
+    domain_provider:
+      needs:
+        importer: finetuning_validator
+      uses: rasa.graph_components.providers.domain_provider.DomainProvider
+      constructor_name: create
+      fn: provide_train
+      config: { }
+      eager: false
+      is_target: true
+      is_input: true
+      resource: null
+    domain_for_core_training_provider:
+      needs:
+        domain: domain_provider
+      uses: rasa.graph_components.providers.domain_for_core_training_provider.DomainForCoreTrainingProvider
+      constructor_name: create
+      fn: provide
+      config: { }
+      eager: false
+      is_target: false
+      is_input: true
+      resource: null
+    story_graph_provider:
+      needs:
+        importer: finetuning_validator
+      uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
+      constructor_name: create
+      fn: provide
+      config:
+        exclusion_percentage: null
+      eager: false
+      is_target: false
+      is_input: true
+      resource: null
+    training_tracker_provider:
+      needs:
+        story_graph: story_graph_provider
+        domain: domain_for_core_training_provider
+      uses: rasa.graph_components.providers.training_tracker_provider.TrainingTrackerProvider
+      constructor_name: create
+      fn: provide
+      config: { }
+      eager: false
+      is_target: false
+      is_input: false
+      resource: null
+    train_MemoizationPolicy0:
+      needs:
+        training_trackers: training_tracker_provider
+        domain: domain_for_core_training_provider
+      uses: rasa.core.policies.memoization.MemoizationPolicy
+      constructor_name: create
+      fn: train
+      config: { }
+      eager: false
+      is_target: true
+      is_input: false
+      resource: null
+
+predict_schema:
+  nodes:
+    nlu_message_converter:
+      needs:
+        messages: __message__
+      uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
+      constructor_name: load
+      fn: convert_user_message
+      config: {}
+      eager: true
+      is_target: false
+      is_input: false
+      resource: null
+    custom_nlu_target:
+      needs:
+        messages: nlu_message_converter
+        domain: domain_provider
+      uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
+      constructor_name: load
+      fn: process
+      config: {}
+      eager: true
+      is_target: false
+      is_input: false
+      resource: null
+    domain_provider:
+      needs: {}
+      uses: rasa.graph_components.providers.domain_provider.DomainProvider
+      constructor_name: load
+      fn: provide_inference
+      config: {}
+      eager: true
+      is_target: false
+      is_input: false
+      resource:
+        name: domain_provider
+    run_MemoizationPolicy0:
+      needs:
+        domain: domain_provider
+        tracker: __tracker__
+        rule_only_data: rule_only_data_provider
+      uses: rasa.core.policies.memoization.MemoizationPolicy
+      constructor_name: load
+      fn: predict_action_probabilities
+      config: {}
+      eager: true
+      is_target: false
+      is_input: false
+      resource:
+        name: train_MemoizationPolicy0
+    rule_only_data_provider:
+      needs: {}
+      uses: rasa.graph_components.providers.rule_only_provider.RuleOnlyDataProvider
+      constructor_name: load
+      fn: provide
+      config: {}
+      eager: true
+      is_target: false
+      is_input: false
+      resource:
+        name: train_RulePolicy1
+    custom_core_target:
+      needs:
+        policy0: run_MemoizationPolicy0
+        domain: domain_provider
+        tracker: __tracker__
+      uses: rasa.core.policies.ensemble.DefaultPolicyPredictionEnsemble
+      constructor_name: load
+      fn: combine_predictions_from_kwargs
+      config: {}
+      eager: true
+      is_target: false
+      is_input: false
+      resource: null

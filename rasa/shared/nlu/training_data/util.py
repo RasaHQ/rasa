@@ -80,9 +80,7 @@ def get_file_format_extension(resource_name: Text) -> Text:
     if not file_formats:
         return rasa.shared.data.yaml_file_extension()
 
-    known_file_formats = {
-        loading.RASA_YAML: rasa.shared.data.yaml_file_extension(),
-    }
+    known_file_formats = {loading.RASA_YAML: rasa.shared.data.yaml_file_extension()}
     fformat = file_formats[0]
     if all(f == fformat for f in file_formats):
         return known_file_formats.get(fformat, rasa.shared.data.yaml_file_extension())

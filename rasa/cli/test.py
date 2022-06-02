@@ -1,8 +1,8 @@
 import argparse
+import asyncio
 import logging
 import os
 from typing import List, Optional, Text, Dict, Union, Any
-import asyncio
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
@@ -182,9 +182,11 @@ async def run_nlu_test_async(
         test_nlu,
     )
 
-    data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
+    data_path = str(
+        rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
+    )
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path], domain_path=domain_path,
+        training_data_paths=[data_path], domain_path=domain_path
     )
     nlu_data = test_data_importer.get_nlu_data()
 
@@ -206,7 +208,7 @@ async def run_nlu_test_async(
         for file in config:
             try:
                 validation_utils.validate_yaml_schema(
-                    rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE,
+                    rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE
                 )
                 config_files.append(file)
             except YamlException:
@@ -223,8 +225,10 @@ async def run_nlu_test_async(
         )
     elif cross_validation:
         logger.info("Test model using cross validation.")
-        config = rasa.cli.utils.get_validated_path(
-            config, "config", DEFAULT_CONFIG_PATH
+        # FIXME: supporting Union[Path, Text] down the chain
+        # is the proper fix and needs more work
+        config = str(
+            rasa.cli.utils.get_validated_path(config, "config", DEFAULT_CONFIG_PATH)
         )
         config_importer = TrainingDataImporter.load_from_dict(config_path=config)
 
@@ -235,7 +239,7 @@ async def run_nlu_test_async(
             models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        await test_nlu(model_path, data_path, output, all_args)
+        await test_nlu(model_path, data_path, output, all_args, domain_path=domain_path)
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
@@ -244,7 +248,6 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     Args:
         args: the parsed CLI arguments for 'rasa test nlu'.
     """
-
     asyncio.run(
         run_nlu_test_async(
             args.config,

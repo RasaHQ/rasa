@@ -176,11 +176,19 @@ def _run_markers(
         return path.parent / (path.name + suffix) if path else None
 
     try:
-        markers.evaluate_trackers(
-            trackers=tracker_loader.load(),
-            output_file=output_filename,
-            session_stats_file=_append_suffix(stats_file_prefix, STATS_SESSION_SUFFIX),
-            overall_stats_file=_append_suffix(stats_file_prefix, STATS_OVERALL_SUFFIX),
+        import asyncio
+
+        asyncio.run(
+            markers.evaluate_trackers(
+                trackers=tracker_loader.load(),
+                output_file=output_filename,
+                session_stats_file=_append_suffix(
+                    stats_file_prefix, STATS_SESSION_SUFFIX
+                ),
+                overall_stats_file=_append_suffix(
+                    stats_file_prefix, STATS_OVERALL_SUFFIX
+                ),
+            )
         )
     except (FileExistsError, NotADirectoryError) as e:
         rasa.shared.utils.cli.print_error_and_exit(message=str(e))
@@ -211,4 +219,4 @@ def _create_tracker_loader(
     """
     endpoints = AvailableEndpoints.read_endpoints(endpoint_config)
     tracker_store = TrackerStore.create(endpoints.tracker_store, domain=domain)
-    return MarkerTrackerLoader(tracker_store, strategy, count, seed,)
+    return MarkerTrackerLoader(tracker_store, strategy, count, seed)

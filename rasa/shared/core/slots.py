@@ -1,5 +1,5 @@
 import logging
-
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Text, Type
 
 import rasa.shared.core.constants
@@ -19,10 +19,14 @@ class InvalidSlotConfigError(RasaException, ValueError):
     """Raised if a slot's config is invalid."""
 
 
-class Slot:
+class Slot(ABC):
     """Key-value store for storing information during a conversation."""
 
-    type_name = None
+    @property
+    @abstractmethod
+    def type_name(self) -> Text:
+        """Name of the type of slot."""
+        ...
 
     def __init__(
         self,
@@ -84,6 +88,7 @@ class Slot:
 
         return self._as_feature()
 
+    @abstractmethod
     def _as_feature(self) -> List[float]:
         raise NotImplementedError(
             "Each slot type needs to specify how its "
@@ -182,7 +187,7 @@ class FloatSlot(Slot):
             UserWarning, if initial_value is outside the min-max range.
         """
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, influence_conversation,
+            name, mappings, initial_value, value_reset_delay, influence_conversation
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -244,8 +249,7 @@ class BooleanSlot(Slot):
 
 
 def bool_from_any(x: Any) -> bool:
-    """ Converts bool/float/int/str to bool or raises error """
-
+    """Converts bool/float/int/str to bool or raises error."""
     if isinstance(x, bool):
         return x
     elif isinstance(x, (float, int)):
@@ -283,7 +287,8 @@ class ListSlot(Slot):
             # we couldn't convert the value to a list - using default value
             return [0.0]
 
-    @Slot.value.setter
+    # FIXME: https://github.com/python/mypy/issues/8085
+    @Slot.value.setter  # type: ignore[attr-defined,misc]
     def value(self, value: Any) -> None:
         """Sets the slot's value."""
         if value and not isinstance(value, list):
@@ -291,7 +296,8 @@ class ListSlot(Slot):
             value = [value]
 
         # Call property setter of superclass
-        super(ListSlot, self.__class__).value.fset(self, value)
+        # FIXME: https://github.com/python/mypy/issues/8085
+        super(ListSlot, self.__class__).value.fset(self, value)  # type: ignore[attr-defined] # noqa: E501
 
 
 class CategoricalSlot(Slot):
@@ -310,7 +316,7 @@ class CategoricalSlot(Slot):
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, influence_conversation,
+            name, mappings, initial_value, value_reset_delay, influence_conversation
         )
         if values and None in values:
             rasa.shared.utils.io.raise_warning(
@@ -422,7 +428,7 @@ class AnySlot(Slot):
             )
 
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, influence_conversation,
+            name, mappings, initial_value, value_reset_delay, influence_conversation
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -435,4 +441,13 @@ class AnySlot(Slot):
             and self.initial_value == other.initial_value
             and self._value_reset_delay == other._value_reset_delay
             and self.value == other.value
+        )
+
+    def _as_feature(self) -> List[float]:
+        raise InvalidSlotConfigError(
+            f"An {AnySlot.__name__} cannot be featurized. "
+            f"Please use a different slot type for slot '{self.name}' instead. If you "
+            f"need to featurize a data type which is not supported out of the box, "
+            f"implement a custom slot type by subclassing '{Slot.__name__}'. "
+            f"See the documentation for more information: {DOCS_URL_SLOTS}"
         )

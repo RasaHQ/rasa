@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from typing import Iterable, List, Dict, Text, Any, Set, Type
+from typing import Iterable, List, Dict, Text, Any, Set, Type, cast
 
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
@@ -45,17 +45,9 @@ import rasa.shared.utils.io
 
 
 # TODO: Can we replace this with the registered types from the regitry?
-TRAINABLE_EXTRACTORS = [
-    MitieEntityExtractor,
-    CRFEntityExtractor,
-    DIETClassifier,
-]
+TRAINABLE_EXTRACTORS = [MitieEntityExtractor, CRFEntityExtractor, DIETClassifier]
 # TODO: replace these once the Recipe is merged (used in tests)
-POLICY_CLASSSES = {
-    TEDPolicy,
-    MemoizationPolicy,
-    RulePolicy,
-}
+POLICY_CLASSSES = {TEDPolicy, MemoizationPolicy, RulePolicy}
 
 
 def _types_to_str(types: Iterable[Type]) -> Text:
@@ -181,7 +173,7 @@ class DefaultV1RecipeValidator(GraphComponent):
                 )
 
         if training_data.regex_features and self._component_types.isdisjoint(
-            [RegexFeaturizer, RegexEntityExtractor],
+            [RegexFeaturizer, RegexEntityExtractor]
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data with regexes, but "
@@ -195,7 +187,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
         if training_data.lookup_tables and self._component_types.isdisjoint(
-            [RegexFeaturizer, RegexEntityExtractor],
+            [RegexFeaturizer, RegexEntityExtractor]
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data consisting of lookup tables, but "
@@ -355,7 +347,7 @@ class DefaultV1RecipeValidator(GraphComponent):
                 docs=f"{DOCS_URL_COMPONENTS}#regexentityextractor",
             )
 
-    def _raise_if_featurizers_are_not_compatible(self,) -> None:
+    def _raise_if_featurizers_are_not_compatible(self) -> None:
         """Raises or warns if there are problems regarding the featurizers.
 
         Raises:
@@ -409,7 +401,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
     def _raise_if_domain_contains_form_names_but_no_rule_policy_given(
-        self, domain: Domain,
+        self, domain: Domain
     ) -> None:
         """Validates that there exists a rule policy if forms are defined.
 
@@ -431,7 +423,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
     def _raise_if_a_rule_policy_is_incompatible_with_domain(
-        self, domain: Domain,
+        self, domain: Domain
     ) -> None:
         """Validates the rule policies against the domain.
 
@@ -485,7 +477,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             story_graph: a story graph (core training data)
         """
         consuming_rule_data = any(
-            policy_node.uses.supported_data()
+            cast(Policy, policy_node.uses).supported_data()
             in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
             for policy_node in self._policy_schema_nodes
         )

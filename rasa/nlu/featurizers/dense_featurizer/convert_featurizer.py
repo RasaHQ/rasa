@@ -1,12 +1,12 @@
 from __future__ import annotations
 import logging
 import os
-from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
+import tensorflow as tf
 from tensorflow.python.eager.wrap_function import WrappedFunction
 from tqdm import tqdm
 import numpy as np
-import tensorflow as tf
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -23,10 +23,7 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
 )
-from rasa.shared.nlu.constants import (
-    TEXT,
-    ACTION_TEXT,
-)
+from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
 from rasa.exceptions import RasaException
 import rasa.nlu.utils
 import rasa.utils.train_utils as train_utils
@@ -224,7 +221,7 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
             cls._validate_model_files_exist(model_url)
 
     @staticmethod
-    def _get_signature(signature: Text, module: Any) -> NoReturn:
+    def _get_signature(signature: Text, module: Any) -> WrappedFunction:
         """Retrieve a signature from a (hopefully loaded) TF model."""
         if not module:
             raise Exception(
@@ -337,7 +334,7 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
             "sequence_encoding"
         ].numpy()
 
-    def process_training_data(self, training_data: TrainingData,) -> TrainingData:
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
         """Featurize all message attributes in the training data with the ConveRT model.
 
         Args:
@@ -448,5 +445,5 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
     @staticmethod
     def _clean_tokens(tokens: List[bytes]) -> List[Text]:
         """Encode tokens and remove special char added by ConveRT."""
-        tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
-        return [string for string in tokens if string]
+        decoded_tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
+        return [string for string in decoded_tokens if string]

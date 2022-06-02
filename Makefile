@@ -98,6 +98,11 @@ endif
 	# Diff of uncommitted changes for running locally
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
 
+lint-changelog:
+	# Lint changelog filenames to avoid merging of incorrectly named changelog fragment files
+	# For more info about proper changelog file naming, see https://github.com/RasaHQ/rasa/blob/main/changelog/README.md
+	poetry run flake8 --exclude=*.feature.md,*.improvement.md,*.bugfix.md,*.doc.md,*.removal.md,*.misc.md,README.md,_template.md.jinja2  changelog/* -q
+
 lint-security:
 	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
 
@@ -202,6 +207,9 @@ test-other-unit-tests: test-marker
 test-performance: PYTEST_MARKER=category_performance
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker
+
+test-gh-actions:
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest .github/tests --cov .github/scripts
 
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload

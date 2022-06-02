@@ -2,12 +2,12 @@ from pathlib import Path
 
 from subprocess import check_call
 
-from _pytest.tmpdir import TempdirFactory
 from typing import Callable, Text
 import pytest
 import shutil
 import os
-from _pytest.pytester import Testdir, RunResult
+
+from pytest import TempdirFactory, Testdir, RunResult
 
 from rasa.cli import scaffold
 from rasa.shared.utils.io import write_yaml

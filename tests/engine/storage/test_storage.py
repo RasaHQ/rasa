@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from rasa.exceptions import UnsupportedModelVersionError
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelMetadata
@@ -40,7 +40,7 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
                 fn="run",
                 constructor_name="load",
                 config={"some_config": 123455, "some more config": [{"nested": "hi"}]},
-            ),
+            )
         }
     )
 

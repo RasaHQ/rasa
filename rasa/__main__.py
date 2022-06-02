@@ -77,18 +77,9 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 def print_version() -> None:
     """Prints version information of rasa tooling and python."""
-
-    try:
-        from rasax.community.version import __version__
-
-        rasa_x_info = __version__
-    except ModuleNotFoundError:
-        rasa_x_info = None
-
     print(f"Rasa Version      :         {version.__version__}")
     print(f"Minimum Compatible Version: {MINIMUM_COMPATIBLE_VERSION}")
     print(f"Rasa SDK Version  :         {rasa_sdk_version}")
-    print(f"Rasa X Version    :         {rasa_x_info}")
     print(f"Python Version    :         {platform.python_version()}")
     print(f"Operating System  :         {platform.platform()}")
     print(f"Python Path       :         {sys.executable}")
@@ -100,9 +91,7 @@ def main() -> None:
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
 
-    log_level = (
-        cmdline_arguments.loglevel if hasattr(cmdline_arguments, "loglevel") else None
-    )
+    log_level = getattr(cmdline_arguments, "loglevel", None)
     configure_logging_and_warnings(
         log_level, warn_only_once=True, filter_repeated_logs=True
     )

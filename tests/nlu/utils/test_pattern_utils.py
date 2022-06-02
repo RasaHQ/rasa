@@ -191,7 +191,7 @@ def test_extract_patterns_use_only_lookup_tables_or_regex_features(
             {"name": "zipcode", "pattern": "*[0-9]{5}"},
             True,
             True,
-        ),
+        )
     ],
 )
 def test_regex_validation(

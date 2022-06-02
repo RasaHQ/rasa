@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Fetch git tags 🎨
         # see https://github.com/actions/checkout/issues/206#issuecomment-617937725
@@ -82,7 +82,7 @@ jobs:
 
       - name: Create new branch 🐣
         if: always()
-        uses: peterjgrainger/action-create-branch@40d33f921267ca130cbacc770f41fc7c501a420f
+        uses: peterjgrainger/action-create-branch@c2800a3a9edbba2218da6861fa46496cf8f3195a
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -90,7 +90,7 @@ jobs:
 
       - name: Open pull request ☄️
         if: always()
-        uses: repo-sync/pull-request@5ba2c80b97c87b9174c1548141b7acd80f6376e1
+        uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde
         with:
           # using this token to make sure it triggers other actions
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}

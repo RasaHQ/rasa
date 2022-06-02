@@ -744,7 +744,7 @@ def test_read_story_file_with_cycles(domain: Domain):
 def test_generate_training_data_with_cycles(domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
     training_trackers = training.load_data(
-        "data/test_yaml_stories/stories_with_cycle.yml", domain, augmentation_factor=0,
+        "data/test_yaml_stories/stories_with_cycle.yml", domain, augmentation_factor=0
     )
 
     _, label_ids, _ = featurizer.featurize_trackers(
@@ -977,6 +977,7 @@ def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
         responses={},
         action_names=[],
         forms={},
+        data={},
     )
 
     # extract information
@@ -1068,6 +1069,7 @@ def test_process_warns_if_intent_or_entities_not_in_domain(
         responses={},
         action_names=[],
         forms={},
+        data={},
     )
 
     # expect a warning
@@ -1088,7 +1090,7 @@ async def test_unpack_regex_message_has_correct_entity_start_and_end():
     slot_1 = {entity: "Core"}
     text = f"/greet{json.dumps(slot_1)}"
 
-    message = Message(data={TEXT: text},)
+    message = Message(data={TEXT: text})
 
     domain = Domain(
         intents=["greet"],
@@ -1097,6 +1099,7 @@ async def test_unpack_regex_message_has_correct_entity_start_and_end():
         responses={},
         action_names=[],
         forms={},
+        data={},
     )
 
     message = YAMLStoryReader.unpack_regex_message(
