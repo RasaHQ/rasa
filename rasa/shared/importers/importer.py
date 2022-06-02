@@ -1,54 +1,63 @@
+from abc import ABC, abstractmethod
 from functools import reduce
-from typing import Text, Optional, List, Dict, Set, Any, Tuple
+from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, Union, cast
 import logging
 
 import rasa.shared.constants
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    Domain,
+    KEY_E2E_ACTIONS,
+    KEY_INTENTS,
+    KEY_RESPONSES,
+    KEY_ACTIONS,
+)
 from rasa.shared.core.events import ActionExecuted, UserUttered
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
-from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
 logger = logging.getLogger(__name__)
 
 
-class TrainingDataImporter:
+class TrainingDataImporter(ABC):
     """Common interface for different mechanisms to load training data."""
 
+    @abstractmethod
+    def __init__(
+        self,
+        config_file: Optional[Text] = None,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[Union[List[Text], Text]] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialise the importer."""
+        ...
+
+    @abstractmethod
     def get_domain(self) -> Domain:
         """Retrieves the domain of the bot.
 
         Returns:
             Loaded `Domain`.
         """
-        raise NotImplementedError()
+        ...
 
-    def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    @abstractmethod
+    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
         Args:
-            template_variables: Values of templates that should be replaced while
-                                reading the story files.
-            use_e2e: Specifies whether to parse end to end learning annotations.
             exclusion_percentage: Amount of training data that should be excluded.
 
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        # TODO: Drop `use_e2e` in Rasa Open Source 3.0.0 when removing Markdown support
-        raise NotImplementedError()
+        ...
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves end-to-end conversation stories for testing.
@@ -56,16 +65,23 @@ class TrainingDataImporter:
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        return self.get_stories(use_e2e=True)
+        return self.get_stories()
 
+    @abstractmethod
     def get_config(self) -> Dict:
         """Retrieves the configuration that should be used for the training.
 
         Returns:
             The configuration as dictionary.
         """
-        raise NotImplementedError()
+        ...
 
+    @abstractmethod
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        """Returns config file path for auto-config only if there is a single one."""
+        ...
+
+    @abstractmethod
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves the NLU training data that should be used for training.
 
@@ -75,20 +91,18 @@ class TrainingDataImporter:
         Returns:
             Loaded NLU `TrainingData`.
         """
-        raise NotImplementedError()
+        ...
 
     @staticmethod
     def load_from_config(
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
-
         config = rasa.shared.utils.io.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
-            config, config_path, domain_path, training_data_paths, training_type
+            config, config_path, domain_path, training_data_paths
         )
 
     @staticmethod
@@ -101,9 +115,8 @@ class TrainingDataImporter:
 
         Instance loaded from configuration file will only read Core training data.
         """
-
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths, TrainingType.CORE
+            config_path, domain_path, training_data_paths
         )
         return importer
 
@@ -117,9 +130,8 @@ class TrainingDataImporter:
 
         Instance loaded from configuration file will only read NLU training data.
         """
-
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths, TrainingType.NLU
+            config_path, domain_path, training_data_paths
         )
 
         if isinstance(importer, E2EImporter):
@@ -135,26 +147,22 @@ class TrainingDataImporter:
         config_path: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
-
         from rasa.shared.importers.rasa import RasaFileImporter
 
         config = config or {}
         importers = config.get("importers", [])
         importers = [
             TrainingDataImporter._importer_from_dict(
-                importer, config_path, domain_path, training_data_paths, training_type
+                importer, config_path, domain_path, training_data_paths
             )
             for importer in importers
         ]
         importers = [importer for importer in importers if importer]
         if not importers:
             importers = [
-                RasaFileImporter(
-                    config_path, domain_path, training_data_paths, training_type
-                )
+                RasaFileImporter(config_path, domain_path, training_data_paths)
             ]
 
         return E2EImporter(ResponsesSyncImporter(CombinedDataImporter(importers)))
@@ -165,14 +173,13 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> Optional["TrainingDataImporter"]:
         from rasa.shared.importers.multi_project import MultiProjectImporter
         from rasa.shared.importers.rasa import RasaFileImporter
 
         module_path = importer_config.pop("name", None)
         if module_path == RasaFileImporter.__name__:
-            importer_class = RasaFileImporter
+            importer_class: Type[TrainingDataImporter] = RasaFileImporter
         elif module_path == MultiProjectImporter.__name__:
             importer_class = MultiProjectImporter
         else:
@@ -183,8 +190,6 @@ class TrainingDataImporter:
             except (AttributeError, ImportError):
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None
-
-        importer_config = dict(training_type=training_type, **importer_config)
 
         constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
             importer_config, importer_class
@@ -198,6 +203,10 @@ class TrainingDataImporter:
         """Returns a random fingerprint as data shouldn't be cached."""
         return rasa.shared.utils.io.random_string(25)
 
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return self.__class__.__name__
+
 
 class NluDataImporter(TrainingDataImporter):
     """Importer that skips any Core-related file reading."""
@@ -210,12 +219,7 @@ class NluDataImporter(TrainingDataImporter):
         """Retrieves model domain (see parent class for full docstring)."""
         return Domain.empty()
 
-    def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return StoryGraph([])
 
@@ -230,6 +234,11 @@ class NluDataImporter(TrainingDataImporter):
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
         return self._importer.get_nlu_data(language)
+
+    @rasa.shared.utils.common.cached_method
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        """Returns config file path for auto-config only if there is a single one."""
+        return self._importer.get_config_file_for_auto_config()
 
 
 class CombinedDataImporter(TrainingDataImporter):
@@ -255,20 +264,16 @@ class CombinedDataImporter(TrainingDataImporter):
         domains = [importer.get_domain() for importer in self._importers]
 
         return reduce(
-            lambda merged, other: merged.merge(other), domains, Domain.empty()
+            lambda merged, other: merged.merge(other),
+            domains,
+            Domain.empty(),
         )
 
     @rasa.shared.utils.common.cached_method
-    def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         stories = [
-            importer.get_stories(template_variables, use_e2e, exclusion_percentage)
-            for importer in self._importers
+            importer.get_stories(exclusion_percentage) for importer in self._importers
         ]
 
         return reduce(
@@ -293,6 +298,17 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), nlu_data, TrainingData()
         )
 
+    @rasa.shared.utils.common.cached_method
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        """Returns config file path for auto-config only if there is a single one."""
+        if len(self._importers) != 1:
+            rasa.shared.utils.io.raise_warning(
+                "Auto-config for multiple importers is not supported; "
+                "using config as is."
+            )
+            return None
+        return self._importers[0].get_config_file_for_auto_config()
+
 
 class ResponsesSyncImporter(TrainingDataImporter):
     """Importer that syncs `responses` between Domain and NLU training data.
@@ -311,6 +327,11 @@ class ResponsesSyncImporter(TrainingDataImporter):
         return self._importer.get_config()
 
     @rasa.shared.utils.common.cached_method
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        """Returns config file path for auto-config only if there is a single one."""
+        return self._importer.get_config_file_for_auto_config()
+
+    @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of retrieval intents in NLU data."""
         existing_domain = self._importer.get_domain()
@@ -326,7 +347,9 @@ class ResponsesSyncImporter(TrainingDataImporter):
             existing_domain,
         )
 
-        existing_domain = existing_domain.merge(domain_with_retrieval_intents)
+        existing_domain = existing_domain.merge(
+            domain_with_retrieval_intents, override=True
+        )
         existing_domain.check_missing_responses()
 
         return existing_domain
@@ -378,25 +401,21 @@ class ResponsesSyncImporter(TrainingDataImporter):
             intent_properties[IS_RETRIEVAL_INTENT_KEY] = True
             retrieval_intent_properties.append({intent: intent_properties})
 
-        return Domain(
-            retrieval_intent_properties,
-            [],
-            [],
-            responses,
-            ResponsesSyncImporter._construct_retrieval_action_names(retrieval_intents),
-            {},
+        action_names = ResponsesSyncImporter._construct_retrieval_action_names(
+            retrieval_intents
         )
 
-    def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
-        """Retrieves training stories / rules (see parent class for full docstring)."""
-        return self._importer.get_stories(
-            template_variables, use_e2e, exclusion_percentage
+        return Domain.from_dict(
+            {
+                KEY_INTENTS: retrieval_intent_properties,
+                KEY_RESPONSES: responses,
+                KEY_ACTIONS: action_names,
+            }
         )
+
+    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
+        """Retrieves training stories / rules (see parent class for full docstring)."""
+        return self._importer.get_stories(exclusion_percentage)
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
@@ -446,6 +465,7 @@ class E2EImporter(TrainingDataImporter):
         """Retrieves model domain (see parent class for full docstring)."""
         original = self.importer.get_domain()
         e2e_domain = self._get_domain_with_e2e_actions()
+
         return original.merge(e2e_domain)
 
     def _get_domain_with_e2e_actions(self) -> Domain:
@@ -462,32 +482,14 @@ class E2EImporter(TrainingDataImporter):
                 }
             )
 
-        additional_e2e_action_names = list(additional_e2e_action_names)
+        return Domain.from_dict({KEY_E2E_ACTIONS: list(additional_e2e_action_names)})
 
-        return Domain(
-            [],
-            [],
-            [],
-            {},
-            action_names=[],
-            forms={},
-            action_texts=additional_e2e_action_names,
-        )
-
-    def get_stories(
-        self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
         See parent class for details.
         """
-        return self.importer.get_stories(
-            template_variables, use_e2e, exclusion_percentage
-        )
+        return self.importer.get_stories(exclusion_percentage)
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
@@ -496,6 +498,11 @@ class E2EImporter(TrainingDataImporter):
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         return self.importer.get_config()
+
+    @rasa.shared.utils.common.cached_method
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        """Returns config file path for auto-config only if there is a single one."""
+        return self.importer.get_config_file_for_auto_config()
 
     @rasa.shared.utils.common.cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
@@ -554,7 +561,7 @@ def _unique_events_from_stories(
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
     # sub state correctly encodes intent vs text
-    data = event.as_sub_state()
+    data = cast(Dict[Text, Any], event.as_sub_state())
     # sub state stores entities differently
     if data.get(ENTITIES) and event.entities:
         data[ENTITIES] = event.entities

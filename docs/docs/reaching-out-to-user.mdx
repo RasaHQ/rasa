@@ -111,7 +111,7 @@ easier to see which intents are expected to come from external devices when work
 ### 4. Update the Domain
 
 To tell the assistant which plant needs watering, you can define an entity that you'll post along with the intent.
-To be able to use the entity value directly in a response, define a slot by the same name:
+To be able to use the entity value directly in a response, define a `from_entity` slot mapping for the `plant` slot:
 
 ```yaml-rasa  title="domain.yml"
 entities:
@@ -121,6 +121,9 @@ slots:
   plant:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: plant
 ```
 
 #### 5. Add a Rule
@@ -149,8 +152,7 @@ The response will use the value from the slot `plant` to warn about the specific
 
 ### Try it out
 
-To try out the dry plant notification example, you'll need to start either [Rasa X](https://rasa.com/docs/rasa-x/)
-or a [CallbackChannel](./connectors/your-own-website.mdx#callbackinput).
+To try out the dry plant notification example, you'll need to start a [CallbackChannel](./connectors/your-own-website.mdx#callbackinput).
 
 :::caution
 External Events and Reminders don't work in request-response channels like the `rest` channel or `rasa shell`.
@@ -188,7 +190,7 @@ You can clone it and follow the instructions in `README` to try out the full ver
 
 To schedule a reminder, you need to define a custom action that returns
 the `ReminderScheduled` event. For example, the following custom action
-schedules a reminder for five seconds from now:
+schedules a reminder for five minutes from now:
 
 ```python  title="actions.py"
 import datetime
@@ -208,9 +210,9 @@ class ActionSetReminder(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        dispatcher.utter_message("I will remind you in 5 seconds.")
+        dispatcher.utter_message("I will remind you in 5 minutes.")
 
-        date = datetime.datetime.now() + datetime.timedelta(seconds=5)
+        date = datetime.datetime.now() + datetime.timedelta(minutes=5)
         entities = tracker.latest_message.get("entities")
 
         reminder = ReminderScheduled(
@@ -248,7 +250,7 @@ rules:
   - intent: ask_remind_call
     entities:
     - PERSON
-  - action: action_schedule_reminder
+  - action: action_set_reminder
 ```
 
 
@@ -429,10 +431,9 @@ intents:
 
 ### Try it Out
 
-To try out reminders you'll need to start either [Rasa X](https://rasa.com/docs/rasa-x/)
-or a [CallbackChannel](./connectors/your-own-website.mdx#callbackinput).
+To try out reminders you'll need to start a [CallbackChannel](./connectors/your-own-website.mdx#callbackinput).
 You'll also need to start the action server to schedule, react to, and cancel your reminders.
 See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/main/examples/reminderbot) for details.
 
 Then, if you send the bot a message like `Remind me to call Paul Pots`, you should get a reminder
-back five seconds later that says `Remember to call Paul Pots!`.
+back five minutes later that says `Remember to call Paul Pots!`.

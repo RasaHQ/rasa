@@ -1,0 +1,11 @@
+version: "3.1"
+rules:
+- rule: Tell a joke when the user asks for one
+  steps:
+  - intent: tell_joke
+  - action: utter_joke
+
+- rule: Say 'I am a bot' anytime the user challenges
+  steps:
+  - intent: bot_challenge
+  - action: utter_iamabot

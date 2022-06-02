@@ -4,11 +4,12 @@ import importlib.util
 import logging
 from multiprocessing.process import BaseProcess
 from multiprocessing import get_context
+from pathlib import Path
 import os
 import signal
 import sys
 import traceback
-from typing import Iterable, List, Optional, Text, Tuple
+from typing import Iterable, List, Optional, Text, Tuple, Union
 
 import aiohttp
 from rasa.exceptions import MissingDependencyException
@@ -78,7 +79,7 @@ def _rasa_service(
     from rasa.core.run import serve_application
 
     # needs separate logging configuration as it is started in its own process
-    rasa.utils.common.set_log_level(args.loglevel)
+    rasa.utils.common.configure_logging_and_warnings(args.loglevel)
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
     if not credentials_path:
@@ -105,8 +106,10 @@ def _rasa_service(
 def _prepare_credentials_for_rasa_x(
     credentials_path: Optional[Text], rasa_x_url: Optional[Text] = None
 ) -> Text:
-    credentials_path = rasa.cli.utils.get_validated_path(
-        credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+    credentials_path = str(
+        rasa.cli.utils.get_validated_path(
+            credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+        )
     )
     if credentials_path:
         credentials = rasa.shared.utils.io.read_config_file(credentials_path)
@@ -133,9 +136,7 @@ def _get_model_endpoint(
     model_endpoint: Optional[EndpointConfig], rasa_x_token: Text, rasa_x_url: Text
 ) -> EndpointConfig:
     # If you change that, please run a test with Rasa X and speak to the bot
-    default_rasax_model_server_url = (
-        f"{rasa_x_url}/projects/default/models/tags/production"
-    )
+    default_rasax_model_server_url = f"{rasa_x_url}/models/tags/production"
 
     model_endpoint = model_endpoint or EndpointConfig()
 
@@ -249,7 +250,7 @@ def generate_rasa_x_token(length: int = 16) -> Text:
 
 def _configure_logging(args: argparse.Namespace) -> None:
     from rasa.core.utils import configure_file_logging
-    from rasa.utils.common import set_log_level
+    from rasa.utils.common import configure_logging_and_warnings
 
     log_level = args.loglevel or DEFAULT_LOG_LEVEL_RASA_X
 
@@ -259,8 +260,10 @@ def _configure_logging(args: argparse.Namespace) -> None:
     logging.basicConfig(level=log_level)
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
-    set_log_level(log_level)
-    configure_file_logging(logging.root, args.log_file)
+    configure_logging_and_warnings(
+        log_level, warn_only_once=False, filter_repeated_logs=False
+    )
+    configure_file_logging(logging.root, args.log_file, False)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
@@ -352,6 +355,12 @@ def rasa_x(args: argparse.Namespace) -> None:
     if args.production:
         run_in_production(args)
     else:
+        rasa.shared.utils.io.raise_warning(
+            f"Your version of rasa '{rasa.version.__version__}' is currently "
+            f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
+            f"version higher or equal to 3.0.0 will result in errors.",
+            UserWarning,
+        )
         run_locally(args)
 
 
@@ -360,13 +369,12 @@ async def _pull_runtime_config_from_server(
     attempts: int = 60,
     wait_time_between_pulls: float = 5,
     keys: Iterable[Text] = ("endpoints", "credentials"),
-) -> Optional[List[Text]]:
+) -> List[Text]:
     """Pull runtime config from `config_endpoint`.
 
     Returns a list of paths to yaml dumps, each containing the contents of one of
     `keys`.
     """
-
     while attempts:
         try:
             async with aiohttp.ClientSession() as session:
@@ -412,38 +420,42 @@ def run_in_production(args: argparse.Namespace) -> None:
     _rasa_service(args, endpoints, None, credentials_path)
 
 
-def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
+def _get_config_path(args: argparse.Namespace) -> Optional[Text]:
     config_path = rasa.cli.utils.get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH
     )
 
-    return config_path
+    return str(config_path)
 
 
-def _get_domain_path(args: argparse.Namespace,) -> Optional[Text]:
+def _get_domain_path(args: argparse.Namespace) -> Optional[Text]:
     domain_path = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH
     )
 
-    return domain_path
+    return str(domain_path)
 
 
 def _get_credentials_and_endpoints_paths(
     args: argparse.Namespace,
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
+    endpoints_config_path: Optional[Union[Path, Text]]
+
     if config_endpoint:
-        endpoints_config_path, credentials_path = rasa.utils.common.run_in_loop(
+        endpoints_config_path, credentials_path = asyncio.run(
             _pull_runtime_config_from_server(config_endpoint)
         )
-
     else:
         endpoints_config_path = rasa.cli.utils.get_validated_path(
             args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
         credentials_path = None
 
-    return credentials_path, endpoints_config_path
+    return (
+        credentials_path,
+        str(endpoints_config_path) if endpoints_config_path else None,
+    )
 
 
 def _prevent_failure_if_git_is_not_available() -> None:

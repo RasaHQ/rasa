@@ -1,0 +1,49 @@
+nodes:
+  schema_validator:
+    needs:
+      importer: __importer__
+    uses: rasa.graph_components.validators.default_recipe_validator.DefaultV1RecipeValidator
+    constructor_name: create
+    fn: validate
+    config: {}
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  finetuning_validator:
+    needs:
+      importer: schema_validator
+    uses: rasa.graph_components.validators.finetuning_validator.FinetuningValidator
+    constructor_name: create
+    fn: validate
+    config:
+      validate_core: false
+      validate_nlu: true
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  nlu_training_data_provider:
+    needs:
+      importer: finetuning_validator
+    uses: rasa.graph_components.providers.nlu_training_data_provider.NLUTrainingDataProvider
+    constructor_name: create
+    fn: provide
+    config:
+      language: null
+      persist: false
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  train_KeywordIntentClassifier0:
+    needs:
+      training_data: nlu_training_data_provider
+    uses: rasa.nlu.classifiers.keyword_intent_classifier.KeywordIntentClassifier
+    constructor_name: create
+    fn: train
+    config: {}
+    eager: False
+    is_target: True
+    is_input: False
+    resource: null

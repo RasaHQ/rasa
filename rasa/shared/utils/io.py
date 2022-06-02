@@ -69,14 +69,13 @@ def raise_warning(
         return True
 
     def formatwarning(
-        message: Text,
-        category: Optional[Type[Warning]],
+        message: Union[Warning, Text],
+        category: Type[Warning],
         filename: Text,
-        lineno: Optional[int],
+        lineno: int,
         line: Optional[Text] = None,
     ) -> Text:
         """Function to format a warning the standard way."""
-
         if not should_show_source_line():
             if docs:
                 line = f"More info at {docs}"
@@ -164,7 +163,7 @@ def list_directory(path: Text) -> List[Text]:
     if os.path.isfile(path):
         return [path]
     elif os.path.isdir(path):
-        results = []
+        results: List[Text] = []
         for base, dirs, files in os.walk(path, followlinks=True):
             # sort files for same order across runs
             files = sorted(files, key=_filename_without_prefix)
@@ -302,7 +301,6 @@ def fix_yaml_loader() -> None:
 
     yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
-    yaml.allow_duplicate_keys = False
 
 
 def replace_environment_variables() -> None:
@@ -354,8 +352,8 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
         )
 
     yaml_parser = yaml.YAML(typ=reader_type)
-    yaml_parser.version = YAML_VERSION
-    yaml_parser.preserve_quotes = True
+    yaml_parser.version = YAML_VERSION  # type: ignore[assignment]
+    yaml_parser.preserve_quotes = True  # type: ignore[assignment]
 
     return yaml_parser.load(content) or {}
 
@@ -400,7 +398,7 @@ def write_yaml(
 
     dumper = yaml.YAML()
     # no wrap lines
-    dumper.width = YAML_LINE_MAX_WIDTH
+    dumper.width = YAML_LINE_MAX_WIDTH  # type: ignore[assignment]
 
     # use `null` to represent `None`
     dumper.representer.add_representer(

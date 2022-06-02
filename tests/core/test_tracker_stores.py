@@ -12,7 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
 from pymongo.errors import OperationFailure
 
-from rasa.nlu.model import Interpreter
+from rasa.core.agent import Agent
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from sqlalchemy.dialects.postgresql.base import PGDialect
@@ -35,7 +35,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
 )
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
@@ -44,27 +44,29 @@ from rasa.core.tracker_store import (
     SQLTrackerStore,
     DynamoTrackerStore,
     FailSafeTrackerStore,
+    AwaitableTrackerStore,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from tests.conftest import AsyncMock
 from tests.core.conftest import MockedMongoTrackerStore
 
 test_domain = Domain.load("data/test_domains/default.yml")
 
 
-def get_or_create_tracker_store(store: TrackerStore) -> None:
+async def get_or_create_tracker_store(store: TrackerStore) -> None:
     slot_key = "location"
     slot_val = "Easter Island"
 
-    tracker = store.get_or_create_tracker(DEFAULT_SENDER_ID)
+    tracker = await store.get_or_create_tracker(DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
     assert tracker.get_slot(slot_key) == slot_val
 
-    store.save(tracker)
+    await store.save(tracker)
 
-    again = store.get_or_create_tracker(DEFAULT_SENDER_ID)
+    again = await store.get_or_create_tracker(DEFAULT_SENDER_ID)
     assert again.get_slot(slot_key) == slot_val
 
 
@@ -79,29 +81,29 @@ def test_dynamo_get_or_create():
 
 
 @mock_dynamodb2
-def test_dynamo_tracker_floats():
+async def test_dynamo_tracker_floats():
     conversation_id = uuid.uuid4().hex
 
     tracker_store = DynamoTrackerStore(test_domain)
-    tracker = tracker_store.get_or_create_tracker(
+    tracker = await tracker_store.get_or_create_tracker(
         conversation_id, append_action_listen=False
     )
 
     # save `slot` event with known `float`-type timestamp
     timestamp = 13423.23434623
     tracker.update(SlotSet("key", "val", timestamp=timestamp))
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     # retrieve tracker and the event timestamp is retrieved as a `float`
-    tracker = tracker_store.get_or_create_tracker(conversation_id)
+    tracker = await tracker_store.get_or_create_tracker(conversation_id)
     retrieved_timestamp = tracker.events[0].timestamp
     assert isinstance(retrieved_timestamp, float)
     assert retrieved_timestamp == timestamp
 
 
-def test_restart_after_retrieval_from_tracker_store(domain: Domain):
+async def test_restart_after_retrieval_from_tracker_store(domain: Domain):
     store = InMemoryTrackerStore(domain)
-    tr = store.get_or_create_tracker("myuser")
+    tr = await store.get_or_create_tracker("myuser")
     synth = [ActionExecuted("action_listen") for _ in range(4)]
 
     for e in synth:
@@ -110,19 +112,19 @@ def test_restart_after_retrieval_from_tracker_store(domain: Domain):
     tr.update(Restarted())
     latest_restart = tr.idx_after_latest_restart()
 
-    store.save(tr)
-    tr2 = store.retrieve("myuser")
+    await store.save(tr)
+    tr2 = await store.retrieve("myuser")
     latest_restart_after_loading = tr2.idx_after_latest_restart()
     assert latest_restart == latest_restart_after_loading
 
 
-def test_tracker_store_remembers_max_history(domain: Domain):
+async def test_tracker_store_remembers_max_history(domain: Domain):
     store = InMemoryTrackerStore(domain)
-    tr = store.get_or_create_tracker("myuser", max_event_history=42)
+    tr = await store.get_or_create_tracker("myuser", max_event_history=42)
     tr.update(Restarted())
 
-    store.save(tr)
-    tr2 = store.retrieve("myuser")
+    await store.save(tr)
+    tr2 = await store.retrieve("myuser")
     assert tr._max_event_history == tr2._max_event_history == 42
 
 
@@ -137,6 +139,10 @@ def test_tracker_store_endpoint_config_loading(endpoints_path: Text):
             "db": 0,
             "password": "password",
             "timeout": 30000,
+            "use_ssl": True,
+            "ssl_keyfile": "keyfile.key",
+            "ssl_certfile": "certfile.crt",
+            "ssl_ca_certs": "my-bundle.ca-bundle",
         }
     )
 
@@ -152,6 +158,10 @@ def test_create_tracker_store_from_endpoint_config(
         db=0,
         password="password",
         record_exp=3000,
+        use_ssl=True,
+        ssl_keyfile="keyfile.key",
+        ssl_certfile="certfile.crt",
+        ssl_ca_certs="my-bundle.ca-bundle",
     )
 
     assert isinstance(tracker_store, type(TrackerStore.create(store, domain)))
@@ -226,9 +236,7 @@ def test_raise_connection_exception_redis_tracker_store_creation(
         TrackerStore.create(store, domain)
 
 
-def test_mongo_tracker_store_raise_exception(
-    domain: Domain, monkeypatch: MonkeyPatch,
-):
+def test_mongo_tracker_store_raise_exception(domain: Domain, monkeypatch: MonkeyPatch):
     monkeypatch.setattr(
         rasa.core.tracker_store,
         "MongoTrackerStore",
@@ -247,6 +255,14 @@ def test_mongo_tracker_store_raise_exception(
 
 class HostExampleTrackerStore(RedisTrackerStore):
     pass
+
+
+class NonAsyncTrackerStore(TrackerStore):
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        pass
+
+    def save(self, tracker: DialogueStateTracker) -> None:
+        pass
 
 
 def test_tracker_store_with_host_argument_from_string(domain: Domain):
@@ -284,7 +300,7 @@ def test_tracker_store_from_invalid_string(domain: Domain):
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
-def _tracker_store_and_tracker_with_slot_set() -> Tuple[
+async def _tracker_store_and_tracker_with_slot_set() -> Tuple[
     InMemoryTrackerStore, DialogueStateTracker
 ]:
     # returns an InMemoryTrackerStore containing a tracker with a slot set
@@ -293,15 +309,15 @@ def _tracker_store_and_tracker_with_slot_set() -> Tuple[
     slot_val = "French"
 
     store = InMemoryTrackerStore(test_domain)
-    tracker = store.get_or_create_tracker(DEFAULT_SENDER_ID)
+    tracker = await store.get_or_create_tracker(DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
 
     return store, tracker
 
 
-def test_tracker_serialisation():
-    store, tracker = _tracker_store_and_tracker_with_slot_set()
+async def test_tracker_serialisation():
+    store, tracker = await _tracker_store_and_tracker_with_slot_set()
     serialised = store.serialise_tracker(tracker)
 
     assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
@@ -416,60 +432,60 @@ def test_db_url_with_query_from_endpoint_config(tmp_path: Path):
     )
 
 
-def test_fail_safe_tracker_store_if_no_errors():
+async def test_fail_safe_tracker_store_if_no_errors():
     mocked_tracker_store = Mock()
 
     tracker_store = FailSafeTrackerStore(mocked_tracker_store, None)
 
     # test save
-    mocked_tracker_store.save = Mock()
-    tracker_store.save(None)
+    mocked_tracker_store.save = AsyncMock()
+    await tracker_store.save(None)
     mocked_tracker_store.save.assert_called_once()
 
     # test retrieve
     expected = [1]
-    mocked_tracker_store.retrieve = Mock(return_value=expected)
+    mocked_tracker_store.retrieve = AsyncMock(return_value=expected)
     sender_id = "10"
-    assert tracker_store.retrieve(sender_id) == expected
+    assert await tracker_store.retrieve(sender_id) == expected
     mocked_tracker_store.retrieve.assert_called_once_with(sender_id)
 
     # test keys
     expected = ["sender 1", "sender 2"]
-    mocked_tracker_store.keys = Mock(return_value=expected)
-    assert tracker_store.keys() == expected
+    mocked_tracker_store.keys = AsyncMock(return_value=expected)
+    assert await tracker_store.keys() == expected
     mocked_tracker_store.keys.assert_called_once()
 
 
-def test_fail_safe_tracker_store_with_save_error():
+async def test_fail_safe_tracker_store_with_save_error():
     mocked_tracker_store = Mock()
     mocked_tracker_store.save = Mock(side_effect=Exception())
 
     fallback_tracker_store = Mock()
-    fallback_tracker_store.save = Mock()
+    fallback_tracker_store.save = AsyncMock()
 
     on_error_callback = Mock()
 
     tracker_store = FailSafeTrackerStore(
         mocked_tracker_store, on_error_callback, fallback_tracker_store
     )
-    tracker_store.save(None)
+    await tracker_store.save(None)
 
     fallback_tracker_store.save.assert_called_once()
     on_error_callback.assert_called_once()
 
 
-def test_fail_safe_tracker_store_with_keys_error():
+async def test_fail_safe_tracker_store_with_keys_error():
     mocked_tracker_store = Mock()
     mocked_tracker_store.keys = Mock(side_effect=Exception())
 
     on_error_callback = Mock()
 
     tracker_store = FailSafeTrackerStore(mocked_tracker_store, on_error_callback)
-    assert tracker_store.keys() == []
+    assert await tracker_store.keys() == []
     on_error_callback.assert_called_once()
 
 
-def test_fail_safe_tracker_store_with_retrieve_error():
+async def test_fail_safe_tracker_store_with_retrieve_error():
     mocked_tracker_store = Mock()
     mocked_tracker_store.retrieve = Mock(side_effect=Exception())
 
@@ -480,7 +496,7 @@ def test_fail_safe_tracker_store_with_retrieve_error():
         mocked_tracker_store, on_error_callback, fallback_tracker_store
     )
 
-    assert tracker_store.retrieve("sender_id") is None
+    assert await tracker_store.retrieve("sender_id") is None
     on_error_callback.assert_called_once()
 
 
@@ -495,7 +511,7 @@ def test_set_fail_safe_tracker_store_domain(domain: Domain):
     assert fallback_tracker_store.domain is failsafe_store.domain
 
 
-def create_tracker_with_partially_saved_events(
+async def create_tracker_with_partially_saved_events(
     tracker_store: TrackerStore,
 ) -> Tuple[List[Event], DialogueStateTracker]:
     # creates a tracker with two events and saved it to the tracker store
@@ -505,7 +521,7 @@ def create_tracker_with_partially_saved_events(
     # create tracker with two events and save it
     events = [UserUttered("hello"), BotUttered("what")]
     tracker = DialogueStateTracker.from_events(sender_id, events)
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     # add more events to the tracker, do not yet save it
     events = [ActionExecuted(ACTION_LISTEN_NAME), UserUttered("123"), BotUttered("yes")]
@@ -515,7 +531,7 @@ def create_tracker_with_partially_saved_events(
     return events, tracker
 
 
-def _saved_tracker_with_multiple_session_starts(
+async def _saved_tracker_with_multiple_session_starts(
     tracker_store: TrackerStore, sender_id: Text
 ) -> DialogueStateTracker:
     tracker = DialogueStateTracker.from_events(
@@ -529,23 +545,23 @@ def _saved_tracker_with_multiple_session_starts(
         ],
     )
 
-    tracker_store.save(tracker)
-    return tracker_store.retrieve(sender_id)
+    await tracker_store.save(tracker)
+    return await tracker_store.retrieve(sender_id)
 
 
-def test_mongo_additional_events(domain: Domain):
+async def test_mongo_additional_events(domain: Domain):
     tracker_store = MockedMongoTrackerStore(domain)
-    events, tracker = create_tracker_with_partially_saved_events(tracker_store)
+    events, tracker = await create_tracker_with_partially_saved_events(tracker_store)
 
     # make sure only new events are returned
     # noinspection PyProtectedMember
     assert list(tracker_store._additional_events(tracker)) == events
 
 
-def test_mongo_additional_events_with_session_start(domain: Domain):
+async def test_mongo_additional_events_with_session_start(domain: Domain):
     sender = "test_mongo_additional_events_with_session_start"
     tracker_store = MockedMongoTrackerStore(domain)
-    tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
+    tracker = await _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 
     tracker.update(UserUttered("hi2"))
 
@@ -558,9 +574,9 @@ def test_mongo_additional_events_with_session_start(domain: Domain):
 
 # we cannot parametrise over this and the previous test due to the different ways of
 # calling _additional_events()
-def test_sql_additional_events(domain: Domain):
+async def test_sql_additional_events(domain: Domain):
     tracker_store = SQLTrackerStore(domain)
-    additional_events, tracker = create_tracker_with_partially_saved_events(
+    additional_events, tracker = await create_tracker_with_partially_saved_events(
         tracker_store
     )
 
@@ -573,10 +589,10 @@ def test_sql_additional_events(domain: Domain):
         )
 
 
-def test_sql_additional_events_with_session_start(domain: Domain):
+async def test_sql_additional_events_with_session_start(domain: Domain):
     sender = "test_sql_additional_events_with_session_start"
     tracker_store = SQLTrackerStore(domain)
-    tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
+    tracker = await _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 
     tracker.update(UserUttered("hi2"), domain)
 
@@ -592,8 +608,10 @@ def test_sql_additional_events_with_session_start(domain: Domain):
     "tracker_store_type,tracker_store_kwargs",
     [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
-def test_tracker_store_retrieve_with_session_started_events(
-    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain: Domain,
+async def test_tracker_store_retrieve_with_session_started_events(
+    tracker_store_type: Type[TrackerStore],
+    tracker_store_kwargs: Dict,
+    domain: Domain,
 ):
     tracker_store = tracker_store_type(domain, **tracker_store_kwargs)
     events = [
@@ -604,14 +622,14 @@ def test_tracker_store_retrieve_with_session_started_events(
     ]
     sender_id = "test_sql_tracker_store_with_session_events"
     tracker = DialogueStateTracker.from_events(sender_id, events)
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     # Save other tracker to ensure that we don't run into problems with other senders
     other_tracker = DialogueStateTracker.from_events("other-sender", [SessionStarted()])
-    tracker_store.save(other_tracker)
+    await tracker_store.save(other_tracker)
 
     # Retrieve tracker with events since latest SessionStarted
-    tracker = tracker_store.retrieve(sender_id)
+    tracker = await tracker_store.retrieve(sender_id)
 
     assert len(tracker.events) == 2
     assert all((event == tracker.events[i] for i, event in enumerate(events[2:])))
@@ -621,8 +639,10 @@ def test_tracker_store_retrieve_with_session_started_events(
     "tracker_store_type,tracker_store_kwargs",
     [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
-def test_tracker_store_retrieve_without_session_started_events(
-    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain,
+async def test_tracker_store_retrieve_without_session_started_events(
+    tracker_store_type: Type[TrackerStore],
+    tracker_store_kwargs: Dict,
+    domain,
 ):
     tracker_store = tracker_store_type(domain, **tracker_store_kwargs)
 
@@ -636,13 +656,13 @@ def test_tracker_store_retrieve_without_session_started_events(
 
     sender_id = "test_sql_tracker_store_retrieve_without_session_started_events"
     tracker = DialogueStateTracker.from_events(sender_id, events)
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     # Save other tracker to ensure that we don't run into problems with other senders
     other_tracker = DialogueStateTracker.from_events("other-sender", [SessionStarted()])
-    tracker_store.save(other_tracker)
+    await tracker_store.save(other_tracker)
 
-    tracker = tracker_store.retrieve(sender_id)
+    tracker = await tracker_store.retrieve(sender_id)
 
     assert len(tracker.events) == 4
     assert all(event == tracker.events[i] for i, event in enumerate(events))
@@ -656,7 +676,7 @@ def test_tracker_store_retrieve_without_session_started_events(
         (InMemoryTrackerStore, {}),
     ],
 )
-def test_tracker_store_retrieve_with_events_from_previous_sessions(
+async def test_tracker_store_retrieve_with_events_from_previous_sessions(
     tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict
 ):
     tracker_store = tracker_store_type(Domain.empty(), **tracker_store_kwargs)
@@ -672,9 +692,9 @@ def test_tracker_store_retrieve_with_events_from_previous_sessions(
             SessionStarted(),
         ],
     )
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
-    actual = tracker_store.retrieve_full_tracker(conversation_id)
+    actual = await tracker_store.retrieve_full_tracker(conversation_id)
 
     assert len(actual.events) == len(tracker.events)
 
@@ -871,7 +891,7 @@ def test_login_db_with_no_postgresql(tmp_path: Path):
             "type": "mongod",
             "url": "mongodb://0.0.0.0:42/?serverSelectionTimeoutMS=5000",
         },
-        {"type": "dynamo",},
+        {"type": "dynamo"},
     ],
 )
 def test_tracker_store_connection_error(config: Dict, domain: Domain):
@@ -881,18 +901,16 @@ def test_tracker_store_connection_error(config: Dict, domain: Domain):
         TrackerStore.create(store, domain)
 
 
-def prepare_token_serialisation(
-    tracker_store: TrackerStore,
-    response_selector_interpreter: Interpreter,
-    sender_id: Text,
+async def prepare_token_serialisation(
+    tracker_store: TrackerStore, response_selector_agent: Agent, sender_id: Text
 ):
     text = "Good morning"
-    tokenizer = WhitespaceTokenizer()
+    tokenizer = WhitespaceTokenizer(WhitespaceTokenizer.get_default_config())
     tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [[t.start, t.end] for t in tokens]
 
-    tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)
-    parse_data = response_selector_interpreter.parse(text)
+    tracker = await tracker_store.get_or_create_tracker(sender_id=sender_id)
+    parse_data = await response_selector_agent.parse_message(text)
     event = UserUttered(
         "Good morning",
         parse_data.get("intent"),
@@ -901,9 +919,9 @@ def prepare_token_serialisation(
     )
 
     tracker.update(event)
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
-    retrieved_tracker = tracker_store.retrieve(sender_id=sender_id)
+    retrieved_tracker = await tracker_store.retrieve(sender_id=sender_id)
     event = retrieved_tracker.get_last_event_for(event_type=UserUttered)
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
 
@@ -911,23 +929,40 @@ def prepare_token_serialisation(
 
 
 def test_inmemory_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_interpreter: Interpreter
+    domain: Domain, default_agent: Agent
 ):
     tracker_store = InMemoryTrackerStore(domain)
-    prepare_token_serialisation(
-        tracker_store, response_selector_interpreter, "inmemory"
-    )
+    prepare_token_serialisation(tracker_store, default_agent, "inmemory")
 
 
 def test_mongo_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_interpreter: Interpreter
+    domain: Domain, response_selector_agent: Agent
 ):
     tracker_store = MockedMongoTrackerStore(domain)
-    prepare_token_serialisation(tracker_store, response_selector_interpreter, "mongo")
+    prepare_token_serialisation(tracker_store, response_selector_agent, "mongo")
 
 
 def test_sql_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_interpreter: Interpreter
+    domain: Domain, response_selector_agent: Agent
 ):
     tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
-    prepare_token_serialisation(tracker_store, response_selector_interpreter, "sql")
+    prepare_token_serialisation(tracker_store, response_selector_agent, "sql")
+
+
+def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
+    with pytest.raises(RasaException) as error:
+        TrackerStore.create(
+            EndpointConfig(port="$DB_PORT", type="sql"),
+            domain,
+        )
+    assert "port '$DB_PORT' cannot be cast to integer." in str(error.value)
+
+
+def test_create_non_async_tracker_store(domain: Domain):
+    endpoint_config = EndpointConfig(
+        type="tests.core.test_tracker_stores.NonAsyncTrackerStore"
+    )
+    with pytest.warns(FutureWarning):
+        tracker_store = TrackerStore.create(endpoint_config)
+    assert isinstance(tracker_store, AwaitableTrackerStore)
+    assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)

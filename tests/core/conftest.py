@@ -17,11 +17,9 @@ from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
-from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
-from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
-from rasa.core.lock_store import InMemoryLockStore
+from rasa.core.tracker_store import MongoTrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
@@ -30,20 +28,16 @@ from tests.core.utilities import tracker_from_dialogue
 
 
 class CustomSlot(Slot):
-    def as_feature(self):
+    type_name = "custom"
+
+    def _as_feature(self):
         return [0.5]
-
-
-# noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
-class ExamplePolicy(Policy):
-    def __init__(self, *args, **kwargs):
-        super(ExamplePolicy, self).__init__(*args, **kwargs)
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):
     """In-memory mocked version of `MongoTrackerStore`."""
 
-    def __init__(self, _domain: Domain,) -> None:
+    def __init__(self, _domain: Domain) -> None:
         from mongomock import MongoClient
 
         self.db = MongoClient().rasa
@@ -81,20 +75,11 @@ def default_channel() -> OutputChannel:
 
 @pytest.fixture
 async def default_processor(default_agent: Agent) -> MessageProcessor:
-    tracker_store = InMemoryTrackerStore(default_agent.domain)
-    lock_store = InMemoryLockStore()
-    return MessageProcessor(
-        default_agent.interpreter,
-        default_agent.policy_ensemble,
-        default_agent.domain,
-        tracker_store,
-        lock_store,
-        TemplatedNaturalLanguageGenerator(default_agent.domain.responses),
-    )
+    return default_agent.processor
 
 
 @pytest.fixture
-def tracker_with_six_scheduled_reminders(
+async def tracker_with_six_scheduled_reminders(
     default_processor: MessageProcessor,
 ) -> DialogueStateTracker:
     reminders = [
@@ -123,13 +108,13 @@ def tracker_with_six_scheduled_reminders(
         ),
     ]
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
     for reminder in reminders:
         tracker.update(UserUttered("test"))
         tracker.update(ActionExecuted("action_reminder_reminder"))
         tracker.update(reminder)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     return tracker
 
@@ -145,10 +130,8 @@ def default_tracker(domain: Domain) -> DialogueStateTracker:
 
 
 @pytest.fixture(scope="session")
-async def form_bot_agent(trained_async: Callable) -> Agent:
-    endpoint = EndpointConfig("https://example.com/webhooks/actions")
-
-    zipped_model = await trained_async(
+async def trained_formbot(trained_async: Callable) -> Text:
+    return await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",
         training_files=[
@@ -157,7 +140,12 @@ async def form_bot_agent(trained_async: Callable) -> Agent:
         ],
     )
 
-    return Agent.load_local_model(zipped_model, action_endpoint=endpoint)
+
+@pytest.fixture(scope="module")
+async def form_bot_agent(trained_formbot: Text) -> Agent:
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+
+    return Agent.load(trained_formbot, action_endpoint=endpoint)
 
 
 @pytest.fixture

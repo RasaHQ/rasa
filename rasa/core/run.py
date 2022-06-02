@@ -2,7 +2,6 @@ import asyncio
 import logging
 import uuid
 import os
-import shutil
 from functools import partial
 from typing import Any, List, Optional, Text, Union, Dict
 
@@ -12,16 +11,12 @@ import rasa.shared.utils.common
 import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
-from rasa import model, server, telemetry
+from rasa import server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
-from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
-import rasa.core.interpreter
-from rasa.core.lock_store import LockStore
-from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.io
 from sanic import Sanic
@@ -34,7 +29,6 @@ def create_http_input_channels(
     channel: Optional[Text], credentials_file: Optional[Text]
 ) -> List["InputChannel"]:
     """Instantiate the chosen input channel."""
-
     if credentials_file:
         all_credentials = rasa.shared.utils.io.read_config_file(credentials_file)
     else:
@@ -76,7 +70,7 @@ def _create_single_channel(channel: Text, credentials: Dict[Text, Any]) -> Any:
 
 
 def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None) -> Sanic:
-    app = Sanic(__name__, configure_logging=False)
+    app = Sanic("rasa_core_no_api", configure_logging=False)
     server.add_root_route(app)
     server.configure_cors(app, cors)
     return app
@@ -95,10 +89,16 @@ def configure_app(
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
+    use_syslog: bool = False,
+    syslog_address: Optional[Text] = None,
+    syslog_port: Optional[int] = None,
+    syslog_protocol: Optional[Text] = None,
+    request_timeout: Optional[int] = None,
 ) -> Sanic:
     """Run the agent."""
-
-    rasa.core.utils.configure_file_logging(logger, log_file)
+    rasa.core.utils.configure_file_logging(
+        logger, log_file, use_syslog, syslog_address, syslog_port, syslog_protocol
+    )
 
     if enable_api:
         app = server.create_app(
@@ -135,6 +135,7 @@ def configure_app(
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
                 sender_id=conversation_id,
+                request_timeout=request_timeout,
             )
 
             logger.info("Killing Sanic server now.")
@@ -148,6 +149,7 @@ def configure_app(
 def serve_application(
     model_path: Optional[Text] = None,
     channel: Optional[Text] = None,
+    interface: Optional[Text] = constants.DEFAULT_SERVER_INTERFACE,
     port: int = constants.DEFAULT_SERVER_PORT,
     credentials: Optional[Text] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
@@ -164,9 +166,13 @@ def serve_application(
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
+    use_syslog: Optional[bool] = False,
+    syslog_address: Optional[Text] = None,
+    syslog_port: Optional[int] = None,
+    syslog_protocol: Optional[Text] = None,
+    request_timeout: Optional[int] = None,
 ) -> None:
     """Run the API entrypoint."""
-
     if not channel and not credentials:
         channel = "cmdline"
 
@@ -184,6 +190,11 @@ def serve_application(
         endpoints=endpoints,
         log_file=log_file,
         conversation_id=conversation_id,
+        use_syslog=use_syslog,
+        syslog_address=syslog_address,
+        syslog_port=syslog_port,
+        syslog_protocol=syslog_protocol,
+        request_timeout=request_timeout,
     )
 
     ssl_context = server.create_ssl_context(
@@ -191,21 +202,13 @@ def serve_application(
     )
     protocol = "https" if ssl_context else "http"
 
-    logger.info(
-        f"Starting Rasa server on "
-        f"{constants.DEFAULT_SERVER_FORMAT.format(protocol, port)}"
-    )
+    logger.info(f"Starting Rasa server on {protocol}://{interface}:{port}")
 
     app.register_listener(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
     app.register_listener(close_resources, "after_server_stop")
-
-    # noinspection PyUnresolvedReferences
-    async def clear_model_files(_app: Sanic, _loop: Text) -> None:
-        if app.agent.model_directory:
-            shutil.rmtree(_app.agent.model_directory)
 
     number_of_workers = rasa.core.utils.number_of_sanic_workers(
         endpoints.lock_store if endpoints else None
@@ -215,11 +218,12 @@ def serve_application(
         input_channels, endpoints, model_path, number_of_workers, enable_api
     )
 
-    app.register_listener(clear_model_files, "after_server_stop")
+    rasa.utils.common.update_sanic_log_level(
+        log_file, use_syslog, syslog_address, syslog_port, syslog_protocol
+    )
 
-    rasa.utils.common.update_sanic_log_level(log_file)
     app.run(
-        host="0.0.0.0",
+        host=interface,
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
@@ -240,57 +244,14 @@ async def load_agent_on_start(
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments).
     """
-    # noinspection PyBroadException
-    try:
-        with model.get_model(model_path) as unpacked_model:
-            _, nlu_model = model.get_model_subdirectories(unpacked_model)
-            _interpreter = rasa.core.interpreter.create_interpreter(
-                endpoints.nlu or nlu_model
-            )
-    except Exception:
-        logger.debug(f"Could not load interpreter from '{model_path}'.")
-        _interpreter = None
-
-    _broker = await EventBroker.create(endpoints.event_broker, loop=loop)
-    _tracker_store = TrackerStore.create(endpoints.tracker_store, event_broker=_broker)
-    _lock_store = LockStore.create(endpoints.lock_store)
-
-    model_server = endpoints.model if endpoints and endpoints.model else None
-
-    try:
-        app.agent = await agent.load_agent(
-            model_path,
-            model_server=model_server,
-            remote_storage=remote_storage,
-            interpreter=_interpreter,
-            generator=endpoints.nlg,
-            tracker_store=_tracker_store,
-            lock_store=_lock_store,
-            action_endpoint=endpoints.action,
-        )
-    except Exception as e:
-        rasa.shared.utils.io.raise_warning(
-            f"The model at '{model_path}' could not be loaded. "
-            f"Error: {type(e)}: {e}"
-        )
-        app.agent = None
-
-    if not app.agent:
-        rasa.shared.utils.io.raise_warning(
-            "Agent could not be loaded with the provided configuration. "
-            "Load default agent without any model."
-        )
-        app.agent = Agent(
-            interpreter=_interpreter,
-            generator=endpoints.nlg,
-            tracker_store=_tracker_store,
-            action_endpoint=endpoints.action,
-            model_server=model_server,
-            remote_storage=remote_storage,
-        )
-
+    app.ctx.agent = await agent.load_agent(
+        model_path=model_path,
+        remote_storage=remote_storage,
+        endpoints=endpoints,
+        loop=loop,
+    )
     logger.info("Rasa server is up and running.")
-    return app.agent
+    return app.ctx.agent
 
 
 async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
@@ -300,7 +261,7 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
         app: The Sanic application.
         _: The current Sanic worker event loop.
     """
-    current_agent = getattr(app, "agent", None)
+    current_agent = getattr(app.ctx, "agent", None)
     if not current_agent:
         logger.debug("No agent found when shutting down server.")
         return

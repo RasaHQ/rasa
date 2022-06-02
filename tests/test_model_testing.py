@@ -2,7 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 import textwrap
-from typing import Text
+from typing import List, Text
 
 import pytest
 from _pytest.capture import CaptureFixture
@@ -25,6 +25,14 @@ import rasa.model
 import rasa.cli.utils
 from rasa.nlu.test import NO_ENTITY
 import rasa.core
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_TEXT,
+)
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
@@ -107,7 +115,11 @@ def test_get_sanitized_model_directory_when_passing_other_input(
     ],
 )
 def test_get_evaluation_metrics(
-    targets, predictions, expected_precision, expected_fscore, expected_accuracy
+    targets: List[Text],
+    predictions: List[Text],
+    expected_precision: float,
+    expected_fscore: float,
+    expected_accuracy: float,
 ):
     from rasa.model_testing import get_evaluation_metrics
 
@@ -119,6 +131,195 @@ def test_get_evaluation_metrics(
     assert precision == expected_precision
     assert accuracy == expected_accuracy
     assert NO_ENTITY not in report
+
+
+@pytest.mark.parametrize(
+    "report_in,accuracy,report_out",
+    [
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+            },
+            0.8,
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+        ),
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+            0.8,
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 0.8,
+                    "recall": 0.8,
+                    "f1-score": 0.8,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+        ),
+    ],
+)
+def test_make_classification_report_complete(
+    report_in: dict, accuracy: float, report_out: dict
+):
+    from rasa.model_testing import make_classification_report_complete
+
+    report_out_actual = make_classification_report_complete(report_in, accuracy)
+    assert report_out == report_out_actual
+
+
+@pytest.mark.parametrize(
+    "report_in",
+    [
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+        ),
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+            },
+        ),
+    ],
+)
+def test_make_classification_report_complete_raises_clf_report_exception(
+    report_in: dict,
+):
+    from rasa.model_testing import (
+        ClassificationReportException,
+        make_classification_report_complete,
+    )
+
+    with pytest.raises(ClassificationReportException):
+        make_classification_report_complete(report_in, accuracy=0.8)
 
 
 @pytest.mark.parametrize(
@@ -139,23 +340,14 @@ def test_get_evaluation_metrics(
         ([], None, []),
     ],
 )
-def test_get_label_set(targets, exclude_label, expected):
+def test_get_label_set(targets: List[Text], exclude_label: Text, expected: List[Text]):
     from rasa.model_testing import get_unique_labels
 
     actual = get_unique_labels(targets, exclude_label)
     assert set(expected) == set(actual)
 
 
-async def test_interpreter_passed_to_agent(
-    monkeypatch: MonkeyPatch, trained_rasa_model: Text
-):
-    from rasa.core.interpreter import RasaNLUInterpreter
-
-    agent = Agent.load(trained_rasa_model)
-    assert isinstance(agent.interpreter, RasaNLUInterpreter)
-
-
-def test_e2e_warning_if_no_nlu_model(
+async def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
     from rasa.model_testing import test_core
@@ -166,7 +358,7 @@ def test_e2e_warning_if_no_nlu_model(
         sys.modules["rasa.core.test"], "test", asyncio.coroutine(lambda *_, **__: True)
     )
 
-    test_core(trained_core_model, additional_arguments={"e2e": True})
+    await test_core(trained_core_model, use_conversation_test_files=True)
 
     assert "No NLU model found. Using default" in capsys.readouterr().out
 
@@ -191,8 +383,8 @@ def test_write_classification_errors():
     assert (
         dump.strip()
         == textwrap.dedent(
-            """
-        version: "2.0"
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: default
           steps:
@@ -333,7 +525,9 @@ def test_log_failed_stories(tmp_path: Path):
         ),
     ],
 )
-def test_evaluation_store_serialise(entity_predictions, entity_targets):
+def test_evaluation_store_serialise(
+    entity_predictions: List[dict], entity_targets: List[dict]
+):
     from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     store = EvaluationStore(
@@ -387,3 +581,61 @@ rules:
     test_trackers = generator.generate_story_trackers()
     assert len(test_trackers) == 1
     assert test_trackers[0].sender_id == test_name
+
+
+def test_duplicated_entity_predictions_tolerated():
+    """Same entity extracted multiple times shouldn't be flagged as prediction error.
+
+    This can happen when multiple entity extractors extract the same entity but a test
+    story only lists the entity once. For completeness, the other case (entity listed
+    twice in test story and extracted once) is also tested here because it should work
+    the same way.
+    """
+    entity = {
+        ENTITY_ATTRIBUTE_TEXT: "Algeria",
+        ENTITY_ATTRIBUTE_START: 0,
+        ENTITY_ATTRIBUTE_END: 7,
+        ENTITY_ATTRIBUTE_VALUE: "Algeria",
+        ENTITY_ATTRIBUTE_TYPE: "country",
+    }
+    evaluation_with_duplicated_prediction = EvaluationStore(
+        entity_predictions=[entity, entity], entity_targets=[entity]
+    )
+    assert not evaluation_with_duplicated_prediction.check_prediction_target_mismatch()
+
+    evaluation_with_duplicated_target = EvaluationStore(
+        entity_predictions=[entity], entity_targets=[entity, entity]
+    )
+    assert not evaluation_with_duplicated_target.check_prediction_target_mismatch()
+
+
+def test_differently_ordered_entity_predictions_tolerated():
+    """The order in which entities were extracted shouldn't matter.
+
+    Let's have an utterance like this: "[Researcher](job_name) from [Germany](country)."
+    and imagine we use different entity extractors for the two entities. Then, the order
+    in which entities are extracted from the utterance depends on the order in which the
+    extractors are listed in the NLU pipeline. However, the expected order is given by
+    where the entities are found in the utterance, i.e. "Researcher" comes before
+    "Germany". Hence, it's reasonable for the expected and extracted order to not match
+    and it shouldn't be flagged as a prediction error.
+
+    """
+    entity1 = {
+        ENTITY_ATTRIBUTE_TEXT: "Algeria and Albania",
+        ENTITY_ATTRIBUTE_START: 0,
+        ENTITY_ATTRIBUTE_END: 7,
+        ENTITY_ATTRIBUTE_VALUE: "Algeria",
+        ENTITY_ATTRIBUTE_TYPE: "country",
+    }
+    entity2 = {
+        ENTITY_ATTRIBUTE_TEXT: "Algeria and Albania",
+        ENTITY_ATTRIBUTE_START: 12,
+        ENTITY_ATTRIBUTE_END: 19,
+        ENTITY_ATTRIBUTE_VALUE: "Albania",
+        ENTITY_ATTRIBUTE_TYPE: "country",
+    }
+    evaluation = EvaluationStore(
+        entity_predictions=[entity1, entity2], entity_targets=[entity2, entity1]
+    )
+    assert not evaluation.check_prediction_target_mismatch()

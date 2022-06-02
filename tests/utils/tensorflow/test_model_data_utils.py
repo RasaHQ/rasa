@@ -5,6 +5,11 @@ import scipy.sparse
 import numpy as np
 import copy
 
+from spacy import Language
+
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
@@ -12,12 +17,12 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow import model_data_utils
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     TEXT,
+    INTENT,
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
@@ -179,13 +184,7 @@ def test_extract_features():
 @pytest.mark.parametrize(
     "text, intent, entities, attributes, real_sparse_feature_sizes",
     [
-        (
-            "Hello!",
-            "greet",
-            None,
-            [TEXT],
-            {"text": {"sequence": [1], "sentence": [1]}},
-        ),
+        ("Hello!", "greet", None, [TEXT], {"text": {"sequence": [1], "sentence": [1]}}),
         (
             "Hello!",
             "greet",
@@ -206,25 +205,43 @@ def test_extract_features():
     ],
 )
 def test_convert_training_examples(
-    spacy_nlp: Any,
+    spacy_nlp: Language,
     text: Text,
     intent: Optional[Text],
     entities: Optional[List[Dict[Text, Any]]],
     attributes: List[Text],
     real_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
 ):
     message = Message(data={TEXT: text, INTENT: intent, ENTITIES: entities})
 
-    tokenizer = SpacyTokenizer()
-    count_vectors_featurizer = CountVectorsFeaturizer()
-    spacy_featurizer = SpacyFeaturizer()
+    tokenizer = SpacyTokenizer.create(
+        SpacyTokenizer.get_default_config(),
+        default_model_storage,
+        Resource("tokenizer"),
+        default_execution_context,
+    )
+    count_vectors_featurizer = CountVectorsFeaturizer.create(
+        CountVectorsFeaturizer.get_default_config(),
+        default_model_storage,
+        Resource("count_featurizer"),
+        default_execution_context,
+    )
+    spacy_featurizer = SpacyFeaturizer.create(
+        SpacyFeaturizer.get_default_config(),
+        default_model_storage,
+        Resource("spacy_featurizer"),
+        default_execution_context,
+    )
 
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
 
     training_data = TrainingData([message])
-    tokenizer.train(training_data)
+    tokenizer.process_training_data(training_data)
     count_vectors_featurizer.train(training_data)
-    spacy_featurizer.train(training_data)
+    count_vectors_featurizer.process_training_data(training_data)
+    spacy_featurizer.process_training_data(training_data)
 
     entity_tag_spec = [
         EntityTagSpec(
@@ -235,7 +252,7 @@ def test_convert_training_examples(
         )
     ]
     output, sparse_feature_sizes = model_data_utils.featurize_training_examples(
-        [message], attributes=attributes, entity_tag_specs=entity_tag_spec,
+        [message], attributes=attributes, entity_tag_specs=entity_tag_spec
     )
 
     assert len(output) == 1

@@ -17,11 +17,7 @@ ENTITY_ATTRIBUTE_CONFIDENCE_ROLE = (
 
 EXTRACTOR = "extractor"
 
-PRETRAINED_EXTRACTORS = {
-    "DucklingEntityExtractor",
-    "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
-    "SpacyEntityExtractor",
-}
+PRETRAINED_EXTRACTORS = {"DucklingEntityExtractor", "SpacyEntityExtractor"}
 
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
@@ -74,8 +70,8 @@ RESPONSE_SELECTOR_UTTER_ACTION_KEY = "utter_action"
 RESPONSE_SELECTOR_TEMPLATE_NAME_KEY = "template_name"
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 
+DEFAULT_TRANSFORMER_SIZE = 256
+
 FEATURIZER_CLASS_ALIAS = "alias"
 
 NO_LENGTH_RESTRICTION = -1
-
-COMPONENT_INDEX = "index"

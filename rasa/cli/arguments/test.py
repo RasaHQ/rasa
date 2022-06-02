@@ -11,9 +11,11 @@ from rasa.cli.arguments.default_arguments import (
     add_out_param,
 )
 from rasa.model import get_latest_model
+from rasa.shared.constants import DEFAULT_DOMAIN_PATH
 
 
 def set_test_arguments(parser: argparse.ArgumentParser) -> None:
+    """Sets test arguments for a parser."""
     add_model_param(parser, add_positional_arg=False)
 
     core_arguments = parser.add_argument_group("Core Test Arguments")
@@ -112,6 +114,16 @@ def add_test_nlu_argument_group(
         "validation mode is chosen, cross-validation is performed, if "
         "multiple configs or a folder of configs are passed, models "
         "will be trained and compared directly.",
+    )
+
+    parser.add_argument(
+        "-d",
+        "--domain",
+        type=str,
+        default=DEFAULT_DOMAIN_PATH,
+        help="Domain specification. This can be a single YAML file, or a directory "
+        "that contains several files with domain specifications in it. The content "
+        "of these files will be read and merged together.",
     )
 
     cross_validation_arguments = parser.add_argument_group("Cross Validation")

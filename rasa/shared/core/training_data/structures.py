@@ -7,6 +7,7 @@ import typing
 from typing import (
     List,
     Text,
+    Deque,
     Dict,
     Optional,
     Tuple,
@@ -15,7 +16,6 @@ from typing import (
     ValuesView,
     Union,
     Sequence,
-    cast,
 )
 
 import rasa.shared.utils.io
@@ -31,6 +31,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     Event,
     SessionStarted,
+    SlotSet,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaCoreException
@@ -118,13 +119,13 @@ class StoryStep:
 
     def __init__(
         self,
-        block_name: Optional[Text] = None,
+        block_name: Text,
         start_checkpoints: Optional[List[Checkpoint]] = None,
         end_checkpoints: Optional[List[Checkpoint]] = None,
         events: Optional[List[Union[Event, List[Event]]]] = None,
         source_name: Optional[Text] = None,
     ) -> None:
-
+        """Initialise `StoryStep` default attributes."""
         self.end_checkpoints = end_checkpoints if end_checkpoints else []
         self.start_checkpoints = start_checkpoints if start_checkpoints else []
         self.events = events if events else []
@@ -169,22 +170,32 @@ class StoryStep:
         return f"    - {story_step_element.as_story_string()}\n"
 
     @staticmethod
-    def _or_string(story_step_element: Sequence[Event], e2e: bool) -> Text:
+    def _event_to_story_string(event: Event, e2e: bool) -> Optional[Text]:
+        if isinstance(event, UserUttered):
+            return event.as_story_string(e2e=e2e)
+        return event.as_story_string()
+
+    @staticmethod
+    def _or_string(story_step_element: Sequence[Event], e2e: bool) -> Optional[Text]:
         for event in story_step_element:
-            if not isinstance(event, UserUttered):
+            # OR statement can also contain `slot_was_set`, and
+            # we're going to ignore this events when representing
+            # the story as a string
+            if not isinstance(event, UserUttered) and not isinstance(event, SlotSet):
                 raise EventTypeError(
-                    "OR statement events must be of type `UserUttered`."
+                    "OR statement events must be of type `UserUttered` or `SlotSet`."
                 )
 
-        # FIXME: https://github.com/python/mypy/issues/7853
-        story_step_element = cast(Sequence[UserUttered], story_step_element)
+        event_as_strings = [
+            StoryStep._event_to_story_string(element, e2e)
+            for element in story_step_element
+        ]
+        result = " OR ".join([event for event in event_as_strings if event is not None])
 
-        result = " OR ".join(
-            [element.as_story_string(e2e) for element in story_step_element]
-        )
         return f"* {result}\n"
 
     def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
+        """Returns a story as a string."""
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
         if flat:
@@ -214,7 +225,9 @@ class StoryStep:
                 # The story reader classes support reading stories in
                 # conversion mode.  When this mode is enabled, OR statements
                 # are represented as lists of events.
-                result += self._or_string(event, e2e)
+                or_string = self._or_string(event, e2e)
+                if or_string:
+                    result += or_string
             else:
                 raise Exception(f"Unexpected element in story step: {event}")
 
@@ -293,9 +306,9 @@ class StoryStep:
 
 
 class RuleStep(StoryStep):
-    """A Special type of StoryStep representing a Rule. """
+    """A Special type of StoryStep representing a Rule."""
 
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         block_name: Optional[Text] = None,
         start_checkpoints: Optional[List[Checkpoint]] = None,
@@ -338,18 +351,16 @@ class RuleStep(StoryStep):
             )
         )
 
-    def get_rules_condition(self) -> List[Event]:
-        """Returns a list of events forming a condition of the Rule. """
-
+    def get_rules_condition(self) -> List[Union[Event, List[Event]]]:
+        """Returns a list of events forming a condition of the Rule."""
         return [
             event
             for event_id, event in enumerate(self.events)
             if event_id in self.condition_events_indices
         ]
 
-    def get_rules_events(self) -> List[Event]:
-        """Returns a list of events forming the Rule, that are not conditions. """
-
+    def get_rules_events(self) -> List[Union[Event, List[Event]]]:
+        """Returns a list of events forming the Rule, that are not conditions."""
         return [
             event
             for event_id, event in enumerate(self.events)
@@ -448,17 +459,17 @@ class StoryGraph:
 
     def ordered_steps(self) -> List[StoryStep]:
         """Returns the story steps ordered by topological order of the DAG."""
-        return [self.get(step_id) for step_id in self.ordered_ids]
+        return [self._get_step(step_id) for step_id in self.ordered_ids]
 
     def cyclic_edges(self) -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]:
         """Returns the story steps ordered by topological order of the DAG."""
-
         return [
-            (self.get(source), self.get(target))
+            (self._get_step(source), self._get_step(target))
             for source, target in self.cyclic_edge_ids
         ]
 
     def merge(self, other: Optional["StoryGraph"]) -> "StoryGraph":
+        """Merge two StoryGraph together."""
         if not other:
             return self
 
@@ -588,7 +599,7 @@ class StoryGraph:
         unused_genr_cps = {
             cp_name
             for cp_name in unused_cps
-            if cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)
+            if cp_name is not None and cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)
         }
 
         k_to_remove = set()
@@ -649,18 +660,9 @@ class StoryGraph:
 
         return collected_end.symmetric_difference(collected_start)
 
-    def get(self, step_id: Text) -> Optional[StoryStep]:
+    def _get_step(self, step_id: Text) -> StoryStep:
         """Looks a story step up by its id."""
-
-        return self.step_lookup.get(step_id)
-
-    def as_story_string(self) -> Text:
-        """Convert the graph into the story file format."""
-
-        story_content = ""
-        for step in self.story_steps:
-            story_content += step.as_story_string(flat=False)
-        return story_content
+        return self.step_lookup[step_id]
 
     @staticmethod
     def order_steps(
@@ -714,7 +716,7 @@ class StoryGraph:
         # noinspection PyPep8Naming
         GRAY, BLACK = 0, 1
 
-        ordered = deque()
+        ordered: Deque = deque()
         unprocessed = sorted(set(graph))
         visited_nodes = {}
 
@@ -801,6 +803,10 @@ class StoryGraph:
         """Checks if `StoryGraph` is empty."""
 
         return not self.story_steps
+
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return f"{self.__class__.__name__}: {len(self.story_steps)} story steps"
 
 
 def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:

@@ -1,0 +1,61 @@
+version: "3.1"
+stories:
+- story: Happy path accepts suggestion  
+  steps:
+  - user: |
+      hi
+    intent: greet
+  - action: utter_greet
+  - user: |
+      show me a place to eat  
+    intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: |
+      that sounds good
+    intent: affirm
+  - action: utter_search_restaurants
+
+- story: Happy path accepts 3rd suggestion
+  steps:
+  - user: |
+      where should I eat tonight
+    intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: |
+      no way
+    intent: deny
+  - action: utter_suggest_cuisine
+  - user: |
+      had better not
+    intent: deny
+  - action: utter_suggest_cuisine
+  - user: |
+      indeed
+    intent: affirm
+  - action: utter_search_restaurants
+
+- story: Happy path accepts suggestion indirectly
+  steps:
+  - user: |
+      hi
+    intent: greet
+  - action: utter_greet
+  - user: |
+      where should I eat tonight
+    intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: |
+      I can always go for sushi
+    intent: affirm
+  - action: utter_search_restaurants
+
+- story: Happy path rejects suggestion, indirectly
+  steps:
+  - user: |
+      food
+    intent: search_restaurant
+  - action: utter_suggest_cuisine
+  - user: |
+      I had that yesterday
+    intent: deny
+  - action: utter_suggest_cuisine

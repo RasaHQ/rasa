@@ -129,212 +129,211 @@ word vectors in your pipeline.
   In addition to SpaCy's pretrained language models, you can also use this component to
   attach spaCy models that you've trained yourself.
 
+## Tokenizers
 
-  ## Tokenizers
+Tokenizers split text into tokens.
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+modeling hierarchical intent structure, use the following flags with any tokenizer:
 
-  Tokenizers split text into tokens.
-  If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-  modeling hierarchical intent structure, use the following flags with any tokenizer:
+* `intent_tokenization_flag` indicates whether to tokenize intent labels or not. Set it to `True`, so that intent
+  labels are tokenized.
 
-  * `intent_tokenization_flag` indicates whether to tokenize intent labels or not. Set it to `True`, so that intent
-    labels are tokenized.
+* `intent_split_symbol` sets the delimiter string to split the intent labels, default is underscore
+  (`_`).
 
-  * `intent_split_symbol` sets the delimiter string to split the intent labels, default is underscore
-    (`_`).
 
+### WhitespaceTokenizer
 
-  ### WhitespaceTokenizer
 
+* **Short**
 
-  * **Short**
+  Tokenizer using whitespaces as a separator
 
-    Tokenizer using whitespaces as a separator
 
 
+* **Outputs**
 
-  * **Outputs**
+  `tokens` for user messages, responses (if present), and intents (if specified)
 
-    `tokens` for user messages, responses (if present), and intents (if specified)
 
 
+* **Requires**
 
-  * **Requires**
+  Nothing
 
-    Nothing
 
 
+* **Description**
 
-  * **Description**
+  Creates a token for every whitespace separated character sequence.
 
-    Creates a token for every whitespace separated character sequence.
+  Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
+  splitting on whitespace if the character fulfills any of the following conditions:
+  - the character follows a whitespace: `" !word"` &#8594; `"word"`
+  - the character precedes a whitespace: `"word! "` &#8594; `"word"`
+  - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
+  - the character is at the end of the string: `"word!"` &#8594; `"word"`
 
-    Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
-    splitting on whitespace if the character fulfills any of the following conditions:
-    - the character follows a whitespace: `" !word"` &#8594; `"word"`
-    - the character precedes a whitespace: `"word! "` &#8594; `"word"`
-    - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
-    - the character is at the end of the string: `"word!"` &#8594; `"word"`
+  Note that:
+  - `"wo!rd"` &#8594; `"wo!rd"`
 
-    Note that:
-    - `"wo!rd"` &#8594; `"wo!rd"`
+  In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
+  substituted with whitespace before splitting on whitespace if the character is not
+  between numbers:
+  - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
+  - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
 
-    In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
-    substituted with whitespace before splitting on whitespace if the character is not
-    between numbers:
-    - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
-    - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
+  Note that:
+  - `"name@example.com"` &#8594; `"name@example.com"`
+  - `"10,000.1"` &#8594; `"10,000.1"`
+  - `"1 - 2"` &#8594; `"1"`,`"2"`
 
-    Note that:
-    - `"name@example.com"` &#8594; `"name@example.com"`
-    - `"10,000.1"` &#8594; `"10,000.1"`
-    - `"1 - 2"` &#8594; `"1"`,`"2"`
 
+* **Configuration**
 
-  * **Configuration**
+  ```yaml-rasa
+  pipeline:
+  - name: "WhitespaceTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
 
-    ```yaml-rasa
-    pipeline:
-    - name: "WhitespaceTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-    ```
 
+### JiebaTokenizer
 
-  ### JiebaTokenizer
 
+* **Short**
 
-  * **Short**
+  Tokenizer using Jieba for Chinese language
 
-    Tokenizer using Jieba for Chinese language
 
 
+* **Outputs**
 
-  * **Outputs**
+  `tokens` for user messages, responses (if present), and intents (if specified)
 
-    `tokens` for user messages, responses (if present), and intents (if specified)
 
 
+* **Requires**
 
-  * **Requires**
+  Nothing
 
-    Nothing
 
 
+* **Description**
 
-  * **Description**
+  Creates tokens using the Jieba tokenizer specifically for Chinese
+  language. It will only work for the Chinese language.
 
-    Creates tokens using the Jieba tokenizer specifically for Chinese
-    language. It will only work for the Chinese language.
+  :::note
+  To use `JiebaTokenizer` you need to install Jieba with `pip3 install jieba`.
 
-    :::note
-    To use `JiebaTokenizer` you need to install Jieba with `pip3 install jieba`.
+  :::
 
-    :::
 
 
+* **Configuration**
 
-  * **Configuration**
+  User's custom dictionary files can be auto loaded by specifying the files' directory path via `dictionary_path`.
+  If the `dictionary_path` is `None` (the default), then no custom dictionary will be used.
 
-    User's custom dictionary files can be auto loaded by specifying the files' directory path via `dictionary_path`.
-    If the `dictionary_path` is `None` (the default), then no custom dictionary will be used.
+  ```yaml-rasa
+  pipeline:
+  - name: "JiebaTokenizer"
+    dictionary_path: "path/to/custom/dictionary/dir"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
 
-    ```yaml-rasa
-    pipeline:
-    - name: "JiebaTokenizer"
-      dictionary_path: "path/to/custom/dictionary/dir"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-    ```
 
+### MitieTokenizer
 
-  ### MitieTokenizer
 
+* **Short**
 
-  * **Short**
+  Tokenizer using MITIE
 
-    Tokenizer using MITIE
 
 
+* **Outputs**
 
-  * **Outputs**
+  `tokens` for user messages, responses (if present), and intents (if specified)
 
-    `tokens` for user messages, responses (if present), and intents (if specified)
 
 
+* **Requires**
 
-  * **Requires**
+  [MitieNLP](./components.mdx#mitienlp)
 
-    [MitieNLP](./components.mdx#mitienlp)
 
 
+* **Description**
 
-  * **Description**
+  Creates tokens using the MITIE tokenizer.
 
-    Creates tokens using the MITIE tokenizer.
 
 
+* **Configuration**
 
-  * **Configuration**
+  ```yaml-rasa
+  pipeline:
+  - name: "MitieTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
 
-    ```yaml-rasa
-    pipeline:
-    - name: "MitieTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-    ```
 
+### SpacyTokenizer
 
-  ### SpacyTokenizer
 
+* **Short**
 
-  * **Short**
+  Tokenizer using spaCy
 
-    Tokenizer using spaCy
 
 
+* **Outputs**
 
-  * **Outputs**
+  `tokens` for user messages, responses (if present), and intents (if specified)
 
-    `tokens` for user messages, responses (if present), and intents (if specified)
 
 
+* **Requires**
 
-  * **Requires**
+  [SpacyNLP](./components.mdx#spacynlp)
 
-    [SpacyNLP](./components.mdx#spacynlp)
 
 
+* **Description**
 
-  * **Description**
+  Creates tokens using the spaCy tokenizer.
 
-    Creates tokens using the spaCy tokenizer.
 
 
+* **Configuration**
 
-  * **Configuration**
-
-    ```yaml-rasa
-    pipeline:
-    - name: "SpacyTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-    ```
+  ```yaml-rasa
+  pipeline:
+  - name: "SpacyTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
 
 
 ## Featurizers
@@ -475,12 +474,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 
 
-* **Requires**
-
-  `tokens`
-
-
-
 * **Type**
 
   Dense featurizer
@@ -535,13 +528,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   `dense_features` for user messages and responses
 
 
-
-* **Requires**
-
-  `tokens`.
-
-
-
 * **Type**
 
   Dense featurizer
@@ -566,12 +552,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   Include a [Tokenizer](./components.mdx#tokenizers) component before this component.
 
   You should specify what language model to load via the parameter `model_name`. See the below table for the
-  available language models.
-  Additionally, you can also specify the architecture variation of the chosen language model by specifying the
-  parameter `model_weights`.
-  The full list of supported architectures can be found in the
-  [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
-  If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+  currently supported language models. The weights to be loaded can be specified by the additional parameter
+  `model_weights`. If left empty, it uses the default model weights listed in the table.
 
   ```
   +----------------+--------------+-------------------------+
@@ -592,7 +574,25 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   +----------------+--------------+-------------------------+
   ```
 
-  The following configuration loads the language model BERT:
+  Apart from the default pretrained model weights, further models can be used from
+  [HuggingFace models](https://huggingface.co/models) provided the following conditions are met (the mentioned
+  files can be found in the "Files and versions" section of the model website):
+
+  * The model architecture is one of the supported language models (check that the `model_type` in `config.json` is
+    listed in the table's column `model_name`)
+  * The model has pretrained Tensorflow weights (check that the file `tf_model.h5` exists)
+  * The model uses the default tokenizer (`config.json` should not contain a custom `tokenizer_class` setting)
+
+  :::note
+  The `LaBSE` weights that are loaded as default for the `bert` architecture provide a multi-lingual model trained on
+  112 languages (see our [tutorial](https://www.youtube.com/watch?v=7tAWk_Coj-s) and the original
+  [paper](https://arxiv.org/pdf/2007.01852.pdf)). We strongly encourage using this as a baseline and testing your bot
+  end-to-end before trying to optimize this component with other weights/architectures.
+  :::
+
+
+  The following configuration loads the language model BERT with `rasa/LaBSE` weights, which can be found
+  [here](https://huggingface.co/rasa/LaBSE/tree/main):
 
   ```yaml-rasa
   pipeline:
@@ -670,6 +670,29 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     # use match word boundaries for lookup table
     "use_word_boundaries": True
   ```
+
+  **Configuring for incremental training**
+
+  To ensure that `sparse_features` are of fixed size during
+  [incremental training](./command-line-interface.mdx#incremental-training), the
+  component should be configured to account for additional patterns that may be
+  added to the training data in future. To do so, configure the `number_additional_patterns`
+  parameter while training the base model from scratch:
+
+  ```yaml-rasa {3}
+  pipeline:
+  - name: RegexFeaturizer
+    number_additional_patterns: 10
+  ```
+
+  If not configured by the user, the component will use twice the number of
+  patterns currently present in the training data (including lookup tables and regex patterns)
+  as the default value for `number_additional_patterns`.
+  This number is kept at a minimum of 10 in order to avoid running out of additional
+  slots for new patterns too frequently during incremental training.
+  Once the component runs out of additional pattern slots, the new patterns are dropped
+  and not considered during featurization. At this point, it is advisable
+  to retrain a new model from scratch.
 
 
 ### CountVectorsFeaturizer
@@ -795,6 +818,36 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "use_shared_vocab": False
   ```
 
+  **Configuring for incremental training**
+
+
+  To ensure that `sparse_features` are of fixed size during
+  [incremental training](./command-line-interface.mdx#incremental-training), the
+  component should be configured to account for additional vocabulary tokens
+  that may be added as part of new training examples in the future.
+  To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
+
+  ```yaml-rasa {3-6}
+  pipeline:
+  - name: CountVectorsFeaturizer
+    additional_vocabulary_size:
+      text: 1000
+      response: 1000
+      action_text: 1000
+  ```
+
+  As in the above example, you can define additional vocabulary size for each of
+  `text` (user messages), `response` (bot responses used by `ResponseSelector`) and
+  `action_text` (bot responses not used by `ResponseSelector`). If you are building a shared
+  vocabulary (`use_shared_vocab=True`), you only need to define a value for the `text` attribute.
+  If any of the attribute is not configured by the user, the component takes half of the current
+  vocabulary size as the default value for the attribute's `additional_vocabulary_size`.
+  This number is kept at a minimum of 1000 in order to avoid running out of additional vocabulary
+  slots too frequently during incremental training. Once the component runs out of additional vocabulary slots,
+  the new vocabulary tokens are dropped and not considered during featurization. At this point,
+  it is advisable to retrain a new model from scratch.
+
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -846,6 +899,10 @@ However, additional parameters exist that can be adapted.
 | alias                     | CountVectorFeaturizer   | Alias name of featurizer.                                    |
 +---------------------------+-------------------------+--------------------------------------------------------------+
 | use_lemma                 | True                    | Use the lemma of words for featurization.                    |
++---------------------------+-------------------------+--------------------------------------------------------------+
+| additional_vocabulary_size| text: 1000              | Size of additional vocabulary to account for incremental     |
+|                           | response: 1000          | training while training a model from scratch                 |
+|                           | action_text: 1000       |                                                              |
 +---------------------------+-------------------------+--------------------------------------------------------------+
 ```
 
@@ -993,6 +1050,83 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   pipeline:
   - name: "MitieIntentClassifier"
   ```
+
+
+### LogisticRegressionClassifier
+
+* **Short**
+
+  Logistic regression intent classifier, using the [scikit-learn implementation](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
+
+
+
+* **Outputs**
+
+  `intent` and `intent_ranking`
+
+
+
+* **Requires** 
+
+  Either `sparse_features` or `dense_features` need to be present. 
+
+
+
+* **Output-Example** 
+
+```json
+{
+    "intent": {"name": "greet", "confidence": 0.780},
+    "intent_ranking": [
+        {
+            "confidence": 0.780,
+            "name": "greet"
+        },
+        {
+            "confidence": 0.140,
+            "name": "goodbye"
+        },
+        {
+            "confidence": 0.080,
+            "name": "restaurant_search"
+        }
+    ]
+}
+```
+
+
+* **Description**
+
+  This classifier uses scikit-learn's logistic regression implementation to perform intent classification.
+  It's able to use only sparse features, but will also pick up any dense features that are present. In general,
+  DIET should yield higher accuracy results, but this classifier should train faster and may be used as
+  a lightweight benchmark. Our implementation uses the base settings from scikit-learn, with the exception
+  of the `class_weight` parameter where we assume the `"balanced"` setting.
+
+
+
+* **Configuration**
+
+An example configuration with all the defaults can be found below.
+
+```yaml
+pipeline:
+- name: LogisticRegressionClassifier
+  max_iter: 100
+  solver: lbfgs
+  tol: 0.0001
+  random_state: 42
+```
+
+There configuration parameters are briefly explained below. 
+
+- `max_iter`: Maximum number of iterations taken for the solvers to converge.
+- `solver`: Solver to be used. For very small datasets you might consider `liblinear`.
+- `tol`: Tolerance for stopping criteria of the optimizer.
+- `random_state`: Used to shuffle the data before training.
+
+More details on the parameters can be found on the [scikit-learn documentation page](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
+
 
 
 ### SklearnIntentClassifier
@@ -1189,7 +1323,8 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
   minimize similarities with negative samples.
 
-  If you want to learn more about the model, check out the
+  DIET does not provide pre-trained word embeddings or pre-trained language models but it is able to use these features if
+  they are added to the pipeline. If you want to learn more about the model, check out the
   [Algorithm Whiteboard](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) series on YouTube,
   where we explain the model architecture in detail.
 
@@ -1246,11 +1381,11 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     This parameter sets the number of units in the transformer (default: `256`).
     The vectors coming out of the transformers will have the given `transformer_size`.
 
-  * `weight_sparsity`:
-    This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
-    in the model (default: `0.8`). The value should be between 0 and 1. If you set `weight_sparsity`
-    to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
-    set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+  * `connection_density`:
+    This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
+    layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
+    to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+    set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
   * `constrain_similarities`:
@@ -1258,6 +1393,14 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     This helps in keeping similarities between input and negative labels to smaller values.
     This should help in better generalization of the model to real world test sets.
 
+  * `model_confidence`:
+    This parameter allows the user to configure how confidences are computed during inference. It can take only 
+    one value as input which is `softmax`[^1]. In `softmax`, confidences are in the range `[0, 1]`. The computed 
+    similarities are normalized with the `softmax` activation function.
+    
+[^1]: Note that `model_confidence: cosine`is deprecated in 2.3.4 (see [changelog](./changelog.mdx#234---2021-02-26))
+    and cannot be specified in the config, however `model_confidence: cosine` will be used regardless of the config
+    if `loss_type: margin` is specified. 
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
@@ -1317,13 +1460,15 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'inner'.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
-|                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
-|                                 |                  | "model_confidence=cosine",                                   |
-|                                 |                  | which is deprecated (see changelog for 2.3.4).               |
+|                                 |                  | or 'margin'. If type 'margin' is specified,                  |
+|                                 |                  | "model_confidence=cosine" will be used which is deprecated   |
+|                                 |                  | as of 2.3.4. See footnote (1).                               |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| ranking_length                  | 10               | Number of top intents to normalize scores for. Applicable    |
-|                                 |                  | only with loss type 'cross_entropy' and 'softmax'            |
-|                                 |                  | confidences. Set to 0 to disable normalization.              |
+| ranking_length                  | 10               | Number of top intents to report. Set to 0 to report all      |
+|                                 |                  | intents.                                                     |
++---------------------------------+------------------+--------------------------------------------------------------+
+| renormalize_confidences         | False            | Normalize the reported top intents. Applicable only with loss|
+|                                 |                  | type 'cross_entropy' and 'softmax' confidences.              |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
 |                                 |                  | embedding vectors for correct labels.                        |
@@ -1344,7 +1489,7 @@ However, additional parameters exist that can be adapted.
 | negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
 |                                 |                  | similarity between embeddings of different labels.           |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+| connection_density              | 0.2              | Connection density of the weights in dense layers.           |
 |                                 |                  | Value should be between 0 and 1.                             |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
@@ -1410,13 +1555,10 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"        | Affects how model's confidence for each intent               |
-|                                 |                  | is computed. It can take two values:                         |
+|                                 |                  | is computed. Currently, only one value is supported:         |
 |                                 |                  | 1. `softmax` - Similarities between input and intent         |
 |                                 |                  | embeddings are post-processed with a softmax function,       |
 |                                 |                  | as a result of which confidence for all intents sum up to 1. |
-|                                 |                  | 2. `linear_norm` - Linearly normalized dot product similarity|
-|                                 |                  | between input and intent embeddings. Confidence for each     |
-|                                 |                  | intent will be in the range `[0,1]`                          |
 |                                 |                  | This parameter does not affect the confidence for entity     |
 |                                 |                  | prediction.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
@@ -1713,7 +1855,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 
   If you want to pass custom features, such as pre-trained word embeddings, to `CRFEntityExtractor`, you can
-  add any dense featurizer to the pipeline before the `CRFEntityExtractor`.
+  add any dense featurizer to the pipeline before the `CRFEntityExtractor` and subsequently configure
+  `CRFEntityExtractor` to make use of the dense features by adding `"text_dense_feature"` to its feature configuration.
   `CRFEntityExtractor` automatically finds the additional dense features and checks if the dense features are an
   iterable of `len(tokens)`, where each entry is a vector.
   A warning will be shown in case the check fails.
@@ -1730,26 +1873,27 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   The following features are available:
 
   ```
-  ==============  ==========================================================================================
-  Feature Name    Description
-  ==============  ==========================================================================================
-  low             Checks if the token is lower case.
-  upper           Checks if the token is upper case.
-  title           Checks if the token starts with an uppercase character and all remaining characters are
-                  lowercased.
-  digit           Checks if the token contains just digits.
-  prefix5         Take the first five characters of the token.
-  prefix2         Take the first two characters of the token.
-  suffix5         Take the last five characters of the token.
-  suffix3         Take the last three characters of the token.
-  suffix2         Take the last two characters of the token.
-  suffix1         Take the last character of the token.
-  pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
-  pos2            Take the first two characters of the Part-of-Speech tag of the token
-                  (``SpacyTokenizer`` required).
-  pattern         Take the patterns defined by ``RegexFeaturizer``.
-  bias            Add an additional "bias" feature to the list of features.
-  ==============  ==========================================================================================
+  ===================  ==========================================================================================
+  Feature Name         Description
+  ===================  ==========================================================================================
+  low                  Checks if the token is lower case.
+  upper                Checks if the token is upper case.
+  title                Checks if the token starts with an uppercase character and all remaining characters are
+                       lowercased.
+  digit                Checks if the token contains just digits.
+  prefix5              Take the first five characters of the token.
+  prefix2              Take the first two characters of the token.
+  suffix5              Take the last five characters of the token.
+  suffix3              Take the last three characters of the token.
+  suffix2              Take the last two characters of the token.
+  suffix1              Take the last character of the token.
+  pos                  Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+  pos2                 Take the first two characters of the Part-of-Speech tag of the token
+                       (``SpacyTokenizer`` required).
+  pattern              Take the patterns defined by ``RegexFeaturizer``.
+  bias                 Add an additional "bias" feature to the list of features.
+  text_dense_features  Adds additional features from a dense featurizer.
+  ===================  ==========================================================================================
   ```
 
   As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
@@ -1780,6 +1924,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         "title",
         "digit",
         "pattern",
+        "text_dense_features"
       ],
       ["low", "title", "upper"],
     ]
@@ -1808,6 +1953,11 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   :::
 
+  :::note
+  If `text_dense_features` features are used, you need to have a dense featurizer (e.g. `LanguageModelFeaturizer`) in
+  your pipeline.
+
+  :::
 
 ### DucklingEntityExtractor
 
@@ -2175,11 +2325,11 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
       This parameter sets the number of units in the transformer (default: `256`).
       The vectors coming out of the transformers will have the given `transformer_size`.
 
-    * `weight_sparsity`:
-      This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
-      in the model (default: `0.8`). The value should be between 0 and 1. If you set `weight_sparsity`
-      to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
-      set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+    * `connection_density`:
+      This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
+      layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
+      to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+      set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
       to learn.
 
     * `BILOU_flag`:
@@ -2247,8 +2397,11 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   |                                 |                  | "model_confidence=cosine",                                   |
   |                                 |                  | which is deprecated (see changelog for 2.3.4).               |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
-  |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
+  | ranking_length                  | 10               | Number of top intents  to report. Set to 0 to report all     |
+  |                                 |                  | intents.                                                     |
+  +---------------------------------+------------------+--------------------------------------------------------------+
+  | renormalize_confidences         | False            | Normalize the reported top intents. Applicable only with loss|
+  |                                 |                  | type 'cross_entropy' and 'softmax' confidences.              |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
   |                                 |                  | embedding vectors for correct labels.                        |
@@ -2269,7 +2422,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   | negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
   |                                 |                  | similarity between embeddings of different labels.           |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+  | connection_density              | 0.2              | Connection density of the weights in dense layers.           |
   |                                 |                  | Value should be between 0 and 1.                             |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
@@ -2448,8 +2601,6 @@ Selectors predict a bot response from a set of candidate responses.
     }
     ```
 
-
-
 * **Description**
 
   Response Selector component can be used to build a response retrieval model to directly predict a bot response from
@@ -2511,17 +2662,22 @@ Selectors predict a bot response from a set of candidate responses.
     This parameter sets the number of units in the transformer (default: `None`).
     The vectors coming out of the transformers will have the given `transformer_size`.
 
-  * `weight_sparsity`:
-    This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
-    in the model (default: `0.8`). The value should be between 0 and 1. If you set `weight_sparsity`
-    to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
-    set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+  * `connection_density`:
+    This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
+    layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
+    to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+    set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
   * `constrain_similarities`:
     This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
     This helps in keeping similarities between input and negative labels to smaller values.
     This should help in better generalization of the model to real world test sets.
+
+  * `model_confidence`:
+      This parameter allows the user to configure how confidences are computed during inference. It can take only 
+    one value as input which is `softmax`. In `softmax`, confidences are in the range `[0, 1]`. The computed 
+    similarities are normalized with the `softmax` activation function.
 
   The component can also be configured to train a response selector for a particular retrieval intent.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.
@@ -2606,9 +2762,11 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | "model_confidence=cosine",                                   |
 |                                 |                   | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| ranking_length                  | 10                | Number of top responses to normalize scores for. Applicable  |
-|                                 |                   | only with loss type 'cross_entropy' and 'softmax'            |
-|                                 |                   | confidences. Set to 0 to disable normalization.              |
+| ranking_length                  | 10                | Number of top responses to report. Set to 0 to report all    |
+|                                 |                   | responses.                                                   |
++---------------------------------+-------------------+--------------------------------------------------------------+
+| renormalize_confidences         | False             | Normalize the top responses. Applicable only with loss type  |
+|                                 |                   | 'cross_entropy' and 'softmax' confidences.                   |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | maximum_positive_similarity     | 0.8               | Indicates how similar the algorithm should try to make       |
 |                                 |                   | embedding vectors for correct labels.                        |
@@ -2629,7 +2787,7 @@ However, additional parameters exist that can be adapted.
 | negative_margin_scale           | 0.8               | The scale of how important is to minimize the maximum        |
 |                                 |                   | similarity between embeddings of different labels.           |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| weight_sparsity                 | 0.8               | Sparsity of the weights in dense layers.                     |
+| connection_density              | 0.2               | Connection density of the weights in dense layers.           |
 |                                 |                   | Value should be between 0 and 1.                             |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | drop_rate                       | 0.2               | Dropout rate for encoder. Value should be between 0 and 1.   |
@@ -2683,13 +2841,10 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"         | Affects how model's confidence for each response label       |
-|                                 |                   | is computed. It can take two values:                         |
+|                                 |                   | is computed. Currently, only one value is supported:         |
 |                                 |                   | 1. `softmax` - Similarities between input and response label |
 |                                 |                   | embeddings are post-processed with a softmax function,       |
 |                                 |                   | as a result of which confidence for all labels sum up to 1.  |
-|                                 |                   | 2. `linear_norm` - Linearly normalized dot product similarity|
-|                                 |                   | between input and response label embeddings. Confidence for  |
-|                                 |                   | each label is in the range `[0, 1]`.                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 ```
 
@@ -2705,8 +2860,16 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 ## Custom Components
 
+:::info New in 3.0
+Rasa Open Source 3.0 unified the implementation of NLU components and policies.
+This requires changes to custom components written for earlier versions of Rasa Open
+Source. Please see the
+[migration guide](migration-guide.mdx#custom-policies-and-custom-components) for a
+step-by-step guide for the migration.
+
+:::
+
 You can create a custom component to perform a specific task which NLU doesn't currently offer (for example, sentiment analysis).
-Below is the specification of the `rasa.nlu.components.Component`] class with the methods you'll need to implement.
 
 You can add a custom component to your pipeline by adding the module path.
 So if you have a module called `sentiment`
@@ -2717,37 +2880,6 @@ pipeline:
 - name: "sentiment.SentimentAnalyzer"
 ```
 
+See the [guide on custom graph components](custom-graph-components.mdx) for a complete guide on custom components.
 Also be sure to read the section on the [Component Lifecycle](./tuning-your-model.mdx#component-lifecycle).
 
-To get started, you can use this skeleton that contains the most important
-methods that you should implement:
-
-```python (docs/sources/tests/nlu/example_component.py)
-```
-
-When you [define metadata for your intent examples in your training data](./training-data-format.mdx#training-examples),
-your component can access both the intent metadata and the intent example metadata during processing:
-
-```python
-# in your component class
-
-    def process(self, message: Message, **kwargs: Any) -> None:
-        metadata = message.get("metadata")
-        print(metadata.get("intent"))
-        print(metadata.get("example"))
-```
-
-:::note custom tokenizers
-If you create a custom tokenizer you should implement the methods of `rasa.nlu.tokenizers.tokenizer.Tokenizer`.
-The `train` and `process` methods are already implemented and you simply need to overwrite the `tokenize`
-method.
-
-:::
-
-:::note custom featurizers
-If you create a custom featurizer you can return two different kind of features: sequence features and sentence
-features. The sequence features are a matrix of size `(number-of-tokens x feature-dimension)`, e.g.
-the matrix contains a feature vector for every token in the sequence.
-The sentence features are represented by a matrix of size `(1 x feature-dimension)`.
-
-:::

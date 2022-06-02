@@ -85,6 +85,7 @@ class TwilioVoiceInput(InputChannel):
         "Polly.Astrid",
         "Polly.Filiz",
         "Polly.Gwyneth",
+        "Polly.Aditi",
     ]
 
     SUPPORTED_SPEECH_MODELS = ["default", "numbers_and_commands", "phone_call"]
@@ -116,9 +117,9 @@ class TwilioVoiceInput(InputChannel):
         initial_prompt: Optional[Text],
         reprompt_fallback_phrase: Optional[Text],
         assistant_voice: Optional[Text],
-        speech_timeout: Optional[Text],
-        speech_model: Optional[Text],
-        enhanced: Optional[Text],
+        speech_timeout: Text = "5",
+        speech_model: Text = "default",
+        enhanced: Text = "false",
     ) -> None:
         """Creates a connection to Twilio voice.
 
@@ -153,16 +154,21 @@ class TwilioVoiceInput(InputChannel):
         if self.speech_model not in self.SUPPORTED_SPEECH_MODELS:
             self._raise_invalid_speech_model_exception()
 
-        if self.enhanced.lower() not in ["true", "false"]:
+        if self.enhanced.lower() not in [
+            "true",
+            "false",
+        ]:
             self._raise_invalid_enhanced_option_exception()
 
-        if (self.enhanced.lower() == "true") and (
-            self.speech_model.lower() != "phone_call"
+        if (
+            self.enhanced.lower() == "true"
+            and self.speech_model.lower() != "phone_call"
         ):
             self._raise_invalid_enhanced_speech_model_exception()
 
-        if (self.speech_model.lower() != "numbers_and_commands") and (
-            self.speech_timeout.lower() == "auto"
+        if (
+            self.speech_model.lower() != "numbers_and_commands"
+            and self.speech_timeout.lower() == "auto"
         ):
             self._raise_invalid_speech_model_timeout_exception()
 
@@ -224,7 +230,7 @@ class TwilioVoiceInput(InputChannel):
             return response.json({"status": "ok"})
 
         @twilio_voice_webhook.route("/webhook", methods=["POST"])
-        async def receive(request: Request) -> Text:
+        async def receive(request: Request) -> HTTPResponse:
             sender_id = request.form.get("From")
             text = request.form.get("SpeechResult")
             input_channel = self.name()
@@ -239,16 +245,14 @@ class TwilioVoiceInput(InputChannel):
             # determine the response.
             if text is not None:
                 await on_new_message(
-                    UserMessage(
-                        text, collector, sender_id, input_channel=input_channel,
-                    )
+                    UserMessage(text, collector, sender_id, input_channel=input_channel)
                 )
 
                 twilio_response = self._build_twilio_voice_response(collector.messages)
             # If the user doesn't respond resend the last message.
             else:
                 # Get last user utterance from tracker.
-                tracker = request.app.agent.tracker_store.retrieve(sender_id)
+                tracker = await request.app.ctx.agent.tracker_store.retrieve(sender_id)
                 last_response = None
                 if tracker:
                     last_response = next(
@@ -262,12 +266,12 @@ class TwilioVoiceInput(InputChannel):
 
                 # If no previous utterance found use the reprompt_fallback phrase.
                 if last_response is None:
-                    last_response = self.reprompt_fallback_phrase
+                    last_response_text = self.reprompt_fallback_phrase
                 else:
-                    last_response = last_response.text
+                    last_response_text = last_response.text
 
                 twilio_response = self._build_twilio_voice_response(
-                    [{"text": last_response}]
+                    [{"text": last_response_text}]
                 )
             return response.text(str(twilio_response), content_type="text/xml")
 
@@ -313,7 +317,7 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         return "twilio_voice"
 
     @staticmethod
-    def _emoji_warning(text: Text,) -> None:
+    def _emoji_warning(text: Text) -> None:
         """Raises a warning if text contains an emoji."""
         emoji_regex = rasa.utils.io.get_emoji_regex()
         if emoji_regex.findall(text):

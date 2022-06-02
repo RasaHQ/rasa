@@ -3,6 +3,8 @@ import shutil
 from pathlib import Path
 from shutil import copyfile
 
+from pytest import Testdir, RunResult, Pytester, ExitCode
+
 from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
@@ -11,7 +13,6 @@ from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.shared.utils.io import list_files, write_yaml, write_text_file
 from typing import Callable
-from _pytest.pytester import RunResult, Testdir, Pytester, ExitCode
 
 
 def test_test_core(run_in_simple_project: Callable[..., RunResult]):
@@ -47,7 +48,7 @@ def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunR
     )
 
     simple_test_story_yaml = """
-version: "2.0"
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: unlikely path
   steps:
@@ -59,7 +60,7 @@ stories:
   - intent: affirm
   - action: utter_happy
 """
-    with open("tests/test_stories.yaml", "w") as f:
+    with open("tests/test_stories.yml", "w") as f:
         f.write(simple_test_story_yaml)
 
     run_in_simple_project_with_model("test", "core", "--no-warnings")
@@ -100,7 +101,7 @@ def test_test_with_no_user_utterance(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):
     write_yaml(
-        {"pipeline": "KeywordIntentClassifier", "policies": [{"name": "TEDPolicy"}],},
+        {"pipeline": "KeywordIntentClassifier", "policies": [{"name": "TEDPolicy"}]},
         "config.yml",
     )
 
@@ -160,9 +161,7 @@ def test_test_nlu_cross_validation_with_autoconfig(
     config_path = str(testdir.tmpdir / "config.yml")
     nlu_path = str(testdir.tmpdir / "nlu.yml")
     shutil.copy(str(moodbot_nlu_data_path), nlu_path)
-    write_yaml(
-        {"language": "en", "pipeline": [], "policies": [],}, config_path,
-    )
+    write_yaml({"language": "en", "pipeline": None, "policies": None}, config_path)
     args = [
         shutil.which("rasa"),
         "test",
@@ -188,6 +187,7 @@ def test_test_nlu_comparison(run_in_simple_project: Callable[..., RunResult]):
     write_yaml({"pipeline": "KeywordIntentClassifier"}, "config.yml")
     write_yaml({"pipeline": "KeywordIntentClassifier"}, "config2.yml")
 
+    # TODO: Loading still needs fixing
     run_in_simple_project(
         "test",
         "nlu",
@@ -218,7 +218,7 @@ def test_test_core_comparison(
         files[0],
         "models/copy-model.tar.gz",
         "--stories",
-        "data/stories.md",
+        "data/stories.yml",
     )
 
     assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
@@ -265,9 +265,10 @@ def test_test_help(run: Callable[..., RunResult]):
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU]
-                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                 [--successes] [--no-errors] [--no-warnings] [--out OUT]
+                 [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                 [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--no-plot] [--successes] [--no-errors] [--no-warnings]
+                 [--out OUT]
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -281,9 +282,9 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                     [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                     [--successes] [--no-errors] [--no-warnings]"""
+                     [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                     [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                     [--no-plot] [--successes] [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

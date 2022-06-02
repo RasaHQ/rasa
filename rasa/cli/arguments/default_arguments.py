@@ -84,7 +84,14 @@ def add_out_param(
     required: bool = False,
 ) -> None:
     parser.add_argument(
-        "--out", type=str, default=default, help=help_text, required=required
+        "--out",
+        type=str,
+        default=default,
+        help=help_text,
+        # The desired behaviour is that required indicates if this argument must
+        # have a value, but argparse interprets it as "must have a value
+        # from user input", so we toggle it only if our default is not set
+        required=required and default is None,
     )
 
 
@@ -109,14 +116,21 @@ def add_data_param(
         nargs="+",
         type=str,
         help=f"Paths to the files or directories containing {data_type} data.",
-        required=required,
+        # The desired behaviour is that required indicates if this argument must
+        # have a value, but argparse interprets it as "must have a value
+        # from user input", so we toggle it only if our default is not set
+        required=required and default is None,
     )
 
 
 def add_logging_options(parser: argparse.ArgumentParser) -> None:
     """Add options to an argument parser to configure logging levels."""
-
-    logging_arguments = parser.add_argument_group("Python Logging Options")
+    logging_arguments = parser.add_argument_group(
+        "Python Logging Options",
+        "You can control level of log messages printed. "
+        "In addition to these arguments, a more fine grained configuration can be "
+        "achieved with environment variables. See online documentation for more info.",
+    )
 
     # arguments for logging configuration
     logging_arguments.add_argument(

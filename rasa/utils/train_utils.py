@@ -1,19 +1,17 @@
 from pathlib import Path
-import copy
 import numpy as np
 from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.nlu.utils.bilou_utils
-from rasa.shared.constants import (
-    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-    DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY,
-)
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
+    RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     SIMILARITY_TYPE,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
@@ -22,31 +20,18 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     AUTO,
     INNER,
-    LINEAR_NORM,
     COSINE,
     SEQUENCE,
     CROSS_ENTROPY,
-    TRANSFORMER_SIZE,
-    NUM_TRANSFORMER_LAYERS,
-    DENSE_DIMENSION,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
-    WEIGHT_SPARSITY,
-    CONNECTION_DENSITY,
     TOLERANCE,
     CHECKPOINT_MODEL,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.utils.tensorflow.model_data import RasaModelData
-from rasa.shared.nlu.constants import (
-    ACTION_NAME,
-    INTENT,
-    ENTITIES,
-    SPLIT_ENTITIES_BY_COMMA,
-)
-from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
-from rasa.core.constants import DIALOGUE
+from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
@@ -55,20 +40,48 @@ if TYPE_CHECKING:
     from tensorflow.keras.callbacks import Callback
 
 
-def normalize(values: np.ndarray, ranking_length: int = 0) -> np.ndarray:
-    """Normalizes an array of positive numbers over the top `ranking_length` values.
+def rank_and_mask(
+    confidences: np.ndarray, ranking_length: int = 0, renormalize: bool = False
+) -> Tuple[np.array, np.array]:
+    """Computes a ranking of the given confidences.
 
-    Other values will be set to 0.
+    First, it computes a list containing the indices that would sort all the given
+    confidences in decreasing order.
+    If a `ranking_length` is specified, then only the indices for the `ranking_length`
+    largest confidences will be returned and all other confidences (i.e. whose indices
+    we do not return) will be masked by setting them to 0.
+    Moreover, if `renormalize` is set to `True`, then the confidences will
+    additionally be renormalised by dividing them by their sum.
+
+    We assume that the given confidences sum up to 1 and, if the
+    `ranking_length` is 0 or larger than the given number of confidences,
+    we set the `ranking_length` to the number of confidences.
+    Hence, in this case the confidences won't be modified.
+
+    Args:
+        confidences: a 1-d array of confidences that are non-negative and sum up to 1
+        ranking_length: the size of the ranking to be computed. If set to 0 or
+            something larger than the number of given confidences, then this is set
+            to the exact number of given confidences.
+        renormalize: determines whether the masked confidences should be renormalised.
+        return_indices:
+    Returns:
+        indices of the top `ranking_length` confidences and an array of the same
+        shape as the given confidences that contains the possibly masked and
+        renormalized confidence values
     """
-    new_values = values.copy()  # prevent mutation of the input
-    if 0 < ranking_length < len(new_values):
-        ranked = sorted(new_values, reverse=True)
-        new_values[new_values < ranked[ranking_length - 1]] = 0
+    indices = confidences.argsort()[::-1]
+    confidences = confidences.copy()
 
-    if np.sum(new_values) > 0:
-        new_values = new_values / np.sum(new_values)
+    if 0 < ranking_length < len(confidences):
+        confidences[indices[ranking_length:]] = 0
 
-    return new_values
+        if renormalize and np.sum(confidences) > 0:
+            confidences = confidences / np.sum(confidences)
+
+        indices = indices[:ranking_length]
+
+    return indices, confidences
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
@@ -85,49 +98,6 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
             config[SIMILARITY_TYPE] = INNER
         elif config[LOSS_TYPE] == MARGIN:
             config[SIMILARITY_TYPE] = COSINE
-
-    return config
-
-
-def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """Updates LOSS_TYPE to 'cross_entropy' if it is set to 'softmax'.
-
-    Args:
-        config: model configuration
-
-    Returns:
-        updated model configuration
-    """
-    if config.get(LOSS_TYPE) == SOFTMAX:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"`{LOSS_TYPE}={SOFTMAX}` is deprecated. "
-            f"Please update your configuration file to use"
-            f"`{LOSS_TYPE}={CROSS_ENTROPY}` instead.",
-            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-        )
-        config[LOSS_TYPE] = CROSS_ENTROPY
-
-    return config
-
-
-def update_deprecated_sparsity_to_density(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """Updates `WEIGHT_SPARSITY` to `CONNECTION_DENSITY = 1 - WEIGHT_SPARSITY`.
-
-    Args:
-        config: model configuration
-
-    Returns:
-        Updated model configuration
-    """
-    if WEIGHT_SPARSITY in config:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"`{WEIGHT_SPARSITY}` is deprecated."
-            f"Please update your configuration file to use"
-            f"`{CONNECTION_DENSITY}` instead.",
-            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-            docs=DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY,
-        )
-        config[CONNECTION_DENSITY] = 1.0 - config[WEIGHT_SPARSITY]
 
     return config
 
@@ -277,56 +247,7 @@ def check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
     # note: call _replace_deprecated_option() here when there are options to deprecate
-    new_config = {}
-    if isinstance(config.get(TRANSFORMER_SIZE), int):
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                TRANSFORMER_SIZE, [TRANSFORMER_SIZE, DIALOGUE], config
-            ),
-        )
 
-    if isinstance(config.get(NUM_TRANSFORMER_LAYERS), int):
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                NUM_TRANSFORMER_LAYERS, [NUM_TRANSFORMER_LAYERS, DIALOGUE], config
-            ),
-        )
-
-    if isinstance(config.get(DENSE_DIMENSION), int):
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config
-            ),
-        )
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, ACTION_NAME], config
-            ),
-        )
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, ENTITIES], config
-            ),
-        )
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, SLOTS], config
-            ),
-        )
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, ACTIVE_LOOP], config
-            ),
-        )
-
-    config.update(new_config)
     return config
 
 
@@ -376,35 +297,6 @@ def entity_label_to_tags(
     return predicted_tags, confidence_values
 
 
-def override_defaults(
-    defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
-) -> Dict[Text, Any]:
-    """Override default config with the given config.
-
-    We cannot use `dict.update` method because configs contain nested dicts.
-
-    Args:
-        defaults: default config
-        custom: user config containing new parameters
-
-    Returns:
-        updated config
-    """
-    if defaults:
-        config = copy.deepcopy(defaults)
-    else:
-        config = {}
-
-    if custom:
-        for key in custom.keys():
-            if isinstance(config.get(key), dict):
-                config[key].update(custom[key])
-            else:
-                config[key] = custom[key]
-
-    return config
-
-
 def create_data_generators(
     model_data: RasaModelData,
     batch_sizes: Union[int, List[int]],
@@ -431,7 +323,7 @@ def create_data_generators(
     validation_data_generator = None
     if eval_num_examples > 0:
         model_data, evaluation_model_data = model_data.split(
-            eval_num_examples, random_seed,
+            eval_num_examples, random_seed
         )
         validation_data_generator = RasaBatchDataGenerator(
             evaluation_model_data,
@@ -480,13 +372,6 @@ def create_common_callbacks(
     callbacks = [RasaTrainingLogger(epochs, silent=False)]
 
     if tensorboard_log_dir:
-        if tensorboard_log_level == "minibatch":
-            tensorboard_log_level = "batch"
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "You set 'tensorboard_log_level' to 'minibatch'. This value should not "
-                "be used anymore. Please use 'batch' instead."
-            )
-
         callbacks.append(
             tf.keras.callbacks.TensorBoard(
                 log_dir=tensorboard_log_dir,
@@ -556,7 +441,8 @@ def _check_evaluation_setting(component_config: Dict[Text, Any]) -> None:
         and component_config[EVAL_NUM_EPOCHS] > component_config[EPOCHS]
     ):
         warning = (
-            f"the value of '{EVAL_NUM_EPOCHS}' is greater than the value of '{EPOCHS}'."
+            f"'{EVAL_NUM_EPOCHS}={component_config[EVAL_NUM_EPOCHS]}' is "
+            f"greater than '{EPOCHS}={component_config[EPOCHS]}'."
             f" No evaluation will occur."
         )
         if component_config[CHECKPOINT_MODEL]:
@@ -602,13 +488,13 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
             f"other places. "
             f"Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead. "
         )
-    if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, LINEAR_NORM, AUTO]:
+    if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, AUTO]:
         raise InvalidConfigException(
             f"{MODEL_CONFIDENCE}={component_config[MODEL_CONFIDENCE]} is not a valid "
-            f"setting. Possible values: `{SOFTMAX}`, `{LINEAR_NORM}`(deprecated)."
+            f"setting. Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead."
         )
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
-        if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
+        if component_config[LOSS_TYPE] != CROSS_ENTROPY:
             raise InvalidConfigException(
                 f"{LOSS_TYPE}={component_config[LOSS_TYPE]} and "
                 f"{MODEL_CONFIDENCE}={SOFTMAX} is not a valid "
@@ -622,27 +508,26 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
                 f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
                 f"only with {SIMILARITY_TYPE}={INNER}."
             )
-    if component_config[MODEL_CONFIDENCE] == LINEAR_NORM:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"{MODEL_CONFIDENCE} is set to `{LINEAR_NORM}`. We "
-            f"introduced this option in Rasa Open Source 2.3.0, "
-            f"but have identified multiple problems with it based "
-            f"on user feedback. Therefore, `{MODEL_CONFIDENCE}={LINEAR_NORM}` "
-            f"is now deprecated and will be removed in Rasa Open Source `3.0.0`."
-            f"Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead."
-        )
+    if component_config.get(RENORMALIZE_CONFIDENCES) and component_config.get(
+        RANKING_LENGTH
+    ):
+        if component_config[MODEL_CONFIDENCE] != SOFTMAX:
+            raise InvalidConfigException(
+                f"Renormalizing the {component_config[RANKING_LENGTH]} top "
+                f"predictions should only be done if {MODEL_CONFIDENCE}={SOFTMAX} "
+                f"Please use {RENORMALIZE_CONFIDENCES}={True} "
+                f"only with {MODEL_CONFIDENCE}={SOFTMAX}."
+            )
 
 
 def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
-    if not component_config[CONSTRAIN_SIMILARITIES] and component_config[LOSS_TYPE] in [
-        SOFTMAX,
-        CROSS_ENTROPY,
-    ]:
+    if (
+        not component_config[CONSTRAIN_SIMILARITIES]
+        and component_config[LOSS_TYPE] == CROSS_ENTROPY
+    ):
         rasa.shared.utils.io.raise_warning(
             f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
-            f"to set it to `True` when using cross-entropy loss. It will be set to "
-            f"`True` by default, "
-            f"Rasa Open Source 3.0.0 onwards.",
+            f"to set it to `True` when using cross-entropy loss.",
             category=UserWarning,
         )
 

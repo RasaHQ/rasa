@@ -3,16 +3,13 @@ from typing import Optional
 
 import pytest
 
-from rasa.engine.graph import (
-    ExecutionContext,
-    GraphSchema,
-    SchemaNode,
-)
+from rasa.engine.graph import ExecutionContext, GraphSchema, SchemaNode
 from rasa.engine.exceptions import GraphRunError
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.storage import ModelStorage
 from tests.engine.graph_components_test_classes import (
     AddInputs,
+    AssertComponent,
     ExecutionContextAware,
     ProvideX,
     SubtractByX,
@@ -103,7 +100,7 @@ def test_default_config(
                 constructor_name="create",
                 config={"x": x} if x else {},
                 is_target=True,
-            ),
+            )
         }
     )
 
@@ -137,7 +134,7 @@ def test_no_inputs(default_model_storage: ModelStorage):
                 constructor_name="create",
                 config={},
                 is_target=True,
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(
@@ -158,7 +155,7 @@ def test_no_target(default_model_storage: ModelStorage):
                 fn="provide",
                 constructor_name="create",
                 config={},
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(
@@ -181,12 +178,14 @@ def test_unused_node(default_model_storage: ModelStorage):
                 config={},
                 is_target=True,
             ),
-            "provide_2": SchemaNode(  # This will not output
-                needs={},
-                uses=ProvideX,
-                fn="provide",
+            # This node will not fail as it will be pruned because it is not a target
+            # or a target's ancestor.
+            "assert_false": SchemaNode(
+                needs={"i": "input"},
+                uses=AssertComponent,
+                fn="run_assert",
                 constructor_name="create",
-                config={},
+                config={"value_to_assert": "some_value"},
             ),
         }
     )
@@ -195,7 +194,7 @@ def test_unused_node(default_model_storage: ModelStorage):
         model_storage=default_model_storage,
         execution_context=ExecutionContext(graph_schema=graph_schema, model_id="1"),
     )
-    results = runner.run()
+    results = runner.run(inputs={"input": "some_other_value"})
     assert results == {"provide": 1}
 
 
@@ -210,7 +209,7 @@ def test_non_eager_can_use_inputs_for_constructor(default_model_storage: ModelSt
                 config={},
                 eager=False,
                 is_target=True,
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(
@@ -232,7 +231,7 @@ def test_can_use_alternate_constructor(default_model_storage: ModelStorage):
                 constructor_name="create_with_2",
                 config={},
                 is_target=True,
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(
@@ -254,7 +253,7 @@ def test_execution_context(default_model_storage: ModelStorage):
                 constructor_name="create",
                 config={},
                 is_target=True,
-            ),
+            )
         }
     )
     context = ExecutionContext(graph_schema=graph_schema, model_id="some_id")
@@ -269,36 +268,6 @@ def test_execution_context(default_model_storage: ModelStorage):
     assert result.node_name == "execution_context_aware"
 
 
-def test_loop(default_model_storage: ModelStorage):
-    graph_schema = GraphSchema(
-        {
-            "subtract_a": SchemaNode(
-                needs={"i": "subtract_b"},
-                uses=SubtractByX,
-                fn="subtract_x",
-                constructor_name="create",
-                config={},
-                is_target=False,
-            ),
-            "subtract_b": SchemaNode(
-                needs={"i": "subtract_a"},
-                uses=SubtractByX,
-                fn="subtract_x",
-                constructor_name="create",
-                config={},
-                is_target=True,
-            ),
-        }
-    )
-    runner = DaskGraphRunner(
-        graph_schema=graph_schema,
-        model_storage=default_model_storage,
-        execution_context=ExecutionContext(graph_schema=graph_schema, model_id="1"),
-    )
-    with pytest.raises(GraphRunError):
-        runner.run()
-
-
 def test_input_value_is_node_name(default_model_storage: ModelStorage):
     graph_schema = GraphSchema(
         {
@@ -309,7 +278,7 @@ def test_input_value_is_node_name(default_model_storage: ModelStorage):
                 constructor_name="create",
                 config={},
                 is_target=True,
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(

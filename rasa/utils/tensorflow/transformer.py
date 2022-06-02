@@ -1,9 +1,12 @@
 from typing import Optional, Text, Tuple, Union
-import tensorflow as tf
-import tensorflow_addons as tfa
-from tensorflow.python.keras.utils import tf_utils
-from tensorflow.python.keras import backend as K
+
 import numpy as np
+import tensorflow as tf
+
+# TODO: The following is not (yet) available via tf.keras
+from keras.utils.control_flow_util import smart_cond
+from tensorflow.keras import backend as K
+
 from rasa.utils.tensorflow.layers import RandomlyConnectedDense
 
 
@@ -80,8 +83,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
     def _create_relative_embeddings(self) -> None:
         """Create relative embeddings."""
-
-        relative_embedding_shape = None
+        relative_embedding_shape: Optional[
+            Union[Tuple[int, int], Tuple[int, int, int]]
+        ] = None
         self.key_relative_embeddings = None
         self.value_relative_embeddings = None
 
@@ -252,7 +256,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
             return logits + drop_mask * -1e9
 
-        return tf_utils.smart_cond(training, droped_logits, lambda: tf.identity(logits))
+        return smart_cond(training, droped_logits, lambda: tf.identity(logits))
 
     def _scaled_dot_product_attention(
         self,
@@ -435,7 +439,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         self._ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
             RandomlyConnectedDense(
-                units=filter_units, activation=tfa.activations.gelu, density=density
+                units=filter_units, activation=tf.nn.gelu, density=density
             ),  # (batch_size, length, filter_units)
             tf.keras.layers.Dropout(dropout_rate),
             RandomlyConnectedDense(

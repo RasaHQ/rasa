@@ -1,5 +1,5 @@
 import logging
-
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Text, Type
 
 import rasa.shared.core.constants
@@ -19,17 +19,21 @@ class InvalidSlotConfigError(RasaException, ValueError):
     """Raised if a slot's config is invalid."""
 
 
-class Slot:
+class Slot(ABC):
     """Key-value store for storing information during a conversation."""
 
-    type_name = None
+    @property
+    @abstractmethod
+    def type_name(self) -> Text:
+        """Name of the type of slot."""
+        ...
 
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
         """Create a Slot.
@@ -37,18 +41,17 @@ class Slot:
         Args:
             name: The name of the slot.
             initial_value: The initial value of the slot.
+            mappings: List containing slot mappings.
             value_reset_delay: After how many turns the slot should be reset to the
                 initial_value. This is behavior is currently not implemented.
-            auto_fill: `True` if the slot should be filled automatically by entities
-                with the same name.
             influence_conversation: If `True` the slot will be featurized and hence
                 influence the predictions of the dialogue polices.
         """
         self.name = name
+        self.mappings = mappings
         self._value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
-        self.auto_fill = auto_fill
         self.influence_conversation = influence_conversation
         self._has_been_set = False
 
@@ -85,6 +88,7 @@ class Slot:
 
         return self._as_feature()
 
+    @abstractmethod
     def _as_feature(self) -> List[float]:
         raise NotImplementedError(
             "Each slot type needs to specify how its "
@@ -142,11 +146,12 @@ class Slot:
             )
 
     def persistence_info(self) -> Dict[str, Any]:
+        """Returns relevant information to persist this slot."""
         return {
             "type": rasa.shared.utils.common.module_path_from_instance(self),
             "initial_value": self.initial_value,
-            "auto_fill": self.auto_fill,
             "influence_conversation": self.influence_conversation,
+            "mappings": self.mappings,
         }
 
     def fingerprint(self) -> Text:
@@ -168,9 +173,9 @@ class FloatSlot(Slot):
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Optional[float] = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
         max_value: float = 1.0,
         min_value: float = 0.0,
         influence_conversation: bool = True,
@@ -182,7 +187,7 @@ class FloatSlot(Slot):
             UserWarning, if initial_value is outside the min-max range.
         """
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, influence_conversation
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -244,8 +249,7 @@ class BooleanSlot(Slot):
 
 
 def bool_from_any(x: Any) -> bool:
-    """ Converts bool/float/int/str to bool or raises error """
-
+    """Converts bool/float/int/str to bool or raises error."""
     if isinstance(x, bool):
         return x
     elif isinstance(x, (float, int)):
@@ -283,7 +287,8 @@ class ListSlot(Slot):
             # we couldn't convert the value to a list - using default value
             return [0.0]
 
-    @Slot.value.setter
+    # FIXME: https://github.com/python/mypy/issues/8085
+    @Slot.value.setter  # type: ignore[attr-defined,misc]
     def value(self, value: Any) -> None:
         """Sets the slot's value."""
         if value and not isinstance(value, list):
@@ -291,7 +296,8 @@ class ListSlot(Slot):
             value = [value]
 
         # Call property setter of superclass
-        super(ListSlot, self.__class__).value.fset(self, value)
+        # FIXME: https://github.com/python/mypy/issues/8085
+        super(ListSlot, self.__class__).value.fset(self, value)  # type: ignore[attr-defined] # noqa: E501
 
 
 class CategoricalSlot(Slot):
@@ -302,19 +308,34 @@ class CategoricalSlot(Slot):
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         values: Optional[List[Any]] = None,
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, influence_conversation
         )
-        self.values = [str(v).lower() for v in values] if values else []
+        if values and None in values:
+            rasa.shared.utils.io.raise_warning(
+                f"Categorical slot '{self.name}' has `null` listed as a possible value"
+                f" in the domain file, which translates to `None` in Python. This value"
+                f" is reserved for when the slot is not set, and should not be listed"
+                f" as a value in the slot's definition."
+                f" Rasa will ignore `null` as a possible value for the '{self.name}'"
+                f" slot. Consider changing this value in your domain file to, for"
+                f" example, `unset`, or provide the value explicitly as a string by"
+                f' using quotation marks: "null".',
+                category=UserWarning,
+            )
+        self.values = (
+            [str(v).lower() for v in values if v is not None] if values else []
+        )
 
     def add_default_value(self) -> None:
+        """Adds the special default value to the list of possible values."""
         values = set(self.values)
         if rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE not in values:
             self.values.append(
@@ -336,31 +357,36 @@ class CategoricalSlot(Slot):
     def _as_feature(self) -> List[float]:
         r = [0.0] * self.feature_dimensionality()
 
+        # Return the zero-filled array if the slot is unset (i.e. set to None).
+        # Conceptually, this is similar to the case when the featurisation process
+        # fails, hence the returned features here are the same as for that case.
+        if self.value is None:
+            return r
+
         try:
             for i, v in enumerate(self.values):
                 if v == str(self.value).lower():
                     r[i] = 1.0
                     break
             else:
-                if self.value is not None:
-                    if (
+                if (
+                    rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
+                    in self.values
+                ):
+                    i = self.values.index(
                         rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
-                        in self.values
-                    ):
-                        i = self.values.index(
-                            rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
-                        )
-                        r[i] = 1.0
-                    else:
-                        rasa.shared.utils.io.raise_warning(
-                            f"Categorical slot '{self.name}' is set to a value "
-                            f"('{self.value}') "
-                            "that is not specified in the domain. "
-                            "Value will be ignored and the slot will "
-                            "behave as if no value is set. "
-                            "Make sure to add all values a categorical "
-                            "slot should store to the domain."
-                        )
+                    )
+                    r[i] = 1.0
+                else:
+                    rasa.shared.utils.io.raise_warning(
+                        f"Categorical slot '{self.name}' is set to a value "
+                        f"('{self.value}') "
+                        "that is not specified in the domain. "
+                        "Value will be ignored and the slot will "
+                        "behave as if no value is set. "
+                        "Make sure to add all values a categorical "
+                        "slot should store to the domain."
+                    )
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r
@@ -371,19 +397,27 @@ class CategoricalSlot(Slot):
 
 
 class AnySlot(Slot):
-    """Slot which can be used to store any value. Users need to create a subclass of
-    `Slot` in case the information is supposed to get featurized."""
+    """Slot which can be used to store any value.
+
+    Users need to create a subclass of `Slot` in case
+    the information is supposed to get featurized.
+    """
 
     type_name = "any"
 
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
         influence_conversation: bool = False,
     ) -> None:
+        """Creates an `Any  Slot` (see parent class for detailed docstring).
+
+        Raises:
+            InvalidSlotConfigError, if slot is featurized.
+        """
         if influence_conversation:
             raise InvalidSlotConfigError(
                 f"An {AnySlot.__name__} cannot be featurized. "
@@ -394,7 +428,7 @@ class AnySlot(Slot):
             )
 
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, influence_conversation
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -406,6 +440,14 @@ class AnySlot(Slot):
             self.name == other.name
             and self.initial_value == other.initial_value
             and self._value_reset_delay == other._value_reset_delay
-            and self.auto_fill == other.auto_fill
             and self.value == other.value
+        )
+
+    def _as_feature(self) -> List[float]:
+        raise InvalidSlotConfigError(
+            f"An {AnySlot.__name__} cannot be featurized. "
+            f"Please use a different slot type for slot '{self.name}' instead. If you "
+            f"need to featurize a data type which is not supported out of the box, "
+            f"implement a custom slot type by subclassing '{Slot.__name__}'. "
+            f"See the documentation for more information: {DOCS_URL_SLOTS}"
         )

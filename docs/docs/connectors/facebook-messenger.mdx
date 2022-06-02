@@ -39,7 +39,7 @@ You need to set up a Facebook app and a page.
 6. Set up a **Webhook** and select at least the **messaging** and
    **messaging_postback** subscriptions. Insert your callback URL, which will
    look like `https://<host>:<port>/webhooks/facebook/webhook`, replacing
-   the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
+   the host and port with the appropriate values from your running Rasa Open Source server.
    
    Insert the **Verify Token** which has to match the `verify`
    entry in your `credentials.yml`.
@@ -47,7 +47,7 @@ You need to set up a Facebook app and a page.
 :::note configure https
 Facebook Messenger only forwards
 messages to endpoints via `https`, so take appropriate measures to add
-it to your setup.
+it to your setup. For local testing of your bot, see [Testing Channels on Your Local Machine](../messaging-and-voice-channels.mdx#testing-channels-on-your-local-machine).
 :::
 
 For more detailed steps, visit the
@@ -65,7 +65,7 @@ facebook:
 ```
 
 
-Restart your Rasa X or Rasa Open Source server
+Restart your Rasa Open Source server
 to make the new channel endpoint available for Facebook Messenger to send messages to.
 
 

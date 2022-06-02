@@ -1,3 +1,6 @@
+from typing import List, Text
+
+
 DOCS_BASE_URL = "https://rasa.com/docs/rasa"
 LEGACY_DOCS_BASE_URL = "https://legacy-docs-v1.rasa.com"
 DOCS_URL_TRAINING_DATA = DOCS_BASE_URL + "/training-data-format"
@@ -13,6 +16,7 @@ DOCS_URL_FORMS = DOCS_BASE_URL + "/forms"
 DOCS_URL_PIPELINE = DOCS_BASE_URL + "/tuning-your-model"
 DOCS_URL_POLICIES = DOCS_BASE_URL + "/policies"
 DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
+DOCS_URL_MARKERS = DOCS_BASE_URL + "/markers"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/actions"
 DOCS_URL_DEFAULT_ACTIONS = DOCS_BASE_URL + "/default-actions"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/connectors/"
@@ -21,27 +25,26 @@ DOCS_URL_EVENT_BROKERS = DOCS_BASE_URL + "/event-brokers"
 DOCS_URL_PIKA_EVENT_BROKER = DOCS_URL_EVENT_BROKERS + "#pika-event-broker"
 DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/tracker-stores"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/components"
+DOCS_URL_GRAPH_COMPONENTS = DOCS_BASE_URL + "/custom-graph-components"
+DOCS_URL_GRAPH_RECIPE = DOCS_BASE_URL + "/graph-recipe"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide"
 DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
     f"{DOCS_URL_MIGRATION_GUIDE}#rasa-21-to-rasa-22"
 )
-DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY = (
-    f"{DOCS_URL_MIGRATION_GUIDE}#rasa-24-to-rasa-25"
-)
 DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
-DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
+DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-enterprise"
 DOCS_BASE_URL_ACTION_SERVER = "https://rasa.com/docs/action-server"
 
 INTENT_MESSAGE_PREFIX = "/"
 
 PACKAGE_NAME = "rasa"
-NEXT_MAJOR_VERSION_FOR_DEPRECATIONS = "3.0.0"
+NEXT_MAJOR_VERSION_FOR_DEPRECATIONS = "4.0.0"
 
 MODEL_CONFIG_SCHEMA_FILE = "shared/utils/schemas/model_config.yml"
 CONFIG_SCHEMA_FILE = "shared/utils/schemas/config.yml"
 RESPONSES_SCHEMA_FILE = "shared/nlu/training_data/schemas/responses.yml"
 SCHEMA_EXTENSIONS_FILE = "shared/utils/pykwalify_extensions.py"
-LATEST_TRAINING_DATA_FORMAT_VERSION = "2.0"
+LATEST_TRAINING_DATA_FORMAT_VERSION = "3.1"
 
 DOMAIN_SCHEMA_FILE = "shared/utils/schemas/domain.yml"
 
@@ -55,6 +58,7 @@ TEST_STORIES_FILE_PREFIX = "test_"
 
 DEFAULT_LOG_LEVEL = "INFO"
 ENV_LOG_LEVEL = "LOG_LEVEL"
+TCP_PROTOCOL = "TCP"
 
 DEFAULT_SENDER_ID = "default"
 UTTER_PREFIX = "utter_"
@@ -67,7 +71,7 @@ CONFIG_AUTOCONFIGURABLE_KEYS = (
 CONFIG_KEYS_CORE = ["policies"]
 CONFIG_KEYS_NLU = ["language", "pipeline"]
 CONFIG_KEYS = CONFIG_KEYS_CORE + CONFIG_KEYS_NLU
-CONFIG_MANDATORY_KEYS_CORE = []
+CONFIG_MANDATORY_KEYS_CORE: List[Text] = []
 CONFIG_MANDATORY_KEYS_NLU = ["language"]
 CONFIG_MANDATORY_KEYS = CONFIG_MANDATORY_KEYS_CORE + CONFIG_MANDATORY_KEYS_NLU
 
@@ -89,6 +93,10 @@ DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_CORE_SUBDIRECTORY_NAME = "core"
 DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
 DEFAULT_CONVERSATION_TEST_PATH = "tests"
+DEFAULT_MARKERS_PATH = "markers"
+DEFAULT_MARKERS_CONFIG_PATH = "markers/config"
+DEFAULT_MARKERS_OUTPUT_PATH = "markers/output"
+DEFAULT_MARKERS_STATS_PATH = "markers/stats"
 
 DIAGNOSTIC_DATA = "diagnostic_data"
 
