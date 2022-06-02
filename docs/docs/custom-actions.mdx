@@ -9,6 +9,15 @@ For details on how to implement a custom action, see the [SDK documentation](htt
 Any custom action that you want to use in your stories should be added into the
 actions section of your [domain](./domain.mdx).
 
+Rasa will send a request to the actions server when a custom action is predicted. 
+The actions server is a web server that responds to this request by running custom code and
+optionally returning information to update the dialogue state.
+
+You can specify your action server's endpoint in `endpoints.yml`:
+  ```yaml-rasa
+  action_endpoint:
+    url: "http://localhost:5055/webhook"
+  ```
 
 When the dialogue engine predicts a custom action to be executed, it will call
 the action server, with the following information:
