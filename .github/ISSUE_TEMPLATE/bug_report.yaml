@@ -18,6 +18,11 @@ body:
     attributes:
       label: Rasa SDK version
       description: What's the rasa SDK version you used (if relevant)
+  - type: input
+    id: version-rasa-x
+    attributes:
+      label: Rasa X version
+      description: What's the Rasa X version you used (if relevant)
   - type: dropdown
     id: version-python
     attributes:
