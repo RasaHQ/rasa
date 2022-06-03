@@ -97,7 +97,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
 ## [Interactive Learning](./writing-stories.mdx#using-interactive-learning)
 
-  In Rasa X or the Rasa CLI, a training mode where the developer corrects and validates the assistant’s predictions at every step of the conversation. The conversation can be saved to the story format and added to the assistant’s training data.
+  In the Rasa CLI, a training mode where the developer corrects and validates the assistant’s predictions at every step of the conversation. The conversation can be saved to the story format and added to the assistant’s training data.
   
 ## [Knowledge Base / Knowledge Graph](https://rasa.com/docs/action-server/knowledge-bases)
 
@@ -125,10 +125,6 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.  
 
-## [NLU Inbox](https://rasa.com/docs/rasa-enterprise/user-guide/annotate-nlu-examples)
-
-  The area within Rasa X where new user messages are collected for review and annotation. Only messages not already represented in the training data will appear in the NLU Inbox.
-
 ## [Pipeline](./tuning-your-model.mdx)
 
   The list of NLU components (see [NLU Component](#nlu-component)) that defines a Rasa assistant’s NLU system. A user message is processed by each component one by one, before returning the final structured output.
@@ -153,9 +149,9 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   An element in the Rasa NLU pipeline (see [Pipeline](#pipeline)) that processes incoming messages. Components perform tasks ranging from entity extraction to intent classification to pre-processing.
   
-## [Rasa X](https://rasa.com/docs/rasa-enterprise/)
+## [Rasa Enterprise](https://rasa.com/docs/rasa-enterprise/)
 
-  A tool for [conversation-driven development](./conversation-driven-development.mdx). Rasa X helps teams share and test an assistant built with Rasa Open Source, annotate user messages, and view conversations.
+  A tool for [conversation-driven development](./conversation-driven-development.mdx). Rasa Enterprise helps teams share and test an assistant built with Rasa Open Source, annotate user messages, and view conversations.
   
 ## [Retrieval Intent](./chitchat-faqs.mdx)
 
@@ -175,9 +171,6 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
   answering FAQs, filling [Forms](./forms.mdx), or handling
   [Fallbacks](./fallback-handoff.mdx#fallbacks).
 
-## [Share Your Bot](https://rasa.com/docs/rasa-enterprise/user-guide/share-assistant)
-  Rasa X feature that generates a link to a chat UI for test users. **Share your bot** allows test users to talk to an assistant while it’s still in development. 
-
 ## [Slot](./domain.mdx#slots)
 
   A key-value store that Rasa uses to track information over the course of a conversation.
@@ -186,10 +179,6 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   Training data format for the dialogue model, consisting of a conversation between a user and a bot. The user's messages are represented as annotated intents and entities, and the bot’s responses are represented as a sequence of actions. 
   
-## [Talk to Your Bot](https://rasa.com/docs/rasa-enterprise/user-guide/share-assistant#talk-to-your-bot)
-
-  Chat interface within Rasa X that allows bot developers to talk to, test, and correct their assistant. Can be enabled in strict Interactive Learning mode, which requires each prediction to be confirmed before the conversation can proceed.
-
 ## [TED Policy](./policies.mdx#ted-policy)
 
   Transformer Embedding Dialogue Policy. TED is the default machine learning-based dialogue policy used by Rasa Open Source. TED complements rule-based policies by handling previously unseen situations, where no rule exists to determine the next action. 
