@@ -664,7 +664,7 @@ class ResponseSelector(DIETClassifier):
         **kwargs: Any,
     ) -> ResponseSelector:
         """Loads the trained model from the provided directory."""
-        model: ResponseSelector = super().load(
+        model = super().load(
             config, model_storage, resource, execution_context, **kwargs
         )
 
@@ -844,7 +844,7 @@ class DIET2DIET(DIET):
         return all_label_ids, all_labels_embed
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -937,7 +937,7 @@ class DIET2DIET(DIET):
         return tf.math.add_n(losses)
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 

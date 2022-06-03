@@ -348,6 +348,8 @@ async def test_retrieval_intent_wrong_prediction(
     assert "# predicted: chitchat/ask_name" in failed_stories
 
 
+# FIXME: these tests take too long to run in the CI, disabling them for now
+@pytest.mark.skip_on_ci
 @pytest.mark.timeout(240, func_only=True)
 async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
     test_file = "data/test_e2ebot/tests/test_stories.yml"
@@ -543,6 +545,7 @@ async def test_log_evaluation_table(caplog, skip_field, skip_value):
         assert "Classification report:" not in caplog.text
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "test_file, correct_intent, correct_entity",
     [
@@ -616,6 +619,7 @@ async def test_wrong_predictions_with_intent_and_entities(
         assert failed_stories.count("\n") == 9
 
 
+@pytest.mark.skip_on_windows
 async def test_failed_entity_extraction_comment(
     tmpdir: Path, restaurantbot_agent: Agent
 ):

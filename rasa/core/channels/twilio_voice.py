@@ -252,7 +252,7 @@ class TwilioVoiceInput(InputChannel):
             # If the user doesn't respond resend the last message.
             else:
                 # Get last user utterance from tracker.
-                tracker = request.app.ctx.agent.tracker_store.retrieve(sender_id)
+                tracker = await request.app.ctx.agent.tracker_store.retrieve(sender_id)
                 last_response = None
                 if tracker:
                     last_response = next(
@@ -266,12 +266,12 @@ class TwilioVoiceInput(InputChannel):
 
                 # If no previous utterance found use the reprompt_fallback phrase.
                 if last_response is None:
-                    last_response = self.reprompt_fallback_phrase
+                    last_response_text = self.reprompt_fallback_phrase
                 else:
-                    last_response = last_response.text
+                    last_response_text = last_response.text
 
                 twilio_response = self._build_twilio_voice_response(
-                    [{"text": last_response}]
+                    [{"text": last_response_text}]
                 )
             return response.text(str(twilio_response), content_type="text/xml")
 
