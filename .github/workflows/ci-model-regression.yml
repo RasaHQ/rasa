@@ -109,7 +109,7 @@ jobs:
           echo "::set-output name=matrix::$matrix"
 
     - name: Update the comment with the configuration
-      uses: peter-evans/create-or-update-comment@v1
+      uses: peter-evans/create-or-update-comment@v2
       if: steps.fc_config.outputs.comment-id != ''
       with:
         comment-id: ${{ steps.fc_config.outputs.comment-id }}
@@ -135,7 +135,7 @@ jobs:
         body-includes: "^/modeltest"
 
     - name: Add reaction
-      uses: peter-evans/create-or-update-comment@v1
+      uses: peter-evans/create-or-update-comment@v2
       if: steps.fc_config_update.outputs.comment-id != ''
       with:
         edit-mode: 'replace'
