@@ -5,6 +5,10 @@ title: Your Own Website
 description: Deploy and Run a Rasa Chat Bot on a Website
 ---
 
+If you just want an easy way for users to test your bot, the best option
+is usually the chat interface that ships with Rasa X, where you can [invite users
+to test your bot](https://rasa.com/docs/rasa-enterprise/user-guide/share-assistant/#share-your-bot).
+
 If you already have an existing website and want to add a Rasa assistant to it,
 you can use the [Rasa Chat Widget](#chat-widget) a widget which you can incorporate into your existing webpage by adding a HTML snippet.
 
@@ -29,10 +33,10 @@ rest:
   # require any credentials
 ```
 
-Restart your Rasa Open Source server
+Restart your Rasa X or Rasa Open Source server
 to make the REST channel available to receive messages. You can then send messages to 
 `http://<host>:<port>/webhooks/rest/webhook`, replacing
-the host and port with the appropriate values from your running Rasa Open Source server.
+the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
 
 #### Request and Response Format
 
@@ -69,10 +73,10 @@ callback:
   url: "http://localhost:5034/bot"
 ```
 
-Restart your Rasa Open Source server
+Restart your Rasa X or Rasa Open Source server
 to make the new channel endpoint available to receive messages. 
 You can then send messages to `http://<host>:<port>/webhooks/callback/webhook`, replacing
-the host and port with the appropriate values from your running Rasa Open Source server.
+the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
 
 #### Request and Response Format
 
@@ -112,10 +116,10 @@ socketio:
 The first two configuration values define the event names used by Rasa Open Source
 when sending or receiving messages over socket.io.
 
-Restart your Rasa Open Source server
+Restart your Rasa X or Rasa Open Source server
 to make the new channel endpoint available to receive messages. 
 You can then send messages to `http://<host>:<port>/socket.io`, replacing
-the host and port with the appropriate values from your running Rasa Open Source server. 
+the host and port with the appropriate values from your running Rasa X or Rasa Open Source server. 
 
 :::note session persistence
 By default, the SocketIO channel uses the socket id as `sender_id`, which causes
