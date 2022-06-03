@@ -1,7 +1,9 @@
 import subprocess
 
-VALIDATE_COMMAND = "rasa data validate --data data/test/test_integration \
-\-d data/test/test_integration/domain.yml"
+VALIDATE_COMMAND = (
+    "rasa data validate --data data/test/test_integration "
+    "-d data/test/test_integration/domain.yml"
+)
 
 
 # NOTE this will be extended to test cli logs at process run to validate log level
