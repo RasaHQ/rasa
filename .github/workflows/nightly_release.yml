@@ -1,0 +1,107 @@
+name: Nightly Builds
+on:
+  schedule:
+    # Runs every weekday at 1am
+    - cron: 0 1 * * 1-5
+  workflow_dispatch:
+
+
+jobs:
+  tag_nightly_release:
+    name: Tag a new nightly release
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.set_tagname.outputs.tag }}
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v3
+
+      - name: Compose tag name
+        id: set_tagname
+        run: |
+          DATE=$(date +'%Y%m%d')
+
+          # Find latest rasa-oss version
+          echo "Trying to find the latest rasa-oss version..."
+          LATEST_RASA_VERSION=$(python -c "import sys; import os; sys.path.append('src/rasa/rasa'); from version import __version__; print(__version__)")
+          echo "Current RASA version: ${LATEST_RASA_VERSION}"
+
+          LATEST_NIGHTLY_VERSION=$(echo ${LATEST_RASA_VERSION} | awk -F. '{$(NF-1) = $(NF-1) + 1;} {$(NF) = 0;} 1' | sed 's/ /./g')
+
+          echo "New nightly release version: ${LATEST_NIGHTLY_VERSION}"
+
+          echo "Composing nightly build tag name..."
+          GH_TAG=${LATEST_NIGHTLY_VERSION}-dev${DATE}
+          echo ${GH_TAG}
+          echo "::set-output name=tag::${GH_TAG}"
+
+      - name: Tag latest main commit as nightly
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tags/${{ steps.set_tagname.outputs.tag }}",
+              sha: context.sha
+            })
+
+
+  deploy:
+#    name: Deploy nightly release instances
+#    needs: tag_nightly_release
+#    runs-on: ubuntu-20.04
+#
+#    steps:
+#      - name: Checkout git repository 🕝
+#        uses: actions/checkout@v3
+#
+#      - name: Authenticate GitHub CLI
+#        run: |
+#          # https://cli.github.com/manual/gh_auth_login
+#          # read token from standard input
+#          gh auth login --with-token <<< ${{ secrets.RASABOT_GITHUB_TOKEN }}
+
+    name: Deploy to PyPI
+    runs-on: ubuntu-latest
+
+    # deploy will only be run when there is a tag available
+    needs: tag_nightly_release  # only run after all other stages succeeded
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+        with:
+          python-version: 3.9
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Copy Segment write key to the package
+        env:
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+        run: |
+          ./scripts/write_keys_file.sh
+
+      - name: Build ⚒️ Distributions
+        run: poetry build
+
+      - name: Publish to PyPI 📦<new nightly pypi??>
+        uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
+
