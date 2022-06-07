@@ -58,6 +58,11 @@ EXPECTED_WARNINGS = [
         "shape. This may consume a large amount of memory.",
     ),
     (UserWarning, "Slot auto-fill has been removed in 3.0 .*"),
+    # This warning is caused by the flatbuffers package
+    # The import was fixed on Github, but the latest version
+    # is not available on PyPi, so we cannot pin the newer version.
+    # cf. https://github.com/google/flatbuffers/issues/6957
+    (DeprecationWarning, "the imp module is deprecated in favour of importlib.*"),
 ] + EXPECTED_PILLOW_DEPRECATION_WARNINGS
 
 
