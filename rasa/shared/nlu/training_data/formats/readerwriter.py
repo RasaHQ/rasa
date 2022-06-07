@@ -41,7 +41,7 @@ def _raise_on_same_start_and_different_end_positions(
             if entity["end"] != end:
                 raise ValueError(
                     f"Entities '{entity}' and "
-                    f"'{aggregated_entities[entity['start']][-1]}' have identical "
+                    f"'{entity_list[0]}' have identical "
                     f"start but different end positions"
                 )
 
