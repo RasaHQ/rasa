@@ -50,20 +50,6 @@ jobs:
 
 
   deploy:
-#    name: Deploy nightly release instances
-#    needs: tag_nightly_release
-#    runs-on: ubuntu-20.04
-#
-#    steps:
-#      - name: Checkout git repository 🕝
-#        uses: actions/checkout@v3
-#
-#      - name: Authenticate GitHub CLI
-#        run: |
-#          # https://cli.github.com/manual/gh_auth_login
-#          # read token from standard input
-#          gh auth login --with-token <<< ${{ secrets.RASABOT_GITHUB_TOKEN }}
-
     name: Deploy to PyPI
     runs-on: ubuntu-latest
 
@@ -99,7 +85,7 @@ jobs:
       - name: Build ⚒️ Distributions
         run: poetry build
 
-      - name: Publish to PyPI 📦<new nightly pypi??>
+      - name: Publish to PyPI 📦
         uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
         with:
           user: __token__
