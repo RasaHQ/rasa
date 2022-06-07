@@ -12,8 +12,8 @@ from typing import (
     Text,
     Dict,
     Callable,
-    Union,
     Tuple,
+    TypeVar,
     TYPE_CHECKING,
 )
 
@@ -39,12 +39,7 @@ from rasa.core.constants import (
     POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
 )
-from rasa.shared.core.constants import (
-    USER,
-    SLOTS,
-    PREVIOUS_ACTION,
-    ACTIVE_LOOP,
-)
+from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
 import rasa.shared.utils.common
 
 
@@ -53,6 +48,10 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+TrackerListTypeVar = TypeVar(
+    "TrackerListTypeVar", List[DialogueStateTracker], List[TrackerWithCachedStates]
+)
 
 
 class SupportedData(Enum):
@@ -70,8 +69,8 @@ class SupportedData(Enum):
     @staticmethod
     def trackers_for_supported_data(
         supported_data: SupportedData,
-        trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
-    ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
+        trackers: TrackerListTypeVar,
+    ) -> TrackerListTypeVar:
         """Return trackers for a given policy.
 
         Args:
@@ -422,7 +421,7 @@ class Policy(GraphComponent):
             )
 
         return cls(
-            config, model_storage, resource, execution_context, featurizer=featurizer,
+            config, model_storage, resource, execution_context, featurizer=featurizer
         )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
@@ -535,7 +534,7 @@ class PolicyPrediction:
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
-        self.policy_priority = (policy_priority,)
+        self.policy_priority = policy_priority
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction

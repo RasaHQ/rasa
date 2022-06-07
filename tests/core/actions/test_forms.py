@@ -10,7 +10,11 @@ from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection, ActionExtractSlots
-from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
+from rasa.shared.constants import (
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    REQUIRED_SLOTS_KEY,
+    IGNORED_INTENTS,
+)
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
@@ -36,21 +40,59 @@ async def test_activate():
     form_name = "my form"
     action = FormAction(form_name, None)
     slot_name = "num_people"
-    domain = f"""
-slots:
-  {slot_name}:
-    type: float
-    mappings:
-    - type: from_entity
-      entity: number
-forms:
-  {form_name}:
-    {REQUIRED_SLOTS_KEY}:
+    domain = textwrap.dedent(
+        f"""
+    slots:
+      {slot_name}:
+        type: float
+        mappings:
+        - type: from_entity
+          entity: number
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
         - {slot_name}
-responses:
-    utter_ask_num_people:
-    - text: "How many people?"
-"""
+    responses:
+      utter_ask_num_people:
+      - text: "How many people?"
+      """
+    )
+    domain = Domain.from_yaml(domain)
+
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events[:-1] == [ActiveLoop(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
+    assert isinstance(events[-1], BotUttered)
+
+
+async def test_activate_with_mapping_conditions_slot():
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
+    form_name = "my form"
+    action = FormAction(form_name, None)
+    slot_name = "num_people"
+    domain = textwrap.dedent(
+        f"""
+    slots:
+      {slot_name}:
+        type: float
+        mappings:
+        - type: from_entity
+          entity: number
+          conditions:
+          - active_loop: {form_name}
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+        - {slot_name}
+    responses:
+      utter_ask_num_people:
+      - text: "How many people?"
+      """
+    )
     domain = Domain.from_yaml(domain)
 
     events = await action.run(
@@ -104,6 +146,51 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
+async def test_activate_with_prefilled_slot_with_mapping_conditions():
+    slot_name = "num_people"
+    slot_value = 5
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id="bla", evts=[SlotSet(slot_name, slot_value)]
+    )
+    form_name = "my form"
+    action = FormAction(form_name, None)
+
+    next_slot_to_request = "next slot to request"
+    domain = f"""
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+            - {slot_name}
+            - {next_slot_to_request}
+    slots:
+      {slot_name}:
+        type: any
+        mappings:
+        - type: from_entity
+          entity: {slot_name}
+          conditions:
+          - active_loop: {form_name}
+      {next_slot_to_request}:
+        type: text
+        mappings:
+        - type: from_text
+          conditions:
+          - active_loop: {form_name}
+    """
+    domain = Domain.from_yaml(domain)
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [
+        ActiveLoop(form_name),
+        SlotSet(REQUESTED_SLOT, next_slot_to_request),
+    ]
+
+
 async def test_switch_forms_with_same_slot(default_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
@@ -119,7 +206,7 @@ async def test_switch_forms_with_same_slot(default_agent: Agent):
     utter_ask_form_2 = f"Please provide the value for {slot_a} of form 2"
 
     domain = f"""
-version: "3.0"
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: order_status
   examples: |
@@ -195,9 +282,7 @@ responses:
         UserUttered("return my shoes", {"name": "form_2", "confidence": 1.0}),
         DefinePrevUserUtteredFeaturization(False),
     ]
-    tracker.update_with_events(
-        next_events, domain,
-    )
+    tracker.update_with_events(next_events, domain)
     events_expected.extend(next_events)
 
     # form_1 is still active, and bot will first validate if the user utterance
@@ -394,13 +479,13 @@ async def test_action_rejection():
         # Validate function says slot is invalid
         (
             [{"event": "slot", "name": "num_people", "value": None}],
-            [SlotSet("num_people", None), SlotSet(REQUESTED_SLOT, "num_people"),],
+            [SlotSet("num_people", None), SlotSet(REQUESTED_SLOT, "num_people")],
         ),
         # Validate function decides to request a slot which is not part of the default
         # slot mapping
         (
             [{"event": "slot", "name": "requested_slot", "value": "is_outside"}],
-            [SlotSet(REQUESTED_SLOT, "is_outside"),],
+            [SlotSet(REQUESTED_SLOT, "is_outside")],
         ),
         # Validate function decides that no more slots should be requested
         (
@@ -431,7 +516,7 @@ async def test_action_rejection():
         # User rejected manually
         (
             [{"event": "action_execution_rejected", "name": "my form"}],
-            [ActionExecutionRejected("my form"),],
+            [ActionExecutionRejected("my form")],
         ),
     ],
 )
@@ -450,7 +535,7 @@ async def test_validate_slots(
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
 
     domain = f"""
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
     entities:
     - num_tables
@@ -542,7 +627,7 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
             ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "slot_2"),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("hello", intent={"name": "greet", "confidence": 1.0},),
+            UserUttered("hello", intent={"name": "greet", "confidence": 1.0}),
             ActionExecutionRejected(form_name),
             ActionExecuted("utter_greet"),
         ],
@@ -552,7 +637,7 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
 
     # Custom form validation action changes the order of the requested slots
     validate_return_events = [
-        {"event": "slot", "name": REQUESTED_SLOT, "value": slot_name_2},
+        {"event": "slot", "name": REQUESTED_SLOT, "value": slot_name_2}
     ]
 
     # The form should ask the same slot again when coming back after unhappy path
@@ -674,9 +759,9 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
         )
         tracker.update_with_events(slot_events, domain)
 
-        action = FormAction(form_name, action_server)
+        form_action = FormAction(form_name, action_server)
 
-        events = await action.run(
+        events = await form_action.run(
             CollectingOutputChannel(),
             TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
@@ -692,7 +777,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
 
 
 @pytest.mark.parametrize(
-    "utterance_name", ["utter_ask_my_form_num_people", "utter_ask_num_people"],
+    "utterance_name", ["utter_ask_my_form_num_people", "utter_ask_num_people"]
 )
 def test_name_of_utterance(utterance_name: Text):
     form_name = "my_form"
@@ -724,7 +809,7 @@ def test_temporary_tracker():
     sender_id = "test"
     domain = Domain.from_yaml(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         slots:
           {extra_slot}:
             type: any
@@ -963,11 +1048,8 @@ async def test_extract_other_slots_with_entity(
     domain = Domain.from_dict(
         {
             "slots": {
-                "some_other_slot": {
-                    "type": "any",
-                    "mappings": some_other_slot_mapping,
-                },
-                "some_slot": {"type": "any", "mappings": some_slot_mapping,},
+                "some_other_slot": {"type": "any", "mappings": some_other_slot_mapping},
+                "some_slot": {"type": "any", "mappings": some_slot_mapping},
             },
             "forms": {
                 form_name: {REQUIRED_SLOTS_KEY: ["some_other_slot", "some_slot"]}
@@ -1126,7 +1208,7 @@ async def test_ask_for_slot_if_not_utter_ask(
     ],
 )
 async def test_ignored_intents_with_slot_type_from_entity(
-    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]],
+    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]]
 ):
     form_name = "some_form"
     entity_name = "some_slot"
@@ -1219,7 +1301,7 @@ async def test_ignored_intents_with_slot_type_from_entity(
     ],
 )
 async def test_ignored_intents_with_slot_type_from_text(
-    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]],
+    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]]
 ):
     form_name = "some_form"
     entity_name = "some_slot"
@@ -1412,8 +1494,8 @@ async def test_extract_other_slots_with_matched_mapping_conditions():
 
     domain = Domain.from_yaml(
         textwrap.dedent(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intent:
             - greet
             - inform
@@ -1453,7 +1535,7 @@ async def test_extract_other_slots_with_matched_mapping_conditions():
             UserUttered(
                 "My name is Emily.",
                 intent={"name": "inform", "confidence": 1.0},
-                entities=[{"entity": "name", "value": "Emily"},],
+                entities=[{"entity": "name", "value": "Emily"}],
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1484,8 +1566,8 @@ async def test_extract_other_slots_raises_no_matched_conditions():
 
     domain = Domain.from_yaml(
         textwrap.dedent(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intent:
             - greet
             - inform
@@ -1525,7 +1607,7 @@ async def test_extract_other_slots_raises_no_matched_conditions():
             UserUttered(
                 "My name is Emily.",
                 intent={"name": "inform", "confidence": 1.0},
-                entities=[{"entity": "name", "value": "Emily"},],
+                entities=[{"entity": "name", "value": "Emily"}],
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1554,8 +1636,8 @@ async def test_extract_other_slots_raises_no_matched_conditions():
 
 async def test_action_extract_slots_custom_mapping_with_condition():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         slots:
           custom_slot:
@@ -1587,7 +1669,7 @@ async def test_action_extract_slots_custom_mapping_with_condition():
         mocked.post(
             action_server_url,
             payload={
-                "events": [{"event": "slot", "name": "custom_slot", "value": "test"},]
+                "events": [{"event": "slot", "name": "custom_slot", "value": "test"}]
             },
         )
 
@@ -1618,8 +1700,8 @@ async def test_action_extract_slots_custom_mapping_with_condition():
 async def test_form_slots_empty_with_restart():
     domain = Domain.from_yaml(
         textwrap.dedent(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intent:
             - greet
             - inform
@@ -1651,7 +1733,7 @@ async def test_form_slots_empty_with_restart():
             UserUttered(
                 "My name is Emily.",
                 intent={"name": "inform", "confidence": 1.0},
-                entities=[{"entity": "name", "value": "Emily"},],
+                entities=[{"entity": "name", "value": "Emily"}],
             ),
             SlotSet("name", "emily"),
             Restarted(),
@@ -1672,3 +1754,68 @@ async def test_form_slots_empty_with_restart():
             tracker,
             domain,
         )
+
+
+async def test_extract_slots_with_mapping_conditions_during_form_activation():
+    slot_name = "city"
+    entity_value = "London"
+    entity_name = "location"
+
+    form_name = "test_form"
+
+    domain = Domain.from_yaml(
+        f"""
+    entities:
+    - {entity_name}
+    slots:
+      {slot_name}:
+        type: text
+        mappings:
+        - type: from_entity
+          entity: {entity_name}
+          conditions:
+          - active_loop: {form_name}
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+            - {slot_name}
+    """
+    )
+
+    events = [
+        ActionExecuted("action_listen"),
+        UserUttered(
+            "I live in London",
+            entities=[{"entity": entity_name, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test", evts=events, domain=domain, slots=domain.slots
+    )
+    assert tracker.active_loop_name is None
+
+    action_extract_slots = ActionExtractSlots(None)
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == []
+
+    expected_events = [
+        ActiveLoop(form_name),
+        SlotSet(slot_name, entity_value),
+        SlotSet(REQUESTED_SLOT, None),
+        ActiveLoop(None),
+    ]
+
+    form_action = FormAction(form_name, None)
+    form_events = await form_action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+
+    assert form_events == expected_events

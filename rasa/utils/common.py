@@ -1,6 +1,7 @@
-import asyncio
 import copy
+import inspect
 import logging
+import logging.handlers
 import os
 import shutil
 import warnings
@@ -49,7 +50,7 @@ EXPECTED_WARNINGS = [
         "Converting sparse IndexedSlices.* to a dense Tensor of unknown "
         "shape. This may consume a large amount of memory.",
     ),
-    (UserWarning, "Slot auto-fill has been removed in 3.0 .*",),
+    (UserWarning, "Slot auto-fill has been removed in 3.0 .*"),
 ]
 
 
@@ -65,7 +66,7 @@ class TempDirectoryPath(str, ContextManager):
     def __exit__(
         self,
         _exc: Optional[Type[BaseException]],
-        _value: Optional[Exception],
+        _value: Optional[BaseException],
         _tb: Optional[TracebackType],
     ) -> None:
         if os.path.exists(self):
@@ -105,10 +106,10 @@ def configure_logging_and_warnings(
             the handlers of the root logger
     """
     if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
-        log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+        log_level_name = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
         # Change log level from str to int (note that log_level in function parameter
         # int already, coming from CLI argparse parameter).
-        log_level = logging.getLevelName(log_level)
+        log_level = logging.getLevelName(log_level_name)
 
     logging.getLogger("rasa").setLevel(log_level)
     # Assign log level to env variable in str format (not int). Why do we assign?
@@ -144,7 +145,7 @@ def _filter_warnings(log_level: Optional[int], warn_only_once: bool = True) -> N
 def configure_library_logging() -> None:
     """Configures log levels of used libraries such as kafka, matplotlib, pika."""
     library_log_level = os.environ.get(
-        ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES,
+        ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
     )
     update_tensorflow_log_level()
     update_asyncio_log_level()
@@ -232,7 +233,7 @@ def update_sanic_log_level(
         )
         socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
         syslog_handler = logging.handlers.SysLogHandler(
-            address=(syslog_address, syslog_port), socktype=socktype,
+            address=(syslog_address, syslog_port), socktype=socktype
         )
         syslog_handler.setFormatter(formatter)
         logger.addHandler(syslog_handler)
@@ -406,7 +407,7 @@ async def call_potential_coroutine(
     Returns:
         The return value of the function.
     """
-    if asyncio.iscoroutine(coroutine_or_return_value):
+    if inspect.iscoroutine(coroutine_or_return_value):
         return await coroutine_or_return_value
 
     return coroutine_or_return_value

@@ -403,7 +403,7 @@ Currently, this means the following minor versions will receive bugfixes updates
 
 ## License
 Licensed under the Apache License, Version 2.0.
-Copyright 2021 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Copyright 2022 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 A list of the Licenses of the dependencies of the project can be found at
 the bottom of the

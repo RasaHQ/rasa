@@ -3,32 +3,33 @@ import shutil
 from pathlib import Path
 from typing import List, Dict, Text, Any, Tuple, Optional, Union
 
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
-from rasa.shared.constants import (
-    REQUIRED_SLOTS_KEY,
-    IGNORED_INTENTS,
+from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
+from rasa.shared.core.constants import (
+    ACTIVE_LOOP,
+    REQUESTED_SLOT,
+    SlotMappingType,
+    MAPPING_TYPE,
+    SLOT_MAPPINGS,
 )
-from rasa.shared.core.constants import ACTIVE_LOOP, REQUESTED_SLOT
-from rasa.shared.core.domain import (
-    KEY_ENTITIES,
-    KEY_SLOTS,
-    KEY_FORMS,
-    Domain,
-)
-from rasa.shared.core.slot_mappings import SlotMapping
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.core.domain import KEY_ENTITIES, KEY_SLOTS, KEY_FORMS, Domain
 from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
 ORIGINAL_DOMAIN = "original_domain"  # not a default, fixed
 DEFAULT_NEW_DOMAIN = "new_domain"
 YML_SUFFIX = ".yml"
 
 
-def _create_back_up(
-    domain_file: Path, backup_location: Path
-) -> Union[List[Any], Dict[Text, Any]]:
+def _create_back_up(domain_file: Path, backup_location: Path) -> Dict[Text, Any]:
     """Makes a backup and returns the content of the file."""
-    original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+    original_content = rasa.shared.utils.io.read_yaml(
+        rasa.shared.utils.io.read_file(domain_file)
+    )
     rasa.shared.utils.io.write_yaml(
         original_content, backup_location, should_preserve_key_order=True
     )
@@ -38,9 +39,9 @@ def _create_back_up(
 def _get_updated_mapping_condition(
     condition: Dict[Text, Text], mapping: Dict[Text, Any], slot_name: Text
 ) -> Dict[Text, Text]:
-    if mapping.get("type") not in [
-        str(SlotMapping.FROM_ENTITY),
-        str(SlotMapping.FROM_TRIGGER_INTENT),
+    if mapping.get(MAPPING_TYPE) not in [
+        str(SlotMappingType.FROM_ENTITY),
+        str(SlotMappingType.FROM_TRIGGER_INTENT),
     ]:
         return {**condition, REQUESTED_SLOT: slot_name}
     return condition
@@ -108,9 +109,7 @@ def _migrate_form_slots(
 
             required_slots.append(slot_name)
 
-        new_forms[form_name] = {
-            REQUIRED_SLOTS_KEY: required_slots,
-        }
+        new_forms[form_name] = {REQUIRED_SLOTS_KEY: required_slots}
 
         if ignored_intents:
             new_forms[form_name][IGNORED_INTENTS] = ignored_intents
@@ -119,17 +118,17 @@ def _migrate_form_slots(
 
 
 def _migrate_auto_fill(
-    slot_name: Text, properties: Dict[Text, Any], entities: List[Text],
+    slot_name: Text, properties: Dict[Text, Any], entities: List[Text]
 ) -> Dict[Text, Any]:
     if slot_name in entities and properties.get("auto_fill", True) is True:
         from_entity_mapping = {
-            "type": str(SlotMapping.FROM_ENTITY),
+            "type": str(SlotMappingType.FROM_ENTITY),
             "entity": slot_name,
         }
-        mappings = properties.get("mappings", [])
+        mappings = properties.get(SLOT_MAPPINGS, [])
         if from_entity_mapping not in mappings:
             mappings.append(from_entity_mapping)
-            properties.update({"mappings": mappings})
+            properties.update({SLOT_MAPPINGS: mappings})
 
     if "auto_fill" in properties:
         del properties["auto_fill"]
@@ -169,7 +168,9 @@ def _migrate_auto_fill_and_custom_slots(
 def _assemble_new_domain(
     domain_file: Path, new_forms: Dict[Text, Any], new_slots: Dict[Text, Any]
 ) -> Dict[Text, Any]:
-    original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+    original_content = rasa.shared.utils.io.read_yaml(
+        rasa.shared.utils.io.read_file(domain_file)
+    )
     new_domain: Dict[Text, Any] = {}
     for key, value in original_content.items():
         if key == KEY_SLOTS:
@@ -177,14 +178,16 @@ def _assemble_new_domain(
         elif key == KEY_FORMS:
             new_domain.update({key: new_forms})
         elif key == "version":
-            new_domain.update({key: '"3.0"'})
+            new_domain.update(
+                {key: DoubleQuotedScalarString(LATEST_TRAINING_DATA_FORMAT_VERSION)}
+            )
         else:
             new_domain.update({key: value})
     return new_domain
 
 
 def _write_final_domain(
-    domain_file: Path, new_forms: Dict, new_slots: Dict, out_file: Path,
+    domain_file: Path, new_forms: Dict, new_slots: Dict, out_file: Path
 ) -> None:
     if domain_file.is_dir():
         for file in domain_file.iterdir():
@@ -210,9 +213,9 @@ def _migrate_domain_files(
         backup_location: where to backup all domain files
         out_path: location where to store the migrated files
     """
-    slots = {}
-    forms = {}
-    entities = []
+    slots: Dict[Text, Any] = {}
+    forms: Dict[Text, Any] = {}
+    entities: List[Any] = []
 
     domain_files = [
         file for file in domain_path.iterdir() if Domain.is_domain_file(file)
@@ -220,8 +223,9 @@ def _migrate_domain_files(
 
     if not domain_files:
         raise RasaException(
-            f"The domain directory '{domain_path}' does not contain any domain files. "
-            f"Please make sure to include these for a successful migration."
+            f"The domain directory '{domain_path.as_posix()}' does not contain any "
+            f"domain files. Please make sure to include these for a successful "
+            f"migration."
         )
 
     for file in domain_files:
@@ -231,7 +235,13 @@ def _migrate_domain_files(
 
         if KEY_SLOTS not in original_content and KEY_FORMS not in original_content:
             if isinstance(original_content, dict):
-                original_content.update({"version": '"3.0"'})
+                original_content.update(
+                    {
+                        "version": DoubleQuotedScalarString(
+                            LATEST_TRAINING_DATA_FORMAT_VERSION
+                        )
+                    }
+                )
 
             # this is done so that the other domain files can be moved
             # in the migrated directory
@@ -255,7 +265,7 @@ def _migrate_domain_files(
 
         slots.update(original_content.get(KEY_SLOTS, {}))
         forms.update(original_content.get(KEY_FORMS, {}))
-        entities.extend(original_content.get(KEY_ENTITIES, {}))
+        entities.extend(original_content.get(KEY_ENTITIES, []))
 
     if not slots or not forms:
         raise RasaException(
@@ -268,7 +278,7 @@ def _migrate_domain_files(
 
 
 def migrate_domain_format(
-    domain_path: Union[Text, Path], out_path: Optional[Union[Text, Path]],
+    domain_path: Union[Text, Path], out_path: Optional[Union[Text, Path]]
 ) -> None:
     """Converts 2.0 domain to 3.0 format."""
     domain_path = Path(domain_path)
@@ -320,15 +330,31 @@ def migrate_domain_format(
     # Note: we do not enforce that the version tag is 2.0 everywhere + validate that
     # migrate-able domain files are among these files later
     original_files = (
-        [file for file in domain_path.iterdir() if Domain.is_domain_file(file)]
+        {
+            file: rasa.shared.utils.io.read_yaml_file(file)
+            for file in domain_path.iterdir()
+            if Domain.is_domain_file(file)
+        }
         if domain_path.is_dir()
-        else [domain_path]
+        else {domain_path: rasa.shared.utils.io.read_yaml_file(domain_path)}
     )
-    migrated_files = [
-        file
-        for file in original_files
-        if rasa.shared.utils.io.read_yaml_file(file).get("version") == "3.0"
-    ]
+    migrated_files = []
+
+    for file, file_dict in original_files.items():
+        if not isinstance(file_dict, dict):
+            raise RasaException(
+                f"The file {file} could not be read "
+                f"as an eligible domain dictionary. "
+                f"Please make sure you have included "
+                f"only eligible domain files."
+            )
+
+        if (
+            file_dict.get(KEY_TRAINING_DATA_FORMAT_VERSION)
+            == LATEST_TRAINING_DATA_FORMAT_VERSION
+        ):
+            migrated_files.append(file)
+
     if migrated_files:
         raise RasaException(
             f"Some of the given files ({[file for file in migrated_files]}) "
@@ -350,7 +376,7 @@ def migrate_domain_format(
         else:
             if not Domain.is_domain_file(domain_path):
                 raise RasaException(
-                    f"The file '{domain_path}' could not be validated as a "
+                    f"The file '{domain_path.as_posix()}' could not be validated as a "
                     f"domain file. Only domain yaml files can be migrated. "
                 )
             original_domain = _create_back_up(domain_path, backup_location)

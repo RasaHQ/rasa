@@ -1,8 +1,10 @@
+from __future__ import annotations
 import contextlib
 import itertools
 import json
 import logging
 import os
+from inspect import isawaitable, iscoroutinefunction
 
 from time import sleep
 from typing import (
@@ -17,6 +19,8 @@ from typing import (
     Union,
     TYPE_CHECKING,
     Generator,
+    TypeVar,
+    Generic,
 )
 
 from boto3.dynamodb.conditions import Key
@@ -35,7 +39,7 @@ from rasa.core.constants import (
 )
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SessionStarted
+from rasa.shared.core.events import SessionStarted, Event
 from rasa.shared.core.trackers import (
     ActionExecuted,
     DialogueStateTracker,
@@ -64,8 +68,62 @@ POSTGRESQL_DEFAULT_POOL_SIZE = 50
 DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 
+def check_if_tracker_store_async(tracker_store: TrackerStore) -> bool:
+    """Evaluates if a tracker store object is async based on implementation of methods.
+
+    :param tracker_store: tracker store object we're evaluating
+    :return: if the tracker store correctly implements all async methods
+    """
+    return all(
+        iscoroutinefunction(getattr(tracker_store, method))
+        for method in _get_async_tracker_store_methods()
+    )
+
+
+def _get_async_tracker_store_methods() -> List[str]:
+    return [
+        attribute
+        for attribute in dir(TrackerStore)
+        if iscoroutinefunction(getattr(TrackerStore, attribute))
+    ]
+
+
 class TrackerDeserialisationException(RasaException):
     """Raised when an error is encountered while deserialising a tracker."""
+
+
+SerializationType = TypeVar("SerializationType")
+
+
+class SerializedTrackerRepresentation(Generic[SerializationType]):
+    """Mixin class for specifying different serialization methods per tracker store."""
+
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> SerializationType:
+        """Requires implementation to return representation of tracker."""
+        raise NotImplementedError()
+
+
+class SerializedTrackerAsText(SerializedTrackerRepresentation[Text]):
+    """Mixin class that returns the serialized tracker as string."""
+
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
+        """Serializes the tracker, returns representation of the tracker."""
+        dialogue = tracker.as_dialogue()
+
+        return json.dumps(dialogue.as_dict())
+
+
+class SerializedTrackerAsDict(SerializedTrackerRepresentation[Dict]):
+    """Mixin class that returns the serialized tracker as dictionary."""
+
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> Dict:
+        """Serializes the tracker, returns representation of the tracker."""
+        d = tracker.as_dialogue().as_dict()
+        d.update({"sender_id": tracker.sender_id})
+        return d
 
 
 class TrackerStore:
@@ -85,16 +143,16 @@ class TrackerStore:
                 destination.
             kwargs: Additional kwargs.
         """
-        self.domain = domain
+        self._domain = domain or Domain.empty()
         self.event_broker = event_broker
-        self.max_event_history = None
+        self.max_event_history: Optional[int] = None
 
     @staticmethod
     def create(
-        obj: Union["TrackerStore", EndpointConfig, None],
+        obj: Union[TrackerStore, EndpointConfig, None],
         domain: Optional[Domain] = None,
         event_broker: Optional[EventBroker] = None,
-    ) -> "TrackerStore":
+    ) -> TrackerStore:
         """Factory to create a tracker store."""
         if isinstance(obj, TrackerStore):
             return obj
@@ -104,7 +162,18 @@ class TrackerStore:
         import sqlalchemy.exc
 
         try:
-            return _create_from_endpoint_config(obj, domain, event_broker)
+            tracker_store = _create_from_endpoint_config(obj, domain, event_broker)
+            if not check_if_tracker_store_async(tracker_store):
+                rasa.shared.utils.io.raise_deprecation_warning(
+                    f"Tracker store implementation "
+                    f"{tracker_store.__class__.__name__} "
+                    f"is not asynchronous. Non-asynchronous tracker stores "
+                    f"are currently deprecated and will be removed in 4.0. "
+                    f"Please make the following methods async: "
+                    f"{_get_async_tracker_store_methods()}"
+                )
+                tracker_store = AwaitableTrackerStore(tracker_store)
+            return tracker_store
         except (
             BotoCoreError,
             pymongo.errors.ConnectionFailure,
@@ -116,7 +185,7 @@ class TrackerStore:
                 "Cannot connect to tracker store." + str(error)
             ) from error
 
-    def get_or_create_tracker(
+    async def get_or_create_tracker(
         self,
         sender_id: Text,
         max_event_history: Optional[int] = None,
@@ -131,24 +200,24 @@ class TrackerStore:
         """
         self.max_event_history = max_event_history
 
-        tracker = self.retrieve(sender_id)
+        tracker = await self.retrieve(sender_id)
 
         if tracker is None:
-            tracker = self.create_tracker(
+            tracker = await self.create_tracker(
                 sender_id, append_action_listen=append_action_listen
             )
 
         return tracker
 
     def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
-        """Returns a Dialogue State Tracker"""
+        """Returns a Dialogue State Tracker."""
         return DialogueStateTracker(
             sender_id,
-            self.domain.slots if self.domain else None,
+            self.domain.slots,
             max_event_history=self.max_event_history,
         )
 
-    def create_tracker(
+    async def create_tracker(
         self, sender_id: Text, append_action_listen: bool = True
     ) -> DialogueStateTracker:
         """Creates a new tracker for `sender_id`.
@@ -167,15 +236,15 @@ class TrackerStore:
         if append_action_listen:
             tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
-        self.save(tracker)
+        await self.save(tracker)
 
         return tracker
 
-    def save(self, tracker: DialogueStateTracker) -> None:
+    async def save(self, tracker: DialogueStateTracker) -> None:
         """Save method that will be overridden by specific tracker."""
         raise NotImplementedError()
 
-    def exists(self, conversation_id: Text) -> bool:
+    async def exists(self, conversation_id: Text) -> bool:
         """Checks if tracker exists for the specified ID.
 
         This method may be overridden by the specific tracker store for
@@ -187,9 +256,9 @@ class TrackerStore:
         Returns:
             `True` if the tracker exists, `False` otherwise.
         """
-        return self.retrieve(conversation_id) is not None
+        return await self.retrieve(conversation_id) is not None
 
-    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session.
 
         This method will be overridden by the specific tracker store.
@@ -202,10 +271,10 @@ class TrackerStore:
         """
         raise NotImplementedError()
 
-    def retrieve_full_tracker(
+    async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Retrieve method for fetching all tracker events across conversation sessions
+        """Retrieve method for fetching all tracker events across conversation sessions\
         that may be overridden by specific tracker.
 
         The default implementation uses `self.retrieve()`.
@@ -216,33 +285,40 @@ class TrackerStore:
         Returns:
             The fetch tracker containing all events across session starts.
         """
-        return self.retrieve(conversation_id)
+        return await self.retrieve(conversation_id)
 
-    def stream_events(self, tracker: DialogueStateTracker) -> None:
-        """Streams events to a message broker"""
-        offset = self.number_of_existing_events(tracker.sender_id)
+    async def stream_events(self, tracker: DialogueStateTracker) -> None:
+        """Streams events to a message broker."""
+        if self.event_broker is None:
+            return None
+
+        offset = await self.number_of_existing_events(tracker.sender_id)
         events = tracker.events
-        for event in list(itertools.islice(events, offset, len(events))):
-            body = {"sender_id": tracker.sender_id}
-            body.update(event.as_dict())
-            self.event_broker.publish(body)
+        new_events = list(itertools.islice(events, offset, len(events)))
 
-    def number_of_existing_events(self, sender_id: Text) -> int:
+        await self._stream_new_events(self.event_broker, new_events, tracker.sender_id)
+
+    async def _stream_new_events(
+        self,
+        event_broker: EventBroker,
+        new_events: List[Event],
+        sender_id: Text,
+    ) -> None:
+        """Publishes new tracker events to a message broker."""
+        for event in new_events:
+            body = {"sender_id": sender_id}
+            body.update(event.as_dict())
+            event_broker.publish(body)
+
+    async def number_of_existing_events(self, sender_id: Text) -> int:
         """Return number of stored events for a given sender id."""
-        old_tracker = self.retrieve(sender_id)
+        old_tracker = await self.retrieve(sender_id)
 
         return len(old_tracker.events) if old_tracker else 0
 
-    def keys(self) -> Iterable[Text]:
-        """Returns the set of values for the tracker store's primary key"""
+    async def keys(self) -> Iterable[Text]:
+        """Returns the set of values for the tracker store's primary key."""
         raise NotImplementedError()
-
-    @staticmethod
-    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
-        """Serializes the tracker, returns representation of the tracker."""
-        dialogue = tracker.as_dialogue()
-
-        return json.dumps(dialogue.as_dict())
 
     def deserialise_tracker(
         self, sender_id: Text, serialised_tracker: Union[Text, bytes]
@@ -263,9 +339,18 @@ class TrackerStore:
 
         return tracker
 
+    @property
+    def domain(self) -> Domain:
+        """Returns the domain of the tracker store."""
+        return self._domain
 
-class InMemoryTrackerStore(TrackerStore):
-    """Stores conversation history in memory"""
+    @domain.setter
+    def domain(self, domain: Optional[Domain]) -> None:
+        self._domain = domain or Domain.empty()
+
+
+class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
+    """Stores conversation history in memory."""
 
     def __init__(
         self,
@@ -273,17 +358,18 @@ class InMemoryTrackerStore(TrackerStore):
         event_broker: Optional[EventBroker] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
-        self.store = {}
+        """Initializes the tracker store."""
+        self.store: Dict[Text, Text] = {}
         super().__init__(domain, event_broker, **kwargs)
 
-    def save(self, tracker: DialogueStateTracker) -> None:
-        """Updates and saves the current conversation state"""
-        if self.event_broker:
-            self.stream_events(tracker)
+    async def save(self, tracker: DialogueStateTracker) -> None:
+        """Updates and saves the current conversation state."""
+        await self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
-    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id."""
         if sender_id in self.store:
             logger.debug(f"Recreating tracker for id '{sender_id}'")
             return self.deserialise_tracker(sender_id, self.store[sender_id])
@@ -292,13 +378,13 @@ class InMemoryTrackerStore(TrackerStore):
 
         return None
 
-    def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the Tracker Store in memory"""
+    async def keys(self) -> Iterable[Text]:
+        """Returns sender_ids of the Tracker Store in memory."""
         return self.store.keys()
 
 
-class RedisTrackerStore(TrackerStore):
-    """Stores conversation history in Redis"""
+class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
+    """Stores conversation history in Redis."""
 
     def __init__(
         self,
@@ -311,12 +397,24 @@ class RedisTrackerStore(TrackerStore):
         record_exp: Optional[float] = None,
         key_prefix: Optional[Text] = None,
         use_ssl: bool = False,
+        ssl_keyfile: Optional[Text] = None,
+        ssl_certfile: Optional[Text] = None,
+        ssl_ca_certs: Optional[Text] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
+        """Initializes the tracker store."""
         import redis
 
         self.red = redis.StrictRedis(
-            host=host, port=port, db=db, password=password, ssl=use_ssl
+            host=host,
+            port=port,
+            db=db,
+            password=password,
+            ssl=use_ssl,
+            ssl_keyfile=ssl_keyfile,
+            ssl_certfile=ssl_certfile,
+            ssl_ca_certs=ssl_ca_certs,
+            decode_responses=True,
         )
         self.record_exp = record_exp
 
@@ -339,12 +437,11 @@ class RedisTrackerStore(TrackerStore):
     def _get_key_prefix(self) -> Text:
         return self.key_prefix
 
-    def save(
+    async def save(
         self, tracker: DialogueStateTracker, timeout: Optional[float] = None
     ) -> None:
         """Saves the current conversation state."""
-        if self.event_broker:
-            self.stream_events(tracker)
+        await self.stream_events(tracker)
 
         if not timeout and self.record_exp:
             timeout = self.record_exp
@@ -354,7 +451,7 @@ class RedisTrackerStore(TrackerStore):
             self.key_prefix + tracker.sender_id, serialised_tracker, ex=timeout
         )
 
-    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session.
 
         The Redis key is formed by appending a prefix to sender_id.
@@ -371,13 +468,13 @@ class RedisTrackerStore(TrackerStore):
         else:
             return None
 
-    def keys(self) -> Iterable[Text]:
+    async def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store."""
         return self.red.keys(self.key_prefix + "*")
 
 
-class DynamoTrackerStore(TrackerStore):
-    """Stores conversation history in DynamoDB"""
+class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
+    """Stores conversation history in DynamoDB."""
 
     def __init__(
         self,
@@ -418,9 +515,9 @@ class DynamoTrackerStore(TrackerStore):
         except self.client.exceptions.ResourceNotFoundException:
             table = dynamo.create_table(
                 TableName=self.table_name,
-                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"},],
+                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"}],
                 AttributeDefinitions=[
-                    {"AttributeName": "sender_id", "AttributeType": "S"},
+                    {"AttributeName": "sender_id", "AttributeType": "S"}
                 ],
                 ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             )
@@ -432,26 +529,30 @@ class DynamoTrackerStore(TrackerStore):
 
         return table
 
-    def save(self, tracker: DialogueStateTracker) -> None:
+    async def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
-        if self.event_broker:
-            self.stream_events(tracker)
+        await self.stream_events(tracker)
         serialized = self.serialise_tracker(tracker)
 
         self.db.put_item(Item=serialized)
 
-    def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
-        """Serializes the tracker, returns object with decimal types."""
-        d = tracker.as_dialogue().as_dict()
-        d.update(
-            {"sender_id": tracker.sender_id,}
-        )
-        # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
-        return core_utils.replace_floats_with_decimals(d)
+    @staticmethod
+    def serialise_tracker(
+        tracker: "DialogueStateTracker",
+    ) -> Dict:
+        """Serializes the tracker, returns object with decimal types.
 
-    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        # Retrieve dialogues for a sender_id in reverse-chronological order based on
-        # the session_date sort key
+        DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s.
+        """
+        return core_utils.replace_floats_with_decimals(
+            SerializedTrackerAsDict.serialise_tracker(tracker)
+        )
+
+    async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Retrieve dialogues for a sender_id in reverse-chronological order.
+
+        Based on the session_date sort key.
+        """
         dialogues = self.db.query(
             KeyConditionExpression=Key("sender_id").eq(sender_id),
             Limit=1,
@@ -466,11 +567,14 @@ class DynamoTrackerStore(TrackerStore):
         # `float`s are stored as `Decimal` objects - we need to convert them back
         events_with_floats = core_utils.replace_decimals_with_floats(events)
 
-        return DialogueStateTracker.from_dict(
-            sender_id, events_with_floats, self.domain.slots
-        )
+        if self.domain is None:
+            slots = []
+        else:
+            slots = self.domain.slots
 
-    def keys(self) -> Iterable[Text]:
+        return DialogueStateTracker.from_dict(sender_id, events_with_floats, slots)
+
+    async def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the `DynamoTrackerStore`."""
         response = self.db.scan(ProjectionExpression="sender_id")
         sender_ids = [i["sender_id"] for i in response["Items"]]
@@ -485,7 +589,7 @@ class DynamoTrackerStore(TrackerStore):
         return sender_ids
 
 
-class MongoTrackerStore(TrackerStore):
+class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
     """Stores conversation history in Mongo.
 
     Property methods:
@@ -540,10 +644,9 @@ class MongoTrackerStore(TrackerStore):
 
         return state
 
-    def save(self, tracker: DialogueStateTracker) -> None:
+    async def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
-        if self.event_broker:
-            self.stream_events(tracker)
+        await self.stream_events(tracker)
 
         additional_events = self._additional_events(tracker)
 
@@ -605,7 +708,7 @@ class MongoTrackerStore(TrackerStore):
 
         return list(reversed(events_after_session_start))
 
-    def _retrieve(
+    async def _retrieve(
         self, sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> Optional[List[Dict[Text, Any]]]:
         stored = self.conversations.find_one({"sender_id": sender_id})
@@ -631,20 +734,22 @@ class MongoTrackerStore(TrackerStore):
 
         return events
 
-    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session."""
-        events = self._retrieve(sender_id, fetch_events_from_all_sessions=False)
+        events = await self._retrieve(sender_id, fetch_events_from_all_sessions=False)
 
         if not events:
             return None
 
         return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
 
-    def retrieve_full_tracker(
+    async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
         """Fetching all tracker events across conversation sessions."""
-        events = self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
+        events = await self._retrieve(
+            conversation_id, fetch_events_from_all_sessions=True
+        )
 
         if not events:
             return None
@@ -653,7 +758,7 @@ class MongoTrackerStore(TrackerStore):
             conversation_id, events, self.domain.slots
         )
 
-    def keys(self) -> Iterable[Text]:
+    async def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store."""
         return [c["sender_id"] for c in self.conversations.find()]
 
@@ -668,7 +773,6 @@ def _create_sequence(table_name: Text) -> "Sequence":
 
     Returns: A `Sequence` object
     """
-
     from sqlalchemy.ext.declarative import declarative_base
 
     sequence_name = f"{table_name}_seq"
@@ -703,7 +807,7 @@ def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
     if not is_postgresql_url(url):
         return {}
 
-    kwargs = {}
+    kwargs: Dict[Text, Any] = {}
 
     schema_name = os.environ.get(POSTGRESQL_SCHEMA)
 
@@ -751,7 +855,22 @@ def ensure_schema_exists(session: "Session") -> None:
             raise ValueError(schema_name)
 
 
-class SQLTrackerStore(TrackerStore):
+def validate_port(port: Any) -> Optional[int]:
+    """Ensure that port can be converted to integer.
+
+    Raises:
+        RasaException if port cannot be cast to integer.
+    """
+    if port is not None and not isinstance(port, int):
+        try:
+            port = int(port)
+        except ValueError as e:
+            raise RasaException(f"The port '{port}' cannot be cast to integer.") from e
+
+    return port
+
+
+class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
     """Store which can save and retrieve trackers from an SQL database."""
 
     Base: DeclarativeMeta = declarative_base()
@@ -786,6 +905,8 @@ class SQLTrackerStore(TrackerStore):
         **kwargs: Dict[Text, Any],
     ) -> None:
         import sqlalchemy.exc
+
+        port = validate_port(port)
 
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
@@ -890,7 +1011,7 @@ class SQLTrackerStore(TrackerStore):
 
         if not self.engine.dialect.name == "postgresql":
             rasa.shared.utils.io.raise_warning(
-                "The parameter 'login_db' can only be used with a postgres database.",
+                "The parameter 'login_db' can only be used with a postgres database."
             )
             return
 
@@ -954,23 +1075,25 @@ class SQLTrackerStore(TrackerStore):
         finally:
             session.close()
 
-    def keys(self) -> Iterable[Text]:
+    async def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the SQLTrackerStore."""
         with self.session_scope() as session:
             sender_ids = session.query(self.SQLEvent.sender_id).distinct().all()
             return [sender_id for (sender_id,) in sender_ids]
 
-    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session."""
-        return self._retrieve(sender_id, fetch_events_from_all_sessions=False)
+        return await self._retrieve(sender_id, fetch_events_from_all_sessions=False)
 
-    def retrieve_full_tracker(
+    async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
         """Fetching all tracker events across conversation sessions."""
-        return self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
+        return await self._retrieve(
+            conversation_id, fetch_events_from_all_sessions=True
+        )
 
-    def _retrieve(
+    async def _retrieve(
         self, sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> Optional[DialogueStateTracker]:
         with self.session_scope() as session:
@@ -1036,11 +1159,9 @@ class SQLTrackerStore(TrackerStore):
 
         return event_query.order_by(self.SQLEvent.timestamp)
 
-    def save(self, tracker: DialogueStateTracker) -> None:
+    async def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
-
-        if self.event_broker:
-            self.stream_events(tracker)
+        await self.stream_events(tracker)
 
         with self.session_scope() as session:
             # only store recent events
@@ -1083,8 +1204,10 @@ class SQLTrackerStore(TrackerStore):
 
 
 class FailSafeTrackerStore(TrackerStore):
-    """Wraps a tracker store so that we can fallback to a different tracker store in
-    case of errors."""
+    """Tracker store wrapper.
+
+    Allows a fallback to a different tracker store in case of errors.
+    """
 
     def __init__(
         self,
@@ -1107,11 +1230,12 @@ class FailSafeTrackerStore(TrackerStore):
         super().__init__(tracker_store.domain, tracker_store.event_broker)
 
     @property
-    def domain(self) -> Optional[Domain]:
+    def domain(self) -> Domain:
+        """Returns the domain of the primary tracker store."""
         return self._tracker_store.domain
 
     @domain.setter
-    def domain(self, domain: Optional[Domain]) -> None:
+    def domain(self, domain: Domain) -> None:
         self._tracker_store.domain = domain
 
         if self._fallback_tracker_store:
@@ -1137,40 +1261,42 @@ class FailSafeTrackerStore(TrackerStore):
                 f"investigate the following error: {error}."
             )
 
-    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Calls `retrieve` method of primary tracker store."""
         try:
-            return self._tracker_store.retrieve(sender_id)
+            return await self._tracker_store.retrieve(sender_id)
         except Exception as e:
             self.on_tracker_store_error(e)
             return None
 
-    def keys(self) -> Iterable[Text]:
+    async def keys(self) -> Iterable[Text]:
+        """Calls `keys` method of primary tracker store."""
         try:
-            return self._tracker_store.keys()
+            return await self._tracker_store.keys()
         except Exception as e:
             self.on_tracker_store_error(e)
             return []
 
-    def save(self, tracker: DialogueStateTracker) -> None:
+    async def save(self, tracker: DialogueStateTracker) -> None:
+        """Calls `save` method of primary tracker store."""
         try:
-            self._tracker_store.save(tracker)
+            await self._tracker_store.save(tracker)
         except Exception as e:
             self.on_tracker_store_error(e)
-            self.fallback_tracker_store.save(tracker)
+            await self.fallback_tracker_store.save(tracker)
 
 
 def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig] = None,
     domain: Optional[Domain] = None,
     event_broker: Optional[EventBroker] = None,
-) -> "TrackerStore":
+) -> TrackerStore:
     """Given an endpoint configuration, create a proper tracker store object."""
-
     domain = domain or Domain.empty()
 
     if endpoint_config is None or endpoint_config.type is None:
         # default tracker store if no type is set
-        tracker_store = InMemoryTrackerStore(domain, event_broker)
+        tracker_store: TrackerStore = InMemoryTrackerStore(domain, event_broker)
     elif endpoint_config.type.lower() == "redis":
         tracker_store = RedisTrackerStore(
             domain=domain,
@@ -1208,7 +1334,7 @@ def _create_from_endpoint_config(
 
 def _load_from_module_name_in_endpoint_config(
     domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None
-) -> "TrackerStore":
+) -> TrackerStore:
     """Initializes a custom tracker.
 
     Defaults to the InMemoryTrackerStore if the module path can not be found.
@@ -1221,7 +1347,6 @@ def _load_from_module_name_in_endpoint_config(
     Returns:
         a tracker store from a specified type in a stores endpoint configuration
     """
-
     try:
         tracker_store_class = rasa.shared.utils.common.class_from_module_path(
             store.type
@@ -1236,3 +1361,75 @@ def _load_from_module_name_in_endpoint_config(
             f"Using `InMemoryTrackerStore` instead."
         )
         return InMemoryTrackerStore(domain)
+
+
+class AwaitableTrackerStore(TrackerStore):
+    """Wraps a tracker store so it can be implemented with async overrides."""
+
+    def __init__(
+        self,
+        tracker_store: TrackerStore,
+    ) -> None:
+        """Create a `AwaitableTrackerStore`.
+
+        Args:
+            tracker_store: the wrapped tracker store.
+        """
+        self._tracker_store = tracker_store
+
+        super().__init__(tracker_store.domain, tracker_store.event_broker)
+
+    @property
+    def domain(self) -> Domain:
+        """Returns the domain of the primary tracker store."""
+        return self._tracker_store.domain
+
+    @domain.setter
+    def domain(self, domain: Optional[Domain]) -> None:
+        """Setter method to modify the wrapped tracker store's domain field."""
+        self._tracker_store.domain = domain or Domain.empty()
+
+    @staticmethod
+    def create(
+        obj: Union[TrackerStore, EndpointConfig, None],
+        domain: Optional[Domain] = None,
+        event_broker: Optional[EventBroker] = None,
+    ) -> TrackerStore:
+        """Wrapper to call `create` method of primary tracker store."""
+        if isinstance(obj, TrackerStore):
+            return AwaitableTrackerStore(obj)
+        else:
+            raise ValueError(
+                f"{type(obj).__name__} supplied "
+                f"but expected object of type {TrackerStore.__name__}."
+            )
+
+    async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Wrapper to call `retrieve` method of primary tracker store."""
+        result = self._tracker_store.retrieve(sender_id)
+        return (
+            await result
+            if isawaitable(result)
+            else result  # type: ignore[return-value]
+        )
+
+    async def keys(self) -> Iterable[Text]:
+        """Wrapper to call `keys` method of primary tracker store."""
+        result = self._tracker_store.keys()
+        return await result if isawaitable(result) else result
+
+    async def save(self, tracker: DialogueStateTracker) -> None:
+        """Wrapper to call `save` method of primary tracker store."""
+        result = self._tracker_store.save(tracker)
+        return await result if isawaitable(result) else result
+
+    async def retrieve_full_tracker(
+        self, conversation_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Wrapper to call `retrieve_full_tracker` method of primary tracker store."""
+        result = self._tracker_store.retrieve_full_tracker(conversation_id)
+        return (
+            await result
+            if isawaitable(result)
+            else result  # type: ignore[return-value]
+        )

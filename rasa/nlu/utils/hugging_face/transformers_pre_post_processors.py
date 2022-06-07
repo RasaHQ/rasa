@@ -22,11 +22,10 @@ def cleanup_tokens(
     # remove empty strings
     token_ids_string = [(id, string) for id, string in token_ids_string if string]
 
-    token_ids: List[int]
-    token_strings: List[Text]
     # return as individual token ids and token strings
     token_ids, token_strings = zip(*token_ids_string)
-    return token_ids, token_strings
+    # FIXME: zip official typing is not really properly set up
+    return token_ids, token_strings  # type: ignore[return-value]
 
 
 def bert_tokens_pre_processor(token_ids: List[int]) -> List[int]:

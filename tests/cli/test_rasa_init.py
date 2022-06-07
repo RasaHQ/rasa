@@ -77,7 +77,7 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
     subparsers = parser.add_subparsers()
     scaffold.add_subparser(subparsers, parents=[])
 
-    args = parser.parse_args(["init", "--no-prompt",])
+    args = parser.parse_args(["init", "--no-prompt"])
 
     # Simple config which should train fast.
     def mock_get_config(*args):
