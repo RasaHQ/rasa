@@ -38,6 +38,13 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
+EXPECTED_PILLOW_DEPRECATION_WARNINGS = [
+    # Keras uses deprecated Pillow features
+    # cf. https://github.com/keras-team/keras/issues/16639
+    (DeprecationWarning, f"{method} is deprecated and will be removed in Pillow 10 .*")
+    for method in ["BICUBIC", "NEAREST", "BILINEAR", "HAMMING", "BOX", "LANCZOS"]
+]
+
 EXPECTED_WARNINGS = [
     # TODO (issue #9932)
     (
@@ -51,7 +58,7 @@ EXPECTED_WARNINGS = [
         "shape. This may consume a large amount of memory.",
     ),
     (UserWarning, "Slot auto-fill has been removed in 3.0 .*"),
-]
+] + EXPECTED_PILLOW_DEPRECATION_WARNINGS
 
 
 class TempDirectoryPath(str, ContextManager):
