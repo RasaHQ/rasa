@@ -231,7 +231,7 @@ async def test_agent_handle_message_full_model(default_agent: Agent):
     sender_id = uuid.uuid4().hex
     message = UserMessage("hello", sender_id=sender_id)
     await default_agent.handle_message(message)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
     expected_events = with_model_ids(
         [
             ActionExecuted(action_name="action_session_start"),
@@ -267,7 +267,7 @@ async def test_agent_handle_message_only_nlu(trained_nlu_model: Text):
     sender_id = uuid.uuid4().hex
     message = UserMessage("hello", sender_id=sender_id)
     await agent.handle_message(message)
-    tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await agent.tracker_store.get_or_create_tracker(sender_id)
     expected_events = with_model_ids(
         [
             ActionExecuted(action_name="action_session_start"),
@@ -288,7 +288,7 @@ async def test_agent_handle_message_only_core(trained_core_model: Text):
     sender_id = uuid.uuid4().hex
     message = UserMessage("/greet", sender_id=sender_id)
     await agent.handle_message(message)
-    tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await agent.tracker_store.get_or_create_tracker(sender_id)
     expected_events = with_model_ids(
         [
             ActionExecuted(action_name="action_session_start"),

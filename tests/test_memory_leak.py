@@ -98,7 +98,7 @@ class MemoryLeakTest(abc.ABC):
         assert max_memory_usage < self.max_memory_threshold_mb
 
     @staticmethod
-    def _write_results(base_name: Text, results: List[Tuple[float]]) -> None:
+    def _write_results(base_name: Text, results: List[Tuple[float, float]]) -> None:
         mprof_plot = Path(f"{base_name}_plot.txt")
         mprof_results = Path(f"{base_name}_raw.json")
 
