@@ -1,5 +1,5 @@
-import asyncio
 import copy
+import inspect
 import logging
 import logging.handlers
 import os
@@ -118,10 +118,10 @@ def configure_logging_and_warnings(
             the handlers of the root logger
     """
     if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
-        log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+        log_level_name = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
         # Change log level from str to int (note that log_level in function parameter
         # int already, coming from CLI argparse parameter).
-        log_level = logging.getLevelName(log_level)
+        log_level = logging.getLevelName(log_level_name)
 
     logging.getLogger("rasa").setLevel(log_level)
     # Assign log level to env variable in str format (not int). Why do we assign?
@@ -419,7 +419,7 @@ async def call_potential_coroutine(
     Returns:
         The return value of the function.
     """
-    if asyncio.iscoroutine(coroutine_or_return_value):
+    if inspect.iscoroutine(coroutine_or_return_value):
         return await coroutine_or_return_value
 
     return coroutine_or_return_value

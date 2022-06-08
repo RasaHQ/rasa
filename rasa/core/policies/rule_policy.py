@@ -1,7 +1,7 @@
 from __future__ import annotations
 import functools
 import logging
-from typing import Any, List, Dict, Text, Optional, Set, Tuple
+from typing import Any, List, DefaultDict, Dict, Text, Optional, Set, Tuple, cast
 
 from tqdm import tqdm
 import numpy as np
@@ -43,7 +43,6 @@ from rasa.shared.core.constants import (
     RULE_SNIPPET_ACTION_NAME,
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
-    LOOP_REJECTED,
     LOOP_NAME,
     SLOTS,
     ACTIVE_LOOP,
@@ -53,7 +52,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
-import rasa.core.training.training
+from rasa.core.training.training import create_action_fingerprints, ActionFingerprint
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +158,7 @@ class RulePolicy(MemoizationPolicy):
         self._enable_fallback_prediction = config["enable_fallback_prediction"]
         self._check_for_contradictions = config["check_for_contradictions"]
 
-        self._rules_sources: defaultdict[Text, List[Tuple[Text, Text]]] = defaultdict(
+        self._rules_sources: DefaultDict[Text, List[Tuple[Text, Text]]] = defaultdict(
             list
         )
 
@@ -303,18 +302,18 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _expected_but_missing_slots(
-        fingerprint: Dict[Text, List[Text]], state: State
+        fingerprint: ActionFingerprint, state: State
     ) -> Set[Text]:
-        expected_slots = set(fingerprint.get(SLOTS, {}))
+        expected_slots = set(fingerprint.slots)
         current_slots = set(state.get(SLOTS, {}).keys())
         # report all slots that are expected but aren't set in current slots
         return expected_slots.difference(current_slots)
 
     @staticmethod
     def _check_active_loops_fingerprint(
-        fingerprint: Dict[Text, List[Text]], state: State
-    ) -> Set[Text]:
-        expected_active_loops = set(fingerprint.get(ACTIVE_LOOP, {}))
+        fingerprint: ActionFingerprint, state: State
+    ) -> Set[Optional[Text]]:
+        expected_active_loops = set(fingerprint.active_loop)
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         current_active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
@@ -365,13 +364,11 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         logger.debug("Started checking if some rules are incomplete.")
         # we need to use only fingerprints from rules
-        rule_fingerprints = rasa.core.training.training.create_action_fingerprints(
-            rule_trackers, domain
-        )
+        rule_fingerprints = create_action_fingerprints(rule_trackers, domain)
         if not rule_fingerprints:
             return
 
-        error_messages = []
+        error_messages: List[Text] = []
         for tracker in rule_trackers:
             states = tracker.past_states(domain)
             # the last action is always action listen
@@ -409,9 +406,9 @@ class RulePolicy(MemoizationPolicy):
                 )
 
         if error_messages:
-            error_messages = "\n".join(error_messages)
+            error_text = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nIncomplete rules found🚨\n\n{error_messages}\n"
+                f"\nIncomplete rules found🚨\n\n{error_text}\n"
                 f"Please note that if some slots or active loops should not be set "
                 f"during prediction you need to explicitly set them to 'null' in the "
                 f"rules."
@@ -428,7 +425,10 @@ class RulePolicy(MemoizationPolicy):
         for states in trackers_as_states:
             for state in states:
                 slots.update(set(state.get(SLOTS, {}).keys()))
-                active_loop: Optional[Text] = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+                # FIXME: ideally we have better annotation for State, TypedDict
+                # could work but support in mypy is very limited. Dataclass are
+                # another option
+                active_loop = cast(Text, state.get(ACTIVE_LOOP, {}).get(LOOP_NAME))
                 if active_loop:
                     loops.add(active_loop)
         return slots, loops
@@ -494,7 +494,7 @@ class RulePolicy(MemoizationPolicy):
         self,
         tracker: TrackerWithCachedStates,
         predicted_action_name: Optional[Text],
-        gold_action_name: Text,
+        gold_action_name: Optional[Text],
         prediction_source: Text,
     ) -> None:
         # we need to remember which action should be predicted by the rule
@@ -721,9 +721,9 @@ class RulePolicy(MemoizationPolicy):
 
         logger.setLevel(logger_level)  # reset logger level
         if error_messages:
-            error_messages = "\n".join(error_messages)
+            error_text = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nContradicting rules or stories found 🚨\n\n{error_messages}\n"
+                f"\nContradicting rules or stories found 🚨\n\n{error_text}\n"
                 f"Please update your stories and rules so that they don't contradict "
                 f"each other."
             )
@@ -955,7 +955,7 @@ class RulePolicy(MemoizationPolicy):
         if active_loop_name is None:
             return None, None
 
-        active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
+        active_loop_rejected = tracker.is_active_loop_rejected
         should_predict_loop = (
             not active_loop_rejected
             and tracker.latest_action

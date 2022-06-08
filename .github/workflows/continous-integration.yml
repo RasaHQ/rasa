@@ -108,7 +108,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
+      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -120,14 +120,14 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v7
+      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -177,6 +177,10 @@ jobs:
     - name: Check Types 📚
       if: needs.changes.outputs.backend == 'true'
       run: make types
+
+    - name: Lint Changelog Filenames 📝
+      if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
+      run: make lint-changelog
 
     - name: Test CLI 🖥
       if: needs.changes.outputs.backend == 'true'
@@ -242,7 +246,7 @@ jobs:
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
+      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -254,14 +258,14 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v7
+      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -322,25 +326,8 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       run: poetry run pip install -U ddtrace
 
-    - name: Test Code 🔍 (monothread)
-      # This is a temporary workaround for OOM on Windows caused by increased memory
-      # consumption associated with the upgrade of our tensorflow dependency
-      # see https://github.com/RasaHQ/rasa/issues/9734 for more information.
-      # Once the memory issues have been addressed, all configurations should be run on
-      # multiple threads
-      if: needs.changes.outputs.backend == 'true' && (matrix.os == 'windows-2019' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
-      env:
-        JOBS: 1
-        PYTHONIOENCODING: "utf-8"
-        DD_ENV: ${{ matrix.test }}
-        DD_SERVICE: rasa
-        DD_ARGS: --ddtrace --ddtrace-patch-all
-      run: |
-        make ${{ matrix.test }}
-        poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
-
-    - name: Test Code 🔍 (multithread)
-      if: needs.changes.outputs.backend == 'true' && !(matrix.os == 'windows-2019' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
+    - name: Test Code 🔍 (multi-process)
+      if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
@@ -349,7 +336,10 @@ jobs:
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
-        mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        fi
+      shell: bash  # bash shell is a way to make code run for both Linux and Windows
 
     - name: Store coverage reports
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
@@ -374,13 +364,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
+        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
         with:
           python-version: 3.9
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           path: ${{ github.workspace }}/tests_coverage
 
@@ -403,7 +393,7 @@ jobs:
 
       - name: Upload reports to codeclimate
         if: needs.changes.outputs.backend == 'true'
-        uses: paambaati/codeclimate-action@v3.0.0
+        uses: paambaati/codeclimate-action@84cea27117a473d605400ca3a97fcef7e433e2d6 # v3.0
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODECLIMATE_REPORTER_ID }}
         with:
@@ -470,7 +460,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
+      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -482,14 +472,14 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v7
+      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -573,7 +563,7 @@ jobs:
       shell: bash
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.6.0
       with:
         version: v0.5.1
         driver: docker
@@ -744,7 +734,7 @@ jobs:
       shell: bash
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.6.0
       with:
         version: v0.5.1
         driver: docker
@@ -805,7 +795,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Set up Python 3.9 🐍
-      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
+      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
       with:
         python-version: 3.9
 
@@ -815,7 +805,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v7
+      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 

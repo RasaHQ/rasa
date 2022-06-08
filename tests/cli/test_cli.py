@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Callable
-from _pytest.pytester import RunResult, Testdir
+
+from pytest import Testdir, RunResult
 import pytest
 import sys
 

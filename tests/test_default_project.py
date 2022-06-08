@@ -1,10 +1,11 @@
 from typing import Any, Dict, Text
 
-from _pytest.pytester import Testdir
 import pytest
 import copy
 
 import re
+
+from pytest import Testdir
 
 from rasa.__main__ import create_argument_parser
 import rasa.cli.data
