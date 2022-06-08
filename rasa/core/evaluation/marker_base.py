@@ -14,6 +14,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
     Any,
+    AsyncIterator,
 )
 
 from pathlib import Path
@@ -562,27 +563,25 @@ class Marker(ABC):
 
         tag, _ = MarkerRegistry.get_non_negated_tag(tag_or_negated_tag=tag)
         if tag in MarkerRegistry.operator_tag_to_marker_class:
-            marker = OperatorMarker.from_tag_and_sub_config(
+            return OperatorMarker.from_tag_and_sub_config(
                 tag=tag, sub_config=sub_marker_config, name=name
             )
         elif tag in MarkerRegistry.condition_tag_to_marker_class:
-            marker = ConditionMarker.from_tag_and_sub_config(
+            return ConditionMarker.from_tag_and_sub_config(
                 tag=tag, sub_config=sub_marker_config, name=name
             )
-        else:
-            raise InvalidMarkerConfig(
-                f"Expected a marker configuration with a key that specifies"
-                f" an operator or a condition but found {tag}. "
-                f"Available conditions and operators are: "
-                f"{sorted(MarkerRegistry.all_tags)}. "
-                f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
-            )
 
-        return marker
+        raise InvalidMarkerConfig(
+            f"Expected a marker configuration with a key that specifies"
+            f" an operator or a condition but found {tag}. "
+            f"Available conditions and operators are: "
+            f"{sorted(MarkerRegistry.all_tags)}. "
+            f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+        )
 
-    def evaluate_trackers(
+    async def evaluate_trackers(
         self,
-        trackers: Iterator[Optional[DialogueStateTracker]],
+        trackers: AsyncIterator[Optional[DialogueStateTracker]],
         output_file: Path,
         session_stats_file: Optional[Path] = None,
         overall_stats_file: Optional[Path] = None,
@@ -612,7 +611,7 @@ class Marker(ABC):
 
         # Apply marker to each session stored in each tracker and save the results.
         processed_trackers: Dict[Text, List[SessionEvaluation]] = {}
-        for tracker in trackers:
+        async for tracker in trackers:
             if tracker:
                 tracker_result = self.evaluate_events(tracker.events)
                 processed_trackers[tracker.sender_id] = tracker_result

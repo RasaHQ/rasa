@@ -338,8 +338,9 @@ def _tag_to_use(
         relevant_tags, relevant_confidences
     )
     # Calculate the percentage of tokens assigned to a tag per tag.
-    token_percentage_per_tag = Counter(relevant_tags)
-    for tag, count in token_percentage_per_tag.items():
+    tag_counts = Counter(relevant_tags)
+    token_percentage_per_tag: Dict[Text, float] = {}
+    for tag, count in tag_counts.items():
         token_percentage_per_tag[tag] = round(count / len(relevant_tags), 2)
 
     # Calculate the harmonic mean between the two metrics per tag.
