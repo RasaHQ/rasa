@@ -2903,7 +2903,7 @@ python-versions = "*"
 
 [[package]]
 name = "tensorflow"
-version = "2.7.1"
+version = "2.7.2"
 description = "TensorFlow is an open source machine learning framework for everyone."
 category = "main"
 optional = false
@@ -5626,15 +5626,15 @@ tensorboard-plugin-wit = [
     {file = "tensorboard_plugin_wit-1.8.1-py3-none-any.whl", hash = "sha256:ff26bdd583d155aa951ee3b152b3d0cffae8005dc697f72b44a8e8c2a77a8cbe"},
 ]
 tensorflow = [
-    {file = "tensorflow-2.7.1-cp37-cp37m-macosx_10_11_x86_64.whl", hash = "sha256:34b58fc1f0921dd679e9a03ffccfaee409c4df5c39a128c939555643e28bf94e"},
-    {file = "tensorflow-2.7.1-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:258a1ec62cd78b265c2f2ecc054dcdbfb4bc0ef8bd45cbeb6056cd0534b3b995"},
-    {file = "tensorflow-2.7.1-cp37-cp37m-win_amd64.whl", hash = "sha256:d1fb85258f013e0beb39cf3e69d362ee25d4cb5e94d0b0fa53019ede4ce5ae5d"},
-    {file = "tensorflow-2.7.1-cp38-cp38-macosx_10_11_x86_64.whl", hash = "sha256:3360fed07fd5f76a6627375ede5b9b23059e67fb4cab74f3192349bb548546e6"},
-    {file = "tensorflow-2.7.1-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:54c2aca9bb3c14a61ac56d8debe347f1b19fb5fd52d0d7372765952e53da45f6"},
-    {file = "tensorflow-2.7.1-cp38-cp38-win_amd64.whl", hash = "sha256:eb377e7da49a1a1b82be7ac5b93619fd2481b21fb3769d39f25971b431d6a024"},
-    {file = "tensorflow-2.7.1-cp39-cp39-macosx_10_11_x86_64.whl", hash = "sha256:634d4924f5f0c4e7a68d7549ce840e7c8c06f7dd8c7ec96a983eab15a707b331"},
-    {file = "tensorflow-2.7.1-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:0ed3ac84cda24bed5d24af5e6aeeb595b472fdc530efb9871bc79f830a0cb5f5"},
-    {file = "tensorflow-2.7.1-cp39-cp39-win_amd64.whl", hash = "sha256:ed0843aa4978ca1f166167d3d638d80ff560eabceeb7bf0b77822df4b5d2f7aa"},
+    {file = "tensorflow-2.7.2-cp37-cp37m-macosx_10_11_x86_64.whl", hash = "sha256:050c2ef8d432eb60f2cb6fc75d751fcb3008af6a86ad1147faea30cb59c275b1"},
+    {file = "tensorflow-2.7.2-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:3c72b8653a539789ef36f8c1ad8266b9e676dff2293f0f7a68d9b26fc77a37f3"},
+    {file = "tensorflow-2.7.2-cp37-cp37m-win_amd64.whl", hash = "sha256:1db663f9f59ba54a294b1f6530f131e90c7a0e6ea49fda5b2c6900e57b0c306a"},
+    {file = "tensorflow-2.7.2-cp38-cp38-macosx_10_11_x86_64.whl", hash = "sha256:cb66d4a998af1ca979d6da33e925281596f52e5a9ba67b2295c53677f8379eee"},
+    {file = "tensorflow-2.7.2-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:d4dbfab1568564b30bab876424fafd74c8a8715238b76284b5dd1cfe86c7881b"},
+    {file = "tensorflow-2.7.2-cp38-cp38-win_amd64.whl", hash = "sha256:b9a7f344b93b953cab4c3f6ec3b6c1799eb538b6a1978d3a4b579d7a81ee7439"},
+    {file = "tensorflow-2.7.2-cp39-cp39-macosx_10_11_x86_64.whl", hash = "sha256:99a85258505130b1f3ce203f11b3bb3c95442edefec96c0b221ce0d6541a92c8"},
+    {file = "tensorflow-2.7.2-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:bb2115796e2e7738de1844aead493bc1f1122ff1fae65fc691bb1ce5a0fdd2aa"},
+    {file = "tensorflow-2.7.2-cp39-cp39-win_amd64.whl", hash = "sha256:3e35d046d0be677239b5e832854bcb291ca79388fa406d9d7547bc3377a7efbb"},
 ]
 tensorflow-addons = [
     {file = "tensorflow_addons-0.15.0-cp37-cp37m-macosx_10_13_x86_64.whl", hash = "sha256:5491aa5c22872aa6db1be9ae9e2f2317b5811ad4d1f98a26d730403d22f971a0"},
