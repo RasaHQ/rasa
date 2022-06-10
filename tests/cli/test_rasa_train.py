@@ -5,7 +5,7 @@ from pathlib import Path
 
 from _pytest.capture import CaptureFixture
 import pytest
-from typing import Callable
+from typing import Callable, List
 from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
 
@@ -31,7 +31,19 @@ from rasa.shared.nlu.training_data.training_data import (
 import rasa.utils.io
 
 
-def test_train(run_in_simple_project: Callable[..., RunResult], tmp_path: Path):
+@pytest.mark.parametrize(
+    "optional_arguments",
+    [
+        ["--endpoints", "endpoints.yml"],
+        ["--endpoints", "non_existent_endpoints.yml"],
+        [],
+    ],
+)
+def test_train(
+    run_in_simple_project: Callable[..., RunResult],
+    tmp_path: Path,
+    optional_arguments: List,
+):
     temp_dir = os.getcwd()
 
     run_in_simple_project(
@@ -46,6 +58,7 @@ def test_train(run_in_simple_project: Callable[..., RunResult], tmp_path: Path):
         "train_models",
         "--fixed-model-name",
         "test-model",
+        *optional_arguments,
     )
 
     models_dir = Path(temp_dir, "train_models")
@@ -422,7 +435,7 @@ def test_train_help(run: Callable[..., RunResult]):
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force] [--finetune [FINETUNE]]
-                  [--epoch-fraction EPOCH_FRACTION]
+                  [--epoch-fraction EPOCH_FRACTION] [--endpoints ENDPOINTS]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")

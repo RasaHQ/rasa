@@ -39,7 +39,7 @@ from rasa.core.constants import (
 )
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SessionStarted
+from rasa.shared.core.events import SessionStarted, Event
 from rasa.shared.core.trackers import (
     ActionExecuted,
     DialogueStateTracker,
@@ -294,10 +294,21 @@ class TrackerStore:
 
         offset = await self.number_of_existing_events(tracker.sender_id)
         events = tracker.events
-        for event in list(itertools.islice(events, offset, len(events))):
-            body = {"sender_id": tracker.sender_id}
+        new_events = list(itertools.islice(events, offset, len(events)))
+
+        await self._stream_new_events(self.event_broker, new_events, tracker.sender_id)
+
+    async def _stream_new_events(
+        self,
+        event_broker: EventBroker,
+        new_events: List[Event],
+        sender_id: Text,
+    ) -> None:
+        """Publishes new tracker events to a message broker."""
+        for event in new_events:
+            body = {"sender_id": sender_id}
             body.update(event.as_dict())
-            self.event_broker.publish(body)
+            event_broker.publish(body)
 
     async def number_of_existing_events(self, sender_id: Text) -> int:
         """Return number of stored events for a given sender id."""
