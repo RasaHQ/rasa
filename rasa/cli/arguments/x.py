@@ -20,5 +20,11 @@ def set_x_arguments(parser: argparse.ArgumentParser) -> None:
         "https://example.com/api/config?token=my_rasa_x_token",
     )
 
+    parser.add_argument(
+        "--no-prompt",
+        action="store_true",
+        help="Automatic yes or default options to prompts and oppressed warnings.",
+    )
+
     default_arguments.add_model_param(parser, add_positional_arg=False)
     add_server_arguments(parser)

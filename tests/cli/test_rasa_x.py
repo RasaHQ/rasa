@@ -32,7 +32,7 @@ def test_x_help(run: Callable[..., RunResult]):
 
     help_text = (
         """usage: rasa x [-h] [-v] [-vv] [--quiet] [--production]
-              [--config-endpoint CONFIG_ENDPOINT] [-m MODEL]
+              [--config-endpoint CONFIG_ENDPOINT] [--no-prompt] [-m MODEL]
               [--log-file LOG_FILE] [--use-syslog]
               [--syslog-address SYSLOG_ADDRESS] [--syslog-port SYSLOG_PORT]
               [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
