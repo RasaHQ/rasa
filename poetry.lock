@@ -2708,7 +2708,7 @@ python-versions = "*"
 
 [[package]]
 name = "spacy"
-version = "3.3.1"
+version = "3.2.4"
 description = "Industrial-strength Natural Language Processing (NLP) in Python"
 category = "main"
 optional = true
@@ -2717,6 +2717,7 @@ python-versions = ">=3.6"
 [package.dependencies]
 blis = ">=0.4.0,<0.8.0"
 catalogue = ">=2.0.6,<2.1.0"
+click = "<8.1.0"
 cymem = ">=2.0.2,<2.1.0"
 jinja2 = "*"
 langcodes = ">=3.2.0,<4.0.0"
@@ -2727,14 +2728,14 @@ pathy = ">=0.3.5"
 preshed = ">=3.0.2,<3.1.0"
 pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<1.9.0"
 requests = ">=2.13.0,<3.0.0"
-spacy-legacy = ">=3.0.9,<3.1.0"
+spacy-legacy = ">=3.0.8,<3.1.0"
 spacy-loggers = ">=1.0.0,<2.0.0"
-srsly = ">=2.4.3,<3.0.0"
-thinc = ">=8.0.14,<8.1.0"
+srsly = ">=2.4.1,<3.0.0"
+thinc = ">=8.0.12,<8.1.0"
 tqdm = ">=4.38.0,<5.0.0"
 typer = ">=0.3.0,<0.5.0"
-typing-extensions = {version = ">=3.7.4,<4.2.0", markers = "python_version < \"3.8\""}
-wasabi = ">=0.9.1,<1.1.0"
+typing-extensions = {version = ">=3.7.4,<4.0.0.0", markers = "python_version < \"3.8\""}
+wasabi = ">=0.8.1,<1.1.0"
 
 [package.extras]
 apple = ["thinc-apple-ops (>=0.0.4,<1.0.0)"]
@@ -3476,7 +3477,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "668837acc9d0ff4769d8d05ae82b78cb073bbc67b46c911befb1261551de6f6f"
+content-hash = "678c88ddb5dc8fbe63a60fee6c0fc0508f2c6af042a69ca64afce61ca1901177"
 
 [metadata.files]
 absl-py = [
@@ -5513,25 +5514,22 @@ sortedcontainers = [
     {file = "sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88"},
 ]
 spacy = [
-    {file = "spacy-3.3.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d2e9510ad67fef328bbec01673d6e65f5670ccbb9434dfe0deaa7edffcc900a6"},
-    {file = "spacy-3.3.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:192baa97dfb90b9c59c8c5e90448284ea3810d4a9422f514f2d3eae78f97aa14"},
-    {file = "spacy-3.3.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5916b1e43b848680e01619963c2dd6ec0c1d99b5a5665c9b9b761f65c5adf18e"},
-    {file = "spacy-3.3.1-cp310-cp310-win_amd64.whl", hash = "sha256:ad3c6726b92723d16c15dc7ecc48abbb6495ef7b4c30d7cf4948c1195162a272"},
-    {file = "spacy-3.3.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:ee876b2036e8500b6dd315347eb2fc0345be097806bfe6857c7347beb759169a"},
-    {file = "spacy-3.3.1-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b18ed499fc8d848bb9026b294dc78128028c58a73ba0ae547d42fc6d471628a8"},
-    {file = "spacy-3.3.1-cp36-cp36m-win_amd64.whl", hash = "sha256:7b58cd4e27d6ae29e23b47e9ba6b8ca4e02fc69d65b57b2a9c7072c3a187b4ba"},
-    {file = "spacy-3.3.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:ae06825f2e349e035fae602e2a48ba1453b8eed9238144e36e1b09a741744c6e"},
-    {file = "spacy-3.3.1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5fd1e3abab9df2e113d29d1bcf16700b68b125504a2b477b49eb7b6c7b5225ea"},
-    {file = "spacy-3.3.1-cp37-cp37m-win_amd64.whl", hash = "sha256:eea5d066f472261a37e43aa6b5002af5a9232da66a83ea5b7b590b905f00a5bb"},
-    {file = "spacy-3.3.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:dfbd15084f7b49fed1160999ef2986f2769cbcc50ab240bf026fa82337500ace"},
-    {file = "spacy-3.3.1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:618f3cd983aa37bb448bdd554e1abf1d82106fc3163959786a2ca1fe01dc4f1b"},
-    {file = "spacy-3.3.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1581ba49a6f687a5e0ad8291129793af8e3c4bb02ffbc8857b34acfa7ed3049f"},
-    {file = "spacy-3.3.1-cp38-cp38-win_amd64.whl", hash = "sha256:b652cc9fcd1e07f733a5de9c89fef300852d0129240f0eb11513d03bba470609"},
-    {file = "spacy-3.3.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:9af33d170d8a697f50556b612be5468fdd4134759846c54415f8fc9f87ca1c25"},
-    {file = "spacy-3.3.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:6971e37234395c6157a514ef1c1f15d27f91042df4e7fc8aefcc6e0d79a3cb8b"},
-    {file = "spacy-3.3.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:747a99fd2712e60325ff00b6b3131e4aef4c67b2f4433b9ffbd44833889a313d"},
-    {file = "spacy-3.3.1-cp39-cp39-win_amd64.whl", hash = "sha256:787bd8546ae4feed088fb712f3baf5239197cedfe9e1ce9d8906b3e3ef2f10bc"},
-    {file = "spacy-3.3.1.tar.gz", hash = "sha256:7f87dbdb104d851ae6ba5fd3a76a2e14e22e048135903e98baf08571a3aa81c0"},
+    {file = "spacy-3.2.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:7e20c63ba47eaa33ebd4b2cc6eefa3e8906505273799138ad8ab231b146d8875"},
+    {file = "spacy-3.2.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bc9184973c9052e1bb9eeb975801e6906aacbe0c009533ec0c34f443832473fd"},
+    {file = "spacy-3.2.4-cp310-cp310-win_amd64.whl", hash = "sha256:0168d97e7fbbddd3258016e4d3c10d1593b7129dddff146c14f3b103ade6b1cd"},
+    {file = "spacy-3.2.4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:cff47cdaa824802cd38ae94fe98af9cde6810d86334cd283659c868e0011831a"},
+    {file = "spacy-3.2.4-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:400af3490c36c1b6c895de526ec06f6c7655af5ca595743c07e09e9bc8f378ea"},
+    {file = "spacy-3.2.4-cp36-cp36m-win_amd64.whl", hash = "sha256:87bd072ccacedbf8bc5a692fea1d5c320abd26821c63af157a7c95baa47dc36d"},
+    {file = "spacy-3.2.4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:36e9ef5a32834383d37bbd27fca49388e31e9b53f77c91ba8ccbf19af10e3aef"},
+    {file = "spacy-3.2.4-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0e9a98999b0fce03d4f483112837ac7111378449ace069c7cd050908f0fa5d9f"},
+    {file = "spacy-3.2.4-cp37-cp37m-win_amd64.whl", hash = "sha256:89be328ff378e4cdcfb4dcf38ca2fad740f87213825ed10e8ce9f54b822277b8"},
+    {file = "spacy-3.2.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:ed29278fc89f07c1999ceca5f6702b379589c8e884a57816bdaeb05a1a7b2bbb"},
+    {file = "spacy-3.2.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:090e684eec551b5b7d56d9242cea18742515a706191ad158e32e16e8f2fe15ac"},
+    {file = "spacy-3.2.4-cp38-cp38-win_amd64.whl", hash = "sha256:2053cb78bcf4eec38aa266890a5700167a284d1a26197f851710d29f3d7071b3"},
+    {file = "spacy-3.2.4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:6db861f69f18ba5e00d0bd44744cf1662e00cc3b564d17a1ccdc4625ec3d5c3d"},
+    {file = "spacy-3.2.4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ac2288e87de1066ad65676e930f53978d6ee97c34044dca4d24f64a24e2a88b6"},
+    {file = "spacy-3.2.4-cp39-cp39-win_amd64.whl", hash = "sha256:e759e27da39e469b6367b82281a10eb4e50de04260ba49d42091cbdfe2d99633"},
+    {file = "spacy-3.2.4.tar.gz", hash = "sha256:3e4c6f298d54044582daca1142b082ee38831bb3d7bb931d2ee601e8b8dce64f"},
 ]
 spacy-legacy = [
     {file = "spacy-legacy-3.0.9.tar.gz", hash = "sha256:4f7dcbc4e6c8e8cb4eadbb009f9c0a1a2a67442e0032c8d6776c9470c3759903"},
