@@ -124,7 +124,7 @@ def test_rasa_x_raises_warning_and_exits_without_production_flag():
         with pytest.warns(
             UserWarning,
             match="Running Rasa X in local mode is no longer supported as Rasa has "
-            "stopped supporting the Community Edition (free version) of ‘Rasa X’."
+            "stopped supporting the Community Edition (free version) of ‘Rasa X’. "
             "For more information please see "
             "https://rasa.com/blog/rasa-x-community-edition-changes/",
         ):
