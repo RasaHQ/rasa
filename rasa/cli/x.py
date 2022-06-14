@@ -14,7 +14,6 @@ import rasa.cli.utils
 from rasa.shared.constants import (
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_ENDPOINTS_PATH,
-    DOCS_BASE_URL_RASA_X,
 )
 from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.cli
@@ -40,9 +39,10 @@ def add_subparser(
         "formatter_class": argparse.ArgumentDefaultsHelpFormatter,
     }
 
-    x_parser_args[
-        "help"
-    ] = "Run a Rasa server in a mode that enables connecting to Rasa Enterprise as the config endpoint."
+    x_parser_args["help"] = (
+        "Run a Rasa server in a mode that enables connecting "
+        "to Rasa Enterprise as the config endpoint."
+    )
 
     shell_parser = subparsers.add_parser("x", **x_parser_args)
     shell_parser.set_defaults(func=rasa_x)
@@ -118,7 +118,8 @@ def rasa_x(args: argparse.Namespace) -> None:
         rasa.shared.utils.io.raise_warning(
             "Running Rasa X in local mode is no longer supported as Rasa has "
             "stopped supporting the Community Edition (free version) of ‘Rasa X’."
-            "For more information please see https://rasa.com/blog/rasa-x-community-edition-changes/",
+            "For more information please see "
+            "https://rasa.com/blog/rasa-x-community-edition-changes/",
             UserWarning,
         )
         exit()

@@ -8,7 +8,8 @@ def set_x_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--production",
         action="store_true",
-        help="Run a Rasa server in a mode that allows connecting to Rasa Enterprise as the config endpoint",
+        help="Run a Rasa server in a mode that allows connecting "
+        "to Rasa Enterprise as the config endpoint",
     )
 
     parser.add_argument(
