@@ -212,6 +212,10 @@ If you want to fine-tune your model, start by modifying the following parameters
 
   Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to [handle actions predicted with low confidence](./fallback-handoff.mdx#handling-low-action-confidence).
 
+* `use_gpu`:
+  This parameter defines whether a GPU (if available) will be used training. By default, `TEDPolicy` will be trained on GPU 
+  if a GPU is available (i.e. `use_gpu` is `True`). To enforce that `TEDPolicy` uses only the CPU for training, set `use_gpu` to `False`.
+  
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -592,6 +596,10 @@ If you want to fine-tune model's performance, start by modifying the following p
     A tolerance of `1.0` means that the threshold score is so low that `UnexpecTEDIntentPolicy` would not
     trigger `action_unlikely_intent` for any of the negative examples that it has encountered
     during training.
+
+* `use_gpu`:
+  This parameter defines whether a GPU (if available) will be used training. By default, `UnexpecTEDIntentPolicy` will be trained on GPU 
+  if a GPU is available (i.e. `use_gpu` is `True`). To enforce that `UnexpecTEDIntentPolicy` uses only the CPU for training, set `use_gpu` to `False`.
 
 The above configuration parameters are the ones you should try tweaking according to your use case and training data.
 However, additional parameters exist that you could adapt.

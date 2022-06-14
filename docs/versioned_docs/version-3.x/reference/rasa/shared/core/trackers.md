@@ -2,6 +2,15 @@
 sidebar_label: rasa.shared.core.trackers
 title: rasa.shared.core.trackers
 ---
+## TrackerActiveLoop Objects
+
+```python
+@dataclasses.dataclass
+class TrackerActiveLoop()
+```
+
+Dataclass for `DialogueStateTracker.active_loop`.
+
 ## EventVerbosity Objects
 
 ```python
@@ -180,7 +189,7 @@ Resets loop validation and rejection parameters.
  | current_slot_values() -> Dict[Text, Any]
 ```
 
-Return the currently set values of the slots
+Return the currently set values of the slots.
 
 #### get\_slot
 
@@ -200,7 +209,7 @@ Get entity values found for the passed entity type and optional role and
 group in latest message.
 
 If you are only interested in the first entity of a given type use
-`next(tracker.get_latest_entity_values(&quot;my_entity_name&quot;), None)`.
+`next(tracker.get_latest_entity_values(`&quot;`my_entity_name`&quot;`), None)`.
 If no entity is found `None` is the default result.
 
 **Arguments**:
@@ -465,6 +474,24 @@ Get the name of the previously executed action or text of e2e action.
 
 Returns: name of the previously executed action or text of e2e action
 
+#### is\_active\_loop\_rejected
+
+```python
+ | @property
+ | is_active_loop_rejected() -> bool
+```
+
+Return True if there is an active loop and it&#x27;s rejected.
+
+#### is\_active\_loop\_interrupted
+
+```python
+ | @property
+ | is_active_loop_interrupted() -> bool
+```
+
+Return True if there is an active loop and it&#x27;s interrupted.
+
 #### fingerprint
 
 ```python
@@ -480,7 +507,7 @@ Returns a unique hash for the tracker which is stable across python runs.
 #### get\_active\_loop\_name
 
 ```python
-get_active_loop_name(state: State) -> Optional[Union[Text, Tuple[Union[float, Text]]]]
+get_active_loop_name(state: State) -> Optional[Text]
 ```
 
 Get the name of current active loop.
