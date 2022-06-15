@@ -671,6 +671,46 @@ def test_verify_slot_mappings_valid(tmp_path: Path):
 def test_default_action_as_active_loop_in_rules(
     tmp_path: Path, file_name: Text, data_type: Text
 ) -> None:
+    config = tmp_path / "config.yml"
+
+    config.write_text(
+        textwrap.dedent(
+            """
+            recipe: default.v1
+
+            language: en
+
+            pipeline:
+               - name: WhitespaceTokenizer
+               - name: RegexFeaturizer
+               - name: LexicalSyntacticFeaturizer
+               - name: CountVectorsFeaturizer
+               - name: CountVectorsFeaturizer
+                 analyzer: char_wb
+                 min_ngram: 1
+                 max_ngram: 4
+               - name: DIETClassifier
+                 epochs: 100
+               - name: EntitySynonymMapper
+               - name: ResponseSelector
+                 epochs: 100
+               - name: FallbackClassifier
+                 threshold: 0.3
+                 ambiguity_threshold: 0.1
+
+            policies:
+               - name: MemoizationPolicy
+               - name: TEDPolicy
+                 max_history: 5
+                 epochs: 100
+               - name: RulePolicy
+                 core_fallback_threshold: 0.3
+                 core_fallback_action_name: "action_default_fallback"
+                 enable_fallback_prediction: true
+            """
+        )
+    )
+
     domain = tmp_path / "domain.yml"
     domain.write_text(
         textwrap.dedent(
@@ -711,18 +751,20 @@ def test_default_action_as_active_loop_in_rules(
             """
         )
     )
-    file_name = tmp_path / f"{file_name}.yml"
-    file_name.write_text(
+    file = tmp_path / f"{file_name}.yml"
+    file.write_text(
         f"""
-                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                {file_name}:
-                - {data_type}: action default fallback test
-                  steps:
-                  - intent: nlu_fallback
-                  - action: action_two_stage_fallback
-                  - active_loop: action_two_stage_fallback
-                """
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            {file_name}:
+            - {data_type}: test
+              steps:
+              - intent: nlu_fallback
+              - action: action_two_stage_fallback
+              - active_loop: action_two_stage_fallback
+           """
     )
-    importer = RasaFileImporter(domain_path=domain, training_data_paths=[file_name])
+    importer = RasaFileImporter(
+        config_file=str(config), domain_path=str(domain), training_data_paths=str(file)
+    )
     validator = Validator.from_importer(importer)
     assert validator.verify_forms_in_stories_rules()
