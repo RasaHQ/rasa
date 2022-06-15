@@ -1,3 +1,4 @@
+import textwrap
 from typing import Text
 
 import pytest
@@ -662,3 +663,66 @@ def test_verify_slot_mappings_valid(tmp_path: Path):
     importer = RasaFileImporter(domain_path=domain)
     validator = Validator.from_importer(importer)
     assert validator.verify_slot_mappings()
+
+
+@pytest.mark.parametrize(
+    ("file_name", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+def test_default_action_as_active_loop_in_rules(
+    tmp_path: Path, file_name: Text, data_type: Text
+) -> None:
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        textwrap.dedent(
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            intents:
+              - greet
+              - goodbye
+              - affirm
+              - deny
+              - mood_great
+              - mood_unhappy
+              - bot_challenge
+
+            responses:
+              utter_greet:
+              - text: "Hey! How are you?"
+
+              utter_cheer_up:
+              - text: "Here is something to cheer you up:"
+                image: "https://i.imgur.com/nGF1K8f.jpg"
+
+              utter_did_that_help:
+              - text: "Did that help you?"
+
+              utter_happy:
+              - text: "Great, carry on!"
+
+              utter_goodbye:
+              - text: "Bye"
+
+              utter_iamabot:
+              - text: "I am a bot, powered by Rasa."
+
+            session_config:
+              session_expiration_time: 60
+              carry_over_slots_to_new_session: true
+            """
+        )
+    )
+    file_name = tmp_path / f"{file_name}.yml"
+    file_name.write_text(
+        f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                {file_name}:
+                - {data_type}: action default fallback test
+                  steps:
+                  - intent: nlu_fallback
+                  - action: action_two_stage_fallback
+                  - active_loop: action_two_stage_fallback
+                """
+    )
+    importer = RasaFileImporter(domain_path=domain, training_data_paths=[file_name])
+    validator = Validator.from_importer(importer)
+    assert validator.verify_forms_in_stories_rules()
