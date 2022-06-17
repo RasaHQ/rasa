@@ -117,7 +117,7 @@ Persist this model into the passed directory.
 
 ```python
  | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> DIETClassifier
+ | load(cls: Type[DIETClassifierT], config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> DIETClassifierT
 ```
 
 Loads a policy from the storage (see parent class for full docstring).
@@ -131,7 +131,7 @@ class DIET(TransformerRasaModel)
 #### batch\_loss
 
 ```python
- | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> tf.Tensor
 ```
 
 Calculates the loss for the given batch.
@@ -156,7 +156,7 @@ Prepares the model for prediction.
 #### batch\_predict
 
 ```python
- | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> Dict[Text, tf.Tensor]
 ```
 
 Predicts the output of the given batch.
