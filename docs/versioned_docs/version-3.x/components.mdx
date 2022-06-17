@@ -1154,18 +1154,14 @@ More details on the parameters can be found on the [scikit-learn documentation p
 
   ```json
   {
-      "intent": {"name": "greet", "confidence": 0.7800},
+      "intent": {"name": "greet", "confidence": 0.78343},
       "intent_ranking": [
           {
-              "confidence": 0.7800,
-              "name": "greet"
-          },
-          {
-              "confidence": 0.1400,
+              "confidence": 0.1485910906220309,
               "name": "goodbye"
           },
           {
-              "confidence": 0.0800,
+              "confidence": 0.08161531595656784,
               "name": "restaurant_search"
           }
       ]
@@ -1293,18 +1289,14 @@ More details on the parameters can be found on the [scikit-learn documentation p
 
   ```json
   {
-      "intent": {"name": "greet", "confidence": 0.7800},
+      "intent": {"name": "greet", "confidence": 0.8343},
       "intent_ranking": [
           {
-              "confidence": 0.7800,
-              "name": "greet"
-          },
-          {
-              "confidence": 0.1400,
+              "confidence": 0.385910906220309,
               "name": "goodbye"
           },
           {
-              "confidence": 0.0800,
+              "confidence": 0.28161531595656784,
               "name": "restaurant_search"
           }
       ],
@@ -2138,7 +2130,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         # use regexes to extract entities
         use_regexes: True
         # use match word boundaries for lookup table
-        use_word_boundaries: True
+        "use_word_boundaries": True
   ```
 
 
@@ -2240,18 +2232,14 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
     ```json
     {
-        "intent": {"name": "greet", "confidence": 0.7800},
+        "intent": {"name": "greet", "confidence": 0.8343},
         "intent_ranking": [
             {
-                "confidence": 0.7800,
-                "name": "greet"
-            },
-            {
-                "confidence": 0.1400,
+                "confidence": 0.385910906220309,
                 "name": "goodbye"
             },
             {
-                "confidence": 0.0800,
+                "confidence": 0.28161531595656784,
                 "name": "restaurant_search"
             }
         ],

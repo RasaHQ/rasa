@@ -294,7 +294,7 @@ condition (see `ConditionMarker.from_tag_and_sub_config`).
 #### evaluate\_trackers
 
 ```python
- | async evaluate_trackers(trackers: AsyncIterator[Optional[DialogueStateTracker]], output_file: Path, session_stats_file: Optional[Path] = None, overall_stats_file: Optional[Path] = None) -> None
+ | evaluate_trackers(trackers: Iterator[Optional[DialogueStateTracker]], output_file: Path, session_stats_file: Optional[Path] = None, overall_stats_file: Optional[Path] = None) -> None
 ```
 
 Collect markers for each dialogue in each tracker loaded.

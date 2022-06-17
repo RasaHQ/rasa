@@ -5,10 +5,10 @@ title: rasa.cli.utils
 #### get\_validated\_path
 
 ```python
-get_validated_path(current: Optional[Union["Path", Text]], parameter: Text, default: Optional[Union["Path", Text]] = None, none_is_valid: bool = False) -> Optional[Union["Path", Text]]
+get_validated_path(current: Optional[Text], parameter: Text, default: Optional[Text] = None, none_is_valid: bool = False) -> Optional[Text]
 ```
 
-Checks whether a file path or its default value is valid and returns it.
+Check whether a file path or its default value is valid and returns it.
 
 **Arguments**:
 
@@ -24,28 +24,10 @@ Checks whether a file path or its default value is valid and returns it.
   The current value if it was valid, else the default value of the
   argument if it is valid, else `None`.
 
-#### missing\_config\_keys
-
-```python
-missing_config_keys(path: Union["Path", Text], mandatory_keys: List[Text]) -> List[Text]
-```
-
-Checks whether the config file at `path` contains the `mandatory_keys`.
-
-**Arguments**:
-
-- `path` - The path to the config file.
-- `mandatory_keys` - A list of mandatory config keys.
-  
-
-**Returns**:
-
-  The list of missing config keys.
-
 #### cancel\_cause\_not\_found
 
 ```python
-cancel_cause_not_found(current: Optional[Union["Path", Text]], parameter: Text, default: Optional[Union["Path", Text]]) -> None
+cancel_cause_not_found(current: Optional[Text], parameter: Text, default: Optional[Text]) -> None
 ```
 
 Exits with an error because the given path was not valid.

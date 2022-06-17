@@ -107,7 +107,7 @@ Collection of configured endpoints.
 #### read\_endpoints\_from\_path
 
 ```python
-read_endpoints_from_path(endpoints_path: Optional[Union[Path, Text]] = None) -> AvailableEndpoints
+read_endpoints_from_path(endpoints_path: Union[Path, Text, None] = None) -> AvailableEndpoints
 ```
 
 Get `AvailableEndpoints` object from specified path.

@@ -111,15 +111,6 @@ serialized as YAML.
 
   `OrderedDict` containing all training data.
 
-#### process\_intents
-
-```python
- | @classmethod
- | process_intents(cls, training_data: "TrainingData") -> List[OrderedDict]
-```
-
-Serializes the intents.
-
 #### process\_synonyms
 
 ```python

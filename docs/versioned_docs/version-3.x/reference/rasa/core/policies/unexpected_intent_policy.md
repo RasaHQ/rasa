@@ -2,24 +2,6 @@
 sidebar_label: rasa.core.policies.unexpected_intent_policy
 title: rasa.core.policies.unexpected_intent_policy
 ---
-## RankingCandidateMetadata Objects
-
-```python
-@dataclasses.dataclass
-class RankingCandidateMetadata()
-```
-
-Dataclass to represent metada for a candidate intent.
-
-## UnexpecTEDIntentPolicyMetadata Objects
-
-```python
-@dataclasses.dataclass
-class UnexpecTEDIntentPolicyMetadata()
-```
-
-Dataclass to represent policy metadata.
-
 ## UnexpecTEDIntentPolicy Objects
 
 ```python

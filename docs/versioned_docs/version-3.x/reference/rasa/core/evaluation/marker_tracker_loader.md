@@ -54,7 +54,7 @@ Creates a MarkerTrackerLoader.
 #### load
 
 ```python
- | async load() -> AsyncIterator[Optional[DialogueStateTracker]]
+ | load() -> Iterator[Optional[DialogueStateTracker]]
 ```
 
 Loads trackers according to strategy.
