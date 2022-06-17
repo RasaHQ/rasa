@@ -374,7 +374,7 @@ jobs:
 
       - name: Upload an artifact with the report
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
           path: report.json
@@ -390,7 +390,7 @@ jobs:
 
       - name: Upload an artifact with diagnostic data
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == 'core'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: diagnostic_data
           path: |
@@ -522,7 +522,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the overall report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: report.json
           path: ./report.json
