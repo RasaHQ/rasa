@@ -343,7 +343,7 @@ jobs:
 
     - name: Store coverage reports
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.test }}-coverage
         path: |
