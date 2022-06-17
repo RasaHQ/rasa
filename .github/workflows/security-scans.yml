@@ -34,7 +34,7 @@ jobs:
         fetch-depth: '0'
 
     - name: Gitleaks - detecting hardcoded secrets
-      uses: zricethezav/gitleaks-action@52bae2afd2dc273666f83f866982e3a3bcfa077d # v1.6.0
+      uses: zricethezav/gitleaks-action@52bae2afd2dc273666f83f866982e3a3bcfa077d
       with:
         config-path: .gitleaks.toml
 
