@@ -11,7 +11,8 @@
             "reference/rasa/cli/arguments/run",
             "reference/rasa/cli/arguments/test",
             "reference/rasa/cli/arguments/train",
-            "reference/rasa/cli/arguments/visualize"
+            "reference/rasa/cli/arguments/visualize",
+            "reference/rasa/cli/arguments/x"
           ],
           "label": "rasa.cli.arguments",
           "type": "category"

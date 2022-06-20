@@ -15,59 +15,19 @@ Add all rasa x parsers.
 - `subparsers` - subparser we are going to attach to
 - `parents` - Parent parsers, needed to ensure tree structure in argparse
 
-#### start\_rasa\_for\_local\_rasa\_x
+#### rasa\_x
 
 ```python
-start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text) -> BaseProcess
+rasa_x(args: argparse.Namespace) -> None
 ```
 
-Starts the Rasa X API with Rasa as a background process.
+Run Rasa with the `x` subcommand.
 
-#### is\_rasa\_x\_installed
+#### run\_in\_enterprise\_connection\_mode
 
 ```python
-is_rasa_x_installed() -> bool
+run_in_enterprise_connection_mode(args: argparse.Namespace) -> None
 ```
 
-Check if Rasa X is installed.
-
-#### generate\_rasa\_x\_token
-
-```python
-generate_rasa_x_token(length: int = 16) -> Text
-```
-
-Generate a hexadecimal secret token used to access the Rasa X API.
-
-A new token is generated on every `rasa x` command.
-
-#### is\_rasa\_project\_setup
-
-```python
-is_rasa_project_setup(args: argparse.Namespace, project_path: Text) -> bool
-```
-
-Checks if `project_path` contains a valid Rasa Open Source project.
-
-**Arguments**:
-
-- `args` - Command-line arguments.
-- `project_path` - Path to the possible Rasa Open Source project.
-  
-
-**Returns**:
-
-  `True` if `project_path` is a valid Rasa Open Source project, `False` otherwise.
-
-#### run\_locally
-
-```python
-run_locally(args: argparse.Namespace) -> None
-```
-
-Run a Rasa X instance locally.
-
-**Arguments**:
-
-- `args` - commandline arguments
+Run Rasa in a mode that enables using Rasa X as the config endpoint.
 

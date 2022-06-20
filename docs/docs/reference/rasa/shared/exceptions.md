@@ -21,14 +21,6 @@ class RasaCoreException(RasaException)
 
 Basic exception for errors raised by Rasa Core.
 
-## RasaXTermsError Objects
-
-```python
-class RasaXTermsError(RasaException)
-```
-
-Error in case the user didn&#x27;t accept the Rasa X terms.
-
 ## InvalidParameterException Objects
 
 ```python
