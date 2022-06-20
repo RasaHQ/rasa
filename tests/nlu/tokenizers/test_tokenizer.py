@@ -42,7 +42,7 @@ def test_tokens_comparison():
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
 def test_train_tokenizer(
-    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int, int]]
 ):
     tk = create_whitespace_tokenizer()
 
@@ -73,7 +73,7 @@ def test_train_tokenizer(
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
 def test_train_tokenizer_e2e_actions(
-    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int, int]]
 ):
     tk = create_whitespace_tokenizer()
 
@@ -99,7 +99,7 @@ def test_train_tokenizer_e2e_actions(
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
 def test_train_tokenizer_action_name(
-    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int, int]]
 ):
     tk = create_whitespace_tokenizer()
 
@@ -122,7 +122,7 @@ def test_train_tokenizer_action_name(
     [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
 def test_process_tokenizer(
-    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int, int]]
 ):
     tk = create_whitespace_tokenizer()
 

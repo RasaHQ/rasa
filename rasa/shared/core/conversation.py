@@ -1,6 +1,10 @@
-from typing import Dict, List, Text, Any
+from typing import Dict, List, Text, Any, TYPE_CHECKING
 
-from rasa.shared.core.events import Event
+import rasa.shared.core.events
+
+
+if TYPE_CHECKING:
+    from rasa.shared.core.events import Event
 
 
 class Dialogue:
@@ -36,5 +40,5 @@ class Dialogue:
         """
         return cls(
             parameters.get("name"),
-            [Event.from_parameters(evt) for evt in parameters.get("events", [])],
+            rasa.shared.core.events.deserialise_events(parameters.get("events", [])),
         )

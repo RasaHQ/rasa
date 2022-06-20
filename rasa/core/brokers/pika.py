@@ -5,7 +5,7 @@ import os
 import ssl
 from asyncio import AbstractEventLoop
 from collections import deque
-from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple
+from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple, cast
 from urllib.parse import urlparse
 
 import aio_pika
@@ -33,7 +33,7 @@ class PikaEventBroker(EventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queues: Union[List[Text], Tuple[Text], Text, None] = None,
+        queues: Union[List[Text], Tuple[Text, ...], Text, None] = None,
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         event_loop: Optional[AbstractEventLoop] = None,
@@ -91,8 +91,8 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None]
-    ) -> Union[List[Text], Tuple[Text]]:
+        queues_arg: Union[List[Text], Tuple[Text, ...], Text, None]
+    ) -> Union[List[Text], Tuple[Text, ...]]:
         """Get queues for this event broker.
 
         The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
@@ -171,7 +171,7 @@ class PikaEventBroker(EventBroker):
         ssl_options = _create_rabbitmq_ssl_options(self.host)
         logger.info("Connecting to RabbitMQ ...")
 
-        last_exception = None
+        last_exception: Optional[Exception] = None
         for _ in range(self._connection_attempts):
             try:
                 return await aio_pika.connect_robust(
@@ -193,6 +193,7 @@ class PikaEventBroker(EventBroker):
                 )
                 await asyncio.sleep(self._retry_delay_in_seconds)
 
+        last_exception = cast(Exception, last_exception)
         logger.error(
             f"Connecting to '{self.host}' failed with error '{last_exception}'."
         )
@@ -210,7 +211,7 @@ class PikaEventBroker(EventBroker):
 
     async def _set_up_exchange(
         self, channel: aio_pika.RobustChannel
-    ) -> aio_pika.Exchange:
+    ) -> aio_pika.RobustExchange:
         exchange = await channel.declare_exchange(
             self.exchange_name, type=aio_pika.ExchangeType.FANOUT
         )

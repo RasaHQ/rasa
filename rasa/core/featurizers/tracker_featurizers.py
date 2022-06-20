@@ -6,7 +6,19 @@ import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
+from typing import (
+    Tuple,
+    List,
+    Optional,
+    Dict,
+    Text,
+    Union,
+    Any,
+    Iterator,
+    Set,
+    DefaultDict,
+    cast,
+)
 import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -449,7 +461,7 @@ class TrackerFeaturizer:
 
         # entity tags are persisted in TED policy, they are not needed for prediction
         if self.state_featurizer is not None:
-            self.state_featurizer.entity_tag_specs = None
+            self.state_featurizer.entity_tag_specs = []
 
         # noinspection PyTypeChecker
         rasa.shared.utils.io.write_text_file(
@@ -813,7 +825,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 sliced_states = self.slice_state_history(
                     tracker_states[:label_index], self.max_history
                 )
-                label = [event.action_name or event.action_text]
+                label = cast(List[Text], [event.action_name or event.action_text])
                 entities = [entity_data]
 
                 yield sliced_states, label, entities
@@ -966,7 +978,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         hashed_examples = set()
         # Mapping of example state hash to set of
         # positive labels associated with the state.
-        state_hash_to_label_set: defaultdict[int, Set[Text]] = defaultdict(set)
+        state_hash_to_label_set: DefaultDict[int, Set[Text]] = defaultdict(set)
 
         logger.debug(
             f"Creating states and {self.LABEL_NAME} label examples from "
@@ -1061,7 +1073,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 sliced_states = self.slice_state_history(
                     tracker_states[:label_index], self.max_history
                 )
-                label = [event.intent_name or event.text]
+                label = cast(List[Text], [event.intent_name or event.text])
                 entities: List[Dict[Text, Any]] = [{}]
 
                 yield sliced_states, label, entities
