@@ -3,13 +3,73 @@ updates:
   - package-ecosystem: pip
     directory: "/"
     schedule:
-      interval: monthly
+      interval: weekly
       time: '13:00'
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 10
     labels:
       - type:dependencies
+      - release:3.2
+    ignore:
+      - dependency-name: prompt-toolkit
+        versions:
+          - "> 2.0.10"
+      - dependency-name: pytest-asyncio
+        versions:
+          - "> 0.10.0"
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: "tuesday"
+      time: '13:00'
+    target-branch: "3.1.x"
+    pull-request-branch-name:
+      separator: "-"
+    open-pull-requests-limit: 10
+    labels:
+      - type:dependencies
+      - release:3.1
+    ignore:
+      - dependency-name: prompt-toolkit
+        versions:
+          - "> 2.0.10"
+      - dependency-name: pytest-asyncio
+        versions:
+          - "> 0.10.0"
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: "tuesday"
+      time: '13:00'
+    target-branch: "3.0.x"
+    pull-request-branch-name:
+      separator: "-"
+    open-pull-requests-limit: 10
+    labels:
+      - type:dependencies
+      - release:3.0
+    ignore:
+      - dependency-name: prompt-toolkit
+        versions:
+          - "> 2.0.10"
+      - dependency-name: pytest-asyncio
+        versions:
+          - "> 0.10.0"
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: monthly
+      time: '13:00'
+    target-branch: "2.8.x"
+    pull-request-branch-name:
+      separator: "-"
+    open-pull-requests-limit: 10
+    labels:
+      - type:dependencies
+      - release:2.8
     ignore:
       - dependency-name: prompt-toolkit
         versions:
