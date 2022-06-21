@@ -18,7 +18,7 @@ Add all interactive cli parsers.
 #### perform\_interactive\_learning
 
 ```python
-perform_interactive_learning(args: argparse.Namespace, zipped_model: Union[Text, "Path"], file_importer: TrainingDataImporter) -> None
+perform_interactive_learning(args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter) -> None
 ```
 
 Performs interactive learning.
@@ -32,7 +32,7 @@ Performs interactive learning.
 #### get\_provided\_model
 
 ```python
-get_provided_model(arg_model: Text) -> Optional[Union[Text, Path]]
+get_provided_model(arg_model: Text) -> Optional[Text]
 ```
 
 Checks model path input and selects model from it.

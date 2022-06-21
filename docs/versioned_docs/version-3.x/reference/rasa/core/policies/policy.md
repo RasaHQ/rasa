@@ -14,7 +14,7 @@ Enumeration of a policy&#x27;s supported training data type.
 
 ```python
  | @staticmethod
- | trackers_for_supported_data(supported_data: SupportedData, trackers: TrackerListTypeVar) -> TrackerListTypeVar
+ | trackers_for_supported_data(supported_data: SupportedData, trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
 ```
 
 Return trackers for a given policy.

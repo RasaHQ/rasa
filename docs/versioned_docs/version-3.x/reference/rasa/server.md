@@ -64,7 +64,7 @@ Create `EventVerbosity` object using request params if present.
 #### get\_test\_stories
 
 ```python
-async get_test_stories(processor: "MessageProcessor", conversation_id: Text, until_time: Optional[float], fetch_all_sessions: bool = False) -> Text
+get_test_stories(processor: "MessageProcessor", conversation_id: Text, until_time: Optional[float], fetch_all_sessions: bool = False) -> Text
 ```
 
 Retrieves test stories from `processor` for all conversation sessions for
