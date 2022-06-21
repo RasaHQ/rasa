@@ -115,7 +115,7 @@ tensorflow-estimator = "~2.6"
 tensorflow-probability = ">=0.11,<0.14"
 setuptools = ">=41.0.0"
 kafka-python = ">=1.4,<3.0"
-ujson = ">=1.35,<5.0"
+ujson = ">=1.35,<6.0"
 regex = ">=2020.6,<2021.9"
 joblib = ">=0.15.1,<1.1.0"
 sentry-sdk = ">=0.17.0,<1.4.0"
@@ -184,7 +184,7 @@ version = "^0.4.4"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.spacy]
-version = "^3.1"
+version = ">=3.1,<3.3"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
