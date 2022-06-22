@@ -111,24 +111,6 @@ serialized as YAML.
 
   `OrderedDict` containing all training data.
 
-#### process\_synonyms
-
-```python
- | @classmethod
- | process_synonyms(cls, training_data: "TrainingData") -> List[OrderedDict]
-```
-
-Serializes the synonyms.
-
-#### process\_regexes
-
-```python
- | @classmethod
- | process_regexes(cls, training_data: "TrainingData") -> List[OrderedDict]
-```
-
-Serializes the regexes.
-
 #### process\_lookup\_tables
 
 ```python

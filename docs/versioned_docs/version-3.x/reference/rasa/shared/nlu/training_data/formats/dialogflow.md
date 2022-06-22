@@ -8,12 +8,10 @@ title: rasa.shared.nlu.training_data.formats.dialogflow
 class DialogflowReader(TrainingDataReader)
 ```
 
-Reader for NLU training data.
-
 #### read
 
 ```python
- | read(filename: Union[Text, Path], **kwargs: Any) -> "TrainingData"
+ | read(fn: Text, **kwargs: Any) -> "TrainingData"
 ```
 
 Loads training data stored in the Dialogflow data format.

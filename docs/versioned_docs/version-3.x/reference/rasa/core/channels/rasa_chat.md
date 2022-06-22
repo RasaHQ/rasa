@@ -8,16 +8,7 @@ title: rasa.core.channels.rasa_chat
 class RasaChatInput(RestInput)
 ```
 
-Chat input channel for Rasa Enterprise.
-
-#### name
-
-```python
- | @classmethod
- | name(cls) -> Text
-```
-
-Name of the channel.
+Chat input channel for Rasa X
 
 #### \_\_init\_\_
 

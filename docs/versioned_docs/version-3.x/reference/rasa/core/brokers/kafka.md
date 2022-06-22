@@ -21,7 +21,7 @@ Kafka event broker.
 #### \_\_init\_\_
 
 ```python
- | __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, partition_by_sender: bool = False, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, sasl_mechanism: Optional[Text] = "PLAIN", ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", **kwargs: Any, ,) -> None
+ | __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, partition_by_sender: bool = False, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, sasl_mechanism: Optional[Text] = "PLAIN", ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", loglevel: Union[int, Text] = logging.ERROR, **kwargs: Any, ,) -> None
 ```
 
 Kafka event broker.
@@ -56,6 +56,7 @@ Kafka event broker.
   should verify that the certificate matches the brokers hostname.
 - `security_protocol` - Protocol used to communicate with brokers.
   Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
+- `loglevel` - Logging level of the kafka logger.
 
 #### from\_endpoint\_config
 
@@ -73,13 +74,4 @@ Creates broker. See the parent class for more information.
 ```
 
 Publishes events.
-
-#### rasa\_environment
-
-```python
- | @rasa.shared.utils.common.lazy_property
- | rasa_environment() -> Optional[Text]
-```
-
-Get value of the `RASA_ENVIRONMENT` environment variable.
 

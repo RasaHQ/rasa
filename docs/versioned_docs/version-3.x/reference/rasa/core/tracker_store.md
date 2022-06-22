@@ -10,57 +10,6 @@ class TrackerDeserialisationException(RasaException)
 
 Raised when an error is encountered while deserialising a tracker.
 
-## SerializedTrackerRepresentation Objects
-
-```python
-class SerializedTrackerRepresentation(Generic[SerializationType])
-```
-
-Mixin class for specifying different serialization methods per tracker store.
-
-#### serialise\_tracker
-
-```python
- | @staticmethod
- | serialise_tracker(tracker: DialogueStateTracker) -> SerializationType
-```
-
-Requires implementation to return representation of tracker.
-
-## SerializedTrackerAsText Objects
-
-```python
-class SerializedTrackerAsText(SerializedTrackerRepresentation[Text])
-```
-
-Mixin class that returns the serialized tracker as string.
-
-#### serialise\_tracker
-
-```python
- | @staticmethod
- | serialise_tracker(tracker: DialogueStateTracker) -> Text
-```
-
-Serializes the tracker, returns representation of the tracker.
-
-## SerializedTrackerAsDict Objects
-
-```python
-class SerializedTrackerAsDict(SerializedTrackerRepresentation[Dict])
-```
-
-Mixin class that returns the serialized tracker as dictionary.
-
-#### serialise\_tracker
-
-```python
- | @staticmethod
- | serialise_tracker(tracker: DialogueStateTracker) -> Dict
-```
-
-Serializes the tracker, returns representation of the tracker.
-
 ## TrackerStore Objects
 
 ```python
@@ -113,7 +62,7 @@ Returns tracker or creates one if the retrieval returns None.
  | init_tracker(sender_id: Text) -> "DialogueStateTracker"
 ```
 
-Returns a Dialogue State Tracker.
+Returns a Dialogue State Tracker
 
 #### create\_tracker
 
@@ -208,7 +157,7 @@ The default implementation uses `self.retrieve()`.
  | stream_events(tracker: DialogueStateTracker) -> None
 ```
 
-Streams events to a message broker.
+Streams events to a message broker
 
 #### number\_of\_existing\_events
 
@@ -224,7 +173,16 @@ Return number of stored events for a given sender id.
  | keys() -> Iterable[Text]
 ```
 
-Returns the set of values for the tracker store&#x27;s primary key.
+Returns the set of values for the tracker store&#x27;s primary key
+
+#### serialise\_tracker
+
+```python
+ | @staticmethod
+ | serialise_tracker(tracker: DialogueStateTracker) -> Text
+```
+
+Serializes the tracker, returns representation of the tracker.
 
 #### deserialise\_tracker
 
@@ -234,30 +192,13 @@ Returns the set of values for the tracker store&#x27;s primary key.
 
 Deserializes the tracker and returns it.
 
-#### domain
-
-```python
- | @property
- | domain() -> Domain
-```
-
-Returns the domain of the tracker store.
-
 ## InMemoryTrackerStore Objects
 
 ```python
-class InMemoryTrackerStore(TrackerStore,  SerializedTrackerAsText)
+class InMemoryTrackerStore(TrackerStore)
 ```
 
-Stores conversation history in memory.
-
-#### \_\_init\_\_
-
-```python
- | __init__(domain: Domain, event_broker: Optional[EventBroker] = None, **kwargs: Dict[Text, Any], ,) -> None
-```
-
-Initializes the tracker store.
+Stores conversation history in memory
 
 #### save
 
@@ -265,15 +206,7 @@ Initializes the tracker store.
  | save(tracker: DialogueStateTracker) -> None
 ```
 
-Updates and saves the current conversation state.
-
-#### retrieve
-
-```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
-```
-
-Returns tracker matching sender_id.
+Updates and saves the current conversation state
 
 #### keys
 
@@ -281,23 +214,15 @@ Returns tracker matching sender_id.
  | keys() -> Iterable[Text]
 ```
 
-Returns sender_ids of the Tracker Store in memory.
+Returns sender_ids of the Tracker Store in memory
 
 ## RedisTrackerStore Objects
 
 ```python
-class RedisTrackerStore(TrackerStore,  SerializedTrackerAsText)
+class RedisTrackerStore(TrackerStore)
 ```
 
-Stores conversation history in Redis.
-
-#### \_\_init\_\_
-
-```python
- | __init__(domain: Domain, host: Text = "localhost", port: int = 6379, db: int = 0, password: Optional[Text] = None, event_broker: Optional[EventBroker] = None, record_exp: Optional[float] = None, key_prefix: Optional[Text] = None, use_ssl: bool = False, ssl_keyfile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_ca_certs: Optional[Text] = None, **kwargs: Dict[Text, Any], ,) -> None
-```
-
-Initializes the tracker store.
+Stores conversation history in Redis
 
 #### save
 
@@ -337,10 +262,10 @@ Returns keys of the Redis Tracker Store.
 ## DynamoTrackerStore Objects
 
 ```python
-class DynamoTrackerStore(TrackerStore,  SerializedTrackerAsDict)
+class DynamoTrackerStore(TrackerStore)
 ```
 
-Stores conversation history in DynamoDB.
+Stores conversation history in DynamoDB
 
 #### \_\_init\_\_
 
@@ -379,13 +304,10 @@ Saves the current conversation state.
 #### serialise\_tracker
 
 ```python
- | @staticmethod
  | serialise_tracker(tracker: "DialogueStateTracker") -> Dict
 ```
 
 Serializes the tracker, returns object with decimal types.
-
-DynamoDB cannot store `float`s, so we&#x27;ll convert them to `Decimal`s.
 
 #### retrieve
 
@@ -408,7 +330,7 @@ Returns sender_ids of the `DynamoTrackerStore`.
 ## MongoTrackerStore Objects
 
 ```python
-class MongoTrackerStore(TrackerStore,  SerializedTrackerAsText)
+class MongoTrackerStore(TrackerStore)
 ```
 
 Stores conversation history in Mongo.
@@ -523,7 +445,7 @@ Ensure that port can be converted to integer.
 ## SQLTrackerStore Objects
 
 ```python
-class SQLTrackerStore(TrackerStore,  SerializedTrackerAsText)
+class SQLTrackerStore(TrackerStore)
 ```
 
 Store which can save and retrieve trackers from an SQL database.
@@ -611,9 +533,8 @@ Update database with events from the current conversation.
 class FailSafeTrackerStore(TrackerStore)
 ```
 
-Tracker store wrapper.
-
-Allows a fallback to a different tracker store in case of errors.
+Wraps a tracker store so that we can fallback to a different tracker store in
+case of errors.
 
 #### \_\_init\_\_
 
@@ -628,13 +549,4 @@ Create a `FailSafeTrackerStore`.
 - `tracker_store` - Primary tracker store.
 - `on_tracker_store_error` - Callback which is called when there is an error
   in the primary tracker store.
-
-#### domain
-
-```python
- | @property
- | domain() -> Domain
-```
-
-Returns the domain of the primary tracker store.
 

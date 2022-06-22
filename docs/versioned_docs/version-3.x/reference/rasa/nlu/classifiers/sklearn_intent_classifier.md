@@ -34,7 +34,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, clf: Optional["sklearn.model_selection.GridSearchCV"] = None, le: Optional["sklearn.preprocessing.LabelEncoder"] = None) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, clf: "sklearn.model_selection.GridSearchCV" = None, le: Optional["sklearn.preprocessing.LabelEncoder"] = None) -> None
 ```
 
 Construct a new intent classifier using the sklearn framework.

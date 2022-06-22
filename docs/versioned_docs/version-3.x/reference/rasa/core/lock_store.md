@@ -183,35 +183,3 @@ class InMemoryLockStore(LockStore)
 
 In-memory store for ticket locks.
 
-#### \_\_init\_\_
-
-```python
- | __init__() -> None
-```
-
-Initialise dictionary of locks.
-
-#### get\_lock
-
-```python
- | get_lock(conversation_id: Text) -> Optional[TicketLock]
-```
-
-Get lock for conversation if it exists.
-
-#### delete\_lock
-
-```python
- | delete_lock(conversation_id: Text) -> None
-```
-
-Delete lock for conversation.
-
-#### save\_lock
-
-```python
- | save_lock(lock: TicketLock) -> None
-```
-
-Save lock in store.
-
