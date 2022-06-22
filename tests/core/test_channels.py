@@ -584,7 +584,7 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     test_route = "/absolute_route"
     input_channel.url_prefix = lambda: test_route
 
-    app = Sanic("test_channels")
+    app = Sanic(__name__, register=False)
     ignored_base_route = "/should_be_ignored"
     rasa.core.channels.channel.register(
         [input_channel], app, route="/should_be_ignored"
