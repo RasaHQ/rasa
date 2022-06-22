@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Any, Dict, Text, List, Callable, Optional
+from typing import Any, Dict, Text, List, Callable, Optional, Union
 from unittest.mock import Mock
 
 import pytest
@@ -9,7 +9,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from pytest_sanic.utils import TestClient
 from sanic import Sanic, response
 from sanic.request import Request
-from sanic.response import StreamingHTTPResponse
+from sanic.response import HTTPResponse, ResponseStream
 
 import rasa.core
 from rasa.exceptions import ModelNotFound
@@ -28,11 +28,11 @@ from rasa.utils.endpoints import EndpointConfig
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
-    app = Sanic(__name__)
+    app = Sanic("test_agent")
     app.number_of_model_requests = 0
 
     @app.route("/model", methods=["GET"])
-    async def model(request: Request) -> StreamingHTTPResponse:
+    async def model(request: Request) -> Union[ResponseStream, HTTPResponse]:
         """Simple HTTP model server responding with a trained model."""
 
         if model_hash == request.headers.get("If-None-Match"):
