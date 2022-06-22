@@ -1,13 +1,10 @@
 [[package]]
 name = "absl-py"
-version = "0.13.0"
+version = "1.1.0"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
 category = "main"
 optional = false
-python-versions = "*"
-
-[package.dependencies]
-six = "*"
+python-versions = ">=3.6"
 
 [[package]]
 name = "aio-pika"
@@ -3476,12 +3473,12 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "7acb0610509d0f1e4ea698fff2be8f39fa99b69dbbd4e1c54ee940496fde6e9f"
+content-hash = "18b884cd8e13c62a25574627d03152e85d828255e14acf475a5653543a8dfdf9"
 
 [metadata.files]
 absl-py = [
-    {file = "absl-py-0.13.0.tar.gz", hash = "sha256:6953272383486044699fd0e9f00aad167a27e08ce19aae66c6c4b10e7e767793"},
-    {file = "absl_py-0.13.0-py3-none-any.whl", hash = "sha256:62bd4e248ddb19d81aec8f9446b407ff37c8175c2ba88266a7afa9b4ce4a333b"},
+    {file = "absl-py-1.1.0.tar.gz", hash = "sha256:3aa39f898329c2156ff525dfa69ce709e42d77aab18bf4917719d6f260aa6a08"},
+    {file = "absl_py-1.1.0-py3-none-any.whl", hash = "sha256:db97287655e30336938f8058d2c81ed2be6af1d9b6ebbcd8df1080a6c7fcd24e"},
 ]
 aio-pika = [
     {file = "aio-pika-6.8.2.tar.gz", hash = "sha256:d89658148def0d8b8d795868a753fe2906f8d8fccee53e4a1b5093ddd3d2dc5c"},
