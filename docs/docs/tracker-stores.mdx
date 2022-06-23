@@ -355,15 +355,14 @@ The constructor also needs to make a `super` call to the base class `TrackerStor
 super().__init__(domain, event_broker, **kwargs)
 ```
 
-Your custom tracker store class will also have to override three base class methods that require implementation:
+Your custom tracker store class must also implement the following three methods:
 - `save`: saves the conversation to the tracker store.
 - `retrieve`: retrieves tracker for the latest conversation session.
 - `keys`: returns the set of values for the tracker store's primary key.
 
 ### Configuration
 
- In your `endpoints.yml` put in the module path to your custom tracker store
- and the parameters you require:
+Put the module path to your custom tracker store and the parameters you require in your `endpoints.yml`:
 
  ```yaml-rasa title="endpoints.yml"
  tracker_store:

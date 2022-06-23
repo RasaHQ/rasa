@@ -238,7 +238,7 @@ You can provide a path key in the `endpoints.yml` file if you wish to override t
 If you need an event broker which is not available out of the box, you can implement your own.
 This is done by extending the base class `EventBroker`.
 
-Your custom event broker class will have to override these base class methods that require implementation:
+Your custom event broker class must also implement the following base class methods:
 - `from_endpoint_config`: creates an `EventBroker` object from the endpoint configuration.
 The method requires the following signature:
 
@@ -266,7 +266,7 @@ The method requires the following signature:
 
 ### Configuration
 
-In your `endpoints.yml` put in the module path to your custom event broker and the parameters you require:
+Put the module path to your custom event broker and the parameters you require in your `endpoints.yml`:
 
  ```yaml-rasa title="endpoints.yml"
  event_broker:
