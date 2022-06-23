@@ -54,8 +54,12 @@ def test_issue_ticket():
     # no one is waiting
     assert not lock.is_someone_waiting()
 
+    lock_store = InMemoryLockStore()
+    lock_store.save_lock(lock)
+    ticket_number = lock_store.increment_ticket_number(lock)
+
     # issue ticket
-    ticket = lock.issue_ticket(1)
+    ticket = lock.issue_ticket(1, ticket_number)
     assert ticket == 0
     assert lock.last_issued == 0
     assert lock.now_serving == 0
@@ -68,7 +72,9 @@ def test_remove_expired_tickets():
     lock = TicketLock("random id 1")
 
     # issue one long- and one short-lived ticket
-    _ = list(map(lock.issue_ticket, [k for k in [0.01, 10]]))
+    _ = list(
+        map(lock.issue_ticket, [k for k in [0.01, 10]], [number for number in [1, 2]])
+    )
 
     # both tickets are there
     assert len(lock.tickets) == 2
@@ -145,18 +151,21 @@ def test_lock_expiration(lock_store: LockStore):
     lock_store.save_lock(lock)
 
     # issue ticket with long lifetime
-    ticket = lock.issue_ticket(10)
+    ticket_number = lock_store.increment_ticket_number(lock)
+    ticket = lock.issue_ticket(10, ticket_number)
     assert ticket == 0
     assert not lock._ticket_for_ticket_number(ticket).has_expired()
 
     # issue ticket with short lifetime
-    ticket = lock.issue_ticket(0.00001)
+    ticket_number = lock_store.increment_ticket_number(lock)
+    ticket = lock.issue_ticket(0.00001, ticket_number)
     time.sleep(0.00002)
     assert ticket == 1
     assert lock._ticket_for_ticket_number(ticket) is None
 
     # newly assigned ticket should get number 1 again
-    assert lock.issue_ticket(10) == 1
+    ticket_number = lock_store.increment_ticket_number(lock)
+    assert lock.issue_ticket(10, ticket_number) == 1
 
 
 async def test_multiple_conversation_ids(default_agent: Agent):

@@ -67,10 +67,9 @@ class TicketLock:
         """
         return self.now_serving != ticket_number
 
-    def issue_ticket(self, lifetime: float) -> int:
+    def issue_ticket(self, lifetime: float, number: int) -> int:
         """Issue a new ticket and return its number."""
         self.remove_expired_tickets()
-        number = self.last_issued + 1
         ticket = Ticket(number, time.time() + lifetime)
         self.tickets.append(ticket)
 

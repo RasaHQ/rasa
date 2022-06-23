@@ -7,8 +7,10 @@ import os
 
 from typing import AsyncGenerator, Dict, Optional, Text, Union
 
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.exceptions import RasaException, ConnectionException
 import rasa.shared.utils.common
+import rasa.shared.utils.io
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
 from rasa.utils.endpoints import EndpointConfig
@@ -24,6 +26,7 @@ LOCK_LIFETIME = _get_lock_lifetime()
 DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 10
 
 DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX = "lock:"
+DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX = "concurrent_lock:"
 
 
 # noinspection PyUnresolvedReferences
@@ -79,7 +82,8 @@ class LockStore:
         logger.debug(f"Issuing ticket for conversation '{conversation_id}'.")
         try:
             lock = self.get_or_create_lock(conversation_id)
-            ticket = lock.issue_ticket(lock_lifetime)
+            ticket_number = self.increment_ticket_number(lock)
+            ticket = lock.issue_ticket(lock_lifetime, ticket_number)
             self.save_lock(lock)
 
             return ticket
@@ -195,6 +199,10 @@ class LockStore:
         else:
             logger.debug(f"Could not delete lock for conversation '{conversation_id}'.")
 
+    def increment_ticket_number(self, lock: TicketLock) -> int:
+        """TODO."""
+        return lock.last_issued + 1
+
 
 class RedisLockStore(LockStore):
     """Redis store for ticket locks."""
@@ -305,7 +313,17 @@ def _create_from_endpoint_config(
 
         lock_store: LockStore = InMemoryLockStore()
     elif endpoint_config.type == "redis":
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "'RedisLockStore' is deprecated and will be removed in Rasa Open "
+            "Source 4.0.0. Please migrate to the enhanced 'ConcurrentRedisLockStore'.",
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
+    elif endpoint_config.type == "concurrent-redis":
+        lock_store = ConcurrentRedisLockStore(
+            host=endpoint_config.url, **endpoint_config.kwargs
+        )
     else:
         lock_store = _load_from_module_name_in_endpoint_config(endpoint_config)
 
@@ -329,3 +347,100 @@ def _load_from_module_name_in_endpoint_config(
             f"'{endpoint_config.type}'. Failed to create a `LockStore` "
             f"instance. Error: {e}"
         )
+
+
+class ConcurrentRedisLockStore(LockStore):
+    """Concurrent implementation of a Redis store for ticket locks."""
+
+    def __init__(
+        self,
+        host: Text = "localhost",
+        port: int = 6379,
+        db: int = 1,
+        password: Optional[Text] = None,
+        use_ssl: bool = False,
+        key_prefix: Optional[Text] = None,
+        socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
+    ) -> None:
+        """Create a lock store which uses Redis for persistence.
+
+        Args:
+            host: The host of the redis server.
+            port: The port of the redis server.
+            db: The name of the database within Redis which should be used by Rasa
+                Open Source.
+            password: The password which should be used for authentication with the
+                Redis database.
+            use_ssl: `True` if SSL should be used for the connection to Redis.
+            key_prefix: prefix to prepend to all keys used by the lock store. Must be
+                alphanumeric.
+            socket_timeout: Timeout in seconds after which an exception will be raised
+                in case Redis doesn't respond within `socket_timeout` seconds.
+        """
+        import redis
+
+        self.red = redis.StrictRedis(
+            host=host,
+            port=int(port),
+            db=int(db),
+            password=password,
+            ssl=use_ssl,
+            socket_timeout=socket_timeout,
+        )
+
+        self.key_prefix = DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
+        if key_prefix:
+            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
+            self._set_key_prefix(key_prefix)
+
+        super().__init__()
+
+    def _set_key_prefix(self, key_prefix: Text) -> None:
+        if isinstance(key_prefix, str) and key_prefix.isalnum():
+            self.key_prefix = (
+                key_prefix + ":" + DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
+            )
+        else:
+            logger.warning(
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
+                f"Using default '{self.key_prefix}' instead."
+            )
+
+    def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
+        """Retrieves lock (see parent docstring for more information)."""
+        serialised_lock = self.red.get(self.key_prefix + conversation_id)
+        if serialised_lock:
+            return TicketLock.from_dict(json.loads(serialised_lock))
+
+        return None
+
+    def delete_lock(self, conversation_id: Text) -> None:
+        """Deletes lock for conversation ID."""
+        deletion_successful = self.red.delete(self.key_prefix + conversation_id)
+        self._log_deletion(conversation_id, deletion_successful)
+
+    def save_lock(self, lock: TicketLock) -> None:
+        """TODO."""
+        lock.remove_expired_tickets()
+
+        for ticket in lock.tickets():
+            serialised_ticket = ticket.dumps()
+            key = self.key_prefix + lock.conversation_id + ":" + str(ticket.number)
+            self.red.set(name=key, value=serialised_ticket)
+
+        last_issued_ticket_number = lock.last_issued
+        last_issued_key = (
+            self.key_prefix + lock.conversation_id + ":" + "last_issued_ticket_number"
+        )
+        self.red.set(name=last_issued_key, value=last_issued_ticket_number)
+
+        self.red.set(self.key_prefix + lock.conversation_id, lock.dumps())
+
+    def increment_ticket_number(self, lock: TicketLock) -> int:
+        """TODO."""
+        last_issued_key = (
+            self.key_prefix + lock.conversation_id + ":" + "last_issued_ticket_number"
+        )
+        number = self.red.incr(name=last_issued_key)
+
+        return number

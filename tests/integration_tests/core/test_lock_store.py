@@ -1,6 +1,7 @@
 import asyncio
 import time
 from pathlib import Path
+from typing import Text
 
 import numpy as np
 import pytest
@@ -9,7 +10,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.lock_store import LockError, RedisLockStore
+from rasa.core.lock_store import ConcurrentRedisLockStore, LockError, RedisLockStore
 
 
 def test_create_lock_store(redis_lock_store: RedisLockStore):
@@ -64,18 +65,21 @@ def test_lock_expiration(redis_lock_store: RedisLockStore):
     redis_lock_store.save_lock(lock)
 
     # issue ticket with long lifetime
-    ticket = lock.issue_ticket(10)
+    ticket_number = redis_lock_store.increment_ticket_number(lock)
+    ticket = lock.issue_ticket(10, ticket_number)
     assert ticket == 0
     assert not lock._ticket_for_ticket_number(ticket).has_expired()
 
     # issue ticket with short lifetime
-    ticket = lock.issue_ticket(0.00001)
+    ticket_number = redis_lock_store.increment_ticket_number(lock)
+    ticket = lock.issue_ticket(0.00001, ticket_number)
     time.sleep(0.00002)
     assert ticket == 1
     assert lock._ticket_for_ticket_number(ticket) is None
 
     # newly assigned ticket should get number 1 again
-    assert lock.issue_ticket(10) == 1
+    ticket_number = redis_lock_store.increment_ticket_number(lock)
+    assert lock.issue_ticket(10, ticket_number) == 1
 
 
 async def test_multiple_conversation_ids(default_agent: Agent):
@@ -192,3 +196,92 @@ async def test_lock_error(default_agent: Agent, monkeypatch: MonkeyPatch):
 
     with pytest.raises(LockError):
         await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
+
+
+async def test_concurrent_message_order(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    trained_default_agent_model: Text,
+    concurrent_redis_lock_store: ConcurrentRedisLockStore,
+):
+    start_time = time.time()
+    n_messages = 10
+    lock_wait = 0.5
+
+    # let's write the incoming order of messages and the order of results to temp files
+    results_file = tmp_path / "results_file"
+    incoming_order_file = tmp_path / "incoming_order_file"
+
+    # We need to mock `Agent.handle_message()` so we can introduce an
+    # artificial holdup (`wait_time_in_seconds`). In the mocked method, we'll
+    # record messages as they come and and as they're processed in files so we
+    # can check the order later on. We don't need the return value of this method so
+    # we'll just return None.
+    async def mocked_handle_message(self, message: UserMessage, wait: float) -> None:
+        # write incoming message to file
+        with open(str(incoming_order_file), "a+") as f_0:
+            f_0.write(message.text + "\n")
+
+        async with self.lock_store.lock(
+            message.sender_id, wait_time_in_seconds=lock_wait
+        ):
+            # hold up the message processing after the lock has been acquired
+            await asyncio.sleep(wait)
+
+            # write message to file as it's processed
+            with open(str(results_file), "a+") as f_1:
+                f_1.write(message.text + "\n")
+
+            return None
+
+    # We'll send n_messages from the same sender_id with different blocking times
+    # after the lock has been acquired.
+    # We have to ensure that the messages are processed in the right order.
+    monkeypatch.setattr(Agent, "handle_message", mocked_handle_message)
+    # use decreasing wait times so that every message after the first one
+    # does not acquire its lock immediately
+    wait_times = np.linspace(0.1, 0.05, n_messages)
+
+    agent_one = Agent.load(
+        trained_default_agent_model, lock_store=concurrent_redis_lock_store
+    )
+    agent_two = Agent.load(
+        trained_default_agent_model, lock_store=concurrent_redis_lock_store
+    )
+    tasks_one = [
+        agent_one.handle_message(
+            UserMessage(f"sender {i}", sender_id="some id"), wait=k
+        )
+        for i, k in enumerate(wait_times)
+    ]
+    tasks_two = [
+        agent_two.handle_message(
+            UserMessage(f"sender {i}", sender_id="some id"), wait=k
+        )
+        for i, k in enumerate(wait_times)
+    ]
+    tasks = tasks_one + tasks_two
+
+    # execute futures
+    await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
+
+    expected_order = [f"sender {i}" for i in range(len(wait_times))]
+
+    # ensure order of incoming messages is as expected
+    with open(str(incoming_order_file)) as f:
+        incoming_order = [line for line in f.read().split("\n") if line]
+        assert incoming_order == expected_order
+
+    # ensure results are processed in expected order
+    with open(str(results_file)) as f:
+        results_order = [line for line in f.read().split("\n") if line]
+        assert results_order == expected_order
+
+    # Every message after the first one will wait `lock_wait` seconds to acquire its
+    # lock (`wait_time_in_seconds` kwarg in `lock_store.lock()`).
+    # Let's make sure that this is not blocking and test that total test
+    # execution time is less than  the sum of all wait times plus
+    # (n_messages - 1) * lock_wait
+    time_limit = np.sum(wait_times[1:])
+    time_limit += (n_messages - 1) * lock_wait
+    assert time.time() - start_time < time_limit
