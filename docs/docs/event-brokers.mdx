@@ -240,29 +240,11 @@ This is done by extending the base class `EventBroker`.
 
 Your custom event broker class must also implement the following base class methods:
 - `from_endpoint_config`: creates an `EventBroker` object from the endpoint configuration.
-The method requires the following signature:
-
- ```python
-  @classmethod
-  async def from_endpoint_config(
-      cls: YourCustomEventBrokerClass,
-      broker_config: EndpointConfig,
-      event_loop: Optional[AbstractEventLoop] = None,
-  ) -> Optional[YourCustomEventBrokerClass]:
-      """Creates an `EventBroker` from the endpoint configuration.
-
-      Args:
-          broker_config: The configuration for the broker.
-          event_loop: The current event loop or `None`.
-
-      Returns:
-          An `EventBroker` object.
-      """
- ```
-
+You can find the method's signature [here](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L45).
 - `publish`: publishes a json-formatted [Rasa event](https://rasa.com/docs/rasa/reference/rasa/shared/core/events/) into an event queue.
-- `is_ready`: determine whether or not the event broker is ready.
-- `close`: close the connection to an event broker.
+You can find the method's signature [here](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L63).
+- `is_ready`: determine whether or not the event broker is ready. You can find the method's signature [here](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L67).
+- `close`: close the connection to an event broker. You can find the method's signature [here](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L75).
 
 ### Configuration
 
