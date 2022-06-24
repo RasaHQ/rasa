@@ -242,7 +242,7 @@ async def test_concurrent_message_order(
     # execute futures
     await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
 
-    expected_order = ["This is a test.", "This is a test"]
+    expected_order = ["This is a test.", "This is a test."]
 
     # ensure results are as expected
     with open(str(results_file)) as f:
