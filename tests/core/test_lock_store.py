@@ -14,7 +14,10 @@ from unittest.mock import patch, Mock
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.core.lock import TicketLock
 import rasa.core.lock_store
 from rasa.core.lock_store import (
@@ -23,6 +26,7 @@ from rasa.core.lock_store import (
     LockStore,
     RedisLockStore,
     DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
+    ConcurrentRedisLockStore,
 )
 from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig
@@ -393,3 +397,22 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
     with pytest.raises(LockError):
         async with lock_store.lock("some sender"):
             pass
+
+
+def test_create_concurrent_redis_lock_store(tmp_path: Path):
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        f"""
+        version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
+        lock_store:
+           type: concurrent-redis
+           url: localhost
+           port: 6379
+        """
+    )
+    endpoint_config = rasa.utils.endpoints.read_endpoint_config(
+        str(endpoints_file), "lock_store"
+    )
+    lock_store = LockStore.create(endpoint_config)
+
+    assert isinstance(lock_store, ConcurrentRedisLockStore)

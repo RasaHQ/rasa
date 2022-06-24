@@ -233,7 +233,8 @@ async def test_concurrent_message_order(
         trained_default_agent_model, lock_store=concurrent_redis_lock_store
     )
 
-    user_message = UserMessage("This is a test.", sender_id="some id")
+    message_text = "This is a test."
+    user_message = UserMessage(message_text, sender_id="some id")
     tasks = [
         agent_one.handle_message(user_message),
         agent_two.handle_message(user_message),
@@ -242,9 +243,82 @@ async def test_concurrent_message_order(
     # execute futures
     await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
 
-    expected_order = ["This is a test.", "This is a test."]
+    expected_order = [message_text, message_text]
 
     # ensure results are as expected
     with open(str(results_file)) as f:
         results_order = [line for line in f.read().split("\n") if line]
         assert results_order == expected_order
+
+
+def test_create_concurrent_lock_store(
+    concurrent_redis_lock_store: ConcurrentRedisLockStore,
+):
+    conversation_id = "my id 0"
+
+    # create and lock
+    lock = concurrent_redis_lock_store.create_lock(conversation_id)
+    concurrent_redis_lock_store.save_lock(lock)
+    lock = concurrent_redis_lock_store.get_lock(conversation_id)
+    assert lock
+    assert lock.conversation_id == conversation_id
+
+
+def test_concurrent_serve_ticket(concurrent_redis_lock_store: ConcurrentRedisLockStore):
+    conversation_id = "my id 1"
+
+    lock = concurrent_redis_lock_store.create_lock(conversation_id)
+    concurrent_redis_lock_store.save_lock(lock)
+
+    # issue ticket with long lifetime
+    ticket_0 = concurrent_redis_lock_store.issue_ticket(conversation_id, 10)
+    assert ticket_0 == 0
+
+    lock = concurrent_redis_lock_store.get_lock(conversation_id)
+    assert lock.last_issued == ticket_0
+    assert lock.now_serving == ticket_0
+    assert lock.is_someone_waiting()
+
+    # issue another ticket
+    ticket_1 = concurrent_redis_lock_store.issue_ticket(conversation_id, 10)
+
+    # finish serving ticket_0
+    concurrent_redis_lock_store.finish_serving(conversation_id, ticket_0)
+
+    lock = concurrent_redis_lock_store.get_lock(conversation_id)
+
+    assert lock.last_issued == ticket_1
+    assert lock.now_serving == ticket_1
+    assert lock.is_someone_waiting()
+
+    # serve second ticket and no one should be waiting
+    concurrent_redis_lock_store.finish_serving(conversation_id, ticket_1)
+
+    lock = concurrent_redis_lock_store.get_lock(conversation_id)
+    assert not lock.is_someone_waiting()
+
+
+# noinspection PyProtectedMember
+def test_concurrent_lock_expiration(
+    concurrent_redis_lock_store: ConcurrentRedisLockStore,
+):
+    conversation_id = "my id 2"
+    lock = concurrent_redis_lock_store.create_lock(conversation_id)
+    concurrent_redis_lock_store.save_lock(lock)
+
+    # issue ticket with long lifetime
+    ticket_number = concurrent_redis_lock_store.increment_ticket_number(lock)
+    ticket = lock.issue_ticket(10, ticket_number)
+    assert ticket == 0
+    assert not lock._ticket_for_ticket_number(ticket).has_expired()
+
+    # issue ticket with short lifetime
+    ticket_number = concurrent_redis_lock_store.increment_ticket_number(lock)
+    ticket = lock.issue_ticket(0.00001, ticket_number)
+    time.sleep(0.00002)
+    assert ticket == 1
+    assert lock._ticket_for_ticket_number(ticket) is None
+
+    # newly assigned ticket should get number 1 again
+    ticket_number = concurrent_redis_lock_store.increment_ticket_number(lock)
+    assert lock.issue_ticket(10, ticket_number) == 1
