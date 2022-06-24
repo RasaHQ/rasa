@@ -82,6 +82,7 @@ class LockStore:
         logger.debug(f"Issuing ticket for conversation '{conversation_id}'.")
         try:
             lock = self.get_or_create_lock(conversation_id)
+            lock.remove_expired_tickets()
             ticket_number = self.increment_ticket_number(lock)
             ticket = lock.issue_ticket(lock_lifetime, ticket_number)
             self.save_lock(lock)
@@ -435,8 +436,6 @@ class ConcurrentRedisLockStore(LockStore):
 
     def increment_ticket_number(self, lock: TicketLock) -> int:
         """Uses Redis atomic transaction to increment ticket number."""
-        lock.remove_expired_tickets()
-
         last_issued_key = (
             self.key_prefix + lock.conversation_id + ":" + "last_issued_ticket_number"
         )
