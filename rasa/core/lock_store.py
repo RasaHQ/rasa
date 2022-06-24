@@ -423,7 +423,7 @@ class ConcurrentRedisLockStore(LockStore):
         """TODO."""
         lock.remove_expired_tickets()
 
-        for ticket in lock.tickets():
+        for ticket in lock.tickets:
             serialised_ticket = ticket.dumps()
             key = self.key_prefix + lock.conversation_id + ":" + str(ticket.number)
             self.red.set(name=key, value=serialised_ticket)
