@@ -356,9 +356,9 @@ super().__init__(domain, event_broker, **kwargs)
 ```
 
 Your custom tracker store class must also implement the following three methods:
-- `save`: saves the conversation to the tracker store. You can find the method's signature [here](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L243).
-- `retrieve`: retrieves tracker for the latest conversation session. You can find the method's signature [here](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L261).
-- `keys`: returns the set of values for the tracker store's primary key. You can find the method's signature [here](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L319).
+- `save`: saves the conversation to the tracker store. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L243).
+- `retrieve`: retrieves tracker for the latest conversation session. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L261).
+- `keys`: returns the set of values for the tracker store's primary key. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L319).
 
 ### Configuration
 
