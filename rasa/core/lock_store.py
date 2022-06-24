@@ -12,7 +12,7 @@ from rasa.shared.exceptions import RasaException, ConnectionException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.core.lock import TicketLock
+from rasa.core.lock import Ticket, TicketLock
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -435,9 +435,27 @@ class ConcurrentRedisLockStore(LockStore):
 
     def increment_ticket_number(self, lock: TicketLock) -> int:
         """Uses Redis atomic transaction to increment ticket number."""
+        lock.remove_expired_tickets()
+
         last_issued_key = (
             self.key_prefix + lock.conversation_id + ":" + "last_issued_ticket_number"
         )
-        number = self.red.incr(name=last_issued_key)
+        last_issued_ticket_number = self.red.get(last_issued_key)
 
-        return number
+        lock_last_issued = lock.last_issued
+
+        if last_issued_ticket_number is None:
+            return lock_last_issued + 1
+
+        if lock_last_issued != last_issued_ticket_number:
+            serialised_ticket = self.red.get(
+                self.key_prefix + lock.conversation_id + ":" + str(lock_last_issued)
+            )
+
+            if serialised_ticket is None:
+                return lock_last_issued + 1
+
+            ticket = Ticket.from_dict(data=json.loads(serialised_ticket))
+            self.red.set(name=last_issued_key, value=ticket.number)
+
+        return self.red.incr(name=last_issued_key)
