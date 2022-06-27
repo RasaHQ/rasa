@@ -677,9 +677,7 @@ def test_default_action_as_active_loop_in_rules(
         textwrap.dedent(
             """
             recipe: default.v1
-
             language: en
-
             pipeline:
                - name: WhitespaceTokenizer
                - name: RegexFeaturizer
