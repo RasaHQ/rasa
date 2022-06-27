@@ -2,6 +2,22 @@
 sidebar_label: rasa.core.tracker_store
 title: rasa.core.tracker_store
 ---
+#### check\_if\_tracker\_store\_async
+
+```python
+check_if_tracker_store_async(tracker_store: TrackerStore) -> bool
+```
+
+Evaluates if a tracker store object is async based on implementation of methods.
+
+**Arguments**:
+
+- `tracker_store`: tracker store object we&#x27;re evaluating
+
+**Returns**:
+
+if the tracker store correctly implements all async methods
+
 ## TrackerDeserialisationException Objects
 
 ```python
@@ -9,6 +25,57 @@ class TrackerDeserialisationException(RasaException)
 ```
 
 Raised when an error is encountered while deserialising a tracker.
+
+## SerializedTrackerRepresentation Objects
+
+```python
+class SerializedTrackerRepresentation(Generic[SerializationType])
+```
+
+Mixin class for specifying different serialization methods per tracker store.
+
+#### serialise\_tracker
+
+```python
+ | @staticmethod
+ | serialise_tracker(tracker: DialogueStateTracker) -> SerializationType
+```
+
+Requires implementation to return representation of tracker.
+
+## SerializedTrackerAsText Objects
+
+```python
+class SerializedTrackerAsText(SerializedTrackerRepresentation[Text])
+```
+
+Mixin class that returns the serialized tracker as string.
+
+#### serialise\_tracker
+
+```python
+ | @staticmethod
+ | serialise_tracker(tracker: DialogueStateTracker) -> Text
+```
+
+Serializes the tracker, returns representation of the tracker.
+
+## SerializedTrackerAsDict Objects
+
+```python
+class SerializedTrackerAsDict(SerializedTrackerRepresentation[Dict])
+```
+
+Mixin class that returns the serialized tracker as dictionary.
+
+#### serialise\_tracker
+
+```python
+ | @staticmethod
+ | serialise_tracker(tracker: DialogueStateTracker) -> Dict
+```
+
+Serializes the tracker, returns representation of the tracker.
 
 ## TrackerStore Objects
 
@@ -37,7 +104,7 @@ Create a TrackerStore.
 
 ```python
  | @staticmethod
- | create(obj: Union["TrackerStore", EndpointConfig, None], domain: Optional[Domain] = None, event_broker: Optional[EventBroker] = None) -> "TrackerStore"
+ | create(obj: Union[TrackerStore, EndpointConfig, None], domain: Optional[Domain] = None, event_broker: Optional[EventBroker] = None) -> TrackerStore
 ```
 
 Factory to create a tracker store.
@@ -45,7 +112,7 @@ Factory to create a tracker store.
 #### get\_or\_create\_tracker
 
 ```python
- | get_or_create_tracker(sender_id: Text, max_event_history: Optional[int] = None, append_action_listen: bool = True) -> "DialogueStateTracker"
+ | async get_or_create_tracker(sender_id: Text, max_event_history: Optional[int] = None, append_action_listen: bool = True) -> "DialogueStateTracker"
 ```
 
 Returns tracker or creates one if the retrieval returns None.
@@ -62,12 +129,12 @@ Returns tracker or creates one if the retrieval returns None.
  | init_tracker(sender_id: Text) -> "DialogueStateTracker"
 ```
 
-Returns a Dialogue State Tracker
+Returns a Dialogue State Tracker.
 
 #### create\_tracker
 
 ```python
- | create_tracker(sender_id: Text, append_action_listen: bool = True) -> DialogueStateTracker
+ | async create_tracker(sender_id: Text, append_action_listen: bool = True) -> DialogueStateTracker
 ```
 
 Creates a new tracker for `sender_id`.
@@ -87,7 +154,7 @@ The tracker begins with a `SessionStarted` event and is initially listening.
 #### save
 
 ```python
- | save(tracker: DialogueStateTracker) -> None
+ | async save(tracker: DialogueStateTracker) -> None
 ```
 
 Save method that will be overridden by specific tracker.
@@ -95,7 +162,7 @@ Save method that will be overridden by specific tracker.
 #### exists
 
 ```python
- | exists(conversation_id: Text) -> bool
+ | async exists(conversation_id: Text) -> bool
 ```
 
 Checks if tracker exists for the specified ID.
@@ -115,7 +182,7 @@ faster implementations.
 #### retrieve
 
 ```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+ | async retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Retrieves tracker for the latest conversation session.
@@ -134,10 +201,10 @@ This method will be overridden by the specific tracker store.
 #### retrieve\_full\_tracker
 
 ```python
- | retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+ | async retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
 ```
 
-Retrieve method for fetching all tracker events across conversation sessions
+Retrieve method for fetching all tracker events across conversation sessions\
 that may be overridden by specific tracker.
 
 The default implementation uses `self.retrieve()`.
@@ -154,15 +221,15 @@ The default implementation uses `self.retrieve()`.
 #### stream\_events
 
 ```python
- | stream_events(tracker: DialogueStateTracker) -> None
+ | async stream_events(tracker: DialogueStateTracker) -> None
 ```
 
-Streams events to a message broker
+Streams events to a message broker.
 
 #### number\_of\_existing\_events
 
 ```python
- | number_of_existing_events(sender_id: Text) -> int
+ | async number_of_existing_events(sender_id: Text) -> int
 ```
 
 Return number of stored events for a given sender id.
@@ -170,19 +237,10 @@ Return number of stored events for a given sender id.
 #### keys
 
 ```python
- | keys() -> Iterable[Text]
+ | async keys() -> Iterable[Text]
 ```
 
-Returns the set of values for the tracker store&#x27;s primary key
-
-#### serialise\_tracker
-
-```python
- | @staticmethod
- | serialise_tracker(tracker: DialogueStateTracker) -> Text
-```
-
-Serializes the tracker, returns representation of the tracker.
+Returns the set of values for the tracker store&#x27;s primary key.
 
 #### deserialise\_tracker
 
@@ -192,42 +250,75 @@ Serializes the tracker, returns representation of the tracker.
 
 Deserializes the tracker and returns it.
 
+#### domain
+
+```python
+ | @property
+ | domain() -> Domain
+```
+
+Returns the domain of the tracker store.
+
 ## InMemoryTrackerStore Objects
 
 ```python
-class InMemoryTrackerStore(TrackerStore)
+class InMemoryTrackerStore(TrackerStore,  SerializedTrackerAsText)
 ```
 
-Stores conversation history in memory
+Stores conversation history in memory.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(domain: Domain, event_broker: Optional[EventBroker] = None, **kwargs: Dict[Text, Any], ,) -> None
+```
+
+Initializes the tracker store.
 
 #### save
 
 ```python
- | save(tracker: DialogueStateTracker) -> None
+ | async save(tracker: DialogueStateTracker) -> None
 ```
 
-Updates and saves the current conversation state
+Updates and saves the current conversation state.
+
+#### retrieve
+
+```python
+ | async retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Returns tracker matching sender_id.
 
 #### keys
 
 ```python
- | keys() -> Iterable[Text]
+ | async keys() -> Iterable[Text]
 ```
 
-Returns sender_ids of the Tracker Store in memory
+Returns sender_ids of the Tracker Store in memory.
 
 ## RedisTrackerStore Objects
 
 ```python
-class RedisTrackerStore(TrackerStore)
+class RedisTrackerStore(TrackerStore,  SerializedTrackerAsText)
 ```
 
-Stores conversation history in Redis
+Stores conversation history in Redis.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(domain: Domain, host: Text = "localhost", port: int = 6379, db: int = 0, password: Optional[Text] = None, event_broker: Optional[EventBroker] = None, record_exp: Optional[float] = None, key_prefix: Optional[Text] = None, use_ssl: bool = False, ssl_keyfile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_ca_certs: Optional[Text] = None, **kwargs: Dict[Text, Any], ,) -> None
+```
+
+Initializes the tracker store.
 
 #### save
 
 ```python
- | save(tracker: DialogueStateTracker, timeout: Optional[float] = None) -> None
+ | async save(tracker: DialogueStateTracker, timeout: Optional[float] = None) -> None
 ```
 
 Saves the current conversation state.
@@ -235,7 +326,7 @@ Saves the current conversation state.
 #### retrieve
 
 ```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+ | async retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Retrieves tracker for the latest conversation session.
@@ -254,7 +345,7 @@ The Redis key is formed by appending a prefix to sender_id.
 #### keys
 
 ```python
- | keys() -> Iterable[Text]
+ | async keys() -> Iterable[Text]
 ```
 
 Returns keys of the Redis Tracker Store.
@@ -262,10 +353,10 @@ Returns keys of the Redis Tracker Store.
 ## DynamoTrackerStore Objects
 
 ```python
-class DynamoTrackerStore(TrackerStore)
+class DynamoTrackerStore(TrackerStore,  SerializedTrackerAsDict)
 ```
 
-Stores conversation history in DynamoDB
+Stores conversation history in DynamoDB.
 
 #### \_\_init\_\_
 
@@ -296,7 +387,7 @@ Returns table or creates one if the table name is not in the table list.
 #### save
 
 ```python
- | save(tracker: DialogueStateTracker) -> None
+ | async save(tracker: DialogueStateTracker) -> None
 ```
 
 Saves the current conversation state.
@@ -304,15 +395,18 @@ Saves the current conversation state.
 #### serialise\_tracker
 
 ```python
+ | @staticmethod
  | serialise_tracker(tracker: "DialogueStateTracker") -> Dict
 ```
 
 Serializes the tracker, returns object with decimal types.
 
+DynamoDB cannot store `float`s, so we&#x27;ll convert them to `Decimal`s.
+
 #### retrieve
 
 ```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+ | async retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Retrieve dialogues for a sender_id in reverse-chronological order.
@@ -322,7 +416,7 @@ Based on the session_date sort key.
 #### keys
 
 ```python
- | keys() -> Iterable[Text]
+ | async keys() -> Iterable[Text]
 ```
 
 Returns sender_ids of the `DynamoTrackerStore`.
@@ -330,7 +424,7 @@ Returns sender_ids of the `DynamoTrackerStore`.
 ## MongoTrackerStore Objects
 
 ```python
-class MongoTrackerStore(TrackerStore)
+class MongoTrackerStore(TrackerStore,  SerializedTrackerAsText)
 ```
 
 Stores conversation history in Mongo.
@@ -350,7 +444,7 @@ Returns the current conversation.
 #### save
 
 ```python
- | save(tracker: DialogueStateTracker) -> None
+ | async save(tracker: DialogueStateTracker) -> None
 ```
 
 Saves the current conversation state.
@@ -358,7 +452,7 @@ Saves the current conversation state.
 #### retrieve
 
 ```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+ | async retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Retrieves tracker for the latest conversation session.
@@ -366,7 +460,7 @@ Retrieves tracker for the latest conversation session.
 #### retrieve\_full\_tracker
 
 ```python
- | retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+ | async retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Fetching all tracker events across conversation sessions.
@@ -374,7 +468,7 @@ Fetching all tracker events across conversation sessions.
 #### keys
 
 ```python
- | keys() -> Iterable[Text]
+ | async keys() -> Iterable[Text]
 ```
 
 Returns sender_ids of the Mongo Tracker Store.
@@ -445,7 +539,7 @@ Ensure that port can be converted to integer.
 ## SQLTrackerStore Objects
 
 ```python
-class SQLTrackerStore(TrackerStore)
+class SQLTrackerStore(TrackerStore,  SerializedTrackerAsText)
 ```
 
 Store which can save and retrieve trackers from an SQL database.
@@ -498,7 +592,7 @@ Provide a transactional scope around a series of operations.
 #### keys
 
 ```python
- | keys() -> Iterable[Text]
+ | async keys() -> Iterable[Text]
 ```
 
 Returns sender_ids of the SQLTrackerStore.
@@ -506,7 +600,7 @@ Returns sender_ids of the SQLTrackerStore.
 #### retrieve
 
 ```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+ | async retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Retrieves tracker for the latest conversation session.
@@ -514,7 +608,7 @@ Retrieves tracker for the latest conversation session.
 #### retrieve\_full\_tracker
 
 ```python
- | retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+ | async retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Fetching all tracker events across conversation sessions.
@@ -522,7 +616,7 @@ Fetching all tracker events across conversation sessions.
 #### save
 
 ```python
- | save(tracker: DialogueStateTracker) -> None
+ | async save(tracker: DialogueStateTracker) -> None
 ```
 
 Update database with events from the current conversation.
@@ -533,8 +627,9 @@ Update database with events from the current conversation.
 class FailSafeTrackerStore(TrackerStore)
 ```
 
-Wraps a tracker store so that we can fallback to a different tracker store in
-case of errors.
+Tracker store wrapper.
+
+Allows a fallback to a different tracker store in case of errors.
 
 #### \_\_init\_\_
 
@@ -549,4 +644,116 @@ Create a `FailSafeTrackerStore`.
 - `tracker_store` - Primary tracker store.
 - `on_tracker_store_error` - Callback which is called when there is an error
   in the primary tracker store.
+
+#### domain
+
+```python
+ | @property
+ | domain() -> Domain
+```
+
+Returns the domain of the primary tracker store.
+
+#### retrieve
+
+```python
+ | async retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Calls `retrieve` method of primary tracker store.
+
+#### keys
+
+```python
+ | async keys() -> Iterable[Text]
+```
+
+Calls `keys` method of primary tracker store.
+
+#### save
+
+```python
+ | async save(tracker: DialogueStateTracker) -> None
+```
+
+Calls `save` method of primary tracker store.
+
+## AwaitableTrackerStore Objects
+
+```python
+class AwaitableTrackerStore(TrackerStore)
+```
+
+Wraps a tracker store so it can be implemented with async overrides.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(tracker_store: TrackerStore) -> None
+```
+
+Create a `AwaitableTrackerStore`.
+
+**Arguments**:
+
+- `tracker_store` - the wrapped tracker store.
+
+#### domain
+
+```python
+ | @property
+ | domain() -> Domain
+```
+
+Returns the domain of the primary tracker store.
+
+#### domain
+
+```python
+ | @domain.setter
+ | domain(domain: Optional[Domain]) -> None
+```
+
+Setter method to modify the wrapped tracker store&#x27;s domain field.
+
+#### create
+
+```python
+ | @staticmethod
+ | create(obj: Union[TrackerStore, EndpointConfig, None], domain: Optional[Domain] = None, event_broker: Optional[EventBroker] = None) -> TrackerStore
+```
+
+Wrapper to call `create` method of primary tracker store.
+
+#### retrieve
+
+```python
+ | async retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Wrapper to call `retrieve` method of primary tracker store.
+
+#### keys
+
+```python
+ | async keys() -> Iterable[Text]
+```
+
+Wrapper to call `keys` method of primary tracker store.
+
+#### save
+
+```python
+ | async save(tracker: DialogueStateTracker) -> None
+```
+
+Wrapper to call `save` method of primary tracker store.
+
+#### retrieve\_full\_tracker
+
+```python
+ | async retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Wrapper to call `retrieve_full_tracker` method of primary tracker store.
 

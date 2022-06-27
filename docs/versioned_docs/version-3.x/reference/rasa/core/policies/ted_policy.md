@@ -77,7 +77,7 @@ Feeds the featurized training data to the model.
 #### train
 
 ```python
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None) -> Resource
+ | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None, **kwargs: Any, ,) -> Resource
 ```
 
 Trains the policy (see parent class for full docstring).
@@ -85,7 +85,7 @@ Trains the policy (see parent class for full docstring).
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, precomputations: Optional[MessageContainerForCoreFeaturization] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action (see parent class for full docstring).
@@ -147,7 +147,7 @@ Initializes the TED model.
 #### batch\_loss
 
 ```python
- | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> tf.Tensor
 ```
 
 Calculates the loss for the given batch.
@@ -172,7 +172,7 @@ Prepares the model for prediction.
 #### batch\_predict
 
 ```python
- | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.

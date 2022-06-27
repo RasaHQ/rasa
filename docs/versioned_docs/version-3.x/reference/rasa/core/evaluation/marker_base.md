@@ -193,7 +193,7 @@ Gets the maximum depth from this point in the marker tree.
 #### evaluate\_events
 
 ```python
- | evaluate_events(events: List[Event], recursive: bool = False) -> List[SessionEvaluation]
+ | evaluate_events(events: List[Event]) -> List[SessionEvaluation]
 ```
 
 Resets the marker, tracks all events, and collects some information.
@@ -205,13 +205,9 @@ The collected information includes:
 If this marker is the special `ANY_MARKER` (identified by its name), then
 results will be collected for all (immediate) sub-markers.
 
-If `recursive` is set to `True`, then all included markers are evaluated.
-
 **Arguments**:
 
 - `events` - a list of events describing a conversation
-- `recursive` - set this to `True` to collect evaluations for all markers that
-  this marker consists of
 
 **Returns**:
 
@@ -239,7 +235,7 @@ evaluation (see `evaluate_events`).
 
 ```python
  | @classmethod
- | from_path(cls, path: Union[Path, Text]) -> Marker
+ | from_path(cls, path: Union[Path, Text]) -> "OrMarker"
 ```
 
 Loads markers from one config file or all config files in a directory tree.
@@ -298,7 +294,7 @@ condition (see `ConditionMarker.from_tag_and_sub_config`).
 #### evaluate\_trackers
 
 ```python
- | evaluate_trackers(trackers: Iterator[Optional[DialogueStateTracker]], output_file: Path, session_stats_file: Optional[Path] = None, overall_stats_file: Optional[Path] = None) -> None
+ | async evaluate_trackers(trackers: AsyncIterator[Optional[DialogueStateTracker]], output_file: Path, session_stats_file: Optional[Path] = None, overall_stats_file: Optional[Path] = None) -> None
 ```
 
 Collect markers for each dialogue in each tracker loaded.

@@ -31,7 +31,7 @@ Load custom configurations.
 #### \_\_init\_\_
 
 ```python
- | __init__(initial_prompt: Optional[Text], reprompt_fallback_phrase: Optional[Text], assistant_voice: Optional[Text], speech_timeout: Optional[Text], speech_model: Optional[Text], enhanced: Optional[Text]) -> None
+ | __init__(initial_prompt: Optional[Text], reprompt_fallback_phrase: Optional[Text], assistant_voice: Optional[Text], speech_timeout: Text = "5", speech_model: Text = "default", enhanced: Text = "false") -> None
 ```
 
 Creates a connection to Twilio voice.
