@@ -95,10 +95,6 @@
             {
               "type": "doc",
               "id": "version-3.x/setting-up-ci-cd"
-            },
-            {
-              "type": "doc",
-              "id": "version-3.x/how-to-deploy"
             }
           ]
         },
@@ -108,6 +104,36 @@
         }
       ]
     },
+    {
+      "type": "category",
+      "label": "Deploying Assistants",
+      "collapsed": true,
+      "items": [
+        {
+          "type": "doc",
+          "id": "version-3.x/deploy/introduction"
+        },
+        {
+          "type": "doc",
+          "id": "version-3.x/deploy/deploy-rasa"
+        },
+        {
+          "type": "doc",
+          "id": "version-3.x/deploy/deploy-action-server"
+        },
+        {
+          "type": "category",
+          "label": "Deployment Tools",
+          "collapsed": true,
+          "items": [
+            {
+              "type": "doc",
+              "id": "version-3.x/deploy/rei/using-rei"
+            }
+          ]
+        }
+      ]
+    }
     {
       "collapsed": false,
       "type": "category",
@@ -168,6 +194,10 @@
             {
               "type": "doc",
               "id": "version-3.x/language-support"
+            },
+            {
+              "type": "doc",
+              "id": "version-3.x/graph-recipe"
             }
           ]
         },
