@@ -419,8 +419,6 @@ class ConcurrentRedisLockStore(LockStore):
 
     def save_lock(self, lock: TicketLock) -> None:
         """Commit individual tickets, last issued ticket number and lock to storage."""
-        lock.remove_expired_tickets()
-
         for ticket in lock.tickets:
             serialised_ticket = ticket.dumps()
             key = self.key_prefix + lock.conversation_id + ":" + str(ticket.number)
