@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "2.8.28"
+version = "2.8.29"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -93,7 +93,7 @@ pytz = ">=2019.1,<2022.0"
 rasa-sdk = "~2.8.4"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
-sanic = ">=19.12.2,<20.12.0"
+sanic = ">=19.12.2,<21.0.0"
 sanic-cors = "^0.10.0b1"
 sanic-jwt = ">=1.6.0,<1.7.0"
 cloudpickle = ">=1.2,<1.7"
@@ -115,7 +115,7 @@ tensorflow-estimator = "~2.6"
 tensorflow-probability = ">=0.11,<0.14"
 setuptools = ">=41.0.0"
 kafka-python = ">=1.4,<3.0"
-ujson = ">=1.35,<5.0"
+ujson = ">=1.35,<6.0"
 regex = ">=2020.6,<2021.8"
 joblib = ">=0.15.1,<1.1.0"
 sentry-sdk = ">=0.17.0,<1.3.0"
@@ -143,7 +143,7 @@ flake8-docstrings = "^1.5.0"
 google-cloud-storage = "^1.40.0"
 azure-storage-blob = "<12.9.0"
 coveralls = "^3.0.1"
-towncrier = "^21.3.0"
+towncrier = ">=21.3.0,<21.9.0"
 toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
 pydoc-markdown = "^3.10.3"
@@ -178,7 +178,7 @@ version = "^0.4.4"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.spacy]
-version = "^3.0"
+version = ">=3.1,<3.3"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]

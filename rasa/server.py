@@ -671,7 +671,7 @@ def create_app(
     endpoints: Optional[AvailableEndpoints] = None,
 ) -> Sanic:
     """Class representing a Rasa HTTP server."""
-    app = Sanic(__name__)
+    app = Sanic(__name__, register=False)
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
 
