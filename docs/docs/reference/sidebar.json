@@ -82,23 +82,13 @@
             "reference/rasa/core/evaluation/marker",
             "reference/rasa/core/evaluation/marker_base",
             "reference/rasa/core/evaluation/marker_stats",
-            "reference/rasa/core/evaluation/marker_tracker_loader",
-            "reference/rasa/core/evaluation/markers"
+            "reference/rasa/core/evaluation/marker_tracker_loader"
           ],
           "label": "rasa.core.evaluation",
           "type": "category"
         },
         {
           "items": [
-            "reference/rasa/core/events/__init__"
-          ],
-          "label": "rasa.core.events",
-          "type": "category"
-        },
-        {
-          "items": [
-            "reference/rasa/core/featurizers/_single_state_featurizer",
-            "reference/rasa/core/featurizers/_tracker_featurizers",
             "reference/rasa/core/featurizers/precomputation",
             "reference/rasa/core/featurizers/single_state_featurizer",
             "reference/rasa/core/featurizers/tracker_featurizers"
@@ -111,30 +101,18 @@
             "reference/rasa/core/nlg/callback",
             "reference/rasa/core/nlg/generator",
             "reference/rasa/core/nlg/interpolator",
-            "reference/rasa/core/nlg/response",
-            "reference/rasa/core/nlg/template"
+            "reference/rasa/core/nlg/response"
           ],
           "label": "rasa.core.nlg",
           "type": "category"
         },
         {
           "items": [
-            "reference/rasa/core/policies/_ensemble",
-            "reference/rasa/core/policies/_memoization",
-            "reference/rasa/core/policies/_policy",
-            "reference/rasa/core/policies/_rule_policy",
-            "reference/rasa/core/policies/_ted_policy",
-            "reference/rasa/core/policies/_unexpected_intent_policy",
             "reference/rasa/core/policies/ensemble",
-            "reference/rasa/core/policies/fallback",
-            "reference/rasa/core/policies/form_policy",
-            "reference/rasa/core/policies/mapping_policy",
             "reference/rasa/core/policies/memoization",
             "reference/rasa/core/policies/policy",
             "reference/rasa/core/policies/rule_policy",
-            "reference/rasa/core/policies/sklearn_policy",
             "reference/rasa/core/policies/ted_policy",
-            "reference/rasa/core/policies/two_stage_fallback",
             "reference/rasa/core/policies/unexpected_intent_policy"
           ],
           "label": "rasa.core.policies",
@@ -144,63 +122,31 @@
           "items": [
             {
               "items": [
-                "reference/rasa/core/training/converters/responses_prefix_converter",
-                "reference/rasa/core/training/converters/story_markdown_to_yaml_converter"
+                "reference/rasa/core/training/converters/responses_prefix_converter"
               ],
               "label": "rasa.core.training.converters",
               "type": "category"
             },
-            {
-              "items": [
-                "reference/rasa/core/training/story_reader/markdown_story_reader",
-                "reference/rasa/core/training/story_reader/story_reader",
-                "reference/rasa/core/training/story_reader/story_step_builder",
-                "reference/rasa/core/training/story_reader/yaml_story_reader"
-              ],
-              "label": "rasa.core.training.story_reader",
-              "type": "category"
-            },
-            {
-              "items": [
-                "reference/rasa/core/training/story_writer/yaml_story_writer"
-              ],
-              "label": "rasa.core.training.story_writer",
-              "type": "category"
-            },
             "reference/rasa/core/training/__init__",
-            "reference/rasa/core/training/data",
-            "reference/rasa/core/training/generator",
             "reference/rasa/core/training/interactive",
-            "reference/rasa/core/training/loading",
             "reference/rasa/core/training/story_conflict",
-            "reference/rasa/core/training/structures",
-            "reference/rasa/core/training/training",
-            "reference/rasa/core/training/visualization"
+            "reference/rasa/core/training/training"
           ],
           "label": "rasa.core.training",
           "type": "category"
         },
         "reference/rasa/core/agent",
-        "reference/rasa/core/config",
-        "reference/rasa/core/conversation",
-        "reference/rasa/core/domain",
         "reference/rasa/core/exceptions",
         "reference/rasa/core/exporter",
-        "reference/rasa/core/featurizers",
         "reference/rasa/core/http_interpreter",
-        "reference/rasa/core/interpreter",
         "reference/rasa/core/jobs",
         "reference/rasa/core/lock",
         "reference/rasa/core/lock_store",
         "reference/rasa/core/migrate",
         "reference/rasa/core/processor",
-        "reference/rasa/core/registry",
-        "reference/rasa/core/restore",
         "reference/rasa/core/run",
-        "reference/rasa/core/slots",
         "reference/rasa/core/test",
         "reference/rasa/core/tracker_store",
-        "reference/rasa/core/trackers",
         "reference/rasa/core/train",
         "reference/rasa/core/utils",
         "reference/rasa/core/visualize"
@@ -259,13 +205,6 @@
       "items": [
         {
           "items": [
-            "reference/rasa/graph_components/adders/nlu_prediction_to_history_adder"
-          ],
-          "label": "rasa.graph_components.adders",
-          "type": "category"
-        },
-        {
-          "items": [
             "reference/rasa/graph_components/converters/nlu_message_converter"
           ],
           "label": "rasa.graph_components.converters",
@@ -275,9 +214,7 @@
           "items": [
             "reference/rasa/graph_components/providers/domain_for_core_training_provider",
             "reference/rasa/graph_components/providers/domain_provider",
-            "reference/rasa/graph_components/providers/domain_without_response_provider",
             "reference/rasa/graph_components/providers/nlu_training_data_provider",
-            "reference/rasa/graph_components/providers/project_provider",
             "reference/rasa/graph_components/providers/rule_only_provider",
             "reference/rasa/graph_components/providers/story_graph_provider",
             "reference/rasa/graph_components/providers/training_tracker_provider"
@@ -299,24 +236,8 @@
     },
     {
       "items": [
-        "reference/rasa/importers/autoconfig",
-        "reference/rasa/importers/importer",
-        "reference/rasa/importers/multi_project",
-        "reference/rasa/importers/rasa"
-      ],
-      "label": "rasa.importers",
-      "type": "category"
-    },
-    {
-      "items": [
         {
           "items": [
-            "reference/rasa/nlu/classifiers/_classifier",
-            "reference/rasa/nlu/classifiers/_diet_classifier",
-            "reference/rasa/nlu/classifiers/_fallback_classifier",
-            "reference/rasa/nlu/classifiers/_keyword_intent_classifier",
-            "reference/rasa/nlu/classifiers/_mitie_intent_classifier",
-            "reference/rasa/nlu/classifiers/_sklearn_intent_classifier",
             "reference/rasa/nlu/classifiers/classifier",
             "reference/rasa/nlu/classifiers/diet_classifier",
             "reference/rasa/nlu/classifiers/fallback_classifier",
@@ -342,15 +263,8 @@
         },
         {
           "items": [
-            "reference/rasa/nlu/extractors/_crf_entity_extractor",
-            "reference/rasa/nlu/extractors/_duckling_entity_extractor",
-            "reference/rasa/nlu/extractors/_entity_synonyms",
-            "reference/rasa/nlu/extractors/_extractor",
-            "reference/rasa/nlu/extractors/_mitie_entity_extractor",
-            "reference/rasa/nlu/extractors/_regex_entity_extractor",
             "reference/rasa/nlu/extractors/crf_entity_extractor",
             "reference/rasa/nlu/extractors/duckling_entity_extractor",
-            "reference/rasa/nlu/extractors/duckling_http_extractor",
             "reference/rasa/nlu/extractors/entity_synonyms",
             "reference/rasa/nlu/extractors/extractor",
             "reference/rasa/nlu/extractors/mitie_entity_extractor",
@@ -364,8 +278,6 @@
           "items": [
             {
               "items": [
-                "reference/rasa/nlu/featurizers/dense_featurizer/_convert_featurizer",
-                "reference/rasa/nlu/featurizers/dense_featurizer/_lm_featurizer",
                 "reference/rasa/nlu/featurizers/dense_featurizer/convert_featurizer",
                 "reference/rasa/nlu/featurizers/dense_featurizer/dense_featurizer",
                 "reference/rasa/nlu/featurizers/dense_featurizer/lm_featurizer",
@@ -377,9 +289,6 @@
             },
             {
               "items": [
-                "reference/rasa/nlu/featurizers/sparse_featurizer/_count_vectors_featurizer",
-                "reference/rasa/nlu/featurizers/sparse_featurizer/_lexical_syntactic_featurizer",
-                "reference/rasa/nlu/featurizers/sparse_featurizer/_regex_featurizer",
                 "reference/rasa/nlu/featurizers/sparse_featurizer/count_vectors_featurizer",
                 "reference/rasa/nlu/featurizers/sparse_featurizer/lexical_syntactic_featurizer",
                 "reference/rasa/nlu/featurizers/sparse_featurizer/regex_featurizer",
@@ -395,14 +304,6 @@
         },
         {
           "items": [
-            "reference/rasa/nlu/schemas/data_schema"
-          ],
-          "label": "rasa.nlu.schemas",
-          "type": "category"
-        },
-        {
-          "items": [
-            "reference/rasa/nlu/selectors/_response_selector",
             "reference/rasa/nlu/selectors/response_selector"
           ],
           "label": "rasa.nlu.selectors",
@@ -410,12 +311,7 @@
         },
         {
           "items": [
-            "reference/rasa/nlu/tokenizers/_jieba_tokenizer",
-            "reference/rasa/nlu/tokenizers/_tokenizer",
-            "reference/rasa/nlu/tokenizers/_whitespace_tokenizer",
-            "reference/rasa/nlu/tokenizers/convert_tokenizer",
             "reference/rasa/nlu/tokenizers/jieba_tokenizer",
-            "reference/rasa/nlu/tokenizers/lm_tokenizer",
             "reference/rasa/nlu/tokenizers/mitie_tokenizer",
             "reference/rasa/nlu/tokenizers/spacy_tokenizer",
             "reference/rasa/nlu/tokenizers/tokenizer",
@@ -428,50 +324,12 @@
           "items": [
             {
               "items": [
-                "reference/rasa/nlu/training_data/converters/nlg_markdown_to_yaml_converter",
-                "reference/rasa/nlu/training_data/converters/nlu_markdown_to_yaml_converter"
-              ],
-              "label": "rasa.nlu.training_data.converters",
-              "type": "category"
-            },
-            {
-              "items": [
-                "reference/rasa/nlu/training_data/formats/dialogflow",
-                "reference/rasa/nlu/training_data/formats/luis",
-                "reference/rasa/nlu/training_data/formats/markdown",
-                "reference/rasa/nlu/training_data/formats/markdown_nlg",
-                "reference/rasa/nlu/training_data/formats/rasa",
-                "reference/rasa/nlu/training_data/formats/rasa_yaml",
-                "reference/rasa/nlu/training_data/formats/readerwriter",
-                "reference/rasa/nlu/training_data/formats/wit"
-              ],
-              "label": "rasa.nlu.training_data.formats",
-              "type": "category"
-            },
-            "reference/rasa/nlu/training_data/entities_parser",
-            "reference/rasa/nlu/training_data/loading",
-            "reference/rasa/nlu/training_data/lookup_tables_parser",
-            "reference/rasa/nlu/training_data/message",
-            "reference/rasa/nlu/training_data/synonyms_parser",
-            "reference/rasa/nlu/training_data/training_data",
-            "reference/rasa/nlu/training_data/util"
-          ],
-          "label": "rasa.nlu.training_data",
-          "type": "category"
-        },
-        {
-          "items": [
-            {
-              "items": [
-                "reference/rasa/nlu/utils/hugging_face/hf_transformers",
                 "reference/rasa/nlu/utils/hugging_face/transformers_pre_post_processors"
               ],
               "label": "rasa.nlu.utils.hugging_face",
               "type": "category"
             },
             "reference/rasa/nlu/utils/__init__",
-            "reference/rasa/nlu/utils/_mitie_utils",
-            "reference/rasa/nlu/utils/_spacy_utils",
             "reference/rasa/nlu/utils/bilou_utils",
             "reference/rasa/nlu/utils/mitie_utils",
             "reference/rasa/nlu/utils/pattern_utils",
@@ -480,15 +338,11 @@
           "label": "rasa.nlu.utils",
           "type": "category"
         },
-        "reference/rasa/nlu/components",
-        "reference/rasa/nlu/config",
         "reference/rasa/nlu/convert",
         "reference/rasa/nlu/model",
         "reference/rasa/nlu/persistor",
-        "reference/rasa/nlu/registry",
         "reference/rasa/nlu/run",
-        "reference/rasa/nlu/test",
-        "reference/rasa/nlu/train"
+        "reference/rasa/nlu/test"
       ],
       "label": "rasa.nlu",
       "type": "category"
@@ -501,7 +355,6 @@
               "items": [
                 {
                   "items": [
-                    "reference/rasa/shared/core/training_data/story_reader/markdown_story_reader",
                     "reference/rasa/shared/core/training_data/story_reader/story_reader",
                     "reference/rasa/shared/core/training_data/story_reader/story_step_builder",
                     "reference/rasa/shared/core/training_data/story_reader/yaml_story_reader"
@@ -511,7 +364,6 @@
                 },
                 {
                   "items": [
-                    "reference/rasa/shared/core/training_data/story_writer/markdown_story_writer",
                     "reference/rasa/shared/core/training_data/story_writer/story_writer",
                     "reference/rasa/shared/core/training_data/story_writer/yaml_story_writer"
                   ],
@@ -539,7 +391,6 @@
         },
         {
           "items": [
-            "reference/rasa/shared/importers/autoconfig",
             "reference/rasa/shared/importers/importer",
             "reference/rasa/shared/importers/multi_project",
             "reference/rasa/shared/importers/rasa",
@@ -556,8 +407,6 @@
                   "items": [
                     "reference/rasa/shared/nlu/training_data/formats/dialogflow",
                     "reference/rasa/shared/nlu/training_data/formats/luis",
-                    "reference/rasa/shared/nlu/training_data/formats/markdown",
-                    "reference/rasa/shared/nlu/training_data/formats/markdown_nlg",
                     "reference/rasa/shared/nlu/training_data/formats/rasa",
                     "reference/rasa/shared/nlu/training_data/formats/rasa_yaml",
                     "reference/rasa/shared/nlu/training_data/formats/readerwriter",
@@ -621,7 +470,6 @@
             "reference/rasa/utils/tensorflow/model_data",
             "reference/rasa/utils/tensorflow/model_data_utils",
             "reference/rasa/utils/tensorflow/models",
-            "reference/rasa/utils/tensorflow/numpy",
             "reference/rasa/utils/tensorflow/rasa_layers",
             "reference/rasa/utils/tensorflow/temp_keras_modules",
             "reference/rasa/utils/tensorflow/transformer"
@@ -632,29 +480,22 @@
         "reference/rasa/utils/common",
         "reference/rasa/utils/converter",
         "reference/rasa/utils/endpoints",
-        "reference/rasa/utils/features",
         "reference/rasa/utils/io",
         "reference/rasa/utils/plotting",
-        "reference/rasa/utils/pykwalify_extensions",
-        "reference/rasa/utils/train_utils",
-        "reference/rasa/utils/validation"
+        "reference/rasa/utils/train_utils"
       ],
       "label": "rasa.utils",
       "type": "category"
     },
     "reference/rasa/__main__",
     "reference/rasa/api",
-    "reference/rasa/data",
     "reference/rasa/exceptions",
     "reference/rasa/jupyter",
     "reference/rasa/model",
     "reference/rasa/model_testing",
     "reference/rasa/model_training",
-    "reference/rasa/run",
     "reference/rasa/server",
     "reference/rasa/telemetry",
-    "reference/rasa/test",
-    "reference/rasa/train",
     "reference/rasa/validator"
   ],
   "label": "Code reference",
