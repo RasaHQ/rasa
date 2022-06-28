@@ -51,15 +51,6 @@ module.exports = {
         'deploy/introduction',
         'deploy/deploy-rasa',
         'deploy/deploy-action-server',
-        {
-            type: 'category',
-            label: 'Deployment Tools',
-            collapsed: true,
-          items: [
-            'deploy/rei/using-rei'
-            
-          ],
-        }
       ],
     },
     {

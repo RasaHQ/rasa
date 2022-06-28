@@ -120,17 +120,6 @@
         {
           "type": "doc",
           "id": "version-3.x/deploy/deploy-action-server"
-        },
-        {
-          "type": "category",
-          "label": "Deployment Tools",
-          "collapsed": true,
-          "items": [
-            {
-              "type": "doc",
-              "id": "version-3.x/deploy/rei/using-rei"
-            }
-          ]
         }
       ]
     },
