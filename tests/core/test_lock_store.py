@@ -405,7 +405,8 @@ def test_create_concurrent_redis_lock_store(tmp_path: Path):
         f"""
         version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
         lock_store:
-           type: concurrent-redis
+           type: redis
+           concurrent: true
            url: localhost
            port: 6379
         """

@@ -17,6 +17,8 @@ from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
+CONCURRENT_KEY = "concurrent"
+
 
 def _get_lock_lifetime() -> int:
     return int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_LIFETIME
@@ -310,15 +312,20 @@ def _create_from_endpoint_config(
         # this is the default type if no lock store type is set
 
         lock_store: LockStore = InMemoryLockStore()
-    elif endpoint_config.type == "redis":
+    elif endpoint_config.type == "redis" and not endpoint_config.kwargs.get(
+        CONCURRENT_KEY, False
+    ):
         rasa.shared.utils.io.raise_deprecation_warning(
-            "'RedisLockStore' is deprecated and will be removed in Rasa Open "
-            "Source 4.0.0. Please migrate to the enhanced 'ConcurrentRedisLockStore'.",
+            "'RedisLockStore' now supports concurrent message handling. "
+            "You must set the 'concurrent' key to True to activate this improvement. ",
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
-    elif endpoint_config.type == "concurrent-redis":
+    elif endpoint_config.type == "redis" and endpoint_config.kwargs.get(
+        CONCURRENT_KEY, False
+    ):
+        del endpoint_config.kwargs[CONCURRENT_KEY]
         lock_store = ConcurrentRedisLockStore(
             host=endpoint_config.url, **endpoint_config.kwargs
         )
