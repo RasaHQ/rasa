@@ -229,7 +229,7 @@ def serve_application(
     metrics['TRIGGER_INTENT_COUNT'] = Counter(
         'trigger_intent_count',
         'Trigger Intent Count',
-        ['conversation_id', 'intent_name'] # add something like status + messages_count?
+        ['intent_name'] # add something like status + messages_count?
     )
     monitor(app, metrics_list=metrics.items()).expose_endpoint()
 
