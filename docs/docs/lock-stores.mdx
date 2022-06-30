@@ -93,3 +93,29 @@ address the same node when sending messages for a given conversation ID.
 
   * `socket_timeout` (default: `10`): Time in seconds after which an
      error is raised if Redis doesn't answer
+
+
+## Custom Lock Store
+
+If you need a lock store which is not available out of the box, you can implement your own.
+This is done by extending the base class `LockStore`.
+
+Your custom lock store class must also implement the following methods:
+- `get_lock`: fetches lock for `conversation_id` from storage; requires `conversation_id` text parameter and returns `TicketLock` instance.
+[(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/lock_store.py#L59).
+- `save_lock`: commit `lock` object to storage; requires `lock` parameter which is of type `TicketLock`and returns `None`.
+[(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/lock_store.py#L67).
+- `delete_lock`: deletes lock for `conversation_id` from storage; requires `conversation_id` text parameter and returns `None`.
+[(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/lock_store.py#L63).
+
+### Configuration
+
+Put the module path to your custom event broker and the parameters you require in your `endpoints.yml`:
+
+ ```yaml-rasa title="endpoints.yml"
+ lock_store:
+   type: path.to.your.module.Class
+   url: localhost
+   a_parameter: a value
+   another_parameter: another value
+ ```

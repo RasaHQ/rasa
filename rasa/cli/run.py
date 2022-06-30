@@ -5,8 +5,6 @@ from typing import List, Text
 
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
-import rasa.cli.utils
-import rasa.shared.utils.cli  # noqa: F401
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_ENDPOINTS_PATH,

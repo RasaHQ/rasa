@@ -19,11 +19,15 @@ class LoopAction(Action, ABC):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        events = []
+        events: List[Event] = []
 
         if not await self.is_activated(output_channel, nlg, tracker, domain):
-            events += self._default_activation_events()
-            events += await self.activate(output_channel, nlg, tracker, domain)
+            events += await self._activate_loop(
+                output_channel,
+                nlg,
+                tracker,
+                domain,
+            )
 
         if not await self.is_done(output_channel, nlg, tracker, domain, events):
             events += await self.do(output_channel, nlg, tracker, domain, events)
@@ -92,3 +96,15 @@ class LoopAction(Action, ABC):
     ) -> List[Event]:
         # can be overwritten
         return []
+
+    async def _activate_loop(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        events = self._default_activation_events()
+        events += await self.activate(output_channel, nlg, tracker, domain)
+
+        return events

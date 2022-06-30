@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-20.04
     name: Update dependencies
     steps:
-      - uses: RasaHQ/dependabot-batch-updater@v1.0
+      - uses: RasaHQ/dependabot-batch-updater@f049cbb0bbd3754bcb5ab154a79f00cd780fc633 # v1.0
         with:
           repo-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           repository: RasaHQ/rasa
