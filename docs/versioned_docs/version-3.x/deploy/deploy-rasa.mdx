@@ -9,7 +9,7 @@ abstract: This page explains how to deploy Rasa Open Source using Helm.
 import variables from './../variables.json';
 
 :::note
-The Rasa Helm chart is open source and available in the
+The Rasa Helm Chart is open source and available in the
 [helm-charts repository](https://github.com/rasahq/helm-charts).
 Please
 [create an issue](https://github.com/RasaHQ/helm-charts/issues/new) in this
@@ -130,11 +130,11 @@ run the following command:
 Prepare an empty file called `rasa-values.yml` which will include all your custom
 configuration for the installation with Helm.
 
-All available values you can find in [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#values).
+All available values you can find in [the Rasa Helm Chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#values).
 
 :::note
 The default configuration of the Rasa chart deploys a Rasa Open Source Server, downloads a model, and serves the downloaded model.
-Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#quick-start) to check out more examples of configuration.
+Visit [the Rasa Helm Chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#quick-start) to check out more examples of configuration.
 
 :::
 
@@ -157,14 +157,14 @@ The URL for the initial model download has to point to a tar.gz file and must no
 
 If you want to train an initial model you can do this by setting the `applicationSettings.trainInitialModel` to `true`.
 It creates a init container that trains a model based on data located in the `/app` directory. If the `/app` directory is empty it creates a new project.
-You can find an example that shows how to download data files from a git repository and train an initial model in the Rasa helm charts [examples](https://github.com/RasaHQ/helm-charts/blob/main/examples/rasa/train-model-helmfile.yaml).
+You can find an example that shows how to download data files from a git repository and train an initial model in the Rasa Helm Charts [examples](https://github.com/RasaHQ/helm-charts/blob/main/examples/rasa/train-model-helmfile.yaml).
 
 ### 4. Deploy Rasa Open Source Assistant
 
 Run the following commands:
 
 ```bash
-# Add the repository which contains the Rasa Helm chart
+# Add the repository which contains the Rasa Helm Chart
 helm repo add rasa https://helm.rasa.com
 
 # Deploy Rasa Open Source
@@ -280,8 +280,8 @@ The other option is to expose your deployment on `NodePort` and access it direct
   Hello from Rasa: 2.8.7
   ```
 
-Visit [the Rasa helm chart README](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#exposing-the-rasa-deployment-to-the-public) to learn other ways to expose your deployment.
+Visit [the Rasa Helm Chart README](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#exposing-the-rasa-deployment-to-the-public) to learn other ways to expose your deployment.
 
 ## Next Steps
 
-- Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration
+- Visit [the Rasa Helm Chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration
