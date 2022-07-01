@@ -2003,12 +2003,19 @@ description = "a pytest plugin for Sanic"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
+develop = false
 
 [package.dependencies]
-async_generator = ">=1.10,<2.0"
+async_generator = "^1.10"
 httpx = ">=0.18.1"
 pytest = ">=5.2"
 websockets = ">=9.1,<11.0"
+
+[package.source]
+type = "git"
+url = "https://github.com/wochinge/pytest-sanic"
+reference = "fix-signal-issue"
+resolved_reference = "6c96e77db3b9530060ba1796f46e1481d7c4dd98"
 
 [[package]]
 name = "pytest-timeout"
@@ -3245,7 +3252,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.9"
-content-hash = "362246c0b635af7d2e200f22d3ed26fa48eca458123941c21371de19a3f1d541"
+content-hash = "aef4e5dab70d741f41da69f30ea71d6fa5425452bd59c2c0f3bf339904d7f595"
 
 [metadata.files]
 absl-py = [
@@ -4841,10 +4848,7 @@ pytest-forked = [
     {file = "pytest-forked-1.4.0.tar.gz", hash = "sha256:8b67587c8f98cbbadfdd804539ed5455b6ed03802203485dd2f53c1422d7440e"},
     {file = "pytest_forked-1.4.0-py3-none-any.whl", hash = "sha256:bbbb6717efc886b9d64537b41fb1497cfaf3c9601276be8da2cccfea5a3c8ad8"},
 ]
-pytest-sanic = [
-    {file = "pytest-sanic-1.9.1.tar.gz", hash = "sha256:79daca07acbc0d9c1f9a1f0c7de7df92e159200e729c75e3a040366ff10a186a"},
-    {file = "pytest_sanic-1.9.1-py3-none-any.whl", hash = "sha256:a9a11f61dedbc3738c6a4f3d8ec24c42d48e25314ca1696f00782c7a0b3e1f16"},
-]
+pytest-sanic = []
 pytest-timeout = [
     {file = "pytest-timeout-1.4.2.tar.gz", hash = "sha256:20b3113cf6e4e80ce2d403b6fb56e9e1b871b510259206d40ff8d609f48bda76"},
     {file = "pytest_timeout-1.4.2-py2.py3-none-any.whl", hash = "sha256:541d7aa19b9a6b4e475c759fd6073ef43d7cdc9a92d95644c260076eb257a063"},

@@ -127,7 +127,6 @@ CacheControl = "^0.12.9"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
-pytest-sanic = "^1.6.1"
 pytest-asyncio = "^0.14.0"
 pytest-xdist = "^2.2.1"
 pytest = "^6.2.2"
@@ -201,3 +200,11 @@ optional = true
 [tool.poetry.dependencies.pymongo]
 version = ">=3.8,<3.11"
 extras = [ "tls", "srv",]
+
+# uncomment once branch is updated and remove the last 3 lines
+#[tool.poetry.dev-dependencies.pytest-sanic]
+#git = "https://github.com/RasaHQ/pytest-sanic"
+#branch = "fix_signal_issue"
+[tool.poetry.dev-dependencies.pytest-sanic]
+git = "https://github.com/wochinge/pytest-sanic"
+branch = "fix-signal-issue"
