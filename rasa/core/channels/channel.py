@@ -393,11 +393,21 @@ class CollectingOutputChannel(OutputChannel):
         buttons: List[Dict[Text, Any]],
         **kwargs: Any,
     ) -> None:
-        await self._persist_message(
-            self._message(recipient_id, text=text, buttons=buttons)
-        )
+        """Sends text message with buttons."""
+        message_parts: List[Text] = text.strip().split("\n\n")
+        last_message_idx: int = len(message_parts) - 1
+
+        for idx, message_part in enumerate(message_parts):
+            await self._persist_message(
+                self._message(
+                    recipient_id,
+                    text=message_part,
+                    buttons=buttons if idx == last_message_idx else None,
+                )
+            )
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
+        """Sends custom json."""
         await self._persist_message(self._message(recipient_id, custom=json_message))
