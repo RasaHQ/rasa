@@ -90,7 +90,7 @@ async def test_load_agent_on_start_with_bad_model_file(
 async def test_close_resources(loop: AbstractEventLoop):
     broker = SQLEventBroker()
     app = Mock()
-    app.agent.tracker_store.event_broker = broker
+    app.ctx.agent.tracker_store.event_broker = broker
 
     with pytest.warns(None) as warnings:
         await run.close_resources(app, loop)
