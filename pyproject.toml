@@ -201,10 +201,7 @@ optional = true
 version = ">=3.8,<3.11"
 extras = [ "tls", "srv",]
 
-# uncomment once branch is updated and remove the last 3 lines
-#[tool.poetry.dev-dependencies.pytest-sanic]
-#git = "https://github.com/RasaHQ/pytest-sanic"
-#branch = "fix_signal_issue"
 [tool.poetry.dev-dependencies.pytest-sanic]
-git = "https://github.com/wochinge/pytest-sanic"
-branch = "fix-signal-issue"
+git = "https://github.com/RasaHQ/pytest-sanic"
+branch = "fix_signal_issue"
+
