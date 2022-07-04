@@ -18,7 +18,7 @@ def run(pytester: Pytester) -> Callable[..., RunResult]:
 
 
 def test_rasa_validate_debug_no_errors(
-    run: Callable[..., RunResult], tmp_path: Path, request: FixtureRequest
+    run: Callable[..., RunResult], request: FixtureRequest
 ):
     # Test captures the subprocess output for the command run
     # validates that the data in 'data/test/test_integration' throws no cli errors
@@ -36,10 +36,19 @@ def test_rasa_validate_debug_no_errors(
         "--debug",
     )
     assert result.ret == 0
+    assert "DEBUG" in str(result.stderr)
+    output_text = "".join(result.outlines)
+    assert "Rasa Open Source reports anonymous usage telemetry"
+    "to help improve the product" in output_text
+    assert "for all its users." in output_text
+    assert "If you'd like to opt-out,"
+    "you can use `rasa telemetry disable`." in output_text
+    assert "To learn more, check out"
+    "https://rasa.com/docs/rasa/telemetry/telemetry." in output_text
 
 
 def test_rasa_validate_debug_with_errors(
-    run: Callable[..., RunResult], tmp_path: Path, request: FixtureRequest
+    run: Callable[..., RunResult], request: FixtureRequest
 ):
     # Test captures the subprocess output for the command run
     # validates that the data in 'data/test/test_integration_incorrect'
@@ -66,7 +75,7 @@ def test_rasa_validate_debug_with_errors(
 
 
 def test_rasa_validate_verbose_no_errors(
-    run: Callable[..., RunResult], tmp_path: Path, request: FixtureRequest
+    run: Callable[..., RunResult], request: FixtureRequest
 ):
     # Test captures the subprocess output for the command run
     # and validates that the data in 'data/test/test_integration' throws no cli errors
@@ -84,10 +93,19 @@ def test_rasa_validate_verbose_no_errors(
         "--verbose",
     )
     assert result.ret == 0
+    assert "INFO" in str(result.stderr)
+    output_text = "".join(result.outlines)
+    assert "Rasa Open Source reports anonymous usage telemetry"
+    "to help improve the product" in output_text
+    assert "for all its users." in output_text
+    assert "If you'd like to opt-out,"
+    "you can use `rasa telemetry disable`." in output_text
+    assert "To learn more, check out"
+    "https://rasa.com/docs/rasa/telemetry/telemetry." in output_text
 
 
 def test_rasa_validate_quiet_no_errors(
-    run: Callable[..., RunResult], tmp_path: Path, request: FixtureRequest
+    run: Callable[..., RunResult], request: FixtureRequest
 ):
     # Test captures the subprocess output for the command run
     # and validates that the data in 'data/test/test_integration' throws no cli errors
@@ -105,3 +123,11 @@ def test_rasa_validate_quiet_no_errors(
         "--quiet",
     )
     assert result.ret == 0
+    output_text = "".join(result.outlines)
+    assert "Rasa Open Source reports anonymous usage telemetry"
+    "to help improve the product" in output_text
+    assert "for all its users." in output_text
+    assert "If you'd like to opt-out,"
+    "you can use `rasa telemetry disable`." in output_text
+    assert "To learn more, check out"
+    "https://rasa.com/docs/rasa/telemetry/telemetry." in output_text
