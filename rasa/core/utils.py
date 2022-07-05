@@ -24,7 +24,6 @@ from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
-from sanic.views import CompositionView
 import rasa.cli.utils as cli_utils
 
 
@@ -96,30 +95,20 @@ def list_routes(app: Sanic) -> Text:
 
     output = {}
 
-    def find_route(suffix: Text, path: Text) -> Optional[Text]:
-        for name, (uri, _) in app.router.routes_names.items():
-            if name.split(".")[-1] == suffix and uri == path:
-                return name
-        return None
-
-    for endpoint, route in app.router.routes_all.items():
+    for route in app.router.routes:
+        endpoint = route.parts
         if endpoint[:-1] in app.router.routes_all and endpoint[-1] == "/":
             continue
 
         options = {}
-        for arg in route.parameters:
+        for arg in route._params:
             options[arg] = f"[{arg}]"
 
-        if not isinstance(route.handler, CompositionView):
-            handlers = [(list(route.methods)[0], route.name)]
-        else:
-            handlers = [
-                (method, find_route(v.__name__, endpoint) or v.__name__)
-                for method, v in route.handler.handlers.items()
-            ]
+        handlers = [(list(route.methods)[0], route.name.replace("rasa_server.", ""))]
 
         for method, name in handlers:
-            line = unquote(f"{endpoint:50s} {method:30s} {name}")
+            full_endpoint = "/" + "/".join(endpoint)
+            line = unquote(f"{full_endpoint:50s} {method:30s} {name}")
             output[name] = line
 
     url_table = "\n".join(output[url] for url in sorted(output))
