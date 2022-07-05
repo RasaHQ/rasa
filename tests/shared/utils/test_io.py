@@ -12,7 +12,10 @@ import rasa.shared
 from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.constants import (
+    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+    DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR,
+)
 from rasa.utils import io as io_utils
 
 os.environ["USER_NAME"] = "user"
@@ -269,6 +272,69 @@ def test_bool_str():
     assert content["one"] == "yes"
     assert content["two"] == "true"
     assert content["three"] == "True"
+
+
+@pytest.mark.parametrize(
+    "indent, expected_content",
+    [
+        (
+            "0",
+            """version: '2.0'
+intents:
+- intent1
+- intent2""",
+        ),
+        (
+            "2",
+            """version: '2.0'
+intents:
+- intent1
+- intent2""",
+        ),
+        (
+            "3",
+            """version: '2.0'
+intents:
+ - intent1
+ - intent2""",
+        ),
+        (
+            "4",
+            """version: '2.0'
+intents:
+  - intent1
+  - intent2""",
+        ),
+        (
+            "6",
+            """version: '2.0'
+intents:
+    - intent1
+    - intent2""",
+        ),
+    ],
+)
+def test_dump_yaml_configured_indent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    indent: Text,
+    expected_content: Text,
+):
+    monkeypatch.setenv(DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR, indent)
+    filepath = tmp_path / "test.yml"
+
+    content = """version: '2.0'
+intents:
+- intent1
+- intent2"""
+
+    filepath.write_text(content)
+    data = rasa.shared.utils.io.read_yaml_file(filepath)
+
+    rasa.shared.utils.io.write_yaml(data, filepath)
+    actual_content = open(filepath).read().strip()
+
+    assert actual_content == expected_content
 
 
 @pytest.mark.parametrize(
