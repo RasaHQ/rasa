@@ -320,7 +320,7 @@ def test_dump_yaml_configured_indent(
     indent: Text,
     expected_content: Text,
 ):
-    monkeypatch.setitem(os.environ, DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR, indent)
+    monkeypatch.setenv(DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR, indent)
     filepath = tmp_path / "test.yml"
 
     content = """version: '2.0'
