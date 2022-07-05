@@ -2,6 +2,39 @@
 sidebar_label: rasa.core.channels.socketio
 title: rasa.core.channels.socketio
 ---
+## SocketBlueprint Objects
+
+```python
+class SocketBlueprint(Blueprint)
+```
+
+#### \_\_init\_\_
+
+```python
+ | __init__(sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any) -> None
+```
+
+Creates a :class:`sanic.Blueprint` for routing socketio connections.
+
+**Arguments**:
+
+- `sio`: Instance of :class:`socketio.AsyncServer` class
+- `socketio_path`: string indicating the route to accept requests on.
+
+#### register
+
+```python
+ | register(app: Sanic, options: Dict[Text, Any]) -> None
+```
+
+Attach the Socket.IO webserver to the given Sanic instance.
+
+**Arguments**:
+
+    blueprint into the app.
+- `app`: Instance of :class:`sanic.app.Sanic` class
+- `options`: Options to be used while registering the
+
 ## SocketIOOutput Objects
 
 ```python

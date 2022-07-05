@@ -263,3 +263,19 @@ Sends an image. Default will just post the url as a string.
 
 Sends an attachment. Default will just post as a string.
 
+#### send\_text\_with\_buttons
+
+```python
+ | async send_text_with_buttons(recipient_id: Text, text: Text, buttons: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
+```
+
+Sends text message with buttons.
+
+#### send\_custom\_json
+
+```python
+ | async send_custom_json(recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any) -> None
+```
+
+Sends custom json.
+
