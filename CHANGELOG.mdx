@@ -16,6 +16,15 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.30] - 2022-07-05
+### Bugfixes
+- [#11131](https://github.com/rasahq/rasa/issues/11131): Responses with two newlines will now be split correctly to separate messages if buttons are present, so that buttons will be sent with the last message.
+- [#11293](https://github.com/rasahq/rasa/issues/11293): Make YAML sequence indent configurable via env var "DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR
+
+### Miscellaneous internal changes
+- [#11292](https://github.com/rasahq/rasa/issues/11292)
+
+
 ## [2.8.29] - 2022-06-23
 ### Miscellaneous internal changes
 - [#11252](https://github.com/rasahq/rasa/issues/11252)
