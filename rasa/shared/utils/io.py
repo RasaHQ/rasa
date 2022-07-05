@@ -411,7 +411,8 @@ def write_yaml(
             f"The value of the env var {DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR} "
             f"is {sequence_indent}. Values less than 2 are not supported - see "
             f"https://yaml.readthedocs.io/en/latest/detail.html#indentation-of-block-sequences. "  # noqa: E501, W505
-            f"YAML will be dumped using a sequence indent value of {DEFAULT_YAML_SEQUENCE_INDENT} instead."
+            f"YAML will be dumped using a sequence indent value of "
+            f"{DEFAULT_YAML_SEQUENCE_INDENT} instead."
         )
         sequence_indent = DEFAULT_YAML_SEQUENCE_INDENT
     dumper.indent(mapping=2, sequence=sequence_indent, offset=sequence_indent - 2)
