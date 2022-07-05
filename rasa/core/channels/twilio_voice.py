@@ -248,7 +248,7 @@ class TwilioVoiceInput(InputChannel):
             # If the user doesn't respond resend the last message.
             else:
                 # Get last user utterance from tracker.
-                tracker = request.app.agent.tracker_store.retrieve(sender_id)
+                tracker = request.app.ctx.agent.tracker_store.retrieve(sender_id)
                 last_response = None
                 if tracker:
                     last_response = next(
