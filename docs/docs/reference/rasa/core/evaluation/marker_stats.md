@@ -5,7 +5,7 @@ title: rasa.core.evaluation.marker_stats
 #### compute\_statistics
 
 ```python
-compute_statistics(values: List[Union[float, int]]) -> Dict[Text, Union[int, np.float]]
+def compute_statistics(values: List[Union[float, int]]) -> Dict[Text, Union[int, np.float]]
 ```
 
 Computes some statistics over the given numbers.
@@ -47,7 +47,7 @@ precede an (relevant) event where a marker applies.
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Creates a new marker statistics object.
@@ -55,7 +55,7 @@ Creates a new marker statistics object.
 #### process
 
 ```python
- | process(sender_id: Text, session_idx: int, meta_data_on_relevant_events_per_marker: Dict[Text, List[EventMetaData]]) -> None
+def process(sender_id: Text, session_idx: int, meta_data_on_relevant_events_per_marker: Dict[Text, List[EventMetaData]]) -> None
 ```
 
 Processes the meta data that was extracted from a single session.
@@ -79,7 +79,7 @@ collects all metadata to be able to compute meta data over *all*
 #### overall\_statistic\_to\_csv
 
 ```python
- | overall_statistic_to_csv(path: Path, overwrite: bool = False) -> None
+def overall_statistic_to_csv(path: Path, overwrite: bool = False) -> None
 ```
 
 Exports the overall statistics (over all processes sessions) to a csv file.
@@ -92,7 +92,7 @@ Exports the overall statistics (over all processes sessions) to a csv file.
 #### per\_session\_statistics\_to\_csv
 
 ```python
- | per_session_statistics_to_csv(path: Path, overwrite: bool = False) -> None
+def per_session_statistics_to_csv(path: Path, overwrite: bool = False) -> None
 ```
 
 Exports the resulting statistics to a csv file.

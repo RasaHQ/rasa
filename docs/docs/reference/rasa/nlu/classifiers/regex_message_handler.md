@@ -16,8 +16,8 @@ Handles hardcoded NLU predictions from messages starting with a `/`.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexMessageHandler
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexMessageHandler
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -25,7 +25,7 @@ Creates a new untrained component (see parent class for full docstring).
 #### process
 
 ```python
- | process(messages: List[Message], domain: Optional[Domain] = None) -> List[Message]
+def process(messages: List[Message], domain: Optional[Domain] = None) -> List[Message]
 ```
 
 Adds hardcoded intents and entities for messages starting with &#x27;/&#x27;.

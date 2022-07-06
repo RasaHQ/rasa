@@ -23,8 +23,8 @@ Represents a persisted graph component in the graph.
 #### from\_cache
 
 ```python
- | @classmethod
- | from_cache(cls, node_name: Text, directory: Path, model_storage: ModelStorage, output_fingerprint: Text) -> Resource
+@classmethod
+def from_cache(cls, node_name: Text, directory: Path, model_storage: ModelStorage, output_fingerprint: Text) -> Resource
 ```
 
 Loads a `Resource` from the cache.
@@ -47,7 +47,7 @@ This automatically loads the persisted resource into the given `ModelStorage`.
 #### to\_cache
 
 ```python
- | to_cache(directory: Path, model_storage: ModelStorage) -> None
+def to_cache(directory: Path, model_storage: ModelStorage) -> None
 ```
 
 Persists the `Resource` to the cache.
@@ -61,7 +61,7 @@ Persists the `Resource` to the cache.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Provides fingerprint for `Resource`.

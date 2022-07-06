@@ -16,8 +16,8 @@ Extracts entities via lookup tables and regexes defined in the training data.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -25,8 +25,8 @@ The component&#x27;s default config (see parent class for full docstring).
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexEntityExtractor
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexEntityExtractor
 ```
 
 Creates a new `GraphComponent`.
@@ -45,7 +45,7 @@ Creates a new `GraphComponent`.
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, patterns: Optional[List[Dict[Text, Text]]] = None) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, patterns: Optional[List[Dict[Text, Text]]] = None) -> None
 ```
 
 Creates a new instance.
@@ -62,7 +62,7 @@ Creates a new instance.
 #### train
 
 ```python
- | train(training_data: TrainingData) -> Resource
+def train(training_data: TrainingData) -> Resource
 ```
 
 Extract patterns from the training data.
@@ -74,7 +74,7 @@ Extract patterns from the training data.
 #### process
 
 ```python
- | process(messages: List[Message]) -> List[Message]
+def process(messages: List[Message]) -> List[Message]
 ```
 
 Extracts entities from messages and appends them to the attribute.
@@ -94,8 +94,8 @@ exists yet, then an `ENTITIES` attribute will be created.
 #### load
 
 ```python
- | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexEntityExtractor
+@classmethod
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexEntityExtractor
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -103,7 +103,7 @@ Loads trained component (see parent class for full docstring).
 #### persist
 
 ```python
- | persist() -> None
+def persist() -> None
 ```
 
 Persist this model.

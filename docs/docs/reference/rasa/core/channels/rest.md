@@ -17,7 +17,7 @@ retrieve responses from the assistant.
 #### blueprint
 
 ```python
- | blueprint(on_new_message: Callable[[UserMessage], Awaitable[None]]) -> Blueprint
+def blueprint(on_new_message: Callable[[UserMessage], Awaitable[None]]) -> Blueprint
 ```
 
 Groups the collection of endpoints used by rest channel.
@@ -35,8 +35,8 @@ Output channel that collects send messages in a list
 #### name
 
 ```python
- | @classmethod
- | name(cls) -> Text
+@classmethod
+def name(cls) -> Text
 ```
 
 Name of QueueOutputChannel.

@@ -5,7 +5,7 @@ title: rasa.cli.x
 #### add\_subparser
 
 ```python
-add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all rasa x parsers.
@@ -18,7 +18,7 @@ Add all rasa x parsers.
 #### rasa\_x
 
 ```python
-rasa_x(args: argparse.Namespace) -> None
+def rasa_x(args: argparse.Namespace) -> None
 ```
 
 Run Rasa with the `x` subcommand.
@@ -26,7 +26,7 @@ Run Rasa with the `x` subcommand.
 #### run\_in\_enterprise\_connection\_mode
 
 ```python
-run_in_enterprise_connection_mode(args: argparse.Namespace) -> None
+def run_in_enterprise_connection_mode(args: argparse.Namespace) -> None
 ```
 
 Run Rasa in a mode that enables using Rasa X as the config endpoint.

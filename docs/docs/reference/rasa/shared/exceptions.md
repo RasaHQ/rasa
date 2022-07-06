@@ -40,7 +40,7 @@ Raised if there is an error reading yaml.
 #### \_\_init\_\_
 
 ```python
- | __init__(filename: Optional[Text] = None) -> None
+def __init__(filename: Optional[Text] = None) -> None
 ```
 
 Create exception.
@@ -108,8 +108,8 @@ Raised if the format of an entity is invalid.
 #### create\_from
 
 ```python
- | @classmethod
- | create_from(cls, other: json.JSONDecodeError, msg: Text) -> "InvalidEntityFormatException"
+@classmethod
+def create_from(cls, other: json.JSONDecodeError, msg: Text) -> "InvalidEntityFormatException"
 ```
 
 Creates `InvalidEntityFormatException` from `JSONDecodeError`.

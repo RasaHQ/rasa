@@ -5,7 +5,7 @@ title: rasa.core.nlg.callback
 #### nlg\_response\_format\_spec
 
 ```python
-nlg_response_format_spec() -> Dict[Text, Any]
+def nlg_response_format_spec() -> Dict[Text, Any]
 ```
 
 Expected response schema for an NLG endpoint.
@@ -15,7 +15,7 @@ Used for validation of the response returned from the NLG endpoint.
 #### nlg\_request\_format
 
 ```python
-nlg_request_format(utter_action: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
+def nlg_request_format(utter_action: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
 ```
 
 Create the json body for the NLG json body for the request.
@@ -36,7 +36,7 @@ the bot.
 #### generate
 
 ```python
- | async generate(utter_action: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
+async def generate(utter_action: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
 ```
 
 Retrieve a named response from the domain using an endpoint.
@@ -44,8 +44,8 @@ Retrieve a named response from the domain using an endpoint.
 #### validate\_response
 
 ```python
- | @staticmethod
- | validate_response(content: Optional[Dict[Text, Any]]) -> bool
+@staticmethod
+def validate_response(content: Optional[Dict[Text, Any]]) -> bool
 ```
 
 Validate the NLG response. Raises exception on failure.

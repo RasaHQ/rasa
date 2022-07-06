@@ -30,7 +30,7 @@ Enum to categorize and place custom components correctly in the graph.
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Creates recipe.
@@ -47,8 +47,8 @@ Describes a graph component which was registered with the decorator.
 #### register
 
 ```python
- | @classmethod
- | register(cls, component_types: Union[ComponentType, List[ComponentType]], is_trainable: bool, model_from: Optional[Text] = None) -> Callable[[Type[GraphComponent]], Type[GraphComponent]]
+@classmethod
+def register(cls, component_types: Union[ComponentType, List[ComponentType]], is_trainable: bool, model_from: Optional[Text] = None) -> Callable[[Type[GraphComponent]], Type[GraphComponent]]
 ```
 
 This decorator can be used to register classes with the recipe.
@@ -69,7 +69,7 @@ This decorator can be used to register classes with the recipe.
 #### graph\_config\_for\_recipe
 
 ```python
- | graph_config_for_recipe(config: Dict, cli_parameters: Dict[Text, Any], training_type: TrainingType = TrainingType.BOTH, is_finetuning: bool = False) -> GraphModelConfiguration
+def graph_config_for_recipe(config: Dict, cli_parameters: Dict[Text, Any], training_type: TrainingType = TrainingType.BOTH, is_finetuning: bool = False) -> GraphModelConfiguration
 ```
 
 Converts the default config to graphs (see interface for full docstring).
@@ -77,8 +77,8 @@ Converts the default config to graphs (see interface for full docstring).
 #### auto\_configure
 
 ```python
- | @staticmethod
- | auto_configure(config_file_path: Optional[Text], config: Dict, training_type: Optional[TrainingType] = TrainingType.BOTH) -> Tuple[Dict[Text, Any], Set[str], Set[str]]
+@staticmethod
+def auto_configure(config_file_path: Optional[Text], config: Dict, training_type: Optional[TrainingType] = TrainingType.BOTH) -> Tuple[Dict[Text, Any], Set[str], Set[str]]
 ```
 
 Determine configuration from auto-filled configuration file.
@@ -100,8 +100,8 @@ allowed to access code outside of `rasa.shared`.
 #### complete\_config
 
 ```python
- | @staticmethod
- | complete_config(config: Dict[Text, Any], keys_to_configure: Set[Text]) -> Dict[Text, Any]
+@staticmethod
+def complete_config(config: Dict[Text, Any], keys_to_configure: Set[Text]) -> Dict[Text, Any]
 ```
 
 Complete a config by adding automatic configuration for the specified keys.

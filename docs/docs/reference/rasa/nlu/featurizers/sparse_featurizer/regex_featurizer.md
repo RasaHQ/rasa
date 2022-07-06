@@ -16,8 +16,8 @@ Adds message features based on regex expressions.
 #### required\_components
 
 ```python
- | @classmethod
- | required_components(cls) -> List[Type]
+@classmethod
+def required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -25,8 +25,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 Returns the component&#x27;s default config.
@@ -34,7 +34,7 @@ Returns the component&#x27;s default config.
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, known_patterns: Optional[List[Dict[Text, Text]]] = None) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, known_patterns: Optional[List[Dict[Text, Text]]] = None) -> None
 ```
 
 Constructs new features for regexes and lookup table using regex expressions.
@@ -52,8 +52,8 @@ Constructs new features for regexes and lookup table using regex expressions.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexFeaturizer
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -61,7 +61,7 @@ Creates a new untrained component (see parent class for full docstring).
 #### train
 
 ```python
- | train(training_data: TrainingData) -> Resource
+def train(training_data: TrainingData) -> Resource
 ```
 
 Trains the component with all patterns extracted from training data.
@@ -69,7 +69,7 @@ Trains the component with all patterns extracted from training data.
 #### process\_training\_data
 
 ```python
- | process_training_data(training_data: TrainingData) -> TrainingData
+def process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Processes the training examples (see parent class for full docstring).
@@ -77,7 +77,7 @@ Processes the training examples (see parent class for full docstring).
 #### process
 
 ```python
- | process(messages: List[Message]) -> List[Message]
+def process(messages: List[Message]) -> List[Message]
 ```
 
 Featurizes all given messages in-place.
@@ -89,8 +89,8 @@ Featurizes all given messages in-place.
 #### load
 
 ```python
- | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexFeaturizer
+@classmethod
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -98,8 +98,8 @@ Loads trained component (see parent class for full docstring).
 #### validate\_config
 
 ```python
- | @classmethod
- | validate_config(cls, config: Dict[Text, Any]) -> None
+@classmethod
+def validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
 Validates that the component is configured properly.

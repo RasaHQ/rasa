@@ -5,7 +5,7 @@ title: rasa.shared.nlu.training_data.lookup_tables_parser
 #### add\_item\_to\_lookup\_tables
 
 ```python
-add_item_to_lookup_tables(title: Text, item: Text, existing_lookup_tables: List[Dict[Text, Union[Text, List[Text]]]]) -> None
+def add_item_to_lookup_tables(title: Text, item: Text, existing_lookup_tables: List[Dict[Text, Union[Text, List[Text]]]]) -> None
 ```
 
 Add an item to a list of existing lookup tables.

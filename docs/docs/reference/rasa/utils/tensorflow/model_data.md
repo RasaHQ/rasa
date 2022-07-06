@@ -22,7 +22,7 @@ Subclassing np.array: https://numpy.org/doc/stable/user/basics.subclassing.html
 #### \_\_new\_\_
 
 ```python
- | __new__(cls, input_array: np.ndarray, number_of_dimensions: int) -> "FeatureArray"
+def __new__(cls, input_array: np.ndarray, number_of_dimensions: int) -> "FeatureArray"
 ```
 
 Create and return a new object.  See help(type) for accurate signature.
@@ -30,7 +30,7 @@ Create and return a new object.  See help(type) for accurate signature.
 #### \_\_init\_\_
 
 ```python
- | __init__(input_array: Any, number_of_dimensions: int, **kwargs: Any) -> None
+def __init__(input_array: Any, number_of_dimensions: int, **kwargs: Any) -> None
 ```
 
 Initialize. FeatureArray.
@@ -46,7 +46,7 @@ to function FeatureArray.__init__ &#x27;
 #### \_\_array\_finalize\_\_
 
 ```python
- | __array_finalize__(obj: Any) -> None
+def __array_finalize__(obj: Any) -> None
 ```
 
 This method is called when the system allocates a new array from obj.
@@ -58,7 +58,7 @@ This method is called when the system allocates a new array from obj.
 #### \_\_array\_ufunc\_\_
 
 ```python
- | __array_ufunc__(ufunc: Any, method: Text, *inputs: Any, **kwargs: Any) -> Any
+def __array_ufunc__(ufunc: Any, method: Text, *inputs: Any, **kwargs: Any) -> Any
 ```
 
 Overwrite this method as we are subclassing numpy array.
@@ -80,7 +80,7 @@ Overwrite this method as we are subclassing numpy array.
 #### \_\_reduce\_\_
 
 ```python
- | __reduce__() -> Tuple[Any, Any, Any]
+def __reduce__() -> Tuple[Any, Any, Any]
 ```
 
 Needed in order to pickle this object.
@@ -92,7 +92,7 @@ Needed in order to pickle this object.
 #### \_\_setstate\_\_
 
 ```python
- | __setstate__(state: Any, **kwargs: Any) -> None
+def __setstate__(state: Any, **kwargs: Any) -> None
 ```
 
 Sets the state.
@@ -133,7 +133,7 @@ be &quot;INTENT&quot; and &#x27;label_sub_key&#x27; would be &quot;IDS&quot;.
 #### \_\_init\_\_
 
 ```python
- | __init__(label_key: Optional[Text] = None, label_sub_key: Optional[Text] = None, data: Optional[Data] = None) -> None
+def __init__(label_key: Optional[Text] = None, label_sub_key: Optional[Text] = None, data: Optional[Data] = None) -> None
 ```
 
 Initializes the RasaModelData object.
@@ -147,7 +147,7 @@ Initializes the RasaModelData object.
 #### get
 
 ```python
- | get(key: Text, sub_key: Optional[Text] = None) -> Union[Dict[Text, List[FeatureArray]], List[FeatureArray]]
+def get(key: Text, sub_key: Optional[Text] = None) -> Union[Dict[Text, List[FeatureArray]], List[FeatureArray]]
 ```
 
 Get the data under the given keys.
@@ -165,7 +165,7 @@ Get the data under the given keys.
 #### items
 
 ```python
- | items() -> ItemsView
+def items() -> ItemsView
 ```
 
 Return the items of the data attribute.
@@ -177,7 +177,7 @@ Return the items of the data attribute.
 #### values
 
 ```python
- | values() -> Any
+def values() -> Any
 ```
 
 Return the values of the data attribute.
@@ -189,7 +189,7 @@ Return the values of the data attribute.
 #### keys
 
 ```python
- | keys(key: Optional[Text] = None) -> List[Text]
+def keys(key: Optional[Text] = None) -> List[Text]
 ```
 
 Return the keys of the data attribute.
@@ -206,7 +206,7 @@ Return the keys of the data attribute.
 #### sort
 
 ```python
- | sort() -> None
+def sort() -> None
 ```
 
 Sorts data according to its keys.
@@ -214,7 +214,7 @@ Sorts data according to its keys.
 #### first\_data\_example
 
 ```python
- | first_data_example() -> Data
+def first_data_example() -> Data
 ```
 
 Return the data with just one feature example per key, sub-key.
@@ -226,7 +226,7 @@ Return the data with just one feature example per key, sub-key.
 #### does\_feature\_exist
 
 ```python
- | does_feature_exist(key: Text, sub_key: Optional[Text] = None) -> bool
+def does_feature_exist(key: Text, sub_key: Optional[Text] = None) -> bool
 ```
 
 Check if feature key (and sub-key) is present and features are available.
@@ -244,7 +244,7 @@ Check if feature key (and sub-key) is present and features are available.
 #### does\_feature\_not\_exist
 
 ```python
- | does_feature_not_exist(key: Text, sub_key: Optional[Text] = None) -> bool
+def does_feature_not_exist(key: Text, sub_key: Optional[Text] = None) -> bool
 ```
 
 Check if feature key (and sub-key) is present and features are available.
@@ -262,7 +262,7 @@ Check if feature key (and sub-key) is present and features are available.
 #### is\_empty
 
 ```python
- | is_empty() -> bool
+def is_empty() -> bool
 ```
 
 Checks if data is set.
@@ -270,7 +270,7 @@ Checks if data is set.
 #### number\_of\_examples
 
 ```python
- | number_of_examples(data: Optional[Data] = None) -> int
+def number_of_examples(data: Optional[Data] = None) -> int
 ```
 
 Obtain number of examples in data.
@@ -289,7 +289,7 @@ Obtain number of examples in data.
 #### number\_of\_units
 
 ```python
- | number_of_units(key: Text, sub_key: Text) -> int
+def number_of_units(key: Text, sub_key: Text) -> int
 ```
 
 Get the number of units of the given key.
@@ -307,7 +307,7 @@ Get the number of units of the given key.
 #### add\_data
 
 ```python
- | add_data(data: Data, key_prefix: Optional[Text] = None) -> None
+def add_data(data: Data, key_prefix: Optional[Text] = None) -> None
 ```
 
 Add incoming data to data.
@@ -320,7 +320,7 @@ Add incoming data to data.
 #### update\_key
 
 ```python
- | update_key(from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text) -> None
+def update_key(from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text) -> None
 ```
 
 Copies the features under the given keys to the new keys and deletes the old.
@@ -335,7 +335,7 @@ Copies the features under the given keys to the new keys and deletes the old.
 #### add\_features
 
 ```python
- | add_features(key: Text, sub_key: Text, features: Optional[List[FeatureArray]]) -> None
+def add_features(key: Text, sub_key: Text, features: Optional[List[FeatureArray]]) -> None
 ```
 
 Add list of features to data under specified key.
@@ -351,7 +351,7 @@ Should update number of examples.
 #### add\_lengths
 
 ```python
- | add_lengths(key: Text, sub_key: Text, from_key: Text, from_sub_key: Text) -> None
+def add_lengths(key: Text, sub_key: Text, from_key: Text, from_sub_key: Text) -> None
 ```
 
 Adds a feature array of lengths of sequences to data under given key.
@@ -366,7 +366,7 @@ Adds a feature array of lengths of sequences to data under given key.
 #### add\_sparse\_feature\_sizes
 
 ```python
- | add_sparse_feature_sizes(sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]) -> None
+def add_sparse_feature_sizes(sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]) -> None
 ```
 
 Adds a dictionary of feature sizes for different attributes.
@@ -380,7 +380,7 @@ Adds a dictionary of feature sizes for different attributes.
 #### get\_sparse\_feature\_sizes
 
 ```python
- | get_sparse_feature_sizes() -> Dict[Text, Dict[Text, List[int]]]
+def get_sparse_feature_sizes() -> Dict[Text, Dict[Text, List[int]]]
 ```
 
 Get feature sizes of the model.
@@ -396,7 +396,7 @@ a dictionary of a feature type to a list of different sparse feature sizes.
 #### split
 
 ```python
- | split(number_of_test_examples: int, random_seed: int) -> Tuple["RasaModelData", "RasaModelData"]
+def split(number_of_test_examples: int, random_seed: int) -> Tuple["RasaModelData", "RasaModelData"]
 ```
 
 Create random hold out test set using stratified split.
@@ -414,7 +414,7 @@ Create random hold out test set using stratified split.
 #### get\_signature
 
 ```python
- | get_signature(data: Optional[Data] = None) -> Dict[Text, Dict[Text, List[FeatureSignature]]]
+def get_signature(data: Optional[Data] = None) -> Dict[Text, Dict[Text, List[FeatureSignature]]]
 ```
 
 Get signature of RasaModelData.
@@ -429,7 +429,7 @@ Signature stores the shape and whether features are sparse or not for every key.
 #### shuffled\_data
 
 ```python
- | shuffled_data(data: Data) -> Data
+def shuffled_data(data: Data) -> Data
 ```
 
 Shuffle model data.
@@ -446,7 +446,7 @@ Shuffle model data.
 #### balanced\_data
 
 ```python
- | balanced_data(data: Data, batch_size: int, shuffle: bool) -> Data
+def balanced_data(data: Data, batch_size: int, shuffle: bool) -> Data
 ```
 
 Mix model data to account for class imbalance.

@@ -47,7 +47,7 @@ Usage:
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Creates an empty container for precomputations.
@@ -55,7 +55,7 @@ Creates an empty container for precomputations.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Fingerprint the container.
@@ -67,7 +67,7 @@ Fingerprint the container.
 #### messages
 
 ```python
- | messages(key_attribute: Text = None) -> ValuesView
+def messages(key_attribute: Text = None) -> ValuesView
 ```
 
 Returns a view of all messages.
@@ -75,7 +75,7 @@ Returns a view of all messages.
 #### all\_messages
 
 ```python
- | all_messages() -> List[Message]
+def all_messages() -> List[Message]
 ```
 
 Returns a list containing all messages.
@@ -83,7 +83,7 @@ Returns a list containing all messages.
 #### keys
 
 ```python
- | keys(key_attribute: Text) -> KeysView
+def keys(key_attribute: Text) -> KeysView
 ```
 
 Returns a view of the value keys for the given key attribute.
@@ -91,8 +91,8 @@ Returns a view of the value keys for the given key attribute.
 #### num\_collisions\_ignored
 
 ```python
- | @property
- | num_collisions_ignored() -> int
+@property
+def num_collisions_ignored() -> int
 ```
 
 Returns the number of collisions that have been ignored.
@@ -100,7 +100,7 @@ Returns the number of collisions that have been ignored.
 #### add
 
 ```python
- | add(message_with_one_key_attribute: Message) -> None
+def add(message_with_one_key_attribute: Message) -> None
 ```
 
 Adds the given message if it is not already present.
@@ -120,7 +120,7 @@ Adds the given message if it is not already present.
 #### add\_all
 
 ```python
- | add_all(messages_with_one_key_attribute: List[Message]) -> None
+def add_all(messages_with_one_key_attribute: List[Message]) -> None
 ```
 
 Adds the given messages.
@@ -139,7 +139,7 @@ Adds the given messages.
 #### collect\_features
 
 ```python
- | collect_features(sub_state: SubState, attributes: Optional[Iterable[Text]] = None) -> Dict[Text, List[Features]]
+def collect_features(sub_state: SubState, attributes: Optional[Iterable[Text]] = None) -> Dict[Text, List[Features]]
 ```
 
 Collects features for all attributes in the given substate.
@@ -172,7 +172,7 @@ collected and their features combined.
 #### lookup\_message
 
 ```python
- | lookup_message(user_text: Text) -> Message
+def lookup_message(user_text: Text) -> Message
 ```
 
 Returns a message that contains the given user text.
@@ -188,7 +188,7 @@ Returns a message that contains the given user text.
 #### derive\_messages\_from\_domain\_and\_add
 
 ```python
- | derive_messages_from_domain_and_add(domain: Domain) -> None
+def derive_messages_from_domain_and_add(domain: Domain) -> None
 ```
 
 Adds all lookup table entries that can be derived from the domain.
@@ -203,7 +203,7 @@ will be turned into a (separate) messages and added to this lookup table.
 #### derive\_messages\_from\_events\_and\_add
 
 ```python
- | derive_messages_from_events_and_add(events: Iterable[Event]) -> None
+def derive_messages_from_events_and_add(events: Iterable[Event]) -> None
 ```
 
 Adds all relevant messages that can be derived from the given events.
@@ -231,8 +231,8 @@ user message and each action name and action text appears exactly once.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CoreFeaturizationInputConverter
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CoreFeaturizationInputConverter
 ```
 
 Creates a new instance (see parent class for full docstring).
@@ -240,7 +240,7 @@ Creates a new instance (see parent class for full docstring).
 #### convert\_for\_training
 
 ```python
- | convert_for_training(domain: Domain, story_graph: StoryGraph) -> TrainingData
+def convert_for_training(domain: Domain, story_graph: StoryGraph) -> TrainingData
 ```
 
 Creates de-duplicated training data.
@@ -262,7 +262,7 @@ messsage.
 #### convert\_for\_inference
 
 ```python
- | convert_for_inference(tracker: DialogueStateTracker) -> List[Message]
+def convert_for_inference(tracker: DialogueStateTracker) -> List[Message]
 ```
 
 Creates a list of messages containing single user and action attributes.
@@ -291,8 +291,8 @@ Collects featurized messages for use by a policy.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CoreFeaturizationCollector
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CoreFeaturizationCollector
 ```
 
 Creates a new instance (see parent class for full docstring).
@@ -300,7 +300,7 @@ Creates a new instance (see parent class for full docstring).
 #### collect
 
 ```python
- | collect(messages: Union[TrainingData, List[Message]]) -> MessageContainerForCoreFeaturization
+def collect(messages: Union[TrainingData, List[Message]]) -> MessageContainerForCoreFeaturization
 ```
 
 Collects messages.

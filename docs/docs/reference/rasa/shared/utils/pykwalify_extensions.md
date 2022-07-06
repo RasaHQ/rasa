@@ -10,7 +10,7 @@ https://pykwalify.readthedocs.io/en/latest/extensions.html#extensions
 #### require\_response\_keys
 
 ```python
-require_response_keys(responses: List[Dict[Text, Any]], _: Dict, __: Text) -> Union[SchemaError, bool]
+def require_response_keys(responses: List[Dict[Text, Any]], _: Dict, __: Text) -> Union[SchemaError, bool]
 ```
 
 Validates that response dicts have either the &quot;text&quot; key or the &quot;custom&quot; key.

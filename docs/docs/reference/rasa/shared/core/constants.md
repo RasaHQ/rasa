@@ -13,7 +13,7 @@ Slot mapping types.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> str
+def __str__() -> str
 ```
 
 Returns the string representation that should be used in config files.
@@ -21,7 +21,7 @@ Returns the string representation that should be used in config files.
 #### is\_predefined\_type
 
 ```python
- | is_predefined_type() -> bool
+def is_predefined_type() -> bool
 ```
 
 Returns True iff the mapping type is predefined.

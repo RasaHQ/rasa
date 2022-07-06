@@ -13,7 +13,7 @@ Writes story training data to file.
 #### dumps
 
 ```python
- | dumps(story_steps: List["StoryStep"], is_appendable: bool = False, is_test_story: bool = False) -> Text
+def dumps(story_steps: List["StoryStep"], is_appendable: bool = False, is_test_story: bool = False) -> Text
 ```
 
 Turns Story steps into an string.
@@ -34,7 +34,7 @@ Turns Story steps into an string.
 #### dump
 
 ```python
- | dump(target: Union[Text, Path, yaml.StringIO], story_steps: List["StoryStep"], is_appendable: bool = False, is_test_story: bool = False) -> None
+def dump(target: Union[Text, Path, yaml.StringIO], story_steps: List["StoryStep"], is_appendable: bool = False, is_test_story: bool = False) -> None
 ```
 
 Writes Story steps into a target file/stream.

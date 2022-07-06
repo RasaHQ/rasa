@@ -5,7 +5,7 @@ title: rasa.cli.arguments.x
 #### set\_x\_arguments
 
 ```python
-set_x_arguments(parser: argparse.ArgumentParser) -> None
+def set_x_arguments(parser: argparse.ArgumentParser) -> None
 ```
 
 Add CLI arguments for running rasa x --production.

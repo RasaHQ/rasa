@@ -13,7 +13,7 @@ Reader for NLU training data.
 #### read
 
 ```python
- | read(filename: Union[Text, Path], **kwargs: Any) -> "TrainingData"
+def read(filename: Union[Text, Path], **kwargs: Any) -> "TrainingData"
 ```
 
 Loads training data stored in the Dialogflow data format.

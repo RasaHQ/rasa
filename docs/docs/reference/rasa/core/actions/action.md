@@ -5,7 +5,7 @@ title: rasa.core.actions.action
 #### default\_actions
 
 ```python
-default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]
+def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]
 ```
 
 List default actions.
@@ -13,7 +13,7 @@ List default actions.
 #### action\_for\_index
 
 ```python
-action_for_index(index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
+def action_for_index(index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
 ```
 
 Get an action based on its index in the list of available actions.
@@ -36,7 +36,7 @@ Get an action based on its index in the list of available actions.
 #### is\_retrieval\_action
 
 ```python
-is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool
+def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool
 ```
 
 Check if an action name is a retrieval action.
@@ -58,7 +58,7 @@ the corresponding retrieval intent name.
 #### action\_for\_name\_or\_text
 
 ```python
-action_for_name_or_text(action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
+def action_for_name_or_text(action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
 ```
 
 Retrieves an action by its name or by its text in case it&#x27;s an end-to-end action.
@@ -82,7 +82,7 @@ Retrieves an action by its name or by its text in case it&#x27;s an end-to-end a
 #### create\_bot\_utterance
 
 ```python
-create_bot_utterance(message: Dict[Text, Any]) -> BotUttered
+def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered
 ```
 
 Create BotUttered event from message.
@@ -98,7 +98,7 @@ Next action to be taken in response to a dialogue state.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Unique identifier of this simple action.
@@ -106,7 +106,7 @@ Unique identifier of this simple action.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Execute the side effects of this action.
@@ -129,7 +129,7 @@ Execute the side effects of this action.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of form.
@@ -137,7 +137,7 @@ Returns text representation of form.
 #### event\_for\_successful\_execution
 
 ```python
- | event_for_successful_execution(prediction: PolicyPrediction) -> ActionExecuted
+def event_for_successful_execution(prediction: PolicyPrediction) -> ActionExecuted
 ```
 
 Event which should be logged for the successful execution of this action.
@@ -162,7 +162,7 @@ An action which only effect is to utter a response when it is run.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Text, silent_fail: Optional[bool] = False) -> None
+def __init__(name: Text, silent_fail: Optional[bool] = False) -> None
 ```
 
 Creates action.
@@ -176,7 +176,7 @@ Creates action.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Simple run implementation uttering a (hopefully defined) response.
@@ -184,7 +184,7 @@ Simple run implementation uttering a (hopefully defined) response.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns action name.
@@ -200,7 +200,7 @@ Action to utter end-to-end responses to the user.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_text: Text) -> None
+def __init__(action_text: Text) -> None
 ```
 
 Creates action.
@@ -212,7 +212,7 @@ Creates action.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns action name.
@@ -220,7 +220,7 @@ Returns action name.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action (see parent class for full docstring).
@@ -228,7 +228,7 @@ Runs action (see parent class for full docstring).
 #### event\_for\_successful\_execution
 
 ```python
- | event_for_successful_execution(prediction: PolicyPrediction) -> ActionExecuted
+def event_for_successful_execution(prediction: PolicyPrediction) -> ActionExecuted
 ```
 
 Event which should be logged for the successful execution of this action.
@@ -253,7 +253,7 @@ An action which queries the Response Selector for the appropriate response.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Text, silent_fail: Optional[bool] = False) -> None
+def __init__(name: Text, silent_fail: Optional[bool] = False) -> None
 ```
 
 Creates action. See docstring of parent class.
@@ -261,8 +261,8 @@ Creates action. See docstring of parent class.
 #### intent\_name\_from\_action
 
 ```python
- | @staticmethod
- | intent_name_from_action(action_name: Text) -> Text
+@staticmethod
+def intent_name_from_action(action_name: Text) -> Text
 ```
 
 Resolve the name of the intent from the action name.
@@ -270,7 +270,7 @@ Resolve the name of the intent from the action name.
 #### get\_full\_retrieval\_name
 
 ```python
- | get_full_retrieval_name(tracker: "DialogueStateTracker") -> Optional[Text]
+def get_full_retrieval_name(tracker: "DialogueStateTracker") -> Optional[Text]
 ```
 
 Returns full retrieval name for the action.
@@ -291,7 +291,7 @@ returns complete action utterance name.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Query the appropriate response and create a bot utterance with that.
@@ -299,7 +299,7 @@ Query the appropriate response and create a bot utterance with that.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns action name.
@@ -315,7 +315,7 @@ Revert the tracker state by two user utterances.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns action back name.
@@ -323,7 +323,7 @@ Returns action back name.
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Initializes action back.
@@ -331,7 +331,7 @@ Initializes action back.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -350,7 +350,7 @@ something.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -368,7 +368,7 @@ Utters the restart response if available.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns action restart name.
@@ -376,7 +376,7 @@ Returns action restart name.
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Initializes action restart.
@@ -384,7 +384,7 @@ Initializes action restart.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -403,7 +403,7 @@ session.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns action start name.
@@ -411,7 +411,7 @@ Returns action start name.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -427,7 +427,7 @@ Executes the fallback action and goes back to the prev state of the dialogue.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns action default fallback name.
@@ -435,7 +435,7 @@ Returns action default fallback name.
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Initializes action default fallback.
@@ -443,7 +443,7 @@ Initializes action default fallback.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -459,7 +459,7 @@ Deactivates an active loop.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -473,8 +473,8 @@ class RemoteAction(Action)
 #### action\_response\_format\_spec
 
 ```python
- | @staticmethod
- | action_response_format_spec() -> Dict[Text, Any]
+@staticmethod
+def action_response_format_spec() -> Dict[Text, Any]
 ```
 
 Expected response schema for an Action endpoint.
@@ -485,7 +485,7 @@ Action endpoint.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -516,7 +516,7 @@ path. This is deprecated and can be removed once the
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -534,7 +534,7 @@ This action can be predicted by `UnexpecTEDIntentPolicy`.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns the name of the action.
@@ -542,7 +542,7 @@ Returns the name of the action.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -550,7 +550,7 @@ Runs action. Please see parent class for the full docstring.
 #### has\_user\_affirmed
 
 ```python
-has_user_affirmed(tracker: "DialogueStateTracker") -> bool
+def has_user_affirmed(tracker: "DialogueStateTracker") -> bool
 ```
 
 Indicates if the last executed action is `action_default_ask_affirmation`.
@@ -570,7 +570,7 @@ description of the intent instead of its identifier name.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -586,7 +586,7 @@ Default implementation which asks the user to rephrase his intent.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns action default ask rephrase name.
@@ -594,7 +594,7 @@ Returns action default ask rephrase name.
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Initializes action default ask rephrase.
@@ -616,7 +616,7 @@ according to assigned slot mappings.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_endpoint: Optional[EndpointConfig]) -> None
+def __init__(action_endpoint: Optional[EndpointConfig]) -> None
 ```
 
 Initializes default action extract slots.
@@ -624,7 +624,7 @@ Initializes default action extract slots.
 #### name
 
 ```python
- | name() -> Text
+def name() -> Text
 ```
 
 Returns action_extract_slots name.
@@ -632,7 +632,7 @@ Returns action_extract_slots name.
 #### run
 
 ```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -640,7 +640,7 @@ Runs action. Please see parent class for the full docstring.
 #### extract\_slot\_value\_from\_predefined\_mapping
 
 ```python
-extract_slot_value_from_predefined_mapping(mapping_type: SlotMappingType, mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> List[Any]
+def extract_slot_value_from_predefined_mapping(mapping_type: SlotMappingType, mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> List[Any]
 ```
 
 Extracts slot value if slot has an applicable predefined mapping.
