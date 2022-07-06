@@ -21,20 +21,10 @@ Raised if a slot&#x27;s config is invalid.
 ## Slot Objects
 
 ```python
-class Slot(ABC)
+class Slot()
 ```
 
 Key-value store for storing information during a conversation.
-
-#### type\_name
-
-```python
- | @property
- | @abstractmethod
- | type_name() -> Text
-```
-
-Name of the type of slot.
 
 #### \_\_init\_\_
 

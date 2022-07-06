@@ -53,7 +53,7 @@ Creates a feature array containing the entity tag ids of the given example.
 ```python
 convert_to_data_format(features: Union[
         List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
-    ], fake_features: Optional[Dict[Text, List["Features"]]] = None, consider_dialogue_dimension: bool = True, featurizers: Optional[List[Text]] = None) -> Tuple[Data, Dict[Text, List["Features"]]]
+    ], fake_features: Optional[Dict[Text, List["Features"]]] = None, consider_dialogue_dimension: bool = True, featurizers: Optional[List[Text]] = None) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]
 ```
 
 Converts the input into &quot;Data&quot; format.

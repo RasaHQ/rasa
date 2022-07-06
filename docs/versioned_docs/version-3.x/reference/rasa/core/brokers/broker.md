@@ -14,7 +14,7 @@ Base class for any event broker implementation.
 
 ```python
  | @staticmethod
- | async create(obj: Union[EventBroker, EndpointConfig, None], loop: Optional[AbstractEventLoop] = None) -> Optional[EventBroker]
+ | async create(obj: Union["EventBroker", EndpointConfig, None], loop: Optional[AbstractEventLoop] = None) -> Optional["EventBroker"]
 ```
 
 Factory to create an event broker.
@@ -23,7 +23,7 @@ Factory to create an event broker.
 
 ```python
  | @classmethod
- | async from_endpoint_config(cls: Type[EB], broker_config: EndpointConfig, event_loop: Optional[AbstractEventLoop] = None) -> Optional[EB]
+ | async from_endpoint_config(cls, broker_config: EndpointConfig, event_loop: Optional[AbstractEventLoop] = None) -> "EventBroker"
 ```
 
 Creates an `EventBroker` from the endpoint configuration.

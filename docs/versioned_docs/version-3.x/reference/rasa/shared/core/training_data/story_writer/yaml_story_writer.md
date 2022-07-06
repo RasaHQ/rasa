@@ -80,14 +80,6 @@ Converts a single story step into an ordered dict.
 
   Dict with a story step.
 
-#### process\_event
-
-```python
- | process_event(event: Union[Event, List[Event]]) -> Optional[OrderedDict]
-```
-
-Process an event or list of events.
-
 #### stories\_contain\_loops
 
 ```python

@@ -2,19 +2,10 @@
 sidebar_label: rasa.core.training.training
 title: rasa.core.training.training
 ---
-## ActionFingerprint Objects
-
-```python
-@dataclasses.dataclass
-class ActionFingerprint()
-```
-
-Dataclass to represent an action fingerprint.
-
 #### create\_action\_fingerprints
 
 ```python
-create_action_fingerprints(trackers: List["DialogueStateTracker"], domain: "Domain") -> Dict[Text, ActionFingerprint]
+create_action_fingerprints(trackers: List["DialogueStateTracker"], domain: "Domain") -> Dict[Text, Dict[Text, List[Text]]]
 ```
 
 Fingerprint each action using the events it created during train.

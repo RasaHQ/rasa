@@ -63,7 +63,7 @@ Turns TrainingData into a string.
 
 ```python
  | @staticmethod
- | prepare_training_examples(training_data: "TrainingData") -> Dict[Text, List[Union[Dict, Text]]]
+ | prepare_training_examples(training_data: "TrainingData") -> OrderedDict
 ```
 
 Pre-processes training data examples by removing not trainable entities.

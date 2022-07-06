@@ -491,7 +491,7 @@ response targets and predictions) as well as entity results
 #### run\_evaluation
 
 ```python
-async run_evaluation(data_path: Text, processor: MessageProcessor, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None, domain_path: Optional[Text] = None) -> Dict
+async run_evaluation(data_path: Text, processor: MessageProcessor, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Evaluate intent classification, response selection and entity extraction.
@@ -508,7 +508,6 @@ Evaluate intent classification, response selection and entity extraction.
   If `False` the report is returned in a human-readable text format. If `None`
   `report_as_dict` is considered as `True` in case an `output_directory` is
   given.
-- `domain_path` - Path to the domain file(s).
   
 - `Returns` - dictionary containing evaluation results
 
@@ -601,7 +600,7 @@ extraction.
 #### compare\_nlu
 
 ```python
-async compare_nlu(configs: List[Text], data: TrainingData, exclusion_percentages: List[int], f_score_results: Dict[Text, List[List[float]]], model_names: List[Text], output: Text, runs: int) -> List[int]
+async compare_nlu(configs: List[Text], data: TrainingData, exclusion_percentages: List[int], f_score_results: Dict[Text, Any], model_names: List[Text], output: Text, runs: int) -> List[int]
 ```
 
 Trains and compares multiple NLU models.

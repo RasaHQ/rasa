@@ -40,11 +40,3 @@ Create a Bot Framework input channel.
 
 Merge the values of `postdata[&#x27;attachments&#x27;]` with `metadata`.
 
-#### blueprint
-
-```python
- | blueprint(on_new_message: Callable[[UserMessage], Awaitable[Any]]) -> Blueprint
-```
-
-Defines the Sanic blueprint for the bot framework integration.
-

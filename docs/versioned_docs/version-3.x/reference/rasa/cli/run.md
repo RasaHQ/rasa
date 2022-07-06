@@ -18,7 +18,7 @@ Add all run parsers.
 #### run
 
 ```python
-run(args: argparse.Namespace) -> None
+run(args: argparse.Namespace) -> NoReturn
 ```
 
 Entrypoint for `rasa run`.

@@ -2,15 +2,6 @@
 sidebar_label: rasa.shared.core.trackers
 title: rasa.shared.core.trackers
 ---
-## TrackerActiveLoop Objects
-
-```python
-@dataclasses.dataclass
-class TrackerActiveLoop()
-```
-
-Dataclass for `DialogueStateTracker.active_loop`.
-
 ## EventVerbosity Objects
 
 ```python
@@ -45,7 +36,7 @@ it can be set in the tracker_store
 
 ```python
  | @classmethod
- | from_dict(cls, sender_id: Text, events_as_dict: List[Dict[Text, Any]], slots: Optional[Iterable[Slot]] = None, max_event_history: Optional[int] = None) -> "DialogueStateTracker"
+ | from_dict(cls, sender_id: Text, events_as_dict: List[Dict[Text, Any]], slots: Optional[List[Slot]] = None, max_event_history: Optional[int] = None) -> "DialogueStateTracker"
 ```
 
 Create a tracker from dump.
@@ -189,7 +180,7 @@ Resets loop validation and rejection parameters.
  | current_slot_values() -> Dict[Text, Any]
 ```
 
-Return the currently set values of the slots.
+Return the currently set values of the slots
 
 #### get\_slot
 
@@ -209,7 +200,7 @@ Get entity values found for the passed entity type and optional role and
 group in latest message.
 
 If you are only interested in the first entity of a given type use
-`next(tracker.get_latest_entity_values(`&quot;`my_entity_name`&quot;`), None)`.
+`next(tracker.get_latest_entity_values(&quot;my_entity_name&quot;), None)`.
 If no entity is found `None` is the default result.
 
 **Arguments**:
@@ -399,7 +390,7 @@ Dump the tracker as a story to a file.
 #### get\_last\_event\_for
 
 ```python
- | get_last_event_for(event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"], ...]], action_names_to_exclude: List[Text] = None, skip: int = 0, event_verbosity: EventVerbosity = EventVerbosity.APPLIED) -> Optional["EventTypeAlias"]
+ | get_last_event_for(event_type: Union[Type[Event], Tuple[Type, ...]], action_names_to_exclude: List[Text] = None, skip: int = 0, event_verbosity: EventVerbosity = EventVerbosity.APPLIED) -> Optional[Event]
 ```
 
 Gets the last event of a given type which was actually applied.
@@ -474,24 +465,6 @@ Get the name of the previously executed action or text of e2e action.
 
 Returns: name of the previously executed action or text of e2e action
 
-#### is\_active\_loop\_rejected
-
-```python
- | @property
- | is_active_loop_rejected() -> bool
-```
-
-Return True if there is an active loop and it&#x27;s rejected.
-
-#### is\_active\_loop\_interrupted
-
-```python
- | @property
- | is_active_loop_interrupted() -> bool
-```
-
-Return True if there is an active loop and it&#x27;s interrupted.
-
 #### fingerprint
 
 ```python
@@ -507,7 +480,7 @@ Returns a unique hash for the tracker which is stable across python runs.
 #### get\_active\_loop\_name
 
 ```python
-get_active_loop_name(state: State) -> Optional[Text]
+get_active_loop_name(state: State) -> Optional[Union[Text, Tuple[Union[float, Text]]]]
 ```
 
 Get the name of current active loop.

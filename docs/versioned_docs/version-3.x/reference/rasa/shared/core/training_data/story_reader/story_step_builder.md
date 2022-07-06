@@ -8,14 +8,6 @@ title: rasa.shared.core.training_data.story_reader.story_step_builder
 class StoryStepBuilder()
 ```
 
-#### add\_checkpoint
-
-```python
- | add_checkpoint(name: Text, conditions: Optional[Dict[Text, Any]]) -> None
-```
-
-Add a checkpoint to story steps.
-
 #### add\_user\_messages
 
 ```python
