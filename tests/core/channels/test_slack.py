@@ -1,3 +1,4 @@
+from http import HTTPStatus
 import json
 import logging
 import time
@@ -11,6 +12,7 @@ from sanic.compat import Header
 from sanic.request import Request
 
 from rasa.core.channels import SlackInput
+from rasa.core.channels.channel import UserMessage
 from rasa.shared.exceptions import InvalidConfigException
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -913,3 +915,64 @@ def test_slack_verify_signature_missing_headers():
     slack = SlackInput("mytoken", slack_signing_secret="foobar")
 
     assert slack.is_request_from_slack_authentic(request) is False
+
+
+async def fake_on_new_message(message: UserMessage):
+    pass
+
+
+@pytest.mark.asyncio
+async def test_slack_process_message_retry():
+    input_channel = SlackInput(
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
+    )
+
+    request = Mock()
+    request.headers = {
+        input_channel.retry_num_header: 1,
+        input_channel.retry_reason_header: input_channel.errors_ignore_retry[0],
+    }
+
+    response = await input_channel.process_message(
+        request=request,
+        on_new_message=fake_on_new_message,
+        text="",
+        sender_id=None,
+        metadata=None,
+    )
+
+    assert response.status == HTTPStatus.CREATED
+    assert response.headers == {"X-Slack-No-Retry": "1"}
+
+
+async def fake_on_new_message_sleep(message: UserMessage):
+    time.sleep(3)
+
+
+@pytest.mark.asyncio
+async def test_slack_process_message_timeout():
+    input_channel = SlackInput(
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
+    )
+
+    request = Mock()
+    request.headers = {}
+
+    start = time.time()
+    response = await input_channel.process_message(
+        request=request,
+        on_new_message=fake_on_new_message_sleep,
+        text="",
+        sender_id=None,
+        metadata=None,
+    )
+    end = time.time()
+
+    duration = end - start
+
+    assert duration < 3
+    assert response.status == HTTPStatus.OK
