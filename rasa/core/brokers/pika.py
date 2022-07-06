@@ -147,9 +147,6 @@ class PikaEventBroker(EventBroker):
     async def connect(self) -> None:
         """Connects to RabbitMQ."""
         self._connection = await self._connect()
-        if self._connection is None:
-            return None
-
         self._connection.reconnect_callbacks.add(self._publish_unpublished_messages)
         logger.info(f"RabbitMQ connection to '{self.host}' was established.")
 
