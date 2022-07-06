@@ -454,6 +454,7 @@ def test_slackbot_init_three_parameter():
 
 # Use monkeypatch for sending attachments, images and plain text.
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_attachment_only():
     from rasa.core.channels.slack import SlackBot
 
@@ -482,6 +483,7 @@ async def test_slackbot_send_attachment_only():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_attachment_only_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -511,6 +513,7 @@ async def test_slackbot_send_attachment_only_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_attachment_with_text():
     from rasa.core.channels.slack import SlackBot
 
@@ -540,6 +543,7 @@ async def test_slackbot_send_attachment_with_text():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_attachment_with_text_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -570,6 +574,7 @@ async def test_slackbot_send_attachment_with_text_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_image_url():
     from rasa.core.channels.slack import SlackBot
 
@@ -598,6 +603,7 @@ async def test_slackbot_send_image_url():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_image_url_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -627,6 +633,7 @@ async def test_slackbot_send_image_url_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_text():
     from rasa.core.channels.slack import SlackBot
 
@@ -654,6 +661,7 @@ async def test_slackbot_send_text():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_text_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -682,6 +690,7 @@ async def test_slackbot_send_text_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_text_with_buttons():
     from rasa.core.channels.slack import SlackBot
 
@@ -725,6 +734,7 @@ async def test_slackbot_send_text_with_buttons():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_text_with_buttons_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -769,6 +779,7 @@ async def test_slackbot_send_text_with_buttons_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_custom_json():
     from rasa.core.channels.slack import SlackBot
 
@@ -795,6 +806,7 @@ async def test_slackbot_send_custom_json():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 async def test_slackbot_send_custom_json_threaded():
     from rasa.core.channels.slack import SlackBot
 
