@@ -7,8 +7,8 @@ on:
 
 
 jobs:
-  tag_nightly_release:
-    name: Tag a new nightly release
+  run_script_and_tag_nightly_release:
+    name: Run release script and tag a new nightly release
     runs-on: ubuntu-latest
     outputs:
       tag_name: ${{ steps.set_tagname.outputs.tag }}
@@ -17,6 +17,10 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
+      - name: Run script
+        run: |
+          ./scripts/prepare_nightly_release.py
+
       - name: Compose tag name
         id: set_tagname
         run: |
@@ -24,15 +28,15 @@ jobs:
 
           # Find latest rasa-oss version
           echo "Trying to find the latest rasa-oss version..."
-          LATEST_RASA_VERSION=$(python -c "import sys; import os; sys.path.append('src/rasa/rasa'); from version import __version__; print(__version__)")
-          echo "Current RASA version: ${LATEST_RASA_VERSION}"
+          LATEST_RASA_MINOR=$(python -c "import sys; import os; sys.path.append('${{ github.workspace }}/rasa'); from rasa.version import __version__; print(__version__)")
+          echo "Current RASA version: ${LATEST_RASA_MINOR}"
 
-          LATEST_NIGHTLY_VERSION=$(echo ${LATEST_RASA_VERSION} | awk -F. '{$(NF-1) = $(NF-1) + 1;} {$(NF) = 0;} 1' | sed 's/ /./g')
+          LATEST_NIGHTLY_VERSION=$(echo ${LATEST_RASA_MINOR} | awk -F. '{$(NF-1) = $(NF-1) + 1;} {$(NF) = 0;} 1' | sed 's/ /./g')
 
           echo "New nightly release version: ${LATEST_NIGHTLY_VERSION}"
 
           echo "Composing nightly build tag name..."
-          GH_TAG=${LATEST_NIGHTLY_VERSION}-dev${DATE}
+          GH_TAG=${LATEST_NIGHTLY_VERSION}.dev${DATE}
           echo ${GH_TAG}
           echo "::set-output name=tag::${GH_TAG}"
 
@@ -46,6 +50,7 @@ jobs:
               repo: context.repo.repo,
               ref: "refs/tags/${{ steps.set_tagname.outputs.tag }}",
               sha: context.sha
+              description: "development build for internal use"
             })
 
 
@@ -54,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # deploy will only be run when there is a tag available
-    needs: tag_nightly_release  # only run after all other stages succeeded
+    needs: run_script_and_tag_nightly_release  # only run after all other stages succeeded
 
     steps:
       - name: Checkout git repository 🕝

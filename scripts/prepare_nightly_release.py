@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Text
 from pep440_version_utils import Version, is_valid_version
 
-VERSION_FILE_PATH = "src/rasa/rasa/version.py"
+VERSION_FILE_PATH = "${{ github.workspace }}/rasa/version.py"
 
-PYPROJECT_FILE_PATH = "src/rasa/pyproject.toml"
+PYPROJECT_FILE_PATH = "${{ github.workspace }}/pyproject.toml"
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -96,8 +96,6 @@ def parse_next_version(version: Text) -> Version:
         return Version(get_current_version()).next_release_candidate()
     elif is_valid_version(version):
         return Version(version)
-    else:
-        raise Exception(f"Invalid version number '{cmdline_args.next_version}'.")
 
 
 def next_version(args: argparse.Namespace) -> Version:
