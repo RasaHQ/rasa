@@ -11,6 +11,7 @@ from rasa.shared.core.constants import SlotMappingType, SLOT_MAPPINGS, MAPPING_T
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
+    ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
@@ -566,9 +567,10 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         """Activate form if the form is called for the first time.
 
-        If activating, validate any required slots that were filled before
-        form activation and return `Form` event with the name of the form, as well
-        as any `SlotSet` events from validation of pre-filled slots.
+        If activating, run action_extract_slots to fill slots with
+        mapping conditions from trigger intents.
+        Validate any required slots that can be filled, and return any `SlotSet`
+        events from the extraction and validation of these pre-filled slots.
 
         Args:
             output_channel: The output channel which can be used to send messages
@@ -584,6 +586,26 @@ class FormAction(LoopAction):
         # collect values of required slots filled before activation
         prefilled_slots = {}
 
+        action_extract_slots = action.action_for_name_or_text(
+            ACTION_EXTRACT_SLOTS, domain, self.action_endpoint
+        )
+
+        logger.debug(
+            f"Executing default action '{ACTION_EXTRACT_SLOTS}' at form activation."
+        )
+
+        extraction_events = await action_extract_slots.run(
+            output_channel, nlg, tracker, domain
+        )
+
+        events_as_str = "\n".join(str(e) for e in extraction_events)
+        logger.debug(
+            f"The execution of '{ACTION_EXTRACT_SLOTS}' resulted in "
+            f"these events: {events_as_str}."
+        )
+
+        tracker.update_with_events(extraction_events, domain)
+
         for slot_name in self.required_slots(domain):
             if not self._should_request_slot(tracker, slot_name):
                 prefilled_slots[slot_name] = tracker.get_slot(slot_name)
@@ -593,9 +615,20 @@ class FormAction(LoopAction):
             return []
 
         logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
-        return await self.validate_slots(
+
+        validated_events = await self.validate_slots(
             prefilled_slots, tracker, domain, output_channel, nlg
         )
+
+        validated_slot_names = [
+            event.key for event in validated_events if isinstance(event, SlotSet)
+        ]
+
+        return validated_events + [
+            event
+            for event in extraction_events
+            if isinstance(event, SlotSet) and event.key not in validated_slot_names
+        ]
 
     async def do(
         self,
@@ -605,6 +638,7 @@ class FormAction(LoopAction):
         domain: "Domain",
         events_so_far: List[Event],
     ) -> List[Event]:
+        """Executes form loop after activation."""
         events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
         if not self._user_rejected_manually(events):
@@ -656,3 +690,18 @@ class FormAction(LoopAction):
         """Deactivates form."""
         logger.debug(f"Deactivating the form '{self.name()}'")
         return []
+
+    async def _activate_loop(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        events = self._default_activation_events()
+
+        temp_tracker = tracker.copy()
+        temp_tracker.update_with_events(events, domain)
+        events += await self.activate(output_channel, nlg, temp_tracker, domain)
+
+        return events

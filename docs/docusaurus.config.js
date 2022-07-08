@@ -11,7 +11,7 @@ const isPreview = process.env.NETLIFY && process.env.CONTEXT === 'deploy-preview
 
 const BASE_URL = '/docs/rasa/';
 const SITE_URL = 'https://rasa.com';
-// NOTE: this allows switching between local dev instances of rasa/rasa-x
+// NOTE: this allows switching between local dev instances of rasa/rasa-enterprise
 const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
 let existingVersions = [];
@@ -86,9 +86,9 @@ module.exports = {
         },
         {
           target: '_self',
-          label: 'Rasa X',
+          label: 'Rasa Enterprise',
           position: 'left',
-          href: `${SWAP_URL}/docs/rasa-x/`,
+          href: `${SWAP_URL}/docs/rasa-enterprise/`,
         },
         {
           target: '_self',
