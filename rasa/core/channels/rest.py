@@ -58,6 +58,21 @@ class RestInput(InputChannel):
     def _extract_input_channel(self, req: Request) -> Text:
         return req.json.get("input_channel") or self.name()
 
+    def get_metadata(self, request: Request) -> Optional[Dict[Text, Any]]:
+        """Extracts additional information from the incoming request.
+
+         Implementing this function is not required. However, it can be used to extract
+         metadata from the request. The return value is passed on to the
+         ``UserMessage`` object and stored in the conversation tracker.
+
+        Args:
+            request: incoming request with the message of the user
+
+        Returns:
+            Metadata which was extracted from the request.
+        """
+        return request.json.get("metadata", None)
+
     def stream_response(
         self,
         on_new_message: Callable[[UserMessage], Awaitable[None]],
