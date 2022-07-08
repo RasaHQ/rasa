@@ -116,7 +116,7 @@ socketio:
 The first two configuration values define the event names used by Rasa Open Source
 when sending or receiving messages over socket.io.
 
-Metadata can be added to the message by adding an object named `metadata` to the message. The `metadata_key` setting can be used to supply metadata on another object name. The default value for `metadata_key` is `metadata`. For example:
+The socket client can pass an object named metadata to supply metadata to the channel. You can configure an alternative key using the metadata_key setting. For example, if you're client wants to pass metadata on a key named customData, the setting would be:
 
 ```yaml-rasa
 socketio:
