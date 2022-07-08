@@ -9,7 +9,6 @@ PERCENTAGE_KEY = "__percentage__"
 
 PACKAGE_NAME = "rasa"
 
-DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
 
 # Key in global config file which contains whether the user agreed to telemetry
@@ -23,7 +22,6 @@ MINIMUM_COMPATIBLE_VERSION = "3.0.0"
 
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
 
-DEFAULT_LOG_LEVEL_RASA_X = "WARNING"
 DEFAULT_LOG_LEVEL_LIBRARIES = "ERROR"
 ENV_LOG_LEVEL_LIBRARIES = "LOG_LEVEL_LIBRARIES"
 ENV_LOG_LEVEL_MATPLOTLIB = "LOG_LEVEL_MATPLOTLIB"
