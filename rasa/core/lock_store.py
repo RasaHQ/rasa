@@ -1,11 +1,12 @@
 from __future__ import annotations
 import asyncio
+from collections import deque
 from contextlib import asynccontextmanager
 import json
 import logging
 import os
 
-from typing import AsyncGenerator, Dict, Optional, Text, Union
+from typing import AsyncGenerator, Deque, Dict, Optional, Text, Union
 
 from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.exceptions import RasaException, ConnectionException
@@ -168,7 +169,7 @@ class LockStore:
         return self.create_lock(conversation_id)
 
     def is_someone_waiting(self, conversation_id: Text) -> bool:
-        """Check if someone is waiting for lock associated with `conversation_id`."""
+        """Return if someone is waiting for lock associated with `conversation_id`."""
         lock = self.get_lock(conversation_id)
         if lock:
             return lock.is_someone_waiting()
@@ -413,53 +414,77 @@ class ConcurrentRedisLockStore(LockStore):
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         """Retrieves lock (see parent docstring for more information)."""
-        serialised_lock = self.red.get(self.key_prefix + conversation_id)
-        if serialised_lock:
-            return TicketLock.from_dict(json.loads(serialised_lock))
+        tickets: Deque[Ticket] = deque()
 
-        return None
+        pattern = self.key_prefix + conversation_id + ":" + "[0-9]*"
+        redis_keys = self.red.keys(pattern)
+
+        for key in redis_keys:
+            serialised_ticket = self.red.get(key)
+            ticket = Ticket.from_dict(json.loads(serialised_ticket))
+            # redis returns tickets in order of recency,
+            # therefore we need to append to the left of the deque
+            tickets.appendleft(ticket)
+
+        if not tickets:
+            return TicketLock(conversation_id)
+
+        return TicketLock(conversation_id, tickets)
 
     def delete_lock(self, conversation_id: Text) -> None:
         """Deletes lock for conversation ID."""
-        deletion_successful = self.red.delete(self.key_prefix + conversation_id)
-        self._log_deletion(conversation_id, deletion_successful)
+        pattern = self.key_prefix + conversation_id + ":"
+        redis_keys = self.red.keys(pattern)
+
+        if not redis_keys:
+            return None
+
+        deletion_successful = self.red.delete(*redis_keys)
+        if deletion_successful == 0:
+            self._log_deletion(conversation_id, False)
+        else:
+            self._log_deletion(conversation_id, True)
 
     def save_lock(self, lock: TicketLock) -> None:
-        """Commit individual tickets, last issued ticket number and lock to storage."""
-        for ticket in lock.tickets:
-            serialised_ticket = ticket.dumps()
-            key = self.key_prefix + lock.conversation_id + ":" + str(ticket.number)
-            self.red.set(name=key, value=serialised_ticket)
+        """Commit individual tickets and last issued ticket number to storage."""
+        last_issued_ticket = lock.tickets[-1]
+        serialised_ticket = last_issued_ticket.dumps()
+        key = (
+            self.key_prefix
+            + lock.conversation_id
+            + ":"
+            + str(last_issued_ticket.number)
+        )
+        self.red.set(
+            name=key, value=serialised_ticket, ex=int(last_issued_ticket.expires)
+        )
 
-        last_issued_ticket_number = lock.last_issued
+        # set expiry on the last_issued_ticket_number key too
         last_issued_key = (
             self.key_prefix + lock.conversation_id + ":" + "last_issued_ticket_number"
         )
-        self.red.set(name=last_issued_key, value=last_issued_ticket_number)
-
-        self.red.set(self.key_prefix + lock.conversation_id, lock.dumps())
+        self.red.expireat(name=last_issued_key, when=int(last_issued_ticket.expires))
 
     def increment_ticket_number(self, lock: TicketLock) -> int:
         """Uses Redis atomic transaction to increment ticket number."""
         last_issued_key = (
             self.key_prefix + lock.conversation_id + ":" + "last_issued_ticket_number"
         )
+
+        # if last_issued_ticket_number value is not set or has expired
+        # we need to (re)set the key and then increment it
+
         last_issued_ticket_number = self.red.get(last_issued_key)
 
-        lock_last_issued = lock.last_issued
-
         if last_issued_ticket_number is None:
-            return lock_last_issued + 1
-
-        if lock_last_issued != last_issued_ticket_number:
-            serialised_ticket = self.red.get(
-                self.key_prefix + lock.conversation_id + ":" + str(lock_last_issued)
-            )
-
-            if serialised_ticket is None:
-                return lock_last_issued + 1
-
-            ticket = Ticket.from_dict(data=json.loads(serialised_ticket))
-            self.red.set(name=last_issued_key, value=ticket.number)
+            self.red.set(name=last_issued_key, value=lock.last_issued)
 
         return self.red.incr(name=last_issued_key)
+
+    def finish_serving(self, conversation_id: Text, ticket_number: int) -> None:
+        """Finish serving ticket with `ticket_number` for `conversation_id`.
+
+        Removes ticket from storage.
+        """
+        ticket_key = self.key_prefix + conversation_id + ":" + str(ticket_number)
+        self.red.delete(ticket_key)
