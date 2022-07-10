@@ -118,9 +118,9 @@ async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
         OSError,
         aiormq.exceptions.AMQPError,
         pamqp.exceptions.PAMQPException,
-        pamqp.specification.AMQPConnectionForced,
-        pamqp.specification.AMQPNotFound,
-        pamqp.specification.AMQPInternalError,
+        pamqp.exceptions.AMQPConnectionForced,
+        pamqp.exceptions.AMQPNotFound,
+        pamqp.exceptions.AMQPInternalError,
     ),
 )
 async def test_aio_pika_exceptions_caught(
