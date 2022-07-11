@@ -27,6 +27,7 @@ from rasa.core.lock_store import (
     RedisLockStore,
     DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
     ConcurrentRedisLockStore,
+    DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX,
 )
 from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig
@@ -406,7 +407,7 @@ def test_create_concurrent_redis_lock_store(tmp_path: Path):
         version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
         lock_store:
            type: redis
-           concurrent: true
+           concurrent_mode: true
            url: localhost
            port: 6379
         """
@@ -417,3 +418,61 @@ def test_create_concurrent_redis_lock_store(tmp_path: Path):
     lock_store = LockStore.create(endpoint_config)
 
     assert isinstance(lock_store, ConcurrentRedisLockStore)
+
+
+def test_create_concurrent_redis_lock_store_valid_custom_key_prefix(
+    tmp_path: Path, caplog: LogCaptureFixture
+):
+    endpoints_file = tmp_path / "endpoints.yml"
+    custom_prefix = "testPrefix"
+    endpoints_file.write_text(
+        f"""
+        version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
+        lock_store:
+            type: redis
+            concurrent_mode: true
+            url: localhost
+            port: 6379
+            key_prefix: {custom_prefix}
+        """
+    )
+    endpoint_config = rasa.utils.endpoints.read_endpoint_config(
+        str(endpoints_file), "lock_store"
+    )
+    with caplog.at_level(logging.DEBUG):
+        lock_store = LockStore.create(endpoint_config)
+
+    assert f"Setting non-default redis key prefix: '{custom_prefix}'." in caplog.text
+    assert (
+        lock_store.key_prefix
+        == custom_prefix + ":" + DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
+    )
+
+
+def test_create_concurrent_redis_lock_store_invalid_custom_key_preifx(
+    tmp_path: Path, caplog: LogCaptureFixture
+):
+    endpoints_file = tmp_path / "endpoints.yml"
+    invalid_prefix = "test_prefix"
+    endpoints_file.write_text(
+        f"""
+        version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
+        lock_store:
+            type: redis
+            concurrent_mode: true
+            url: localhost
+            port: 6379
+            key_prefix: {invalid_prefix}
+        """
+    )
+    endpoint_config = rasa.utils.endpoints.read_endpoint_config(
+        str(endpoints_file), "lock_store"
+    )
+    with caplog.at_level(logging.WARNING):
+        lock_store = LockStore.create(endpoint_config)
+
+    assert (
+        f"Omitting provided non-alphanumeric redis key prefix: '{invalid_prefix}'."
+        in caplog.text
+    )
+    assert lock_store.key_prefix == DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX

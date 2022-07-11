@@ -18,7 +18,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
-CONCURRENT_KEY = "concurrent"
+CONCURRENT_KEY = "concurrent_mode"
 
 
 def _get_lock_lifetime() -> int:
@@ -422,18 +422,15 @@ class ConcurrentRedisLockStore(LockStore):
         for key in redis_keys:
             serialised_ticket = self.red.get(key)
             ticket = Ticket.from_dict(json.loads(serialised_ticket))
-            # redis returns tickets in order of recency,
-            # therefore we need to append to the left of the deque
             tickets.appendleft(ticket)
 
-        if not tickets:
-            return TicketLock(conversation_id)
+        tickets = deque(sorted(tickets, key=lambda x: x.number))
 
         return TicketLock(conversation_id, tickets)
 
     def delete_lock(self, conversation_id: Text) -> None:
         """Deletes lock for conversation ID."""
-        pattern = self.key_prefix + conversation_id + ":"
+        pattern = self.key_prefix + conversation_id + ":*"
         redis_keys = self.red.keys(pattern)
 
         if not redis_keys:
@@ -488,3 +485,13 @@ class ConcurrentRedisLockStore(LockStore):
         """
         ticket_key = self.key_prefix + conversation_id + ":" + str(ticket_number)
         self.red.delete(ticket_key)
+
+        # unset last_issued_key if value matches the
+        # ticket_number that finished serving
+        last_issued_key = (
+            self.key_prefix + conversation_id + ":" + "last_issued_ticket_number"
+        )
+
+        last_issued_ticket_number = self.red.get(last_issued_key)
+        if int(last_issued_ticket_number) == ticket_number:
+            self.red.delete(last_issued_key)

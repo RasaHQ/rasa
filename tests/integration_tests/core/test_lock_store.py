@@ -1,10 +1,13 @@
 import asyncio
+import logging
 import multiprocessing
 import time
+from collections import deque
 from pathlib import Path
 
 import numpy as np
 import pytest
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.agent import Agent
@@ -317,3 +320,105 @@ def test_concurrent_lock_expiration(
     # newly assigned ticket should get number 1 again
     ticket_number = concurrent_redis_lock_store.issue_ticket(conversation_id, 10)
     assert ticket_number == 1
+
+
+def test_concurrent_get_lock(concurrent_redis_lock_store: ConcurrentRedisLockStore):
+    conversation_id = "my id 3"
+
+    lock = concurrent_redis_lock_store.get_lock(conversation_id)
+    assert lock.tickets == deque()
+
+    # issue several tickets
+    for _ in range(5):
+        concurrent_redis_lock_store.issue_ticket(conversation_id, 20)
+
+    lock = concurrent_redis_lock_store.get_lock(conversation_id)
+
+    assert len(lock.tickets) == 5
+
+    for i in range(5):
+        assert lock.tickets[i].number == i
+
+
+def test_concurrent_delete_lock_success(
+    concurrent_redis_lock_store: ConcurrentRedisLockStore,
+    caplog: LogCaptureFixture,
+):
+    conversation_id = "my id 4"
+
+    # issue several tickets
+    for _ in range(4):
+        concurrent_redis_lock_store.issue_ticket(conversation_id, 20)
+
+    with caplog.at_level(logging.DEBUG):
+        concurrent_redis_lock_store.delete_lock(conversation_id)
+
+    assert f"Deleted lock for conversation '{conversation_id}'." in caplog.text
+
+    lock = concurrent_redis_lock_store.get_lock(conversation_id)
+    assert len(lock.tickets) == 0
+
+
+def test_concurrent_increment_ticket_number_and_save_lock(
+    concurrent_redis_lock_store: ConcurrentRedisLockStore,
+):
+    conversation_id = "my id 5"
+    lock = concurrent_redis_lock_store.get_lock(conversation_id)
+    assert len(lock.tickets) == 0
+
+    # issue several tickets
+    for _ in range(3):
+        ticket_number = concurrent_redis_lock_store.increment_ticket_number(lock)
+        lock.issue_ticket(lifetime=100, ticket_number=ticket_number)
+        concurrent_redis_lock_store.save_lock(lock)
+
+    last_issued_key = (
+        concurrent_redis_lock_store.key_prefix
+        + conversation_id
+        + ":"
+        + "last_issued_ticket_number"
+    )
+    assert int(concurrent_redis_lock_store.red.get(last_issued_key)) == 2
+
+    retrieved_lock = concurrent_redis_lock_store.get_lock(conversation_id)
+    for j in range(3):
+        assert retrieved_lock.tickets[j].number == j
+        assert retrieved_lock.tickets[j].expires
+
+
+def test_concurrent_finish_serving(
+    concurrent_redis_lock_store: ConcurrentRedisLockStore,
+):
+    conversation_id = "my id 6"
+
+    # issue several tickets
+    for _ in range(5):
+        concurrent_redis_lock_store.issue_ticket(conversation_id)
+
+    expected_last_issued = 4
+
+    last_issued_key = (
+        concurrent_redis_lock_store.key_prefix
+        + conversation_id
+        + ":"
+        + "last_issued_ticket_number"
+    )
+    assert (
+        int(concurrent_redis_lock_store.red.get(last_issued_key))
+        == expected_last_issued
+    )
+
+    # finish serving last ticket
+    concurrent_redis_lock_store.finish_serving(
+        conversation_id, ticket_number=expected_last_issued
+    )
+
+    lock = concurrent_redis_lock_store.get_lock(conversation_id)
+    assert lock.last_issued == 3
+
+    # issue a new ticket
+    concurrent_redis_lock_store.issue_ticket(conversation_id)
+    assert (
+        int(concurrent_redis_lock_store.red.get(last_issued_key))
+        == expected_last_issued
+    )
