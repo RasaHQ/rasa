@@ -161,7 +161,7 @@ psutil = "^5.8.0"
 mypy-extensions = "^0.4.3"
 sanic-testing = "^0.8.0"
 analytics-python = "^1.4.0"
-datadog-api-client = "^1.7.0"
+datadog-api-client = "^2.0.0"
 datadog = "^0.43.0"
 types-redis = "^4.1.16"
 
