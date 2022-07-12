@@ -13,7 +13,12 @@ from _pytest.monkeypatch import MonkeyPatch
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.lock_store import ConcurrentRedisLockStore, LockError, RedisLockStore
+from rasa.core.lock_store import (
+    ConcurrentRedisLockStore,
+    LockError,
+    RedisLockStore,
+    LAST_ISSUED_TICKET_NUMBER_SUFFIX,
+)
 
 
 def test_create_lock_store(redis_lock_store: RedisLockStore):
@@ -359,6 +364,21 @@ def test_concurrent_delete_lock_success(
     assert len(lock.tickets) == 0
 
 
+def test_concurrent_delete_lock_no_keys(
+    concurrent_redis_lock_store: ConcurrentRedisLockStore,
+    caplog: LogCaptureFixture,
+):
+    conversation_id = "some id"
+
+    with caplog.at_level(logging.DEBUG):
+        concurrent_redis_lock_store.delete_lock(conversation_id)
+
+    assert (
+        f"The lock store does not contain any key-value items "
+        f"for conversation '{conversation_id}'." in caplog.text
+    )
+
+
 def test_concurrent_increment_ticket_number_and_save_lock(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
 ):
@@ -376,7 +396,7 @@ def test_concurrent_increment_ticket_number_and_save_lock(
         concurrent_redis_lock_store.key_prefix
         + conversation_id
         + ":"
-        + "last_issued_ticket_number"
+        + LAST_ISSUED_TICKET_NUMBER_SUFFIX
     )
     assert int(concurrent_redis_lock_store.red.get(last_issued_key)) == 2
 
@@ -401,7 +421,7 @@ def test_concurrent_finish_serving(
         concurrent_redis_lock_store.key_prefix
         + conversation_id
         + ":"
-        + "last_issued_ticket_number"
+        + LAST_ISSUED_TICKET_NUMBER_SUFFIX
     )
     assert (
         int(concurrent_redis_lock_store.red.get(last_issued_key))

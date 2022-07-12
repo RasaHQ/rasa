@@ -19,6 +19,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 CONCURRENT_KEY = "concurrent_mode"
+LAST_ISSUED_TICKET_NUMBER_SUFFIX = "last_issued_ticket_number"
 
 
 def _get_lock_lifetime() -> int:
@@ -434,6 +435,10 @@ class ConcurrentRedisLockStore(LockStore):
         redis_keys = self.red.keys(pattern)
 
         if not redis_keys:
+            logger.debug(
+                f"The lock store does not contain any key-value "
+                f"items for conversation '{conversation_id}'."
+            )
             return None
 
         deletion_successful = self.red.delete(*redis_keys)
@@ -458,14 +463,20 @@ class ConcurrentRedisLockStore(LockStore):
 
         # set expiry on the last_issued_ticket_number key too
         last_issued_key = (
-            self.key_prefix + lock.conversation_id + ":" + "last_issued_ticket_number"
+            self.key_prefix
+            + lock.conversation_id
+            + ":"
+            + LAST_ISSUED_TICKET_NUMBER_SUFFIX
         )
         self.red.expireat(name=last_issued_key, when=int(last_issued_ticket.expires))
 
     def increment_ticket_number(self, lock: TicketLock) -> int:
         """Uses Redis atomic transaction to increment ticket number."""
         last_issued_key = (
-            self.key_prefix + lock.conversation_id + ":" + "last_issued_ticket_number"
+            self.key_prefix
+            + lock.conversation_id
+            + ":"
+            + LAST_ISSUED_TICKET_NUMBER_SUFFIX
         )
 
         # if last_issued_ticket_number value is not set or has expired
@@ -489,7 +500,7 @@ class ConcurrentRedisLockStore(LockStore):
         # unset last_issued_key if value matches the
         # ticket_number that finished serving
         last_issued_key = (
-            self.key_prefix + conversation_id + ":" + "last_issued_ticket_number"
+            self.key_prefix + conversation_id + ":" + LAST_ISSUED_TICKET_NUMBER_SUFFIX
         )
 
         last_issued_ticket_number = self.red.get(last_issued_key)
