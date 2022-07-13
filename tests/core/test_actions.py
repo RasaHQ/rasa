@@ -2,6 +2,7 @@ import logging
 import textwrap
 from datetime import datetime
 from typing import List, Text, Any, Dict, Optional
+from unittest.mock import Mock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -159,7 +160,6 @@ async def test_remote_action_runs(
     default_tracker: DialogueStateTracker,
     domain: Domain,
 ):
-
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
@@ -467,7 +467,6 @@ async def test_remote_action_invalid_entities_payload(
     domain: Domain,
     event: Event,
 ):
-
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
     response = {"events": [event], "responses": []}
@@ -1216,7 +1215,7 @@ async def test_action_extract_slots_predefined_mappings(
         tracker,
         domain,
     )
-    assert not new_events
+    assert new_events == [SlotSet(slot_name, slot_value)]
 
     new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
     tracker.update_with_events(new_events, domain)
@@ -2665,3 +2664,51 @@ async def test_action_extract_slots_non_required_form_slot_with_from_entity_mapp
         domain,
     )
     assert events == [SlotSet("form1_info1", "info1"), SlotSet("form1_slot1", "Filled")]
+
+
+async def test_action_extract_slots_returns_slot_set_even_if_slot_value_is_unchanged():
+    event_with_slot_entity = UserUttered(
+        text="I am a text",
+        intent={"name": "intent_with_entity"},
+        entities=[{"entity": "entity", "value": "value"}],
+    )
+
+    domain = textwrap.dedent(
+        """
+          intents:
+            - intent_with_entity
+          entities:
+            - entity
+          slots:
+            entity:
+              type: text
+              mappings:
+              - type: from_entity
+                entity: entity
+        """
+    )
+
+    domain = Domain.from_yaml(domain)
+
+    tracker = DialogueStateTracker.from_events(
+        "some-sender",
+        evts=[
+            event_with_slot_entity,
+        ],
+    )
+
+    tracker._set_slot("entity", "value")
+
+    action = ActionExtractSlots(None)
+
+    events = await action.run(
+        output_channel=CollectingOutputChannel(),
+        nlg=Mock(),
+        tracker=tracker,
+        domain=domain,
+    )
+
+    assert len(events) == 1
+    assert type(events[0]) == SlotSet
+    assert events[0].key == "entity"
+    assert events[0].value == "value"
