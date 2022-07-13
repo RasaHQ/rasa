@@ -1,7 +1,6 @@
 import textwrap
-from typing import Dict, Text, List, Any, Union, Optional
+from typing import Dict, Text, List, Any, Union
 from unittest.mock import Mock
-from xml import dom
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -73,17 +72,20 @@ async def test_activate(monkeypatch: MonkeyPatch):
 
     async def mocked_action_response(*args, **kwargs):
         return {
-                "events": [
-                    {
-                        "event": "slot",
-                        "timestamp": None,
-                        "name": slot_set_by_remote_custom_extraction_method,
-                        "value": slot_value_set_by_remote_custom_extraction_method
-                    }
-                ],
-                "responses": []
-            }
-    monkeypatch.setattr("rasa.utils.endpoints.EndpointConfig.request", mocked_action_response)
+            "events": [
+                {
+                    "event": "slot",
+                    "timestamp": None,
+                    "name": slot_set_by_remote_custom_extraction_method,
+                    "value": slot_value_set_by_remote_custom_extraction_method,
+                }
+            ],
+            "responses": [],
+        }
+
+    monkeypatch.setattr(
+        "rasa.utils.endpoints.EndpointConfig.request", mocked_action_response
+    )
 
     events = await action.run(
         CollectingOutputChannel(),
@@ -93,8 +95,11 @@ async def test_activate(monkeypatch: MonkeyPatch):
     )
     assert events[:-1] == [
         ActiveLoop(form_name),
-        SlotSet(slot_set_by_remote_custom_extraction_method, slot_value_set_by_remote_custom_extraction_method),
-        SlotSet(REQUESTED_SLOT, domain_required_slot_name)
+        SlotSet(
+            slot_set_by_remote_custom_extraction_method,
+            slot_value_set_by_remote_custom_extraction_method,
+        ),
+        SlotSet(REQUESTED_SLOT, domain_required_slot_name),
     ]
     assert isinstance(events[-1], BotUttered)
 
