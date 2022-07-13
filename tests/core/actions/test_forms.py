@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
+from questionary import form
 
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
@@ -34,10 +35,10 @@ from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
-ACTION_SERVER_URL = "http:/my-action-server:5055/webhook"
+ACTION_SERVER_URL = "http://my-action-server:5055/webhook"
 
 
-async def test_activate(monkeypatch: MonkeyPatch):
+async def test_activate():
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
     form_name = "my_form"
     action_server = EndpointConfig(ACTION_SERVER_URL)
@@ -70,29 +71,25 @@ async def test_activate(monkeypatch: MonkeyPatch):
     )
     domain = Domain.from_yaml(domain)
 
-    async def mocked_action_response(*args, **kwargs):
-        return {
-            "events": [
-                {
-                    "event": "slot",
-                    "timestamp": None,
-                    "name": slot_set_by_remote_custom_extraction_method,
-                    "value": slot_value_set_by_remote_custom_extraction_method,
-                }
-            ],
-            "responses": [],
+    form_validation_events = [
+        {
+            "event": "slot",
+            "timestamp": None,
+            "name": slot_set_by_remote_custom_extraction_method,
+            "value": slot_value_set_by_remote_custom_extraction_method,
         }
-
-    monkeypatch.setattr(
-        "rasa.utils.endpoints.EndpointConfig.request", mocked_action_response
-    )
-
-    events = await action.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
+    ]
+    with aioresponses() as mocked:
+        mocked.post(
+            ACTION_SERVER_URL,
+            payload={"events": form_validation_events},
+        )
+        events = await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
     assert events[:-1] == [
         ActiveLoop(form_name),
         SlotSet(
@@ -789,6 +786,10 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
 
         form_action = FormAction(form_name, action_server)
 
+        mocked.post(
+            ACTION_SERVER_URL,
+            payload={"events": []},
+        )
         events = await form_action.run(
             CollectingOutputChannel(),
             TemplatedNaturalLanguageGenerator(domain.responses),
