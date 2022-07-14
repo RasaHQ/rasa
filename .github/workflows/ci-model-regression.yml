@@ -220,7 +220,7 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@37a9333538a8350a13fe9d8fa03e0d4742a1ad2e
+      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -364,7 +364,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+        uses: actions/setup-python@d09bd5e6005b175076f227b13d9730d56e9dcfcb
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.9
@@ -472,7 +472,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
@@ -609,7 +609,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+        uses: actions/setup-python@d09bd5e6005b175076f227b13d9730d56e9dcfcb
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.9
@@ -717,7 +717,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
@@ -757,7 +757,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+        uses: actions/setup-python@d09bd5e6005b175076f227b13d9730d56e9dcfcb
         with:
           python-version: 3.9
 
@@ -780,7 +780,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the overall report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: report.json
           path: ./report.json
@@ -903,7 +903,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@37a9333538a8350a13fe9d8fa03e0d4742a1ad2e
+      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
