@@ -464,15 +464,6 @@ class ConcurrentRedisLockStore(LockStore):
             name=key, value=serialised_ticket, ex=int(last_issued_ticket.expires)
         )
 
-        # set expiry on the last_issued_ticket_number key too
-        last_issued_key = (
-            self.key_prefix
-            + lock.conversation_id
-            + ":"
-            + LAST_ISSUED_TICKET_NUMBER_SUFFIX
-        )
-        self.red.expireat(name=last_issued_key, when=int(last_issued_ticket.expires))
-
     def increment_ticket_number(self, lock: TicketLock) -> int:
         """Uses Redis atomic transaction to increment ticket number."""
         last_issued_key = (

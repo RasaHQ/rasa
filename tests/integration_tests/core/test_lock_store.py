@@ -308,23 +308,24 @@ def test_concurrent_lock_expiration(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
 ):
     conversation_id = "my id 2"
+    initial_ticket_number = 1
 
     # issue ticket with long lifetime
-    ticket_number = concurrent_redis_lock_store.issue_ticket(conversation_id, 10)
-    assert ticket_number == 1
+    ticket_one = concurrent_redis_lock_store.issue_ticket(conversation_id, 10)
+    assert ticket_one == initial_ticket_number
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
-    assert not lock._ticket_for_ticket_number(ticket_number).has_expired()
+    assert not lock._ticket_for_ticket_number(ticket_one).has_expired()
 
     # issue ticket with short lifetime
-    ticket_number = concurrent_redis_lock_store.issue_ticket(conversation_id, 0.00001)
+    ticket_two = concurrent_redis_lock_store.issue_ticket(conversation_id, 0.00001)
     time.sleep(0.00002)
-    assert ticket_number == 2
+    assert ticket_two == initial_ticket_number + 1
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
-    assert lock._ticket_for_ticket_number(ticket_number) is None
+    assert lock._ticket_for_ticket_number(ticket_two) is None
 
-    # newly assigned ticket should get number 1 again
-    ticket_number = concurrent_redis_lock_store.issue_ticket(conversation_id, 10)
-    assert ticket_number == 1
+    # newly assigned ticket should increment once more, regardless of ticket expiring
+    ticket_three = concurrent_redis_lock_store.issue_ticket(conversation_id, 10)
+    assert ticket_three == initial_ticket_number + 2
 
 
 def test_concurrent_get_lock(concurrent_redis_lock_store: ConcurrentRedisLockStore):
