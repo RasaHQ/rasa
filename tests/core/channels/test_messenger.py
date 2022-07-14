@@ -1,28 +1,34 @@
 import logging
+
 import pytest
-from rasa.core import utils, run
-from rasa.core.channels.facebook import MessengerBot
 from fbmessenger import MessengerClient
+
+from rasa.core import utils, run
+from rasa.core.channels.messenger import MessengerBot
 
 logger = logging.getLogger(__name__)
 
 
-def test_facebook_channel():
-    from rasa.core.channels.facebook import FacebookInput
+def test_messenger_channel():
+    from rasa.core.channels.messenger import MessengerInput
 
-    input_channel = FacebookInput(
-        fb_verify="YOUR_FB_VERIFY",
-        # you need tell facebook this token, to confirm your URL
-        fb_secret="YOUR_FB_SECRET",  # your app secret
-        fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"
+    input_channel = MessengerInput(
+        messenger_verify="YOUR_FB_VERIFY",
+        # you need tell facebook/instagram this token, to confirm your URL
+        messenger_secret="YOUR_FB_SECRET",  # your app secret
+        messenger_access_token="YOUR_FB_PAGE_ACCESS_TOKEN",
         # token for the page you subscribed to
+        messenger_service="facebook/instagram"
+        # which platform you want to use this channel for
     )
 
     s = run.configure_app([input_channel], port=5004)
     routes_list = utils.list_routes(s)
 
-    assert routes_list["fb_webhook.health"].startswith("/webhooks/facebook")
-    assert routes_list["fb_webhook.webhook"].startswith("/webhooks/facebook/webhook")
+    assert routes_list["messenger_webhook.health"].startswith("/webhooks/messenger")
+    assert routes_list["messenger_webhook.webhook"].startswith(
+        "/webhooks/messenger/webhook"
+    )
 
 
 @pytest.mark.parametrize(
@@ -93,18 +99,20 @@ async def test_facebook_send_custom_json(test_input, expected):
             super(TestableMessengerClient, self).__init__(page_access_token, **kwargs)
 
         def send(
-            self,
-            payload,
-            recipient_id,
-            messaging_type="RESPONSE",
-            notification_type="REGULAR",
-            timeout=None,
-            tag=None,
+                self,
+                payload,
+                recipient_id,
+                messaging_type="RESPONSE",
+                notification_type="REGULAR",
+                timeout=None,
+                tag=None,
         ):
             self.recipient_id = recipient_id
 
     messenger_client = TestableMessengerClient(page_access_token="test_token")
-    messenger_bot = MessengerBot(messenger_client)
+    messenger_bot = MessengerBot(
+        messenger_client, messenger_service="facebook/instagram"
+    )
     await messenger_bot.send_custom_json(
         recipient_id="test_id", json_message=test_input
     )

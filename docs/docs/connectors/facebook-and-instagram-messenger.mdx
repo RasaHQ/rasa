@@ -1,18 +1,18 @@
 ---
-id: facebook-messenger
-sidebar_label: Facebook Messenger
-title: Facebook Messenger
-description: Build a Rasa Chat Bot on Facebook Messenger
+id: messenger
+sidebar_label: Messenger
+title: Messenger
+description: Build a Rasa Chat Bot on Facebook and Instagram Messenger
 ---
 
-## Facebook Setup
+## Facebook\Instagram Setup
 
 You first need to set up a facebook page and app to get credentials to connect to
 Facebook Messenger. Once you have them you can add these to your `credentials.yml`.
 
 ### Getting Credentials
 
-**How to get the Facebook credentials:**
+**How to get the Facebook\Instagram credentials:**
 You need to set up a Facebook app and a page.
 
 1. To create the app head over to
@@ -58,10 +58,11 @@ For more detailed steps, visit the
 Add the Facebook credentials to your `credentials.yml`:
 
 ```yaml-rasa
-facebook:
+messenger:
   verify: "rasa-bot"
   secret: "3e34709d01ea89032asdebfe5a74518"
   page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
+  messenger-service: "facebook/instagram"
 ```
 
 

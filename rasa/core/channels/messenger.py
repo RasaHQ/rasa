@@ -1,19 +1,19 @@
 import hashlib
 import hmac
 import logging
+from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
+
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
 from fbmessenger.sender_actions import SenderAction
-
-import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
-
-from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
+
+import rasa.shared.utils.io
+from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,6 @@ class Messenger:
         self, text: Text, sender_id: Text, metadata: Optional[Dict[Text, Any]]
     ) -> None:
         """Pass on the text to the dialogue engine for processing."""
-
         out_channel = MessengerBot(self.client, self.messenger_service)
         await out_channel.send_action(sender_id, sender_action="mark_seen")
 
@@ -380,14 +379,14 @@ class MessengerInput(InputChannel):
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
 
-        fb_webhook = Blueprint("fb_webhook", __name__)
+        messenger_webhook = Blueprint("messenger_webhook", __name__)
 
         # noinspection PyUnusedLocal
-        @fb_webhook.route("/", methods=["GET"])
+        @messenger_webhook.route("/", methods=["GET"])
         async def health(request: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
-        @fb_webhook.route("/webhook", methods=["GET"])
+        @messenger_webhook.route("/webhook", methods=["GET"])
         async def token_verification(request: Request) -> HTTPResponse:
             if request.args.get("hub.verify_token") == self.messenger_verify:
                 return response.text(request.args.get("hub.challenge"))
@@ -398,7 +397,7 @@ class MessengerInput(InputChannel):
                 )
                 return response.text("failure, invalid token")
 
-        @fb_webhook.route("/webhook", methods=["POST"])
+        @messenger_webhook.route("/webhook", methods=["POST"])
         async def webhook(request: Request) -> HTTPResponse:
             signature = request.headers.get("X-Hub-Signature") or ""
             if not self.validate_hub_signature(
@@ -418,7 +417,7 @@ class MessengerInput(InputChannel):
             await messenger.handle(request.json, metadata)
             return response.text("success")
 
-        return fb_webhook
+        return messenger_webhook
 
     @staticmethod
     def validate_hub_signature(
