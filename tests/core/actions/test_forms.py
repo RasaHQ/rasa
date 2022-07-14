@@ -67,6 +67,7 @@ async def test_activate():
         tracker,
         domain,
     )
+    assert isinstance(events[-1], BotUttered)
     assert events[:-1] == [ActiveLoop(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
 
 
