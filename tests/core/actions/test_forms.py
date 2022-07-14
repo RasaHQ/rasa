@@ -5,7 +5,6 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from questionary import form
 
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
@@ -39,6 +38,39 @@ ACTION_SERVER_URL = "http://my-action-server:5055/webhook"
 
 
 async def test_activate():
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
+    form_name = "my form"
+    action = FormAction(form_name, None)
+    slot_name = "num_people"
+    domain = textwrap.dedent(
+        f"""
+    slots:
+      {slot_name}:
+        type: float
+        mappings:
+        - type: from_entity
+          entity: number
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+        - {slot_name}
+    responses:
+      utter_ask_num_people:
+      - text: "How many people?"
+      """
+    )
+    domain = Domain.from_yaml(domain)
+
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events[:-1] == [ActiveLoop(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
+
+
+async def test_activate_with_custom_slot_mapping():
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
     form_name = "my_form"
     action_server = EndpointConfig(ACTION_SERVER_URL)
@@ -144,7 +176,7 @@ async def test_activate_with_prefilled_slot():
     tracker = DialogueStateTracker.from_events(
         sender_id="bla", evts=[SlotSet(slot_name, slot_value)]
     )
-    form_name = "my form"
+    form_name = "my_form"
     action = FormAction(form_name, None)
 
     next_slot_to_request = "next slot to request"

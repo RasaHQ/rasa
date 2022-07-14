@@ -336,10 +336,7 @@ class FormAction(LoopAction):
         domain: Domain,
         slot_values: Dict[Text, Any],
     ) -> Dict[Text, Any]:
-        slot_mappings = self.get_mappings_for_slot(event.key, domain)
-
-        for mapping in slot_mappings:
-            slot_values[event.key] = event.value
+        slot_values[event.key] = event.value
 
         return slot_values
 
