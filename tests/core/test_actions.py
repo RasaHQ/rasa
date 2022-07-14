@@ -2666,25 +2666,33 @@ async def test_action_extract_slots_non_required_form_slot_with_from_entity_mapp
     assert events == [SlotSet("form1_info1", "info1"), SlotSet("form1_slot1", "Filled")]
 
 
-async def test_action_extract_slots_returns_slot_set_even_if_slot_value_is_unchanged():
-    event_with_slot_entity = UserUttered(
-        text="I am a text",
-        intent={"name": "intent_with_entity"},
-        entities=[{"entity": "entity", "value": "value"}],
-    )
+@pytest.mark.parametrize(
+    "starting_value, value_to_set, expect_event",
+    [
+        ("value", None, True),
+        (None, "value", True),
+        ("value", "value", True),
+        (None, None, False),
+    ],
+)
+async def test_action_extract_slots_emits_necessary_slot_set_events(
+    starting_value: Text, value_to_set: Text, expect_event: bool
+):
+    entity_name = "entity"
+    intent_name = "intent_with_entity"
 
     domain = textwrap.dedent(
-        """
+        f"""
           intents:
-            - intent_with_entity
+            - {intent_name}
           entities:
-            - entity
+            - {entity_name}
           slots:
-            entity:
+            {entity_name}:
               type: text
               mappings:
               - type: from_entity
-                entity: entity
+                entity: {entity_name}
         """
     )
 
@@ -2693,11 +2701,20 @@ async def test_action_extract_slots_returns_slot_set_even_if_slot_value_is_uncha
     tracker = DialogueStateTracker.from_events(
         "some-sender",
         evts=[
-            event_with_slot_entity,
+            SlotSet(entity_name, starting_value),
         ],
     )
 
-    tracker._set_slot("entity", "value")
+    tracker.update_with_events(
+        new_events=[
+            UserUttered(
+                text="I am a text",
+                intent={"name": intent_name},
+                entities=[{"entity": entity_name, "value": value_to_set}],
+            )
+        ],
+        domain=domain,
+    )
 
     action = ActionExtractSlots(None)
 
@@ -2708,7 +2725,10 @@ async def test_action_extract_slots_returns_slot_set_even_if_slot_value_is_uncha
         domain=domain,
     )
 
-    assert len(events) == 1
-    assert type(events[0]) == SlotSet
-    assert events[0].key == "entity"
-    assert events[0].value == "value"
+    if expect_event:
+        assert len(events) == 1
+        assert type(events[0]) == SlotSet
+        assert events[0].key == entity_name
+        assert events[0].value == value_to_set
+    else:
+        assert len(events) == 0
