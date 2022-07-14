@@ -317,9 +317,9 @@ def _create_from_endpoint_config(
     elif endpoint_config.type == "redis" and not endpoint_config.kwargs.get(
         CONCURRENT_KEY, False
     ):
-        rasa.shared.utils.io.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_warning(
             "'RedisLockStore' now supports concurrent message handling. "
-            "You must set the 'concurrent' key to True to activate this improvement. ",
+            "You must set the 'concurrent_mode' key to True to activate this improvement. ",
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
@@ -437,7 +437,9 @@ class ConcurrentRedisLockStore(LockStore):
         if not redis_keys:
             logger.debug(
                 f"The lock store does not contain any key-value "
-                f"items for conversation '{conversation_id}'."
+                f"items for conversation '{conversation_id}'. "
+                f"The pattern used for searching existing keys was: "
+                f"'{pattern}'."
             )
             return None
 
