@@ -264,7 +264,7 @@ def test_create_concurrent_lock_store(
     conversation_id = "my id 0"
 
     ticket_number = concurrent_redis_lock_store.issue_ticket(conversation_id)
-    assert ticket_number == 0
+    assert ticket_number == 1
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
     assert lock
     assert lock.conversation_id == conversation_id
@@ -275,7 +275,7 @@ def test_concurrent_serve_ticket(concurrent_redis_lock_store: ConcurrentRedisLoc
 
     # issue ticket with long lifetime
     ticket_0 = concurrent_redis_lock_store.issue_ticket(conversation_id, 10)
-    assert ticket_0 == 0
+    assert ticket_0 == 1
 
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
     assert lock.last_issued == ticket_0
@@ -311,14 +311,14 @@ def test_concurrent_lock_expiration(
 
     # issue ticket with long lifetime
     ticket_number = concurrent_redis_lock_store.issue_ticket(conversation_id, 10)
-    assert ticket_number == 0
+    assert ticket_number == 1
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
     assert not lock._ticket_for_ticket_number(ticket_number).has_expired()
 
     # issue ticket with short lifetime
     ticket_number = concurrent_redis_lock_store.issue_ticket(conversation_id, 0.00001)
     time.sleep(0.00002)
-    assert ticket_number == 1
+    assert ticket_number == 2
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
     assert lock._ticket_for_ticket_number(ticket_number) is None
 
@@ -342,7 +342,8 @@ def test_concurrent_get_lock(concurrent_redis_lock_store: ConcurrentRedisLockSto
     assert len(lock.tickets) == 5
 
     for i in range(5):
-        assert lock.tickets[i].number == i
+        # ticket numbers start at 1, not 0
+        assert lock.tickets[i].number == i + 1
 
 
 def test_concurrent_delete_lock_success(
@@ -386,8 +387,10 @@ def test_concurrent_increment_ticket_number_and_save_lock(
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
     assert len(lock.tickets) == 0
 
+    total_issued_tickets = 3
+
     # issue several tickets
-    for _ in range(3):
+    for _ in range(total_issued_tickets):
         ticket_number = concurrent_redis_lock_store.increment_ticket_number(lock)
         lock.issue_ticket(lifetime=100, ticket_number=ticket_number)
         concurrent_redis_lock_store.save_lock(lock)
@@ -398,11 +401,15 @@ def test_concurrent_increment_ticket_number_and_save_lock(
         + ":"
         + LAST_ISSUED_TICKET_NUMBER_SUFFIX
     )
-    assert int(concurrent_redis_lock_store.red.get(last_issued_key)) == 2
+    assert (
+        int(concurrent_redis_lock_store.red.get(last_issued_key))
+        == total_issued_tickets
+    )
 
     retrieved_lock = concurrent_redis_lock_store.get_lock(conversation_id)
     for j in range(3):
-        assert retrieved_lock.tickets[j].number == j
+        # ticket numbers start at 1
+        assert retrieved_lock.tickets[j].number == j + 1
         assert retrieved_lock.tickets[j].expires
 
 
@@ -415,7 +422,7 @@ def test_concurrent_finish_serving(
     for _ in range(5):
         concurrent_redis_lock_store.issue_ticket(conversation_id)
 
-    expected_last_issued = 4
+    expected_last_issued = 5
 
     last_issued_key = (
         concurrent_redis_lock_store.key_prefix
@@ -434,11 +441,11 @@ def test_concurrent_finish_serving(
     )
 
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
-    assert lock.last_issued == 3
+    assert lock.last_issued == 4
 
     # issue a new ticket
     concurrent_redis_lock_store.issue_ticket(conversation_id)
     assert (
         int(concurrent_redis_lock_store.red.get(last_issued_key))
-        == expected_last_issued
+        == expected_last_issued + 1
     )

@@ -319,7 +319,8 @@ def _create_from_endpoint_config(
     ):
         rasa.shared.utils.io.raise_warning(
             "'RedisLockStore' now supports concurrent message handling. "
-            "You must set the 'concurrent_mode' key to True to activate this improvement. ",
+            "You must set the 'concurrent_mode' key to True to activate "
+            "this improvement. ",
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
@@ -481,15 +482,7 @@ class ConcurrentRedisLockStore(LockStore):
             + LAST_ISSUED_TICKET_NUMBER_SUFFIX
         )
 
-        # if last_issued_ticket_number value is not set or has expired
-        # we need to (re)set the key and then increment it
-
-        last_issued_ticket_number = self.red.get(last_issued_key)
-
-        if last_issued_ticket_number is None:
-            self.red.set(name=last_issued_key, value=lock.last_issued)
-
-        return self.red.incr(name=last_issued_key)
+        return self.red.incr(name=last_issued_key, amount=1)
 
     def finish_serving(self, conversation_id: Text, ticket_number: int) -> None:
         """Finish serving ticket with `ticket_number` for `conversation_id`.
@@ -498,13 +491,3 @@ class ConcurrentRedisLockStore(LockStore):
         """
         ticket_key = self.key_prefix + conversation_id + ":" + str(ticket_number)
         self.red.delete(ticket_key)
-
-        # unset last_issued_key if value matches the
-        # ticket_number that finished serving
-        last_issued_key = (
-            self.key_prefix + conversation_id + ":" + LAST_ISSUED_TICKET_NUMBER_SUFFIX
-        )
-
-        last_issued_ticket_number = self.red.get(last_issued_key)
-        if int(last_issued_ticket_number) == ticket_number:
-            self.red.delete(last_issued_key)
