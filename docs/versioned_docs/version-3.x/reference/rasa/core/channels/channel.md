@@ -247,6 +247,23 @@ Output channel that collects send messages in a list
 
 (doesn&#x27;t send them anywhere, just collects them).
 
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Initialise list to collect messages.
+
+#### name
+
+```python
+ | @classmethod
+ | name(cls) -> Text
+```
+
+Name of the channel.
+
 #### send\_image\_url
 
 ```python

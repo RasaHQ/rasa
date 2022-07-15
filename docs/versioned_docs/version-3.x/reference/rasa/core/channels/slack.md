@@ -10,6 +10,14 @@ class SlackBot(OutputChannel)
 
 A Slack communication channel
 
+#### send\_attachment
+
+```python
+ | async send_attachment(recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any) -> None
+```
+
+Sends message with attachment.
+
 ## SlackInput Objects
 
 ```python

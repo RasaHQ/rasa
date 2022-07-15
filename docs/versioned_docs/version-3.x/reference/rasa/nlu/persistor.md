@@ -57,6 +57,14 @@ Store models on Google Cloud Storage.
 
 Fetches them when needed, instead of storing them on the local disk.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(bucket_name: Text) -> None
+```
+
+Initialise class with client and bucket.
+
 ## AzurePersistor Objects
 
 ```python

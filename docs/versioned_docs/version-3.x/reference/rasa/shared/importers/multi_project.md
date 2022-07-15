@@ -8,6 +8,14 @@ title: rasa.shared.importers.multi_project
 class MultiProjectImporter(TrainingDataImporter)
 ```
 
+#### get\_config\_file\_for\_auto\_config
+
+```python
+ | get_config_file_for_auto_config() -> Optional[Text]
+```
+
+Returns config file path for auto-config only if there is a single one.
+
 #### training\_paths
 
 ```python

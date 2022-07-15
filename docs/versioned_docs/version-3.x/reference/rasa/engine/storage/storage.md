@@ -79,7 +79,7 @@ Retrieves metadata from archive.
 ```python
  | @contextmanager
  | @abc.abstractmethod
- | write_to(resource: Resource) -> ContextManager[Path]
+ | write_to(resource: Resource) -> Generator[Path, None, None]
 ```
 
 Persists data for a given resource.
@@ -101,7 +101,7 @@ This `Resource` can then be accessed in dependent graph nodes via
 ```python
  | @contextmanager
  | @abc.abstractmethod
- | read_from(resource: Resource) -> ContextManager[Path]
+ | read_from(resource: Resource) -> Generator[Path, None, None]
 ```
 
 Provides the data of a persisted `Resource`.

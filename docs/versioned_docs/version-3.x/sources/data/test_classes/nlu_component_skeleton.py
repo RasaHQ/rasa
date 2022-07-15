@@ -7,7 +7,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
-# TODO: Correctly register your component with it's type
+# TODO: Correctly register your component with its type
 @DefaultV1Recipe.register(
     [DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER], is_trainable=True
 )
@@ -31,7 +31,6 @@ class CustomNLUComponent(GraphComponent):
         # TODO: Implement this if your component augments the training data with
         #       tokens or message features which are used by other components
         #       during training.
-        # components during training.
         ...
 
         return training_data

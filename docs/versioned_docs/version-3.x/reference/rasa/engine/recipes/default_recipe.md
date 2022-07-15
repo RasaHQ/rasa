@@ -74,3 +74,46 @@ This decorator can be used to register classes with the recipe.
 
 Converts the default config to graphs (see interface for full docstring).
 
+#### auto\_configure
+
+```python
+ | @staticmethod
+ | auto_configure(config_file_path: Optional[Text], config: Dict, training_type: Optional[TrainingType] = TrainingType.BOTH) -> Tuple[Dict[Text, Any], Set[str], Set[str]]
+```
+
+Determine configuration from auto-filled configuration file.
+
+Keys that are provided and have a value in the file are kept. Keys that are not
+provided are configured automatically.
+
+Note that this needs to be called explicitly; ie. we cannot
+auto-configure automatically from importers because importers are not
+allowed to access code outside of `rasa.shared`.
+
+**Arguments**:
+
+- `config_file_path` - The path to the configuration file.
+- `config` - Configuration in dictionary format.
+- `training_type` - Optional training type to auto-configure. By default
+  both core and NLU will be auto-configured.
+
+#### complete\_config
+
+```python
+ | @staticmethod
+ | complete_config(config: Dict[Text, Any], keys_to_configure: Set[Text]) -> Dict[Text, Any]
+```
+
+Complete a config by adding automatic configuration for the specified keys.
+
+**Arguments**:
+
+- `config` - The provided configuration.
+- `keys_to_configure` - Keys to be configured automatically (e.g. `policies`).
+  
+
+**Returns**:
+
+  The resulting configuration including both the provided and
+  the automatically configured keys.
+

@@ -43,6 +43,23 @@ Returns the SessionConfig with the default values.
 
 Returns a boolean value depending on the value of session_expiration_time.
 
+#### as\_dict
+
+```python
+ | as_dict() -> Dict
+```
+
+Return serialized `SessionConfig`.
+
+## EntityProperties Objects
+
+```python
+@dataclass
+class EntityProperties()
+```
+
+Class for keeping track of the properties of entities in the domain.
+
 ## Domain Objects
 
 ```python
@@ -53,6 +70,33 @@ The domain specifies the universe in which the bot&#x27;s policy acts.
 
 A Domain subclass provides the actions the bot can take, the intents
 and entities it can recognise.
+
+#### empty
+
+```python
+ | @classmethod
+ | empty(cls) -> "Domain"
+```
+
+Returns empty Domain.
+
+#### load
+
+```python
+ | @classmethod
+ | load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain"
+```
+
+Returns loaded Domain after merging all domain files.
+
+#### from\_path
+
+```python
+ | @classmethod
+ | from_path(cls, path: Union[Text, Path]) -> "Domain"
+```
+
+Loads the `Domain` from a path.
 
 #### from\_file
 
@@ -105,11 +149,33 @@ Loads and merges multiple domain files recursively from a directory tree.
  | merge(domain: Optional["Domain"], override: bool = False) -> "Domain"
 ```
 
-Merge this domain with another one, combining their attributes.
+Merges this domain dict with another one, combining their attributes.
 
-List attributes like ``intents`` and ``actions`` will be deduped
-and merged. Single attributes will be taken from `self` unless
-override is `True`, in which case they are taken from `domain`.
+This method merges domain dicts, and ensures all attributes (like ``intents``,
+``entities``, and ``actions``) are known to the Domain when the
+object is created.
+
+List attributes like ``intents`` and ``actions`` are deduped
+and merged. Single attributes are taken from `domain1` unless
+override is `True`, in which case they are taken from `domain2`.
+
+#### merge\_domain\_dicts
+
+```python
+ | @staticmethod
+ | merge_domain_dicts(domain_dict: Dict, combined: Dict, override: bool = False) -> Dict
+```
+
+Combines two domain dictionaries.
+
+#### collect\_slots
+
+```python
+ | @staticmethod
+ | collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]
+```
+
+Collects a list of slots from a dictionary.
 
 #### retrieval\_intents
 
@@ -124,7 +190,7 @@ List retrieval intents present in the domain.
 
 ```python
  | @classmethod
- | collect_entity_properties(cls, domain_entities: List[Union[Text, Dict[Text, Any]]]) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]
+ | collect_entity_properties(cls, domain_entities: List[Union[Text, Dict[Text, Any]]]) -> EntityProperties
 ```
 
 Get entity properties for a domain from what is provided by a domain file.
@@ -136,15 +202,13 @@ Get entity properties for a domain from what is provided by a domain file.
 
 **Returns**:
 
-  A list of entity names.
-  A dictionary of entity names to roles.
-  A dictionary of entity names to groups.
+  An instance of EntityProperties.
 
 #### collect\_intent\_properties
 
 ```python
  | @classmethod
- | collect_intent_properties(cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text], roles: Dict[Text, List[Text]], groups: Dict[Text, List[Text]]) -> Dict[Text, Dict[Text, Union[bool, List]]]
+ | collect_intent_properties(cls, intents: List[Union[Text, Dict[Text, Any]]], entity_properties: EntityProperties) -> Dict[Text, Dict[Text, Union[bool, List]]]
 ```
 
 Get intent properties for a domain from what is provided by a domain file.
@@ -152,9 +216,7 @@ Get intent properties for a domain from what is provided by a domain file.
 **Arguments**:
 
 - `intents` - The intents as provided by a domain file.
-- `entities` - All entities as provided by a domain file.
-- `roles` - The roles of entities as provided by a domain file.
-- `groups` - The groups of entities as provided by a domain file.
+- `entity_properties` - Entity properties as provided by the domain file.
   
 
 **Returns**:
@@ -164,7 +226,7 @@ Get intent properties for a domain from what is provided by a domain file.
 #### \_\_init\_\_
 
 ```python
- | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
+ | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], data: Dict, action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
 ```
 
 Creates a `Domain`.
@@ -178,6 +240,7 @@ Creates a `Domain`.
   will send the matching response to the user.
 - `action_names` - Names of custom actions.
 - `forms` - Form names and their slot mappings.
+- `data` - original domain dict representation.
 - `action_texts` - End-to-End bot utterances from end-to-end stories.
 - `store_entities_as_slots` - If `True` Rasa will automatically create `SlotSet`
   events for entities if there are slots with the same name as the entity.
@@ -477,22 +540,6 @@ Returns `responses` with preserved multilines in the `text` key.
 
   `responses` with preserved multilines in the `text` key.
 
-#### cleaned\_domain
-
-```python
- | cleaned_domain() -> Dict[Text, Any]
-```
-
-Fetch cleaned domain to display or write into a file.
-
-The internal `used_entities` property is replaced by `use_entities` or
-`ignore_entities` and redundant keys are replaced with default values
-to make the domain easier readable.
-
-**Returns**:
-
-  A cleaned dictionary version of the domain.
-
 #### persist
 
 ```python
@@ -501,28 +548,15 @@ to make the domain easier readable.
 
 Write domain to a file.
 
-#### persist\_clean
-
-```python
- | persist_clean(filename: Union[Text, Path]) -> None
-```
-
-Write cleaned domain to a file.
-
 #### as\_yaml
 
 ```python
- | as_yaml(clean_before_dump: bool = False) -> Text
+ | as_yaml() -> Text
 ```
 
 Dump the `Domain` object as a YAML string.
+
 This function preserves the orders of the keys in the domain.
-
-**Arguments**:
-
-- `clean_before_dump` - When set to `True`, this method returns
-  a version of the domain without internal
-  information. Defaults to `False`.
 
 **Returns**:
 
@@ -544,6 +578,15 @@ Return the configuration for an intent.
 ```
 
 Returns sorted list of intents.
+
+#### entities
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | entities() -> List[Text]
+```
+
+Returns sorted list of entities.
 
 #### domain\_warnings
 
@@ -649,4 +692,12 @@ Counts the total number of slot mappings and custom slot mappings.
 ```
 
 Returns text representation of object.
+
+#### warn\_about\_duplicates\_found\_during\_domain\_merging
+
+```python
+warn_about_duplicates_found_during_domain_merging(duplicates: Dict[Text, List[Text]]) -> None
+```
+
+Emits warning about found duplicates while loading multiple domain paths.
 

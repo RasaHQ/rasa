@@ -38,13 +38,21 @@ Sets log levels of various loggers and sets up filters for warnings and logs.
 
 **Arguments**:
 
-- `log_level` - The lo level to be used for the &#x27;Rasa&#x27; logger. Pass `None` to use
+- `log_level` - The log level to be used for the &#x27;Rasa&#x27; logger. Pass `None` to use
   either the environment variable &#x27;LOG_LEVEL&#x27; if it is specified, or the
   default log level otherwise.
 - `warn_only_once` - determines whether user warnings should be filtered by the
   `warnings` module to appear only &quot;once&quot;
 - `filter_repeated_logs` - determines whether `RepeatedLogFilter`s are added to
   the handlers of the root logger
+
+#### configure\_library\_logging
+
+```python
+configure_library_logging() -> None
+```
+
+Configures log levels of used libraries such as kafka, matplotlib, pika.
 
 #### update\_apscheduler\_log\_level
 
@@ -53,6 +61,14 @@ update_apscheduler_log_level() -> None
 ```
 
 Configures the log level of `apscheduler.*` loggers.
+
+#### update\_socketio\_log\_level
+
+```python
+update_socketio_log_level() -> None
+```
+
+Set the log level of socketio.
 
 #### update\_tensorflow\_log\_level
 
@@ -83,12 +99,32 @@ Uses the log level specified in the environment variable &#x27;LOG_LEVEL_LIBRARI
 #### update\_matplotlib\_log\_level
 
 ```python
-update_matplotlib_log_level() -> None
+update_matplotlib_log_level(library_log_level: Text) -> None
 ```
 
-Set the log level of matplotlib to the log level.
+Set the log level of matplotlib.
 
-Uses the log level specified in the environment variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
+Uses the library specific log level or the general libraries log level.
+
+#### update\_kafka\_log\_level
+
+```python
+update_kafka_log_level(library_log_level: Text) -> None
+```
+
+Set the log level of kafka.
+
+Uses the library specific log level or the general libraries log level.
+
+#### update\_rabbitmq\_log\_level
+
+```python
+update_rabbitmq_log_level(library_log_level: Text) -> None
+```
+
+Set the log level of pika.
+
+Uses the library specific log level or the general libraries log level.
 
 #### sort\_list\_of\_dicts\_by\_first\_key
 

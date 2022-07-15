@@ -181,9 +181,10 @@ Request the next slot and response if needed, else return `None`.
 
 Activate form if the form is called for the first time.
 
-If activating, validate any required slots that were filled before
-form activation and return `Form` event with the name of the form, as well
-as any `SlotSet` events from validation of pre-filled slots.
+If activating, run action_extract_slots to fill slots with
+mapping conditions from trigger intents.
+Validate any required slots that can be filled, and return any `SlotSet`
+events from the extraction and validation of these pre-filled slots.
 
 **Arguments**:
 
@@ -197,6 +198,14 @@ as any `SlotSet` events from validation of pre-filled slots.
 **Returns**:
 
   Events from the activation.
+
+#### do
+
+```python
+ | async do(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain", events_so_far: List[Event]) -> List[Event]
+```
+
+Executes form loop after activation.
 
 #### is\_done
 

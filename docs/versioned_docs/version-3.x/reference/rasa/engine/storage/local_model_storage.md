@@ -49,7 +49,7 @@ Retrieves metadata from archive (see parent class for full docstring).
 
 ```python
  | @contextmanager
- | write_to(resource: Resource) -> ContextManager[Path]
+ | write_to(resource: Resource) -> Generator[Path, None, None]
 ```
 
 Persists data for a resource (see parent class for full docstring).
@@ -58,7 +58,7 @@ Persists data for a resource (see parent class for full docstring).
 
 ```python
  | @contextmanager
- | read_from(resource: Resource) -> ContextManager[Path]
+ | read_from(resource: Resource) -> Generator[Path, None, None]
 ```
 
 Provides the data of a `Resource` (see parent class for full docstring).

@@ -8,10 +8,11 @@ title: rasa.shared.core.training_data.story_writer.story_writer
 class StoryWriter()
 ```
 
+Writes story training data to file.
+
 #### dumps
 
 ```python
- | @staticmethod
  | dumps(story_steps: List["StoryStep"], is_appendable: bool = False, is_test_story: bool = False) -> Text
 ```
 
@@ -33,7 +34,6 @@ Turns Story steps into an string.
 #### dump
 
 ```python
- | @staticmethod
  | dump(target: Union[Text, Path, yaml.StringIO], story_steps: List["StoryStep"], is_appendable: bool = False, is_test_story: bool = False) -> None
 ```
 
