@@ -15,7 +15,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ModelNotFound
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.nlu.extractors.extractor import EntityTagSpec, EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityTagSpec, EntityExtractor
 import rasa.core.actions.action
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
@@ -900,7 +900,7 @@ class TEDPolicy(Policy):
         else:
             parsed_message = Message(data={TEXT: text})
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
-        entities = EntityExtractorMixin.convert_predictions_into_entities(
+        entities = EntityExtractor.convert_predictions_into_entities(
             text,
             tokens,
             predicted_tags,

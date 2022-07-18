@@ -19,7 +19,7 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
 )
 from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
@@ -36,7 +36,7 @@ if typing.TYPE_CHECKING:
     is_trainable=True,
     model_from="MitieNLP",
 )
-class MitieEntityExtractor(GraphComponent, EntityExtractorMixin):
+class MitieEntityExtractor(GraphComponent, EntityExtractor):
     """A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`)."""
 
     MITIE_RESOURCE_FILE = "mitie_ner.dat"

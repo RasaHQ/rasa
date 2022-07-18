@@ -39,7 +39,7 @@ class EntityTagSpec(NamedTuple):
     num_tags: int
 
 
-class EntityExtractorMixin(abc.ABC):
+class EntityExtractor(abc.ABC):
     """Provides functionality for components that do entity extraction.
 
     Inheriting from this class will add utility functions for entity extraction.
@@ -182,7 +182,7 @@ class EntityExtractorMixin(abc.ABC):
         last_token_end = -1
 
         for idx, token in enumerate(tokens):
-            current_entity_tag = EntityExtractorMixin.get_tag_for(
+            current_entity_tag = EntityExtractor.get_tag_for(
                 tags, ENTITY_ATTRIBUTE_TYPE, idx
             )
 
@@ -191,11 +191,11 @@ class EntityExtractorMixin(abc.ABC):
                 last_token_end = token.end
                 continue
 
-            current_group_tag = EntityExtractorMixin.get_tag_for(
+            current_group_tag = EntityExtractor.get_tag_for(
                 tags, ENTITY_ATTRIBUTE_GROUP, idx
             )
             current_group_tag = bilou_utils.tag_without_prefix(current_group_tag)
-            current_role_tag = EntityExtractorMixin.get_tag_for(
+            current_role_tag = EntityExtractor.get_tag_for(
                 tags, ENTITY_ATTRIBUTE_ROLE, idx
             )
             current_role_tag = bilou_utils.tag_without_prefix(current_role_tag)
@@ -237,7 +237,7 @@ class EntityExtractorMixin(abc.ABC):
 
             if new_tag_found:
                 # new entity found
-                entity = EntityExtractorMixin._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,
@@ -247,7 +247,7 @@ class EntityExtractorMixin(abc.ABC):
                     confidences,
                 )
                 entities.append(entity)
-            elif EntityExtractorMixin._check_is_single_entity(
+            elif EntityExtractor._check_is_single_entity(
                 text, token, last_token_end, split_entities_config, current_entity_tag
             ):
                 # current token has the same entity tag as the token before and
@@ -256,7 +256,7 @@ class EntityExtractorMixin(abc.ABC):
                 # and a whitespace.
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
                 if confidences is not None:
-                    EntityExtractorMixin._update_confidence_values(
+                    EntityExtractor._update_confidence_values(
                         entities, confidences, idx
                     )
 
@@ -265,7 +265,7 @@ class EntityExtractorMixin(abc.ABC):
                 # tokens are separated by at least 2 symbols (e.g. multiple spaces,
                 # a comma and a space, etc.) and also shouldn't be represented as a
                 # single entity
-                entity = EntityExtractorMixin._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,

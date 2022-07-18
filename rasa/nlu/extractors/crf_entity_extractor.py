@@ -17,7 +17,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -85,7 +85,7 @@ class CRFEntityExtractorOptions(str, Enum):
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
+class CRFEntityExtractor(GraphComponent, EntityExtractor):
     """Implements conditional random fields (CRF) to do named entity recognition."""
 
     CONFIG_FEATURES = "features"

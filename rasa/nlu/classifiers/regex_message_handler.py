@@ -6,7 +6,7 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
 )
-class RegexMessageHandler(GraphComponent, EntityExtractorMixin):
+class RegexMessageHandler(GraphComponent, EntityExtractor):
     """Handles hardcoded NLU predictions from messages starting with a `/`."""
 
     @classmethod

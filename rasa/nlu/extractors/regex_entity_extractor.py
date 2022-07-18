@@ -19,7 +19,7 @@ from rasa.shared.nlu.constants import (
     TEXT,
     ENTITY_ATTRIBUTE_TYPE,
 )
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class RegexEntityExtractor(GraphComponent, EntityExtractorMixin):
+class RegexEntityExtractor(GraphComponent, EntityExtractor):
     """Extracts entities via lookup tables and regexes defined in the training data."""
 
     REGEX_FILE_NAME = "regex.json"
