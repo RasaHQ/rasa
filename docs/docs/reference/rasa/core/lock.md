@@ -69,10 +69,20 @@ Return whether `ticket_number` is locked.
 #### issue\_ticket
 
 ```python
-def issue_ticket(lifetime: float) -> int
+def issue_ticket(lifetime: float, ticket_number: int) -> int
 ```
 
 Issue a new ticket and return its number.
+
+**Arguments**:
+
+- `lifetime` - The length of time after which the ticket expires.
+- `ticket_number` - Integer representing the ticket number.
+  
+
+**Returns**:
+
+  ticket_number integer.
 
 #### remove\_expired\_tickets
 

@@ -32,7 +32,7 @@ const { readFile, writeFile } = fs.promises;
 
 const PROGRAM_OUTPUT_RE = /```[a-z]+ \[([^\]]+)\]\n```/;
 
-const VERSIONED_DOCS_PATH_RE = /(\/versioned_docs\/version-\d+\.x)\//;
+const VERSIONED_DOCS_PATH_RE = /(\/versioned_docs\/version-\d+\.\d+\.x)\//;
 
 const defaultOptions = {
     docsDir: './docs',
@@ -102,8 +102,6 @@ async function getProgramOutputs(options) {
     It relies on the output of `getProgramOutputs()` above,
     and is inspired by `remark-sources` plugin.
 */
-
-
 function remarkProgramOutput(options = {}) {
     options = { ...defaultOptions, ...options };
     return (root, { history }) => {
