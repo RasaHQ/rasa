@@ -14,7 +14,10 @@ from unittest.mock import patch, Mock
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.core.lock import TicketLock
 import rasa.core.lock_store
 from rasa.core.lock_store import (
@@ -23,6 +26,8 @@ from rasa.core.lock_store import (
     LockStore,
     RedisLockStore,
     DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
+    ConcurrentRedisLockStore,
+    DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX,
 )
 from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig
@@ -54,8 +59,12 @@ def test_issue_ticket():
     # no one is waiting
     assert not lock.is_someone_waiting()
 
+    lock_store = InMemoryLockStore()
+    lock_store.save_lock(lock)
+    ticket_number = lock_store.increment_ticket_number(lock)
+
     # issue ticket
-    ticket = lock.issue_ticket(1)
+    ticket = lock.issue_ticket(1, ticket_number)
     assert ticket == 0
     assert lock.last_issued == 0
     assert lock.now_serving == 0
@@ -68,7 +77,9 @@ def test_remove_expired_tickets():
     lock = TicketLock("random id 1")
 
     # issue one long- and one short-lived ticket
-    _ = list(map(lock.issue_ticket, [k for k in [0.01, 10]]))
+    _ = list(
+        map(lock.issue_ticket, [k for k in [0.01, 10]], [number for number in [1, 2]])
+    )
 
     # both tickets are there
     assert len(lock.tickets) == 2
@@ -145,18 +156,21 @@ def test_lock_expiration(lock_store: LockStore):
     lock_store.save_lock(lock)
 
     # issue ticket with long lifetime
-    ticket = lock.issue_ticket(10)
+    ticket_number = lock_store.increment_ticket_number(lock)
+    ticket = lock.issue_ticket(10, ticket_number)
     assert ticket == 0
     assert not lock._ticket_for_ticket_number(ticket).has_expired()
 
     # issue ticket with short lifetime
-    ticket = lock.issue_ticket(0.00001)
+    ticket_number = lock_store.increment_ticket_number(lock)
+    ticket = lock.issue_ticket(0.00001, ticket_number)
     time.sleep(0.00002)
     assert ticket == 1
     assert lock._ticket_for_ticket_number(ticket) is None
 
     # newly assigned ticket should get number 1 again
-    assert lock.issue_ticket(10) == 1
+    ticket_number = lock_store.increment_ticket_number(lock)
+    assert lock.issue_ticket(10, ticket_number) == 1
 
 
 async def test_multiple_conversation_ids(default_agent: Agent):
@@ -384,3 +398,81 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
     with pytest.raises(LockError):
         async with lock_store.lock("some sender"):
             pass
+
+
+def test_create_concurrent_redis_lock_store(tmp_path: Path):
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        f"""
+        version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
+        lock_store:
+           type: redis
+           concurrent_mode: true
+           url: localhost
+           port: 6379
+        """
+    )
+    endpoint_config = rasa.utils.endpoints.read_endpoint_config(
+        str(endpoints_file), "lock_store"
+    )
+    lock_store = LockStore.create(endpoint_config)
+
+    assert isinstance(lock_store, ConcurrentRedisLockStore)
+
+
+def test_create_concurrent_redis_lock_store_valid_custom_key_prefix(
+    tmp_path: Path, caplog: LogCaptureFixture
+):
+    endpoints_file = tmp_path / "endpoints.yml"
+    custom_prefix = "testPrefix"
+    endpoints_file.write_text(
+        f"""
+        version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
+        lock_store:
+            type: redis
+            concurrent_mode: true
+            url: localhost
+            port: 6379
+            key_prefix: {custom_prefix}
+        """
+    )
+    endpoint_config = rasa.utils.endpoints.read_endpoint_config(
+        str(endpoints_file), "lock_store"
+    )
+    with caplog.at_level(logging.DEBUG):
+        lock_store = LockStore.create(endpoint_config)
+
+    assert f"Setting non-default redis key prefix: '{custom_prefix}'." in caplog.text
+    assert (
+        lock_store.key_prefix
+        == custom_prefix + ":" + DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
+    )
+
+
+def test_create_concurrent_redis_lock_store_invalid_custom_key_preifx(
+    tmp_path: Path, caplog: LogCaptureFixture
+):
+    endpoints_file = tmp_path / "endpoints.yml"
+    invalid_prefix = "test_prefix"
+    endpoints_file.write_text(
+        f"""
+        version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
+        lock_store:
+            type: redis
+            concurrent_mode: true
+            url: localhost
+            port: 6379
+            key_prefix: {invalid_prefix}
+        """
+    )
+    endpoint_config = rasa.utils.endpoints.read_endpoint_config(
+        str(endpoints_file), "lock_store"
+    )
+    with caplog.at_level(logging.WARNING):
+        lock_store = LockStore.create(endpoint_config)
+
+    assert (
+        f"Omitting provided non-alphanumeric redis key prefix: '{invalid_prefix}'."
+        in caplog.text
+    )
+    assert lock_store.key_prefix == DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
