@@ -5,7 +5,7 @@ from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 from rasa.shared.nlu.constants import TEXT, SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLReader
 
@@ -224,7 +224,7 @@ def test_convert_tags_to_entities(
     expected_entities: List[Dict[Text, Any]],
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-    extractor = EntityExtractorMixin()
+    extractor = EntityExtractor()
 
     message = Message(data={TEXT: text})
     tokens = whitespace_tokenizer.tokenize(message, TEXT)
@@ -399,7 +399,7 @@ def test_split_entities_by_comma(
     expected_entities: List[Dict[Text, Any]],
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-    extractor = EntityExtractorMixin()
+    extractor = EntityExtractor()
 
     message = Message(data={TEXT: text})
     tokens = whitespace_tokenizer.tokenize(message, TEXT)
@@ -473,7 +473,7 @@ def test_check_correct_entity_annotations(
     whitespace_tokenizer.process_training_data(training_data)
 
     with pytest.warns(UserWarning) as record:
-        EntityExtractorMixin.check_correct_entity_annotations(training_data)
+        EntityExtractor.check_correct_entity_annotations(training_data)
 
     assert len(record) == warnings
     assert all(

@@ -17,7 +17,7 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.classifiers.classifier import IntentClassifier
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
@@ -127,7 +127,7 @@ DIETClassifierT = TypeVar("DIETClassifierT", bound="DIETClassifier")
     ],
     is_trainable=True,
 )
-class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
+class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractor):
     """A multi-task model for intent classification and entity extraction.
 
     DIET is Dual Intent and Entity Transformer.

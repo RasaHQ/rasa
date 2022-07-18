@@ -7,7 +7,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
     is_trainable=False,
     model_from="SpacyNLP",
 )
-class SpacyEntityExtractor(GraphComponent, EntityExtractorMixin):
+class SpacyEntityExtractor(GraphComponent, EntityExtractor):
     """Entity extractor which uses SpaCy."""
 
     @classmethod

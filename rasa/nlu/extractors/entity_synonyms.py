@@ -10,7 +10,7 @@ from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityExtractor
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.engine.storage.resource import Resource
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
+class EntitySynonymMapper(GraphComponent, EntityExtractor):
     """Maps entities to their synonyms if they appear in the training data."""
 
     SYNONYM_FILENAME = "synonyms.json"

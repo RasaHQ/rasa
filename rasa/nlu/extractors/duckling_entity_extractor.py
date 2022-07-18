@@ -13,7 +13,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.constants import ENTITIES, TEXT
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 
@@ -58,7 +58,7 @@ def convert_duckling_format_to_rasa(
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=False
 )
-class DucklingEntityExtractor(GraphComponent, EntityExtractorMixin):
+class DucklingEntityExtractor(GraphComponent, EntityExtractor):
     """Searches for structured entities, e.g. dates, using a duckling server."""
 
     @staticmethod
