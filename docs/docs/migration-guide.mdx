@@ -13,6 +13,29 @@ This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
 
+## Rasa 3.2 to 3.3
+
+### ConcurrentRedisLockStore
+
+[`ConcurrentRedisLockStore`](./lock-stores.mdx#concurrentredislockstore) is the new Redis implementation of the abstract interface `LockStore`.
+This implementation is able to handle messages received in parallel for the same conversation id by different Rasa instances.
+
+In order to replace the use of `RedisLockStore` with `ConcurrentRedisLockStore`, specify the new parameter `concurrent_mode` as `true` in `endpoints.yml`:
+
+```yaml-rasa
+lock_store:
+    type: "redis"
+    concurrent_mode: true
+    url: <url of the redis instance, e.g. localhost>
+    port: <port of your redis instance, usually 6379>
+    password: <password used for authentication>
+    db: <number of your database within redis, e.g. 0>
+    key_prefix: <alphanumeric value to prepend to lock store keys>
+```
+
+Note that not specifying the `concurrent_mode` parameter or setting it to `false` will default to using the `RedisLockStore` implementation.
+
+
 ## Rasa 3.0 to 3.1
 
 ### Machine Learning Components
