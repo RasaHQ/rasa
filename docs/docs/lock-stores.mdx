@@ -42,7 +42,7 @@ address the same node when sending messages for a given conversation ID.
   Therefore, `ConcurrentRedisLockStore` ensures that only one Rasa instance can handle a conversation at any point in time.
   This is the recommended lock store for running a replicated set of Rasa servers.
 
-  The ticket number initialisation begins at 1, in contrast to `RedisLockStore` which begins at 0.
+  The ticket number initialization begins at 1, in contrast to `RedisLockStore` which begins at 0.
   If the ticket expires, the ticket number will not be reassigned to future tickets; as a result ticket numbers are unique to ticket instances.
 
 
