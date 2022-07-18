@@ -40,7 +40,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-      uses: actions/setup-python@d09bd5e6005b175076f227b13d9730d56e9dcfcb
+      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
