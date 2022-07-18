@@ -20,11 +20,13 @@ Exception that is raised when a lock cannot be acquired.
 class LockStore()
 ```
 
+Base class for ticket locks.
+
 #### create
 
 ```python
  | @staticmethod
- | create(obj: Union["LockStore", EndpointConfig, None]) -> "LockStore"
+ | create(obj: Union[LockStore, EndpointConfig, None]) -> LockStore
 ```
 
 Factory to create a lock store.

@@ -344,15 +344,25 @@ DynamoDB is a hosted NoSQL database offered by Amazon Web Services (AWS).
 ## Custom Tracker Store
 
 If you need a tracker store which is not available out of the box, you can implement your own.
-This is done by extending the base class `TrackerStore`.
+This is done by extending the base class `TrackerStore` and one of the provided mixin classes that implement the
+`serialise_tracker` method: `SerializedTrackerAsText` or `SerializedTrackerAsDict`.
 
 To write a custom tracker store, extend the `TrackerStore` base class. Your constructor has to
 provide a parameter `host`.
+The constructor also needs to make a `super` call to the base class `TrackerStore` using `domain` and `event_broker` arguments:
+
+```
+super().__init__(domain, event_broker, **kwargs)
+```
+
+Your custom tracker store class must also implement the following three methods:
+- `save`: saves the conversation to the tracker store. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L243).
+- `retrieve`: retrieves tracker for the latest conversation session. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L261).
+- `keys`: returns the set of values for the tracker store's primary key. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L319).
 
 ### Configuration
 
- In your `endpoints.yml` put in the module path to your custom tracker store
- and the parameters you require:
+Put the module path to your custom tracker store and the parameters you require in your `endpoints.yml`:
 
  ```yaml-rasa title="endpoints.yml"
  tracker_store:

@@ -5,7 +5,7 @@ title: rasa.api
 #### run
 
 ```python
-run(model: "Text", endpoints: "Text", connector: "Text" = None, credentials: "Text" = None, **kwargs: "Dict[Text, Any]", ,) -> "NoReturn"
+run(model: "Text", endpoints: "Text", connector: "Text" = None, credentials: "Text" = None, **kwargs: "Dict[Text, Any]", ,) -> None
 ```
 
 Runs a Rasa model.
