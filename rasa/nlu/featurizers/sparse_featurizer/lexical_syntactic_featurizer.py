@@ -48,10 +48,14 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             ["low", "title", "upper"],
             ["BOS", "EOS", "low", "upper", "title", "digit"],
             ["low", "title", "upper"],
-        ]
+        ],
+        # As case sensitivity was moved from tokenizer to featurizers,
+        # featurizers have to implement a way to deal with case
+        # sensitivity
+        "prefix_suffix_case_sensitive": True,
     }
 
-    function_dict: Dict[Text, Callable[[Token], Union[bool, Text, None]]] = {
+    _function_dict_default: Dict[Text, Callable[[Token], Union[bool, Text, None]]] = {
         "low": lambda token: token.text.islower(),
         "title": lambda token: token.text.istitle(),
         "prefix5": lambda token: token.text[:5],
@@ -70,15 +74,33 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         "digit": lambda token: token.text.isdigit(),
     }
 
+    _function_dict_lower: Dict[Text, Callable[[Token], Union[bool, Text, None]]] = {
+        "prefix5": lambda token: token.text[:5].lower(),
+        "prefix2": lambda token: token.text[:2].lower(),
+        "suffix5": lambda token: token.text[-5:].lower(),
+        "suffix3": lambda token: token.text[-3:].lower(),
+        "suffix2": lambda token: token.text[-2:].lower(),
+        "suffix1": lambda token: token.text[-1:].lower(),
+    }
+
     def __init__(
         self,
         component_config: Dict[Text, Any],
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
     ):
+        """Creates a LexicalSyntacticFeaturizer.
+
+        Args:
+            component_config: Component config as defined in config.yml
+            feature_to_idx_dict: Prepared feature to idx for loading from disk
+        """
         super().__init__(component_config)
 
         self.feature_to_idx_dict = feature_to_idx_dict or {}
         self.number_of_features = self._calculate_number_of_features()
+        self.function_dict = self._function_dict_default.copy()
+        if not component_config.get("prefix_suffix_case_sensitive", True):
+            self.function_dict.update(self._function_dict_lower)
 
     def _calculate_number_of_features(self) -> int:
         return sum(

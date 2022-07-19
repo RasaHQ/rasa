@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Union
 import warnings
+import logging
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
@@ -20,6 +21,8 @@ from rasa.shared.constants import (
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
     CONFIG_SCHEMA_FILE,
     MODEL_CONFIG_SCHEMA_FILE,
+    DEFAULT_YAML_SEQUENCE_INDENT,
+    DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR,
 )
 from rasa.shared.exceptions import (
     FileIOException,
@@ -28,6 +31,8 @@ from rasa.shared.exceptions import (
     RasaException,
 )
 import rasa.shared.utils.validation
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -395,6 +400,22 @@ def write_yaml(
         data = convert_to_ordered_dict(data)
 
     dumper = yaml.YAML()
+
+    sequence_indent = int(
+        os.environ.get(
+            DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR, DEFAULT_YAML_SEQUENCE_INDENT
+        )
+    )
+    if sequence_indent < 2:
+        logger.warning(
+            f"The value of the env var {DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR} "
+            f"is {sequence_indent}. Values less than 2 are not supported - see "
+            f"https://yaml.readthedocs.io/en/latest/detail.html#indentation-of-block-sequences. "  # noqa: E501, W505
+            f"YAML will be dumped using a sequence indent value of "
+            f"{DEFAULT_YAML_SEQUENCE_INDENT} instead."
+        )
+        sequence_indent = DEFAULT_YAML_SEQUENCE_INDENT
+    dumper.indent(mapping=2, sequence=sequence_indent, offset=sequence_indent - 2)
     # no wrap lines
     dumper.width = YAML_LINE_MAX_WIDTH
 

@@ -42,6 +42,13 @@ async def test_send_response(default_channel, default_tracker):
         "text": "This message should come first:  \n\n"
         "This is message two  \nThis as well\n\n"
     }
+    multiline_text_message_with_buttons = {
+        **multiline_text_message,
+        "buttons": [
+            {"title": "some title 1", "payload": "/some_payload1"},
+            {"title": "some title 2", "payload": "/some_payload2"},
+        ],
+    }
     image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
     text_and_image_message = {
         "text": "look at this",
@@ -56,6 +63,9 @@ async def test_send_response(default_channel, default_tracker):
     await default_channel.send_response(
         default_tracker.sender_id, multiline_text_message
     )
+    await default_channel.send_response(
+        default_tracker.sender_id, multiline_text_message_with_buttons
+    )
     await default_channel.send_response(default_tracker.sender_id, image_only_message)
     await default_channel.send_response(
         default_tracker.sender_id, text_and_image_message
@@ -63,7 +73,7 @@ async def test_send_response(default_channel, default_tracker):
     await default_channel.send_response(default_tracker.sender_id, custom_json_message)
     collected = default_channel.messages
 
-    assert len(collected) == 8
+    assert len(collected) == 10
 
     # text only message
     assert collected[0] == {"recipient_id": "my-sender", "text": "hey"}
@@ -78,20 +88,34 @@ async def test_send_response(default_channel, default_tracker):
         "text": "This is message two  \nThis as well",
     }
 
-    # image only message
+    # multiline text message with buttons, should split on '\n\n'
     assert collected[3] == {
+        "recipient_id": "my-sender",
+        "text": "This message should come first:  ",
+    }
+    assert collected[4] == {
+        "recipient_id": "my-sender",
+        "text": "This is message two  \nThis as well",
+        "buttons": [
+            {"title": "some title 1", "payload": "/some_payload1"},
+            {"title": "some title 2", "payload": "/some_payload2"},
+        ],
+    }
+
+    # image only message
+    assert collected[5] == {
         "recipient_id": "my-sender",
         "image": "https://i.imgur.com/nGF1K8f.jpg",
     }
 
     # text & image combined - will result in two messages
-    assert collected[4] == {"recipient_id": "my-sender", "text": "look at this"}
-    assert collected[5] == {
+    assert collected[6] == {"recipient_id": "my-sender", "text": "look at this"}
+    assert collected[7] == {
         "recipient_id": "my-sender",
         "image": "https://i.imgur.com/T5xVo.jpg",
     }
-    assert collected[6] == {"recipient_id": "my-sender", "text": "look at this"}
-    assert collected[7] == {
+    assert collected[8] == {"recipient_id": "my-sender", "text": "look at this"}
+    assert collected[9] == {
         "recipient_id": "my-sender",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
@@ -569,11 +593,13 @@ def test_register_channel_without_route():
 
     input_channel = RestInput()
 
-    app = Sanic(__name__)
+    app = Sanic("test_channels")
     rasa.core.channels.channel.register([input_channel], app, route=None)
 
     routes_list = utils.list_routes(app)
-    assert routes_list["custom_webhook_RestInput.receive"].startswith("/webhook")
+    assert routes_list["test_channels.custom_webhook_RestInput.receive"].startswith(
+        "/webhook"
+    )
 
 
 def test_channel_registration_with_absolute_url_prefix_overwrites_route():
@@ -584,7 +610,7 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     test_route = "/absolute_route"
     input_channel.url_prefix = lambda: test_route
 
-    app = Sanic(__name__)
+    app = Sanic("test_channels", register=False)
     ignored_base_route = "/should_be_ignored"
     rasa.core.channels.channel.register(
         [input_channel], app, route="/should_be_ignored"
@@ -593,8 +619,12 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     # Assure that an absolute url returned by `url_prefix` overwrites route parameter
     # given in `register`.
     routes_list = utils.list_routes(app)
-    assert routes_list["custom_webhook_RestInput.health"].startswith(test_route)
-    assert ignored_base_route not in routes_list.get("custom_webhook_RestInput.health")
+    assert routes_list["test_channels.custom_webhook_RestInput.health"].startswith(
+        test_route
+    )
+    assert ignored_base_route not in routes_list.get(
+        "test_channels.custom_webhook_RestInput.health"
+    )
 
 
 @pytest.mark.parametrize(

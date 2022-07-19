@@ -110,3 +110,5 @@ SEVERITY_KEY = "severity"
 NAME = "name"
 
 TF_DETERMINISTIC_OPS = "TF_DETERMINISTIC_OPS"
+
+USE_GPU = "use_gpu"

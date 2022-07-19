@@ -21,12 +21,23 @@ class SocketBlueprint(Blueprint):
     def __init__(
         self, sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any
     ) -> None:
-        self.sio = sio
-        self.socketio_path = socketio_path
+        """Creates a :class:`sanic.Blueprint` for routing socketio connections.
+
+        :param sio: Instance of :class:`socketio.AsyncServer` class
+        :param socketio_path: string indicating the route to accept requests on.
+        """
         super().__init__(*args, **kwargs)
+        self.ctx.sio = sio
+        self.ctx.socketio_path = socketio_path
 
     def register(self, app: Sanic, options: Dict[Text, Any]) -> None:
-        self.sio.attach(app, self.socketio_path)
+        """Attach the Socket.IO webserver to the given Sanic instance.
+
+        :param app: Instance of :class:`sanic.app.Sanic` class
+        :param options: Options to be used while registering the
+            blueprint into the app.
+        """
+        self.ctx.sio.attach(app, self.ctx.socketio_path)
         super().register(app, options)
 
 

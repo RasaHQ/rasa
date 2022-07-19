@@ -134,7 +134,7 @@ def test_hangouts_extract_functions():
     def create_req(app):
         return Request(
             b"http://127.0.0.1:42101/webhooks/hangouts/webhook",
-            None,
+            {},
             None,
             "POST",
             None,

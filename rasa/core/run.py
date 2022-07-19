@@ -76,7 +76,7 @@ def _create_single_channel(channel: Text, credentials: Dict[Text, Any]) -> Any:
 
 
 def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None) -> Sanic:
-    app = Sanic(__name__, configure_logging=False)
+    app = Sanic("rasa_core_no_api", configure_logging=False, register=False)
     server.add_root_route(app)
     server.configure_cors(app, cors)
     return app
@@ -204,8 +204,8 @@ def serve_application(
 
     # noinspection PyUnresolvedReferences
     async def clear_model_files(_app: Sanic, _loop: Text) -> None:
-        if app.agent.model_directory:
-            shutil.rmtree(_app.agent.model_directory)
+        if app.ctx.agent.model_directory:
+            shutil.rmtree(_app.ctx.agent.model_directory)
 
     number_of_workers = rasa.core.utils.number_of_sanic_workers(
         endpoints.lock_store if endpoints else None
@@ -258,7 +258,7 @@ async def load_agent_on_start(
     model_server = endpoints.model if endpoints and endpoints.model else None
 
     try:
-        app.agent = await agent.load_agent(
+        app.ctx.agent = await agent.load_agent(
             model_path,
             model_server=model_server,
             remote_storage=remote_storage,
@@ -273,14 +273,14 @@ async def load_agent_on_start(
             f"The model at '{model_path}' could not be loaded. "
             f"Error: {type(e)}: {e}"
         )
-        app.agent = None
+        app.ctx.agent = None
 
-    if not app.agent:
+    if not app.ctx.agent:
         rasa.shared.utils.io.raise_warning(
             "Agent could not be loaded with the provided configuration. "
             "Load default agent without any model."
         )
-        app.agent = Agent(
+        app.ctx.agent = Agent(
             interpreter=_interpreter,
             generator=endpoints.nlg,
             tracker_store=_tracker_store,
@@ -290,7 +290,7 @@ async def load_agent_on_start(
         )
 
     logger.info("Rasa server is up and running.")
-    return app.agent
+    return app.ctx.agent
 
 
 async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
@@ -300,7 +300,7 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
         app: The Sanic application.
         _: The current Sanic worker event loop.
     """
-    current_agent = getattr(app, "agent", None)
+    current_agent = getattr(app.ctx, "agent", None)
     if not current_agent:
         logger.debug("No agent found when shutting down server.")
         return
