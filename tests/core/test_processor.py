@@ -1523,6 +1523,7 @@ async def test_loads_correct_model_from_path(
     assert nlu_processor.model_filename == trained_nlu_model_name
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_custom_action_triggers_action_extract_slots(
     trained_async: Callable,
     caplog: LogCaptureFixture,
