@@ -1234,7 +1234,7 @@ class ActionExtractSlots(Action):
                     if not isinstance(slot, ListSlot):
                         value = value[-1]
 
-                    if tracker.get_slot(slot.name) != value:
+                    if value is not None or tracker.get_slot(slot.name) is not None:
                         slot_events.append(SlotSet(slot.name, value))
 
                 should_fill_custom_slot = mapping_type == SlotMappingType.CUSTOM

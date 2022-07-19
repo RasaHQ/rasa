@@ -34,6 +34,8 @@ from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
+ACTION_SERVER_URL = "http://my-action-server:5055/webhook"
+
 
 async def test_activate():
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
@@ -65,7 +67,70 @@ async def test_activate():
         tracker,
         domain,
     )
+    assert isinstance(events[-1], BotUttered)
     assert events[:-1] == [ActiveLoop(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
+
+
+async def test_activate_with_custom_slot_mapping():
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
+    form_name = "my_form"
+    action_server = EndpointConfig(ACTION_SERVER_URL)
+    action = FormAction(form_name, action_server)
+    domain_required_slot_name = "num_people"
+    slot_set_by_remote_custom_extraction_method = "some_slot"
+    slot_value_set_by_remote_custom_extraction_method = "anything"
+    domain = textwrap.dedent(
+        f"""
+    slots:
+      {domain_required_slot_name}:
+        type: float
+        mappings:
+        - type: from_entity
+          entity: number
+      {slot_set_by_remote_custom_extraction_method}:
+          type: any
+          mappings:
+          - type: custom
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+        - {domain_required_slot_name}
+    responses:
+      utter_ask_num_people:
+      - text: "How many people?"
+    actions:
+      - validate_{form_name}
+      """
+    )
+    domain = Domain.from_yaml(domain)
+
+    form_validation_events = [
+        {
+            "event": "slot",
+            "timestamp": None,
+            "name": slot_set_by_remote_custom_extraction_method,
+            "value": slot_value_set_by_remote_custom_extraction_method,
+        }
+    ]
+    with aioresponses() as mocked:
+        mocked.post(
+            ACTION_SERVER_URL,
+            payload={"events": form_validation_events},
+        )
+        events = await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+    assert events[:-1] == [
+        ActiveLoop(form_name),
+        SlotSet(
+            slot_set_by_remote_custom_extraction_method,
+            slot_value_set_by_remote_custom_extraction_method,
+        ),
+        SlotSet(REQUESTED_SLOT, domain_required_slot_name),
+    ]
     assert isinstance(events[-1], BotUttered)
 
 
@@ -112,7 +177,7 @@ async def test_activate_with_prefilled_slot():
     tracker = DialogueStateTracker.from_events(
         sender_id="bla", evts=[SlotSet(slot_name, slot_value)]
     )
-    form_name = "my form"
+    form_name = "my_form"
     action = FormAction(form_name, None)
 
     next_slot_to_request = "next slot to request"
@@ -575,12 +640,10 @@ async def test_validate_slots(
     assert slot_events == [SlotSet(slot_name, slot_value), SlotSet("num_tables", 5)]
     tracker.update_with_events(slot_events, domain)
 
-    action_server_url = "http:/my-action-server:5055/webhook"
-
     with aioresponses() as mocked:
-        mocked.post(action_server_url, payload={"events": validate_return_events})
+        mocked.post(ACTION_SERVER_URL, payload={"events": validate_return_events})
 
-        action_server = EndpointConfig(action_server_url)
+        action_server = EndpointConfig(ACTION_SERVER_URL)
         action = FormAction(form_name, action_server)
 
         events = await action.run(
@@ -633,8 +696,6 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
         ],
     )
 
-    action_server_url = "http://my-action-server:5055/webhook"
-
     # Custom form validation action changes the order of the requested slots
     validate_return_events = [
         {"event": "slot", "name": REQUESTED_SLOT, "value": slot_name_2}
@@ -644,9 +705,9 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
     expected_events = [SlotSet(REQUESTED_SLOT, slot_name_2)]
 
     with aioresponses() as mocked:
-        mocked.post(action_server_url, payload={"events": validate_return_events})
+        mocked.post(ACTION_SERVER_URL, payload={"events": validate_return_events})
 
-        action_server = EndpointConfig(action_server_url)
+        action_server = EndpointConfig(ACTION_SERVER_URL)
         action = FormAction(form_name, action_server)
 
         events = await action.run(
@@ -694,12 +755,11 @@ async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[
     - validate_{form_name}
     """
     domain = Domain.from_yaml(domain)
-    action_server_url = "http:/my-action-server:5055/webhook"
 
     with aioresponses() as mocked:
-        mocked.post(action_server_url, payload={"events": custom_events})
+        mocked.post(ACTION_SERVER_URL, payload={"events": custom_events})
 
-        action_server = EndpointConfig(action_server_url)
+        action_server = EndpointConfig(ACTION_SERVER_URL)
         action = FormAction(form_name, action_server)
 
         with pytest.raises(ActionExecutionRejection):
@@ -736,12 +796,10 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
     - validate_{form_name}
     """
     domain = Domain.from_yaml(domain)
-    action_server_url = "http:/my-action-server:5055/webhook"
-
     expected_slot_value = "✅"
     with aioresponses() as mocked:
         mocked.post(
-            action_server_url,
+            ACTION_SERVER_URL,
             payload={
                 "events": [
                     {"event": "slot", "name": slot_name, "value": expected_slot_value}
@@ -749,7 +807,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
             },
         )
 
-        action_server = EndpointConfig(action_server_url)
+        action_server = EndpointConfig(ACTION_SERVER_URL)
         action_extract_slots = ActionExtractSlots(action_endpoint=None)
         slot_events = await action_extract_slots.run(
             CollectingOutputChannel(),
@@ -761,6 +819,10 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
 
         form_action = FormAction(form_name, action_server)
 
+        mocked.post(
+            ACTION_SERVER_URL,
+            payload={"events": []},
+        )
         events = await form_action.run(
             CollectingOutputChannel(),
             TemplatedNaturalLanguageGenerator(domain.responses),
@@ -1663,17 +1725,15 @@ async def test_action_extract_slots_custom_mapping_with_condition():
         sender_id="test_id", evts=events, slots=domain.slots
     )
 
-    action_server_url = "http:/my-action-server:5055/webhook"
-
     with aioresponses() as mocked:
         mocked.post(
-            action_server_url,
+            ACTION_SERVER_URL,
             payload={
                 "events": [{"event": "slot", "name": "custom_slot", "value": "test"}]
             },
         )
 
-        action_server = EndpointConfig(action_server_url)
+        action_server = EndpointConfig(ACTION_SERVER_URL)
         action_extract_slots = ActionExtractSlots(action_server)
         events = await action_extract_slots.run(
             CollectingOutputChannel(),
