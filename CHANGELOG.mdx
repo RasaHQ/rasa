@@ -16,6 +16,17 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.2.3] - 2022-07-18                         
+### Bugfixes
+- [#11305](https://github.com/rasahq/rasa/issues/11305): - Fixed error in creating response when slack sends retry messages. Assigning `None` to `response.text` caused `TypeError: Bad body type. Expected str, got NoneType`.
+  - Fixed Slack triggering timeout after 3 seconds if the action execution is too slow. Running `on_new_message` as an asyncio background task instead of a blocking await fixes this by immediately returning a response with code 200.
+- [#11326](https://github.com/rasahq/rasa/issues/11326): Revert change in #10295 that removed running the form validation action on activation of the form before the loop is active.
+- [#11333](https://github.com/rasahq/rasa/issues/11333): `SlotSet` events will be emitted when the value set by the current user turn is the same as the existing value.
+
+  Previously, `ActionExtractSlots` would not emit any `SlotSet` events if the new value was the same as the existing
+  one. This caused the augmented memoization policy to lose these slot values when truncating the tracker.
+
+
 ## [3.2.2] - 2022-07-05                         
 ### Improved Documentation
 - [#11207](https://github.com/rasahq/rasa/issues/11207): Update documentation for customizable classes such as tracker stores, event brokers and lock stores.
