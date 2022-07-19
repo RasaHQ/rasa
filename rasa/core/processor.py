@@ -887,6 +887,15 @@ class MessageProcessor:
             events = []
 
         self._log_action_on_tracker(tracker, action, events, prediction)
+
+        if any(isinstance(e, UserUttered) for e in events):
+            logger.debug(
+                f"A `UserUttered` event was returned by executing "
+                f"action '{action.name()}'. This will run the default action "
+                f"'{ACTION_EXTRACT_SLOTS}'."
+            )
+            tracker = await self.run_action_extract_slots(output_channel, tracker)
+
         if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
             UTTER_PREFIX
         ):

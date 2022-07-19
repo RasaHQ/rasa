@@ -65,6 +65,7 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
+    ACTION_EXTRACT_SLOTS,
     ACTION_RESTART_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
     DEFAULT_INTENTS,
@@ -1520,3 +1521,79 @@ async def test_loads_correct_model_from_path(
 
     assert core_processor.model_filename == trained_core_model_name
     assert nlu_processor.model_filename == trained_nlu_model_name
+
+
+@pytest.mark.timeout(120, func_only=True)
+async def test_custom_action_triggers_action_extract_slots(
+    trained_async: Callable,
+    caplog: LogCaptureFixture,
+):
+    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = f"{parent_folder}/config.yml"
+    stories_path = f"{parent_folder}/stories.yml"
+    nlu_path = f"{parent_folder}/nlu.yml"
+
+    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
+    agent = Agent.load(model_path)
+    processor = agent.processor
+
+    action_server_url = "http://some-url"
+    endpoint = EndpointConfig(action_server_url)
+    processor.action_endpoint = endpoint
+
+    entity_name = "mood"
+    slot_name = "mood_slot"
+    slot_value = "happy"
+    custom_action = "action_force_next_utter"
+
+    sender_id = uuid.uuid4().hex
+    message = UserMessage(
+        text="Activate custom action.",
+        output_channel=CollectingOutputChannel(),
+        sender_id=sender_id,
+        parse_data={
+            "intent": {"name": "activate_flow", "confidence": 1},
+            "entities": [],
+        },
+    )
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "action", "name": "action_listen"},
+                    {
+                        "event": "user",
+                        "text": "Feeling so happy",
+                        "parse_data": {
+                            "intent": {"name": "mood_great", "confidence": 1.0},
+                            "entities": [{"entity": entity_name, "value": slot_value}],
+                        },
+                    },
+                ]
+            },
+        )
+        with caplog.at_level(logging.DEBUG):
+            await processor.handle_message(message)
+
+        caplog_records = [rec.message for rec in caplog.records]
+
+        assert (
+            f"A `UserUttered` event was returned by executing "
+            f"action '{custom_action}'. This will run the default action "
+            f"'{ACTION_EXTRACT_SLOTS}'." in caplog_records
+        )
+
+    tracker = processor.get_tracker(sender_id)
+    assert any(
+        isinstance(e, UserUttered) and e.text == "Feeling so happy"
+        for e in tracker.events
+    )
+    assert SlotSet(slot_name, slot_value) in tracker.events
+    assert tracker.get_slot(slot_name) == slot_value
+    assert any(
+        isinstance(e, BotUttered) and e.text == "Great, carry on!"
+        for e in tracker.events
+    )
