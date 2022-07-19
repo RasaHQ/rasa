@@ -17,10 +17,10 @@ how you can migrate from one version to another.
 
 ### ConcurrentRedisLockStore
 
-The [`ConcurrentRedisLockStore`](./lock-stores.mdx#concurrentredislockstore) is the new Redis implementation of the abstract interface `LockStore`.
-This implementation is able to handle messages received in parallel for the same conversation id by different Rasa instances.
+The [`ConcurrentRedisLockStore`](./lock-stores.mdx#concurrentredislockstore) is a new lock store using Redis for persistence.
+This lock store can handle receiving messages in parallel for the same conversation ID by different Rasa instances.
 
-In order to switch from using the `RedisLockStore` to the `ConcurrentRedisLockStore`, specify the parameter (new in 3.3) `concurrent_mode` as `true` in `endpoints.yml`:
+To switch from the `RedisLockStore` to the `ConcurrentRedisLockStore`, specify the parameter (new in 3.3) `concurrent_mode` as `true` in `endpoints.yml`:
 
 ```yaml-rasa
 lock_store:
@@ -33,13 +33,14 @@ lock_store:
     key_prefix: <alphanumeric value to prepend to lock store keys>
 ```
 
-Note that not specifying the `concurrent_mode` parameter or setting it to `false` will default to using the `RedisLockStore` implementation.
+Note that omitting the `concurrent_mode` parameter or setting it to `false` will default to using the `RedisLockStore`.
 
-No database migration is required when switching to the `ConcurrentRedisLockStore`, and you may use the same Redis database number.
+No database migration is required when switching to the `ConcurrentRedisLockStore`. You can use the same Redis instance and database number as you did previously when using the `RedisLockStore`.
 You may want to delete all the preexisting keys if using the same Redis database number.
-The reason for this is because what used to be stored by the `RedisLockStore`(i.e., serialized [TicketLock](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticketlock-objects) instances) is no longer stored by the new `ConcurrentRedisLockStore`.
-The `ConcurrentRedisLockStore` instead stores individual `Ticket` instances, as well as the last issued ticket number.
-The mechanism for concurrent message handling of the same conversation id recreates the `TicketLock` from the persisted `Ticket` instances.
+These former key-value items are no longer required by the `ConcurrentRedisLockStore` and the database can be cleared.
+
+There is no overlap in key-value items stored when using the `RedisLockStore` and the `ConcurrentRedisLockStore`, because the `RedisLockStore` persists serialized [TicketLock](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticketlock-objects) instances) while the `ConcurrentRedisLockStore` instead stores individual [`Ticket`](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticket-objects) instances, as well as the last issued ticket number.
+The `ConcurrentRedisLockStore` recreates the `TicketLock` from the persisted `Ticket` instances, which allows it to handle concurrent messages for the same conversation ID.
 
 
 ## Rasa 3.0 to 3.1

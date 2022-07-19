@@ -36,8 +36,8 @@ address the same node when sending messages for a given conversation ID.
 
 :::info New in 3.3
 
-`ConcurrentRedisLockStore` is the new implementation of the abstract interface `LockStore` that uses Redis as a persistence layer.
-You can read through the [migration guide](./migration-guide.mdx#concurrentredislockstore) to learn how to switch to this lock store implementation.
+`ConcurrentRedisLockStore` is a new lock store that uses Redis as a persistence layer and is safe for use with multiple Rasa server replicas.
+See the [migration guide](./migration-guide.mdx#concurrentredislockstore) to learn how to switch to this lock store.
 
 :::
 
