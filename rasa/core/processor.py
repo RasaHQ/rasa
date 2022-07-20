@@ -175,6 +175,9 @@ class MessageProcessor:
         )
         tracker.update_with_events(extraction_events, self.domain)
 
+        if any([isinstance(e, BotUttered) for e in extraction_events]):
+            await self.execute_side_effects(extraction_events, tracker, output_channel)
+
         events_as_str = "\n".join([str(e) for e in extraction_events])
         logger.debug(
             f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
