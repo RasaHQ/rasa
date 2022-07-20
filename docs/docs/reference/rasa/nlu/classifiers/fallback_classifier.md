@@ -8,7 +8,7 @@ title: rasa.nlu.classifiers.fallback_classifier
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
 )
-class FallbackClassifier(GraphComponent,  IntentClassifier)
+class FallbackClassifier(GraphComponent, IntentClassifier)
 ```
 
 Handles incoming messages with low NLU confidence.

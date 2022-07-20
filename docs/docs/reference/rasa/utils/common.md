@@ -5,7 +5,7 @@ title: rasa.utils.common
 ## TempDirectoryPath Objects
 
 ```python
-class TempDirectoryPath(str,  ContextManager)
+class TempDirectoryPath(str, ContextManager)
 ```
 
 Represents a path to an temporary directory.

@@ -10,7 +10,7 @@ title: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer
     is_trainable=False,
     model_from="MitieNLP",
 )
-class MitieFeaturizer(DenseFeaturizer,  GraphComponent)
+class MitieFeaturizer(DenseFeaturizer, GraphComponent)
 ```
 
 A class that featurizes using Mitie.

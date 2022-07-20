@@ -5,7 +5,7 @@ title: rasa.nlu.featurizers.featurizer
 ## Featurizer Objects
 
 ```python
-class Featurizer(Generic[FeatureType],  ABC)
+class Featurizer(Generic[FeatureType], ABC)
 ```
 
 Base class for all featurizers.

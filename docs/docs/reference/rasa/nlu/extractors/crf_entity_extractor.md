@@ -5,7 +5,7 @@ title: rasa.nlu.extractors.crf_entity_extractor
 ## CRFEntityExtractorOptions Objects
 
 ```python
-class CRFEntityExtractorOptions(str,  Enum)
+class CRFEntityExtractorOptions(str, Enum)
 ```
 
 Features that can be used for the &#x27;CRFEntityExtractor&#x27;.
@@ -16,7 +16,7 @@ Features that can be used for the &#x27;CRFEntityExtractor&#x27;.
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class CRFEntityExtractor(GraphComponent,  EntityExtractorMixin)
+class CRFEntityExtractor(GraphComponent, EntityExtractorMixin)
 ```
 
 Implements conditional random fields (CRF) to do named entity recognition.

@@ -8,7 +8,7 @@ title: rasa.nlu.classifiers.sklearn_intent_classifier
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
-class SklearnIntentClassifier(GraphComponent,  IntentClassifier)
+class SklearnIntentClassifier(GraphComponent, IntentClassifier)
 ```
 
 Intent classifier using the sklearn framework.

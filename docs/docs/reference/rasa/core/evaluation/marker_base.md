@@ -319,7 +319,7 @@ Collect markers for each dialogue in each tracker loaded.
 ## OperatorMarker Objects
 
 ```python
-class OperatorMarker(Marker,  ABC)
+class OperatorMarker(Marker, ABC)
 ```
 
 Combines several markers into one.
@@ -437,7 +437,7 @@ See `Marker.from_config` for more details.
 ## ConditionMarker Objects
 
 ```python
-class ConditionMarker(Marker,  ABC)
+class ConditionMarker(Marker, ABC)
 ```
 
 A marker that does not contain any sub-markers.

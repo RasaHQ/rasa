@@ -8,7 +8,7 @@ title: rasa.nlu.classifiers.logistic_regression_classifier
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
-class LogisticRegressionClassifier(IntentClassifier,  GraphComponent)
+class LogisticRegressionClassifier(IntentClassifier, GraphComponent)
 ```
 
 Intent classifier using the Logistic Regression.

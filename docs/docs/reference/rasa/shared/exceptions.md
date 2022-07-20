@@ -24,7 +24,7 @@ Basic exception for errors raised by Rasa Core.
 ## InvalidParameterException Objects
 
 ```python
-class InvalidParameterException(RasaException,  ValueError)
+class InvalidParameterException(RasaException, ValueError)
 ```
 
 Raised when an invalid parameter is used.
@@ -60,7 +60,7 @@ Raised when a YAML file can not be parsed properly due to a syntax error.
 ## FileNotFoundException Objects
 
 ```python
-class FileNotFoundException(RasaException,  FileNotFoundError)
+class FileNotFoundException(RasaException, FileNotFoundError)
 ```
 
 Raised when a file, expected to exist, doesn&#x27;t exist.
@@ -76,7 +76,7 @@ Raised if there is an error while doing file IO.
 ## InvalidConfigException Objects
 
 ```python
-class InvalidConfigException(ValueError,  RasaException)
+class InvalidConfigException(ValueError, RasaException)
 ```
 
 Raised if an invalid configuration is encountered.
@@ -92,7 +92,7 @@ Raised if a requested feature is not supported.
 ## SchemaValidationError Objects
 
 ```python
-class SchemaValidationError(RasaException,  jsonschema.ValidationError)
+class SchemaValidationError(RasaException, jsonschema.ValidationError)
 ```
 
 Raised if schema validation via `jsonschema` failed.
@@ -100,7 +100,7 @@ Raised if schema validation via `jsonschema` failed.
 ## InvalidEntityFormatException Objects
 
 ```python
-class InvalidEntityFormatException(RasaException,  json.JSONDecodeError)
+class InvalidEntityFormatException(RasaException, json.JSONDecodeError)
 ```
 
 Raised if the format of an entity is invalid.

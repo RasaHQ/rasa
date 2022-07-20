@@ -5,7 +5,7 @@ title: rasa.shared.core.training_data.structures
 ## EventTypeError Objects
 
 ```python
-class EventTypeError(RasaCoreException,  ValueError)
+class EventTypeError(RasaCoreException, ValueError)
 ```
 
 Represents an error caused by a Rasa Core event not being of the expected

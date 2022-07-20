@@ -8,7 +8,7 @@ title: rasa.nlu.extractors.duckling_entity_extractor
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=False
 )
-class DucklingEntityExtractor(GraphComponent,  EntityExtractorMixin)
+class DucklingEntityExtractor(GraphComponent, EntityExtractorMixin)
 ```
 
 Searches for structured entities, e.g. dates, using a duckling server.

@@ -12,7 +12,7 @@ title: rasa.nlu.classifiers.diet_classifier
     ],
     is_trainable=True,
 )
-class DIETClassifier(GraphComponent,  IntentClassifier,  EntityExtractorMixin)
+class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin)
 ```
 
 A multi-task model for intent classification and entity extraction.

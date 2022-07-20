@@ -13,7 +13,7 @@ Raised if a slot type is invalid.
 ## InvalidSlotConfigError Objects
 
 ```python
-class InvalidSlotConfigError(RasaException,  ValueError)
+class InvalidSlotConfigError(RasaException, ValueError)
 ```
 
 Raised if a slot&#x27;s config is invalid.

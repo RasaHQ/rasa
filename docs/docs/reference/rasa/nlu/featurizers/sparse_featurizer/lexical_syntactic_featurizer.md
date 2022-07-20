@@ -8,7 +8,7 @@ title: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
-class LexicalSyntacticFeaturizer(SparseFeaturizer,  GraphComponent)
+class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent)
 ```
 
 Extracts and encodes lexical syntactic features.

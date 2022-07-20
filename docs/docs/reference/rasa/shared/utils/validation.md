@@ -5,7 +5,7 @@ title: rasa.shared.utils.validation
 ## YamlValidationException Objects
 
 ```python
-class YamlValidationException(YamlException,  ValueError)
+class YamlValidationException(YamlException, ValueError)
 ```
 
 Raised if a yaml file does not correspond to the expected schema.

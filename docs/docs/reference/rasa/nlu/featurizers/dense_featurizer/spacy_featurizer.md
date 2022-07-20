@@ -8,7 +8,7 @@ title: rasa.nlu.featurizers.dense_featurizer.spacy_featurizer
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
 )
-class SpacyFeaturizer(DenseFeaturizer,  GraphComponent)
+class SpacyFeaturizer(DenseFeaturizer, GraphComponent)
 ```
 
 Featurize messages using SpaCy.

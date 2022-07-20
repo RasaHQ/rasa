@@ -5,7 +5,7 @@ title: rasa.core.test
 ## WrongPredictionException Objects
 
 ```python
-class WrongPredictionException(RasaException,  ValueError)
+class WrongPredictionException(RasaException, ValueError)
 ```
 
 Raised if a wrong prediction is encountered.

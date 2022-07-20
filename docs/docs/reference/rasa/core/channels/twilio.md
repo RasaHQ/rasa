@@ -5,7 +5,7 @@ title: rasa.core.channels.twilio
 ## TwilioOutput Objects
 
 ```python
-class TwilioOutput(Client,  OutputChannel)
+class TwilioOutput(Client, OutputChannel)
 ```
 
 Output channel for Twilio

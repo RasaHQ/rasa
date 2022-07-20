@@ -8,7 +8,7 @@ title: rasa.nlu.extractors.regex_entity_extractor
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class RegexEntityExtractor(GraphComponent,  EntityExtractorMixin)
+class RegexEntityExtractor(GraphComponent, EntityExtractorMixin)
 ```
 
 Extracts entities via lookup tables and regexes defined in the training data.

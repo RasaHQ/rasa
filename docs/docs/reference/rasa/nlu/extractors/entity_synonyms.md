@@ -8,7 +8,7 @@ title: rasa.nlu.extractors.entity_synonyms
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class EntitySynonymMapper(GraphComponent,  EntityExtractorMixin)
+class EntitySynonymMapper(GraphComponent, EntityExtractorMixin)
 ```
 
 Maps entities to their synonyms if they appear in the training data.

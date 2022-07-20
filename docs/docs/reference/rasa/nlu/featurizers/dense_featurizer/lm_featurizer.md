@@ -8,7 +8,7 @@ title: rasa.nlu.featurizers.dense_featurizer.lm_featurizer
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
 )
-class LanguageModelFeaturizer(DenseFeaturizer,  GraphComponent)
+class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent)
 ```
 
 A featurizer that uses transformer-based language models.

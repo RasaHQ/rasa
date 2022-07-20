@@ -5,7 +5,7 @@ title: rasa.nlu.featurizers.dense_featurizer.dense_featurizer
 ## DenseFeaturizer Objects
 
 ```python
-class DenseFeaturizer(Featurizer[np.ndarray],  ABC)
+class DenseFeaturizer(Featurizer[np.ndarray], ABC)
 ```
 
 Base class for all dense featurizers.

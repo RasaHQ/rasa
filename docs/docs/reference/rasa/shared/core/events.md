@@ -165,7 +165,7 @@ Returns text representation of event.
 ## AlwaysEqualEventMixin Objects
 
 ```python
-class AlwaysEqualEventMixin(Event,  ABC)
+class AlwaysEqualEventMixin(Event, ABC)
 ```
 
 Class to deduplicate common behavior for events without additional attributes.
@@ -181,7 +181,7 @@ Compares object with other object.
 ## SkipEventInMDStoryMixin Objects
 
 ```python
-class SkipEventInMDStoryMixin(Event,  ABC)
+class SkipEventInMDStoryMixin(Event, ABC)
 ```
 
 Skips the visualization of an event in Markdown stories.

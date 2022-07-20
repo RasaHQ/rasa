@@ -8,7 +8,7 @@ title: rasa.nlu.classifiers.regex_message_handler
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
 )
-class RegexMessageHandler(GraphComponent,  EntityExtractorMixin)
+class RegexMessageHandler(GraphComponent, EntityExtractorMixin)
 ```
 
 Handles hardcoded NLU predictions from messages starting with a `/`.

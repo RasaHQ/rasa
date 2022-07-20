@@ -8,7 +8,7 @@ title: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
-class CountVectorsFeaturizer(SparseFeaturizer,  GraphComponent)
+class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent)
 ```
 
 Creates a sequence of token counts features based on sklearn&#x27;s `CountVectorizer`.

@@ -10,7 +10,7 @@ title: rasa.nlu.extractors.spacy_entity_extractor
     is_trainable=False,
     model_from="SpacyNLP",
 )
-class SpacyEntityExtractor(GraphComponent,  EntityExtractorMixin)
+class SpacyEntityExtractor(GraphComponent, EntityExtractorMixin)
 ```
 
 Entity extractor which uses SpaCy.

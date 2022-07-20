@@ -5,7 +5,7 @@ title: rasa.core.channels.telegram
 ## TelegramOutput Objects
 
 ```python
-class TelegramOutput(TeleBot,  OutputChannel)
+class TelegramOutput(TeleBot, OutputChannel)
 ```
 
 Output channel for Telegram.

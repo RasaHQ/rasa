@@ -10,7 +10,7 @@ title: rasa.nlu.classifiers.mitie_intent_classifier
     is_trainable=True,
     model_from="MitieNLP",
 )
-class MitieIntentClassifier(GraphComponent,  IntentClassifier)
+class MitieIntentClassifier(GraphComponent, IntentClassifier)
 ```
 
 Intent classifier which uses the `mitie` library.

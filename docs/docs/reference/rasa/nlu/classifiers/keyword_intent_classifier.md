@@ -8,7 +8,7 @@ title: rasa.nlu.classifiers.keyword_intent_classifier
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
-class KeywordIntentClassifier(GraphComponent,  IntentClassifier)
+class KeywordIntentClassifier(GraphComponent, IntentClassifier)
 ```
 
 Intent classifier using simple keyword matching.

@@ -53,7 +53,7 @@ Returns a stable hash for this Token.
 ## Tokenizer Objects
 
 ```python
-class Tokenizer(GraphComponent,  abc.ABC)
+class Tokenizer(GraphComponent, abc.ABC)
 ```
 
 Base class for tokenizers.

@@ -13,7 +13,7 @@ Exception that can be raised when domain is not valid.
 ## ActionNotFoundException Objects
 
 ```python
-class ActionNotFoundException(ValueError,  RasaException)
+class ActionNotFoundException(ValueError, RasaException)
 ```
 
 Raised when an action name could not be found.

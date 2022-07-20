@@ -8,7 +8,7 @@ title: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
-class RegexFeaturizer(SparseFeaturizer,  GraphComponent)
+class RegexFeaturizer(SparseFeaturizer, GraphComponent)
 ```
 
 Adds message features based on regex expressions.

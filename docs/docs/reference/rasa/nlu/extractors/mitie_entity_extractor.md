@@ -10,7 +10,7 @@ title: rasa.nlu.extractors.mitie_entity_extractor
     is_trainable=True,
     model_from="MitieNLP",
 )
-class MitieEntityExtractor(GraphComponent,  EntityExtractorMixin)
+class MitieEntityExtractor(GraphComponent, EntityExtractorMixin)
 ```
 
 A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`).

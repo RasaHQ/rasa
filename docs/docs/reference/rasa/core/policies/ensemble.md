@@ -99,7 +99,7 @@ Derives a single prediction from the given list of predictions.
 ## DefaultPolicyPredictionEnsemble Objects
 
 ```python
-class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble,  GraphComponent)
+class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent)
 ```
 
 An ensemble that picks the &quot;best&quot; prediction and combines events from all.

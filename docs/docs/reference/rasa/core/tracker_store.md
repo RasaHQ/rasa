@@ -262,7 +262,7 @@ Returns the domain of the tracker store.
 ## InMemoryTrackerStore Objects
 
 ```python
-class InMemoryTrackerStore(TrackerStore,  SerializedTrackerAsText)
+class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText)
 ```
 
 Stores conversation history in memory.
@@ -302,7 +302,7 @@ Returns sender_ids of the Tracker Store in memory.
 ## RedisTrackerStore Objects
 
 ```python
-class RedisTrackerStore(TrackerStore,  SerializedTrackerAsText)
+class RedisTrackerStore(TrackerStore, SerializedTrackerAsText)
 ```
 
 Stores conversation history in Redis.
@@ -353,7 +353,7 @@ Returns keys of the Redis Tracker Store.
 ## DynamoTrackerStore Objects
 
 ```python
-class DynamoTrackerStore(TrackerStore,  SerializedTrackerAsDict)
+class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict)
 ```
 
 Stores conversation history in DynamoDB.
@@ -424,7 +424,7 @@ Returns sender_ids of the `DynamoTrackerStore`.
 ## MongoTrackerStore Objects
 
 ```python
-class MongoTrackerStore(TrackerStore,  SerializedTrackerAsText)
+class MongoTrackerStore(TrackerStore, SerializedTrackerAsText)
 ```
 
 Stores conversation history in Mongo.
@@ -539,7 +539,7 @@ Ensure that port can be converted to integer.
 ## SQLTrackerStore Objects
 
 ```python
-class SQLTrackerStore(TrackerStore,  SerializedTrackerAsText)
+class SQLTrackerStore(TrackerStore, SerializedTrackerAsText)
 ```
 
 Store which can save and retrieve trackers from an SQL database.

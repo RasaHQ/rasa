@@ -62,7 +62,7 @@ Checks if the specified file is a story file.
 ## StoryParseError Objects
 
 ```python
-class StoryParseError(RasaCoreException,  ValueError)
+class StoryParseError(RasaCoreException, ValueError)
 ```
 
 Raised if there is an error while parsing a story file.

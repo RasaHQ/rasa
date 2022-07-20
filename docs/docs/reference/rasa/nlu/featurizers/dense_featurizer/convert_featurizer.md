@@ -8,7 +8,7 @@ title: rasa.nlu.featurizers.dense_featurizer.convert_featurizer
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
 )
-class ConveRTFeaturizer(DenseFeaturizer,  GraphComponent)
+class ConveRTFeaturizer(DenseFeaturizer, GraphComponent)
 ```
 
 Featurizer using ConveRT model.
