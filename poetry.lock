@@ -2486,7 +2486,7 @@ requests = "*"
 
 [[package]]
 name = "rsa"
-version = "4.8"
+version = "4.9"
 description = "Pure-Python RSA implementation"
 category = "main"
 optional = false
@@ -5234,10 +5234,7 @@ rocketchat-api = [
     {file = "rocketchat_API-1.25.0-py3-none-any.whl", hash = "sha256:701997e206fcb547edd2b8c2d388fc5789476ba3863b0be7c6853867df7551fd"},
     {file = "rocketchat_API-1.25.0.tar.gz", hash = "sha256:679c0e4d374f54b8a2cfdb29df1e9b6246f03596470e98befafcb64f22f0c083"},
 ]
-rsa = [
-    {file = "rsa-4.8-py3-none-any.whl", hash = "sha256:95c5d300c4e879ee69708c428ba566c59478fd653cc3a22243eeb8ed846950bb"},
-    {file = "rsa-4.8.tar.gz", hash = "sha256:5c6bd9dc7a543b7fe4304a631f8a8a3b674e2bbfc49c2ae96200cdbe55df6b17"},
-]
+rsa = []
 "ruamel.yaml" = [
     {file = "ruamel.yaml-0.16.13-py2.py3-none-any.whl", hash = "sha256:64b06e7873eb8e1125525ecef7345447d786368cadca92a7cd9b59eae62e95a3"},
     {file = "ruamel.yaml-0.16.13.tar.gz", hash = "sha256:bb48c514222702878759a05af96f4b7ecdba9b33cd4efcf25c86b882cef3a942"},
