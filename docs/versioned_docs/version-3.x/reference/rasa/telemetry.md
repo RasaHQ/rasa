@@ -190,7 +190,7 @@ Write to the configuration if telemetry tracking should be enabled or disabled.
 #### filter\_errors
 
 ```python
-filter_errors(event: Optional[Dict[Text, Any]], hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]
+filter_errors(event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]
 ```
 
 Filter errors.

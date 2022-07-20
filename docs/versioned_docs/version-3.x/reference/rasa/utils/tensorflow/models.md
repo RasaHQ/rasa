@@ -33,7 +33,7 @@ Initialize the RasaModel.
 #### batch\_loss
 
 ```python
- | batch_loss(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> tf.Tensor
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
 ```
 
 Calculates the loss for the given batch.
@@ -62,7 +62,7 @@ For example, pre calculation of `self.all_labels_embed`.
 #### batch\_predict
 
 ```python
- | batch_predict(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.
@@ -79,7 +79,7 @@ Predicts the output of the given batch.
 #### train\_step
 
 ```python
- | train_step(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> Dict[Text, float]
+ | train_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, float]
 ```
 
 Performs a train step using the given batch.
@@ -96,7 +96,7 @@ Performs a train step using the given batch.
 #### test\_step
 
 ```python
- | test_step(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> Dict[Text, float]
+ | test_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, float]
 ```
 
 Tests the model using the given batch.
@@ -115,7 +115,7 @@ This method is used during validation.
 #### predict\_step
 
 ```python
- | predict_step(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> Dict[Text, tf.Tensor]
+ | predict_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
 ```
 
 Predicts the output for the given batch.
@@ -192,7 +192,7 @@ Loads a model from the given weights.
 
 ```python
  | @staticmethod
- | batch_to_model_data_format(batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]], data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]]) -> Dict[Text, Dict[Text, List[tf.Tensor]]]
+ | batch_to_model_data_format(batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]], data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]]) -> Dict[Text, Dict[Text, List[tf.Tensor]]]
 ```
 
 Convert input batch tensors into batch data format.
@@ -270,7 +270,7 @@ Returns the dot-product loss layer to use.
 #### batch\_loss
 
 ```python
- | batch_loss(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> tf.Tensor
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
 ```
 
 Calculates the loss for the given batch.
@@ -287,7 +287,7 @@ Calculates the loss for the given batch.
 #### batch\_predict
 
 ```python
- | batch_predict(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.

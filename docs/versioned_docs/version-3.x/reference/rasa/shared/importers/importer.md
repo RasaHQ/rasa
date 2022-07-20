@@ -5,24 +5,14 @@ title: rasa.shared.importers.importer
 ## TrainingDataImporter Objects
 
 ```python
-class TrainingDataImporter(ABC)
+class TrainingDataImporter()
 ```
 
 Common interface for different mechanisms to load training data.
 
-#### \_\_init\_\_
-
-```python
- | @abstractmethod
- | __init__(config_file: Optional[Text] = None, domain_path: Optional[Text] = None, training_data_paths: Optional[Union[List[Text], Text]] = None, **kwargs: Any, ,) -> None
-```
-
-Initialise the importer.
-
 #### get\_domain
 
 ```python
- | @abstractmethod
  | get_domain() -> Domain
 ```
 
@@ -35,7 +25,6 @@ Retrieves the domain of the bot.
 #### get\_stories
 
 ```python
- | @abstractmethod
  | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
@@ -65,7 +54,6 @@ Retrieves end-to-end conversation stories for testing.
 #### get\_config
 
 ```python
- | @abstractmethod
  | get_config() -> Dict
 ```
 
@@ -78,7 +66,6 @@ Retrieves the configuration that should be used for the training.
 #### get\_config\_file\_for\_auto\_config
 
 ```python
- | @abstractmethod
  | get_config_file_for_auto_config() -> Optional[Text]
 ```
 
@@ -87,7 +74,6 @@ Returns config file path for auto-config only if there is a single one.
 #### get\_nlu\_data
 
 ```python
- | @abstractmethod
  | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
