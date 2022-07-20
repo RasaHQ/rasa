@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, AsyncGenerator, Dict, List, Optional, Text
+from typing import Any, AsyncGenerator, Dict, List, Optional, Text, overload
 
 import aiohttp
 import questionary
@@ -87,10 +87,20 @@ def _print_bot_output(
     if "custom" in message:
         rasa.shared.utils.cli.print_color("Custom json:", color=color)
         rasa.shared.utils.cli.print_color(
-            json.dumps(message["custom"], indent=2), color=color
+            rasa.shared.utils.io.json_to_string(message["custom"]), color=color
         )
 
     return None
+
+
+@overload
+def _get_user_input(previous_response: None) -> Text:
+    ...
+
+
+@overload
+def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
+    ...
 
 
 def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
@@ -102,7 +112,7 @@ def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Tex
         response = cli_utils.payload_from_button_question(button_response)
         if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
-            response = _get_user_input({})
+            response = _get_user_input(None)
     else:
         response = questionary.text(
             "",

@@ -44,7 +44,7 @@ jobs:
         sudo chmod +x /usr/local/bin/gomplate
 
     - name: Find a comment with configuration
-      uses: tczekajlo/find-comment@master
+      uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
       id: fc_config
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -109,7 +109,7 @@ jobs:
           echo "::set-output name=matrix::$matrix"
 
     - name: Update the comment with the configuration
-      uses: peter-evans/create-or-update-comment@v1
+      uses: peter-evans/create-or-update-comment@v2
       if: steps.fc_config.outputs.comment-id != ''
       with:
         comment-id: ${{ steps.fc_config.outputs.comment-id }}
@@ -127,7 +127,7 @@ jobs:
         body: ${{ steps.fc_config.outputs.comment-body }}
 
     - name: Find a comment with configuration - update
-      uses: tczekajlo/find-comment@master
+      uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
       id: fc_config_update
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -135,7 +135,7 @@ jobs:
         body-includes: "^/modeltest"
 
     - name: Add reaction
-      uses: peter-evans/create-or-update-comment@v1
+      uses: peter-evans/create-or-update-comment@v2
       if: steps.fc_config_update.outputs.comment-id != ''
       with:
         edit-mode: 'replace'
@@ -186,7 +186,7 @@ jobs:
           GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
-          
+
           num_max_replicas=3
           matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
           if [[ $matrix_length -gt $num_max_replicas ]]; then
@@ -220,7 +220,7 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@e0f83f24f541c30f1e9fe3c966963a10b8e647f5
+      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -364,7 +364,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
+        uses: actions/setup-python@d09bd5e6005b175076f227b13d9730d56e9dcfcb
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.9
@@ -376,13 +376,13 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
@@ -472,7 +472,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
@@ -609,7 +609,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
+        uses: actions/setup-python@d09bd5e6005b175076f227b13d9730d56e9dcfcb
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.9
@@ -621,13 +621,13 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
@@ -717,7 +717,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
@@ -757,12 +757,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
+        uses: actions/setup-python@d09bd5e6005b175076f227b13d9730d56e9dcfcb
         with:
           python-version: 3.9
 
       - name: Get reports
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           path: reports/
 
@@ -780,7 +780,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the overall report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: report.json
           path: ./report.json
@@ -833,7 +833,7 @@ jobs:
           unzip report.json.zip && mv report.json report_main.json
 
       - name: Download the report
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: report.json
 
@@ -862,7 +862,7 @@ jobs:
           echo "::set-output name=to_ts::$TIME_UNIX_NOW"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v2.2.0
+        uses: marocchino/sticky-pull-request-comment@39c5b5dc7717447d0cba270cd115037d32d28443 # v2.2.0
         if: ${{ always() }}
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -879,7 +879,7 @@ jobs:
 
       - name: Remove 'status:model-regression-tests' label
         continue-on-error: true
-        uses: buildsville/add-remove-label@v1
+        uses: buildsville/add-remove-label@6008d7bd99d3baeb7c04033584e68f8ec80b198b # v1.0
         with:
           token: ${{secrets.GITHUB_TOKEN}}
           label: 'status:model-regression-tests'
@@ -887,7 +887,7 @@ jobs:
 
       - name: Remove 'runner:gpu' label
         continue-on-error: true
-        uses: buildsville/add-remove-label@v1
+        uses: buildsville/add-remove-label@6008d7bd99d3baeb7c04033584e68f8ec80b198b # v1.0
         with:
           token: ${{secrets.GITHUB_TOKEN}}
           label: 'runner:gpu'
@@ -903,7 +903,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@e0f83f24f541c30f1e9fe3c966963a10b8e647f5
+      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}

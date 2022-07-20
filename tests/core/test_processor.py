@@ -225,18 +225,18 @@ async def test_reminder_scheduled(
     sender_id = uuid.uuid4().hex
 
     reminder = ReminderScheduled("remind", datetime.datetime.now())
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     tracker.update(UserUttered("test"))
     tracker.update(ActionExecuted("action_schedule_reminder"))
     tracker.update(reminder)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
     # retrieve the updated tracker
-    t = default_processor.tracker_store.retrieve(sender_id)
+    t = await default_processor.tracker_store.retrieve(sender_id)
 
     assert t.events[1] == UserUttered("test")
     assert t.events[2] == ActionExecuted("action_schedule_reminder")
@@ -257,13 +257,13 @@ async def test_reminder_lock(
         sender_id = uuid.uuid4().hex
 
         reminder = ReminderScheduled("remind", datetime.datetime.now())
-        tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+        tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
         tracker.update(UserUttered("test"))
         tracker.update(ActionExecuted("action_schedule_reminder"))
         tracker.update(reminder)
 
-        default_processor.tracker_store.save(tracker)
+        await default_processor.tracker_store.save(tracker)
 
         await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
@@ -274,7 +274,7 @@ async def test_trigger_external_latest_input_channel(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
     input_channel = "test_input_channel_external"
 
     tracker.update(UserUttered("test1"))
@@ -284,7 +284,7 @@ async def test_trigger_external_latest_input_channel(
         "test3", None, tracker, default_channel
     )
 
-    tracker = default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve(sender_id)
 
     assert tracker.get_latest_input_channel() == input_channel
 
@@ -297,16 +297,16 @@ async def test_reminder_aborted(
     reminder = ReminderScheduled(
         "utter_greet", datetime.datetime.now(), kill_on_user_message=True
     )
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     tracker.update(reminder)
     tracker.update(UserUttered("test"))  # cancels the reminder
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
     await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
     # retrieve the updated tracker
-    t = default_processor.tracker_store.retrieve(sender_id)
+    t = await default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 3  # nothing should have been executed
 
 
@@ -331,7 +331,7 @@ async def test_reminder_cancelled_multi_user(
     sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
     trackers = []
     for sender_id in sender_ids:
-        tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+        tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
         tracker.update(UserUttered("test"))
         tracker.update(ActionExecuted("action_reminder_reminder"))
@@ -346,7 +346,7 @@ async def test_reminder_cancelled_multi_user(
     trackers[0].update(ReminderCancelled())
 
     for tracker in trackers:
-        default_processor.tracker_store.save(tracker)
+        await default_processor.tracker_store.save(tracker)
         await default_processor._schedule_reminders(
             tracker.events, tracker, default_channel
         )
@@ -361,7 +361,7 @@ async def test_reminder_cancelled_multi_user(
     # execute the jobs
     await wait_until_all_jobs_were_executed(timeout_after_seconds=5.0)
 
-    tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
+    tracker_0 = await default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
     assert (
         UserUttered(
@@ -371,7 +371,7 @@ async def test_reminder_cancelled_multi_user(
         not in tracker_0.events
     )
 
-    tracker_1 = default_processor.tracker_store.retrieve(sender_ids[1])
+    tracker_1 = await default_processor.tracker_store.retrieve(sender_ids[1])
     # there should be utter_greet action
     assert (
         UserUttered(
@@ -508,17 +508,17 @@ async def test_reminder_restart(
     reminder = ReminderScheduled(
         "utter_greet", datetime.datetime.now(), kill_on_user_message=False
     )
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     tracker.update(reminder)
     tracker.update(Restarted())  # cancels the reminder
     tracker.update(UserUttered("test"))
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
     await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
     # retrieve the updated tracker
-    t = default_processor.tracker_store.retrieve(sender_id)
+    t = await default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 4  # nothing should have been executed
 
 
@@ -549,7 +549,7 @@ async def test_has_session_expired(
         session_expiration_time_in_minutes, True
     )
     # create new tracker without events
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.events.clear()
 
     # apply desired event
@@ -569,7 +569,7 @@ async def test_update_tracker_session(
     monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
     # does something
@@ -578,10 +578,10 @@ async def test_update_tracker_session(
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
-    default_processor.save_tracker(tracker)
+    await default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
-    tracker = default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve(sender_id)
 
     assert list(tracker.events) == [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -605,7 +605,7 @@ async def test_update_tracker_session_with_metadata(
     )
     await default_processor.handle_message(message)
 
-    tracker = default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve(sender_id)
     events = list(tracker.events)
 
     assert events[0] == with_model_id(
@@ -677,7 +677,7 @@ async def test_update_tracker_session_with_slots(
     monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # apply a user uttered and five slots
     user_event = UserUttered("some utterance")
@@ -695,10 +695,10 @@ async def test_update_tracker_session_with_slots(
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
-    default_processor.save_tracker(tracker)
+    await default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
-    tracker = default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve(sender_id)
     events = list(tracker.events)
 
     # the first three events should be up to the user utterance
@@ -764,7 +764,7 @@ async def test_fetch_tracker_with_initial_session(
 
     tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     tracker = await default_processor.fetch_tracker_with_initial_session(
         conversation_id, default_channel
@@ -809,7 +809,7 @@ async def test_fetch_tracker_with_initial_session_does_not_update_session(
 
     tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     tracker = await default_processor.fetch_tracker_with_initial_session(
         conversation_id, default_channel
@@ -851,7 +851,7 @@ async def test_handle_message_with_session_start(
         UserMessage(f"/greet{json.dumps(slot_2)}", default_channel, sender_id)
     )
 
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # make sure the sequence of events is as expected
     expected = with_model_ids(
@@ -978,7 +978,7 @@ async def test_restart_triggers_session_start(
         UserMessage("/restart", default_channel, sender_id)
     )
 
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     expected = with_model_ids(
         [
@@ -1036,7 +1036,7 @@ async def test_handle_message_if_action_manually_rejects(
     monkeypatch.setattr(ActionBotResponse, ActionBotResponse.run.__name__, mocked_run)
     await default_processor.handle_message(message)
 
-    tracker = default_processor.tracker_store.retrieve(conversation_id)
+    tracker = await default_processor.tracker_store.retrieve(conversation_id)
 
     logged_events = list(tracker.events)
 
@@ -1104,7 +1104,7 @@ async def test_policy_events_are_applied_to_tracker(
 
     assert action_received_events
 
-    tracker = default_processor.get_tracker(conversation_id)
+    tracker = await default_processor.get_tracker(conversation_id)
     # The action was logged on the tracker as well
     expected_events.append(with_model_id(ActionExecuted(ACTION_LISTEN_NAME), model_id))
 
@@ -1158,7 +1158,7 @@ async def test_policy_events_not_applied_if_rejected(
         UserMessage(user_message, sender_id=conversation_id)
     )
 
-    tracker = default_processor.get_tracker(conversation_id)
+    tracker = await default_processor.get_tracker(conversation_id)
     expected_events = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
@@ -1222,7 +1222,7 @@ async def test_logging_of_end_to_end_action(
         UserMessage(user_message, sender_id=conversation_id)
     )
 
-    tracker = default_processor.tracker_store.retrieve(conversation_id)
+    tracker = await default_processor.tracker_store.retrieve(conversation_id)
     expected_events = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
@@ -1397,7 +1397,7 @@ async def test_processor_valid_slot_setting(default_agent: Agent):
         },
     )
     await processor.handle_message(message)
-    tracker = processor.get_tracker("test")
+    tracker = await processor.get_tracker("test")
     assert SlotSet("name", "Peter") in tracker.events
 
 
@@ -1473,19 +1473,21 @@ def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
     assert result["policy"] == "MemoizationPolicy"
 
 
-def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
+async def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
     model_id = default_processor.model_metadata.model_id
-    tracker = default_processor.get_tracker("bloop")
+    tracker = await default_processor.get_tracker("bloop")
     assert tracker.model_id == model_id
 
 
+# FIXME: these tests take too long to run in the CI, disabling them for now
+@pytest.mark.skip_on_ci
 async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
     processor = e2e_bot_agent.processor
     message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test")
     with caplog.at_level(logging.DEBUG):
         await processor.handle_message(message)
 
-    tracker = processor.get_tracker("test")
+    tracker = await processor.get_tracker("test")
     assert SlotSet("mood", "sad") in tracker.events
     assert any(
         "An end-to-end prediction was made which has triggered the 2nd execution of "

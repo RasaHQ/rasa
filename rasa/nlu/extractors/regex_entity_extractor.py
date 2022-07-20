@@ -165,7 +165,6 @@ class RegexEntityExtractor(GraphComponent, EntityExtractorMixin):
 
         for pattern in self.patterns:
             matches = re.finditer(pattern["pattern"], message.get(TEXT), flags=flags)
-            matches = list(matches)
 
             for match in matches:
                 start_index = match.start()

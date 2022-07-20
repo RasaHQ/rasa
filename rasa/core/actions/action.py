@@ -49,7 +49,6 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     SlotMappingType,
-    LOOP_REJECTED,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -406,7 +405,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return None
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
         ]
 
         if (
@@ -439,7 +438,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return []
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
         ]
 
         if (
@@ -747,12 +746,12 @@ class RemoteAction(Action):
 
             events_json = response.get("events", [])
             responses = response.get("responses", [])
-            bot_messages: List[Event] = await self._utter_responses(
+            bot_messages = await self._utter_responses(
                 responses, output_channel, nlg, tracker
             )
 
             evts = events.deserialise_events(events_json)
-            return bot_messages + evts
+            return cast(List[Event], bot_messages) + evts
 
         except ClientResponseError as e:
             if e.status == 400:
@@ -763,15 +762,21 @@ class RemoteAction(Action):
                 logger.error(exception.message)
                 raise exception
             else:
-                raise RasaException("Failed to execute custom action.") from e
+                raise RasaException(
+                    f"Failed to execute custom action '{self.name()}'"
+                ) from e
 
         except aiohttp.ClientConnectionError as e:
             logger.error(
-                "Failed to run custom action '{}'. Couldn't connect "
-                "to the server at '{}'. Is the server running? "
-                "Error: {}".format(self.name(), self.action_endpoint.url, e)
+                f"Failed to run custom action '{self.name()}'. Couldn't connect "
+                f"to the server at '{self.action_endpoint.url}'. "
+                f"Is the server running? "
+                f"Error: {e}"
             )
-            raise RasaException("Failed to execute custom action.")
+            raise RasaException(
+                f"Failed to execute custom action '{self.name()}'. Couldn't connect "
+                f"to the server at '{self.action_endpoint.url}."
+            )
 
         except aiohttp.ClientError as e:
             # not all errors have a status attribute, but
@@ -880,7 +885,9 @@ def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
         raise TypeError("Cannot find last event to revert to.")
 
     last_user_event = copy.deepcopy(last_user_event)
-    last_user_event.parse_data["intent"]["confidence"] = 1.0
+    # FIXME: better type annotation for `parse_data` would require
+    # a larger refactoring (e.g. switch to dataclass)
+    last_user_event.parse_data["intent"]["confidence"] = 1.0  # type: ignore[typeddict-item]  # noqa: E501
 
     return revert_events + [last_user_event]
 
@@ -943,14 +950,17 @@ class ActionDefaultAskAffirmation(Action):
 
         intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
 
-        intent_ranking: List["IntentPrediction"] = (
-            latest_message.parse_data.get(INTENT_RANKING_KEY) or []
+        # FIXME: better type annotation for `parse_data` would require
+        # a larger refactoring (e.g. switch to dataclass)
+        intent_ranking = cast(
+            List["IntentPrediction"],
+            latest_message.parse_data.get(INTENT_RANKING_KEY) or [],
         )
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[misc]
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
@@ -1006,8 +1016,7 @@ class ActionExtractSlots(Action):
             return True
 
         if (
-            tracker.active_loop
-            and tracker.active_loop.get(LOOP_REJECTED)
+            tracker.is_active_loop_rejected
             and tracker.get_slot(REQUESTED_SLOT) == slot_name
         ):
             return False

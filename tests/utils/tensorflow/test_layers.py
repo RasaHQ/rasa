@@ -395,7 +395,7 @@ def test_dot_product_loss_get_similarities_and_confidences_from_embeddings(
     ],
 )
 def test_randomly_connected_dense_shape(
-    inputs: np.array, units: int, expected_output_shape: Tuple[int]
+    inputs: np.array, units: int, expected_output_shape: Tuple[int, ...]
 ):
     layer = RandomlyConnectedDense(units=units)
     y = layer(inputs)

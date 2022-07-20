@@ -16,12 +16,61 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
-## [3.1.6] - 2022-07-20                         
+## [3.2.2] - 2022-07-05
+### Improved Documentation
+- [#11207](https://github.com/rasahq/rasa/issues/11207): Update documentation for customizable classes such as tracker stores, event brokers and lock stores.
+
+### Miscellaneous internal changes
+- [#11296](https://github.com/rasahq/rasa/issues/11296)
+
+
+## [3.2.1] - 2022-06-17
+### Bugfixes
+- [#10430](https://github.com/rasahq/rasa/issues/10430): Fix failed check in `rasa data validate` that verifies forms in rules or stories are consistent with the domain when the rule or story contains a default action as `active_loop` step.
+
+
+## [3.2.0] - 2022-06-14
+### Deprecations and Removals
+- [#10989](https://github.com/rasahq/rasa/issues/10989): [NLU training data](nlu-training-data.mdx) in JSON format is deprecated and will be
+  removed in Rasa Open Source 4.0.
+  Please use `rasa data convert nlu -f yaml --data <path to NLU data>` to convert your
+  NLU JSON data to YAML format before support for NLU JSON data is removed.
+
+### Improvements
+- [#10696](https://github.com/rasahq/rasa/issues/10696): Make `TrackerStore` interface methods asynchronous and supply an `AwaitableTrackerstore` wrapper for custom tracker stores which do not implement the methods as asynchronous.
+- [#10897](https://github.com/rasahq/rasa/issues/10897): Added flag `use_gpu` to `TEDPolicy` and `UnexpecTEDIntentPolicy` that can be used to enable training on CPU even when a GPU is available.
+- [#11102](https://github.com/rasahq/rasa/issues/11102): Add `--endpoints` command line parameter to `rasa train` parser.
+
+### Bugfixes
+- [#11129](https://github.com/rasahq/rasa/issues/11129): The azure botframework channel now validates the incoming JSON Web Tokens (including signature).
+
+  Previously, JWTs were not validated at all.
+- [#9386](https://github.com/rasahq/rasa/issues/9386): `rasa shell` now outputs custom json unicode characters instead of `\uxxxx` codes
+
+### Improved Documentation
+- [#11130](https://github.com/rasahq/rasa/issues/11130): Clarify aspects of the API spec
+  GET /status endpoint: Correct response schema for model_id - a string, not an object.
+
+  GET /conversations/{conversation_id}/tracker: Describe each of the enum options for include_events query parameter
+
+  POST & PUT /conversations/{conversation_id}/tracker/eventss: Events schema added for each event type
+
+  GET /conversations/{conversation_id}/story: Clarified the all_sessions query parameter and default behaviour.
+
+  POST /model/test/intents : Remove JSON payload option since it is not supported
+
+  POST /model/parse: Explain what emulation_mode is and how it affects response results
+
+### Miscellaneous internal changes
+- [#11088](https://github.com/rasahq/rasa/issues/11088), [#11123](https://github.com/rasahq/rasa/issues/11123), [#9093](https://github.com/rasahq/rasa/issues/9093), [#9099](https://github.com/rasahq/rasa/issues/9099)
+
+
+## [3.1.6] - 2022-07-20
 ### Bugfixes
 - [#11362](https://github.com/rasahq/rasa/issues/11362): Run default action `action_extract_slots` after a custom action returns a `UserUttered` event to fill any applicable slots.
 
 
-## [3.1.5] - 2022-07-15                         
+## [3.1.5] - 2022-07-15
 ### Bugfixes
 - [#11333](https://github.com/rasahq/rasa/issues/11333): `SlotSet` events will be emitted when the value set by the current user turn is the same as the existing value.
 
@@ -32,7 +81,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 ## [3.1.4] - 2022-06-21                          No significant changes.
 
 
-## [3.1.3] - 2022-06-17                         
+## [3.1.3] - 2022-06-17
 ### Bugfixes
 - [#11129](https://github.com/rasahq/rasa/issues/11129): The azure botframework channel now validates the incoming JSON Web Tokens (including signature).
 
@@ -40,7 +89,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 - [#11197](https://github.com/rasahq/rasa/issues/11197): Backports fix for failed check in `rasa data validate` that verifies forms in rules or stories are consistent with the domain when the rule or story contains a default action as `active_loop` step.
 
 
-## [3.1.2] - 2022-06-08                         
+## [3.1.2] - 2022-06-08
 ### Miscellaneous internal changes
 - [#11156](https://github.com/rasahq/rasa/issues/11156), [#11173](https://github.com/rasahq/rasa/issues/11173)
 
