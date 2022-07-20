@@ -67,14 +67,21 @@ class TicketLock:
         """
         return self.now_serving != ticket_number
 
-    def issue_ticket(self, lifetime: float) -> int:
-        """Issue a new ticket and return its number."""
-        self.remove_expired_tickets()
-        number = self.last_issued + 1
-        ticket = Ticket(number, time.time() + lifetime)
+    def issue_ticket(self, lifetime: float, ticket_number: int) -> int:
+        """Issue a new ticket and return its number.
+
+        Args:
+            lifetime: The length of time after which the ticket expires.
+            ticket_number: Integer representing the ticket number.
+
+        Returns:
+            ticket_number integer.
+
+        """
+        ticket = Ticket(ticket_number, time.time() + lifetime)
         self.tickets.append(ticket)
 
-        return number
+        return ticket_number
 
     def remove_expired_tickets(self) -> None:
         """Remove expired tickets."""
