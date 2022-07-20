@@ -1588,7 +1588,7 @@ async def test_custom_action_triggers_action_extract_slots(
             f"'{ACTION_EXTRACT_SLOTS}'." in caplog_records
         )
 
-    tracker = processor.get_tracker(sender_id)
+    tracker = await processor.get_tracker(sender_id)
     assert any(
         isinstance(e, UserUttered) and e.text == "Feeling so happy"
         for e in tracker.events
