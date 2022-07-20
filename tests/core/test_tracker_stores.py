@@ -966,3 +966,13 @@ def test_create_non_async_tracker_store(domain: Domain):
         tracker_store = TrackerStore.create(endpoint_config)
     assert isinstance(tracker_store, AwaitableTrackerStore)
     assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
+
+
+def test_create_awaitable_tracker_store_with_endpoint_config():
+    endpoint_config = EndpointConfig(
+        type="tests.core.test_tracker_stores.NonAsyncTrackerStore"
+    )
+    tracker_store = AwaitableTrackerStore.create(endpoint_config)
+
+    assert isinstance(tracker_store, AwaitableTrackerStore)
+    assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
