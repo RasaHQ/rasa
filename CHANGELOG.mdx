@@ -16,6 +16,14 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.2.2] - 2022-07-05
+### Improved Documentation
+- [#11207](https://github.com/rasahq/rasa/issues/11207): Update documentation for customizable classes such as tracker stores, event brokers and lock stores.
+
+### Miscellaneous internal changes
+- [#11296](https://github.com/rasahq/rasa/issues/11296)
+
+
 ## [3.2.1] - 2022-06-17
 ### Bugfixes
 - [#10430](https://github.com/rasahq/rasa/issues/10430): Fix failed check in `rasa data validate` that verifies forms in rules or stories are consistent with the domain when the rule or story contains a default action as `active_loop` step.
@@ -55,6 +63,22 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#11088](https://github.com/rasahq/rasa/issues/11088), [#11123](https://github.com/rasahq/rasa/issues/11123), [#9093](https://github.com/rasahq/rasa/issues/9093), [#9099](https://github.com/rasahq/rasa/issues/9099)
+
+
+## [3.1.6] - 2022-07-20
+### Bugfixes
+- [#11362](https://github.com/rasahq/rasa/issues/11362): Run default action `action_extract_slots` after a custom action returns a `UserUttered` event to fill any applicable slots.
+
+
+## [3.1.5] - 2022-07-15
+### Bugfixes
+- [#11333](https://github.com/rasahq/rasa/issues/11333): `SlotSet` events will be emitted when the value set by the current user turn is the same as the existing value.
+
+  Previously, `ActionExtractSlots` would not emit any `SlotSet` events if the new value was the same as the existing
+  one. This caused the augmented memoization policy to lose these slot values when truncating the tracker.
+
+
+## [3.1.4] - 2022-06-21                          No significant changes.
 
 
 ## [3.1.3] - 2022-06-17
