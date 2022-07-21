@@ -226,7 +226,6 @@ class MessengerBot(OutputChannel):
         **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
-
         # buttons is a list of tuples: [(option_name,payload)]
         if "instagram" in self.messenger_service:
             await self.send_quick_replies(recipient_id, text, buttons)
@@ -292,7 +291,6 @@ class MessengerBot(OutputChannel):
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json data to the output."""
-
         recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
 
         self.messenger_client.send(json_message, recipient_id, "RESPONSE")

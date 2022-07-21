@@ -99,13 +99,13 @@ async def test_facebook_send_custom_json(test_input, expected):
             super(TestableMessengerClient, self).__init__(page_access_token, **kwargs)
 
         def send(
-                self,
-                payload,
-                recipient_id,
-                messaging_type="RESPONSE",
-                notification_type="REGULAR",
-                timeout=None,
-                tag=None,
+            self,
+            payload,
+            recipient_id,
+            messaging_type="RESPONSE",
+            notification_type="REGULAR",
+            timeout=None,
+            tag=None,
         ):
             self.recipient_id = recipient_id
 
