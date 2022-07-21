@@ -4,7 +4,7 @@ from typing import Iterator, Text
 import pytest
 import sqlalchemy as sa
 
-from rasa.core.lock_store import RedisLockStore
+from rasa.core.lock_store import ConcurrentRedisLockStore, RedisLockStore
 
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
@@ -65,3 +65,16 @@ def _drop_db(connection: sa.engine.Connection, database_name: Text) -> None:
     connection.execution_options(isolation_level="AUTOCOMMIT").execute(
         f"DROP DATABASE IF EXISTS {database_name}"
     )
+
+
+@pytest.fixture
+def concurrent_redis_lock_store() -> Iterator[ConcurrentRedisLockStore]:
+    # we need one redis database per worker, otherwise
+    # tests conflicts with each others when databases are flushed
+    pytest_worker_id = os.getenv("PYTEST_XDIST_WORKER", "gw0")
+    redis_database = int(pytest_worker_id.replace("gw", ""))
+    lock_store = ConcurrentRedisLockStore(REDIS_HOST, REDIS_PORT, redis_database)
+    try:
+        yield lock_store
+    finally:
+        lock_store.red.flushdb()
