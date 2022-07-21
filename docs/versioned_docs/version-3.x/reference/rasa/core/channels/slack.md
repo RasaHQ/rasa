@@ -10,6 +10,14 @@ class SlackBot(OutputChannel)
 
 A Slack communication channel
 
+#### send\_text\_message
+
+```python
+ | async send_text_message(recipient_id: Text, text: Text, **kwargs: Any) -> None
+```
+
+Send text message to Slack API.
+
 #### send\_attachment
 
 ```python
