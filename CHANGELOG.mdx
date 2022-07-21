@@ -16,6 +16,13 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.2.4] - 2022-07-21                         
+### Bugfixes
+- [#11061](https://github.com/rasahq/rasa/issues/11061): Added session_config key as valid domain key during domain loading from directory containing a separate domain file with session configuration.
+- [#11362](https://github.com/rasahq/rasa/issues/11362): Run default action `action_extract_slots` after a custom action returns a `UserUttered` event to fill any applicable slots.
+- [#11368](https://github.com/rasahq/rasa/issues/11368): Handle the case when an `EndpointConfig` object is given as parameter to the `AwaitableTrackerStore.create()` method.
+
+
 ## [3.2.3] - 2022-07-18                         
 ### Bugfixes
 - [#11305](https://github.com/rasahq/rasa/issues/11305): - Fixed error in creating response when slack sends retry messages. Assigning `None` to `response.text` caused `TypeError: Bad body type. Expected str, got NoneType`.
