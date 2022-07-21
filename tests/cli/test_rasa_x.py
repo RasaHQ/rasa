@@ -15,7 +15,7 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
 import rasa.version
 
-from tests.cli.conftest import RASA_EXECUTABLE
+from tests.cli.conftest import RASA_EXE
 
 
 def test_x_help(run: Callable[..., RunResult]):
@@ -45,7 +45,7 @@ def test_x_help(run: Callable[..., RunResult]):
 
     help_text = (
         [
-            f"{RASA_EXECUTABLE} x",
+            f"{RASA_EXE} x",
             "[-h]",
             "[-v]",
             "[-vv]",

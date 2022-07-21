@@ -21,13 +21,13 @@ from tests.conftest import (
     AsyncMock,
 )
 
-from tests.cli.conftest import RASA_EXECUTABLE
+from tests.cli.conftest import RASA_EXE
 
 
 def test_export_help(run: Callable[..., RunResult]):
     output = run("export", "--help")
 
-    help_text = f"""usage: {RASA_EXECUTABLE} export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
+    help_text = f"""usage: {RASA_EXE} export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
                    [--minimum-timestamp MINIMUM_TIMESTAMP]
                    [--maximum-timestamp MAXIMUM_TIMESTAMP]
                    [--conversation-ids CONVERSATION_IDS]"""
