@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import hmac
 from http import HTTPStatus
@@ -363,7 +364,7 @@ class SlackInput(InputChannel):
             )
 
             return response.text(
-                None, status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": "1"}
+                "", status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": "1"}
             )
 
         if metadata is not None:
@@ -385,7 +386,7 @@ class SlackInput(InputChannel):
                 metadata=metadata,
             )
 
-            await on_new_message(user_msg)
+            asyncio.create_task(on_new_message(user_msg))
         except Exception as e:
             logger.error(f"Exception when trying to handle message.{e}")
             logger.error(str(e), exc_info=True)
