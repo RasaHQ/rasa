@@ -7,7 +7,8 @@ import pytest
 import shutil
 import os
 
-from pytest import TempdirFactory, Testdir, RunResult
+from pytest import TempdirFactory, Testdir
+from _pytest.pytester import RunResult
 
 from rasa.cli import scaffold
 from rasa.shared.utils.io import write_yaml
