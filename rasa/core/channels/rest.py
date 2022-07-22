@@ -81,6 +81,21 @@ class RestInput(InputChannel):
         input_channel: Text,
         metadata: Optional[Dict[Text, Any]],
     ) -> Callable[[Any], Awaitable[None]]:
+        """Streams response to the client
+
+         If the stream option is enabled, this method will be called to
+         stream the response to the client
+
+        Args:
+            on_new_message: sanic event
+            text: message text
+            sender_id: message sender_id
+            input_channel: input channel name
+            metadata: optional metadata sent with the message
+
+        Returns:
+            Sanic stream
+        """
         async def stream(resp: Any) -> None:
             q: Queue = Queue()
             task = asyncio.ensure_future(
