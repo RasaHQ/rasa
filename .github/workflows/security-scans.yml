@@ -103,9 +103,9 @@ jobs:
           args: --org=rasa --yarn-workspaces --strict-out-of-sync=false --prune-repeated-subdependencies
       - name: Run Snyk Code to check for vulnerabilities
         uses: snyk/actions/python-3.8@master
-        continue-on-error: true
+        continue-on-error: false
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: test
-          args: --code
+          args: --code --severity-threshold=medium
