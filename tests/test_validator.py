@@ -697,7 +697,6 @@ def test_default_action_as_active_loop_in_rules(
                - name: FallbackClassifier
                  threshold: 0.3
                  ambiguity_threshold: 0.1
-
             policies:
                - name: MemoizationPolicy
                - name: TEDPolicy
