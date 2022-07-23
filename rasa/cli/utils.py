@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+import argparse
 from types import FrameType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union, overload
 
@@ -203,3 +204,9 @@ def signal_handler(_: int, __: FrameType) -> None:
     """Kills Rasa when OS signal is received."""
     print("Goodbye 👋")
     sys.exit(0)
+
+
+def configure_no_colors(args: argparse.Namespace):
+    """Configure if cli should print colors"""
+    if getattr(args, 'no_colors', False):
+        rasa.shared.utils.io.disable_colors()

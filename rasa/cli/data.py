@@ -107,7 +107,7 @@ def _add_data_validate_parsers(
     _append_story_structure_arguments(validate_parser)
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)
-    _append_no_colors_argument(validate_parser)
+    default_arguments.add_no_colors_param(validate_parser)
 
     validate_subparsers = validate_parser.add_subparsers()
     story_structure_parser = validate_subparsers.add_parser(
@@ -129,14 +129,6 @@ def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
         help="Number of turns taken into account for story structure validation.",
     )
     default_arguments.add_config_param(parser)
-
-
-def _append_no_colors_argument(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "--no-colors",
-        help="Disable printing colors.",
-        action='store_true',
-    )
 
 
 def split_nlu_data(args: argparse.Namespace) -> None:
@@ -167,8 +159,6 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         stories_only: If `True`, only the story structure is validated.
     """
     from rasa.validator import Validator
-
-    _configure_print_no_colors(args)
 
     config = rasa.cli.utils.get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
@@ -266,7 +256,3 @@ def _migrate_domain(args: argparse.Namespace) -> None:
 
     rasa.core.migrate.migrate_domain_format(args.domain, args.out)
 
-
-def _configure_print_no_colors(args: argparse.Namespace):
-    if 'no_colors' in args and args.no_colors:
-        rasa.shared.utils.io.disable_colors()
