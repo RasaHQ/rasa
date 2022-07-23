@@ -22,7 +22,7 @@ from rasa.shared.constants import (
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
     CONFIG_SCHEMA_FILE,
     MODEL_CONFIG_SCHEMA_FILE,
-    ENV_PRINT_NO_COLORS,
+    ENV_NO_COLOR,
 )
 from rasa.shared.exceptions import (
     FileIOException,
@@ -633,11 +633,11 @@ def random_string(length: int) -> Text:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 
-def configure_print_no_colors(no_colors: bool = False) -> None:
-    """Configure if should'nt print colors."""
-    os.environ[ENV_PRINT_NO_COLORS] = str(no_colors)
+def disable_colors() -> None:
+    """Disable printing colors."""
+    os.environ[ENV_NO_COLOR] = ""
 
 
 def should_print_colors() -> bool:
     """Checks if should print colors"""
-    return os.environ.get(ENV_PRINT_NO_COLORS, str(False)) != str(True)
+    return ENV_NO_COLOR not in os.environ

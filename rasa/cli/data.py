@@ -268,5 +268,5 @@ def _migrate_domain(args: argparse.Namespace) -> None:
 
 
 def _configure_print_no_colors(args: argparse.Namespace):
-    if 'no_colors' in args:
-        rasa.shared.utils.io.configure_print_no_colors(args.no_colors)
+    if 'no_colors' in args and args.no_colors:
+        rasa.shared.utils.io.disable_colors()
