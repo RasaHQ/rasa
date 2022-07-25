@@ -270,7 +270,10 @@ class RasaDataGenerator(Sequence):
         # transformation does not work (e.g. you cannot access x.row, x.col)
         if not isinstance(array_of_array_of_sparse[0][0], scipy.sparse.coo_matrix):
             array_of_array_of_sparse = [
-                [x.tocoo() for x in array_of_sparse]
+                [
+                    x.tocoo() if isinstance(x, scipy.sparse.spmatrix) else x
+                    for x in array_of_sparse
+                ]
                 for array_of_sparse in array_of_array_of_sparse
             ]
 
