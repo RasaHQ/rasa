@@ -3,7 +3,8 @@ import shutil
 from pathlib import Path
 from shutil import copyfile
 
-from pytest import Testdir, RunResult, Pytester, ExitCode
+from pytest import Testdir, Pytester, ExitCode
+from _pytest.pytester import RunResult
 
 from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
@@ -13,6 +14,8 @@ from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.shared.utils.io import list_files, write_yaml, write_text_file
 from typing import Callable
+
+from tests.cli.conftest import RASA_EXE
 
 
 def test_test_core(run_in_simple_project: Callable[..., RunResult]):
@@ -163,7 +166,7 @@ def test_test_nlu_cross_validation_with_autoconfig(
     shutil.copy(str(moodbot_nlu_data_path), nlu_path)
     write_yaml({"language": "en", "pipeline": None, "policies": None}, config_path)
     args = [
-        shutil.which("rasa"),
+        shutil.which(RASA_EXE),
         "test",
         "nlu",
         "--cross-validation",
@@ -261,7 +264,7 @@ def test_test_core_comparison_after_train(
 def test_test_help(run: Callable[..., RunResult]):
     output = run("test", "--help")
 
-    help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
+    help_text = f"""usage: {RASA_EXE} test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU]
@@ -269,7 +272,7 @@ def test_test_help(run: Callable[..., RunResult]):
                  [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  [--no-plot] [--successes] [--no-errors] [--no-warnings]
                  [--out OUT]
-                 {core,nlu} ..."""
+                 {{core,nlu}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -281,7 +284,7 @@ def test_test_help(run: Callable[..., RunResult]):
 def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
-    help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
+    help_text = f"""usage: {RASA_EXE} test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
                      [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
                      [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                      [--no-plot] [--successes] [--no-errors] [--no-warnings]"""
@@ -296,7 +299,7 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
 def test_test_core_help(run: Callable[..., RunResult]):
     output = run("test", "core", "--help")
 
-    help_text = """usage: rasa test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
+    help_text = f"""usage: {RASA_EXE} test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
