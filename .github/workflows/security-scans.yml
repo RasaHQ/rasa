@@ -24,20 +24,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
 
-  gitleaks:
-    name: Detecting hardcoded secrets
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        # Fetch all history for all tags and branches
-        fetch-depth: '0'
-
-    - name: Gitleaks - detecting hardcoded secrets
-      uses: zricethezav/gitleaks-action@42eafe5778bee6458d87a832256fd7f39be48397 # v1.6.0
-      with:
-        config-path: .gitleaks.toml
-
   bandit:
     name: Detect python security issues
     runs-on: ubuntu-latest
