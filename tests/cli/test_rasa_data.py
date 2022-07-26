@@ -10,7 +10,7 @@ from _pytest.fixtures import FixtureRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import ENV_NO_COLOR, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.validator import Validator
@@ -151,6 +151,20 @@ def test_data_validate_help(run: Callable[..., RunResult]):
     printed_help = set(output.outlines)
     for line in lines:
         assert line in printed_help
+
+
+def test_data_validate_no_colors(run: Callable[..., RunResult]):
+    output = run("data", "validate", "--no-colors")
+    printed_text = " ".join(output.outlines + output.errlines)
+    end_color = rasa.shared.utils.io.bcolors.ENDC
+    assert end_color not in printed_text
+
+def test_data_validate_no_color_env(run: Callable[..., RunResult]):
+    os.environ[ENV_NO_COLOR] = ""
+    output = run("data", "validate")
+    printed_text = " ".join(output.outlines + output.errlines)
+    end_color = rasa.shared.utils.io.bcolors.ENDC
+    assert end_color not in printed_text
 
 
 def test_data_migrate_help(run: Callable[..., RunResult]):
