@@ -13,6 +13,36 @@ This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
 
+## Rasa 3.2 to 3.3
+
+### ConcurrentRedisLockStore
+
+The [`ConcurrentRedisLockStore`](./lock-stores.mdx#concurrentredislockstore) is a new lock store using Redis for persistence.
+This lock store can handle receiving messages in parallel for the same conversation ID by different Rasa instances.
+
+To switch from the `RedisLockStore` to the `ConcurrentRedisLockStore`, specify the parameter (new in 3.3) `concurrent_mode` as `true` in `endpoints.yml`:
+
+```yaml-rasa
+lock_store:
+    type: "redis"
+    concurrent_mode: true
+    url: <url of the redis instance, e.g. localhost>
+    port: <port of your redis instance, usually 6379>
+    password: <password used for authentication>
+    db: <number of your database within redis, e.g. 0>
+    key_prefix: <alphanumeric value to prepend to lock store keys>
+```
+
+Note that omitting the `concurrent_mode` parameter or setting it to `false` will default to using the `RedisLockStore`.
+
+No database migration is required when switching to the `ConcurrentRedisLockStore`. You can use the same Redis instance and database number as you did previously when using the `RedisLockStore`.
+You may want to delete all the preexisting keys if using the same Redis database number.
+These former key-value items are no longer required by the `ConcurrentRedisLockStore` and the database can be cleared.
+
+There is no overlap in key-value items stored when using the `RedisLockStore` and the `ConcurrentRedisLockStore`, because the `RedisLockStore` persists serialized [TicketLock](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticketlock-objects) instances while the `ConcurrentRedisLockStore` instead stores individual [`Ticket`](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticket-objects) instances, as well as the last issued ticket number.
+The `ConcurrentRedisLockStore` recreates the `TicketLock` from the persisted `Ticket` instances, which allows it to handle concurrent messages for the same conversation ID.
+
+
 ## Rasa 3.0 to 3.1
 
 ### Machine Learning Components

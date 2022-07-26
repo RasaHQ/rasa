@@ -336,10 +336,7 @@ class FormAction(LoopAction):
         domain: Domain,
         slot_values: Dict[Text, Any],
     ) -> Dict[Text, Any]:
-        slot_mappings = self.get_mappings_for_slot(event.key, domain)
-
-        for mapping in slot_mappings:
-            slot_values[event.key] = event.value
+        slot_values[event.key] = event.value
 
         return slot_values
 
@@ -534,11 +531,8 @@ class FormAction(LoopAction):
            - the form is called after `action_listen`
            - form validation was not cancelled
         """
-        # No active_loop means there are no form filled slots to validate yet
-        if not tracker.active_loop:
-            return []
-
-        needs_validation = (
+        # no active_loop means that it is called during activation
+        needs_validation = not tracker.active_loop or (
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and not tracker.is_active_loop_interrupted
         )
