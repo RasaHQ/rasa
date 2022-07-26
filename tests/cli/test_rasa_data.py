@@ -160,6 +160,7 @@ def test_data_validate_no_colors(run: Callable[..., RunResult]):
     end_color = rasa.shared.utils.io.bcolors.ENDC
     assert end_color not in printed_text
 
+
 def test_data_validate_no_color_env(run: Callable[..., RunResult]):
     os.environ[ENV_NO_COLOR] = ""
     output = run("data", "validate")

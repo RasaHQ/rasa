@@ -208,5 +208,5 @@ def signal_handler(_: int, __: FrameType) -> None:
 
 def configure_no_colors(args: argparse.Namespace):
     """Configure if cli should print colors"""
-    if getattr(args, 'no_colors', False):
+    if getattr(args, "no_colors", False):
         rasa.shared.utils.io.disable_colors()

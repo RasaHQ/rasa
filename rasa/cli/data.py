@@ -255,4 +255,3 @@ def _migrate_domain(args: argparse.Namespace) -> None:
     import rasa.core.migrate
 
     rasa.core.migrate.migrate_domain_format(args.domain, args.out)
-

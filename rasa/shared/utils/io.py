@@ -52,7 +52,7 @@ def wrap_with_color(*args: Any, color: Text) -> Text:
 
     if should_print_colors():
         return color + message + bcolors.ENDC
-    
+
     return message
 
 

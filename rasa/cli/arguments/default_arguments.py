@@ -157,9 +157,10 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
         const=logging.WARNING,
     )
 
+
 def add_no_colors_param(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--no-colors",
         help="Disable printing colors.",
-        action='store_true',
+        action="store_true",
     )
