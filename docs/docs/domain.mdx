@@ -531,10 +531,8 @@ based on the latest user message.
 In addition to the predefined mappings, you can define [custom slot mappings](./domain.mdx#custom-slot-mappings).
 All custom slot mappings should contain a mapping of type `custom`.
 
-Slot mappings are defined as a YAML list of dictionaries mapped to the key `mappings` in the domain file.
-The priority order in which slot mappings fill slots follows the list indexing, where index 0 is top priority.
-Once a slot mapping becomes applicable, the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots) stops looping through the list of slot mappings and
-sets the slot with the extracted value.
+Slot mappings are specified as a YAML list of dictionaries under the key `mappings` in the domain file.
+Slot mappings are prioritized in the order they are listed in the domain. The first slot mapping found to apply will be used to fill the slot.
 
 The default behavior is for slot mappings to apply after every user message, regardless of the dialogue context.
 To make a slot mapping apply only within the context of a form see [Mapping Conditions](./domain.mdx#mapping-conditions).

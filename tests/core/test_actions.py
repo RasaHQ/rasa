@@ -2744,13 +2744,6 @@ async def test_action_extract_slots_priority_of_slot_mappings():
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         intents:
-        - greet
-        - goodbye
-        - affirm
-        - deny
-        - mood_great
-        - mood_unhappy
-        - bot_challenge
         - inform
 
         entities:
@@ -2767,20 +2760,7 @@ async def test_action_extract_slots_priority_of_slot_mappings():
               value: 42
               intent: inform
 
-        forms:
-          test_form:
-            required_slots:
-            - {slot_name}
-
         responses:
-            utter_test:
-                - condition:
-                  - type: slot
-                    name: {slot_name}
-                    value: null
-                  text: "location slot is null"
-                - text: "location slot has value: {{slot_name}}"
-
             utter_ask_location:
                 - text: "where are you located?"
         """
