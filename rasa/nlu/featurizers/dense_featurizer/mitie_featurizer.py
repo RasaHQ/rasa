@@ -164,7 +164,7 @@ class MitieFeaturizer(DenseFeaturizer, GraphComponent):
         )
 
         sentence_fetaures = self.aggregate_sequence_features(
-            np.array(sequence_features), self.pooling_operation
+            sequence_features, self.pooling_operation
         )
 
         return sequence_features, sentence_fetaures
