@@ -1602,7 +1602,7 @@ async def test_custom_action_triggers_action_extract_slots(
 
 
 async def test_processor_executes_bot_uttered_returned_by_action_extract_slots(
-        default_agent: Agent,
+    default_agent: Agent,
 ):
     slot_name = "location"
     domain_yaml = textwrap.dedent(
@@ -1653,7 +1653,7 @@ async def test_processor_executes_bot_uttered_returned_by_action_extract_slots(
             payload={
                 "events": [
                     {"event": "bot", "text": bot_uttered_text},
-                    {"event": "slot", "name": "location", "value": None}
+                    {"event": "slot", "name": "location", "value": None},
                 ]
             },
         )
