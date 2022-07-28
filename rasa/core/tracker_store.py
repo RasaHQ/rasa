@@ -1269,6 +1269,16 @@ class FailSafeTrackerStore(TrackerStore):
             self.on_tracker_store_error(e)
             return None
 
+    async def retrieve_full_tracker(
+        self, conversation_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Calls `retrieve_full_tracker` method of primary tracker store."""
+        try:
+            return await self._tracker_store.retrieve_full_tracker(sender_id)
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            return None
+
     async def keys(self) -> Iterable[Text]:
         """Calls `keys` method of primary tracker store."""
         try:
