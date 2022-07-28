@@ -180,6 +180,8 @@ class MessageProcessor:
             f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
             f"resulting in {len(extraction_events)} events: {events_as_str}"
         )
+        await self.execute_side_effects(extraction_events, tracker, output_channel)
+
         return tracker
 
     async def predict_next_for_sender_id(
