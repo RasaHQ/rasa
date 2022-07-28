@@ -24,19 +24,20 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
 
-  gitleaks:
-    name: Detecting hardcoded secrets
+  trufflehog:
+    name: Detect Secrets
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-      with:
-        # Fetch all history for all tags and branches
-        fetch-depth: '0'
-
-    - name: Gitleaks - detecting hardcoded secrets
-      uses: zricethezav/gitleaks-action@518e4898c0cd1cc5d9aab6627a2eabd46e81d8da # v1.6.0
-      with:
-        config-path: .gitleaks.toml
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: TruffleHog Secrets Scan
+        uses: trufflesecurity/trufflehog@0752503872c81fb8820085d38d5cd7e7cff8a5af
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: ${{ github.head_ref }}
 
   bandit:
     name: Detect python security issues
@@ -50,7 +51,7 @@ jobs:
 
     - name: Set up Python 3.9 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
       with:
         python-version: 3.9
 
