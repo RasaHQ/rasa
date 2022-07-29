@@ -17,9 +17,9 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
-      - name: Run script
-        run: |
-          ./scripts/prepare_nightly_release.py
+#      - name: Run script
+#        run: |
+#          ./scripts/prepare_nightly_release.py
 
       - name: Compose tag name
         id: set_tagname
@@ -93,6 +93,8 @@ jobs:
       - name: Publish to PyPI 📦
         uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
+          user: "github-ci"
+          password: ${{ secrets.PYPI_PASSWORD }}
+          repository_url: "https://pypi.rasa.com/simple/"
+          packages_dir: ${{ format('{0}/dist', github.workspace) }}
 
