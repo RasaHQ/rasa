@@ -1,9 +1,11 @@
 name: Nightly Builds
 on:
-  schedule:
-    # Runs every weekday at 1am
-    - cron: 0 1 * * 1-5
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
 
 
 jobs:
@@ -11,15 +13,11 @@ jobs:
     name: Run release script and tag a new nightly release
     runs-on: ubuntu-latest
     outputs:
-      tag_name: ${{ steps.set_tagname.outputs.tag }}
+      tag_name: ${{ steps.set_tagname.outputs.tag_name }}
 
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
-
-#      - name: Run script
-#        run: |
-#          ./scripts/prepare_nightly_release.py
 
       - name: Compose tag name
         id: set_tagname
@@ -31,14 +29,14 @@ jobs:
           LATEST_RASA_MINOR=$(python -c "import sys; import os; sys.path.append('${{ github.workspace }}/rasa'); from rasa.version import __version__; print(__version__)")
           echo "Current RASA version: ${LATEST_RASA_MINOR}"
 
-          LATEST_NIGHTLY_VERSION=$(echo ${LATEST_RASA_MINOR} | awk -F. '{$(NF-1) = $(NF-1) + 1;} {$(NF) = 0;} 1' | sed 's/ /./g')
+          LATEST_NIGHTLY_VERSION=$(echo ${LATEST_RASA_MINOR})
 
           echo "New nightly release version: ${LATEST_NIGHTLY_VERSION}"
 
           echo "Composing nightly build tag name..."
           GH_TAG=${LATEST_NIGHTLY_VERSION}.dev${DATE}
           echo ${GH_TAG}
-          echo "::set-output name=tag::${GH_TAG}"
+          echo "::set-output name=tag_name::${GH_TAG}"
 
       - name: Tag latest main commit as nightly
         uses: actions/github-script@v5
@@ -48,9 +46,8 @@ jobs:
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: "refs/tags/${{ steps.set_tagname.outputs.tag }}",
+              ref: "refs/tags/${{ steps.set_tagname.outputs.tag_name }}",
               sha: context.sha
-              description: "development build for internal use"
             })
 
 
@@ -88,7 +85,9 @@ jobs:
           ./scripts/write_keys_file.sh
 
       - name: Build ⚒️ Distributions
-        run: poetry build
+        run: |
+          sed -i 's/name = "rasa"/name = "rasa-nightly"/g' pyproject.toml
+          poetry build
 
       - name: Publish to PyPI 📦
         uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
