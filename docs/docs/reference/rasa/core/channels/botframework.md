@@ -35,7 +35,9 @@ Create a Bot Framework input channel.
 
 ```python
 @staticmethod
-def add_attachments_to_metadata(postdata: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
+def add_attachments_to_metadata(
+        postdata: Dict[Text, Any],
+        metadata: Optional[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
 ```
 
 Merge the values of `postdata[&#x27;attachments&#x27;]` with `metadata`.
@@ -43,7 +45,8 @@ Merge the values of `postdata[&#x27;attachments&#x27;]` with `metadata`.
 #### blueprint
 
 ```python
-def blueprint(on_new_message: Callable[[UserMessage], Awaitable[Any]]) -> Blueprint
+def blueprint(
+        on_new_message: Callable[[UserMessage], Awaitable[Any]]) -> Blueprint
 ```
 
 Defines the Sanic blueprint for the bot framework integration.

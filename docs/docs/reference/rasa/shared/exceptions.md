@@ -109,7 +109,8 @@ Raised if the format of an entity is invalid.
 
 ```python
 @classmethod
-def create_from(cls, other: json.JSONDecodeError, msg: Text) -> "InvalidEntityFormatException"
+def create_from(cls, other: json.JSONDecodeError,
+                msg: Text) -> "InvalidEntityFormatException"
 ```
 
 Creates `InvalidEntityFormatException` from `JSONDecodeError`.

@@ -294,7 +294,11 @@ condition (see `ConditionMarker.from_tag_and_sub_config`).
 #### evaluate\_trackers
 
 ```python
-async def evaluate_trackers(trackers: AsyncIterator[Optional[DialogueStateTracker]], output_file: Path, session_stats_file: Optional[Path] = None, overall_stats_file: Optional[Path] = None) -> None
+async def evaluate_trackers(trackers: AsyncIterator[
+    Optional[DialogueStateTracker]],
+                            output_file: Path,
+                            session_stats_file: Optional[Path] = None,
+                            overall_stats_file: Optional[Path] = None) -> None
 ```
 
 Collect markers for each dialogue in each tracker loaded.
@@ -327,7 +331,9 @@ Combines several markers into one.
 #### \_\_init\_\_
 
 ```python
-def __init__(markers: List[Marker], negated: bool = False, name: Optional[Text] = None) -> None
+def __init__(markers: List[Marker],
+             negated: bool = False,
+             name: Optional[Text] = None) -> None
 ```
 
 Instantiates a marker.
@@ -412,7 +418,9 @@ Gets the maximum depth from this point in the marker tree.
 
 ```python
 @staticmethod
-def from_tag_and_sub_config(tag: Text, sub_config: Any, name: Optional[Text] = None) -> OperatorMarker
+def from_tag_and_sub_config(tag: Text,
+                            sub_config: Any,
+                            name: Optional[Text] = None) -> OperatorMarker
 ```
 
 Creates an operator marker from the given config.
@@ -445,7 +453,9 @@ A marker that does not contain any sub-markers.
 #### \_\_init\_\_
 
 ```python
-def __init__(text: Text, negated: bool = False, name: Optional[Text] = None) -> None
+def __init__(text: Text,
+             negated: bool = False,
+             name: Optional[Text] = None) -> None
 ```
 
 Instantiates an atomic marker.
@@ -482,7 +492,9 @@ Gets the maximum depth from this point in the marker tree.
 
 ```python
 @staticmethod
-def from_tag_and_sub_config(tag: Text, sub_config: Any, name: Optional[Text] = None) -> ConditionMarker
+def from_tag_and_sub_config(tag: Text,
+                            sub_config: Any,
+                            name: Optional[Text] = None) -> ConditionMarker
 ```
 
 Creates an atomic marker from the given config.

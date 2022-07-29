@@ -22,7 +22,10 @@ change their own `DenseForSparse` layers if it&#x27;s needed.
 #### adjust\_sparse\_layers\_for\_incremental\_training
 
 ```python
-def adjust_sparse_layers_for_incremental_training(new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]], old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]], reg_lambda: float) -> None
+def adjust_sparse_layers_for_incremental_training(
+        new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        reg_lambda: float) -> None
 ```
 
 Finds and adjusts `DenseForSparse` layers during incremental training.
@@ -94,7 +97,9 @@ The layer combines a given list of tensors (whether sparse or dense) by:
 #### \_\_init\_\_
 
 ```python
-def __init__(attribute: Text, feature_type: Text, feature_type_signature: List[FeatureSignature], config: Dict[Text, Any]) -> None
+def __init__(attribute: Text, feature_type: Text,
+             feature_type_signature: List[FeatureSignature],
+             config: Dict[Text, Any]) -> None
 ```
 
 Creates a new `ConcatenateSparseDenseFeatures` object.
@@ -102,7 +107,8 @@ Creates a new `ConcatenateSparseDenseFeatures` object.
 #### call
 
 ```python
-def call(inputs: Tuple[List[Union[tf.Tensor, tf.SparseTensor]]], training: bool = False) -> tf.Tensor
+def call(inputs: Tuple[List[Union[tf.Tensor, tf.SparseTensor]]],
+         training: bool = False) -> tf.Tensor
 ```
 
 Combines sparse and dense feature tensors into one tensor.
@@ -179,7 +185,9 @@ the sequence-level (token-level) features.
 #### \_\_init\_\_
 
 ```python
-def __init__(attribute: Text, attribute_signature: Dict[Text, List[FeatureSignature]], config: Dict[Text, Any]) -> None
+def __init__(attribute: Text,
+             attribute_signature: Dict[Text, List[FeatureSignature]],
+             config: Dict[Text, Any]) -> None
 ```
 
 Creates a new `RasaFeatureCombiningLayer` object.
@@ -187,11 +195,9 @@ Creates a new `RasaFeatureCombiningLayer` object.
 #### call
 
 ```python
-def call(inputs: Tuple[
-            List[Union[tf.Tensor, tf.SparseTensor]],
-            List[Union[tf.Tensor, tf.SparseTensor]],
-            tf.Tensor,
-        ], training: bool = False) -> Tuple[tf.Tensor, tf.Tensor]
+def call(inputs: Tuple[List[Union[tf.Tensor, tf.SparseTensor]],
+                       List[Union[tf.Tensor, tf.SparseTensor]], tf.Tensor, ],
+         training: bool = False) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Combines multiple 3-D dense/sparse feature tensors into one.
@@ -296,7 +302,9 @@ sequences of features to fixed-size embeddings.
 #### \_\_init\_\_
 
 ```python
-def __init__(attribute: Text, attribute_signature: Dict[Text, List[FeatureSignature]], config: Dict[Text, Any]) -> None
+def __init__(attribute: Text,
+             attribute_signature: Dict[Text, List[FeatureSignature]],
+             config: Dict[Text, Any]) -> None
 ```
 
 Creates a new `RasaSequenceLayer` object.
@@ -304,11 +312,11 @@ Creates a new `RasaSequenceLayer` object.
 #### call
 
 ```python
-def call(inputs: Tuple[
-            List[Union[tf.Tensor, tf.SparseTensor]],
-            List[Union[tf.Tensor, tf.SparseTensor]],
-            tf.Tensor,
-        ], training: bool = False) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]
+def call(
+    inputs: Tuple[List[Union[tf.Tensor, tf.SparseTensor]],
+                  List[Union[tf.Tensor, tf.SparseTensor]], tf.Tensor, ],
+    training: bool = False
+) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]
 ```
 
 Combines all of an attribute&#x27;s features and embeds using a transformer.
@@ -362,13 +370,12 @@ elsewhere.
 #### prepare\_transformer\_layer
 
 ```python
-def prepare_transformer_layer(attribute_name: Text, config: Dict[Text, Any], num_layers: int, units: int, drop_rate: float, unidirectional: bool) -> Union[
-    TransformerEncoder,
-    Callable[
-        [tf.Tensor, Optional[tf.Tensor], Optional[Union[tf.Tensor, bool]]],
-        Tuple[tf.Tensor, Optional[tf.Tensor]],
-    ],
-]
+def prepare_transformer_layer(
+    attribute_name: Text, config: Dict[Text, Any], num_layers: int, units: int,
+    drop_rate: float, unidirectional: bool
+) -> Union[TransformerEncoder, Callable[
+    [tf.Tensor, Optional[tf.Tensor], Optional[Union[tf.Tensor, bool]]], Tuple[
+        tf.Tensor, Optional[tf.Tensor]], ], ]
 ```
 
 Creates &amp; returns a transformer encoder, potentially with 0 layers.

@@ -34,7 +34,12 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, clf: Optional["sklearn.model_selection.GridSearchCV"] = None, le: Optional["sklearn.preprocessing.LabelEncoder"] = None) -> None
+def __init__(
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        clf: Optional["sklearn.model_selection.GridSearchCV"] = None,
+        le: Optional["sklearn.preprocessing.LabelEncoder"] = None) -> None
 ```
 
 Construct a new intent classifier using the sklearn framework.
@@ -43,7 +48,9 @@ Construct a new intent classifier using the sklearn framework.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> SklearnIntentClassifier
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> SklearnIntentClassifier
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -146,7 +153,9 @@ Persist this model into the passed directory.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> SklearnIntentClassifier
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> SklearnIntentClassifier
 ```
 
 Loads trained component (see parent class for full docstring).

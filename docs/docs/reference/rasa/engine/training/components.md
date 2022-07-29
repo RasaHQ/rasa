@@ -30,7 +30,9 @@ Initializes a `PrecomputedValueProvider`.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> PrecomputedValueProvider
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> PrecomputedValueProvider
 ```
 
 Creates instance (see parent class for full docstring).
@@ -98,7 +100,9 @@ Replaces non-input nodes during a fingerprint run.
 #### \_\_init\_\_
 
 ```python
-def __init__(cache: TrainingCache, config_of_replaced_component: Dict[Text, Any], class_of_replaced_component: Type) -> None
+def __init__(cache: TrainingCache, config_of_replaced_component: Dict[Text,
+                                                                      Any],
+             class_of_replaced_component: Type) -> None
 ```
 
 Initializes a `FingerprintComponent`.
@@ -113,7 +117,9 @@ Initializes a `FingerprintComponent`.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FingerprintComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> FingerprintComponent
 ```
 
 Creates a `FingerprintComponent` (see parent class for full docstring).

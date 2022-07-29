@@ -13,7 +13,10 @@ Abstract data generator.
 #### \_\_init\_\_
 
 ```python
-def __init__(model_data: RasaModelData, batch_size: Union[int, List[int]], batch_strategy: Text = SEQUENCE, shuffle: bool = True)
+def __init__(model_data: RasaModelData,
+             batch_size: Union[int, List[int]],
+             batch_strategy: Text = SEQUENCE,
+             shuffle: bool = True)
 ```
 
 Initializes the data generator.
@@ -66,7 +69,12 @@ Update the data after every epoch.
 
 ```python
 @staticmethod
-def prepare_batch(data: Data, start: Optional[int] = None, end: Optional[int] = None, tuple_sizes: Optional[Dict[Text, int]] = None) -> Tuple[Optional[np.ndarray], ...]
+def prepare_batch(
+    data: Data,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+    tuple_sizes: Optional[Dict[Text, int]] = None
+) -> Tuple[Optional[np.ndarray], ...]
 ```
 
 Slices model data into batch using given start and end value.
@@ -96,7 +104,11 @@ Data generator with an optional increasing batch size.
 #### \_\_init\_\_
 
 ```python
-def __init__(model_data: RasaModelData, batch_size: Union[List[int], int], epochs: int = 1, batch_strategy: Text = SEQUENCE, shuffle: bool = True)
+def __init__(model_data: RasaModelData,
+             batch_size: Union[List[int], int],
+             epochs: int = 1,
+             batch_strategy: Text = SEQUENCE,
+             shuffle: bool = True)
 ```
 
 Initializes the increasing batch size data generator.

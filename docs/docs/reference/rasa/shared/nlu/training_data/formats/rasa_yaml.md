@@ -82,7 +82,8 @@ Turns TrainingData into a string.
 #### dump
 
 ```python
-def dump(target: Union[Text, Path, StringIO], training_data: "TrainingData") -> None
+def dump(target: Union[Text, Path, StringIO],
+         training_data: "TrainingData") -> None
 ```
 
 Writes training data into a file in a YAML format.
@@ -96,7 +97,8 @@ Writes training data into a file in a YAML format.
 
 ```python
 @classmethod
-def training_data_to_dict(cls, training_data: "TrainingData") -> Optional[OrderedDict]
+def training_data_to_dict(
+        cls, training_data: "TrainingData") -> Optional[OrderedDict]
 ```
 
 Represents NLU training data to a dict/list structure ready to be
@@ -142,7 +144,8 @@ Serializes the regexes.
 
 ```python
 @classmethod
-def process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]
+def process_lookup_tables(cls,
+                          training_data: "TrainingData") -> List[OrderedDict]
 ```
 
 Serializes the look up tables.
@@ -160,7 +163,11 @@ Serializes the look up tables.
 
 ```python
 @staticmethod
-def process_training_examples_by_key(training_examples: Dict[Text, List[Union[Dict, Text]]], key_name: Text, key_examples: Text, example_extraction_predicate: Callable[[Dict[Text, Any]], Text]) -> List[OrderedDict]
+def process_training_examples_by_key(
+    training_examples: Dict[Text, List[Union[Dict, Text]]], key_name: Text,
+    key_examples: Text,
+    example_extraction_predicate: Callable[[Dict[Text, Any]], Text]
+) -> List[OrderedDict]
 ```
 
 Prepares training examples  to be written to YAML.

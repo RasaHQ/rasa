@@ -50,7 +50,13 @@ Any extra python dependencies required for this component to run.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None, oov_token: Optional[Text] = None, oov_words: Optional[List[Text]] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             execution_context: ExecutionContext,
+             vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
+             oov_token: Optional[Text] = None,
+             oov_words: Optional[List[Text]] = None) -> None
 ```
 
 Constructs a new count vectorizer using the sklearn framework.
@@ -59,7 +65,9 @@ Constructs a new count vectorizer using the sklearn framework.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CountVectorsFeaturizer
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> CountVectorsFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -67,7 +75,8 @@ Creates a new untrained component (see parent class for full docstring).
 #### train
 
 ```python
-def train(training_data: TrainingData, model: Optional[SpacyModel] = None) -> Resource
+def train(training_data: TrainingData,
+          model: Optional[SpacyModel] = None) -> Resource
 ```
 
 Trains the featurizer.
@@ -114,7 +123,9 @@ Returns the metadata necessary to load the model again.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CountVectorsFeaturizer
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> CountVectorsFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).

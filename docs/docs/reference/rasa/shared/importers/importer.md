@@ -14,7 +14,10 @@ Common interface for different mechanisms to load training data.
 
 ```python
 @abstractmethod
-def __init__(config_file: Optional[Text] = None, domain_path: Optional[Text] = None, training_data_paths: Optional[Union[List[Text], Text]] = None, **kwargs: Any, ,) -> None
+def __init__(config_file: Optional[Text] = None,
+             domain_path: Optional[Text] = None,
+             training_data_paths: Optional[Union[List[Text], Text]] = None,
+             **kwargs: Any) -> None
 ```
 
 Initialise the importer.
@@ -106,7 +109,11 @@ Retrieves the NLU training data that should be used for training.
 
 ```python
 @staticmethod
-def load_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+def load_from_config(
+    config_path: Text,
+    domain_path: Optional[Text] = None,
+    training_data_paths: Optional[List[Text]] = None
+) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a configuration file.
@@ -115,7 +122,11 @@ Loads a `TrainingDataImporter` instance from a configuration file.
 
 ```python
 @staticmethod
-def load_core_importer_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+def load_core_importer_from_config(
+    config_path: Text,
+    domain_path: Optional[Text] = None,
+    training_data_paths: Optional[List[Text]] = None
+) -> "TrainingDataImporter"
 ```
 
 Loads core `TrainingDataImporter` instance.
@@ -126,7 +137,11 @@ Instance loaded from configuration file will only read Core training data.
 
 ```python
 @staticmethod
-def load_nlu_importer_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+def load_nlu_importer_from_config(
+    config_path: Text,
+    domain_path: Optional[Text] = None,
+    training_data_paths: Optional[List[Text]] = None
+) -> "TrainingDataImporter"
 ```
 
 Loads nlu `TrainingDataImporter` instance.
@@ -137,7 +152,12 @@ Instance loaded from configuration file will only read NLU training data.
 
 ```python
 @staticmethod
-def load_from_dict(config: Optional[Dict] = None, config_path: Optional[Text] = None, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+def load_from_dict(
+    config: Optional[Dict] = None,
+    config_path: Optional[Text] = None,
+    domain_path: Optional[Text] = None,
+    training_data_paths: Optional[List[Text]] = None
+) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a dictionary.

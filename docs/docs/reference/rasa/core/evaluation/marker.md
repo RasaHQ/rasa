@@ -93,7 +93,9 @@ The sequence marker application follows two rules:
 #### \_\_init\_\_
 
 ```python
-def __init__(markers: List[Marker], negated: bool = False, name: Optional[Text] = None) -> None
+def __init__(markers: List[Marker],
+             negated: bool = False,
+             name: Optional[Text] = None) -> None
 ```
 
 Instantiate a new sequence marker.

@@ -46,7 +46,12 @@ Returns the default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None, lookup: Optional[Dict] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             execution_context: ExecutionContext,
+             featurizer: Optional[TrackerFeaturizer] = None,
+             lookup: Optional[Dict] = None) -> None
 ```
 
 Initializes the policy.
@@ -55,7 +60,8 @@ Initializes the policy.
 
 ```python
 @classmethod
-def raise_if_incompatible_with_domain(cls, config: Dict[Text, Any], domain: Domain) -> None
+def raise_if_incompatible_with_domain(cls, config: Dict[Text, Any],
+                                      domain: Domain) -> None
 ```
 
 Checks whether the domains action names match the configured fallback.
@@ -72,7 +78,8 @@ Checks whether the domains action names match the configured fallback.
 #### train
 
 ```python
-def train(training_trackers: List[TrackerWithCachedStates], domain: Domain, **kwargs: Any, ,) -> Resource
+def train(training_trackers: List[TrackerWithCachedStates], domain: Domain,
+          **kwargs: Any) -> Resource
 ```
 
 Trains the policy on given training trackers.
@@ -90,7 +97,11 @@ Trains the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
-def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
+def predict_action_probabilities(tracker: DialogueStateTracker,
+                                 domain: Domain,
+                                 rule_only_data: Optional[Dict[Text,
+                                                               Any]] = None,
+                                 **kwargs: Any) -> PolicyPrediction
 ```
 
 Predicts the next action (see parent class for more information).

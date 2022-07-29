@@ -31,7 +31,8 @@ Components that should be included in the pipeline before this component.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], execution_context: ExecutionContext) -> None
+def __init__(config: Dict[Text, Any],
+             execution_context: ExecutionContext) -> None
 ```
 
 Initializes the featurizer with the model in the config.
@@ -58,7 +59,9 @@ Validates the configuration.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> LanguageModelFeaturizer
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> LanguageModelFeaturizer
 ```
 
 Creates a LanguageModelFeaturizer.

@@ -5,7 +5,8 @@ title: rasa.core.evaluation.marker_stats
 #### compute\_statistics
 
 ```python
-def compute_statistics(values: List[Union[float, int]]) -> Dict[Text, Union[int, np.float]]
+def compute_statistics(
+        values: List[Union[float, int]]) -> Dict[Text, Union[int, np.float]]
 ```
 
 Computes some statistics over the given numbers.
@@ -55,7 +56,10 @@ Creates a new marker statistics object.
 #### process
 
 ```python
-def process(sender_id: Text, session_idx: int, meta_data_on_relevant_events_per_marker: Dict[Text, List[EventMetaData]]) -> None
+def process(
+    sender_id: Text, session_idx: int,
+    meta_data_on_relevant_events_per_marker: Dict[Text, List[EventMetaData]]
+) -> None
 ```
 
 Processes the meta data that was extracted from a single session.

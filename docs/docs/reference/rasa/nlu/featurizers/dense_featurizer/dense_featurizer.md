@@ -14,7 +14,10 @@ Base class for all dense featurizers.
 
 ```python
 @staticmethod
-def aggregate_sequence_features(dense_sequence_features: np.ndarray, pooling_operation: Text, only_non_zero_vectors: bool = True) -> np.ndarray
+def aggregate_sequence_features(
+        dense_sequence_features: np.ndarray,
+        pooling_operation: Text,
+        only_non_zero_vectors: bool = True) -> np.ndarray
 ```
 
 Aggregates the non-zero vectors of a dense sequence feature matrix.

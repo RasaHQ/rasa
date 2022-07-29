@@ -41,7 +41,11 @@ Default config for ProjectProvider.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, fingerprints: Optional[Dict[Text, Text]] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             execution_context: ExecutionContext,
+             fingerprints: Optional[Dict[Text, Text]] = None) -> None
 ```
 
 Instantiates a `FineTuningValidator`.
@@ -82,7 +86,9 @@ Validates whether we can finetune Core and NLU when finetuning is enabled.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FinetuningValidator
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> FinetuningValidator
 ```
 
 Creates a new `FineTuningValidator` (see parent class for full docstring).
@@ -99,7 +105,9 @@ Persists this `FineTuningValidator`.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> GraphComponent
 ```
 
 Loads a `FineTuningValidator` (see parent class for full docstring).

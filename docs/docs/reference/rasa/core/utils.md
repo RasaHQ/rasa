@@ -5,7 +5,12 @@ title: rasa.core.utils
 #### configure\_file\_logging
 
 ```python
-def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text], use_syslog: Optional[bool], syslog_address: Optional[Text] = None, syslog_port: Optional[int] = None, syslog_protocol: Optional[Text] = None) -> None
+def configure_file_logging(logger_obj: logging.Logger,
+                           log_file: Optional[Text],
+                           use_syslog: Optional[bool],
+                           syslog_address: Optional[Text] = None,
+                           syslog_port: Optional[int] = None,
+                           syslog_protocol: Optional[Text] = None) -> None
 ```
 
 Configure logging to a file.
@@ -22,7 +27,9 @@ Configure logging to a file.
 #### one\_hot
 
 ```python
-def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray
+def one_hot(hot_idx: int,
+            length: int,
+            dtype: Optional[Text] = None) -> np.ndarray
 ```
 
 Create a one-hot array.
@@ -41,7 +48,9 @@ Create a one-hot array.
 #### dump\_obj\_as\_yaml\_to\_file
 
 ```python
-def dump_obj_as_yaml_to_file(filename: Union[Text, Path], obj: Any, should_preserve_key_order: bool = False) -> None
+def dump_obj_as_yaml_to_file(filename: Union[Text, Path],
+                             obj: Any,
+                             should_preserve_key_order: bool = False) -> None
 ```
 
 Writes `obj` to the filename in YAML repr.
@@ -63,7 +72,9 @@ List all the routes of a sanic application. Mainly used for debugging.
 #### extract\_args
 
 ```python
-def extract_args(kwargs: Dict[Text, Any], keys_to_extract: Set[Text]) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
+def extract_args(
+        kwargs: Dict[Text, Any],
+        keys_to_extract: Set[Text]) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
 ```
 
 Go through the kwargs and filter out the specified keys.
@@ -107,7 +118,9 @@ Collection of configured endpoints.
 #### read\_endpoints\_from\_path
 
 ```python
-def read_endpoints_from_path(endpoints_path: Optional[Union[Path, Text]] = None) -> AvailableEndpoints
+def read_endpoints_from_path(
+        endpoints_path: Optional[Union[Path,
+                                       Text]] = None) -> AvailableEndpoints
 ```
 
 Get `AvailableEndpoints` object from specified path.
@@ -187,7 +200,8 @@ Convert all instances in `obj` of `Decimal` to `float`.
 #### number\_of\_sanic\_workers
 
 ```python
-def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) -> int
+def number_of_sanic_workers(
+        lock_store: Union[EndpointConfig, LockStore, None]) -> int
 ```
 
 Get the number of Sanic workers to use in `app.run()`.

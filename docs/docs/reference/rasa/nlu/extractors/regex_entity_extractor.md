@@ -26,7 +26,9 @@ The component&#x27;s default config (see parent class for full docstring).
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexEntityExtractor
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> RegexEntityExtractor
 ```
 
 Creates a new `GraphComponent`.
@@ -45,7 +47,10 @@ Creates a new `GraphComponent`.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, patterns: Optional[List[Dict[Text, Text]]] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             patterns: Optional[List[Dict[Text, Text]]] = None) -> None
 ```
 
 Creates a new instance.
@@ -95,7 +100,9 @@ exists yet, then an `ENTITIES` attribute will be created.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexEntityExtractor
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> RegexEntityExtractor
 ```
 
 Loads trained component (see parent class for full docstring).

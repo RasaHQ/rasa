@@ -31,7 +31,9 @@ Returns default configuration (see parent class for full docstring).
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> TrainingTrackerProvider
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> TrainingTrackerProvider
 ```
 
 Creates component (see parent class for full docstring).
@@ -39,7 +41,8 @@ Creates component (see parent class for full docstring).
 #### provide
 
 ```python
-def provide(story_graph: StoryGraph, domain: Domain) -> List[TrackerWithCachedStates]
+def provide(story_graph: StoryGraph,
+            domain: Domain) -> List[TrackerWithCachedStates]
 ```
 
 Generates the training trackers from the training data.

@@ -34,7 +34,11 @@ Returns the component&#x27;s default config.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, known_patterns: Optional[List[Dict[Text, Text]]] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             execution_context: ExecutionContext,
+             known_patterns: Optional[List[Dict[Text, Text]]] = None) -> None
 ```
 
 Constructs new features for regexes and lookup table using regex expressions.
@@ -53,7 +57,9 @@ Constructs new features for regexes and lookup table using regex expressions.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexFeaturizer
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> RegexFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -90,7 +96,9 @@ Featurizes all given messages in-place.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexFeaturizer
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> RegexFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).

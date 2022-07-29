@@ -13,7 +13,9 @@ Provides domain during training and inference time.
 #### \_\_init\_\_
 
 ```python
-def __init__(model_storage: ModelStorage, resource: Resource, domain: Optional[Domain] = None) -> None
+def __init__(model_storage: ModelStorage,
+             resource: Resource,
+             domain: Optional[Domain] = None) -> None
 ```
 
 Creates domain provider.
@@ -22,7 +24,9 @@ Creates domain provider.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DomainProvider
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> DomainProvider
 ```
 
 Creates component (see parent class for full docstring).
@@ -31,7 +35,9 @@ Creates component (see parent class for full docstring).
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> DomainProvider
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> DomainProvider
 ```
 
 Creates provider using a persisted version of itself.

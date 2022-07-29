@@ -28,7 +28,11 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, intent_keyword_map: Optional[Dict] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             execution_context: ExecutionContext,
+             intent_keyword_map: Optional[Dict] = None) -> None
 ```
 
 Creates classifier.
@@ -37,7 +41,9 @@ Creates classifier.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> KeywordIntentClassifier
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> KeywordIntentClassifier
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -70,7 +76,9 @@ Persist this model into the passed directory.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> KeywordIntentClassifier
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> KeywordIntentClassifier
 ```
 
 Loads trained component (see parent class for full docstring).

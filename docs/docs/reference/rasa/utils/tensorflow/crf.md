@@ -66,7 +66,9 @@ Build the CrfDecodeForwardRnnCell.
 #### crf\_decode\_forward
 
 ```python
-def crf_decode_forward(inputs: TensorLike, state: TensorLike, transition_params: TensorLike, sequence_lengths: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
+def crf_decode_forward(
+        inputs: TensorLike, state: TensorLike, transition_params: TensorLike,
+        sequence_lengths: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Computes forward decoding in a linear-chain CRF.
@@ -88,7 +90,8 @@ Computes forward decoding in a linear-chain CRF.
 #### crf\_decode\_backward
 
 ```python
-def crf_decode_backward(backpointers: TensorLike, scores: TensorLike, state: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
+def crf_decode_backward(backpointers: TensorLike, scores: TensorLike,
+                        state: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Computes backward decoding in a linear-chain CRF.
@@ -109,7 +112,9 @@ Computes backward decoding in a linear-chain CRF.
 #### crf\_decode
 
 ```python
-def crf_decode(potentials: TensorLike, transition_params: TensorLike, sequence_length: TensorLike) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]
+def crf_decode(
+        potentials: TensorLike, transition_params: TensorLike,
+        sequence_length: TensorLike) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]
 ```
 
 Decode the highest scoring sequence of tags.

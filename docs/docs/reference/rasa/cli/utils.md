@@ -5,7 +5,11 @@ title: rasa.cli.utils
 #### get\_validated\_path
 
 ```python
-def get_validated_path(current: Optional[Union["Path", Text]], parameter: Text, default: Optional[Union["Path", Text]] = None, none_is_valid: bool = False) -> Optional[Union["Path", Text]]
+def get_validated_path(
+        current: Optional[Union["Path", Text]],
+        parameter: Text,
+        default: Optional[Union["Path", Text]] = None,
+        none_is_valid: bool = False) -> Optional[Union["Path", Text]]
 ```
 
 Checks whether a file path or its default value is valid and returns it.
@@ -27,7 +31,8 @@ Checks whether a file path or its default value is valid and returns it.
 #### missing\_config\_keys
 
 ```python
-def missing_config_keys(path: Union["Path", Text], mandatory_keys: List[Text]) -> List[Text]
+def missing_config_keys(path: Union["Path", Text],
+                        mandatory_keys: List[Text]) -> List[Text]
 ```
 
 Checks whether the config file at `path` contains the `mandatory_keys`.
@@ -45,7 +50,9 @@ Checks whether the config file at `path` contains the `mandatory_keys`.
 #### cancel\_cause\_not\_found
 
 ```python
-def cancel_cause_not_found(current: Optional[Union["Path", Text]], parameter: Text, default: Optional[Union["Path", Text]]) -> None
+def cancel_cause_not_found(current: Optional[Union["Path",
+                                                   Text]], parameter: Text,
+                           default: Optional[Union["Path", Text]]) -> None
 ```
 
 Exits with an error because the given path was not valid.
@@ -83,7 +90,9 @@ Create a string representation of an element.
 #### button\_choices\_from\_message\_data
 
 ```python
-def button_choices_from_message_data(message: Dict[Text, Any], allow_free_text_input: bool = True) -> List[Text]
+def button_choices_from_message_data(
+        message: Dict[Text, Any],
+        allow_free_text_input: bool = True) -> List[Text]
 ```
 
 Return list of choices to present to the user.

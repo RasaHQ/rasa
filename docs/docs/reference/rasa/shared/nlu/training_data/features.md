@@ -13,7 +13,9 @@ Stores the features produced by any featurizer.
 #### \_\_init\_\_
 
 ```python
-def __init__(features: Union[np.ndarray, scipy.sparse.spmatrix], feature_type: Text, attribute: Text, origin: Union[Text, List[Text]]) -> None
+def __init__(features: Union[np.ndarray,
+                             scipy.sparse.spmatrix], feature_type: Text,
+             attribute: Text, origin: Union[Text, List[Text]]) -> None
 ```
 
 Initializes the Features object.
@@ -69,9 +71,8 @@ Combine the incoming features with this instance&#x27;s features.
 #### \_\_key\_\_
 
 ```python
-def __key__() -> Tuple[
-        Text, Text, Union[np.ndarray, scipy.sparse.spmatrix], Union[Text, List[Text]]
-    ]
+def __key__() -> Tuple[Text, Text, Union[np.ndarray, scipy.sparse.spmatrix],
+                       Union[Text, List[Text]]]
 ```
 
 Returns a 4-tuple of defining properties.
@@ -110,7 +111,11 @@ Calculate a stable string fingerprint for the features.
 
 ```python
 @staticmethod
-def filter(features_list: List[Features], attributes: Optional[Iterable[Text]] = None, type: Optional[Text] = None, origin: Optional[List[Text]] = None, is_sparse: Optional[bool] = None) -> List[Features]
+def filter(features_list: List[Features],
+           attributes: Optional[Iterable[Text]] = None,
+           type: Optional[Text] = None,
+           origin: Optional[List[Text]] = None,
+           is_sparse: Optional[bool] = None) -> List[Features]
 ```
 
 Filters the given list of features.
@@ -139,7 +144,10 @@ Filters the given list of features.
 
 ```python
 @staticmethod
-def groupby_attribute(features_list: List[Features], attributes: Optional[Iterable[Text]] = None) -> Dict[Text, List[Features]]
+def groupby_attribute(
+        features_list: List[Features],
+        attributes: Optional[Iterable[Text]] = None
+) -> Dict[Text, List[Features]]
 ```
 
 Groups the given features according to their attribute.
@@ -163,7 +171,8 @@ Groups the given features according to their attribute.
 
 ```python
 @staticmethod
-def combine(features_list: List[Features], expected_origins: Optional[List[Text]] = None) -> Features
+def combine(features_list: List[Features],
+            expected_origins: Optional[List[Text]] = None) -> Features
 ```
 
 Combine features of the same type and level that describe the same attribute.
@@ -192,7 +201,8 @@ sequence dimension.
 
 ```python
 @staticmethod
-def reduce(features_list: List[Features], expected_origins: Optional[List[Text]] = None) -> List[Features]
+def reduce(features_list: List[Features],
+           expected_origins: Optional[List[Text]] = None) -> List[Features]
 ```
 
 Combines features of same type and level into one Feature.

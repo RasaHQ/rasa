@@ -163,7 +163,9 @@ override is `True`, in which case they are taken from `domain2`.
 
 ```python
 @staticmethod
-def merge_domain_dicts(domain_dict: Dict, combined: Dict, override: bool = False) -> Dict
+def merge_domain_dicts(domain_dict: Dict,
+                       combined: Dict,
+                       override: bool = False) -> Dict
 ```
 
 Combines two domain dictionaries.
@@ -190,7 +192,10 @@ List retrieval intents present in the domain.
 
 ```python
 @classmethod
-def collect_entity_properties(cls, domain_entities: List[Union[Text, Dict[Text, Any]]]) -> EntityProperties
+def collect_entity_properties(
+        cls, domain_entities: List[Union[Text,
+                                         Dict[Text,
+                                              Any]]]) -> EntityProperties
 ```
 
 Get entity properties for a domain from what is provided by a domain file.
@@ -208,7 +213,11 @@ Get entity properties for a domain from what is provided by a domain file.
 
 ```python
 @classmethod
-def collect_intent_properties(cls, intents: List[Union[Text, Dict[Text, Any]]], entity_properties: EntityProperties) -> Dict[Text, Dict[Text, Union[bool, List]]]
+def collect_intent_properties(
+    cls, intents: List[Union[Text,
+                             Dict[Text,
+                                  Any]]], entity_properties: EntityProperties
+) -> Dict[Text, Dict[Text, Union[bool, List]]]
 ```
 
 Get intent properties for a domain from what is provided by a domain file.
@@ -226,7 +235,18 @@ Get intent properties for a domain from what is provided by a domain file.
 #### \_\_init\_\_
 
 ```python
-def __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], data: Dict, action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
+def __init__(
+    intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
+    entities: List[Union[Text, Dict[Text, Any]]],
+    slots: List[Slot],
+    responses: Dict[Text, List[Dict[Text, Any]]],
+    action_names: List[Text],
+    forms: Union[Dict[Text, Any], List[Text]],
+    data: Dict,
+    action_texts: Optional[List[Text]] = None,
+    store_entities_as_slots: bool = True,
+    session_config: SessionConfig = SessionConfig.default()
+) -> None
 ```
 
 Creates a `Domain`.
@@ -336,7 +356,8 @@ Return only the responses which are defined for retrieval intents.
 
 ```python
 @staticmethod
-def is_retrieval_intent_response(response: Tuple[Text, List[Dict[Text, Any]]]) -> bool
+def is_retrieval_intent_response(
+        response: Tuple[Text, List[Dict[Text, Any]]]) -> bool
 ```
 
 Check if the response is for a retrieval intent.
@@ -393,7 +414,8 @@ Returns all available entity state strings.
 
 ```python
 @staticmethod
-def concatenate_entity_labels(entity_labels: Dict[Text, List[Text]], entity: Optional[Text] = None) -> List[Text]
+def concatenate_entity_labels(entity_labels: Dict[Text, List[Text]],
+                              entity: Optional[Text] = None) -> List[Text]
 ```
 
 Concatenates the given entity labels with their corresponding sub-labels.
@@ -432,7 +454,8 @@ Returns all available states.
 #### get\_active\_state
 
 ```python
-def get_active_state(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> State
+def get_active_state(tracker: "DialogueStateTracker",
+                     omit_unset_slots: bool = False) -> State
 ```
 
 Given a dialogue tracker, makes a representation of current dialogue state.
@@ -450,7 +473,11 @@ Given a dialogue tracker, makes a representation of current dialogue state.
 #### states\_for\_tracker\_history
 
 ```python
-def states_for_tracker_history(tracker: "DialogueStateTracker", omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
+def states_for_tracker_history(
+        tracker: "DialogueStateTracker",
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
 ```
 
 List of states for each state of the trackers history.
@@ -526,7 +553,9 @@ Return serialized `Domain`.
 
 ```python
 @staticmethod
-def get_responses_with_multilines(responses: Dict[Text, List[Dict[Text, Any]]]) -> Dict[Text, List[Dict[Text, Any]]]
+def get_responses_with_multilines(
+    responses: Dict[Text, List[Dict[Text, Any]]]
+) -> Dict[Text, List[Dict[Text, Any]]]
 ```
 
 Returns `responses` with preserved multilines in the `text` key.
@@ -591,7 +620,12 @@ Returns sorted list of entities.
 #### domain\_warnings
 
 ```python
-def domain_warnings(intents: Optional[Union[List[Text], Set[Text]]] = None, entities: Optional[Union[List[Text], Set[Text]]] = None, actions: Optional[Union[List[Text], Set[Text]]] = None, slots: Optional[Union[List[Text], Set[Text]]] = None) -> Dict[Text, Dict[Text, Set[Text]]]
+def domain_warnings(
+    intents: Optional[Union[List[Text], Set[Text]]] = None,
+    entities: Optional[Union[List[Text], Set[Text]]] = None,
+    actions: Optional[Union[List[Text], Set[Text]]] = None,
+    slots: Optional[Union[List[Text], Set[Text]]] = None
+) -> Dict[Text, Dict[Text, Set[Text]]]
 ```
 
 Generate domain warnings from intents, entities, actions and slots.
@@ -696,7 +730,8 @@ Returns text representation of object.
 #### warn\_about\_duplicates\_found\_during\_domain\_merging
 
 ```python
-def warn_about_duplicates_found_during_domain_merging(duplicates: Dict[Text, List[Text]]) -> None
+def warn_about_duplicates_found_during_domain_merging(
+        duplicates: Dict[Text, List[Text]]) -> None
 ```
 
 Emits warning about found duplicates while loading multiple domain paths.

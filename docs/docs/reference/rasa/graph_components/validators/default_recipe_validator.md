@@ -14,7 +14,9 @@ Validates a &quot;DefaultV1&quot; configuration against the training data and do
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DefaultV1RecipeValidator
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> DefaultV1RecipeValidator
 ```
 
 Creates a new `ConfigValidator` (see parent class for full docstring).

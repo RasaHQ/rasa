@@ -5,7 +5,8 @@ title: rasa.shared.utils.common
 #### class\_from\_module\_path
 
 ```python
-def class_from_module_path(module_path: Text, lookup_path: Optional[Text] = None) -> Type
+def class_from_module_path(module_path: Text,
+                           lookup_path: Optional[Text] = None) -> Type
 ```
 
 Given the module name and path of a class, tries to retrieve the class.
@@ -97,7 +98,9 @@ Transforms e.g. a list like [&#x27;A&#x27;, &#x27;B&#x27;, &#x27;C&#x27;] into a
 #### minimal\_kwargs
 
 ```python
-def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None) -> Dict[Text, Any]
+def minimal_kwargs(kwargs: Dict[Text, Any],
+                   func: Callable,
+                   excluded_keys: Optional[List] = None) -> Dict[Text, Any]
 ```
 
 Returns only the kwargs which are required by a function. Keys, contained in
@@ -149,7 +152,9 @@ Removes keys for empty values.
 #### merge\_dicts
 
 ```python
-def merge_dicts(tempDict1: Dict[Text, Any], tempDict2: Dict[Text, Any], override_existing_values: bool = False) -> Dict[Text, Any]
+def merge_dicts(tempDict1: Dict[Text, Any],
+                tempDict2: Dict[Text, Any],
+                override_existing_values: bool = False) -> Dict[Text, Any]
 ```
 
 Merges two dicts.
@@ -157,7 +162,9 @@ Merges two dicts.
 #### merge\_lists
 
 ```python
-def merge_lists(list1: List[Any], list2: List[Any], override: bool = False) -> List[Any]
+def merge_lists(list1: List[Any],
+                list2: List[Any],
+                override: bool = False) -> List[Any]
 ```
 
 Merges two lists.
@@ -165,7 +172,9 @@ Merges two lists.
 #### merge\_lists\_of\_dicts
 
 ```python
-def merge_lists_of_dicts(dict_list1: List[Dict], dict_list2: List[Dict], override_existing_values: bool = False) -> List[Dict]
+def merge_lists_of_dicts(dict_list1: List[Dict],
+                         dict_list2: List[Dict],
+                         override_existing_values: bool = False) -> List[Dict]
 ```
 
 Merges two dict lists.

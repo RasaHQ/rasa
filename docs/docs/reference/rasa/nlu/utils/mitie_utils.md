@@ -13,7 +13,11 @@ Wraps `MitieNLP` output to make it fingerprintable.
 #### \_\_init\_\_
 
 ```python
-def __init__(model_path: Path, word_feature_extractor: Optional["mitie.total_word_feature_extractor"] = None) -> None
+def __init__(
+    model_path: Path,
+    word_feature_extractor: Optional[
+        "mitie.total_word_feature_extractor"] = None
+) -> None
 ```
 
 Initializing MitieModel.
@@ -59,7 +63,10 @@ Returns default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(path_to_model_file: Path, extractor: Optional["mitie.total_word_feature_extractor"] = None) -> None
+def __init__(
+        path_to_model_file: Path,
+        extractor: Optional["mitie.total_word_feature_extractor"] = None
+) -> None
 ```
 
 Constructs a new language model from the MITIE framework.
@@ -77,7 +84,9 @@ Lists required dependencies (see parent class for full docstring).
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieNLP
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> MitieNLP
 ```
 
 Creates component (see parent class for full docstring).

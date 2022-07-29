@@ -22,7 +22,8 @@ Subclassing np.array: https://numpy.org/doc/stable/user/basics.subclassing.html
 #### \_\_new\_\_
 
 ```python
-def __new__(cls, input_array: np.ndarray, number_of_dimensions: int) -> "FeatureArray"
+def __new__(cls, input_array: np.ndarray,
+            number_of_dimensions: int) -> "FeatureArray"
 ```
 
 Create and return a new object.  See help(type) for accurate signature.
@@ -30,7 +31,8 @@ Create and return a new object.  See help(type) for accurate signature.
 #### \_\_init\_\_
 
 ```python
-def __init__(input_array: Any, number_of_dimensions: int, **kwargs: Any) -> None
+def __init__(input_array: Any, number_of_dimensions: int,
+             **kwargs: Any) -> None
 ```
 
 Initialize. FeatureArray.
@@ -58,7 +60,8 @@ This method is called when the system allocates a new array from obj.
 #### \_\_array\_ufunc\_\_
 
 ```python
-def __array_ufunc__(ufunc: Any, method: Text, *inputs: Any, **kwargs: Any) -> Any
+def __array_ufunc__(ufunc: Any, method: Text, *inputs: Any,
+                    **kwargs: Any) -> Any
 ```
 
 Overwrite this method as we are subclassing numpy array.
@@ -133,7 +136,9 @@ be &quot;INTENT&quot; and &#x27;label_sub_key&#x27; would be &quot;IDS&quot;.
 #### \_\_init\_\_
 
 ```python
-def __init__(label_key: Optional[Text] = None, label_sub_key: Optional[Text] = None, data: Optional[Data] = None) -> None
+def __init__(label_key: Optional[Text] = None,
+             label_sub_key: Optional[Text] = None,
+             data: Optional[Data] = None) -> None
 ```
 
 Initializes the RasaModelData object.
@@ -147,7 +152,10 @@ Initializes the RasaModelData object.
 #### get
 
 ```python
-def get(key: Text, sub_key: Optional[Text] = None) -> Union[Dict[Text, List[FeatureArray]], List[FeatureArray]]
+def get(
+    key: Text,
+    sub_key: Optional[Text] = None
+) -> Union[Dict[Text, List[FeatureArray]], List[FeatureArray]]
 ```
 
 Get the data under the given keys.
@@ -320,7 +328,8 @@ Add incoming data to data.
 #### update\_key
 
 ```python
-def update_key(from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text) -> None
+def update_key(from_key: Text, from_sub_key: Text, to_key: Text,
+               to_sub_key: Text) -> None
 ```
 
 Copies the features under the given keys to the new keys and deletes the old.
@@ -335,7 +344,8 @@ Copies the features under the given keys to the new keys and deletes the old.
 #### add\_features
 
 ```python
-def add_features(key: Text, sub_key: Text, features: Optional[List[FeatureArray]]) -> None
+def add_features(key: Text, sub_key: Text,
+                 features: Optional[List[FeatureArray]]) -> None
 ```
 
 Add list of features to data under specified key.
@@ -351,7 +361,8 @@ Should update number of examples.
 #### add\_lengths
 
 ```python
-def add_lengths(key: Text, sub_key: Text, from_key: Text, from_sub_key: Text) -> None
+def add_lengths(key: Text, sub_key: Text, from_key: Text,
+                from_sub_key: Text) -> None
 ```
 
 Adds a feature array of lengths of sequences to data under given key.
@@ -366,7 +377,8 @@ Adds a feature array of lengths of sequences to data under given key.
 #### add\_sparse\_feature\_sizes
 
 ```python
-def add_sparse_feature_sizes(sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]) -> None
+def add_sparse_feature_sizes(
+        sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]) -> None
 ```
 
 Adds a dictionary of feature sizes for different attributes.
@@ -396,7 +408,8 @@ a dictionary of a feature type to a list of different sparse feature sizes.
 #### split
 
 ```python
-def split(number_of_test_examples: int, random_seed: int) -> Tuple["RasaModelData", "RasaModelData"]
+def split(number_of_test_examples: int,
+          random_seed: int) -> Tuple["RasaModelData", "RasaModelData"]
 ```
 
 Create random hold out test set using stratified split.
@@ -414,7 +427,9 @@ Create random hold out test set using stratified split.
 #### get\_signature
 
 ```python
-def get_signature(data: Optional[Data] = None) -> Dict[Text, Dict[Text, List[FeatureSignature]]]
+def get_signature(
+    data: Optional[Data] = None
+) -> Dict[Text, Dict[Text, List[FeatureSignature]]]
 ```
 
 Get signature of RasaModelData.

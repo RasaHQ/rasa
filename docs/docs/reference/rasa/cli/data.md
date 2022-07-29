@@ -5,7 +5,8 @@ title: rasa.cli.data
 #### add\_subparser
 
 ```python
-def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction,
+                  parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all data parsers.
@@ -30,7 +31,8 @@ Load data from a file path and split the NLU data into test and train examples.
 #### validate\_files
 
 ```python
-def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
+def validate_files(args: argparse.Namespace,
+                   stories_only: bool = False) -> None
 ```
 
 Validates either the story structure or the entire project.

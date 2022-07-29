@@ -5,7 +5,9 @@ title: rasa.utils.train_utils
 #### rank\_and\_mask
 
 ```python
-def rank_and_mask(confidences: np.ndarray, ranking_length: int = 0, renormalize: bool = False) -> Tuple[np.array, np.array]
+def rank_and_mask(confidences: np.ndarray,
+                  ranking_length: int = 0,
+                  renormalize: bool = False) -> Tuple[np.array, np.array]
 ```
 
 Computes a ranking of the given confidences.
@@ -56,7 +58,9 @@ on the LOSS_TYPE.
 #### align\_token\_features
 
 ```python
-def align_token_features(list_of_tokens: List[List["Token"]], in_token_features: np.ndarray, shape: Optional[Tuple] = None) -> np.ndarray
+def align_token_features(list_of_tokens: List[List["Token"]],
+                         in_token_features: np.ndarray,
+                         shape: Optional[Tuple] = None) -> np.ndarray
 ```
 
 Align token features to match tokens.
@@ -134,7 +138,12 @@ them with the new parameters and log a warning.
 #### entity\_label\_to\_tags
 
 ```python
-def entity_label_to_tags(model_predictions: Dict[Text, Any], entity_tag_specs: List["EntityTagSpec"], bilou_flag: bool = False, prediction_index: int = 0) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]
+def entity_label_to_tags(
+    model_predictions: Dict[Text, Any],
+    entity_tag_specs: List["EntityTagSpec"],
+    bilou_flag: bool = False,
+    prediction_index: int = 0
+) -> Tuple[Dict[Text, List[Text]], Dict[Text, List[float]]]
 ```
 
 Convert the output predictions for entities to the actual entity tags.
@@ -156,7 +165,15 @@ Convert the output predictions for entities to the actual entity tags.
 #### create\_data\_generators
 
 ```python
-def create_data_generators(model_data: RasaModelData, batch_sizes: Union[int, List[int]], epochs: int, batch_strategy: Text = SEQUENCE, eval_num_examples: int = 0, random_seed: Optional[int] = None, shuffle: bool = True) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]
+def create_data_generators(
+    model_data: RasaModelData,
+    batch_sizes: Union[int, List[int]],
+    epochs: int,
+    batch_strategy: Text = SEQUENCE,
+    eval_num_examples: int = 0,
+    random_seed: Optional[int] = None,
+    shuffle: bool = True
+) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]
 ```
 
 Create data generators for train and optional validation data.
@@ -179,7 +196,11 @@ Create data generators for train and optional validation data.
 #### create\_common\_callbacks
 
 ```python
-def create_common_callbacks(epochs: int, tensorboard_log_dir: Optional[Text] = None, tensorboard_log_level: Optional[Text] = None, checkpoint_dir: Optional[Path] = None) -> List["Callback"]
+def create_common_callbacks(
+        epochs: int,
+        tensorboard_log_dir: Optional[Text] = None,
+        tensorboard_log_level: Optional[Text] = None,
+        checkpoint_dir: Optional[Path] = None) -> List["Callback"]
 ```
 
 Create common callbacks.
@@ -205,7 +226,8 @@ The following callbacks are created:
 #### update\_confidence\_type
 
 ```python
-def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
+def update_confidence_type(
+        component_config: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Set model confidence to auto if margin loss is used.
@@ -237,7 +259,8 @@ Validates that combination of parameters in the configuration are correctly set.
 #### init\_split\_entities
 
 ```python
-def init_split_entities(split_entities_config: Union[bool, Dict[Text, Any]], default_split_entity: bool) -> Dict[Text, bool]
+def init_split_entities(split_entities_config: Union[bool, Dict[Text, Any]],
+                        default_split_entity: bool) -> Dict[Text, bool]
 ```
 
 Initialise the behaviour for splitting entities by comma (or not).

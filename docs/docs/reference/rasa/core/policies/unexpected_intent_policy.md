@@ -48,7 +48,15 @@ Returns the default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, model: Optional[RasaModel] = None, featurizer: Optional[TrackerFeaturizer] = None, fake_features: Optional[Dict[Text, List[Features]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, label_quantiles: Optional[Dict[int, List[float]]] = None)
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             execution_context: ExecutionContext,
+             model: Optional[RasaModel] = None,
+             featurizer: Optional[TrackerFeaturizer] = None,
+             fake_features: Optional[Dict[Text, List[Features]]] = None,
+             entity_tag_specs: Optional[List[EntityTagSpec]] = None,
+             label_quantiles: Optional[Dict[int, List[float]]] = None)
 ```
 
 Declares instance variables with default values.
@@ -69,7 +77,8 @@ Gets the class of the model architecture to be used by the policy.
 #### compute\_label\_quantiles\_post\_training
 
 ```python
-def compute_label_quantiles_post_training(model_data: RasaModelData, label_ids: np.ndarray) -> None
+def compute_label_quantiles_post_training(model_data: RasaModelData,
+                                          label_ids: np.ndarray) -> None
 ```
 
 Computes quantile scores for prediction of `action_unlikely_intent`.
@@ -86,7 +95,8 @@ inference time according to the `tolerance` value specified.
 #### run\_training
 
 ```python
-def run_training(model_data: RasaModelData, label_ids: Optional[np.ndarray] = None) -> None
+def run_training(model_data: RasaModelData,
+                 label_ids: Optional[np.ndarray] = None) -> None
 ```
 
 Feeds the featurized training data to the model.
@@ -105,7 +115,12 @@ Feeds the featurized training data to the model.
 #### predict\_action\_probabilities
 
 ```python
-def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, precomputations: Optional[MessageContainerForCoreFeaturization] = None, **kwargs: Any, ,) -> PolicyPrediction
+def predict_action_probabilities(
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        **kwargs: Any) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.

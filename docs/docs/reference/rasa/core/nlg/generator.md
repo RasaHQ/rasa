@@ -13,7 +13,9 @@ Generate bot utterances based on a dialogue state.
 #### generate
 
 ```python
-async def generate(utter_action: Text, tracker: "DialogueStateTracker", output_channel: Text, **kwargs: Any, ,) -> Optional[Dict[Text, Any]]
+async def generate(utter_action: Text, tracker: "DialogueStateTracker",
+                   output_channel: Text,
+                   **kwargs: Any) -> Optional[Dict[Text, Any]]
 ```
 
 Generate a response for the requested utter action.
@@ -26,7 +28,8 @@ the dialogue state into a machine learning NLG model.
 
 ```python
 @staticmethod
-def create(obj: Union["NaturalLanguageGenerator", EndpointConfig, None], domain: Optional[Domain]) -> "NaturalLanguageGenerator"
+def create(obj: Union["NaturalLanguageGenerator", EndpointConfig, None],
+           domain: Optional[Domain]) -> "NaturalLanguageGenerator"
 ```
 
 Factory to create a generator.

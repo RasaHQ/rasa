@@ -42,7 +42,10 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, entity_taggers: Optional[Dict[Text, "CRF"]] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             entity_taggers: Optional[Dict[Text, "CRF"]] = None) -> None
 ```
 
 Creates an instance of entity extractor.
@@ -51,7 +54,9 @@ Creates an instance of entity extractor.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CRFEntityExtractor
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> CRFEntityExtractor
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -93,7 +98,9 @@ Extract entities from the given message using the trained model(s).
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CRFEntityExtractor
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> CRFEntityExtractor
 ```
 
 Loads trained component (see parent class for full docstring).

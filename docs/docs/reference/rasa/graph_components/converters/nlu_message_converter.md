@@ -14,7 +14,9 @@ Converts the user message into a NLU Message object.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> NLUMessageConverter
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> NLUMessageConverter
 ```
 
 Creates component (see parent class for full docstring).

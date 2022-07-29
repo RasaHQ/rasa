@@ -13,7 +13,8 @@ Helper class to read a story file.
 #### \_\_init\_\_
 
 ```python
-def __init__(domain: Optional[Domain] = None, source_name: Optional[Text] = None) -> None
+def __init__(domain: Optional[Domain] = None,
+             source_name: Optional[Text] = None) -> None
 ```
 
 Constructor for the StoryReader.
@@ -26,7 +27,8 @@ Constructor for the StoryReader.
 #### read\_from\_file
 
 ```python
-def read_from_file(filename: Text, skip_validation: bool = False) -> List[StoryStep]
+def read_from_file(filename: Text,
+                   skip_validation: bool = False) -> List[StoryStep]
 ```
 
 Reads stories or rules from file.

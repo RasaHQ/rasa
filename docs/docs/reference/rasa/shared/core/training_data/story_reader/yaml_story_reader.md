@@ -31,7 +31,8 @@ Create a reader from another reader.
 #### read\_from\_file
 
 ```python
-def read_from_file(filename: Union[Text, Path], skip_validation: bool = False) -> List[StoryStep]
+def read_from_file(filename: Union[Text, Path],
+                   skip_validation: bool = False) -> List[StoryStep]
 ```
 
 Read stories or rules from file.
@@ -50,7 +51,8 @@ Read stories or rules from file.
 #### read\_from\_string
 
 ```python
-def read_from_string(string: Text, skip_validation: bool = False) -> List[StoryStep]
+def read_from_string(string: Text,
+                     skip_validation: bool = False) -> List[StoryStep]
 ```
 
 Read stories or rules from a string.
@@ -69,7 +71,8 @@ Read stories or rules from a string.
 #### read\_from\_parsed\_yaml
 
 ```python
-def read_from_parsed_yaml(parsed_content: Dict[Text, Union[Dict, List]]) -> List[StoryStep]
+def read_from_parsed_yaml(
+        parsed_content: Dict[Text, Union[Dict, List]]) -> List[StoryStep]
 ```
 
 Read stories from parsed YAML.
@@ -130,7 +133,10 @@ Checks if a file is a test conversations file.
 
 ```python
 @staticmethod
-def unpack_regex_message(message: Message, domain: Optional[Domain] = None, entity_extractor_name: Optional[Text] = None) -> Message
+def unpack_regex_message(
+        message: Message,
+        domain: Optional[Domain] = None,
+        entity_extractor_name: Optional[Text] = None) -> Message
 ```
 
 Unpacks the message if `TEXT` contains an encoding of attributes.

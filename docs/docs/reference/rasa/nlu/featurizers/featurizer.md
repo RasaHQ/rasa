@@ -46,7 +46,9 @@ Validates that the component is configured properly.
 #### add\_features\_to\_message
 
 ```python
-def add_features_to_message(sequence: FeatureType, sentence: Optional[FeatureType], attribute: Text, message: Message) -> None
+def add_features_to_message(sequence: FeatureType,
+                            sentence: Optional[FeatureType], attribute: Text,
+                            message: Message) -> None
 ```
 
 Adds sequence and sentence features for the attribute to the given message.
@@ -62,7 +64,8 @@ Adds sequence and sentence features for the attribute to the given message.
 
 ```python
 @staticmethod
-def raise_if_featurizer_configs_are_not_compatible(featurizer_configs: Iterable[Dict[Text, Any]]) -> None
+def raise_if_featurizer_configs_are_not_compatible(
+        featurizer_configs: Iterable[Dict[Text, Any]]) -> None
 ```
 
 Validates that the given configurations of featurizers can be used together.

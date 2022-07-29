@@ -30,7 +30,9 @@ Block characters, making sure not to allow:
 #### interpolate
 
 ```python
-def interpolate(response: Union[List[Any], Dict[Text, Any], Text], values: Dict[Text, Text]) -> Union[List[Any], Dict[Text, Any], Text]
+def interpolate(
+        response: Union[List[Any], Dict[Text, Any], Text],
+        values: Dict[Text, Text]) -> Union[List[Any], Dict[Text, Any], Text]
 ```
 
 Recursively process response and interpolate any text keys.

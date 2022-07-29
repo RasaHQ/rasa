@@ -14,7 +14,9 @@ Enumeration of a policy&#x27;s supported training data type.
 
 ```python
 @staticmethod
-def trackers_for_supported_data(supported_data: SupportedData, trackers: TrackerListTypeVar) -> TrackerListTypeVar
+def trackers_for_supported_data(
+        supported_data: SupportedData,
+        trackers: TrackerListTypeVar) -> TrackerListTypeVar
 ```
 
 Return trackers for a given policy.
@@ -56,7 +58,11 @@ or both ML-based data and rule data, they need to override this method.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             execution_context: ExecutionContext,
+             featurizer: Optional[TrackerFeaturizer] = None) -> None
 ```
 
 Constructs a new Policy object.
@@ -65,7 +71,9 @@ Constructs a new Policy object.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> Policy
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource, execution_context: ExecutionContext,
+           **kwargs: Any) -> Policy
 ```
 
 Creates a new untrained policy (see parent class for full docstring).
@@ -83,7 +91,8 @@ Returns the policy&#x27;s featurizer.
 
 ```python
 @abc.abstractmethod
-def train(training_trackers: List[TrackerWithCachedStates], domain: Domain, **kwargs: Any, ,) -> Resource
+def train(training_trackers: List[TrackerWithCachedStates], domain: Domain,
+          **kwargs: Any) -> Resource
 ```
 
 Trains a policy.
@@ -105,7 +114,11 @@ Trains a policy.
 
 ```python
 @abc.abstractmethod
-def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
+def predict_action_probabilities(tracker: DialogueStateTracker,
+                                 domain: Domain,
+                                 rule_only_data: Optional[Dict[Text,
+                                                               Any]] = None,
+                                 **kwargs: Any) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -128,7 +141,9 @@ Predicts the next action the bot should take after seeing the tracker.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> Policy
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> Policy
 ```
 
 Loads a trained policy (see parent class for full docstring).
@@ -170,7 +185,16 @@ Stores information about the prediction of a `Policy`.
 #### \_\_init\_\_
 
 ```python
-def __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None, hide_rule_turn: bool = False, action_metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(probabilities: List[float],
+             policy_name: Optional[Text],
+             policy_priority: int = 1,
+             events: Optional[List[Event]] = None,
+             optional_events: Optional[List[Event]] = None,
+             is_end_to_end_prediction: bool = False,
+             is_no_user_prediction: bool = False,
+             diagnostic_data: Optional[Dict[Text, Any]] = None,
+             hide_rule_turn: bool = False,
+             action_metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates a `PolicyPrediction`.
@@ -205,7 +229,13 @@ Creates a `PolicyPrediction`.
 
 ```python
 @staticmethod
-def for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> "PolicyPrediction"
+def for_action_name(
+        domain: Domain,
+        action_name: Text,
+        policy_name: Optional[Text] = None,
+        confidence: float = 1.0,
+        action_metadata: Optional[Dict[Text,
+                                       Any]] = None) -> "PolicyPrediction"
 ```
 
 Create a prediction for a given action.
@@ -269,7 +299,8 @@ Gets the highest predicted confidence.
 #### confidence\_scores\_for
 
 ```python
-def confidence_scores_for(action_name: Text, value: float, domain: Domain) -> List[float]
+def confidence_scores_for(action_name: Text, value: float,
+                          domain: Domain) -> List[float]
 ```
 
 Returns confidence scores if a single action is predicted.

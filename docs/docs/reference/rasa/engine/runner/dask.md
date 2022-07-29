@@ -13,7 +13,10 @@ Dask implementation of a `GraphRunner`.
 #### \_\_init\_\_
 
 ```python
-def __init__(graph_schema: GraphSchema, model_storage: ModelStorage, execution_context: ExecutionContext, hooks: Optional[List[GraphNodeHook]] = None) -> None
+def __init__(graph_schema: GraphSchema,
+             model_storage: ModelStorage,
+             execution_context: ExecutionContext,
+             hooks: Optional[List[GraphNodeHook]] = None) -> None
 ```
 
 Initializes a `DaskGraphRunner`.
@@ -31,7 +34,11 @@ Initializes a `DaskGraphRunner`.
 
 ```python
 @classmethod
-def create(cls, graph_schema: GraphSchema, model_storage: ModelStorage, execution_context: ExecutionContext, hooks: Optional[List[GraphNodeHook]] = None) -> DaskGraphRunner
+def create(cls,
+           graph_schema: GraphSchema,
+           model_storage: ModelStorage,
+           execution_context: ExecutionContext,
+           hooks: Optional[List[GraphNodeHook]] = None) -> DaskGraphRunner
 ```
 
 Creates the runner (see parent class for full docstring).
@@ -39,7 +46,8 @@ Creates the runner (see parent class for full docstring).
 #### run
 
 ```python
-def run(inputs: Optional[Dict[Text, Any]] = None, targets: Optional[List[Text]] = None) -> Dict[Text, Any]
+def run(inputs: Optional[Dict[Text, Any]] = None,
+        targets: Optional[List[Text]] = None) -> Dict[Text, Any]
 ```
 
 Runs the graph (see parent class for full docstring).

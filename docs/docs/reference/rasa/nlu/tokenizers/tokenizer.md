@@ -13,7 +13,11 @@ Used by `Tokenizers` which split a single message into multiple `Token`s.
 #### \_\_init\_\_
 
 ```python
-def __init__(text: Text, start: int, end: Optional[int] = None, data: Optional[Dict[Text, Any]] = None, lemma: Optional[Text] = None) -> None
+def __init__(text: Text,
+             start: int,
+             end: Optional[int] = None,
+             data: Optional[Dict[Text, Any]] = None,
+             lemma: Optional[Text] = None) -> None
 ```
 
 Create a `Token`.
@@ -70,7 +74,9 @@ Construct a new tokenizer.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> GraphComponent
 ```
 
 Creates a new component (see parent class for full docstring).

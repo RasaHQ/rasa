@@ -48,7 +48,8 @@ regex match.
 #### extract\_entity\_attributes\_from\_dict
 
 ```python
-def extract_entity_attributes_from_dict(entity_text: Text, match: Match) -> EntityAttributes
+def extract_entity_attributes_from_dict(entity_text: Text,
+                                        match: Match) -> EntityAttributes
 ```
 
 Extract entity attributes from dict format.
@@ -111,7 +112,8 @@ training example.
 #### parse\_training\_example
 
 ```python
-def parse_training_example(example: Text, intent: Optional[Text] = None) -> "Message"
+def parse_training_example(example: Text,
+                           intent: Optional[Text] = None) -> "Message"
 ```
 
 Extract entities and synonyms, and convert to plain text.

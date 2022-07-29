@@ -13,7 +13,9 @@ Writes Core training data into a file in a YAML format.
 #### dumps
 
 ```python
-def dumps(story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False) -> Text
+def dumps(story_steps: List[StoryStep],
+          is_appendable: bool = False,
+          is_test_story: bool = False) -> Text
 ```
 
 Turns Story steps into an YAML string.
@@ -35,7 +37,10 @@ Turns Story steps into an YAML string.
 #### dump
 
 ```python
-def dump(target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False) -> None
+def dump(target: Union[Text, Path, yaml.StringIO],
+         story_steps: List[StoryStep],
+         is_appendable: bool = False,
+         is_test_story: bool = False) -> None
 ```
 
 Writes Story steps into a target file/stream.
@@ -53,7 +58,8 @@ Writes Story steps into a target file/stream.
 #### stories\_to\_yaml
 
 ```python
-def stories_to_yaml(story_steps: List[StoryStep], is_test_story: bool = False) -> Dict[Text, Any]
+def stories_to_yaml(story_steps: List[StoryStep],
+                    is_test_story: bool = False) -> Dict[Text, Any]
 ```
 
 Converts a sequence of story steps into yaml format.
@@ -111,7 +117,8 @@ Checks if the stories contain at least one active loop.
 
 ```python
 @staticmethod
-def process_user_utterance(user_utterance: UserUttered, is_test_story: bool = False) -> OrderedDict
+def process_user_utterance(user_utterance: UserUttered,
+                           is_test_story: bool = False) -> OrderedDict
 ```
 
 Converts a single user utterance into an ordered dict.

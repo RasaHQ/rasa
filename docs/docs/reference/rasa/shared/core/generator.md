@@ -13,7 +13,12 @@ A tracker wrapper that caches the state creation of the tracker.
 #### \_\_init\_\_
 
 ```python
-def __init__(sender_id: Text, slots: Optional[Iterable[Slot]], max_event_history: Optional[int] = None, domain: Optional[Domain] = None, is_augmented: bool = False, is_rule_tracker: bool = False) -> None
+def __init__(sender_id: Text,
+             slots: Optional[Iterable[Slot]],
+             max_event_history: Optional[int] = None,
+             domain: Optional[Domain] = None,
+             is_augmented: bool = False,
+             is_rule_tracker: bool = False) -> None
 ```
 
 Initializes a tracker with cached states.
@@ -22,7 +27,14 @@ Initializes a tracker with cached states.
 
 ```python
 @classmethod
-def from_events(cls, sender_id: Text, evts: List[Event], slots: Optional[Iterable[Slot]] = None, max_event_history: Optional[int] = None, sender_source: Optional[Text] = None, domain: Optional[Domain] = None, is_rule_tracker: bool = False) -> "TrackerWithCachedStates"
+def from_events(cls,
+                sender_id: Text,
+                evts: List[Event],
+                slots: Optional[Iterable[Slot]] = None,
+                max_event_history: Optional[int] = None,
+                sender_source: Optional[Text] = None,
+                domain: Optional[Domain] = None,
+                is_rule_tracker: bool = False) -> "TrackerWithCachedStates"
 ```
 
 Initializes a tracker with given events.
@@ -30,7 +42,9 @@ Initializes a tracker with given events.
 #### past\_states\_for\_hashing
 
 ```python
-def past_states_for_hashing(domain: Domain, omit_unset_slots: bool = False) -> Deque[FrozenState]
+def past_states_for_hashing(domain: Domain,
+                            omit_unset_slots: bool = False
+                            ) -> Deque[FrozenState]
 ```
 
 Generates and caches the past states of this tracker based on the history.
@@ -48,7 +62,11 @@ Generates and caches the past states of this tracker based on the history.
 #### past\_states
 
 ```python
-def past_states(domain: Domain, omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
+def past_states(
+        domain: Domain,
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
 ```
 
 Generates the past states of this tracker based on the history.
@@ -86,7 +104,8 @@ Create a new state tracker with the same initial values.
 #### copy
 
 ```python
-def copy(sender_id: Text = "", sender_source: Text = "") -> "TrackerWithCachedStates"
+def copy(sender_id: Text = "",
+         sender_source: Text = "") -> "TrackerWithCachedStates"
 ```
 
 Creates a duplicate of this tracker.
@@ -113,7 +132,14 @@ Generates trackers from training data.
 #### \_\_init\_\_
 
 ```python
-def __init__(story_graph: StoryGraph, domain: Domain, remove_duplicates: bool = True, unique_last_num_states: Optional[int] = None, augmentation_factor: int = 50, tracker_limit: Optional[int] = None, use_story_concatenation: bool = True, debug_plots: bool = False)
+def __init__(story_graph: StoryGraph,
+             domain: Domain,
+             remove_duplicates: bool = True,
+             unique_last_num_states: Optional[int] = None,
+             augmentation_factor: int = 50,
+             tracker_limit: Optional[int] = None,
+             use_story_concatenation: bool = True,
+             debug_plots: bool = False)
 ```
 
 Given a set of story parts, generates all stories that are possible.

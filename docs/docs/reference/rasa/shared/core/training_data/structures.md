@@ -39,7 +39,8 @@ Creates `Checkpoint`.
 #### filter\_trackers
 
 ```python
-def filter_trackers(trackers: List[DialogueStateTracker]) -> List[DialogueStateTracker]
+def filter_trackers(
+        trackers: List[DialogueStateTracker]) -> List[DialogueStateTracker]
 ```
 
 Filters out all trackers that do not satisfy the conditions.
@@ -59,7 +60,11 @@ multiple intents are separated in one line by chaining them with &quot;OR&quot;s
 #### \_\_init\_\_
 
 ```python
-def __init__(block_name: Text, start_checkpoints: Optional[List[Checkpoint]] = None, end_checkpoints: Optional[List[Checkpoint]] = None, events: Optional[List[Union[Event, List[Event]]]] = None, source_name: Optional[Text] = None) -> None
+def __init__(block_name: Text,
+             start_checkpoints: Optional[List[Checkpoint]] = None,
+             end_checkpoints: Optional[List[Checkpoint]] = None,
+             events: Optional[List[Union[Event, List[Event]]]] = None,
+             source_name: Optional[Text] = None) -> None
 ```
 
 Initialise `StoryStep` default attributes.
@@ -93,7 +98,8 @@ Checks if the executed action is a `action_session_start`.
 #### explicit\_events
 
 ```python
-def explicit_events(domain: Domain, should_append_final_listen: bool = True) -> List[Event]
+def explicit_events(domain: Domain,
+                    should_append_final_listen: bool = True) -> List[Event]
 ```
 
 Returns events contained in the story step including implicit events.
@@ -149,7 +155,8 @@ class Story()
 
 ```python
 @staticmethod
-def from_events(events: List[Event], story_name: Optional[Text] = None) -> "Story"
+def from_events(events: List[Event],
+                story_name: Optional[Text] = None) -> "Story"
 ```
 
 Create a story from a list of events.
@@ -214,7 +221,8 @@ Merge two StoryGraph together.
 
 ```python
 @staticmethod
-def overlapping_checkpoint_names(cps: List[Checkpoint], other_cps: List[Checkpoint]) -> Set[Text]
+def overlapping_checkpoint_names(cps: List[Checkpoint],
+                                 other_cps: List[Checkpoint]) -> Set[Text]
 ```
 
 Find overlapping checkpoints names.
@@ -231,7 +239,8 @@ Create a graph with the cyclic edges removed from this graph.
 
 ```python
 @staticmethod
-def order_steps(story_steps: List[StoryStep]) -> Tuple[deque, List[Tuple[Text, Text]]]
+def order_steps(
+        story_steps: List[StoryStep]) -> Tuple[deque, List[Tuple[Text, Text]]]
 ```
 
 Topological sort of the steps returning the ids of the steps.
@@ -240,7 +249,8 @@ Topological sort of the steps returning the ids of the steps.
 
 ```python
 @staticmethod
-def topological_sort(graph: Dict[Text, Set[Text]]) -> Tuple[deque, List[Tuple[Text, Text]]]
+def topological_sort(
+        graph: Dict[Text, Set[Text]]) -> Tuple[deque, List[Tuple[Text, Text]]]
 ```
 
 Creates a top sort of a directed graph. This is an unstable sorting!

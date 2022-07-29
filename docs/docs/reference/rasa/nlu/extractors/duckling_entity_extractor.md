@@ -38,7 +38,9 @@ Creates the extractor.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DucklingEntityExtractor
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> DucklingEntityExtractor
 ```
 
 Creates component (see parent class for full docstring).

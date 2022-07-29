@@ -47,7 +47,8 @@ Converts the given training data file and saves it to the output directory.
 
 ```python
 @classmethod
-def generate_path_for_converted_training_data_file(cls, source_file_path: Path, output_directory: Path) -> Path
+def generate_path_for_converted_training_data_file(
+        cls, source_file_path: Path, output_directory: Path) -> Path
 ```
 
 Generates path for a training data file converted to YAML format.

@@ -5,7 +5,10 @@ title: rasa.shared.utils.io
 #### raise\_warning
 
 ```python
-def raise_warning(message: Text, category: Optional[Type[Warning]] = None, docs: Optional[Text] = None, **kwargs: Any, ,) -> None
+def raise_warning(message: Text,
+                  category: Optional[Type[Warning]] = None,
+                  docs: Optional[Text] = None,
+                  **kwargs: Any) -> None
 ```
 
 Emit a `warnings.warn` with sensible defaults and a colored warning msg.
@@ -13,7 +16,10 @@ Emit a `warnings.warn` with sensible defaults and a colored warning msg.
 #### write\_text\_file
 
 ```python
-def write_text_file(content: Text, file_path: Union[Text, Path], encoding: Text = DEFAULT_ENCODING, append: bool = False) -> None
+def write_text_file(content: Text,
+                    file_path: Union[Text, Path],
+                    encoding: Text = DEFAULT_ENCODING,
+                    append: bool = False) -> None
 ```
 
 Writes text to a file.
@@ -28,7 +34,8 @@ Writes text to a file.
 #### read\_file
 
 ```python
-def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) -> Any
+def read_file(filename: Union[Text, Path],
+              encoding: Text = DEFAULT_ENCODING) -> Any
 ```
 
 Read text from a file.
@@ -75,7 +82,8 @@ If the path points to a file, returns an empty list.
 #### deep\_container\_fingerprint
 
 ```python
-def deep_container_fingerprint(obj: Union[List[Any], Dict[Any, Any], Any], encoding: Text = DEFAULT_ENCODING) -> Text
+def deep_container_fingerprint(obj: Union[List[Any], Dict[Any, Any], Any],
+                               encoding: Text = DEFAULT_ENCODING) -> Text
 ```
 
 Calculate a hash which is stable, independent of a containers key order.
@@ -97,7 +105,8 @@ will create the same hash!
 #### get\_dictionary\_fingerprint
 
 ```python
-def get_dictionary_fingerprint(dictionary: Dict[Any, Any], encoding: Text = DEFAULT_ENCODING) -> Text
+def get_dictionary_fingerprint(dictionary: Dict[Any, Any],
+                               encoding: Text = DEFAULT_ENCODING) -> Text
 ```
 
 Calculate the fingerprint for a dictionary.
@@ -118,7 +127,8 @@ a list or a elements which can be dumped as a string.
 #### get\_list\_fingerprint
 
 ```python
-def get_list_fingerprint(elements: List[Any], encoding: Text = DEFAULT_ENCODING) -> Text
+def get_list_fingerprint(elements: List[Any],
+                         encoding: Text = DEFAULT_ENCODING) -> Text
 ```
 
 Calculate a fingerprint for an unordered list.
@@ -179,7 +189,8 @@ Enable yaml loader to process the environment variables in the yaml.
 #### read\_yaml
 
 ```python
-def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any
+def read_yaml(content: Text,
+              reader_type: Union[Text, List[Text]] = "safe") -> Any
 ```
 
 Parses yaml from a text.
@@ -197,7 +208,8 @@ Parses yaml from a text.
 #### read\_yaml\_file
 
 ```python
-def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]
+def read_yaml_file(
+        filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]
 ```
 
 Parses a yaml file.
@@ -216,7 +228,9 @@ Raises an exception if the content of the file can not be parsed as YAML.
 #### write\_yaml
 
 ```python
-def write_yaml(data: Any, target: Union[Text, Path, StringIO], should_preserve_key_order: bool = False) -> None
+def write_yaml(data: Any,
+               target: Union[Text, Path, StringIO],
+               should_preserve_key_order: bool = False) -> None
 ```
 
 Writes a yaml to the file or to the stream
@@ -295,7 +309,9 @@ Dump an object as a json string to a file.
 #### dump\_obj\_as\_yaml\_to\_string
 
 ```python
-def dump_obj_as_yaml_to_string(obj: Any, should_preserve_key_order: bool = False) -> Text
+def dump_obj_as_yaml_to_string(obj: Any,
+                               should_preserve_key_order: bool = False
+                               ) -> Text
 ```
 
 Writes data (python dict) to a yaml string.
@@ -323,7 +339,11 @@ Succeeds even if the path already exists.
 #### raise\_deprecation\_warning
 
 ```python
-def raise_deprecation_warning(message: Text, warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS, docs: Optional[Text] = None, **kwargs: Any, ,) -> None
+def raise_deprecation_warning(
+        message: Text,
+        warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+        docs: Optional[Text] = None,
+        **kwargs: Any) -> None
 ```
 
 Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires

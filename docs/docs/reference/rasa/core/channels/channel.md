@@ -15,7 +15,13 @@ Includes the channel the responses should be sent to.
 #### \_\_init\_\_
 
 ```python
-def __init__(text: Optional[Text] = None, output_channel: Optional["OutputChannel"] = None, sender_id: Optional[Text] = None, parse_data: Dict[Text, Any] = None, input_channel: Optional[Text] = None, message_id: Optional[Text] = None, metadata: Optional[Dict] = None) -> None
+def __init__(text: Optional[Text] = None,
+             output_channel: Optional["OutputChannel"] = None,
+             sender_id: Optional[Text] = None,
+             parse_data: Dict[Text, Any] = None,
+             input_channel: Optional[Text] = None,
+             message_id: Optional[Text] = None,
+             metadata: Optional[Dict] = None) -> None
 ```
 
 Creates a ``UserMessage`` object.
@@ -34,7 +40,8 @@ Creates a ``UserMessage`` object.
 #### register
 
 ```python
-def register(input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]) -> None
+def register(input_channels: List["InputChannel"], app: Sanic,
+             route: Optional[Text]) -> None
 ```
 
 Registers input channel blueprints with Sanic.
@@ -59,7 +66,8 @@ Every input channel needs a name to identify it.
 #### blueprint
 
 ```python
-def blueprint(on_new_message: Callable[[UserMessage], Awaitable[Any]]) -> Blueprint
+def blueprint(
+        on_new_message: Callable[[UserMessage], Awaitable[Any]]) -> Blueprint
 ```
 
 Defines a Sanic blueprint.
@@ -129,7 +137,8 @@ Decodes a Bearer Token using the specific JWT key and algorithm.
 #### decode\_bearer\_token
 
 ```python
-def decode_bearer_token(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Optional[Dict]
+def decode_bearer_token(bearer_token: Text, jwt_key: Text,
+                        jwt_algorithm: Text) -> Optional[Dict]
 ```
 
 Decodes a Bearer Token using the specific JWT key and algorithm.
@@ -176,7 +185,8 @@ Send a message to the client.
 #### send\_text\_message
 
 ```python
-async def send_text_message(recipient_id: Text, text: Text, **kwargs: Any) -> None
+async def send_text_message(recipient_id: Text, text: Text,
+                            **kwargs: Any) -> None
 ```
 
 Send a message through this channel.
@@ -184,7 +194,8 @@ Send a message through this channel.
 #### send\_image\_url
 
 ```python
-async def send_image_url(recipient_id: Text, image: Text, **kwargs: Any) -> None
+async def send_image_url(recipient_id: Text, image: Text,
+                         **kwargs: Any) -> None
 ```
 
 Sends an image. Default will just post the url as a string.
@@ -192,7 +203,8 @@ Sends an image. Default will just post the url as a string.
 #### send\_attachment
 
 ```python
-async def send_attachment(recipient_id: Text, attachment: Text, **kwargs: Any) -> None
+async def send_attachment(recipient_id: Text, attachment: Text,
+                          **kwargs: Any) -> None
 ```
 
 Sends an attachment. Default will just post as a string.
@@ -200,7 +212,9 @@ Sends an attachment. Default will just post as a string.
 #### send\_text\_with\_buttons
 
 ```python
-async def send_text_with_buttons(recipient_id: Text, text: Text, buttons: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
+async def send_text_with_buttons(recipient_id: Text, text: Text,
+                                 buttons: List[Dict[Text, Any]],
+                                 **kwargs: Any) -> None
 ```
 
 Sends buttons to the output.
@@ -210,7 +224,9 @@ Default implementation will just post the buttons as a string.
 #### send\_quick\_replies
 
 ```python
-async def send_quick_replies(recipient_id: Text, text: Text, quick_replies: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
+async def send_quick_replies(recipient_id: Text, text: Text,
+                             quick_replies: List[Dict[Text, Any]],
+                             **kwargs: Any) -> None
 ```
 
 Sends quick replies to the output.
@@ -220,7 +236,9 @@ Default implementation will just send as buttons.
 #### send\_elements
 
 ```python
-async def send_elements(recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any) -> None
+async def send_elements(recipient_id: Text, elements: Iterable[Dict[Text,
+                                                                    Any]],
+                        **kwargs: Any) -> None
 ```
 
 Sends elements to the output.
@@ -230,7 +248,8 @@ Default implementation will just post the elements as a string.
 #### send\_custom\_json
 
 ```python
-async def send_custom_json(recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any) -> None
+async def send_custom_json(recipient_id: Text, json_message: Dict[Text, Any],
+                           **kwargs: Any) -> None
 ```
 
 Sends json dict to the output channel.
@@ -267,7 +286,8 @@ Name of the channel.
 #### send\_image\_url
 
 ```python
-async def send_image_url(recipient_id: Text, image: Text, **kwargs: Any) -> None
+async def send_image_url(recipient_id: Text, image: Text,
+                         **kwargs: Any) -> None
 ```
 
 Sends an image. Default will just post the url as a string.
@@ -275,7 +295,8 @@ Sends an image. Default will just post the url as a string.
 #### send\_attachment
 
 ```python
-async def send_attachment(recipient_id: Text, attachment: Text, **kwargs: Any) -> None
+async def send_attachment(recipient_id: Text, attachment: Text,
+                          **kwargs: Any) -> None
 ```
 
 Sends an attachment. Default will just post as a string.

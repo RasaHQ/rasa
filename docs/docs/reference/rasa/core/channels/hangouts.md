@@ -30,7 +30,8 @@ Starts messages as empty dictionary.
 #### send\_custom\_json
 
 ```python
-async def send_custom_json(recipient_id: Text, json_message: Dict, **kwargs: Any) -> None
+async def send_custom_json(recipient_id: Text, json_message: Dict,
+                           **kwargs: Any) -> None
 ```
 
 Custom json payload is simply forwarded to Google Hangouts without
@@ -57,7 +58,8 @@ Returns channel name.
 #### blueprint
 
 ```python
-def blueprint(on_new_message: Callable[[UserMessage], Awaitable[None]]) -> Blueprint
+def blueprint(
+        on_new_message: Callable[[UserMessage], Awaitable[None]]) -> Blueprint
 ```
 
 API configuration for the channel webhook.

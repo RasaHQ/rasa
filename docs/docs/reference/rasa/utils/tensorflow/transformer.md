@@ -30,7 +30,12 @@ Multi-headed attention layer.
 #### call
 
 ```python
-def call(query_input: tf.Tensor, source_input: tf.Tensor, pad_mask: Optional[tf.Tensor] = None, training: Optional[Union[tf.Tensor, bool]] = None) -> Tuple[tf.Tensor, tf.Tensor]
+def call(
+    query_input: tf.Tensor,
+    source_input: tf.Tensor,
+    pad_mask: Optional[tf.Tensor] = None,
+    training: Optional[Union[tf.Tensor, bool]] = None
+) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Apply attention mechanism to query_input and source_input.
@@ -81,7 +86,11 @@ The layer is composed of the sublayers:
 #### call
 
 ```python
-def call(x: tf.Tensor, pad_mask: Optional[tf.Tensor] = None, training: Optional[Union[tf.Tensor, bool]] = None) -> Tuple[tf.Tensor, tf.Tensor]
+def call(
+    x: tf.Tensor,
+    pad_mask: Optional[tf.Tensor] = None,
+    training: Optional[Union[tf.Tensor, bool]] = None
+) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Apply transformer encoder layer.
@@ -133,7 +142,11 @@ Encoder stack is made up of `num_layers` identical encoder layers.
 #### call
 
 ```python
-def call(x: tf.Tensor, pad_mask: Optional[tf.Tensor] = None, training: Optional[Union[tf.Tensor, bool]] = None) -> Tuple[tf.Tensor, tf.Tensor]
+def call(
+    x: tf.Tensor,
+    pad_mask: Optional[tf.Tensor] = None,
+    training: Optional[Union[tf.Tensor, bool]] = None
+) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Apply transformer encoder.

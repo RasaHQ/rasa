@@ -16,7 +16,10 @@ Maps entities to their synonyms if they appear in the training data.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Optional[Dict[Text, Any]], model_storage: ModelStorage, resource: Resource, synonyms: Optional[Dict[Text, Any]] = None) -> None
+def __init__(config: Optional[Dict[Text, Any]],
+             model_storage: ModelStorage,
+             resource: Resource,
+             synonyms: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates the mapper.
@@ -34,7 +37,12 @@ Creates the mapper.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, synonyms: Optional[Dict[Text, Any]] = None) -> EntitySynonymMapper
+def create(cls,
+           config: Dict[Text, Any],
+           model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext,
+           synonyms: Optional[Dict[Text, Any]] = None) -> EntitySynonymMapper
 ```
 
 Creates component (see parent class for full docstring).
@@ -69,7 +77,9 @@ Modifies entities attached to message to resolve synonyms.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> EntitySynonymMapper
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> EntitySynonymMapper
 ```
 
 Loads trained component (see parent class for full docstring).

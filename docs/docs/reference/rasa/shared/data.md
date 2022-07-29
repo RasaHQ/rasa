@@ -81,7 +81,8 @@ Recursively collects all NLU training files from a list of paths.
 #### get\_data\_files
 
 ```python
-def get_data_files(paths: Optional[Union[Text, List[Text]]], filter_predicate: Callable[[Text], bool]) -> List[Text]
+def get_data_files(paths: Optional[Union[Text, List[Text]]],
+                   filter_predicate: Callable[[Text], bool]) -> List[Text]
 ```
 
 Recursively collects all training files from a list of paths.

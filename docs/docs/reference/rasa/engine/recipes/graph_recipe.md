@@ -27,7 +27,11 @@ and during execution (all recipes use targets during execution).
 #### graph\_config\_for\_recipe
 
 ```python
-def graph_config_for_recipe(config: Dict, cli_parameters: Dict[Text, Any], training_type: TrainingType = TrainingType.BOTH, is_finetuning: bool = False) -> GraphModelConfiguration
+def graph_config_for_recipe(
+        config: Dict,
+        cli_parameters: Dict[Text, Any],
+        training_type: TrainingType = TrainingType.BOTH,
+        is_finetuning: bool = False) -> GraphModelConfiguration
 ```
 
 Converts the default config to graphs (see interface for full docstring).

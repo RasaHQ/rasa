@@ -84,7 +84,9 @@ Lists required dependencies (see parent class for full docstring).
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> SpacyNLP
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> SpacyNLP
 ```
 
 Creates component (see parent class for full docstring).
@@ -111,7 +113,8 @@ Provides the loaded SpaCy model.
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData, model: SpacyModel) -> TrainingData
+def process_training_data(training_data: TrainingData,
+                          model: SpacyModel) -> TrainingData
 ```
 
 Adds SpaCy tokens and features to training data messages.

@@ -88,7 +88,9 @@ Represents common behavior and interface for all `TrackerStore`s.
 #### \_\_init\_\_
 
 ```python
-def __init__(domain: Optional[Domain], event_broker: Optional[EventBroker] = None, **kwargs: Dict[Text, Any], ,) -> None
+def __init__(domain: Optional[Domain],
+             event_broker: Optional[EventBroker] = None,
+             **kwargs: Dict[Text, Any]) -> None
 ```
 
 Create a TrackerStore.
@@ -104,7 +106,9 @@ Create a TrackerStore.
 
 ```python
 @staticmethod
-def create(obj: Union[TrackerStore, EndpointConfig, None], domain: Optional[Domain] = None, event_broker: Optional[EventBroker] = None) -> TrackerStore
+def create(obj: Union[TrackerStore, EndpointConfig, None],
+           domain: Optional[Domain] = None,
+           event_broker: Optional[EventBroker] = None) -> TrackerStore
 ```
 
 Factory to create a tracker store.
@@ -112,7 +116,10 @@ Factory to create a tracker store.
 #### get\_or\_create\_tracker
 
 ```python
-async def get_or_create_tracker(sender_id: Text, max_event_history: Optional[int] = None, append_action_listen: bool = True) -> "DialogueStateTracker"
+async def get_or_create_tracker(
+        sender_id: Text,
+        max_event_history: Optional[int] = None,
+        append_action_listen: bool = True) -> "DialogueStateTracker"
 ```
 
 Returns tracker or creates one if the retrieval returns None.
@@ -134,7 +141,9 @@ Returns a Dialogue State Tracker.
 #### create\_tracker
 
 ```python
-async def create_tracker(sender_id: Text, append_action_listen: bool = True) -> DialogueStateTracker
+async def create_tracker(
+        sender_id: Text,
+        append_action_listen: bool = True) -> DialogueStateTracker
 ```
 
 Creates a new tracker for `sender_id`.
@@ -201,7 +210,8 @@ This method will be overridden by the specific tracker store.
 #### retrieve\_full\_tracker
 
 ```python
-async def retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+async def retrieve_full_tracker(
+        conversation_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Retrieve method for fetching all tracker events across conversation sessions\
@@ -245,7 +255,10 @@ Returns the set of values for the tracker store&#x27;s primary key.
 #### deserialise\_tracker
 
 ```python
-def deserialise_tracker(sender_id: Text, serialised_tracker: Union[Text, bytes]) -> Optional[DialogueStateTracker]
+def deserialise_tracker(
+        sender_id: Text,
+        serialised_tracker: Union[Text,
+                                  bytes]) -> Optional[DialogueStateTracker]
 ```
 
 Deserializes the tracker and returns it.
@@ -270,7 +283,9 @@ Stores conversation history in memory.
 #### \_\_init\_\_
 
 ```python
-def __init__(domain: Domain, event_broker: Optional[EventBroker] = None, **kwargs: Dict[Text, Any], ,) -> None
+def __init__(domain: Domain,
+             event_broker: Optional[EventBroker] = None,
+             **kwargs: Dict[Text, Any]) -> None
 ```
 
 Initializes the tracker store.
@@ -310,7 +325,19 @@ Stores conversation history in Redis.
 #### \_\_init\_\_
 
 ```python
-def __init__(domain: Domain, host: Text = "localhost", port: int = 6379, db: int = 0, password: Optional[Text] = None, event_broker: Optional[EventBroker] = None, record_exp: Optional[float] = None, key_prefix: Optional[Text] = None, use_ssl: bool = False, ssl_keyfile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_ca_certs: Optional[Text] = None, **kwargs: Dict[Text, Any], ,) -> None
+def __init__(domain: Domain,
+             host: Text = "localhost",
+             port: int = 6379,
+             db: int = 0,
+             password: Optional[Text] = None,
+             event_broker: Optional[EventBroker] = None,
+             record_exp: Optional[float] = None,
+             key_prefix: Optional[Text] = None,
+             use_ssl: bool = False,
+             ssl_keyfile: Optional[Text] = None,
+             ssl_certfile: Optional[Text] = None,
+             ssl_ca_certs: Optional[Text] = None,
+             **kwargs: Dict[Text, Any]) -> None
 ```
 
 Initializes the tracker store.
@@ -318,7 +345,8 @@ Initializes the tracker store.
 #### save
 
 ```python
-async def save(tracker: DialogueStateTracker, timeout: Optional[float] = None) -> None
+async def save(tracker: DialogueStateTracker,
+               timeout: Optional[float] = None) -> None
 ```
 
 Saves the current conversation state.
@@ -361,7 +389,11 @@ Stores conversation history in DynamoDB.
 #### \_\_init\_\_
 
 ```python
-def __init__(domain: Domain, table_name: Text = "states", region: Text = "us-east-1", event_broker: Optional[EndpointConfig] = None, **kwargs: Dict[Text, Any], ,) -> None
+def __init__(domain: Domain,
+             table_name: Text = "states",
+             region: Text = "us-east-1",
+             event_broker: Optional[EndpointConfig] = None,
+             **kwargs: Dict[Text, Any]) -> None
 ```
 
 Initialize `DynamoTrackerStore`.
@@ -379,7 +411,8 @@ Initialize `DynamoTrackerStore`.
 #### get\_or\_create\_table
 
 ```python
-def get_or_create_table(table_name: Text) -> "boto3.resources.factory.dynamodb.Table"
+def get_or_create_table(
+        table_name: Text) -> "boto3.resources.factory.dynamodb.Table"
 ```
 
 Returns table or creates one if the table name is not in the table list.
@@ -460,7 +493,8 @@ Retrieves tracker for the latest conversation session.
 #### retrieve\_full\_tracker
 
 ```python
-async def retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+async def retrieve_full_tracker(
+        conversation_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Fetching all tracker events across conversation sessions.
@@ -556,7 +590,14 @@ Represents an event in the SQL Tracker Store.
 
 ```python
 @staticmethod
-def get_db_url(dialect: Text = "sqlite", host: Optional[Text] = None, port: Optional[int] = None, db: Text = "rasa.db", username: Text = None, password: Text = None, login_db: Optional[Text] = None, query: Optional[Dict] = None) -> Union[Text, "URL"]
+def get_db_url(dialect: Text = "sqlite",
+               host: Optional[Text] = None,
+               port: Optional[int] = None,
+               db: Text = "rasa.db",
+               username: Text = None,
+               password: Text = None,
+               login_db: Optional[Text] = None,
+               query: Optional[Dict] = None) -> Union[Text, "URL"]
 ```
 
 Build an SQLAlchemy `URL` object representing the parameters needed
@@ -608,7 +649,8 @@ Retrieves tracker for the latest conversation session.
 #### retrieve\_full\_tracker
 
 ```python
-async def retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+async def retrieve_full_tracker(
+        conversation_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Fetching all tracker events across conversation sessions.
@@ -634,7 +676,10 @@ Allows a fallback to a different tracker store in case of errors.
 #### \_\_init\_\_
 
 ```python
-def __init__(tracker_store: TrackerStore, on_tracker_store_error: Optional[Callable[[Exception], None]] = None, fallback_tracker_store: Optional[TrackerStore] = None) -> None
+def __init__(tracker_store: TrackerStore,
+             on_tracker_store_error: Optional[Callable[[Exception],
+                                                       None]] = None,
+             fallback_tracker_store: Optional[TrackerStore] = None) -> None
 ```
 
 Create a `FailSafeTrackerStore`.
@@ -720,7 +765,9 @@ Setter method to modify the wrapped tracker store&#x27;s domain field.
 
 ```python
 @staticmethod
-def create(obj: Union[TrackerStore, EndpointConfig, None], domain: Optional[Domain] = None, event_broker: Optional[EventBroker] = None) -> TrackerStore
+def create(obj: Union[TrackerStore, EndpointConfig, None],
+           domain: Optional[Domain] = None,
+           event_broker: Optional[EventBroker] = None) -> TrackerStore
 ```
 
 Wrapper to call `create` method of primary tracker store.
@@ -752,7 +799,8 @@ Wrapper to call `save` method of primary tracker store.
 #### retrieve\_full\_tracker
 
 ```python
-async def retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+async def retrieve_full_tracker(
+        conversation_id: Text) -> Optional[DialogueStateTracker]
 ```
 
 Wrapper to call `retrieve_full_tracker` method of primary tracker store.

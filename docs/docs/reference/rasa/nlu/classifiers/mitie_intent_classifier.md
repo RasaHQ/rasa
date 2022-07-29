@@ -36,7 +36,10 @@ Returns default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, clf: Optional["mitie.text_categorizer"] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             clf: Optional["mitie.text_categorizer"] = None) -> None
 ```
 
 Constructs a new intent classifier using the MITIE framework.
@@ -85,7 +88,9 @@ Make intent predictions using `mitie`.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieIntentClassifier
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> MitieIntentClassifier
 ```
 
 Creates component for training see parent class for full docstring).
@@ -94,7 +99,9 @@ Creates component for training see parent class for full docstring).
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieIntentClassifier
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> MitieIntentClassifier
 ```
 
 Loads component for inference see parent class for full docstring).

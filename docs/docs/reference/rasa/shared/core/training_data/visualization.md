@@ -27,7 +27,14 @@ Plots the graph and persists it into a html file.
 #### visualize\_neighborhood
 
 ```python
-def visualize_neighborhood(current: Optional[List[Event]], event_sequences: List[List[Event]], output_file: Optional[Text] = None, max_history: int = 2, nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, max_distance: int = 1, fontsize: int = 12) -> "networkx.MultiDiGraph"
+def visualize_neighborhood(current: Optional[List[Event]],
+                           event_sequences: List[List[Event]],
+                           output_file: Optional[Text] = None,
+                           max_history: int = 2,
+                           nlu_training_data: Optional["TrainingData"] = None,
+                           should_merge_nodes: bool = True,
+                           max_distance: int = 1,
+                           fontsize: int = 12) -> "networkx.MultiDiGraph"
 ```
 
 Given a set of event lists, visualizing the flows.
@@ -35,7 +42,13 @@ Given a set of event lists, visualizing the flows.
 #### visualize\_stories
 
 ```python
-def visualize_stories(story_steps: List[StoryStep], domain: Domain, output_file: Optional[Text], max_history: int, nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, fontsize: int = 12) -> "networkx.MultiDiGraph"
+def visualize_stories(story_steps: List[StoryStep],
+                      domain: Domain,
+                      output_file: Optional[Text],
+                      max_history: int,
+                      nlu_training_data: Optional["TrainingData"] = None,
+                      should_merge_nodes: bool = True,
+                      fontsize: int = 12) -> "networkx.MultiDiGraph"
 ```
 
 Given a set of stories, generates a graph visualizing the flows in the stories.

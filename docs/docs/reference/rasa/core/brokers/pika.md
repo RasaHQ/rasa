@@ -13,7 +13,18 @@ Pika-based event broker for publishing messages to RabbitMQ.
 #### \_\_init\_\_
 
 ```python
-def __init__(host: Text, username: Text, password: Text, port: Union[int, Text] = 5672, queues: Union[List[Text], Tuple[Text, ...], Text, None] = None, should_keep_unpublished_messages: bool = True, raise_on_failure: bool = False, event_loop: Optional[AbstractEventLoop] = None, connection_attempts: int = 20, retry_delay_in_seconds: float = 5, exchange_name: Text = RABBITMQ_EXCHANGE, **kwargs: Any, ,)
+def __init__(host: Text,
+             username: Text,
+             password: Text,
+             port: Union[int, Text] = 5672,
+             queues: Union[List[Text], Tuple[Text, ...], Text, None] = None,
+             should_keep_unpublished_messages: bool = True,
+             raise_on_failure: bool = False,
+             event_loop: Optional[AbstractEventLoop] = None,
+             connection_attempts: int = 20,
+             retry_delay_in_seconds: float = 5,
+             exchange_name: Text = RABBITMQ_EXCHANGE,
+             **kwargs: Any)
 ```
 
 Initialise RabbitMQ event broker.
@@ -42,7 +53,11 @@ Initialise RabbitMQ event broker.
 
 ```python
 @classmethod
-async def from_endpoint_config(cls, broker_config: Optional["EndpointConfig"], event_loop: Optional[AbstractEventLoop] = None) -> Optional["PikaEventBroker"]
+async def from_endpoint_config(
+    cls,
+    broker_config: Optional["EndpointConfig"],
+    event_loop: Optional[AbstractEventLoop] = None
+) -> Optional["PikaEventBroker"]
 ```
 
 Creates broker. See the parent class for more information.
@@ -74,7 +89,8 @@ Return `True` if a connection was established.
 #### publish
 
 ```python
-def publish(event: Dict[Text, Any], headers: Optional[Dict[Text, Text]] = None) -> None
+def publish(event: Dict[Text, Any],
+            headers: Optional[Dict[Text, Text]] = None) -> None
 ```
 
 Publishes `event` to Pika queues.

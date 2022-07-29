@@ -5,7 +5,9 @@ title: rasa.shared.nlu.training_data.util
 #### transform\_entity\_synonyms
 
 ```python
-def transform_entity_synonyms(synonyms: List[Dict[Text, Any]], known_synonyms: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
+def transform_entity_synonyms(
+        synonyms: List[Dict[Text, Any]],
+        known_synonyms: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
 ```
 
 Transforms the entity synonyms into a text-&gt;value dictionary
@@ -102,7 +104,13 @@ Return a decoded python string.
 #### build\_entity
 
 ```python
-def build_entity(start: int, end: int, value: Text, entity_type: Text, role: Optional[Text] = None, group: Optional[Text] = None, **kwargs: Any, ,) -> Dict[Text, Any]
+def build_entity(start: int,
+                 end: int,
+                 value: Text,
+                 entity_type: Text,
+                 role: Optional[Text] = None,
+                 group: Optional[Text] = None,
+                 **kwargs: Any) -> Dict[Text, Any]
 ```
 
 Builds a standard entity dictionary.

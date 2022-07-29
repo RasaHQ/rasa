@@ -15,7 +15,8 @@ Used for validation of the response returned from the NLG endpoint.
 #### nlg\_request\_format
 
 ```python
-def nlg_request_format(utter_action: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
+def nlg_request_format(utter_action: Text, tracker: DialogueStateTracker,
+                       output_channel: Text, **kwargs: Any) -> Dict[Text, Any]
 ```
 
 Create the json body for the NLG json body for the request.
@@ -36,7 +37,8 @@ the bot.
 #### generate
 
 ```python
-async def generate(utter_action: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Dict[Text, Any]
+async def generate(utter_action: Text, tracker: DialogueStateTracker,
+                   output_channel: Text, **kwargs: Any) -> Dict[Text, Any]
 ```
 
 Retrieve a named response from the domain using an endpoint.

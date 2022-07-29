@@ -13,7 +13,11 @@ Output channel for Telegram.
 #### send\_text\_with\_buttons
 
 ```python
-async def send_text_with_buttons(recipient_id: Text, text: Text, buttons: List[Dict[Text, Any]], button_type: Optional[Text] = "inline", **kwargs: Any, ,) -> None
+async def send_text_with_buttons(recipient_id: Text,
+                                 text: Text,
+                                 buttons: List[Dict[Text, Any]],
+                                 button_type: Optional[Text] = "inline",
+                                 **kwargs: Any) -> None
 ```
 
 Sends a message with keyboard.

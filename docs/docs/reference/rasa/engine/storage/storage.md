@@ -29,7 +29,10 @@ Creates the storage.
 ```python
 @classmethod
 @abc.abstractmethod
-def from_model_archive(cls, storage_path: Path, model_archive_path: Union[Text, Path]) -> Tuple[ModelStorage, ModelMetadata]
+def from_model_archive(
+    cls, storage_path: Path,
+    model_archive_path: Union[Text,
+                              Path]) -> Tuple[ModelStorage, ModelMetadata]
 ```
 
 Unpacks a model archive and initializes a `ModelStorage`.
@@ -54,7 +57,8 @@ Unpacks a model archive and initializes a `ModelStorage`.
 
 ```python
 @classmethod
-def metadata_from_archive(cls, model_archive_path: Union[Text, Path]) -> ModelMetadata
+def metadata_from_archive(
+        cls, model_archive_path: Union[Text, Path]) -> ModelMetadata
 ```
 
 Retrieves metadata from archive.
@@ -123,7 +127,9 @@ Provides the data of a persisted `Resource`.
 #### create\_model\_package
 
 ```python
-def create_model_package(model_archive_path: Union[Text, Path], model_configuration: GraphModelConfiguration, domain: Domain) -> ModelMetadata
+def create_model_package(model_archive_path: Union[Text, Path],
+                         model_configuration: GraphModelConfiguration,
+                         domain: Domain) -> ModelMetadata
 ```
 
 Creates a model archive containing all data to load and run the model.

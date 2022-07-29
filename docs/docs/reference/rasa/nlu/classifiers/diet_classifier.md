@@ -47,7 +47,16 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None) -> None
+def __init__(
+    config: Dict[Text, Any],
+    model_storage: ModelStorage,
+    resource: Resource,
+    execution_context: ExecutionContext,
+    index_label_id_mapping: Optional[Dict[int, Text]] = None,
+    entity_tag_specs: Optional[List[EntityTagSpec]] = None,
+    model: Optional[RasaModel] = None,
+    sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None
+) -> None
 ```
 
 Declare instance variables with default values.
@@ -56,7 +65,9 @@ Declare instance variables with default values.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DIETClassifier
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> DIETClassifier
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -117,7 +128,10 @@ Persist this model into the passed directory.
 
 ```python
 @classmethod
-def load(cls: Type[DIETClassifierT], config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> DIETClassifierT
+def load(cls: Type[DIETClassifierT], config: Dict[Text, Any],
+         model_storage: ModelStorage, resource: Resource,
+         execution_context: ExecutionContext,
+         **kwargs: Any) -> DIETClassifierT
 ```
 
 Loads a policy from the storage (see parent class for full docstring).
@@ -131,7 +145,9 @@ class DIET(TransformerRasaModel)
 #### batch\_loss
 
 ```python
-def batch_loss(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> tf.Tensor
+def batch_loss(
+    batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray,
+                                                 ...]]) -> tf.Tensor
 ```
 
 Calculates the loss for the given batch.
@@ -156,7 +172,9 @@ Prepares the model for prediction.
 #### batch\_predict
 
 ```python
-def batch_predict(batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]) -> Dict[Text, tf.Tensor]
+def batch_predict(
+    batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
+) -> Dict[Text, tf.Tensor]
 ```
 
 Predicts the output of the given batch.

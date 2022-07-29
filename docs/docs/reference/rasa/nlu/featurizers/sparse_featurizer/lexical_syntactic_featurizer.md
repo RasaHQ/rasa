@@ -58,7 +58,14 @@ Returns the component&#x27;s default config.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, feature_to_idx_dict: Optional[Dict[Tuple[int, Text], Dict[Text, int]]] = None) -> None
+def __init__(
+    config: Dict[Text, Any],
+    model_storage: ModelStorage,
+    resource: Resource,
+    execution_context: ExecutionContext,
+    feature_to_idx_dict: Optional[Dict[Tuple[int, Text], Dict[Text,
+                                                              int]]] = None
+) -> None
 ```
 
 Instantiates a new `LexicalSyntacticFeaturizer` instance.
@@ -92,7 +99,8 @@ Trains the featurizer.
 #### warn\_if\_pos\_features\_cannot\_be\_computed
 
 ```python
-def warn_if_pos_features_cannot_be_computed(training_data: TrainingData) -> None
+def warn_if_pos_features_cannot_be_computed(
+        training_data: TrainingData) -> None
 ```
 
 Warn if part-of-speech features are needed but not given.
@@ -135,7 +143,9 @@ Processes the training examples in the given training data in-place.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> LexicalSyntacticFeaturizer
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> LexicalSyntacticFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -144,7 +154,9 @@ Creates a new untrained component (see parent class for full docstring).
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> LexicalSyntacticFeaturizer
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> LexicalSyntacticFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).

@@ -125,7 +125,9 @@ Components that should be included in the pipeline before this component.
 ```python
 @classmethod
 @abstractmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> GraphComponent
 ```
 
 Creates a new `GraphComponent`.
@@ -145,7 +147,9 @@ Creates a new `GraphComponent`.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> GraphComponent
 ```
 
 Creates a component using a persisted version of itself.
@@ -228,7 +232,9 @@ Holds functionality to be run before and after a `GraphNode`.
 
 ```python
 @abstractmethod
-def on_before_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], received_inputs: Dict[Text, Any]) -> Dict
+def on_before_node(node_name: Text, execution_context: ExecutionContext,
+                   config: Dict[Text, Any],
+                   received_inputs: Dict[Text, Any]) -> Dict
 ```
 
 Runs before the `GraphNode` executes.
@@ -249,7 +255,9 @@ Runs before the `GraphNode` executes.
 
 ```python
 @abstractmethod
-def on_after_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], output: Any, input_hook_data: Dict) -> None
+def on_after_node(node_name: Text, execution_context: ExecutionContext,
+                  config: Dict[Text, Any], output: Any,
+                  input_hook_data: Dict) -> None
 ```
 
 Runs after the `GraphNode` as executed.
@@ -287,7 +295,17 @@ of the component and passing the output onwards.
 #### \_\_init\_\_
 
 ```python
-def __init__(node_name: Text, component_class: Type[GraphComponent], constructor_name: Text, component_config: Dict[Text, Any], fn_name: Text, inputs: Dict[Text, Text], eager: bool, model_storage: ModelStorage, resource: Optional[Resource], execution_context: ExecutionContext, hooks: Optional[List[GraphNodeHook]] = None) -> None
+def __init__(node_name: Text,
+             component_class: Type[GraphComponent],
+             constructor_name: Text,
+             component_config: Dict[Text, Any],
+             fn_name: Text,
+             inputs: Dict[Text, Text],
+             eager: bool,
+             model_storage: ModelStorage,
+             resource: Optional[Resource],
+             execution_context: ExecutionContext,
+             hooks: Optional[List[GraphNodeHook]] = None) -> None
 ```
 
 Initializes `GraphNode`.
@@ -313,7 +331,8 @@ Initializes `GraphNode`.
 #### \_\_call\_\_
 
 ```python
-def __call__(*inputs_from_previous_nodes: Tuple[Text, Any]) -> Tuple[Text, Any]
+def __call__(
+        *inputs_from_previous_nodes: Tuple[Text, Any]) -> Tuple[Text, Any]
 ```
 
 Calls the `GraphComponent` run method when the node executes in the graph.
@@ -332,7 +351,12 @@ Calls the `GraphComponent` run method when the node executes in the graph.
 
 ```python
 @classmethod
-def from_schema_node(cls, node_name: Text, schema_node: SchemaNode, model_storage: ModelStorage, execution_context: ExecutionContext, hooks: Optional[List[GraphNodeHook]] = None) -> GraphNode
+def from_schema_node(cls,
+                     node_name: Text,
+                     schema_node: SchemaNode,
+                     model_storage: ModelStorage,
+                     execution_context: ExecutionContext,
+                     hooks: Optional[List[GraphNodeHook]] = None) -> GraphNode
 ```
 
 Creates a `GraphNode` from a `SchemaNode`.

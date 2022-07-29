@@ -5,7 +5,8 @@ title: rasa.shared.core.events
 #### deserialise\_events
 
 ```python
-def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"]
+def deserialise_events(
+        serialized_events: List[Dict[Text, Any]]) -> List["Event"]
 ```
 
 Convert a list of dictionaries to a list of corresponding events.
@@ -16,7 +17,8 @@ Example format:
 #### format\_message
 
 ```python
-def format_message(text: Text, intent: Optional[Text], entities: Union[Text, List[Any]]) -> Text
+def format_message(text: Text, intent: Optional[Text],
+                   entities: Union[Text, List[Any]]) -> Text
 ```
 
 Uses NLU parser information to generate a message with inline entity annotations.
@@ -36,7 +38,11 @@ Uses NLU parser information to generate a message with inline entity annotations
 #### split\_events
 
 ```python
-def split_events(events: Iterable["Event"], event_type_to_split_on: Type["Event"], additional_splitting_conditions: Optional[Dict[Text, Any]] = None, include_splitting_event: bool = True) -> List[List["Event"]]
+def split_events(events: Iterable["Event"],
+                 event_type_to_split_on: Type["Event"],
+                 additional_splitting_conditions: Optional[Dict[Text,
+                                                                Any]] = None,
+                 include_splitting_event: bool = True) -> List[List["Event"]]
 ```
 
 Splits events according to an event type and condition.
@@ -128,7 +134,9 @@ Returns a unique hash for the event which is stable across python runs.
 
 ```python
 @staticmethod
-def resolve_by_type(type_name: Text, default: Optional[Type["Event"]] = None) -> Optional[Type["Event"]]
+def resolve_by_type(
+        type_name: Text,
+        default: Optional[Type["Event"]] = None) -> Optional[Type["Event"]]
 ```
 
 Returns a slots class by its type name.
@@ -211,7 +219,15 @@ As a side effect a new `Turn` will be created in the `Tracker`.
 #### \_\_init\_\_
 
 ```python
-def __init__(text: Optional[Text] = None, intent: Optional[Dict] = None, entities: Optional[List[Dict]] = None, parse_data: Optional["NLUPredictionData"] = None, timestamp: Optional[float] = None, input_channel: Optional[Text] = None, message_id: Optional[Text] = None, metadata: Optional[Dict] = None, use_text_for_featurization: Optional[bool] = None) -> None
+def __init__(text: Optional[Text] = None,
+             intent: Optional[Dict] = None,
+             entities: Optional[List[Dict]] = None,
+             parse_data: Optional["NLUPredictionData"] = None,
+             timestamp: Optional[float] = None,
+             input_channel: Optional[Text] = None,
+             message_id: Optional[Text] = None,
+             metadata: Optional[Dict] = None,
+             use_text_for_featurization: Optional[bool] = None) -> None
 ```
 
 Creates event for incoming user message.
@@ -323,7 +339,9 @@ Stores information whether action was predicted based on text or intent.
 #### \_\_init\_\_
 
 ```python
-def __init__(use_text_for_featurization: bool, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(use_text_for_featurization: bool,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event.
@@ -390,7 +408,9 @@ Event that is used to add extracted entities to the tracker state.
 #### \_\_init\_\_
 
 ```python
-def __init__(entities: List[Dict[Text, Any]], timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(entities: List[Dict[Text, Any]],
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Initializes event.
@@ -465,7 +485,10 @@ This class is not used in the story training as it is contained in the
 #### \_\_init\_\_
 
 ```python
-def __init__(text: Optional[Text] = None, data: Optional[Dict] = None, metadata: Optional[Dict[Text, Any]] = None, timestamp: Optional[float] = None) -> None
+def __init__(text: Optional[Text] = None,
+             data: Optional[Dict] = None,
+             metadata: Optional[Dict[Text, Any]] = None,
+             timestamp: Optional[float] = None) -> None
 ```
 
 Creates event for a bot response.
@@ -559,7 +582,10 @@ that `tracker.slots[key]=value`.
 #### \_\_init\_\_
 
 ```python
-def __init__(key: Text, value: Optional[Any] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(key: Text,
+             value: Optional[Any] = None,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event to set slot.
@@ -740,7 +766,13 @@ The triggered intent can include entities if needed.
 #### \_\_init\_\_
 
 ```python
-def __init__(intent: Text, trigger_date_time: datetime, entities: Optional[List[Dict]] = None, name: Optional[Text] = None, kill_on_user_message: bool = True, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(intent: Text,
+             trigger_date_time: datetime,
+             entities: Optional[List[Dict]] = None,
+             name: Optional[Text] = None,
+             kill_on_user_message: bool = True,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates the reminder.
@@ -810,7 +842,11 @@ Cancel certain jobs.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Optional[Text] = None, intent: Optional[Text] = None, entities: Optional[List[Dict]] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(name: Optional[Text] = None,
+             intent: Optional[Text] = None,
+             entities: Optional[List[Dict]] = None,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates a ReminderCancelled event.
@@ -929,7 +965,9 @@ Story should get dumped to a file.
 #### \_\_init\_\_
 
 ```python
-def __init__(path: Optional[Text] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(path: Optional[Text] = None,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event about story exporting.
@@ -983,7 +1021,9 @@ Enqueue a followup action.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(name: Text,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates an event which forces the model to run a certain action next.
@@ -1126,7 +1166,13 @@ to the latest `Turn`` in `Tracker.turns`.
 #### \_\_init\_\_
 
 ```python
-def __init__(action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, action_text: Optional[Text] = None, hide_rule_turn: bool = False) -> None
+def __init__(action_name: Optional[Text] = None,
+             policy: Optional[Text] = None,
+             confidence: Optional[float] = None,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict] = None,
+             action_text: Optional[Text] = None,
+             hide_rule_turn: bool = False) -> None
 ```
 
 Creates event for a successful event execution.
@@ -1229,7 +1275,10 @@ This class is not used in the story training as it is contained in the
 #### \_\_init\_\_
 
 ```python
-def __init__(text: Optional[Text] = None, data: Optional[Any] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(text: Optional[Text] = None,
+             data: Optional[Any] = None,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 See docstring of `BotUttered`.
@@ -1277,7 +1326,9 @@ If `name` is given: activates a loop with `name` else deactivates active loop.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Optional[Text], timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(name: Optional[Text],
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event for active loop.
@@ -1376,7 +1427,9 @@ Notifies form action whether or not to validate the user input.
 #### \_\_init\_\_
 
 ```python
-def __init__(is_interrupted: bool, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(is_interrupted: bool,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Event to notify that loop was interrupted.
@@ -1446,7 +1499,9 @@ to handle old legacy events which were stored with the old type name
 #### \_\_init\_\_
 
 ```python
-def __init__(validate: bool, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(validate: bool,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 See parent class docstring.
@@ -1478,7 +1533,11 @@ Notify Core that the execution of the action has been rejected.
 #### \_\_init\_\_
 
 ```python
-def __init__(action_name: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(action_name: Text,
+             policy: Optional[Text] = None,
+             confidence: Optional[float] = None,
+             timestamp: Optional[float] = None,
+             metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event.

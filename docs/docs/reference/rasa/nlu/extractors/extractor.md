@@ -34,7 +34,8 @@ Returns the name of the class.
 #### add\_extractor\_name
 
 ```python
-def add_extractor_name(entities: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
+def add_extractor_name(
+        entities: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
 ```
 
 Adds this extractor&#x27;s name to a list of entities.
@@ -69,7 +70,8 @@ Adds this extractor&#x27;s name to the list of processors for this entity.
 
 ```python
 @staticmethod
-def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list
+def filter_irrelevant_entities(extracted: list,
+                               requested_dimensions: set) -> list
 ```
 
 Only return dimensions the user configured.
@@ -90,7 +92,13 @@ self.name (e.g. &#x27;CRFEntityExtractor&#x27;) are removed.
 
 ```python
 @staticmethod
-def convert_predictions_into_entities(text: Text, tokens: List[Token], tags: Dict[Text, List[Text]], split_entities_config: Dict[Text, bool] = None, confidences: Optional[Dict[Text, List[float]]] = None) -> List[Dict[Text, Any]]
+def convert_predictions_into_entities(
+    text: Text,
+    tokens: List[Token],
+    tags: Dict[Text, List[Text]],
+    split_entities_config: Dict[Text, bool] = None,
+    confidences: Optional[Dict[Text, List[float]]] = None
+) -> List[Dict[Text, Any]]
 ```
 
 Convert predictions into entities.
@@ -112,7 +120,8 @@ Convert predictions into entities.
 
 ```python
 @staticmethod
-def get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text
+def get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text,
+                idx: int) -> Text
 ```
 
 Get the value of the given tag name from the list of tags.

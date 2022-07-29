@@ -5,7 +5,8 @@ title: rasa.shared.nlu.training_data.loading
 #### load\_data
 
 ```python
-def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData"
+def load_data(resource_name: Text,
+              language: Optional[Text] = "en") -> "TrainingData"
 ```
 
 Load training data from disk.

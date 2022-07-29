@@ -5,7 +5,8 @@ title: rasa.cli.visualize
 #### add\_subparser
 
 ```python
-def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction,
+                  parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all visualization parsers.

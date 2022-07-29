@@ -39,7 +39,11 @@ Name of the type of slot.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, mappings: List[Dict[Text, Any]], initial_value: Any = None, value_reset_delay: Optional[int] = None, influence_conversation: bool = True) -> None
+def __init__(name: Text,
+             mappings: List[Dict[Text, Any]],
+             initial_value: Any = None,
+             value_reset_delay: Optional[int] = None,
+             influence_conversation: bool = True) -> None
 ```
 
 Create a Slot.
@@ -160,7 +164,13 @@ A slot storing a float value.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, mappings: List[Dict[Text, Any]], initial_value: Optional[float] = None, value_reset_delay: Optional[int] = None, max_value: float = 1.0, min_value: float = 0.0, influence_conversation: bool = True) -> None
+def __init__(name: Text,
+             mappings: List[Dict[Text, Any]],
+             initial_value: Optional[float] = None,
+             value_reset_delay: Optional[int] = None,
+             max_value: float = 1.0,
+             min_value: float = 0.0,
+             influence_conversation: bool = True) -> None
 ```
 
 Creates a FloatSlot.
@@ -220,7 +230,12 @@ Slot type which can be used to branch conversations based on its value.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, mappings: List[Dict[Text, Any]], values: Optional[List[Any]] = None, initial_value: Any = None, value_reset_delay: Optional[int] = None, influence_conversation: bool = True) -> None
+def __init__(name: Text,
+             mappings: List[Dict[Text, Any]],
+             values: Optional[List[Any]] = None,
+             initial_value: Any = None,
+             value_reset_delay: Optional[int] = None,
+             influence_conversation: bool = True) -> None
 ```
 
 Creates a `Categorical  Slot` (see parent class for detailed docstring).
@@ -255,7 +270,11 @@ the information is supposed to get featurized.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, mappings: List[Dict[Text, Any]], initial_value: Any = None, value_reset_delay: Optional[int] = None, influence_conversation: bool = False) -> None
+def __init__(name: Text,
+             mappings: List[Dict[Text, Any]],
+             initial_value: Any = None,
+             value_reset_delay: Optional[int] = None,
+             influence_conversation: bool = False) -> None
 ```
 
 Creates an `Any  Slot` (see parent class for detailed docstring).

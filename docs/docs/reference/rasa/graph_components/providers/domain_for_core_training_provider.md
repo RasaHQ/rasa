@@ -45,7 +45,10 @@ by core components
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DomainForCoreTrainingProvider
+def create(
+        cls, config: Dict[Text, Any], model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext) -> DomainForCoreTrainingProvider
 ```
 
 Creates component (see parent class for full docstring).

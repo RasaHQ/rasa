@@ -34,7 +34,8 @@ Returns default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage,
+             resource: Resource) -> None
 ```
 
 Initialize the tokenizer.
@@ -43,7 +44,9 @@ Initialize the tokenizer.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> JiebaTokenizer
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> JiebaTokenizer
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -77,7 +80,9 @@ Tokenizes the text of the provided attribute of the incoming message.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> JiebaTokenizer
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> JiebaTokenizer
 ```
 
 Loads a custom dictionary from model storage.

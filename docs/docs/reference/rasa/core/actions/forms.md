@@ -13,7 +13,8 @@ Action which implements and executes the form logic.
 #### \_\_init\_\_
 
 ```python
-def __init__(form_name: Text, action_endpoint: Optional[EndpointConfig]) -> None
+def __init__(form_name: Text,
+             action_endpoint: Optional[EndpointConfig]) -> None
 ```
 
 Creates a `FormAction`.
@@ -46,7 +47,11 @@ A list of required slots that the form has to fill.
 #### from\_entity
 
 ```python
-def from_entity(entity: Text, intent: Optional[Union[Text, List[Text]]] = None, not_intent: Optional[Union[Text, List[Text]]] = None, role: Optional[Text] = None, group: Optional[Text] = None) -> Dict[Text, Any]
+def from_entity(entity: Text,
+                intent: Optional[Union[Text, List[Text]]] = None,
+                not_intent: Optional[Union[Text, List[Text]]] = None,
+                role: Optional[Text] = None,
+                group: Optional[Text] = None) -> Dict[Text, Any]
 ```
 
 A dictionary for slot mapping to extract slot value.
@@ -63,7 +68,8 @@ From:
 #### get\_mappings\_for\_slot
 
 ```python
-def get_mappings_for_slot(slot_to_fill: Text, domain: Domain) -> List[Dict[Text, Any]]
+def get_mappings_for_slot(slot_to_fill: Text,
+                          domain: Domain) -> List[Dict[Text, Any]]
 ```
 
 Get mappings for requested slot.
@@ -73,7 +79,8 @@ If None, map requested slot to an entity with the same name
 #### entity\_mapping\_is\_unique
 
 ```python
-def entity_mapping_is_unique(slot_mapping: Dict[Text, Any], domain: Domain) -> bool
+def entity_mapping_is_unique(slot_mapping: Dict[Text, Any],
+                             domain: Domain) -> bool
 ```
 
 Verifies if the from_entity mapping is unique.
@@ -82,7 +89,11 @@ Verifies if the from_entity mapping is unique.
 
 ```python
 @staticmethod
-def get_entity_value_for_slot(name: Text, tracker: "DialogueStateTracker", slot_to_be_filled: Text, role: Optional[Text] = None, group: Optional[Text] = None) -> Any
+def get_entity_value_for_slot(name: Text,
+                              tracker: "DialogueStateTracker",
+                              slot_to_be_filled: Text,
+                              role: Optional[Text] = None,
+                              group: Optional[Text] = None) -> Any
 ```
 
 Extract entities for given name and optional role and group.
@@ -118,7 +129,10 @@ previous form and must be ignored.
 #### validate\_slots
 
 ```python
-async def validate_slots(slot_candidates: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
+async def validate_slots(
+        slot_candidates: Dict[Text, Any], tracker: "DialogueStateTracker",
+        domain: Domain, output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
 ```
 
 Validate the extracted slots.
@@ -148,7 +162,10 @@ them. Otherwise there is no validation.
 #### validate
 
 ```python
-async def validate(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
+async def validate(
+        tracker: "DialogueStateTracker", domain: Domain,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
 ```
 
 Extract and validate value of requested slot and other slots.
@@ -168,7 +185,10 @@ Extract and validate value of requested slot and other slots.
 #### request\_next\_slot
 
 ```python
-async def request_next_slot(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, events_so_far: List[Event]) -> List[Union[SlotSet, Event]]
+async def request_next_slot(
+        tracker: "DialogueStateTracker", domain: Domain,
+        output_channel: OutputChannel, nlg: NaturalLanguageGenerator,
+        events_so_far: List[Event]) -> List[Union[SlotSet, Event]]
 ```
 
 Request the next slot and response if needed, else return `None`.
@@ -176,7 +196,10 @@ Request the next slot and response if needed, else return `None`.
 #### activate
 
 ```python
-async def activate(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+async def activate(output_channel: "OutputChannel",
+                   nlg: "NaturalLanguageGenerator",
+                   tracker: "DialogueStateTracker",
+                   domain: "Domain") -> List[Event]
 ```
 
 Activate form if the form is called for the first time.
@@ -202,7 +225,9 @@ events from the extraction and validation of these pre-filled slots.
 #### do
 
 ```python
-async def do(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain", events_so_far: List[Event]) -> List[Event]
+async def do(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+             tracker: "DialogueStateTracker", domain: "Domain",
+             events_so_far: List[Event]) -> List[Event]
 ```
 
 Executes form loop after activation.
@@ -210,7 +235,10 @@ Executes form loop after activation.
 #### is\_done
 
 ```python
-async def is_done(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain", events_so_far: List[Event]) -> bool
+async def is_done(output_channel: "OutputChannel",
+                  nlg: "NaturalLanguageGenerator",
+                  tracker: "DialogueStateTracker", domain: "Domain",
+                  events_so_far: List[Event]) -> bool
 ```
 
 Checks if loop can be terminated.

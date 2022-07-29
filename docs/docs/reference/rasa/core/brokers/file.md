@@ -16,7 +16,11 @@ There will be one event per line and each event is stored as json.
 
 ```python
 @classmethod
-async def from_endpoint_config(cls, broker_config: Optional["EndpointConfig"], event_loop: Optional[AbstractEventLoop] = None) -> Optional["FileEventBroker"]
+async def from_endpoint_config(
+    cls,
+    broker_config: Optional["EndpointConfig"],
+    event_loop: Optional[AbstractEventLoop] = None
+) -> Optional["FileEventBroker"]
 ```
 
 Creates broker. See the parent class for more information.

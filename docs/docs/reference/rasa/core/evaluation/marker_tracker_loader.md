@@ -37,7 +37,10 @@ Represents a wrapper over a `TrackerStore` with a configurable access pattern.
 #### \_\_init\_\_
 
 ```python
-def __init__(tracker_store: TrackerStore, strategy: str, count: int = None, seed: Any = None) -> None
+def __init__(tracker_store: TrackerStore,
+             strategy: str,
+             count: int = None,
+             seed: Any = None) -> None
 ```
 
 Creates a MarkerTrackerLoader.

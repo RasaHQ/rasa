@@ -33,7 +33,9 @@ Validates a slot mapping.
 
 ```python
 @staticmethod
-def intent_is_desired(mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: "Domain") -> bool
+def intent_is_desired(mapping: Dict[Text,
+                                    Any], tracker: "DialogueStateTracker",
+                      domain: "Domain") -> bool
 ```
 
 Checks whether user intent matches slot mapping intent specifications.
@@ -51,7 +53,8 @@ Convert object to a list if it isn&#x27;t.
 
 ```python
 @staticmethod
-def entity_is_desired(mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> bool
+def entity_is_desired(mapping: Dict[Text, Any],
+                      tracker: "DialogueStateTracker") -> bool
 ```
 
 Checks whether slot should be filled by an entity in the input or not.
@@ -70,7 +73,8 @@ Checks whether slot should be filled by an entity in the input or not.
 
 ```python
 @staticmethod
-def check_mapping_validity(slot_name: Text, mapping_type: SlotMappingType, mapping: Dict[Text, Any], domain: "Domain") -> bool
+def check_mapping_validity(slot_name: Text, mapping_type: SlotMappingType,
+                           mapping: Dict[Text, Any], domain: "Domain") -> bool
 ```
 
 Checks the mapping for validity.

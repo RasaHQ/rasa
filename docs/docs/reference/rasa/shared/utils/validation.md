@@ -13,7 +13,11 @@ Raised if a yaml file does not correspond to the expected schema.
 #### \_\_init\_\_
 
 ```python
-def __init__(message: Text, validation_errors: Optional[List[SchemaError.SchemaErrorEntry]] = None, filename: Optional[Text] = None, content: Any = None) -> None
+def __init__(message: Text,
+             validation_errors: Optional[List[
+                 SchemaError.SchemaErrorEntry]] = None,
+             filename: Optional[Text] = None,
+             content: Any = None) -> None
 ```
 
 Create The Error.
@@ -41,7 +45,8 @@ Validate yaml content.
 #### validate\_training\_data
 
 ```python
-def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) -> None
+def validate_training_data(json_data: Dict[Text, Any],
+                           schema: Dict[Text, Any]) -> None
 ```
 
 Validate rasa training data format to ensure proper training.
@@ -59,7 +64,8 @@ Validate rasa training data format to ensure proper training.
 #### validate\_training\_data\_format\_version
 
 ```python
-def validate_training_data_format_version(yaml_file_content: Dict[Text, Any], filename: Optional[Text]) -> bool
+def validate_training_data_format_version(yaml_file_content: Dict[Text, Any],
+                                          filename: Optional[Text]) -> bool
 ```
 
 Validates version on the training data content using `version` field

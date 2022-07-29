@@ -55,7 +55,8 @@ Return merged instance of this data with other training data.
 #### filter\_training\_examples
 
 ```python
-def filter_training_examples(condition: Callable[[Message], bool]) -> "TrainingData"
+def filter_training_examples(
+        condition: Callable[[Message], bool]) -> "TrainingData"
 ```
 
 Filter training examples.
@@ -292,7 +293,9 @@ Returns the full filename to persist NLG data.
 #### persist
 
 ```python
-def persist(dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> Dict[Text, Any]
+def persist(
+        dir_name: Text,
+        filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> Dict[Text, Any]
 ```
 
 Persists this training data to disk and returns necessary
@@ -319,7 +322,10 @@ Checks that the data has a minimum of certain training examples.
 #### train\_test\_split
 
 ```python
-def train_test_split(train_frac: float = 0.8, random_seed: Optional[int] = None) -> Tuple["TrainingData", "TrainingData"]
+def train_test_split(
+    train_frac: float = 0.8,
+    random_seed: Optional[int] = None
+) -> Tuple["TrainingData", "TrainingData"]
 ```
 
 Split into a training and test dataset,
@@ -328,7 +334,8 @@ preserving the fraction of examples per intent.
 #### split\_nlu\_examples
 
 ```python
-def split_nlu_examples(train_frac: float, random_seed: Optional[int] = None) -> Tuple[list, list]
+def split_nlu_examples(train_frac: float,
+                       random_seed: Optional[int] = None) -> Tuple[list, list]
 ```
 
 Split the training data into a train and test set.
@@ -370,7 +377,9 @@ Checks if there are any training examples from e2e stories.
 #### list\_to\_str
 
 ```python
-def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text
+def list_to_str(lst: List[Text],
+                delim: Text = ", ",
+                quote: Text = "'") -> Text
 ```
 
 Converts list to a string.

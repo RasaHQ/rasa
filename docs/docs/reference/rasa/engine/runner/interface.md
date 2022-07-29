@@ -15,7 +15,11 @@ A `GraphRunner` is responsible for running a `GraphSchema`.
 ```python
 @classmethod
 @abstractmethod
-def create(cls, graph_schema: GraphSchema, model_storage: ModelStorage, execution_context: ExecutionContext, hooks: Optional[List[GraphNodeHook]] = None) -> GraphRunner
+def create(cls,
+           graph_schema: GraphSchema,
+           model_storage: ModelStorage,
+           execution_context: ExecutionContext,
+           hooks: Optional[List[GraphNodeHook]] = None) -> GraphRunner
 ```
 
 Creates a new instance of a `GraphRunner`.
@@ -34,7 +38,8 @@ Creates a new instance of a `GraphRunner`.
 
 ```python
 @abstractmethod
-def run(inputs: Optional[Dict[Text, Any]] = None, targets: Optional[List[Text]] = None) -> Dict[Text, Any]
+def run(inputs: Optional[Dict[Text, Any]] = None,
+        targets: Optional[List[Text]] = None) -> Dict[Text, Any]
 ```
 
 Runs the instantiated graph with the given inputs and targets.

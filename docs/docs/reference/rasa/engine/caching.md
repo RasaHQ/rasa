@@ -17,7 +17,8 @@ training runs.
 
 ```python
 @abc.abstractmethod
-def cache_output(fingerprint_key: Text, output: Any, output_fingerprint: Text, model_storage: ModelStorage) -> None
+def cache_output(fingerprint_key: Text, output: Any, output_fingerprint: Text,
+                 model_storage: ModelStorage) -> None
 ```
 
 Adds the output to the cache.
@@ -61,7 +62,8 @@ Retrieves fingerprint of output based on fingerprint key.
 
 ```python
 @abc.abstractmethod
-def get_cached_result(output_fingerprint_key: Text, node_name: Text, model_storage: ModelStorage) -> Optional[Cacheable]
+def get_cached_result(output_fingerprint_key: Text, node_name: Text,
+                      model_storage: ModelStorage) -> Optional[Cacheable]
 ```
 
 Returns a potentially cached output result.
@@ -109,7 +111,9 @@ Persists `Cacheable` to disk.
 
 ```python
 @classmethod
-def from_cache(cls, node_name: Text, directory: Path, model_storage: ModelStorage, output_fingerprint: Text) -> Cacheable
+def from_cache(cls, node_name: Text, directory: Path,
+               model_storage: ModelStorage,
+               output_fingerprint: Text) -> Cacheable
 ```
 
 Loads `Cacheable` from cache.
@@ -158,7 +162,8 @@ The `Cache` setting can be configured via environment variables.
 #### cache\_output
 
 ```python
-def cache_output(fingerprint_key: Text, output: Any, output_fingerprint: Text, model_storage: ModelStorage) -> None
+def cache_output(fingerprint_key: Text, output: Any, output_fingerprint: Text,
+                 model_storage: ModelStorage) -> None
 ```
 
 Adds the output to the cache (see parent class for full docstring).
@@ -174,7 +179,8 @@ Returns cached output fingerprint (see parent class for full docstring).
 #### get\_cached\_result
 
 ```python
-def get_cached_result(output_fingerprint_key: Text, node_name: Text, model_storage: ModelStorage) -> Optional[Cacheable]
+def get_cached_result(output_fingerprint_key: Text, node_name: Text,
+                      model_storage: ModelStorage) -> Optional[Cacheable]
 ```
 
 Returns a potentially cached output (see parent class for full docstring).

@@ -24,7 +24,9 @@ Represents a persisted graph component in the graph.
 
 ```python
 @classmethod
-def from_cache(cls, node_name: Text, directory: Path, model_storage: ModelStorage, output_fingerprint: Text) -> Resource
+def from_cache(cls, node_name: Text, directory: Path,
+               model_storage: ModelStorage,
+               output_fingerprint: Text) -> Resource
 ```
 
 Loads a `Resource` from the cache.

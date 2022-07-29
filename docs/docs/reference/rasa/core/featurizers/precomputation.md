@@ -139,7 +139,10 @@ Adds the given messages.
 #### collect\_features
 
 ```python
-def collect_features(sub_state: SubState, attributes: Optional[Iterable[Text]] = None) -> Dict[Text, List[Features]]
+def collect_features(
+        sub_state: SubState,
+        attributes: Optional[Iterable[Text]] = None
+) -> Dict[Text, List[Features]]
 ```
 
 Collects features for all attributes in the given substate.
@@ -232,7 +235,10 @@ user message and each action name and action text appears exactly once.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CoreFeaturizationInputConverter
+def create(
+        cls, config: Dict[Text, Any], model_storage: ModelStorage,
+        resource: Resource, execution_context: ExecutionContext
+) -> CoreFeaturizationInputConverter
 ```
 
 Creates a new instance (see parent class for full docstring).
@@ -240,7 +246,8 @@ Creates a new instance (see parent class for full docstring).
 #### convert\_for\_training
 
 ```python
-def convert_for_training(domain: Domain, story_graph: StoryGraph) -> TrainingData
+def convert_for_training(domain: Domain,
+                         story_graph: StoryGraph) -> TrainingData
 ```
 
 Creates de-duplicated training data.
@@ -292,7 +299,9 @@ Collects featurized messages for use by a policy.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CoreFeaturizationCollector
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> CoreFeaturizationCollector
 ```
 
 Creates a new instance (see parent class for full docstring).
@@ -300,7 +309,9 @@ Creates a new instance (see parent class for full docstring).
 #### collect
 
 ```python
-def collect(messages: Union[TrainingData, List[Message]]) -> MessageContainerForCoreFeaturization
+def collect(
+    messages: Union[TrainingData, List[Message]]
+) -> MessageContainerForCoreFeaturization
 ```
 
 Collects messages.

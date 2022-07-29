@@ -13,7 +13,8 @@ Implement a fbmessenger to parse incoming webhooks and send msgs.
 #### message
 
 ```python
-async def message(message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]) -> None
+async def message(message: Dict[Text, Any],
+                  metadata: Optional[Dict[Text, Any]]) -> None
 ```
 
 Handle an incoming event from the fb webhook.
@@ -21,7 +22,8 @@ Handle an incoming event from the fb webhook.
 #### postback
 
 ```python
-async def postback(message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]) -> None
+async def postback(message: Dict[Text, Any],
+                   metadata: Optional[Dict[Text, Any]]) -> None
 ```
 
 Handle a postback (e.g. quick reply button).
@@ -45,7 +47,8 @@ Sends a message to the recipient using the messenger client.
 #### send\_text\_message
 
 ```python
-async def send_text_message(recipient_id: Text, text: Text, **kwargs: Any) -> None
+async def send_text_message(recipient_id: Text, text: Text,
+                            **kwargs: Any) -> None
 ```
 
 Send a message through this channel.
@@ -53,7 +56,8 @@ Send a message through this channel.
 #### send\_image\_url
 
 ```python
-async def send_image_url(recipient_id: Text, image: Text, **kwargs: Any) -> None
+async def send_image_url(recipient_id: Text, image: Text,
+                         **kwargs: Any) -> None
 ```
 
 Sends an image. Default will just post the url as a string.
@@ -74,7 +78,9 @@ Sends a sender action to facebook (e.g. &quot;typing_on&quot;).
 #### send\_text\_with\_buttons
 
 ```python
-async def send_text_with_buttons(recipient_id: Text, text: Text, buttons: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
+async def send_text_with_buttons(recipient_id: Text, text: Text,
+                                 buttons: List[Dict[Text, Any]],
+                                 **kwargs: Any) -> None
 ```
 
 Sends buttons to the output.
@@ -82,7 +88,9 @@ Sends buttons to the output.
 #### send\_quick\_replies
 
 ```python
-async def send_quick_replies(recipient_id: Text, text: Text, quick_replies: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
+async def send_quick_replies(recipient_id: Text, text: Text,
+                             quick_replies: List[Dict[Text, Any]],
+                             **kwargs: Any) -> None
 ```
 
 Sends quick replies to the output.
@@ -90,7 +98,9 @@ Sends quick replies to the output.
 #### send\_elements
 
 ```python
-async def send_elements(recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any) -> None
+async def send_elements(recipient_id: Text, elements: Iterable[Dict[Text,
+                                                                    Any]],
+                        **kwargs: Any) -> None
 ```
 
 Sends elements to the output.
@@ -98,7 +108,9 @@ Sends elements to the output.
 #### send\_custom\_json
 
 ```python
-async def send_custom_json(recipient_id: Text, json_message: Union[List, Dict[Text, Any]], **kwargs: Any, ,) -> None
+async def send_custom_json(recipient_id: Text,
+                           json_message: Union[List, Dict[Text, Any]],
+                           **kwargs: Any) -> None
 ```
 
 Sends custom json data to the output.
@@ -135,7 +147,8 @@ https://github.com/rehabstudio/fbmessenger#facebook-app-setup
 
 ```python
 @staticmethod
-def validate_hub_signature(app_secret: Text, request_payload: bytes, hub_signature_header: Text) -> bool
+def validate_hub_signature(app_secret: Text, request_payload: bytes,
+                           hub_signature_header: Text) -> bool
 ```
 
 Make sure the incoming webhook requests are properly signed.

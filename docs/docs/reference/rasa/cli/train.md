@@ -5,7 +5,8 @@ title: rasa.cli.train
 #### add\_subparser
 
 ```python
-def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction,
+                  parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all training parsers.
@@ -18,7 +19,8 @@ Add all training parsers.
 #### run\_training
 
 ```python
-def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]
+def run_training(args: argparse.Namespace,
+                 can_exit: bool = False) -> Optional[Text]
 ```
 
 Trains a model.

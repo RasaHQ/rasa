@@ -21,7 +21,9 @@ Set arguments for running Rasa SDK.
 #### add\_interface\_argument
 
 ```python
-def add_interface_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]) -> None
+def add_interface_argument(
+        parser: Union[argparse.ArgumentParser,
+                      argparse._ArgumentGroup]) -> None
 ```
 
 Binds the RASA process to a network interface.
@@ -29,7 +31,9 @@ Binds the RASA process to a network interface.
 #### add\_port\_argument
 
 ```python
-def add_port_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]) -> None
+def add_port_argument(
+        parser: Union[argparse.ArgumentParser,
+                      argparse._ArgumentGroup]) -> None
 ```
 
 Add an argument for port.

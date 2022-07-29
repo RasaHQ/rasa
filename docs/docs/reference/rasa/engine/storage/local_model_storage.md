@@ -31,7 +31,9 @@ Creates a new instance (see parent class for full docstring).
 
 ```python
 @classmethod
-def from_model_archive(cls, storage_path: Path, model_archive_path: Union[Text, Path]) -> Tuple[LocalModelStorage, ModelMetadata]
+def from_model_archive(
+    cls, storage_path: Path, model_archive_path: Union[Text, Path]
+) -> Tuple[LocalModelStorage, ModelMetadata]
 ```
 
 Initializes storage from archive (see parent class for full docstring).
@@ -40,7 +42,8 @@ Initializes storage from archive (see parent class for full docstring).
 
 ```python
 @classmethod
-def metadata_from_archive(cls, model_archive_path: Union[Text, Path]) -> ModelMetadata
+def metadata_from_archive(
+        cls, model_archive_path: Union[Text, Path]) -> ModelMetadata
 ```
 
 Retrieves metadata from archive (see parent class for full docstring).
@@ -66,7 +69,9 @@ Provides the data of a `Resource` (see parent class for full docstring).
 #### create\_model\_package
 
 ```python
-def create_model_package(model_archive_path: Union[Text, Path], model_configuration: GraphModelConfiguration, domain: Domain) -> ModelMetadata
+def create_model_package(model_archive_path: Union[Text, Path],
+                         model_configuration: GraphModelConfiguration,
+                         domain: Domain) -> ModelMetadata
 ```
 
 Creates model package (see parent class for full docstring).

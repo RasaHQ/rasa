@@ -63,7 +63,8 @@ Turns TrainingData into a string.
 
 ```python
 @staticmethod
-def prepare_training_examples(training_data: "TrainingData") -> Dict[Text, List[Union[Dict, Text]]]
+def prepare_training_examples(
+        training_data: "TrainingData") -> Dict[Text, List[Union[Dict, Text]]]
 ```
 
 Pre-processes training data examples by removing not trainable entities.
@@ -100,7 +101,9 @@ Generates text for a message object.
 
 ```python
 @staticmethod
-def generate_entity_attributes(text: Text, entity: Dict[Text, Any], short_allowed: bool = True) -> Text
+def generate_entity_attributes(text: Text,
+                               entity: Dict[Text, Any],
+                               short_allowed: bool = True) -> Text
 ```
 
 Generates text for the entity attributes.
@@ -120,7 +123,9 @@ Generates text for the entity attributes.
 
 ```python
 @staticmethod
-def generate_entity(text: Text, entity: Union[Dict[Text, Any], List[Dict[Text, Any]]]) -> Text
+def generate_entity(
+        text: Text, entity: Union[Dict[Text, Any], List[Dict[Text,
+                                                             Any]]]) -> Text
 ```
 
 Generates text for one or multiple entity objects.

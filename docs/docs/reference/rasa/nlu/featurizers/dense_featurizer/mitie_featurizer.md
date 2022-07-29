@@ -45,7 +45,8 @@ Any extra python dependencies required for this component to run.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], execution_context: ExecutionContext) -> None
+def __init__(config: Dict[Text, Any],
+             execution_context: ExecutionContext) -> None
 ```
 
 Instantiates a new `MitieFeaturizer` instance.
@@ -54,7 +55,9 @@ Instantiates a new `MitieFeaturizer` instance.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieFeaturizer
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> MitieFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -91,7 +94,8 @@ Featurizes all given messages in-place.
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData, model: MitieModel) -> TrainingData
+def process_training_data(training_data: TrainingData,
+                          model: MitieModel) -> TrainingData
 ```
 
 Processes the training examples in the given training data in-place.
@@ -109,7 +113,10 @@ Processes the training examples in the given training data in-place.
 #### features\_for\_tokens
 
 ```python
-def features_for_tokens(tokens: List[Token], feature_extractor: "mitie.total_word_feature_extractor") -> Tuple[np.ndarray, np.ndarray]
+def features_for_tokens(
+    tokens: List[Token],
+    feature_extractor: "mitie.total_word_feature_extractor"
+) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Calculates features.

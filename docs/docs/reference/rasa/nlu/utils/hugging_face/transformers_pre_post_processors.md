@@ -5,7 +5,8 @@ title: rasa.nlu.utils.hugging_face.transformers_pre_post_processors
 #### cleanup\_tokens
 
 ```python
-def cleanup_tokens(token_ids_string: List[Tuple[int, Text]], delimiter: Text) -> Tuple[List[int], List[Text]]
+def cleanup_tokens(token_ids_string: List[Tuple[int, Text]],
+                   delimiter: Text) -> Tuple[List[int], List[Text]]
 ```
 
 Utility method to apply delimiter based cleanup on list of tokens.
@@ -109,7 +110,8 @@ Add XLM style special tokens.
 #### bert\_embeddings\_post\_processor
 
 ```python
-def bert_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+def bert_embeddings_post_processor(
+        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post-process embeddings from BERT.
@@ -130,7 +132,8 @@ sentence representation.
 #### gpt\_embeddings\_post\_processor
 
 ```python
-def gpt_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+def gpt_embeddings_post_processor(
+        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post-process embeddings from GPT models.
@@ -151,7 +154,8 @@ representation.
 #### xlnet\_embeddings\_post\_processor
 
 ```python
-def xlnet_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+def xlnet_embeddings_post_processor(
+        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post-process embeddings from XLNet models.
@@ -173,7 +177,8 @@ to special tokens from the sequence embeddings.
 #### roberta\_embeddings\_post\_processor
 
 ```python
-def roberta_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+def roberta_embeddings_post_processor(
+        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post process embeddings from Roberta models.
@@ -195,7 +200,8 @@ corresponding to special tokens from the sequence embeddings.
 #### xlm\_embeddings\_post\_processor
 
 ```python
-def xlm_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+def xlm_embeddings_post_processor(
+        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post process embeddings from XLM models
@@ -217,7 +223,9 @@ corresponding to special tokens from the sequence embeddings.
 #### bert\_tokens\_cleaner
 
 ```python
-def bert_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[List[int], List[Text]]
+def bert_tokens_cleaner(
+        token_ids: List[int],
+        token_strings: List[Text]) -> Tuple[List[int], List[Text]]
 ```
 
 Token cleanup method for BERT.
@@ -238,7 +246,9 @@ sub-tokens.
 #### openaigpt\_tokens\_cleaner
 
 ```python
-def openaigpt_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[List[int], List[Text]]
+def openaigpt_tokens_cleaner(
+        token_ids: List[int],
+        token_strings: List[Text]) -> Tuple[List[int], List[Text]]
 ```
 
 Token cleanup method for GPT.
@@ -259,7 +269,9 @@ token into sub-tokens.
 #### gpt2\_tokens\_cleaner
 
 ```python
-def gpt2_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[List[int], List[Text]]
+def gpt2_tokens_cleaner(
+        token_ids: List[int],
+        token_strings: List[Text]) -> Tuple[List[int], List[Text]]
 ```
 
 Token cleanup method for GPT2.
@@ -280,7 +292,9 @@ sub-tokens.
 #### xlnet\_tokens\_cleaner
 
 ```python
-def xlnet_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[List[int], List[Text]]
+def xlnet_tokens_cleaner(
+        token_ids: List[int],
+        token_strings: List[Text]) -> Tuple[List[int], List[Text]]
 ```
 
 Token cleanup method for XLNet.

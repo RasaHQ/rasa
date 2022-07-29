@@ -14,7 +14,8 @@ A Mattermost communication channel
 
 ```python
 @classmethod
-def token_from_login(cls, url: Text, user: Text, password: Text) -> Optional[Text]
+def token_from_login(cls, url: Text, user: Text,
+                     password: Text) -> Optional[Text]
 ```
 
 Retrieve access token for mattermost user.
@@ -22,7 +23,8 @@ Retrieve access token for mattermost user.
 #### send\_image\_url
 
 ```python
-async def send_image_url(recipient_id: Text, image: Text, **kwargs: Any) -> None
+async def send_image_url(recipient_id: Text, image: Text,
+                         **kwargs: Any) -> None
 ```
 
 Sends an image.
@@ -30,7 +32,9 @@ Sends an image.
 #### send\_text\_with\_buttons
 
 ```python
-async def send_text_with_buttons(recipient_id: Text, text: Text, buttons: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
+async def send_text_with_buttons(recipient_id: Text, text: Text,
+                                 buttons: List[Dict[Text, Any]],
+                                 **kwargs: Any) -> None
 ```
 
 Sends buttons to the output.

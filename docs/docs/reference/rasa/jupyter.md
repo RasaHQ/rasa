@@ -13,7 +13,9 @@ Prints JSONs with indent.
 #### chat
 
 ```python
-def chat(model_path: Optional[Text] = None, endpoints: Optional[Text] = None, agent: Optional["Agent"] = None) -> None
+def chat(model_path: Optional[Text] = None,
+         endpoints: Optional[Text] = None,
+         agent: Optional["Agent"] = None) -> None
 ```
 
 Chat to the bot within a Jupyter notebook.

@@ -5,7 +5,8 @@ title: rasa.utils.endpoints
 #### read\_endpoint\_config
 
 ```python
-def read_endpoint_config(filename: Text, endpoint_type: Text) -> Optional["EndpointConfig"]
+def read_endpoint_config(filename: Text,
+                         endpoint_type: Text) -> Optional["EndpointConfig"]
 ```
 
 Read an endpoint configuration file from disk and extract one
@@ -46,7 +47,14 @@ Configuration for an external HTTP endpoint.
 #### \_\_init\_\_
 
 ```python
-def __init__(url: Optional[Text] = None, params: Optional[Dict[Text, Any]] = None, headers: Optional[Dict[Text, Any]] = None, basic_auth: Optional[Dict[Text, Text]] = None, token: Optional[Text] = None, token_name: Text = "token", cafile: Optional[Text] = None, **kwargs: Any, ,) -> None
+def __init__(url: Optional[Text] = None,
+             params: Optional[Dict[Text, Any]] = None,
+             headers: Optional[Dict[Text, Any]] = None,
+             basic_auth: Optional[Dict[Text, Text]] = None,
+             token: Optional[Text] = None,
+             token_name: Text = "token",
+             cafile: Optional[Text] = None,
+             **kwargs: Any) -> None
 ```
 
 Creates an `EndpointConfig` instance.
@@ -62,7 +70,10 @@ Creates and returns a configured aiohttp client session.
 #### request
 
 ```python
-async def request(method: Text = "post", subpath: Optional[Text] = None, content_type: Optional[Text] = "application/json", **kwargs: Any, ,) -> Optional[Any]
+async def request(method: Text = "post",
+                  subpath: Optional[Text] = None,
+                  content_type: Optional[Text] = "application/json",
+                  **kwargs: Any) -> Optional[Any]
 ```
 
 Send a HTTP request to the endpoint. Return json response, if available.
@@ -95,7 +106,9 @@ boolean value. If not, `default` is returned.
 #### float\_arg
 
 ```python
-def float_arg(request: Request, key: Text, default: Optional[float] = None) -> Optional[float]
+def float_arg(request: Request,
+              key: Text,
+              default: Optional[float] = None) -> Optional[float]
 ```
 
 Returns a passed argument cast as a float or None.
@@ -117,7 +130,9 @@ float value. If not, `default` is returned.
 #### int\_arg
 
 ```python
-def int_arg(request: Request, key: Text, default: Optional[int] = None) -> Optional[int]
+def int_arg(request: Request,
+            key: Text,
+            default: Optional[int] = None) -> Optional[int]
 ```
 
 Returns a passed argument cast as an int or None.

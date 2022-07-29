@@ -13,7 +13,8 @@ Provides NLU training data during training.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage,
+             resource: Resource) -> None
 ```
 
 Creates a new NLU training data provider.
@@ -31,7 +32,9 @@ Returns the default config for NLU training data provider.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> NLUTrainingDataProvider
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> NLUTrainingDataProvider
 ```
 
 Creates a new NLU training data provider.

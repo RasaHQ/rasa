@@ -45,7 +45,12 @@ it can be set in the tracker_store
 
 ```python
 @classmethod
-def from_dict(cls, sender_id: Text, events_as_dict: List[Dict[Text, Any]], slots: Optional[Iterable[Slot]] = None, max_event_history: Optional[int] = None) -> "DialogueStateTracker"
+def from_dict(
+        cls,
+        sender_id: Text,
+        events_as_dict: List[Dict[Text, Any]],
+        slots: Optional[Iterable[Slot]] = None,
+        max_event_history: Optional[int] = None) -> "DialogueStateTracker"
 ```
 
 Create a tracker from dump.
@@ -57,7 +62,13 @@ the tracker, these events will be replayed to recreate the state.
 
 ```python
 @classmethod
-def from_events(cls, sender_id: Text, evts: List[Event], slots: Optional[Iterable[Slot]] = None, max_event_history: Optional[int] = None, sender_source: Optional[Text] = None, domain: Optional[Domain] = None) -> "DialogueStateTracker"
+def from_events(cls,
+                sender_id: Text,
+                evts: List[Event],
+                slots: Optional[Iterable[Slot]] = None,
+                max_event_history: Optional[int] = None,
+                sender_source: Optional[Text] = None,
+                domain: Optional[Domain] = None) -> "DialogueStateTracker"
 ```
 
 Creates tracker from existing events.
@@ -80,7 +91,11 @@ Creates tracker from existing events.
 #### \_\_init\_\_
 
 ```python
-def __init__(sender_id: Text, slots: Optional[Iterable[Slot]], max_event_history: Optional[int] = None, sender_source: Optional[Text] = None, is_rule_tracker: bool = False) -> None
+def __init__(sender_id: Text,
+             slots: Optional[Iterable[Slot]],
+             max_event_history: Optional[int] = None,
+             sender_source: Optional[Text] = None,
+             is_rule_tracker: bool = False) -> None
 ```
 
 Initialize the tracker.
@@ -92,7 +107,9 @@ information we captured while processing messages of the dialogue.
 #### current\_state
 
 ```python
-def current_state(event_verbosity: EventVerbosity = EventVerbosity.NONE) -> Dict[Text, Any]
+def current_state(
+        event_verbosity: EventVerbosity = EventVerbosity.NONE
+) -> Dict[Text, Any]
 ```
 
 Returns the current tracker state as an object.
@@ -118,7 +135,11 @@ Convert State dict into a hashable format FrozenState.
 #### past\_states
 
 ```python
-def past_states(domain: Domain, omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
+def past_states(
+        domain: Domain,
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
 ```
 
 Generates the past states of this tracker based on the history.
@@ -202,7 +223,10 @@ Retrieves the value of a slot.
 #### get\_latest\_entity\_values
 
 ```python
-def get_latest_entity_values(entity_type: Text, entity_role: Optional[Text] = None, entity_group: Optional[Text] = None) -> Iterator[Text]
+def get_latest_entity_values(
+        entity_type: Text,
+        entity_role: Optional[Text] = None,
+        entity_group: Optional[Text] = None) -> Iterator[Text]
 ```
 
 Get entity values found for the passed entity type and optional role and
@@ -268,7 +292,8 @@ Creates a new state tracker with the same initial values.
 #### generate\_all\_prior\_trackers
 
 ```python
-def generate_all_prior_trackers() -> Generator[Tuple["DialogueStateTracker", bool], None, None]
+def generate_all_prior_trackers(
+) -> Generator[Tuple["DialogueStateTracker", bool], None, None]
 ```
 
 Returns a generator of the previous trackers of this tracker.
@@ -353,7 +378,9 @@ Modify the state of the tracker according to an ``Event``.
 #### update\_with\_events
 
 ```python
-def update_with_events(new_events: List[Event], domain: Optional[Domain], override_timestamp: bool = True) -> None
+def update_with_events(new_events: List[Event],
+                       domain: Optional[Domain],
+                       override_timestamp: bool = True) -> None
 ```
 
 Adds multiple events to the tracker.
@@ -379,7 +406,10 @@ Returns the dumped tracker as a string.
 #### export\_stories
 
 ```python
-def export_stories(writer: "StoryWriter", e2e: bool = False, include_source: bool = False, should_append_stories: bool = False) -> Text
+def export_stories(writer: "StoryWriter",
+                   e2e: bool = False,
+                   include_source: bool = False,
+                   should_append_stories: bool = False) -> Text
 ```
 
 Dump the tracker as a story in the Rasa Core story format.
@@ -399,7 +429,13 @@ Dump the tracker as a story to a file.
 #### get\_last\_event\_for
 
 ```python
-def get_last_event_for(event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"], ...]], action_names_to_exclude: List[Text] = None, skip: int = 0, event_verbosity: EventVerbosity = EventVerbosity.APPLIED) -> Optional["EventTypeAlias"]
+def get_last_event_for(
+    event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"],
+                                                    ...]],
+    action_names_to_exclude: List[Text] = None,
+    skip: int = 0,
+    event_verbosity: EventVerbosity = EventVerbosity.APPLIED
+) -> Optional["EventTypeAlias"]
 ```
 
 Gets the last event of a given type which was actually applied.
@@ -541,7 +577,8 @@ Check if action_listen is the previous executed action.
 #### get\_trackers\_for\_conversation\_sessions
 
 ```python
-def get_trackers_for_conversation_sessions(tracker: DialogueStateTracker) -> List[DialogueStateTracker]
+def get_trackers_for_conversation_sessions(
+        tracker: DialogueStateTracker) -> List[DialogueStateTracker]
 ```
 
 Generate trackers for `tracker` that are split by conversation sessions.

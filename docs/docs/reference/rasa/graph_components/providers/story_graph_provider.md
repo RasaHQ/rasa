@@ -31,7 +31,9 @@ Returns default configuration (see parent class for full docstring).
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> StoryGraphProvider
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> StoryGraphProvider
 ```
 
 Creates component (see parent class for full docstring).

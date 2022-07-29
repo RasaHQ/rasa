@@ -17,7 +17,8 @@ retrieve responses from the assistant.
 #### blueprint
 
 ```python
-def blueprint(on_new_message: Callable[[UserMessage], Awaitable[None]]) -> Blueprint
+def blueprint(
+        on_new_message: Callable[[UserMessage], Awaitable[None]]) -> Blueprint
 ```
 
 Groups the collection of endpoints used by rest channel.

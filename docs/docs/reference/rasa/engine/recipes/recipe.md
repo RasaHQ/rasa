@@ -42,7 +42,11 @@ Returns `Recipe` based on an optional recipe identifier.
 
 ```python
 @staticmethod
-def auto_configure(config_file_path: Optional[Text], config: Dict, training_type: Optional[TrainingType] = TrainingType.BOTH) -> Tuple[Dict[Text, Any], Set[str], Set[str]]
+def auto_configure(
+    config_file_path: Optional[Text],
+    config: Dict,
+    training_type: Optional[TrainingType] = TrainingType.BOTH
+) -> Tuple[Dict[Text, Any], Set[str], Set[str]]
 ```
 
 Adds missing options with defaults and dumps the configuration.
@@ -54,7 +58,11 @@ will have different auto configuration values.
 
 ```python
 @abc.abstractmethod
-def graph_config_for_recipe(config: Dict, cli_parameters: Dict[Text, Any], training_type: TrainingType = TrainingType.BOTH, is_finetuning: bool = False) -> GraphModelConfiguration
+def graph_config_for_recipe(
+        config: Dict,
+        cli_parameters: Dict[Text, Any],
+        training_type: TrainingType = TrainingType.BOTH,
+        is_finetuning: bool = False) -> GraphModelConfiguration
 ```
 
 Converts a config to a graph compatible model configuration.

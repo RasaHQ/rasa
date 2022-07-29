@@ -67,7 +67,8 @@ Commit `lock` to storage.
 #### issue\_ticket
 
 ```python
-def issue_ticket(conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME) -> int
+def issue_ticket(conversation_id: Text,
+                 lock_lifetime: float = LOCK_LIFETIME) -> int
 ```
 
 Issue new ticket with `lock_lifetime` for lock associated with
@@ -79,7 +80,10 @@ Creates a new lock if none is found.
 
 ```python
 @asynccontextmanager
-async def lock(conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME, wait_time_in_seconds: float = 1) -> AsyncGenerator[TicketLock, None]
+async def lock(
+        conversation_id: Text,
+        lock_lifetime: float = LOCK_LIFETIME,
+        wait_time_in_seconds: float = 1) -> AsyncGenerator[TicketLock, None]
 ```
 
 Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
@@ -150,7 +154,14 @@ Redis store for ticket locks.
 #### \_\_init\_\_
 
 ```python
-def __init__(host: Text = "localhost", port: int = 6379, db: int = 1, password: Optional[Text] = None, use_ssl: bool = False, key_prefix: Optional[Text] = None, socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
+def __init__(
+        host: Text = "localhost",
+        port: int = 6379,
+        db: int = 1,
+        password: Optional[Text] = None,
+        use_ssl: bool = False,
+        key_prefix: Optional[Text] = None,
+        socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
 ```
 
 Create a lock store which uses Redis for persistence.
@@ -236,7 +247,14 @@ Concurrent implementation of a Redis store for ticket locks.
 #### \_\_init\_\_
 
 ```python
-def __init__(host: Text = "localhost", port: int = 6379, db: int = 1, password: Optional[Text] = None, use_ssl: bool = False, key_prefix: Optional[Text] = None, socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
+def __init__(
+        host: Text = "localhost",
+        port: int = 6379,
+        db: int = 1,
+        password: Optional[Text] = None,
+        use_ssl: bool = False,
+        key_prefix: Optional[Text] = None,
+        socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
 ```
 
 Create a lock store which uses Redis for persistence.

@@ -5,7 +5,8 @@ title: rasa.core.agent
 #### load\_from\_server
 
 ```python
-async def load_from_server(agent: Agent, model_server: EndpointConfig) -> Agent
+async def load_from_server(agent: Agent,
+                           model_server: EndpointConfig) -> Agent
 ```
 
 Load a persisted model from a server.
@@ -13,7 +14,11 @@ Load a persisted model from a server.
 #### load\_agent
 
 ```python
-async def load_agent(model_path: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, endpoints: Optional[AvailableEndpoints] = None, loop: Optional[AbstractEventLoop] = None) -> Agent
+async def load_agent(model_path: Optional[Text] = None,
+                     model_server: Optional[EndpointConfig] = None,
+                     remote_storage: Optional[Text] = None,
+                     endpoints: Optional[AvailableEndpoints] = None,
+                     loop: Optional[AbstractEventLoop] = None) -> Agent
 ```
 
 Loads agent from server, remote storage or disk.
@@ -53,7 +58,16 @@ getting the next action, and handling a channel.
 #### \_\_init\_\_
 
 ```python
-def __init__(domain: Optional[Domain] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, fingerprint: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, http_interpreter: Optional[RasaNLUHttpInterpreter] = None)
+def __init__(domain: Optional[Domain] = None,
+             generator: Union[EndpointConfig, NaturalLanguageGenerator,
+                              None] = None,
+             tracker_store: Optional[TrackerStore] = None,
+             lock_store: Optional[LockStore] = None,
+             action_endpoint: Optional[EndpointConfig] = None,
+             fingerprint: Optional[Text] = None,
+             model_server: Optional[EndpointConfig] = None,
+             remote_storage: Optional[Text] = None,
+             http_interpreter: Optional[RasaNLUHttpInterpreter] = None)
 ```
 
 Initializes an `Agent`.
@@ -62,7 +76,18 @@ Initializes an `Agent`.
 
 ```python
 @classmethod
-def load(cls, model_path: Union[Text, Path], domain: Optional[Domain] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, fingerprint: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, http_interpreter: Optional[RasaNLUHttpInterpreter] = None) -> Agent
+def load(cls,
+         model_path: Union[Text, Path],
+         domain: Optional[Domain] = None,
+         generator: Union[EndpointConfig, NaturalLanguageGenerator,
+                          None] = None,
+         tracker_store: Optional[TrackerStore] = None,
+         lock_store: Optional[LockStore] = None,
+         action_endpoint: Optional[EndpointConfig] = None,
+         fingerprint: Optional[Text] = None,
+         model_server: Optional[EndpointConfig] = None,
+         remote_storage: Optional[Text] = None,
+         http_interpreter: Optional[RasaNLUHttpInterpreter] = None) -> Agent
 ```
 
 Constructs a new agent and loads the processer and model.
@@ -70,7 +95,8 @@ Constructs a new agent and loads the processer and model.
 #### load\_model
 
 ```python
-def load_model(model_path: Union[Text, Path], fingerprint: Optional[Text] = None) -> None
+def load_model(model_path: Union[Text, Path],
+               fingerprint: Optional[Text] = None) -> None
 ```
 
 Loads the agent&#x27;s model and processor given a new model path.
@@ -137,7 +163,8 @@ The return value of this function is parsed_data.
 #### handle\_message
 
 ```python
-async def handle_message(message: UserMessage) -> Optional[List[Dict[Text, Any]]]
+async def handle_message(
+        message: UserMessage) -> Optional[List[Dict[Text, Any]]]
 ```
 
 Handle a single message.
@@ -146,7 +173,8 @@ Handle a single message.
 
 ```python
 @agent_must_be_ready
-async def predict_next_for_sender_id(sender_id: Text) -> Optional[Dict[Text, Any]]
+async def predict_next_for_sender_id(
+        sender_id: Text) -> Optional[Dict[Text, Any]]
 ```
 
 Predict the next action for a sender id.
@@ -155,7 +183,10 @@ Predict the next action for a sender id.
 
 ```python
 @agent_must_be_ready
-def predict_next_with_tracker(tracker: DialogueStateTracker, verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART) -> Optional[Dict[Text, Any]]
+def predict_next_with_tracker(
+    tracker: DialogueStateTracker,
+    verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART
+) -> Optional[Dict[Text, Any]]
 ```
 
 Predicts the next action.
@@ -173,7 +204,10 @@ Append a message to a dialogue - does not predict actions.
 
 ```python
 @agent_must_be_ready
-async def execute_action(sender_id: Text, action: Text, output_channel: OutputChannel, policy: Optional[Text], confidence: Optional[float]) -> Optional[DialogueStateTracker]
+async def execute_action(
+        sender_id: Text, action: Text, output_channel: OutputChannel,
+        policy: Optional[Text],
+        confidence: Optional[float]) -> Optional[DialogueStateTracker]
 ```
 
 Executes an action.
@@ -182,7 +216,9 @@ Executes an action.
 
 ```python
 @agent_must_be_ready
-async def trigger_intent(intent_name: Text, entities: List[Dict[Text, Any]], output_channel: OutputChannel, tracker: DialogueStateTracker) -> None
+async def trigger_intent(intent_name: Text, entities: List[Dict[Text, Any]],
+                         output_channel: OutputChannel,
+                         tracker: DialogueStateTracker) -> None
 ```
 
 Trigger a user intent, e.g. triggered by an external event.
@@ -191,7 +227,11 @@ Trigger a user intent, e.g. triggered by an external event.
 
 ```python
 @agent_must_be_ready
-async def handle_text(text_message: Union[Text, Dict[Text, Any]], output_channel: Optional[OutputChannel] = None, sender_id: Optional[Text] = DEFAULT_SENDER_ID) -> Optional[List[Dict[Text, Any]]]
+async def handle_text(
+    text_message: Union[Text, Dict[Text, Any]],
+    output_channel: Optional[OutputChannel] = None,
+    sender_id: Optional[Text] = DEFAULT_SENDER_ID
+) -> Optional[List[Dict[Text, Any]]]
 ```
 
 Handle a single message.

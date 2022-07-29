@@ -28,7 +28,9 @@ Creates a Template Natural Language Generator.
 #### generate
 
 ```python
-async def generate(utter_action: Text, tracker: DialogueStateTracker, output_channel: Text, **kwargs: Any, ,) -> Optional[Dict[Text, Any]]
+async def generate(utter_action: Text, tracker: DialogueStateTracker,
+                   output_channel: Text,
+                   **kwargs: Any) -> Optional[Dict[Text, Any]]
 ```
 
 Generate a response for the requested utter action.
@@ -36,7 +38,9 @@ Generate a response for the requested utter action.
 #### generate\_from\_slots
 
 ```python
-def generate_from_slots(utter_action: Text, filled_slots: Dict[Text, Any], output_channel: Text, **kwargs: Any, ,) -> Optional[Dict[Text, Any]]
+def generate_from_slots(utter_action: Text, filled_slots: Dict[Text, Any],
+                        output_channel: Text,
+                        **kwargs: Any) -> Optional[Dict[Text, Any]]
 ```
 
 Generate a response for the requested utter action.

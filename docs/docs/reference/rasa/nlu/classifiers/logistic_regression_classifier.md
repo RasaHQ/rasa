@@ -43,7 +43,8 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], name: Text, model_storage: ModelStorage, resource: Resource) -> None
+def __init__(config: Dict[Text, Any], name: Text, model_storage: ModelStorage,
+             resource: Resource) -> None
 ```
 
 Construct a new classifier.
@@ -60,7 +61,9 @@ Train the intent classifier on a data set.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> GraphComponent
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -85,7 +88,9 @@ Persist this model into the passed directory.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+         resource: Resource, execution_context: ExecutionContext,
+         **kwargs: Any) -> GraphComponent
 ```
 
 Loads trained component (see parent class for full docstring).

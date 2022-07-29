@@ -13,7 +13,8 @@ A class used to verify usage of intents and utterances.
 #### \_\_init\_\_
 
 ```python
-def __init__(domain: Domain, intents: TrainingData, story_graph: StoryGraph, config: Optional[Dict[Text, Any]]) -> None
+def __init__(domain: Domain, intents: TrainingData, story_graph: StoryGraph,
+             config: Optional[Dict[Text, Any]]) -> None
 ```
 
 Initializes the Validator object.
@@ -91,7 +92,8 @@ Verifies that actions used in stories and rules are present in the domain.
 #### verify\_story\_structure
 
 ```python
-def verify_story_structure(ignore_warnings: bool = True, max_history: Optional[int] = None) -> bool
+def verify_story_structure(ignore_warnings: bool = True,
+                           max_history: Optional[int] = None) -> bool
 ```
 
 Verifies that the bot behaviour in stories is deterministic.
