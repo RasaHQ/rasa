@@ -1,0 +1,15 @@
+rules:
+- rule: rule_1
+  steps:
+  - intent: greet
+  - action: utter_noworries
+  - active_loop: null
+  - action: stop_q_form
+
+stories:
+- story: ml_story_1
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: thankyou
+  - action: utter_noworries

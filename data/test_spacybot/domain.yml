@@ -1,0 +1,12 @@
+version: "3.1"
+
+intents:
+  - greet
+  - mood_great
+
+responses:
+  utter_greet:
+  - text: "Hey! How are you?"
+
+  utter_happy:
+  - text: "Great, carry on!"

@@ -1,0 +1,31 @@
+intents:
+ - greet
+ - default
+ - goodbye
+ - start_form
+ - stop
+ - affirm
+ - deny
+ - inform
+
+slots:
+  cuisine:
+    type: text
+  location:
+    type: text
+
+entities:
+ - name
+
+responses:
+  utter_greet:
+    - text: hey there!
+  utter_goodbye:
+    - text: goodbye :(
+  utter_default:
+    - text: default message
+  utter_ask_continue:
+    - text: should I continue?
+
+forms:
+  some_form: {}

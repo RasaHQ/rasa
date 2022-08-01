@@ -1,0 +1,6 @@
+stories:
+- story: simple_story_without_checkpoint
+  steps:
+  - intent: /simple
+  - action: utter_default
+  - action: utter_greet

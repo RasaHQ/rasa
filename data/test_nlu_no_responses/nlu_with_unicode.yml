@@ -1,0 +1,163 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - moin
+    - hey there
+    - let's go
+    - hey dude
+    - goodmorning
+    - goodevening
+    - good afternoon
+    
+
+- intent: goodbye
+  examples: |
+    - good afternoon
+    - cu
+    - good by
+    - cee you later
+    - good night
+    - bye
+    - goodbye
+    - have a nice day
+    - see you around
+    - bye bye
+    - see you later
+
+- intent: affirm
+  examples: |
+    - yes
+    - y
+    - indeed
+    - of course
+    - that sounds good
+    - correct
+
+- intent: deny
+  examples: |
+    - no
+    - n
+    - never
+    - I don't think so
+    - don't like that
+    - no way
+    - not really
+
+- intent: mood_great
+  examples: |
+    - perfect
+    - great
+    - amazing
+    - feeling like a king
+    - wonderful
+    - I am feeling very good
+    - I am great
+    - I am amazing
+    - I am going to save the world
+    - super stoked
+    - extremely good
+    - so so perfect
+    - so good
+    - so perfect
+
+- intent: mood_unhappy
+  examples: |
+    - my day was horrible
+    - I am sad
+    - I don't feel very well
+    - I am disappointed
+    - super sad
+    - I'm so sad
+    - sad
+    - very sad
+    - unhappy
+    - not good
+    - not very good
+    - extremly sad
+    - so saad
+    - so sad
+
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you a human?
+    - am I talking to a bot?
+    - am I talking to a human?
+
+- intent: internet_problem
+  examples: |
+    - my internet is slow
+    - i have very slow wifi
+    - my internet is very bad
+    - internet is down
+    - router not working
+    - modem not giving internet
+    - modem problem
+    - i cant use the internet
+    - i cant go to google
+    - google is not working
+    - ma connection est lente
+    - j'ai un wifi très lent
+    - mon internet est très mauvais
+    - Internet est en panne
+    - le routeur ne marche pas
+    - le modem ne donne pas Internet
+    - problème de modem
+    - je ne peux pas utiliser Internet
+    - je ne peux pas aller sur google
+    - google ne fonctionne pas
+    - mafi internet
+    - ma 3ande wifi
+    - mech meche el internet
+    - ma fie fout 3al internet
+    - ma fie esta3mil el wifi
+    - el connextion manna mechye
+    - internet khara
+    - internet 3atil
+    - el router mano meche
+    - mech edir fout 3ala el facebook
+    - الانترنت لدي بطيء
+    - لدي wifi بطيء جدًا
+    - الإنترنت الخاص بي سيء للغاية
+    - الإنترنت معطل
+    - جهاز التوجيه لا يعمل
+    - مودم لا يعطي الإنترنت
+    - مشكلة المودم
+    - لا أستطيع استخدام الإنترنت
+    - لا أستطيع الذهاب إلى جوجل
+    - جوجل لا يعمل
+    - իմ ինտերնետը դանդաղ է
+    - ես շատ դանդաղ wifi ունեմ
+    - իմ ինտերնետը շատ վատն է
+    - ինտերնետն անջատված է
+    - երթուղիչը չի աշխատում
+    - մոդեմ, որը ինտերնետ չի տալիս
+    - մոդեմի խնդիր
+    - Ես չեմ կարող օգտվել ինտերնետից
+    - չեմ կարող մտնել google
+    - google- ը չի աշխատում
+    - my connection is down
+    - my internet is bad
+    - my wifi is slow
+    - my interent is not working
+    - i have internet problems
+    - i have bad wifi
+    - i have called ogero on 1515 and they have resolved the noise issue
+    - my connection is still down
+    - i reached to ogero on 1515 and they solved the noise
+    - check my connection
+    - I contacted ogero
+    - i don't have internet
+    - wifi khara
+    - internet us slow
+    - My internet is slow
+    - BAD INTERNET
+    - my internt is rlly shitty

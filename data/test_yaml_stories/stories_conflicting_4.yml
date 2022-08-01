@@ -1,0 +1,22 @@
+stories:
+- story: "story 1"
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: greet
+    entities:
+      - cuisine: German
+  - action: utter_greet
+  - intent: greet
+  - action: utter_greet
+
+- story: "story 2"
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: greet
+    entities:
+      - cuisine: German
+  - action: utter_greet
+  - intent: greet
+  - action: utter_default

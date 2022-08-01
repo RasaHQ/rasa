@@ -1,0 +1,274 @@
+{
+  "luis_schema_version": "7.0.0",
+  "versionId": "0.1",
+  "name": "demo-restaurants",
+  "desc": "",
+  "culture": "en-us",
+  "tokenizerVersion": "1.0.0",
+  "patternAnyEntities": [],
+  "regex_entities": [
+    {
+      "name": "flightNumber",
+      "regexPattern": "flight [A-Z]{2} [0-9]{4}",
+      "roles": []
+    }
+  ],
+  "phraselists": [],
+  "regex_features": [],
+  "patterns": [],
+  "settings": [],
+  "intents": [
+    {
+      "name": "affirm",
+      "features": []
+    },
+    {
+      "name": "goodbye",
+      "features": []
+    },
+    {
+      "name": "greet",
+      "features": []
+    },
+    {
+      "name": "inform",
+      "features": []
+    },
+    {
+      "name": "None",
+      "features": []
+    }
+  ],
+  "entities": [
+    {
+      "name": "cuisine",
+      "children": [],
+      "roles": [],
+      "features": []
+    },
+    {
+      "name": "location",
+      "children": [],
+      "roles": [
+        "to",
+        "from"
+      ],
+      "features": []
+    }
+  ],
+  "hierarchicals": [],
+  "composites": [],
+  "closedLists": [],
+  "prebuiltEntities": [],
+  "utterances": [
+    {
+      "text": "hello",
+      "intent": "greet",
+      "entities": []
+    },
+    {
+      "text": "hey",
+      "intent": "greet",
+      "entities": []
+    },
+    {
+      "text": "hi",
+      "intent": "greet",
+      "entities": []
+    },
+    {
+      "text": "hey there",
+      "intent": "greet",
+      "entities": []
+    },
+    {
+      "text": "howdy",
+      "intent": "greet",
+      "entities": []
+    },
+    {
+      "text": "i'm looking for a place to eat",
+      "intent": "inform",
+      "entities": []
+    },
+    {
+      "text": "i'm looking for a place in the north of town",
+      "intent": "inform",
+      "entities": [
+        {
+          "entity": "location",
+          "role": "to",
+          "startPos": 31,
+          "endPos": 35,
+          "children": []
+        }
+      ]
+    },
+    {
+      "text": "show me chinese restaurants",
+      "intent": "greet",
+      "entities": [
+        {
+          "entity": "cuisine",
+          "startPos": 8,
+          "endPos": 14,
+          "children": []
+        }
+      ]
+    },
+    {
+      "text": "yes",
+      "intent": "affirm",
+      "entities": []
+    },
+    {
+      "text": "yep",
+      "intent": "affirm",
+      "entities": []
+    },
+    {
+      "text": "yeah",
+      "intent": "affirm",
+      "entities": []
+    },
+    {
+      "text": "show me a mexican place in the centre",
+      "intent": "inform",
+      "entities": [
+        {
+          "entity": "cuisine",
+          "startPos": 10,
+          "endPos": 16,
+          "children": []
+        },
+        {
+          "entity": "location",
+          "startPos": 31,
+          "endPos": 36,
+          "children": []
+        }
+      ]
+    },
+    {
+      "text": "bye",
+      "intent": "goodbye",
+      "entities": []
+    },
+    {
+      "text": "goodbye",
+      "intent": "goodbye",
+      "entities": []
+    },
+    {
+      "text": "good bye",
+      "intent": "goodbye",
+      "entities": []
+    },
+    {
+      "text": "stop",
+      "intent": "goodbye",
+      "entities": []
+    },
+    {
+      "text": "end",
+      "intent": "goodbye",
+      "entities": []
+    },
+    {
+      "text": "i am looking for an indian spot",
+      "intent": "inform",
+      "entities": []
+    },
+    {
+      "text": "search for restaurants",
+      "intent": "inform",
+      "entities": []
+    },
+    {
+      "text": "anywhere in the west",
+      "intent": "inform",
+      "entities": [
+        {
+          "entity": "location",
+          "startPos": 16,
+          "endPos": 19,
+          "children": []
+        }
+      ]
+    },
+    {
+      "text": "central indian restaurant",
+      "intent": "greet",
+      "entities": [
+        {
+          "entity": "cuisine",
+          "startPos": 8,
+          "endPos": 13,
+          "children": []
+        },
+        {
+          "entity": "location",
+          "startPos": 0,
+          "endPos": 6,
+          "children": []
+        }
+      ]
+    },
+    {
+      "text": "indeed",
+      "intent": "affirm",
+      "entities": []
+    },
+    {
+      "text": "that's right",
+      "intent": "affirm",
+      "entities": []
+    },
+    {
+      "text": "ok",
+      "intent": "affirm",
+      "entities": []
+    },
+    {
+      "text": "great",
+      "intent": "affirm",
+      "entities": []
+    },
+    {
+      "text": "do you know any good vietnamese places?",
+      "intent": "inform",
+      "entities": [
+        {
+          "entity": "cuisine",
+          "startPos": 21,
+          "endPos": 30,
+          "children": []
+        }
+      ]
+    },
+    {
+      "text": "i want some russian food",
+      "intent": "inform",
+      "entities": [
+        {
+          "entity": "cuisine",
+          "startPos": 12,
+          "endPos": 18,
+          "children": []
+        }
+      ]
+    },
+    {
+      "text": "any indonesian places?",
+      "intent": "inform",
+      "entities": [
+        {
+          "entity": "cuisine",
+          "startPos": 4,
+          "endPos": 13,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

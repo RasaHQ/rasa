@@ -1,0 +1,5 @@
+stories:
+- story: chitchat name
+  steps:
+  - intent: chitchat/ask_name
+  - action: utter_chitchat

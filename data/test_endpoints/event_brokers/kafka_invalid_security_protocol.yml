@@ -1,0 +1,3 @@
+event_broker:
+  security_protocol: SOMETHING
+  type: kafka

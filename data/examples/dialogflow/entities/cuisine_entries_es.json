@@ -1,0 +1,25 @@
+[
+  {
+    "value": "mexicano",
+    "synonyms": [
+      "mexicano",
+      "mexicana",
+      "méxico"
+    ]
+  },
+  {
+    "value": "chino",
+    "synonyms": [
+      "chino",
+      "china",
+      "chinos"
+    ]
+  },
+  {
+    "value": "indio",
+    "synonyms": [
+      "indio",
+      "india"
+    ]
+  }
+]

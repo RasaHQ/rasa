@@ -1,0 +1,28 @@
+version: "3.1"
+stories:
+  - story: path 1
+    steps:
+      - user: |
+          hello there!
+        intent: greet
+      - action: utter_greet
+      - user: |
+          amazing
+        intent: mood_great
+      - action: utter_happy
+
+  - story: path 2
+    steps:
+      - user: |
+          hello there!
+        intent: greet
+      - action: utter_greet
+      - user: |
+          very sad
+        intent: mood_unhappy
+      - action: utter_cheer_up
+      - action: utter_did_that_help
+      - user: |
+          yes
+        intent: affirm
+      - action: utter_happy

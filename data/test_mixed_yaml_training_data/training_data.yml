@@ -1,0 +1,24 @@
+version: "3.1"
+nlu:
+- intent: intent_name
+  examples: |
+    - how much CO2 will that use?
+    - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
+
+stories:
+- story: simple_story_with_only_start
+  steps:
+  - checkpoint: check_greet
+  - intent: simple
+  - action: utter_default
+
+- rule: Say 'I am a bot' anytime the user challenges
+  steps:
+  - intent: bot_challenge
+  - action: utter_iamabot
+
+responses:
+  chitchat/ask_name:
+  - image: "https://i.imgur.com/zTvA58i.jpeg"
+    text: hello, my name is retrieval bot.
+  - text: Oh yeah, I am called the retrieval bot.

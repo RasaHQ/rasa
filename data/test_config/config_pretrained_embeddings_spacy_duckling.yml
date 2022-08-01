@@ -1,0 +1,14 @@
+language: "en"
+
+pipeline:
+- name: "SpacyNLP"
+  model: "en_core_web_md"
+- name: "SpacyTokenizer"
+- name: "RegexFeaturizer"
+- name: "SpacyFeaturizer"
+- name: "CRFEntityExtractor"
+- name: "EntitySynonymMapper"
+- name: "SklearnIntentClassifier"
+- name: "DucklingEntityExtractor"
+  url: "http://duckling:8000"
+  

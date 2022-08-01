@@ -1,0 +1,20 @@
+stories:
+- story: greetings
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - checkpoint: check_greet
+
+- story: "happy path"
+  steps:
+  - checkpoint: check_greet
+  - or:
+    - intent: default
+    - intent: greet
+  - action: utter_default
+
+- story: problem
+  steps:
+  - checkpoint: check_greet
+  - intent: default
+  - action: utter_goodbye

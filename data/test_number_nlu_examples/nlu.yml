@@ -1,0 +1,13 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - Hello!
+    - Howdy!
+
+- intent: ask_weather
+  examples: |
+    - What's the weather like today?
+    - Does it look sunny outside today?
+    - Oh, do you mind checking the weather for me please?

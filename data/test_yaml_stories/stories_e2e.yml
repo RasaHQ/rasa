@@ -1,0 +1,30 @@
+version: "3.1"
+
+stories:
+- story: happy path (intent to action)
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_great
+  - action: utter_happy
+
+- story: sad path (text to text)
+  steps:
+  - user: "[Hello](bla)"
+  - bot: "Welcome to moodbot. How are you feeling today?"
+  - user: "Horrible"
+  - bot: "Oh no! Here is a kitten photo. Did it help?"
+  - user: "Yes"
+  - bot: "Perfect"
+
+- story: sad path 2 (mixed)
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - user: "I'm not happy"
+  - action: utter_cheer_up
+  - action: utter_did_that_help
+  - user: "Not at all"
+  - bot: "Goodbye!"
+
+

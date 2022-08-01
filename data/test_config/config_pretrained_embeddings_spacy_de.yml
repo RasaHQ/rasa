@@ -1,0 +1,11 @@
+language: "de"
+
+pipeline:
+  - name: SpacyNLP
+    model: "de_core_news_sm"
+  - name: SpacyTokenizer
+  - name: SpacyFeaturizer
+  - name: RegexFeaturizer
+  - name: CRFEntityExtractor
+  - name: EntitySynonymMapper
+  - name: SklearnIntentClassifier

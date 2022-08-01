@@ -1,0 +1,133 @@
+[
+  {
+    "id": "b3ecd39d-4eec-435d-a0fe-6cfd29412ad7",
+    "data": [
+      {
+        "text": "estoy buscando un lugar para comer",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "5a25e429-a00a-4418-a48b-7d019eca3ac6",
+    "data": [
+      {
+        "text": "busco un lugar en el ",
+        "userDefined": false
+      },
+      {
+        "text": "norte",
+        "meta": "@location",
+        "alias": "location",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "8b6fcd21-8e95-46ff-a841-54c59c650571",
+    "data": [
+      {
+        "text": "muéstrame los restaurantes ",
+        "userDefined": false
+      },
+      {
+        "text": "chinos",
+        "meta": "@cuisine",
+        "alias": "cuisine",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "86992625-d848-47de-8220-f9a7d5ddf63b",
+    "data": [
+      {
+        "text": "estoy buscando un lugar ",
+        "userDefined": false
+      },
+      {
+        "text": "indio",
+        "meta": "@cuisine",
+        "alias": "cuisine",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "2c5ce034-f89b-4570-a7eb-7bee714902df",
+    "data": [
+      {
+        "text": "buscar restaurantes",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "93ce3697-b53f-4e96-bea1-9de96b098ec4",
+    "data": [
+      {
+        "text": "en cualquier parte del ",
+        "userDefined": false
+      },
+      {
+        "text": "oeste",
+        "meta": "@location",
+        "alias": "location",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "6190aae9-a23f-4d8a-9a50-84a9d971d3f0",
+    "data": [
+      {
+        "text": "restaurante ",
+        "userDefined": false
+      },
+      {
+        "text": "central",
+        "meta": "@location",
+        "alias": "location",
+        "userDefined": false
+      },
+      {
+        "text": " de la ",
+        "userDefined": false
+      },
+      {
+        "text": "India",
+        "meta": "@cuisine",
+        "alias": "cuisine",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  }
+]

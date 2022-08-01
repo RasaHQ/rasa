@@ -1,0 +1,23 @@
+version: "3.1"
+nlu:
+- intent: affirm
+  examples: |
+    - yes
+    - yep
+    - yeah
+    - indeed
+    - that's right
+    - ok
+    - great
+    - right, thank you
+    - correct
+    - great choice
+    - sounds really good
+- intent: chitchat/ask_name
+  examples: |
+    - What's your name?
+    - What can I call you?
+- intent: chitchat/ask_weather
+  examples: |
+    - How's the weather?
+    - Is it too hot outside?

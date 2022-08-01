@@ -1,0 +1,246 @@
+version: "3.1"
+
+nlu:
+- intent: faq/meta_inquire-ask_bot-challenge
+  examples: |
+    - What is your name?
+    - Are you a rasa bot?
+    - Am I chatting with a human?
+    - Am I talking to a bot?
+    - Are you human?
+    - So you can't tell if you're doing well?
+    - What are you?
+    - Who am I talking to?
+    - Who are you?
+    - Who made you?
+    - You're a human, right?
+    - are you a bot?
+    - who do you work for?
+    - What's your name?
+    - who are you ?
+    - What is Carbon bot
+    - I'm obviously talking to a computer
+    - am i taking to bot
+    - bot?
+
+- intent: faq/ask_howdoing
+  examples: |
+    - how are you?
+    - how is it going?
+    - how's it going?
+    - how are things?
+    - are you well?
+    - what's up?
+    - wassssup
+    - wassup
+    - hey what is up
+    - how's you
+    - how ya going?
+    - how you doing?
+    - how are you doing
+    - sup
+    - 'sup
+    - how you doing
+    - Hello how are you
+    - Whats up?
+    - are you okay?
+    - How are you
+    - how are you
+    - whats'up
+
+- intent: faq/meta_inquire_capabilities
+  examples: |
+    - Hmm... I don't know. What can you do?
+    - What is this
+    - what questions can you answer
+    - so, what can you do?
+    - what kinds of tasks can you help with?
+    - alright anything else?
+    - is that it?
+    - alright is that it?
+    - so what can you do for me
+    - Ok. What can you do then?
+    - So what can you help me with?
+    - Tell me what you can do
+    - Well... I thought you could tell me how I could offset my emissions!
+    - What can you do?
+    - What can you help me with?
+    - What lies within the realm of you abilities, dear bot?
+    - can you do anything?
+    - help me
+    - how can you help me?
+    - how can you help?
+    - what can this bot do?
+    - what can you actually do?
+    - what can you do?
+    - what could you do for me?
+    - What else can you tell me?
+    - how can you help with carbon offsets
+    - what can i ask you
+    - how can i help?
+    - Thanks anything else that you can do
+    - what csn you do for me
+    - What do you mean by this if I have to go on website why should  I  have you in first place?
+    - what do you do?
+    - what you can do
+    - anything else ?
+
+- intent: faq/oos-future_inquire-ask
+  examples: |
+    - How do we know that airplanes emit CO2?
+    - do you have anymore information?
+    - Is CO2 harmful?
+    - what else should I know?
+    - what are you doing
+    - why is this side effect "happy"?
+    - Can you debate the most common misconceptions about climate change?
+    - Can you give me some things to read?
+    - Could you give me a QR code, so I can share you?
+    - Could you give me a link, so I can share you?
+    - Hi. Do you know about climate change?
+    - How do you reduce emissions?
+    - How does climate change work?
+    - What are greenhouse gas emissions?
+    - What are the most common misconceptions about climate change?
+    - What are the most important sources of greenhouse gas emissions?
+    - What emits CO2?
+    - What is climate change?
+    - What is so bad about greenhouse gas?
+    - Why did you say this?
+    - Why does climate change matter?
+    - Why is it called "greenhouse"?
+
+- intent: faq/oos_inform
+  examples: |
+    - Chuck Norris can stop climate change with one hand.
+    - It's cold outside.
+    - it's warm outside
+    - Bacor
+    - Need a ride from 75 Beekman st [Plattsburgh](city) ny to
+    - i read in information
+    - tell me more, please
+    - that was rude
+    - Nothing
+    - Hello, I think you have an interesting profile, I wonder if you would like to participate in production of content with me. I do interviews, skits, commercials, pranks, fashion and music videos. To see examples what I do please see my yt  I want to grow my audience and find more projects with a budget. more fb pages on various subjects with backlink purposes to reach different markets. I also do remote interviews.
+    - piefgwngpiVNP
+    - Problem making or receiving payment through PayPal
+    - there are way too many flights
+    - Buying carbon oddsets for a Christmas oresent
+    - I dont really trust the UN
+    - buy a flight ticket for me
+    - I will consider purchasing offsets next time I fly.
+    - Tell him to meet me in marietta ohio come with me  please
+    - L o st themdink frving
+
+- intent: faq/oos_inquire
+  examples: |
+    - Great! What is the weather like in [Berlin](city)?
+    - What do you know about Chuck Norris?
+    - What is the answer to life, the universe, and everything?
+    - do you have any thanksgiving plans
+    - can you suggest some?
+    - how fast the bot move?
+    - oh, ok well can you give me more info about my flight then
+    - What are we doing here buddy?
+    - What is christmas?
+    - Can you come with me please
+    - Yes can you come with me please meet me in [marietta](city) Ohio
+    - Hi his me miranda I love tom cruise can you make it happen
+    - Can you hep fix it
+    - what is the weather ?
+    - Are you sending me things Roy
+
+- intent: faq/oos_request
+  examples: |
+    - make me coffee
+    - play the lottery
+    - I want to know name of the flight?
+    - Can you get me the specific flight information?
+    - Can I give you feedback?
+    - I want to pay the money from paypal
+    - can I pay with credit card
+    - book flight
+    - Deliver a pizza
+    - how to implement faq
+    - What would you suggest where to go for a romance places
+    - Can you fyling him here please i love him so much
+    - Can you fyling him here please
+    - Can you ask him please to fyling here do you watch underworld movie he in it
+    - Can you till him that to fyling here to meet me please
+    - Please stop message him to flying here please
+    - Carolina tell shane brolly that please
+
+- intent: faq/placeholder
+  examples: |
+    - and
+    - so what do I do?
+    - what do i do
+    - .
+    - ok so same
+    - then
+    - next
+    - attitude
+    - talk to me
+    - i
+    - something thing
+    - Hmm
+    - Hmm...
+    - I see
+    - hmm
+
+- intent: faq/takeacut
+  examples: |
+    - do you get paid for offsets
+    - so do you get a cut when I buy these?
+    - what do you get out of this
+    - what are you getting from this?
+    - what you get out of it?
+    - how does this benefit you?
+    - what's the catch?
+    - is there a catch?
+    - there must be a catch
+    - what's the business model here?
+    - are you gonna take a cut?
+    - do you make money off this
+    - do you make money if I buy these offsets?
+    - who benefits from this?
+    - do you get some of that?
+    - who is taking a cut
+    - do you get a cut
+    - are you non-profit?
+    - Does the company take any of the money I pay for offsets?
+
+responses:
+  utter_faq/meta_inquire-ask_bot-challenge:
+    - text: Yes, I am a bot! And I'm part of a research project.
+
+  utter_faq/ask_howdoing:
+    - text: I'm great! Thanks for asking.
+
+  utter_faq/meta_inquire_capabilities:
+    - text: I can help you calculate and buy carbon offsets for your flights.
+
+  utter_faq/oos-future_inquire-ask:
+    - text: That sounds like a relevant question, but I don't know the answer.
+
+  utter_faq/oos_inform:
+    - text: Good to know
+
+  utter_faq/oos_inquire:
+    - text: I'm afraid I have no idea
+
+  utter_faq/oos_request:
+    - text: that's not something I can help with
+
+  utter_faq/placeholder:
+    - text: so
+
+  utter_faq/takeacut:
+    - text: No, my creators don't get a cut from the offsets you buy. I'm just here to help!
+
+
+stories:
+- story: FAQ
+  steps:
+  - intent: faq
+  - action: utter_faq

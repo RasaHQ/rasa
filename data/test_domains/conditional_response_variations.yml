@@ -1,0 +1,54 @@
+version: "3.1"
+
+intents:
+  - greet
+  - withdraw
+  - check_balance
+  - goodbye
+
+slots:
+  account_type:
+    type: categorical
+    values:
+      - primary
+      - secondary
+    mappings:
+      - type: custom
+  can_withdraw:
+    type: bool
+    mappings:
+      - type: custom
+
+responses:
+  utter_withdraw:
+    - text: "You are not allowed to withdraw any amounts. Please check permission."
+      condition:
+        - type: slot
+          name: can_withdraw
+          value: False
+    - text: "Withdrawal has been approved."
+      condition:
+        - type: slot
+          name: can_withdraw
+          value: True
+        - type: slot
+          name: account_type
+          value: primary
+    - text: "Withdrawal was sent for approval to primary account holder."
+      condition:
+        - type: slot
+          name: account_type
+          value: secondary
+  utter_check_balance:
+    - text: "As a primary account holder, you can now set-up your access on mobile app too."
+      condition:
+        - type: slot
+          name: account_type
+          value: primary
+      channel: os
+    - text: "Welcome to your app account overview."
+      condition:
+        - type: slot
+          name: account_type
+          value: primary
+      channel: app

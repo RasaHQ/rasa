@@ -1,0 +1,6 @@
+version: "3.1"
+nlu:
+- synonym: chinese
+  examples: |
+    - Chines
+    - Chinese

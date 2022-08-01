@@ -1,0 +1,86 @@
+{
+    "utterances": [
+        {
+            "text": "I want pizza",
+            "entities": [],
+            "traits": []
+        },
+        {
+            "text": "i want to fly from london",
+            "entities": [
+                {
+                    "entity": "location:from",
+                    "start": 19,
+                    "end": 25,
+                    "body": "london",
+                    "entities": []
+                }
+            ],
+            "traits": [],
+            "intent": "flight_booking"
+        },
+        {
+            "text": "i want to fly to berlin",
+            "entities": [
+                {
+                    "entity": "location:to",
+                    "start": 17,
+                    "end": 23,
+                    "body": "berlin",
+                    "entities": []
+                }
+            ],
+            "traits": [],
+            "intent": "flight_booking"
+        },
+        {
+            "text": "i want to go from berlin to tokyo tomorrow",
+            "entities": [
+                {
+                    "entity": "location:from",
+                    "start": 18,
+                    "end": 24,
+                    "body": "berlin",
+                    "entities": []
+                },
+                {
+                    "entity": "location:to",
+                    "start": 28,
+                    "end": 33,
+                    "body": "tokyo",
+                    "entities": []
+                }
+            ],
+            "traits": [],
+            "intent": "flight_booking"
+        },
+        {
+            "text": "i'm looking for a flight from london to amsterdam next monday",
+            "entities": [
+                {
+                    "entity": "location:from",
+                    "start": 30,
+                    "end": 36,
+                    "body": "london",
+                    "entities": []
+                },
+                {
+                    "entity": "wit$datetime:datetime",
+                    "start": 50,
+                    "end": 61,
+                    "body": "next monday",
+                    "entities": []
+                },
+                {
+                    "entity": "location:to",
+                    "start": 40,
+                    "end": 49,
+                    "body": "amsterdam",
+                    "entities": []
+                }
+            ],
+            "traits": [],
+            "intent": "flight_booking"
+        }
+    ]
+}

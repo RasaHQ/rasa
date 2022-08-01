@@ -1,0 +1,14 @@
+version: "3.1"
+
+stories:
+- story: Test with two easy entities
+  steps:
+    - user: my name is [joe](name)
+    - bot: hi joe!
+    - user: I am feeling [happy](mood)
+    - bot: This is an unknown bot utterance
+
+- story: Test with a hard entity
+  steps:
+    - user: today I was very [cranky](mood)
+    - bot: I'm sorry!

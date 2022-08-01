@@ -1,0 +1,10 @@
+recipe: default.v1
+language: en
+pipeline:
+    - name: "SpacyNLP"
+      model: "en_core_web_md"
+    - name: "SpacyTokenizer"
+    - name: "SpacyFeaturizer"
+    - name: "RegexFeaturizer"
+    - name: "SpacyEntityExtractor"
+    - name: "EntitySynonymMapper"

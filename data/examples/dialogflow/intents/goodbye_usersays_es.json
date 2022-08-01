@@ -1,0 +1,67 @@
+[
+  {
+    "id": "dde37345-fa41-4310-9a7f-74f74ca7a925",
+    "data": [
+      {
+        "text": "a usted adiós",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "86811b69-cee1-4ae0-8944-ace8eb4badc2",
+    "data": [
+      {
+        "text": "despedida",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "78bbd720-b50b-4cb9-9dce-eee0fef5aa74",
+    "data": [
+      {
+        "text": "adiós",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "74597c31-b649-49cc-bd3b-9a4ed3487070",
+    "data": [
+      {
+        "text": "suspender",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "7b42db30-d815-46fd-a7f5-79b9180c7c6b",
+    "data": [
+      {
+        "text": "fin",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  }
+]

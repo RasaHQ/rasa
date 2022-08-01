@@ -1,0 +1,7 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: "CountVectorsFeaturizer"
+  max_ngram: 3
+- name: "DIETClassifier"
+  epochs: 10

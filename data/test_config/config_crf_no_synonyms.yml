@@ -1,0 +1,5 @@
+recipe: default.v1
+language: en
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "CRFEntityExtractor"

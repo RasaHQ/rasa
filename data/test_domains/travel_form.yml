@@ -1,0 +1,43 @@
+# all hashtags are comments :)
+intents:
+ - inform:
+     use_entities:
+       - GPE
+ - greet:
+     ignore_entities:
+       - GPE
+
+entities:
+  - GPE:
+      roles:
+        - destination
+        - origin
+  - name
+
+slots:
+  GPE_origin:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: GPE
+      role: origin
+  GPE_destination:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: GPE
+      role: destination
+  requested_slot:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: custom
+
+responses:
+  utter_ask_GPE_origin:
+    - text: "where are you leaving from?"
+  utter_ask_GPE_destination:
+    - text: "where are you going to?"
+
+actions:
+  - action_search_travel

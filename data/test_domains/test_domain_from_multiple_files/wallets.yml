@@ -1,0 +1,30 @@
+version: "3.1"
+
+intents:
+- open_wallet
+- exchange_wallet
+
+slots:
+  greenOrGrey:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: strawberry_robot
+  activate_simulation:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: strawberry_robot
+  activate_double_simulation:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: strawberry_robot
+
+actions:
+- utter_open_wallet_options
+- utter_greengrey_wallet
+- action_prevent_20

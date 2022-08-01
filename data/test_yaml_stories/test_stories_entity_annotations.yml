@@ -1,0 +1,9 @@
+version: "3.1"
+
+stories:
+  - story: Test with entity annotation
+    steps:
+      - intent: greet
+        user: |-
+            Hi, I live in [London](city).
+      - bot: hey there!

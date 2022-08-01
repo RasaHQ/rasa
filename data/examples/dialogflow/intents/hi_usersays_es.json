@@ -1,0 +1,67 @@
+[
+  {
+    "id": "40c60a12-1079-4e2c-a7c3-3498ab00de30",
+    "data": [
+      {
+        "text": "hello",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "96019dea-5810-4ce0-9f69-16c2ce012603",
+    "data": [
+      {
+        "text": "Hola amigo",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "298a54d1-c80c-4542-b41f-2cb549db814c",
+    "data": [
+      {
+        "text": "Bueno",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "0f490459-85df-4865-abd0-70f87f62890e",
+    "data": [
+      {
+        "text": "Caramba",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "1bf90b9b-fe34-42ae-96ea-21beaa3fca4f",
+    "data": [
+      {
+        "text": "Hola",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  }
+]

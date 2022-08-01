@@ -1,0 +1,40 @@
+# all hashtags are comments :)
+intents:
+ - greet
+ - default
+ - goodbye
+ - affirm
+ - thank_you
+ - change_bank_details
+ - simple
+ - hello
+ - why
+ - next_intent
+
+entities:
+ - name
+
+slots:
+  name:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: name
+
+responses:
+  utter_greet:
+    - text: "hey there {name}!"  # {name} will be filled by slot (same name) or by custom action
+  utter_channel:
+    - text: "this is a default channel"
+    - text: "you're talking to me on slack!"  # if you define channel-specific utterances, the bot will pick
+      channel: "slack"                        # from those when talking on that specific channel
+  utter_goodbye:
+    - text: "goodbye 😢"   # multiple responses - bot will randomly pick one of them
+    - text: "bye bye 😢"
+  utter_default:   # utterance sent by action_default_fallback
+    - text: "sorry, I didn't get that, can you rephrase it?"
+
+forms:
+  some_form:
+    required_slots:
+      - name

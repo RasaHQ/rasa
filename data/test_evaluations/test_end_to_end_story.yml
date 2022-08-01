@@ -1,0 +1,29 @@
+stories:
+- story: simple_story_with_only_start
+  steps:
+  - intent: greet
+    user: /greet
+  - action: utter_greet
+
+- story: simple_story_with_multiple_turns
+  steps:
+  - intent: greet
+    user: /greet
+  - action: utter_greet
+  - intent: default
+    user: /default
+  - action: utter_default
+  - intent: goodbye
+    user: /goodbye
+  - action: utter_goodbye
+
+- story: story_with_multiple_entities_correction_and_search
+  steps:
+  - intent: greet
+    user: |
+      /greet{"name": "Max"}
+  - action: utter_greet
+  - intent: default
+    user: /default
+  - action: utter_default
+

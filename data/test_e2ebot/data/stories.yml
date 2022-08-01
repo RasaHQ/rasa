@@ -1,0 +1,16 @@
+version: "3.1"
+
+stories:
+- story: Tell name and mood
+  steps:
+  - user: my name is [joe](name)
+  - bot: hi joe!
+  - user: I am feeling [happy](mood)
+  - bot: I'm glad
+
+- story: Tell name and mood 2
+  steps:
+  - user: my name is [bob](name)
+  - bot: hi bob!
+  - user: I am feeling [sad](mood)
+  - bot: oh dear...

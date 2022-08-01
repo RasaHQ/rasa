@@ -1,0 +1,8 @@
+
+stories:
+ - story: simple_story
+   steps:
+   - intent: greet
+   - action: utter_greet
+   - intent: ask_weather
+   - action: utter_weather

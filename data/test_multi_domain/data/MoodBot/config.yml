@@ -1,0 +1,11 @@
+recipe: default.v1
+language: en
+
+pipeline: "pretrained_embeddings_spacy"
+
+policies:
+  - name: MemoizationPolicy
+  - name: TEDPolicy
+
+imports:
+- ../GreetBot

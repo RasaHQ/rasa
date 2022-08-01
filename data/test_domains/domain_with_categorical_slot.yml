@@ -1,0 +1,12 @@
+slots:
+  category_slot:
+    type: categorical
+    values:
+      - value_one
+      - value_two
+    mappings:
+      - type: custom
+
+responses:
+  utter_greet:
+    - text: "hey there!"

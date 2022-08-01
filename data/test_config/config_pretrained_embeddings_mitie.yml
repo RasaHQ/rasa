@@ -1,0 +1,12 @@
+language: "en"
+
+pipeline:
+- name: "MitieNLP"
+  model: "data/total_word_feature_extractor.dat"
+- name: "MitieTokenizer"
+- name: "MitieEntityExtractor"
+- name: "EntitySynonymMapper"
+- name: "RegexFeaturizer"
+- name: "MitieFeaturizer"
+- name: "SklearnIntentClassifier"
+

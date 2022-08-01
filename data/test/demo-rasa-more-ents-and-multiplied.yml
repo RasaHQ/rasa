@@ -1,0 +1,111 @@
+version: "3.1"
+nlu:
+- intent: affirm
+  examples: |
+    - yes
+    - yep
+    - yeah
+    - indeed
+    - that's right
+    - ok
+    - great
+    - right, thank you
+    - correct
+    - great choice
+    - sounds really good
+- intent: goodbye
+  examples: |
+    - bye
+    - goodbye
+    - good bye
+    - stop
+    - end
+    - farewell
+    - Bye bye
+    - have a good one
+- intent: greet
+  examples: |
+    - hey
+    - howdy
+    - hey there
+    - hello
+    - hi
+    - good morning
+    - good evening
+    - dear sir
+- intent: chitchat/ask_name
+  examples: |
+    - What's your name?
+    - What can I call you?
+- intent: chitchat/ask_weather
+  examples: |
+    - How's the weather?
+    - Is it too hot outside?
+- intent: restaurant_search
+  examples: |
+    - i'm looking for a place in the [north](location) of town
+    - show me [chinese](cuisine) restaurants
+    - show me [chines]{"entity": "cuisine", "value": "chinese"} restaurants in the [north](location)
+    - show me a [mexican](cuisine) place in the [centre](location)
+    - i am looking for an [indian](cuisine) spot called olaolaolaolaolaola
+    - anywhere in the [west](location)
+    - anywhere near [18328](location)
+    - I am looking for [asian fusion](cuisine) food
+    - I am looking a restaurant in [29432](location)
+    - I am looking for [mexican indian fusion](cuisine)
+    - [central](location) [indian](cuisine) restaurant
+    - [mexican](cuisine) restaurant in [Berlin](location)
+    - are there any [indian](cuisine) restaurants in the [centre](location)
+    - show me [chinese](cuisine) restaurants near the [city centre](location)
+    - I am looking for [mexican](cuisine) food
+    - I want [chinese](cuisine) food
+    - Do you know of any [indian](cuisine) places near [18328](location)?
+    - i'm looking for a place in the [north](location) of town 1
+    - show me [chinese](cuisine) restaurants 1
+    - show me [chines]{"entity": "cuisine", "value": "chinese"} restaurants in the [north](location) 1
+    - show me a [mexican](cuisine) place in the [centre](location) 1
+    - i am looking for an [indian](cuisine) spot called olaolaolaolaolaola 1
+    - anywhere in the [west](location) 1
+    - anywhere near [18328](location) 1
+    - I am looking for [asian fusion](cuisine) food 1
+    - I am looking a restaurant in [29432](location) 1
+    - I am looking for [mexican indian fusion](cuisine) 1
+    - [central](location) [indian](cuisine) restaurant 1
+    - [mexican](cuisine) restaurant in [Berlin](location) 1
+    - are there any [indian](cuisine) restaurants in the [centre](location) 1
+    - show me [chinese](cuisine) restaurants near the [city centre](location) 1
+    - I am looking for [mexican](cuisine) food 1
+    - I want [chinese](cuisine) food 1
+    - Do you know of any [indian](cuisine) places near [18328](location)? 1
+    - i'm looking for a place in the [north](location) of town 2
+    - show me [chinese](cuisine) restaurants 2
+    - show me [chines]{"entity": "cuisine", "value": "chinese"} restaurants in the [north](location) 2
+    - show me a [mexican](cuisine) place in the [centre](location) 2
+    - i am looking for an [indian](cuisine) spot called olaolaolaolaolaola 2
+    - anywhere in the [west](location) 2
+    - anywhere near [18328](location) 2
+    - I am looking for [asian fusion](cuisine) food 2
+    - I am looking a restaurant in [29432](location) 2
+    - I am looking for [mexican indian fusion](cuisine) 2
+    - [central](location) [indian](cuisine) restaurant 2
+    - [mexican](cuisine) restaurant in [Berlin](location) 2
+    - are there any [indian](cuisine) restaurants in the [centre](location) 2
+    - show me [chinese](cuisine) restaurants near the [city centre](location) 2
+    - I am looking for [mexican](cuisine) food 2
+    - I want [chinese](cuisine) food 2
+    - Do you know of any [indian](cuisine) places near [18328](location)? 2
+- synonym: chinese
+  examples: |
+    - chines
+    - Chines
+    - Chinese
+- synonym: vegetarian
+  examples: |
+    - vegg
+    - veggie
+- regex: greet
+  examples: |
+    - hey[^\s]*
+- regex: zipcode
+  examples: |
+    - [0-9]{5}

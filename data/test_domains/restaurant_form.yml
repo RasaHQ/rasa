@@ -1,0 +1,40 @@
+# all hashtags are comments :)
+intents:
+ - inform
+ - request_restaurant
+
+entities:
+- number
+- cuisine
+
+slots:
+  cuisine:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: cuisine
+  people:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: number
+        conditions:
+          - active_loop: restaurant_form
+            requested_slot: people
+responses:
+  utter_ask_people:
+    - text: "For how many people?"
+  utter_ask_cuisine:
+    - text: "What cuisine would you like?"
+
+actions:
+  - action_search_restaurants
+
+
+forms:
+  restaurant_form:
+   required_slots:
+    - cuisine
+    - people

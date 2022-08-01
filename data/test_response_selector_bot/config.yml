@@ -1,0 +1,14 @@
+recipe: default.v1
+language: en
+
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "CountVectorsFeaturizer"
+  - name: KeywordIntentClassifier
+  - name: ResponseSelector
+    epochs: 5
+    learning_rate: 0.01
+    random_seed: 42
+
+policies:
+  - name: RulePolicy

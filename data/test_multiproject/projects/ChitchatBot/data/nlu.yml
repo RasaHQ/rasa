@@ -1,0 +1,14 @@
+version: "3.1"
+nlu:
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you a human?
+    - am I talking to a bot?
+    - am I talking to a human?
+- intent: tell_joke
+  examples: |
+    - tell me joke
+    - tell me sth funny
+    - can you tell me a joke?
+    - what's your best joke?

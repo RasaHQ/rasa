@@ -1,0 +1,18 @@
+version: "3.1"
+
+nlu:
+- intent: tell_name
+  examples: |
+    - my name is [joe](name)
+    - my name is [bob](name)
+    - I am [bob](name)
+    - I am [jim](name)
+    - I am called [bill](name)
+
+- intent: tell_mood
+  examples: |
+    - I am feeling [happy](mood)
+    - I am quite [happy](mood)
+    - I feel [sad](mood)
+    - I feel [happy](mood)
+    - I am so [sad](mood)

@@ -1,0 +1,6 @@
+version: "3.1"
+responses:
+  utter_mood/great:
+  - text: some response to mood/great
+  utter_mood/unhappy:
+  - text: some response to mood/unhappy

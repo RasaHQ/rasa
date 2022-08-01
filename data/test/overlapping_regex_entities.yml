@@ -1,0 +1,14 @@
+
+version: "3.1"
+nlu:
+- intent: restaurant_search
+  examples: |
+    - What [pizza](meal) places have been [buzzing](zz-words) lately?
+    - What [pizza](meal) places have been [trendy](zz-words) lately?
+- regex: zz-words
+  examples: |
+    - \w*zz\w*
+- lookup: meal
+  examples: |
+    - pizza
+    - pasta

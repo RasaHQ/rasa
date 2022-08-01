@@ -1,0 +1,50 @@
+stories:
+- story: simple_story
+  steps:
+  - intent: greet
+    entities:
+    - name: Peter
+    - unrelated_recognized_entity: whatever
+    - unused_entity: whatever
+    - other: foo
+  - action: utter_greet
+
+- story: simple_story_with_multiple_turns
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: default
+    entities:
+    - name: Peter
+    - unrelated_recognized_entity: whatever
+    - unused_entity: whatever
+    - other: foo
+  - action: utter_default
+  - intent: goodbye
+    entities:
+    - name: Peter
+    - unrelated_recognized_entity: whatever
+    - unused_entity: whatever
+    - other: foo
+  - action: utter_goodbye
+  - intent: thank
+    entities:
+    - name: Peter
+    - unrelated_recognized_entity: whatever
+    - unused_entity: whatever
+    - other: foo
+  - action: utter_default
+  - intent: ask
+    entities:
+    - name: Peter
+    - unrelated_recognized_entity: whatever
+    - unused_entity: whatever
+    - other: foo
+  - action: utter_default
+  - intent: why
+    entities:
+    - name: Peter
+    - unrelated_recognized_entity: whatever
+    - unused_entity: whatever
+    - other: foo
+  - action: utter_default
