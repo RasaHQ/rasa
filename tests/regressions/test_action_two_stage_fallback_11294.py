@@ -170,4 +170,4 @@ async def test_action_two_stage_fallback_does_not_return_key_error(
     )
     responses = await agent.handle_message(message)
 
-    assert any(utter_default_text == bot_msg["text"] for bot_msg in responses)
+    assert any(bot_msg["text"] == utter_default_text for bot_msg in responses)
