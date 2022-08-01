@@ -235,6 +235,12 @@ The `EntityExtractor` class was renamed to `EntityExtractorMixin`:
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-entity-extractor" defaultValue="new">
   <TabItem value="old">
 
+:::info Changed in 3.3
+
+As of 3.3, the `EntityExtractorMixin` has been renamed back to `EntityExtractor`. The migration instructions below are valid for versions >= 3.0, <3.3.
+
+:::
+
   ```python
   from rasa.nlu.extractors.extractor import EntityExtractor
 
