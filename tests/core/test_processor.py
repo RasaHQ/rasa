@@ -1636,7 +1636,7 @@ async def test_processor_executes_bot_uttered_returned_by_action_extract_slots(
 
     sender_id = uuid.uuid4().hex
     message = UserMessage(
-        text="I would like to travel to Lisbon",
+        text="This is a test.",
         output_channel=CollectingOutputChannel(),
         sender_id=sender_id,
         parse_data={
