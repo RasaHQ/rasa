@@ -202,19 +202,32 @@ class SlotMapping:
             )
             return False
 
-        if (
-            mapping_type == SlotMappingType.FROM_INTENT
-            and mapping.get(INTENT) not in domain.intents
-        ):
-            rasa.shared.utils.io.raise_warning(
-                f"Slot '{slot_name}' uses a 'from_intent' mapping for "
-                f"a non-existent intent '{mapping.get('intent')}'. "
-                f"Skipping slot extraction because of invalid mapping."
-            )
-            return False
+        if not isinstance(mapping.get('intent'), list):
+            if (
+                mapping_type == SlotMappingType.FROM_INTENT
+                and mapping.get(INTENT) not in domain.intents
+            ):
+                rasa.shared.utils.io.raise_warning(
+                    f"Slot '{slot_name}' uses a 'from_intent' mapping for "
+                    f"a non-existent intent '{mapping.get('intent')}'. "
+                    f"Skipping slot extraction because of invalid mapping."
+                )
+                return False
 
-        return True
-
+            return True
+        else:
+            for intent in mapping.get(INTENT):
+                if (
+                mapping_type == SlotMappingType.FROM_INTENT
+                and intent not in domain.intents
+                ):
+                    rasa.shared.utils.io.raise_warning(
+                        f"Slot '{slot_name}' uses a 'from_intent' mapping for "
+                        f"a non-existent intent '{mapping.get('intent')}'. "
+                        f"Skipping slot extraction because of invalid mapping."
+                    )
+                    return False
+            return True
 
 def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     """Raises InvalidDomain exception if slot mappings are invalid."""
