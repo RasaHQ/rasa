@@ -24,6 +24,22 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
 
+  trufflehog:
+    name: Detect Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: TruffleHog Secrets Scan
+        uses: trufflesecurity/trufflehog@0752503872c81fb8820085d38d5cd7e7cff8a5af
+        continue-on-error: true
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: ${{ github.head_ref }}
+
   bandit:
     name: Detect python security issues
     runs-on: ubuntu-latest

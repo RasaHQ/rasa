@@ -12,11 +12,13 @@ from rasa.core.training import interactive as interactive_learning
 from rasa.cli import interactive, train
 from rasa.model_training import TrainingResult
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_interactive_help(run: Callable[..., RunResult]):
     output = run("interactive", "--help")
 
-    help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-p PORT] [-m MODEL]
+    help_text = f"""usage: {RASA_EXE} interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-p PORT] [-m MODEL]
                         [--data DATA [DATA ...]] [--skip-visualization]
                         [--conversation-id CONVERSATION_ID]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
@@ -24,7 +26,7 @@ def test_interactive_help(run: Callable[..., RunResult]):
                         [--debug-plots] [--finetune [FINETUNE]]
                         [--epoch-fraction EPOCH_FRACTION] [--force]
                         [--persist-nlu-data]
-                        {core} ... [model-as-positional-argument]"""
+                        {{core}} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -36,7 +38,7 @@ def test_interactive_help(run: Callable[..., RunResult]):
 def test_interactive_core_help(run: Callable[..., RunResult]):
     output = run("interactive", "core", "--help")
 
-    help_text = """usage: rasa interactive core [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
+    help_text = f"""usage: {RASA_EXE} interactive core [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                              [--skip-visualization]
                              [--conversation-id CONVERSATION_ID]
                              [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]

@@ -5,6 +5,8 @@ from pytest import Testdir, RunResult
 import pytest
 import sys
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_cli_start_is_fast(testdir: Testdir):
     """
@@ -40,8 +42,8 @@ def test_cli_start_is_fast(testdir: Testdir):
 def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("--help")
 
-    help_text = """usage: rasa [-h] [--version]
-            {init,run,shell,train,interactive,telemetry,test,visualize,data,export,x,evaluate}
+    help_text = f"""usage: {RASA_EXE} [-h] [--version]
+            {{init,run,shell,train,interactive,telemetry,test,visualize,data,export,x,evaluate}}
             ..."""
 
     lines = help_text.split("\n")
