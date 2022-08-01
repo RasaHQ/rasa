@@ -2665,6 +2665,65 @@ async def test_action_extract_slots_non_required_form_slot_with_from_entity_mapp
     )
     assert events == [SlotSet("form1_info1", "info1"), SlotSet("form1_slot1", "Filled")]
 
+async def test_action_multiple_intents_same_values():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - form_start
+        - intent1
+        - intent2
+        entities:
+        - form_info
+        - form_slot
+        slots:
+          form_info:
+            type: text
+            mappings:
+            - type: from_entity
+              entity: form_info
+          form_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_intent
+              value: Filled
+              intent: 
+                - intent1
+                - intent2
+              conditions:
+              - active_loop: form
+                requested_slot: form_slot
+        forms:
+          form:
+            required_slots:
+            - form_slot
+        """
+    )
+
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        UserUttered("Start form."),
+        ActiveLoop("form"),
+        SlotSet(REQUESTED_SLOT, "form_slot"),
+        UserUttered(
+            "Hi",
+            intent={"name": "intent2"},
+            entities=[{"entity": "form_info", "value": "info"}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [SlotSet("form_info", "info"), SlotSet("form_slot", "Filled")]
+
 
 @pytest.mark.parametrize(
     "starting_value, value_to_set, expect_event",
