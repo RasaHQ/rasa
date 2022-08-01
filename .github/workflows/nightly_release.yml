@@ -1,11 +1,9 @@
 name: Nightly Builds
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - '*'
-  pull_request:
+  schedule:
+    # Runs every weekday at 1am
+    - cron: 0 1 * * 1-5
+  workflow_dispatch:
 
 
 jobs:
@@ -18,6 +16,8 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compose tag name
         id: set_tagname
@@ -39,16 +39,12 @@ jobs:
           echo "::set-output name=tag_name::${GH_TAG}"
 
       - name: Tag latest main commit as nightly
-        uses: actions/github-script@v5
-        with:
-          github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: "refs/tags/${{ steps.set_tagname.outputs.tag_name }}",
-              sha: context.sha
-            })
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          git tag -a ${{ steps.set_tagname.outputs.tag_name }} -m "This is an internal development build"
+          git push origin ${{ steps.set_tagname.outputs.tag_name }} --tags
 
 
   deploy:
@@ -84,9 +80,13 @@ jobs:
         run: |
           ./scripts/write_keys_file.sh
 
+      - name: Update version (nightly releases) 🚀
+        run: |
+          poetry run pip install toml pep440_version_utils
+          poetry run python ./scripts/prepare_nightly_release.py --next_version "${{ needs.run_script_and_tag_nightly_release.outputs.tag_name }}"
+
       - name: Build ⚒️ Distributions
         run: |
-          sed -i 's/name = "rasa"/name = "rasa-nightly"/g' pyproject.toml
           poetry build
 
       - name: Publish to PyPI 📦
@@ -96,4 +96,3 @@ jobs:
           password: ${{ secrets.PYPI_PASSWORD }}
           repository_url: "https://pypi.rasa.com/simple/"
           packages_dir: ${{ format('{0}/dist', github.workspace) }}
-

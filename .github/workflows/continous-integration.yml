@@ -573,7 +573,7 @@ jobs:
 
     - name: Check if tag version is equal or higher than the latest tagged Rasa version
       id: rasa_get_version
-      if: env.IS_TAG_BUILD == 'true' && contains(github.ref, 'refs/tags/(.*).dev(.*)')
+      if: env.IS_TAG_BUILD == 'true'
       run: |
         # Get latest tagged Rasa version
         git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
@@ -623,7 +623,7 @@ jobs:
         echo "::set-output name=base_builder_exists::${BASE_IMAGE_BUILDER_EXISTS}"
 
     - name: Build Docker base image and push 🛠 ⬆
-      if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true' && contains(github.ref, 'refs/tags/(.*).dev(.*)')
+      if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
       run: |
         export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
         docker buildx bake -f docker/docker-bake.hcl base --push
@@ -666,7 +666,7 @@ jobs:
     # TAG_NAME=2.0.6
     # IMAGE_TAG=2.0.6
     - name: Set environment variables - push - tag
-      if: github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && contains(github.ref, 'refs/tags/(.*).dev(.*)')
+      if: github.event_name == 'push' && env.IS_TAG_BUILD == 'true'
       run: |
         TAG_NAME=${GITHUB_REF#refs/tags/}
         echo "IMAGE_TAG=${TAG_NAME}" >> $GITHUB_ENV
@@ -762,7 +762,7 @@ jobs:
         docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
     - name: Push image with ${{github.ref}} tag 📦
-      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && contains(github.ref, 'refs/tags/(.*).dev(.*)') && github.repository == 'RasaHQ/rasa'
+      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
       run: |
         IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
