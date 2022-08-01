@@ -3,6 +3,8 @@ import sys
 from typing import Callable
 from _pytest.pytester import RunResult
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_run_does_not_start(run_in_simple_project: Callable[..., RunResult]):
     os.remove("domain.yml")
@@ -32,7 +34,7 @@ def test_run_help(
                 [--response-timeout RESPONSE_TIMEOUT]"""
 
     help_text = (
-        """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
+        f"""usage: {RASA_EXE} run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--use-syslog] [--syslog-address SYSLOG_ADDRESS]
                 [--syslog-port SYSLOG_PORT]
                 [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
@@ -64,10 +66,10 @@ def test_run_action_help(
         # This is required because `argparse` behaves differently on
         # Python 3.9 and above. The difference is the changed formatting of help
         # output for CLI arguments with `nargs="*"
-        help_text = """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+        help_text = f"""usage: {RASA_EXE} run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
                         [--cors [CORS ...]] [--actions ACTIONS]"""
     else:
-        help_text = """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+        help_text = f"""usage: {RASA_EXE} run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
                         [--cors [CORS [CORS ...]]] [--actions ACTIONS]"""
 
     lines = help_text.split("\n")

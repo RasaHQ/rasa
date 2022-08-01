@@ -140,5 +140,5 @@ def test(
     if additional_arguments is None:
         additional_arguments = {}
 
-    test_core(model, stories, output, additional_arguments)
-    test_nlu(model, nlu_data, output, additional_arguments)
+    test_core(model, stories, output, additional_arguments)  # type: ignore[unused-coroutine] # noqa: E501
+    test_nlu(model, nlu_data, output, additional_arguments)  # type: ignore[unused-coroutine] # noqa: E501

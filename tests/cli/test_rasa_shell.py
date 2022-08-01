@@ -2,6 +2,8 @@ import sys
 from typing import Callable
 from _pytest.pytester import RunResult
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_shell_help(run: Callable[..., RunResult]):
     output = run("shell", "--help")
@@ -18,7 +20,7 @@ def test_shell_help(run: Callable[..., RunResult]):
                   [--response-timeout RESPONSE_TIMEOUT]"""
 
     help_text = (
-        """usage: rasa shell [-h] [-v] [-vv] [--quiet]
+        f"""usage: {RASA_EXE} shell [-h] [-v] [-vv] [--quiet]
                   [--conversation-id CONVERSATION_ID] [-m MODEL]
                   [--log-file LOG_FILE] [--use-syslog]
                   [--syslog-address SYSLOG_ADDRESS]
@@ -46,7 +48,7 @@ def test_shell_help(run: Callable[..., RunResult]):
 def test_shell_nlu_help(run: Callable[..., RunResult]):
     output = run("shell", "nlu", "--help")
 
-    help_text = """usage: rasa shell nlu [-h] [-v] [-vv] [--quiet] [-m MODEL]
+    help_text = f"""usage: {RASA_EXE} shell nlu [-h] [-v] [-vv] [--quiet] [-m MODEL]
                       [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
