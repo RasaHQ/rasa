@@ -2,6 +2,7 @@ import logging
 import textwrap
 from datetime import datetime
 from typing import List, Text, Any, Dict, Optional
+from unittest.mock import Mock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -159,7 +160,6 @@ async def test_remote_action_runs(
     default_tracker: DialogueStateTracker,
     domain: Domain,
 ):
-
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
@@ -467,7 +467,6 @@ async def test_remote_action_invalid_entities_payload(
     domain: Domain,
     event: Event,
 ):
-
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
     response = {"events": [event], "responses": []}
@@ -1216,7 +1215,7 @@ async def test_action_extract_slots_predefined_mappings(
         tracker,
         domain,
     )
-    assert not new_events
+    assert new_events == [SlotSet(slot_name, slot_value)]
 
     new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
     tracker.update_with_events(new_events, domain)
@@ -2665,3 +2664,124 @@ async def test_action_extract_slots_non_required_form_slot_with_from_entity_mapp
         domain,
     )
     assert events == [SlotSet("form1_info1", "info1"), SlotSet("form1_slot1", "Filled")]
+
+
+@pytest.mark.parametrize(
+    "starting_value, value_to_set, expect_event",
+    [
+        ("value", None, True),
+        (None, "value", True),
+        ("value", "value", True),
+        (None, None, False),
+    ],
+)
+async def test_action_extract_slots_emits_necessary_slot_set_events(
+    starting_value: Text, value_to_set: Text, expect_event: bool
+):
+    entity_name = "entity"
+    intent_name = "intent_with_entity"
+
+    domain = textwrap.dedent(
+        f"""
+          intents:
+            - {intent_name}
+          entities:
+            - {entity_name}
+          slots:
+            {entity_name}:
+              type: text
+              mappings:
+              - type: from_entity
+                entity: {entity_name}
+        """
+    )
+
+    domain = Domain.from_yaml(domain)
+
+    tracker = DialogueStateTracker.from_events(
+        "some-sender",
+        evts=[
+            SlotSet(entity_name, starting_value),
+        ],
+    )
+
+    tracker.update_with_events(
+        new_events=[
+            UserUttered(
+                text="I am a text",
+                intent={"name": intent_name},
+                entities=[{"entity": entity_name, "value": value_to_set}],
+            )
+        ],
+        domain=domain,
+    )
+
+    action = ActionExtractSlots(None)
+
+    events = await action.run(
+        output_channel=CollectingOutputChannel(),
+        nlg=Mock(),
+        tracker=tracker,
+        domain=domain,
+    )
+
+    if expect_event:
+        assert len(events) == 1
+        assert type(events[0]) == SlotSet
+        assert events[0].key == entity_name
+        assert events[0].value == value_to_set
+    else:
+        assert len(events) == 0
+
+
+async def test_action_extract_slots_priority_of_slot_mappings():
+    slot_name = "location_slot"
+    entity_name = "location"
+    entity_value = "Berlin"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        intents:
+        - inform
+
+        entities:
+        - {entity_name}
+
+        slots:
+          {slot_name}:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: {entity_name}
+            - type: from_intent
+              value: 42
+              intent: inform
+
+        responses:
+            utter_ask_location:
+                - text: "where are you located?"
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        UserUttered(
+            "I am located in Berlin",
+            intent={"name": "inform"},
+            entities=[{"entity": entity_name, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(events, domain=domain)
+    assert tracker.get_slot("location_slot") == entity_value

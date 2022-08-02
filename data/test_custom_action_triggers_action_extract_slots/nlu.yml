@@ -1,0 +1,12 @@
+version: "3.1"
+
+nlu:
+- intent: activate_flow
+  examples: |
+    - Trigger custom action.
+    - Activate custom action.
+
+- intent: mood_great
+  examples: |
+    - I am so [happy](mood).
+    - Feeling [sad](mood).
