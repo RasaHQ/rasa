@@ -33,9 +33,7 @@ logger = logging.getLogger(__name__)
 
 # URL to the old remote location of the model which
 # users might use. The model is no longer hosted here.
-ORIGINAL_TF_HUB_MODULE_URL = (
-    "https://github.com/davidalami/ConveRT/releases/download/1.0/nocontext_tf_model.tar.gz"
-)
+ORIGINAL_TF_HUB_MODULE_URL = "https://github.com/davidalami/ConveRT/releases/download/1.0/nocontext_tf_model.tar.gz"
 
 # Warning: This URL is only intended for running pytests on ConveRT
 # related components. This URL should not be allowed to be used by the user.
@@ -90,7 +88,7 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-        cache_dir: Path = None
+        cache_dir: str = None,
     ) -> ConveRTFeaturizer:
         """Creates a new component (see parent class for full docstring)."""
         if cache_dir:
