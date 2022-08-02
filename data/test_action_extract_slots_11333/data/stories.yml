@@ -1,0 +1,63 @@
+version: "3.1"
+
+stories:
+
+- story: happy path
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_great
+  - action: utter_happy
+
+- story: sad path 1
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_unhappy
+  - action: utter_cheer_up
+  - action: utter_did_that_help
+  - intent: affirm
+  - action: utter_happy
+
+- story: sad path 2
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_unhappy
+  - action: utter_cheer_up
+  - action: utter_did_that_help
+  - intent: deny
+  - action: utter_goodbye
+
+- story: block savings
+  steps:
+  - intent: block
+    entities:
+    - account_type: savings
+  - slot_was_set:
+    - account_type: savings
+  - action: utter_block_account
+
+- story: block checking
+  steps:
+  - intent: block
+    entities:
+    - account_type: checking
+  - slot_was_set:
+    - account_type: checking
+  - action: utter_checking
+
+- story: block credit
+  steps:
+  - intent: block
+    entities:
+    - account_type: credit
+  - slot_was_set:
+    - account_type: credit
+  - action: utter_credit
+
+- story: block checking
+  steps:
+  - intent: block 
+  - action: utter_nothing
+

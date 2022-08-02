@@ -15,6 +15,8 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
 import rasa.version
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_x_help(run: Callable[..., RunResult]):
     output = run("x", "--help")
@@ -23,34 +25,60 @@ def test_x_help(run: Callable[..., RunResult]):
         # This is required because `argparse` behaves differently on
         # Python 3.9 and above. The difference is the changed formatting of help
         # output for CLI arguments with `nargs="*"
-        version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN] [--cors [CORS ...]]
-              [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""
+        version_dependent = [
+            "[-i INTERFACE]",
+            "[-p PORT]",
+            "[-t AUTH_TOKEN]",
+            "[--cors [CORS ...]]",
+            "[--enable-api]",
+            "[--response-timeout RESPONSE_TIMEOUT]",
+        ]
     else:
-        version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
-              [--cors [CORS [CORS ...]]] [--enable-api]
-              [--response-timeout RESPONSE_TIMEOUT]"""
+        version_dependent = [
+            "[-i INTERFACE]",
+            "[-p PORT]",
+            "[-t AUTH_TOKEN]",
+            "[--cors [CORS [CORS ...]]]",
+            "[--enable-api]",
+            "[--response-timeout RESPONSE_TIMEOUT]",
+        ]
 
     help_text = (
-        """usage: rasa x [-h] [-v] [-vv] [--quiet] [--production]
-              [--config-endpoint CONFIG_ENDPOINT] [--no-prompt] [-m MODEL]
-              [--log-file LOG_FILE] [--use-syslog]
-              [--syslog-address SYSLOG_ADDRESS] [--syslog-port SYSLOG_PORT]
-              [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
-              """
+        [
+            f"{RASA_EXE} x",
+            "[-h]",
+            "[-v]",
+            "[-vv]",
+            "[--quiet]",
+            "[-m MODEL]",
+            "[--no-prompt]",
+            "[--production]",
+            "[--config-endpoint CONFIG_ENDPOINT]",
+            "[--log-file LOG_FILE]",
+            "[--use-syslog]",
+            "[--syslog-address SYSLOG_ADDRESS]",
+            "[--syslog-port SYSLOG_PORT]",
+            "[--syslog-protocol SYSLOG_PROTOCOL]",
+            "[--endpoints ENDPOINTS]",
+        ]
         + version_dependent
-        + """
-              [--remote-storage REMOTE_STORAGE]
-              [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
-              [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]
-              [--credentials CREDENTIALS] [--connector CONNECTOR]
-              [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]"""
+        + [
+            "--remote-storage REMOTE_STORAGE]",
+            "[--ssl-certificate SSL_CERTIFICATE]",
+            "[--ssl-keyfile SSL_KEYFILE]",
+            "[--ssl-ca-file SSL_CA_FILE]",
+            "[--ssl-password SSL_PASSWORD]",
+            "[--credentials CREDENTIALS]",
+            "[--connector CONNECTOR]",
+            "[--jwt-secret JWT_SECRET]",
+            "[--jwt-method JWT_METHOD]",
+        ]
     )
 
-    lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
-    for line in lines:
-        assert line in printed_help
+    printed_help = " ".join(output.outlines)
+    for item in help_text:
+        assert item in printed_help
 
 
 def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path):

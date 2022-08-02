@@ -1398,10 +1398,13 @@ class AwaitableTrackerStore(TrackerStore):
         """Wrapper to call `create` method of primary tracker store."""
         if isinstance(obj, TrackerStore):
             return AwaitableTrackerStore(obj)
+        elif isinstance(obj, EndpointConfig):
+            return AwaitableTrackerStore(_create_from_endpoint_config(obj))
         else:
             raise ValueError(
                 f"{type(obj).__name__} supplied "
-                f"but expected object of type {TrackerStore.__name__}."
+                f"but expected object of type {TrackerStore.__name__} or "
+                f"of type {EndpointConfig.__name__}."
             )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:

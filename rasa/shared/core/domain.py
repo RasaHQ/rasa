@@ -92,6 +92,7 @@ ALL_DOMAIN_KEYS = [
     KEY_INTENTS,
     KEY_RESPONSES,
     KEY_E2E_ACTIONS,
+    SESSION_CONFIG_KEY,
 ]
 
 PREV_PREFIX = "prev_"
@@ -275,7 +276,7 @@ class Domain:
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
-        domain_dict: Dict[Text, Any] = {}
+        combined: Dict[Text, Any] = {}
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
@@ -284,9 +285,9 @@ class Domain:
                     other_dict = rasa.shared.utils.io.read_yaml(
                         rasa.shared.utils.io.read_file(full_path)
                     )
-                    domain_dict = Domain.merge_domain_dicts(other_dict, domain_dict)
+                    combined = Domain.merge_domain_dicts(other_dict, combined)
 
-        domain = Domain.from_dict(domain_dict)
+        domain = Domain.from_dict(combined)
         return domain
 
     def merge(
