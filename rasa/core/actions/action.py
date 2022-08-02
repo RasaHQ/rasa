@@ -405,7 +405,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return None
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[literal-required]
         ]
 
         if (
@@ -438,7 +438,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return []
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[literal-required]
         ]
 
         if (
@@ -960,7 +960,7 @@ class ActionDefaultAskAffirmation(Action):
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[misc]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[literal-required] # noqa: E501
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
@@ -1236,6 +1236,7 @@ class ActionExtractSlots(Action):
 
                     if value is not None or tracker.get_slot(slot.name) is not None:
                         slot_events.append(SlotSet(slot.name, value))
+                        break
 
                 should_fill_custom_slot = mapping_type == SlotMappingType.CUSTOM
 
