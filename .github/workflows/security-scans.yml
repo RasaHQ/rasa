@@ -42,7 +42,7 @@ jobs:
           head: ${{ github.head_ref }}
           extra_args: --exclude-paths=trufflehogignore.txt
       - name: Alert on secret finding
-        if: steps.trufflehog.outcome != 'success'
+        if: steps.trufflehog.outcome == 'failure'
         run: echo "Failed"
 
   bandit:
