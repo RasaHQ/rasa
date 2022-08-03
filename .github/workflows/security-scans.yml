@@ -40,7 +40,7 @@ jobs:
         with:
           path: ./
           base: ${{ github.event.pull_request.base.sha }}
-          head: ${{ github.head_ref }}
+          head: ${{ GITHUB_REF }}
           extra_args: --exclude-paths=trufflehogignore.txt
 
   bandit:
