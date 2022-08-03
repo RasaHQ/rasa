@@ -1,5 +1,6 @@
 data/test_moodbot/credentials.yml
 examples/responseselectorbot/credentials.yml
+examples/moodbot/credentials.yml
 newdocs/docs/user-guide/connectors/telegram.md
 docs/connectors/telegram.rst
 docs/core/connectors.rst
