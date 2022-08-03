@@ -28,8 +28,6 @@ jobs:
     name: Detect Secrets
     runs-on: ubuntu-latest
     steps:
-      - name: Display branches
-        run: echo $GITHUB_CONTEXT
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -39,8 +37,8 @@ jobs:
         continue-on-error: true
         with:
           path: ./
-          base: ${{ github.event.pull_request.base.sha }}
-          head: $GITHUB_REF
+          base: ${{ github.base_ref }}
+          head: ${{ github.head_ref }}
           extra_args: --exclude-paths=trufflehogignore.txt
 
   bandit:
