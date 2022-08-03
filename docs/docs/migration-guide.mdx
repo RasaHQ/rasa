@@ -42,6 +42,36 @@ These former key-value items are no longer required by the `ConcurrentRedisLockS
 There is no overlap in key-value items stored when using the `RedisLockStore` and the `ConcurrentRedisLockStore`, because the `RedisLockStore` persists serialized [TicketLock](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticketlock-objects) instances while the `ConcurrentRedisLockStore` instead stores individual [`Ticket`](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticket-objects) instances, as well as the last issued ticket number.
 The `ConcurrentRedisLockStore` recreates the `TicketLock` from the persisted `Ticket` instances, which allows it to handle concurrent messages for the same conversation ID.
 
+### Changes to Custom NLU Components: `EntityExtractorMixin` renamed to `EntityExtractor`
+
+As of 3.3, the `EntityExtractorMixin` has been renamed back to `EntityExtractor`.
+
+<Tabs values={[{"label": "Rasa 3.2 (old)", "value": "old"}, {"label": "Rasa 3.3 (new)", "value": "new"}]}  groupId="3-0-nlu-entity-extractor" defaultValue="new">
+  <TabItem value="old">
+
+  ```python {2,4}
+  from rasa.engine.graph import GraphComponent
+  from rasa.nlu.extractors.extractor import EntityExtractorMixin
+
+  class MyNLUComponent(GraphComponent, EntityExtractorMixin):
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  from rasa.engine.graph import GraphComponent
+  from rasa.nlu.extractors.extractor import EntityExtractor
+
+  class MyNLUComponent(GraphComponent, EntityExtractor):
+      ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+
 
 ## Rasa 3.0 to 3.1
 
@@ -232,14 +262,15 @@ This snippet shows the required changes:
 
 The `EntityExtractor` class was renamed to `EntityExtractorMixin`:
 
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-entity-extractor" defaultValue="new">
-  <TabItem value="old">
 
 :::info Changed in 3.3
 
 As of 3.3, the `EntityExtractorMixin` has been renamed back to `EntityExtractor`. The migration instructions below are valid for versions >= 3.0, <3.3.
 
 :::
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-entity-extractor" defaultValue="new">
+  <TabItem value="old">
 
   ```python
   from rasa.nlu.extractors.extractor import EntityExtractor

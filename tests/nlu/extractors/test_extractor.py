@@ -1,11 +1,14 @@
 from typing import Any, Text, Dict, List
 
 import pytest
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 from rasa.shared.nlu.constants import TEXT, SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor, EntityExtractorMixin
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLReader
 
@@ -479,4 +482,25 @@ def test_check_correct_entity_annotations(
     assert all(
         [excerpt in record[0].message.args[0]]
         for excerpt in ["Misaligned entity annotation in sentence"]
+    )
+
+
+def test_entity_extractor_mixin_raises_deprecation_warning():
+    with pytest.warns(FutureWarning) as record:
+        class DeprecatedEntityExtractorMixin(GraphComponent, EntityExtractorMixin):
+            @classmethod
+            def create(
+                cls,
+                config: Dict[Text, Any],
+                model_storage: ModelStorage,
+                resource: Resource,
+                execution_context: ExecutionContext,
+            ) -> GraphComponent:
+                return cls()
+
+    assert len(record) == 1
+
+    assert (
+        "EntityExtractorMixin was renamed to EntityExtractor in Rasa 3.3."
+        in record[0].message.args[0]
     )

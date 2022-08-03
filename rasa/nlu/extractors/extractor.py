@@ -1,5 +1,6 @@
 import abc
 from typing import Any, Dict, List, NamedTuple, Text, Tuple, Optional
+import logging
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
@@ -29,6 +30,8 @@ from rasa.shared.nlu.constants import (
 )
 import rasa.utils.train_utils
 
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 class EntityTagSpec(NamedTuple):
     """Specification of an entity tag present in the training data."""
@@ -469,3 +472,18 @@ class EntityExtractor(abc.ABC):
                         docs=DOCS_URL_TRAINING_DATA_NLU,
                     )
                     break
+
+
+class EntityExtractorMixin(EntityExtractor):
+    """Class for backward compatibility in 3.x. 
+
+    EntityExtractorMixin was renamed to EntityExtractor in 3.3.
+    This class will be removed in 4.0
+    """
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "EntityExtractorMixin was renamed to EntityExtractor in Rasa 3.3. "
+            "Please replace uses of EntityExtractorMixin in custom components "
+            "with EntityExtractor instead."
+        )
