@@ -31,14 +31,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
       - name: TruffleHog Secrets Scan
-        uses: trufflesecurity/trufflehog@0752503872c81fb8820085d38d5cd7e7cff8a5af
+        uses: trufflesecurity/trufflehog@047e2b4607487da3c05564ec9b198cf22a048310
         continue-on-error: true
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
           head: ${{ github.head_ref }}
+          extra_args: -x .trufflehogignore
 
   bandit:
     name: Detect python security issues
