@@ -37,9 +37,9 @@ jobs:
         continue-on-error: true
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
+          base: ${{ github.base_ref }}
           head: ${{ github.head_ref }}
-          extra_args: -x trufflehogignore.txt
+          extra_args: --exclude-paths=trufflehogignore.txt
 
   bandit:
     name: Detect python security issues
