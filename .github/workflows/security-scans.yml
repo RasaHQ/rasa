@@ -39,7 +39,7 @@ jobs:
           path: ./
           base: ${{ github.base_ref }}
           head: ${{ github.head_ref }}
-          extra_args: --exclude-paths=trufflehogignore.txt --max-depth=1
+          extra_args: --exclude-paths=trufflehogignore.txt
 
   bandit:
     name: Detect python security issues
