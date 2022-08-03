@@ -33,6 +33,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: TruffleHog Secrets Scan
+        id: trufflehog
         uses: trufflesecurity/trufflehog@047e2b4607487da3c05564ec9b198cf22a048310
         continue-on-error: true
         with:
@@ -40,6 +41,9 @@ jobs:
           base: ${{ github.base_ref }}
           head: ${{ github.head_ref }}
           extra_args: --exclude-paths=trufflehogignore.txt
+      - name: Alert on secret finding
+        if: steps.trufflehog.outcome != 'success'
+        run: echo "Failed"
 
   bandit:
     name: Detect python security issues
