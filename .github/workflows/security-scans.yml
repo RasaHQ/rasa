@@ -28,6 +28,8 @@ jobs:
     name: Detect Secrets
     runs-on: ubuntu-latest
     steps:
+      - name: Display branches
+        run: echo "$GITHUB_CONTEXT"
       - name: Checkout code
         uses: actions/checkout@v3
         with:
