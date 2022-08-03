@@ -30,8 +30,6 @@ from rasa.shared.nlu.constants import (
 )
 import rasa.utils.train_utils
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
 
 class EntityTagSpec(NamedTuple):
     """Specification of an entity tag present in the training data."""
