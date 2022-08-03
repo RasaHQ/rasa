@@ -43,7 +43,24 @@ jobs:
           extra_args: --exclude-paths=trufflehogignore.txt
       - name: Alert on secret finding
         if: steps.trufflehog.outcome == 'failure'
-        run: echo "Failed"
+        uses: slackapi/slack-github-action@936158bbe252e9a6062e793ea4609642c966e302
+        with:
+          payload: |
+            {
+              "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
   bandit:
     name: Detect python security issues

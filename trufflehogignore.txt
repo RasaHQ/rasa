@@ -1,3 +1,1 @@
-
-
 deactivate/lib/python3.6/site-packages/pip/_vendor/urllib3/util/url.py
