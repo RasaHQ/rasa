@@ -31,7 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       - name: TruffleHog Secrets Scan
         uses: trufflesecurity/trufflehog@047e2b4607487da3c05564ec9b198cf22a048310
         continue-on-error: true
@@ -39,7 +39,7 @@ jobs:
           path: ./
           base: ${{ github.base_ref }}
           head: ${{ github.head_ref }}
-          extra_args: --exclude-paths=trufflehogignore.txt
+          extra_args: --exclude-paths=trufflehogignore.txt --max-depth=1
 
   bandit:
     name: Detect python security issues
