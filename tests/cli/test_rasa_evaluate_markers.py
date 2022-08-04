@@ -15,6 +15,8 @@ from rasa.core.tracker_store import SQLTrackerStore
 from rasa.cli.evaluate import STATS_SESSION_SUFFIX, STATS_OVERALL_SUFFIX
 from tests.conftest import write_endpoint_config_to_yaml
 
+from tests.cli.conftest import RASA_EXE
+
 
 @pytest.fixture
 def marker_sqlite_tracker(tmp_path: Path) -> Tuple[SQLTrackerStore, Text]:
@@ -47,8 +49,8 @@ def write_markers_config_to_yaml(
 def test_evaluate_markers_help(run: Callable[..., RunResult]):
     output = run("evaluate", "markers", "--help")
 
-    help_text = """usage: rasa evaluate markers [-h] [-v] [-vv] [--quiet]
-    {first_n,sample_n,all} ..."""
+    help_text = f"""usage: {RASA_EXE} evaluate markers [-h] [-v] [-vv] [--quiet]
+    {{first_n,sample_n,all}} ..."""
 
     lines = [line.strip() for line in help_text.split("\n")]
     # expected help text lines should appear somewhere in the output
@@ -61,7 +63,7 @@ def test_evaluate_markers_first_n_help(run: Callable[..., RunResult]):
     # We need to specify an output_filename as that's the first positional parameter
     output = run("evaluate", "markers", "first_n", "--help")
 
-    help_text = """usage: rasa evaluate markers first_n [-h] [-v] [-vv] [--quiet]
+    help_text = f"""usage: {RASA_EXE} evaluate markers first_n [-h] [-v] [-vv] [--quiet]
     [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
@@ -78,7 +80,7 @@ def test_evaluate_markers_sample_n_help(run: Callable[..., RunResult]):
     # We need to specify an output_filename as that's the first positional parameter
     output = run("evaluate", "markers", "sample_n", "--help")
 
-    help_text = """usage: rasa evaluate markers sample_n [-h] [-v] [-vv] [--quiet] [--seed SEED]
+    help_text = f"""usage: {RASA_EXE} evaluate markers sample_n [-h] [-v] [-vv] [--quiet] [--seed SEED]
     [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
@@ -95,7 +97,7 @@ def test_evaluate_markers_all_help(run: Callable[..., RunResult]):
     # We need to specify an output_filename as that's the first positional parameter
     output = run("evaluate", "markers", "all", "--help")
 
-    help_text = """usage: rasa evaluate markers all [-h] [-v] [-vv] [--quiet] [--config CONFIG]
+    help_text = f"""usage: {RASA_EXE} evaluate markers all [-h] [-v] [-vv] [--quiet] [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
     output_filename"""

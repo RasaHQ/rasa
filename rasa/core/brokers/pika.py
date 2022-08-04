@@ -86,7 +86,7 @@ class PikaEventBroker(EventBroker):
 
         self._loop = event_loop or asyncio.get_event_loop()
 
-        self._connection: Optional[aio_pika.RobustConnection] = None
+        self._connection: Optional[aio_pika.abc.AbstractRobustConnection] = None
         self._exchange: Optional[aio_pika.RobustExchange] = None
 
     @staticmethod
@@ -147,7 +147,7 @@ class PikaEventBroker(EventBroker):
     async def connect(self) -> None:
         """Connects to RabbitMQ."""
         self._connection = await self._connect()
-        self._connection.add_reconnect_callback(self._publish_unpublished_messages)
+        self._connection.reconnect_callbacks.add(self._publish_unpublished_messages)
         logger.info(f"RabbitMQ connection to '{self.host}' was established.")
 
         channel = await self._connection.channel()
@@ -158,7 +158,7 @@ class PikaEventBroker(EventBroker):
 
         self._exchange = await self._set_up_exchange(channel)
 
-    async def _connect(self) -> aio_pika.RobustConnection:
+    async def _connect(self) -> aio_pika.abc.AbstractRobustConnection:
         url = None
         # The `url` parameter will take precedence over parameters like `login` or
         # `password`.
@@ -285,7 +285,7 @@ class PikaEventBroker(EventBroker):
                 self._unpublished_events.append(event)
 
             if self.raise_on_failure:
-                self.close()
+                self.close()  # type: ignore[unused-coroutine]
                 raise e
 
     def _message(
