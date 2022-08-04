@@ -119,10 +119,6 @@ jobs:
         if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-docs-tests'))
         run: python -m venv create .venv
 
-      - name: Set up virtual environment
-        if: needs.changes.outputs.docs == 'true'
-        run: poetry config virtualenvs.in-project true
-
       - name: Load Yarn Cached Packages ⬇
         uses: actions/cache@v3
         with:
