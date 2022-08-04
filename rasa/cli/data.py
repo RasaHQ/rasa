@@ -107,7 +107,6 @@ def _add_data_validate_parsers(
     _append_story_structure_arguments(validate_parser)
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)
-    default_arguments.add_no_colors_param(validate_parser)
 
     validate_subparsers = validate_parser.add_subparsers()
     story_structure_parser = validate_subparsers.add_parser(

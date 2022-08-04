@@ -26,10 +26,7 @@ from rasa.cli import (
     evaluate,
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
-from rasa.cli.utils import (
-    parse_last_positional_argument_as_model_path,
-    configure_no_colors,
-)
+from rasa.cli.utils import parse_last_positional_argument_as_model_path
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_error
 from rasa.utils.common import configure_logging_and_warnings
@@ -107,7 +104,6 @@ def main() -> None:
 
     try:
         if hasattr(cmdline_arguments, "func"):
-            configure_no_colors(cmdline_arguments)
             rasa.utils.io.configure_colored_logging(log_level)
             rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()

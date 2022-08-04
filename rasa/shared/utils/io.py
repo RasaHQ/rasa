@@ -633,11 +633,6 @@ def random_string(length: int) -> Text:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 
-def disable_colors() -> None:
-    """Disable printing colors."""
-    os.environ[ENV_NO_COLOR] = ""
-
-
 def should_print_colors() -> bool:
     """Checks if should print colors"""
     return ENV_NO_COLOR not in os.environ

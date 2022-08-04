@@ -144,7 +144,7 @@ def test_data_validate_help(run: Callable[..., RunResult]):
     help_text = f"""usage: {RASA_EXE} data validate [-h] [-v] [-vv] [--quiet]
                           [--max-history MAX_HISTORY] [-c CONFIG]
                           [--fail-on-warnings] [-d DOMAIN]
-                          [--data DATA [DATA ...]] [--no-colors]
+                          [--data DATA [DATA ...]]
                           {{stories}} ..."""
 
     lines = help_text.split("\n")
@@ -152,13 +152,6 @@ def test_data_validate_help(run: Callable[..., RunResult]):
     printed_help = set(output.outlines)
     for line in lines:
         assert line in printed_help
-
-
-def test_data_validate_no_colors(run: Callable[..., RunResult]):
-    output = run("data", "validate", "--no-colors")
-    printed_text = " ".join(output.outlines + output.errlines)
-    end_color = rasa.shared.utils.io.bcolors.ENDC
-    assert end_color not in printed_text
 
 
 def test_data_validate_no_color_env(run: Callable[..., RunResult]):
