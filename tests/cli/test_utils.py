@@ -8,6 +8,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 import rasa.cli.utils
+from tests.cli.conftest import RASA_EXE
 
 
 @contextlib.contextmanager
@@ -26,10 +27,10 @@ def make_actions_subdir():
 @pytest.mark.parametrize(
     "argv",
     [
-        ["rasa", "run"],
-        ["rasa", "run", "actions"],
-        ["rasa", "run", "core"],
-        ["rasa", "interactive", "nlu", "--param", "xy"],
+        [RASA_EXE, "run"],
+        [RASA_EXE, "run", "actions"],
+        [RASA_EXE, "run", "core"],
+        [RASA_EXE, "interactive", "nlu", "--param", "xy"],
     ],
 )
 def test_parse_last_positional_argument_as_model_path(argv):
@@ -47,10 +48,10 @@ def test_parse_last_positional_argument_as_model_path(argv):
 @pytest.mark.parametrize(
     "argv",
     [
-        ["rasa", "run"],
-        ["rasa", "run", "actions"],
-        ["rasa", "run", "core"],
-        ["rasa", "test", "nlu", "--param", "xy", "--model", "test"],
+        [RASA_EXE, "run"],
+        [RASA_EXE, "run", "actions"],
+        [RASA_EXE, "run", "core"],
+        [RASA_EXE, "test", "nlu", "--param", "xy", "--model", "test"],
     ],
 )
 def test_parse_no_positional_model_path_argument(argv):
