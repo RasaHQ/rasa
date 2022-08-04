@@ -99,3 +99,41 @@ jobs:
 
     - name: Test Docs 🕸
       run: make test-docs
+
+  documentation_lint:
+    name: Documentation Linting Checks
+    runs-on: ubuntu-latest
+    needs: [ changes ]
+    if: needs.changes.outputs.docs == 'true'
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v3
+
+      - name: Set up Node 12.x 🦙
+        uses: actions/setup-node@v2.3.0
+        with:
+          node-version: '12.x'
+
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-docs-tests'))
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        if: needs.changes.outputs.docs == 'true'
+        run: poetry config virtualenvs.in-project true
+
+      - name: Load Yarn Cached Packages ⬇
+        uses: actions/cache@v3
+        with:
+          path: docs/node_modules
+          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-12.x
+
+      - name: Install Dependencies 📦
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-docs
+
+      - name: Docs Linting Checks 🕸
+        run: make lint-docs
