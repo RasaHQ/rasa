@@ -155,7 +155,7 @@ jobs:
       - name: Install Dependencies 📦
         run: |
           sudo apt-get -y install libpq-dev
-          make install-docs
+          make install-full install-docs
 
       - name: Docs Linting Checks 🕸
         run: make lint-docs
