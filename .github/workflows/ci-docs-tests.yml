@@ -110,6 +110,11 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
       - name: Set up Node 12.x 🦙
         uses: actions/setup-node@v2.3.0
         with:
