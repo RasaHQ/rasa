@@ -3,13 +3,14 @@ updates:
   - package-ecosystem: pip
     directory: "/"
     schedule:
-      interval: monthly
+      interval: weekly
       time: '13:00'
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 10
     labels:
       - type:dependencies
+      - release:main
     ignore:
       - dependency-name: prompt-toolkit
         versions:
@@ -17,6 +18,7 @@ updates:
       - dependency-name: pytest-asyncio
         versions:
           - "> 0.10.0"
+
   - package-ecosystem: npm
     directory: "/docs"
     schedule:

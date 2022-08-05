@@ -24,19 +24,43 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
 
-  gitleaks:
-    name: Detecting hardcoded secrets
+  trufflehog:
+    name: Detect Secrets
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-      with:
-        # Fetch all history for all tags and branches
-        fetch-depth: '0'
-
-    - name: Gitleaks - detecting hardcoded secrets
-      uses: zricethezav/gitleaks-action@518e4898c0cd1cc5d9aab6627a2eabd46e81d8da # v1.6.0
-      with:
-        config-path: .gitleaks.toml
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: TruffleHog Secrets Scan
+        id: trufflehog
+        uses: trufflesecurity/trufflehog@047e2b4607487da3c05564ec9b198cf22a048310
+        continue-on-error: true
+        with:
+          path: ./
+          base: ${{ github.base_ref }}
+          head: ${{ github.head_ref }}
+          extra_args: --exclude-paths=trufflehogignore.txt
+      - name: Alert on secret finding
+        if: steps.trufflehog.outcome == 'failure'
+        uses: slackapi/slack-github-action@936158bbe252e9a6062e793ea4609642c966e302
+        with:
+          payload: |
+            {
+              "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
   bandit:
     name: Detect python security issues
@@ -50,7 +74,7 @@ jobs:
 
     - name: Set up Python 3.9 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
       with:
         python-version: 3.9
 
