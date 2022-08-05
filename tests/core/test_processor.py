@@ -1599,3 +1599,66 @@ async def test_custom_action_triggers_action_extract_slots(
         isinstance(e, BotUttered) and e.text == "Great, carry on!"
         for e in tracker.events
     )
+
+
+async def test_processor_executes_bot_uttered_returned_by_action_extract_slots(
+    default_agent: Agent,
+):
+    slot_name = "location"
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        intents:
+        - inform
+
+        entities:
+        - {slot_name}
+
+        slots:
+          {slot_name}:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: {slot_name}
+
+        actions:
+        - action_validate_slot_mappings
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    processor = default_agent.processor
+    processor.domain = domain
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+    processor.action_endpoint = EndpointConfig(action_server_url)
+
+    sender_id = uuid.uuid4().hex
+    message = UserMessage(
+        text="This is a test.",
+        output_channel=CollectingOutputChannel(),
+        sender_id=sender_id,
+        parse_data={
+            "intent": {"name": "inform", "confidence": 1},
+            "entities": [{"entity": slot_name, "value": "Lisbon"}],
+        },
+    )
+
+    bot_uttered_text = "This city is not yet supported."
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "bot", "text": bot_uttered_text},
+                    {"event": "slot", "name": "location", "value": None},
+                ]
+            },
+        )
+        responses = await processor.handle_message(message)
+        assert any(bot_uttered_text in r.get("text") for r in responses)
+
+        tracker = await processor.get_tracker(sender_id)
+        assert tracker.get_slot(slot_name) is None
