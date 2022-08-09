@@ -16,6 +16,14 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.2.5] - 2022-08-05                         
+### Bugfixes
+- [#11294](https://github.com/rasahq/rasa/issues/11294): Fix `KeyError` which resulted when `action_two_stage_fallback` got executed in a project whose domain contained slot mappings.
+- [#11390](https://github.com/rasahq/rasa/issues/11390): Fixes regression in which slot mappings were prioritized according to reverse order as they were listed in the domain, instead of in order from first to last, as was implicitly expected in `2.x`.
+  Clarifies this implicit priority order in the docs.
+- [#11394](https://github.com/rasahq/rasa/issues/11394): Enables the dispatching of bot messages returned as events by slot validation actions.
+
+
 ## [3.2.4] - 2022-07-21                         
 ### Bugfixes
 - [#11061](https://github.com/rasahq/rasa/issues/11061): Added session_config key as valid domain key during domain loading from directory containing a separate domain file with session configuration.
