@@ -229,7 +229,9 @@ cleanup-generated-changelog:
 
 test-docs: generate-pending-changelog docs
 	poetry run pytest tests/docs/*
-	cd docs && yarn mdx-lint
+
+lint-docs: generate-pending-changelog docs
+	cd docs/ && yarn mdx-lint
 
 prepare-docs:
 	cd docs/ && poetry run yarn pre-build
