@@ -90,7 +90,7 @@ class SlotMapping:
             active_loop_match = any(match_list)
 
         if active_loop_match:
-            form_ignored_intents = domain.forms[active_loop_name].get(
+            form_ignored_intents = domain.forms.get(active_loop_name, {}).get(
                 IGNORED_INTENTS, []
             )
             ignored_intents = SlotMapping.to_list(form_ignored_intents)

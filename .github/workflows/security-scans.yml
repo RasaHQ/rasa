@@ -33,12 +33,34 @@ jobs:
         with:
           fetch-depth: 0
       - name: TruffleHog Secrets Scan
-        uses: trufflesecurity/trufflehog@0752503872c81fb8820085d38d5cd7e7cff8a5af
+        id: trufflehog
+        uses: trufflesecurity/trufflehog@047e2b4607487da3c05564ec9b198cf22a048310
         continue-on-error: true
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
+          base: ${{ github.base_ref }}
           head: ${{ github.head_ref }}
+          extra_args: --exclude-paths=trufflehogignore.txt
+      - name: Alert on secret finding
+        if: steps.trufflehog.outcome == 'failure'
+        uses: slackapi/slack-github-action@936158bbe252e9a6062e793ea4609642c966e302
+        with:
+          payload: |
+            {
+              "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
   bandit:
     name: Detect python security issues

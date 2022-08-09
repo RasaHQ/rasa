@@ -173,6 +173,9 @@ class MessageProcessor:
         extraction_events = await action_extract_slots.run(
             output_channel, self.nlg, tracker, self.domain
         )
+
+        await self._send_bot_messages(extraction_events, tracker, output_channel)
+
         tracker.update_with_events(extraction_events, self.domain)
 
         events_as_str = "\n".join([str(e) for e in extraction_events])
@@ -180,6 +183,7 @@ class MessageProcessor:
             f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
             f"resulting in {len(extraction_events)} events: {events_as_str}"
         )
+
         return tracker
 
     async def predict_next_for_sender_id(
