@@ -3,6 +3,8 @@ import asyncio
 import json
 import logging
 import os
+
+import concurrent.futures
 from typing import (
     Any,
     AsyncGenerator,
@@ -101,19 +103,20 @@ def _print_bot_output(
     return None
 
 
+pool = concurrent.futures.ThreadPoolExecutor()
+
+
 @overload
 def _get_user_input(previous_response: None) -> Text:
     ...
 
 
 @overload
-async def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
+def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
     ...
 
 
-async def _get_user_input(  # type: ignore[misc]
-    previous_response: Optional[Dict[str, Any]]
-) -> Optional[Text]:
+def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
     button_response = None
     if previous_response is not None:
         button_response = _print_bot_output(previous_response, is_latest_message=True)
@@ -129,7 +132,9 @@ async def _get_user_input(  # type: ignore[misc]
             qmark="Your input ->",
             style=Style([("qmark", "#b373d6"), ("", "#b373d6")]),
         )
-        response = await question.ask_async()
+        response = pool.submit(  # type: ignore[assignment]
+            asyncio.run, question.ask_async()
+        ).result()
     return response.strip() if response is not None else None
 
 
