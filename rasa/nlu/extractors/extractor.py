@@ -1,6 +1,5 @@
 import abc
 from typing import Any, Dict, List, NamedTuple, Text, Tuple, Optional
-import logging
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
@@ -473,7 +472,7 @@ class EntityExtractor(abc.ABC):
 
 
 class EntityExtractorMixin(EntityExtractor):
-    """Class for backward compatibility in 3.x. 
+    """Class for backward compatibility in 3.x.
 
     EntityExtractorMixin was renamed to EntityExtractor in 3.3.
     This class will be removed in 4.0
