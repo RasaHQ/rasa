@@ -48,6 +48,7 @@ class bcolors:
 
 
 def wrap_with_color(*args: Any, color: Text) -> Text:
+    """Convert args in a string and wrap it with a given color."""
     message = " ".join(str(s) for s in args)
 
     if should_print_colors():
@@ -634,5 +635,5 @@ def random_string(length: int) -> Text:
 
 
 def should_print_colors() -> bool:
-    """Checks if should print colors"""
+    """Checks if should print colors."""
     return ENV_NO_COLOR not in os.environ
