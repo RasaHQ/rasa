@@ -3,7 +3,15 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, AsyncGenerator, Dict, List, Optional, Text, overload
+from typing import (
+    Any,
+    AsyncGenerator,
+    Dict,
+    List,
+    Optional,
+    Text,
+    overload,
+)
 
 import aiohttp
 import questionary
@@ -94,7 +102,7 @@ def _print_bot_output(
 
 
 @overload
-async def _get_user_input(previous_response: None) -> Text:
+def _get_user_input(previous_response: None) -> Text:
     ...
 
 
@@ -103,7 +111,7 @@ async def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
     ...
 
 
-async def _get_user_input(
+async def _get_user_input(  # type: ignore[misc]
     previous_response: Optional[Dict[str, Any]]
 ) -> Optional[Text]:
     button_response = None
@@ -114,7 +122,7 @@ async def _get_user_input(
         response = cli_utils.payload_from_button_question(button_response)
         if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
-            response = await _get_user_input(None)
+            response = _get_user_input(None)
     else:
         question = questionary.text(
             "",
@@ -195,7 +203,7 @@ async def record_messages(
     previous_response = None
     await asyncio.sleep(0.5)  # Wait for server to start
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = await _get_user_input(previous_response)
+        text = _get_user_input(previous_response)
 
         if text == exit_text or text is None:
             break
