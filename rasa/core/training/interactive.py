@@ -324,7 +324,7 @@ async def _ask_questions(
     answers: Any = {}
 
     while should_retry:
-        answers = questions.ask()
+        answers = await questions.ask_async()
         if answers is None or is_abort(answers):
             should_retry = await _ask_if_quit(conversation_id, endpoint)
         else:
@@ -599,17 +599,17 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     return slot_strings
 
 
-def _retry_on_error(
+async def _retry_on_error(
     func: Callable, export_path: Text, *args: Any, **kwargs: Any
 ) -> None:
     while True:
         try:
             return func(export_path, *args, **kwargs)
         except OSError as e:
-            answer = questionary.confirm(
+            answer = await questionary.confirm(
                 f"Failed to export '{export_path}': {e}. Please make sure 'rasa' "
                 f"has read and write access to this file. Would you like to retry?"
-            ).ask()
+            ).ask_async()
             if not answer:
                 raise e
 
@@ -617,7 +617,7 @@ def _retry_on_error(
 async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Write stories and nlu data to file."""
 
-    story_path, nlu_path, domain_path = _request_export_info()
+    story_path, nlu_path, domain_path = await _request_export_info()
 
     tracker = await retrieve_tracker(endpoint, conversation_id)
     events = tracker.get("events", [])
@@ -625,9 +625,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig) -
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    _retry_on_error(_write_stories_to_file, story_path, events, domain)
-    _retry_on_error(_write_nlu_to_file, nlu_path, events)
-    _retry_on_error(_write_domain_to_file, domain_path, events, domain)
+    await _retry_on_error(_write_stories_to_file, story_path, events, domain)
+    await _retry_on_error(_write_nlu_to_file, nlu_path, events)
+    await _retry_on_error(_write_domain_to_file, domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -637,7 +637,7 @@ async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
 
     Return `True` if the previous question should be retried."""
 
-    answer = questionary.select(
+    answer = await questionary.select(
         message="Do you want to stop?",
         choices=[
             Choice("Continue", "continue"),
@@ -646,7 +646,7 @@ async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
             Choice("Start Fresh", "restart"),
             Choice("Export & Quit", "quit"),
         ],
-    ).ask()
+    ).ask_async()
 
     if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
@@ -713,7 +713,7 @@ async def _request_action_from_user(
     return action_name, is_new_action
 
 
-def _request_export_info() -> Tuple[Text, Text, Text]:
+async def _request_export_info() -> Tuple[Text, Text, Text]:
     import rasa.shared.data
 
     """Request file path and export stories & nlu data to that path"""
@@ -752,7 +752,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
         ),
     )
 
-    answers = questions.ask()
+    answers = await questions.ask_async()
     if not answers:
         raise Abort()
 
@@ -1003,12 +1003,12 @@ async def _predict_till_next_listen(
         if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
             "buttons", None
         ):
-            user_selection = _get_button_choice(last_event)
+            user_selection = await _get_button_choice(last_event)
             if user_selection != rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
                 await send_message(endpoint, conversation_id, user_selection)
 
 
-def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
+async def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
     data = last_event["data"]
     message = last_event.get("text", "")
 
@@ -1016,7 +1016,7 @@ def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
         data, allow_free_text_input=True
     )
     question = questionary.select(message, choices)
-    return rasa.cli.utils.payload_from_button_question(question)
+    return await rasa.cli.utils.payload_from_button_question(question)
 
 
 async def _correct_wrong_nlu(

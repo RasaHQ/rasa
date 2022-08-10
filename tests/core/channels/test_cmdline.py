@@ -17,8 +17,8 @@ def mock_stdin(input_from_stdin: List[Text]):
     for line in input_from_stdin:
         text += line + ENTER + "\r"
 
-    with create_pipe_input() as inp:
-        inp.send_text(text)
+    inp = create_pipe_input()
+    inp.send_text(text)
 
     prompt_session_init = PromptSession.__init__
 

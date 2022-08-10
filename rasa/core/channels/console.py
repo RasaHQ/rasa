@@ -121,10 +121,10 @@ async def _get_user_input(
         button_response = _print_bot_output(previous_response, is_latest_message=True)
 
     if button_response is not None:
-        response = cli_utils.payload_from_button_question(button_response)
+        response = await cli_utils.payload_from_button_question(button_response)
         if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
-            response = _get_user_input(None)
+            response = await _get_user_input(None)
     else:
         question = questionary.text(
             "",

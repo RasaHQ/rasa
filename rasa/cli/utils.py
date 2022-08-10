@@ -190,9 +190,9 @@ def button_choices_from_message_data(
     return choices
 
 
-def payload_from_button_question(button_question: "Question") -> Text:
+async def payload_from_button_question(button_question: "Question") -> Text:
     """Prompt user with a button question and returns the nlu payload."""
-    response = button_question.ask()
+    response = await button_question.ask_async()
     if response != FREE_TEXT_INPUT_PROMPT:
         # Extract intent slash command if it's a button
         response = response[response.find("(") + 1 : response.find(")")]
