@@ -146,7 +146,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             intents = self.clf.classes_
             intent_ranking = [
                 {"name": k, "confidence": v}
-                for i, (k, v) in zip(intents, probas[idx])
+                for k, v in zip(intents, probas[idx])
             ]
             sorted_ranking = sorted(intent_ranking, key=lambda e: -e["confidence"])
             intent = sorted_ranking[0]
