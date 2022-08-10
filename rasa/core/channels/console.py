@@ -131,7 +131,7 @@ async def _get_user_input(
             qmark="Your input ->",
             style=Style([("qmark", "#b373d6"), ("", "#b373d6")]),
         )
-        response = question.ask_async()
+        response = await question.ask_async()
     return response.strip() if response is not None else None
 
 
