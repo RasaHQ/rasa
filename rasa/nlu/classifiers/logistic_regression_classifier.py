@@ -9,6 +9,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -43,7 +44,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             "solver": "lbfgs",
             "tol": 1e-4,
             "random_state": 42,
-            RANKING_LENGTH: 10
+            RANKING_LENGTH: LABEL_RANKING_LENGTH
         }
 
     def __init__(
