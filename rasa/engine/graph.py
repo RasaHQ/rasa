@@ -400,7 +400,8 @@ class GraphNode:
             raise
         except Exception as e:
             raise GraphComponentException(
-                f"Error initializing graph component for node '{self._node_name}, {e.msg}'."
+                f"Error initializing graph component for node "
+                f"'{self._node_name}, {e.msg}'."
             ) from e
 
     def _get_resource(self, kwargs: Dict[Text, Any]) -> Resource:
