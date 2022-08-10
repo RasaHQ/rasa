@@ -11,11 +11,10 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import TEXT, INTENT
-
+from rasa.utils.tensorflow.constants import RANKING_LENGTH
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +43,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             "solver": "lbfgs",
             "tol": 1e-4,
             "random_state": 42,
+            RANKING_LENGTH: 10
         }
 
     def __init__(
@@ -55,7 +55,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     ) -> None:
         """Construct a new classifier."""
         self.name = name
-        config = {**self.get_default_config(), **config}
+        self.config = {**self.get_default_config(), **config}
         self.clf = LogisticRegression(
             solver=config["solver"],
             max_iter=config["max_iter"],
@@ -141,20 +141,16 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     def process(self, messages: List[Message]) -> List[Message]:
         """Return the most likely intent and its probability for a message."""
         X = self._create_X(messages)
-        pred = self.clf.predict(X)
         probas = self.clf.predict_proba(X)
         for idx, message in enumerate(messages):
-            intent = {"name": pred[idx], "confidence": probas[idx].max()}
             intents = self.clf.classes_
-            intent_info = {
-                k: v
-                for i, (k, v) in enumerate(zip(intents, probas[idx]))
-                if i < LABEL_RANKING_LENGTH
-            }
             intent_ranking = [
-                {"name": k, "confidence": v} for k, v in intent_info.items()
+                {"name": k, "confidence": v}
+                for i, (k, v) in zip(intents, probas[idx])
             ]
             sorted_ranking = sorted(intent_ranking, key=lambda e: -e["confidence"])
+            intent = sorted_ranking[0]
+            sorted_ranking = sorted_ranking[self.config[RANKING_LENGTH]]
             message.set("intent", intent, add_to_output=True)
             message.set("intent_ranking", sorted_ranking, add_to_output=True)
         return messages
