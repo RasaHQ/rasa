@@ -150,7 +150,8 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             ]
             sorted_ranking = sorted(intent_ranking, key=lambda e: -e["confidence"])
             intent = sorted_ranking[0]
-            sorted_ranking = sorted_ranking[:self.config[RANKING_LENGTH]]
+            if self.config[RANKING_LENGTH] > 0:
+                sorted_ranking = sorted_ranking[:self.config[RANKING_LENGTH]]
             message.set("intent", intent, add_to_output=True)
             message.set("intent_ranking", sorted_ranking, add_to_output=True)
         return messages
