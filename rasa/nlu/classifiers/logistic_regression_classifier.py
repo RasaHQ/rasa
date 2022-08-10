@@ -44,7 +44,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             "solver": "lbfgs",
             "tol": 1e-4,
             "random_state": 42,
-            RANKING_LENGTH: LABEL_RANKING_LENGTH
+            RANKING_LENGTH: LABEL_RANKING_LENGTH,
         }
 
     def __init__(
@@ -146,13 +146,12 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         for idx, message in enumerate(messages):
             intents = self.clf.classes_
             intent_ranking = [
-                {"name": k, "confidence": v}
-                for k, v in zip(intents, probas[idx])
+                {"name": k, "confidence": v} for k, v in zip(intents, probas[idx])
             ]
             sorted_ranking = sorted(intent_ranking, key=lambda e: -e["confidence"])
             intent = sorted_ranking[0]
             if self.config[RANKING_LENGTH] > 0:
-                sorted_ranking = sorted_ranking[:self.config[RANKING_LENGTH]]
+                sorted_ranking = sorted_ranking[: self.config[RANKING_LENGTH]]
             message.set("intent", intent, add_to_output=True)
             message.set("intent_ranking", sorted_ranking, add_to_output=True)
         return messages
