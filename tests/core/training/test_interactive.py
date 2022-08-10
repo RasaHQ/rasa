@@ -693,7 +693,7 @@ class QuestionaryConfirmMock:
     def __call__(self, text: Text) -> "QuestionaryConfirmMock":
         return self
 
-    def ask(self) -> bool:
+    def ask_async(self) -> bool:
         self.tries -= 1
         if self.tries == 0:
             return False
