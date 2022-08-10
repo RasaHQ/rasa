@@ -616,7 +616,6 @@ async def _retry_on_error(
 
 async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Write stories and nlu data to file."""
-
     story_path, nlu_path, domain_path = await _request_export_info()
 
     tracker = await retrieve_tracker(endpoint, conversation_id)

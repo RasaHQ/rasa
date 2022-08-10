@@ -4,7 +4,6 @@ import json
 import logging
 import os
 
-import concurrent.futures
 from typing import (
     Any,
     AsyncGenerator,
@@ -138,6 +137,7 @@ async def _get_user_input(
 async def send_message_receive_block(
     server_url: Text, auth_token: Text, sender_id: Text, message: Text
 ) -> List[Dict[Text, Any]]:
+    """Posts message and returns response."""
     payload = {"sender": sender_id, "message": message}
 
     url = f"{server_url}/webhooks/rest/webhook?token={auth_token}"
