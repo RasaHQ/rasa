@@ -58,11 +58,11 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         self.name = name
         self.config = {**self.get_default_config(), **config}
         self.clf = LogisticRegression(
-            solver=config["solver"],
-            max_iter=config["max_iter"],
+            solver=self.config["solver"],
+            max_iter=self.config["max_iter"],
             class_weight="balanced",
-            tol=config["tol"],
-            random_state=config["random_state"],
+            tol=self.config["tol"],
+            random_state=self.config["random_state"],
             # Added these parameters to ensure sklearn changes won't affect us.
             # Should a sklearn update the defaults, we won't be affected.
             dual=False,
