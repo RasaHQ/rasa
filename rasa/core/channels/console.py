@@ -103,20 +103,19 @@ def _print_bot_output(
     return None
 
 
-pool = concurrent.futures.ThreadPoolExecutor()
-
-
 @overload
-def _get_user_input(previous_response: None) -> Text:
+async def _get_user_input(previous_response: None) -> Text:
     ...
 
 
 @overload
-def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
+async def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
     ...
 
 
-def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
+async def _get_user_input(
+    previous_response: Optional[Dict[str, Any]]
+) -> Optional[Text]:
     button_response = None
     if previous_response is not None:
         button_response = _print_bot_output(previous_response, is_latest_message=True)
@@ -132,9 +131,7 @@ def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Tex
             qmark="Your input ->",
             style=Style([("qmark", "#b373d6"), ("", "#b373d6")]),
         )
-        response = pool.submit(  # type: ignore[assignment]
-            asyncio.run, question.ask_async()
-        ).result()
+        response = question.ask_async()
     return response.strip() if response is not None else None
 
 
@@ -208,7 +205,7 @@ async def record_messages(
     previous_response = None
     await asyncio.sleep(0.5)  # Wait for server to start
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = _get_user_input(previous_response)
+        text = await _get_user_input(previous_response)
 
         if text == exit_text or text is None:
             break
