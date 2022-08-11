@@ -72,61 +72,20 @@ jobs:
 
     - name: Check if tag version is equal or higher than the latest tagged Rasa version
       id: rasa_get_version
+      if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
       run: |
         # Get latest tagged Rasa version
         git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
         # Fetch branch history
         git fetch --prune --unshallow
-        LATEST_TAGGED_NON_ALPHA_RASA_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | head -n1)
+        python scripts/evaluate_release_tag.py $TAG_NAME
+        exit_status=$?
 
-        echo "LATEST_TAGGED_NON_ALPHA_RASA_VERSION=${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" >> $GITHUB_ENV
-
-        # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
-        IS_LATEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$TAG_NAME" \
-          | sort -V -C && echo true || echo false) || true)
-
-
-        if [[ "${IS_LATEST_VERSION}" == "true" && "$TAG_NAME" =~ ^[0-9.]+$ ]]; then
-          echo "::set-output name=is_latest_version::true"
+        if [[ "${exit_status}" == "0" ]]; then
+          echo "::set-output name=build_docs::true"
         else
-          echo "::set-output name=is_latest_version::false"
+          echo "::set-output name=build_docs::false"
         fi
-
-
-    # MAJOR.MINOR.MICRO(PATCH)
-    # docs are built on every minor tag for the latest major (when 3.0 is out, the latest major is 3.0)
-    # (technically it'll be always the latest version)
-    #
-    # docs are built on every micro tag for the latest minor of
-    # - the latest major (when 3.0 is out, the latest major is 3.0)
-    # - the previous major (when 3.0 is out, the previous major is 2.0, the latest minor on this version being 2.8)
-    - name: Check if it's a micro tag for the latest minor
-      if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
-      id: check_tag
-      run: |
-        IS_LATEST_VERSION=${{ steps.rasa_get_version.outputs.is_latest_version }}
-
-        # the latest major (when 3.0 is out, the latest major is 3.0)
-        # build docs on push to the main branch
-        if [[ "${IS_LATEST_VERSION}" == "true" || "${IS_MAIN_BRANCH}" == "true" ]]; then
-          echo "::set-output name=build_docs::true"
-          exit 0
-        fi
-
-        # the previous major (when 3.0 is out, the previous major is 2.0, the latest minor on this version being 2.8)
-        CURRENT_MAJOR_VERSION=$(echo ${LATEST_TAGGED_NON_ALPHA_RASA_VERSION} | awk -F\. '{print $1}')
-        PREVIOUS_MAJOR_LATEST_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | grep -vE "^${CURRENT_MAJOR_VERSION}" | head -n1)
-
-        # Return 'true' if tag version is equal or higher than the latest previous major version
-        IS_PREVIOUS_MAJOR_LATEST_VERSION=$((printf '%s\n%s\n' "${PREVIOUS_MAJOR_LATEST_VERSION}" "$TAG_NAME" \
-          | sort -V -C && echo true || echo false) || true)
-
-        if [[ "${IS_PREVIOUS_MAJOR_LATEST_VERSION}" == "true" ]]; then
-          echo "::set-output name=build_docs::true"
-          exit 0
-        fi
-
-        echo "::set-output name=build_docs::false"
 
   prebuild_docs:
     name: Prebuild Docs
