@@ -96,6 +96,7 @@ class RestInput(InputChannel):
         Returns:
             Sanic stream
         """
+
         async def stream(resp: Any) -> None:
             q: Queue = Queue()
             task = asyncio.ensure_future(
