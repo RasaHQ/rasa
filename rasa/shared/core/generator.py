@@ -109,6 +109,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             or omit_unset_slots != self._omit_unset_slots
         ):
             states = super().past_states(domain, omit_unset_slots=omit_unset_slots)
+            self._omit_unset_slots = omit_unset_slots
             self._states_for_hashing = deque(
                 self.freeze_current_state(s) for s in states
             )
