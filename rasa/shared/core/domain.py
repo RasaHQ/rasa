@@ -339,7 +339,10 @@ class Domain:
             override
             or combined.get(SESSION_CONFIG_KEY) == SessionConfig.default().as_dict()
             or combined.get(SESSION_CONFIG_KEY) is None
-        ) and domain_dict.get(SESSION_CONFIG_KEY):
+        ) and domain_dict.get(SESSION_CONFIG_KEY) not in [
+            None,
+            SessionConfig.default().as_dict(),
+        ]:
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
         # remove existing forms from new actions
