@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import textwrap
@@ -469,7 +470,6 @@ async def _request_intent_from_user(
 
 async def _print_history(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Print information about the conversation for the user."""
-
     tracker_dump = await retrieve_tracker(
         endpoint, conversation_id, EventVerbosity.AFTER_RESTART
     )
@@ -480,11 +480,13 @@ async def _print_history(conversation_id: Text, endpoint: EndpointConfig) -> Non
 
     print("------")
     print("Chat History\n")
-    print(table)
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(None, print, table)
 
     if slot_strings:
         print("\n")
-        print(f"Current slots: \n\t{', '.join(slot_strings)}\n")
+        slots_info = f"Current slots: \n\t{', '.join(slot_strings)}\n"
+        loop.run_in_executor(None, print, slots_info)
 
     print("------")
 
@@ -589,7 +591,6 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
 def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     """Create an array of slot representations to be displayed."""
-
     slot_strings = []
     for k, s in tracker_dump.get("slots", {}).items():
         colored_value = rasa.shared.utils.io.wrap_with_color(
@@ -634,8 +635,8 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig) -
 async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
     """Display the exit menu.
 
-    Return `True` if the previous question should be retried."""
-
+    Return `True` if the previous question should be retried.
+    """
     answer = await questionary.select(
         message="Do you want to stop?",
         choices=[
