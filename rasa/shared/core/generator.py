@@ -182,6 +182,9 @@ class TrackerWithCachedStates(DialogueStateTracker):
             tracker.update(event, skip_states=True)
 
         tracker._states_for_hashing = copy.copy(self._states_for_hashing)
+        tracker._omit_unset_slots = (
+            tracker._omit_unset_slots if hasattr(self, "_omit_unset_slots") else None
+        )
 
         return tracker
 
