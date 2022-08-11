@@ -1,25 +1,19 @@
 from __future__ import annotations
 import asyncio
-from collections import deque
 from contextlib import asynccontextmanager
 import json
 import logging
 import os
 
-from typing import AsyncGenerator, Deque, Dict, Optional, Text, Union
+from typing import AsyncGenerator, Dict, Optional, Text, Union
 
-from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.exceptions import RasaException, ConnectionException
 import rasa.shared.utils.common
-import rasa.shared.utils.io
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.core.lock import Ticket, TicketLock
+from rasa.core.lock import TicketLock
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
-CONCURRENT_KEY = "concurrent_mode"
-LAST_ISSUED_TICKET_NUMBER_SUFFIX = "last_issued_ticket_number"
 
 
 def _get_lock_lifetime() -> int:
@@ -30,7 +24,6 @@ LOCK_LIFETIME = _get_lock_lifetime()
 DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 10
 
 DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX = "lock:"
-DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX = "concurrent_lock:"
 
 
 # noinspection PyUnresolvedReferences
@@ -86,9 +79,7 @@ class LockStore:
         logger.debug(f"Issuing ticket for conversation '{conversation_id}'.")
         try:
             lock = self.get_or_create_lock(conversation_id)
-            lock.remove_expired_tickets()
-            ticket_number = self.increment_ticket_number(lock)
-            ticket = lock.issue_ticket(lock_lifetime, ticket_number)
+            ticket = lock.issue_ticket(lock_lifetime)
             self.save_lock(lock)
 
             return ticket
@@ -160,7 +151,7 @@ class LockStore:
     def get_or_create_lock(self, conversation_id: Text) -> TicketLock:
         """Fetch existing lock for `conversation_id`.
 
-        If one doesn't exist, create a new one.
+        Alternatively, create a new one if it doesn't exist.
         """
         existing_lock = self.get_lock(conversation_id)
 
@@ -170,7 +161,7 @@ class LockStore:
         return self.create_lock(conversation_id)
 
     def is_someone_waiting(self, conversation_id: Text) -> bool:
-        """Return if someone is waiting for lock associated with `conversation_id`."""
+        """Return whether someone is waiting for lock for this `conversation_id`."""
         lock = self.get_lock(conversation_id)
         if lock:
             return lock.is_someone_waiting()
@@ -182,6 +173,7 @@ class LockStore:
 
         Removes ticket from lock and saves lock.
         """
+
         lock = self.get_lock(conversation_id)
         if lock:
             lock.remove_ticket_for(ticket_number)
@@ -200,10 +192,6 @@ class LockStore:
             logger.debug(f"Deleted lock for conversation '{conversation_id}'.")
         else:
             logger.debug(f"Could not delete lock for conversation '{conversation_id}'.")
-
-    def increment_ticket_number(self, lock: TicketLock) -> int:
-        """Increments last issued ticket number."""
-        return lock.last_issued + 1
 
 
 class RedisLockStore(LockStore):
@@ -314,24 +302,8 @@ def _create_from_endpoint_config(
         # this is the default type if no lock store type is set
 
         lock_store: LockStore = InMemoryLockStore()
-    elif endpoint_config.type == "redis" and not endpoint_config.kwargs.get(
-        CONCURRENT_KEY, False
-    ):
-        rasa.shared.utils.io.raise_warning(
-            "'RedisLockStore' now supports concurrent message handling. "
-            "You must set the 'concurrent_mode' key to True to activate "
-            "this improvement. ",
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-
+    elif endpoint_config.type == "redis":
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
-    elif endpoint_config.type == "redis" and endpoint_config.kwargs.get(
-        CONCURRENT_KEY, False
-    ):
-        del endpoint_config.kwargs[CONCURRENT_KEY]
-        lock_store = ConcurrentRedisLockStore(
-            host=endpoint_config.url, **endpoint_config.kwargs
-        )
     else:
         lock_store = _load_from_module_name_in_endpoint_config(endpoint_config)
 
@@ -355,130 +327,3 @@ def _load_from_module_name_in_endpoint_config(
             f"'{endpoint_config.type}'. Failed to create a `LockStore` "
             f"instance. Error: {e}"
         )
-
-
-class ConcurrentRedisLockStore(LockStore):
-    """Concurrent implementation of a Redis store for ticket locks."""
-
-    def __init__(
-        self,
-        host: Text = "localhost",
-        port: int = 6379,
-        db: int = 1,
-        password: Optional[Text] = None,
-        use_ssl: bool = False,
-        key_prefix: Optional[Text] = None,
-        socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
-    ) -> None:
-        """Create a lock store which uses Redis for persistence.
-
-        Args:
-            host: The host of the redis server.
-            port: The port of the redis server.
-            db: The name of the database within Redis which should be used by Rasa
-                Open Source.
-            password: The password which should be used for authentication with the
-                Redis database.
-            use_ssl: `True` if SSL should be used for the connection to Redis.
-            key_prefix: prefix to prepend to all keys used by the lock store. Must be
-                alphanumeric.
-            socket_timeout: Timeout in seconds after which an exception will be raised
-                in case Redis doesn't respond within `socket_timeout` seconds.
-        """
-        import redis
-
-        self.red = redis.StrictRedis(
-            host=host,
-            port=int(port),
-            db=int(db),
-            password=password,
-            ssl=use_ssl,
-            socket_timeout=socket_timeout,
-        )
-
-        self.key_prefix = DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
-        if key_prefix:
-            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
-            self._set_key_prefix(key_prefix)
-
-        super().__init__()
-
-    def _set_key_prefix(self, key_prefix: Text) -> None:
-        if isinstance(key_prefix, str) and key_prefix.isalnum():
-            self.key_prefix = (
-                key_prefix + ":" + DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
-            )
-        else:
-            logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
-                f"Using default '{self.key_prefix}' instead."
-            )
-
-    def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
-        """Retrieves lock (see parent docstring for more information)."""
-        tickets: Deque[Ticket] = deque()
-
-        pattern = self.key_prefix + conversation_id + ":" + "[0-9]*"
-        redis_keys = self.red.keys(pattern)
-
-        for key in redis_keys:
-            serialised_ticket = self.red.get(key)
-            ticket = Ticket.from_dict(json.loads(serialised_ticket))
-            tickets.appendleft(ticket)
-
-        tickets = deque(sorted(tickets, key=lambda x: x.number))
-
-        return TicketLock(conversation_id, tickets)
-
-    def delete_lock(self, conversation_id: Text) -> None:
-        """Deletes lock for conversation ID."""
-        pattern = self.key_prefix + conversation_id + ":*"
-        redis_keys = self.red.keys(pattern)
-
-        if not redis_keys:
-            logger.debug(
-                f"The lock store does not contain any key-value "
-                f"items for conversation '{conversation_id}'. "
-                f"The pattern used for searching existing keys was: "
-                f"'{pattern}'."
-            )
-            return None
-
-        deletion_successful = self.red.delete(*redis_keys)
-        if deletion_successful == 0:
-            self._log_deletion(conversation_id, False)
-        else:
-            self._log_deletion(conversation_id, True)
-
-    def save_lock(self, lock: TicketLock) -> None:
-        """Commit individual tickets and last issued ticket number to storage."""
-        last_issued_ticket = lock.tickets[-1]
-        serialised_ticket = last_issued_ticket.dumps()
-        key = (
-            self.key_prefix
-            + lock.conversation_id
-            + ":"
-            + str(last_issued_ticket.number)
-        )
-        self.red.set(
-            name=key, value=serialised_ticket, ex=int(last_issued_ticket.expires)
-        )
-
-    def increment_ticket_number(self, lock: TicketLock) -> int:
-        """Uses Redis atomic transaction to increment ticket number."""
-        last_issued_key = (
-            self.key_prefix
-            + lock.conversation_id
-            + ":"
-            + LAST_ISSUED_TICKET_NUMBER_SUFFIX
-        )
-
-        return self.red.incr(name=last_issued_key, amount=1)
-
-    def finish_serving(self, conversation_id: Text, ticket_number: int) -> None:
-        """Finish serving ticket with `ticket_number` for `conversation_id`.
-
-        Removes ticket from storage.
-        """
-        ticket_key = self.key_prefix + conversation_id + ":" + str(ticket_number)
-        self.red.delete(ticket_key)

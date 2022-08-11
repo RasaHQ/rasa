@@ -107,7 +107,7 @@ def get_or_create_lock(conversation_id: Text) -> TicketLock
 
 Fetch existing lock for `conversation_id`.
 
-If one doesn&#x27;t exist, create a new one.
+Alternatively, create a new one if it doesn&#x27;t exist.
 
 #### is\_someone\_waiting
 
@@ -115,7 +115,7 @@ If one doesn&#x27;t exist, create a new one.
 def is_someone_waiting(conversation_id: Text) -> bool
 ```
 
-Return if someone is waiting for lock associated with `conversation_id`.
+Return whether someone is waiting for lock for this `conversation_id`.
 
 #### finish\_serving
 
@@ -134,14 +134,6 @@ def cleanup(conversation_id: Text, ticket_number: int) -> None
 ```
 
 Remove lock for `conversation_id` if no one is waiting.
-
-#### increment\_ticket\_number
-
-```python
-def increment_ticket_number(lock: TicketLock) -> int
-```
-
-Increments last issued ticket number.
 
 ## RedisLockStore Objects
 
@@ -235,83 +227,4 @@ def save_lock(lock: TicketLock) -> None
 ```
 
 Save lock in store.
-
-## ConcurrentRedisLockStore Objects
-
-```python
-class ConcurrentRedisLockStore(LockStore)
-```
-
-Concurrent implementation of a Redis store for ticket locks.
-
-#### \_\_init\_\_
-
-```python
-def __init__(
-        host: Text = "localhost",
-        port: int = 6379,
-        db: int = 1,
-        password: Optional[Text] = None,
-        use_ssl: bool = False,
-        key_prefix: Optional[Text] = None,
-        socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
-```
-
-Create a lock store which uses Redis for persistence.
-
-**Arguments**:
-
-- `host` - The host of the redis server.
-- `port` - The port of the redis server.
-- `db` - The name of the database within Redis which should be used by Rasa
-  Open Source.
-- `password` - The password which should be used for authentication with the
-  Redis database.
-- `use_ssl` - `True` if SSL should be used for the connection to Redis.
-- `key_prefix` - prefix to prepend to all keys used by the lock store. Must be
-  alphanumeric.
-- `socket_timeout` - Timeout in seconds after which an exception will be raised
-  in case Redis doesn&#x27;t respond within `socket_timeout` seconds.
-
-#### get\_lock
-
-```python
-def get_lock(conversation_id: Text) -> Optional[TicketLock]
-```
-
-Retrieves lock (see parent docstring for more information).
-
-#### delete\_lock
-
-```python
-def delete_lock(conversation_id: Text) -> None
-```
-
-Deletes lock for conversation ID.
-
-#### save\_lock
-
-```python
-def save_lock(lock: TicketLock) -> None
-```
-
-Commit individual tickets and last issued ticket number to storage.
-
-#### increment\_ticket\_number
-
-```python
-def increment_ticket_number(lock: TicketLock) -> int
-```
-
-Uses Redis atomic transaction to increment ticket number.
-
-#### finish\_serving
-
-```python
-def finish_serving(conversation_id: Text, ticket_number: int) -> None
-```
-
-Finish serving ticket with `ticket_number` for `conversation_id`.
-
-Removes ticket from storage.
 
