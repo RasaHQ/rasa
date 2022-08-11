@@ -146,6 +146,7 @@ class SocketIOInput(InputChannel):
             credentials.get("socketio_path", "/socket.io"),
             credentials.get("jwt_key"),
             credentials.get("jwt_method", "HS256"),
+            credentials.get("metadata_key", "metadata"),
         )
 
     def __init__(
@@ -157,6 +158,7 @@ class SocketIOInput(InputChannel):
         socketio_path: Optional[Text] = "/socket.io",
         jwt_key: Optional[Text] = None,
         jwt_method: Optional[Text] = "HS256",
+        metadata_key: Optional[Text] = "metadata",
     ):
         """Creates a ``SocketIOInput`` object."""
         self.bot_message_evt = bot_message_evt
@@ -165,6 +167,7 @@ class SocketIOInput(InputChannel):
         self.namespace = namespace
         self.socketio_path = socketio_path
         self.sio: Optional[AsyncServer] = None
+        self.metadata_key = metadata_key
 
         self.jwt_key = jwt_key
         self.jwt_algorithm = jwt_method
@@ -251,8 +254,14 @@ class SocketIOInput(InputChannel):
             else:
                 sender_id = sid
 
+            metadata = data.get(self.metadata_key, {})
+            logger.debug(f"returning metadata: {metadata}")
             message = UserMessage(
-                data["message"], output_channel, sender_id, input_channel=self.name()
+                data["message"],
+                output_channel,
+                sender_id,
+                input_channel=self.name(),
+                metadata=metadata,
             )
             await on_new_message(message)
 
