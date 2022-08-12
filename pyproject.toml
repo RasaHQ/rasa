@@ -99,7 +99,10 @@ sanic-jwt = "^1.6.0"
 cloudpickle = ">=1.2,<2.2"
 aiohttp = ">=3.6,!=3.7.4.post0,<3.9"
 questionary = ">=1.5.1,<1.11.0"
-prompt-toolkit = "^2.0"
+# there is currently an issue with 3.0.29 as it changes the unit test
+# interface for testing CLI interactions. this change breaks our unit
+# tests.
+prompt-toolkit = "^3.0,<3.0.29"
 python-socketio = ">=4.4,<6"
 python-engineio = ">=4,<6,!=5.0.0"
 pydot = "~1.4"
