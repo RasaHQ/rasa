@@ -77,6 +77,7 @@ jobs:
     - name: Check if tag version is equal or higher than the latest tagged Rasa version
       id: rasa_get_version
       if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
+      continue-on-error: true
       run: |
         # Get latest tagged Rasa version
         git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
