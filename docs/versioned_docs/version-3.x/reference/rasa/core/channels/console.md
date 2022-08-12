@@ -10,6 +10,14 @@ print_buttons(message: Dict[Text, Any], is_latest_message: bool = False, color: 
 
 Create CLI buttons from message data.
 
+#### send\_message\_receive\_block
+
+```python
+async send_message_receive_block(server_url: Text, auth_token: Text, sender_id: Text, message: Text) -> List[Dict[Text, Any]]
+```
+
+Posts message and returns response.
+
 #### record\_messages
 
 ```python
