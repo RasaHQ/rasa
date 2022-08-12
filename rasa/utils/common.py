@@ -46,11 +46,6 @@ EXPECTED_PILLOW_DEPRECATION_WARNINGS = [
 ]
 
 EXPECTED_WARNINGS = [
-    # TODO (issue #9932)
-    (
-        np.VisibleDeprecationWarning,
-        "Creating an ndarray from ragged nested sequences.*",
-    ),
     # cf. https://github.com/tensorflow/tensorflow/issues/38168
     (
         UserWarning,
