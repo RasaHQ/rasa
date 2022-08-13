@@ -10,7 +10,7 @@ from rasa.cli.arguments import default_arguments
 import rasa.cli.utils
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_CONFIG_PATH
 import rasa.shared.data
-from rasa.shared.importers.rasa import RasaFileImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
 import rasa.shared.utils.cli
@@ -163,8 +163,8 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
     )
 
-    file_importer = RasaFileImporter(
-        domain_path=args.domain, training_data_paths=args.data, config_file=config
+    file_importer = TrainingDataImporter.load_from_config(
+        domain_path=args.domain, training_data_paths=args.data, config_path=config
     )
 
     validator = Validator.from_importer(file_importer)
