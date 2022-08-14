@@ -81,7 +81,7 @@ class RestInput(InputChannel):
         input_channel: Text,
         metadata: Optional[Dict[Text, Any]],
     ) -> Callable[[Any], Awaitable[None]]:
-        """Streams response to the client
+        """Streams response to the client.
 
          If the stream option is enabled, this method will be called to
          stream the response to the client
