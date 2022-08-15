@@ -2732,3 +2732,56 @@ async def test_action_extract_slots_emits_necessary_slot_set_events(
         assert events[0].value == value_to_set
     else:
         assert len(events) == 0
+
+
+async def test_action_extract_slots_priority_of_slot_mappings():
+    slot_name = "location_slot"
+    entity_name = "location"
+    entity_value = "Berlin"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        intents:
+        - inform
+
+        entities:
+        - {entity_name}
+
+        slots:
+          {slot_name}:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: {entity_name}
+            - type: from_intent
+              value: 42
+              intent: inform
+
+        responses:
+            utter_ask_location:
+                - text: "where are you located?"
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        UserUttered(
+            "I am located in Berlin",
+            intent={"name": "inform"},
+            entities=[{"entity": entity_name, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(events, domain=domain)
+    assert tracker.get_slot("location_slot") == entity_value

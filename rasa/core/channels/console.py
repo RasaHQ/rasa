@@ -3,7 +3,16 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, AsyncGenerator, Dict, List, Optional, Text, overload
+
+from typing import (
+    Any,
+    AsyncGenerator,
+    Dict,
+    List,
+    Optional,
+    Text,
+    overload,
+)
 
 import aiohttp
 import questionary
@@ -94,37 +103,41 @@ def _print_bot_output(
 
 
 @overload
-def _get_user_input(previous_response: None) -> Text:
+async def _get_user_input(previous_response: None) -> Text:
     ...
 
 
 @overload
-def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
+async def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
     ...
 
 
-def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
+async def _get_user_input(
+    previous_response: Optional[Dict[str, Any]]
+) -> Optional[Text]:
     button_response = None
     if previous_response is not None:
         button_response = _print_bot_output(previous_response, is_latest_message=True)
 
     if button_response is not None:
-        response = cli_utils.payload_from_button_question(button_response)
+        response = await cli_utils.payload_from_button_question(button_response)
         if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
-            response = _get_user_input(None)
+            response = await _get_user_input(None)
     else:
-        response = questionary.text(
+        question = questionary.text(
             "",
             qmark="Your input ->",
             style=Style([("qmark", "#b373d6"), ("", "#b373d6")]),
-        ).ask()
+        )
+        response = await question.ask_async()
     return response.strip() if response is not None else None
 
 
 async def send_message_receive_block(
     server_url: Text, auth_token: Text, sender_id: Text, message: Text
 ) -> List[Dict[Text, Any]]:
+    """Posts message and returns response."""
     payload = {"sender": sender_id, "message": message}
 
     url = f"{server_url}/webhooks/rest/webhook?token={auth_token}"
@@ -192,7 +205,7 @@ async def record_messages(
     previous_response = None
     await asyncio.sleep(0.5)  # Wait for server to start
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = _get_user_input(previous_response)
+        text = await _get_user_input(previous_response)
 
         if text == exit_text or text is None:
             break

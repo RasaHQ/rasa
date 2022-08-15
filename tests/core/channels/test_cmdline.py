@@ -13,12 +13,11 @@ ENTER = "\x0a"
 
 
 def mock_stdin(input_from_stdin: List[Text]):
-    inp = create_pipe_input()
-
     text = ""
     for line in input_from_stdin:
         text += line + ENTER + "\r"
 
+    inp = create_pipe_input()
     inp.send_text(text)
 
     prompt_session_init = PromptSession.__init__
