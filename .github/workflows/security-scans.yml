@@ -24,19 +24,43 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
 
-  gitleaks:
-    name: Detecting hardcoded secrets
+  trufflehog:
+    name: Detect Secrets
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-      with:
-        # Fetch all history for all tags and branches
-        fetch-depth: '0'
-
-    - name: Gitleaks - detecting hardcoded secrets
-      uses: zricethezav/gitleaks-action@v1.6.0
-      with:
-        config-path: .gitleaks.toml
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: TruffleHog Secrets Scan
+        id: trufflehog
+        uses: trufflesecurity/trufflehog@047e2b4607487da3c05564ec9b198cf22a048310
+        continue-on-error: true
+        with:
+          path: ./
+          base: ${{ github.base_ref }}
+          head: ${{ github.head_ref }}
+          extra_args: --exclude-paths=trufflehogignore.txt
+      - name: Alert on secret finding
+        if: steps.trufflehog.outcome == 'failure'
+        uses: slackapi/slack-github-action@936158bbe252e9a6062e793ea4609642c966e302
+        with:
+          payload: |
+            {
+              "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
   bandit:
     name: Detect python security issues
@@ -50,7 +74,7 @@ jobs:
 
     - name: Set up Python 3.9 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
+      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
       with:
         python-version: 3.9
 
@@ -62,14 +86,14 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v7
+      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
       id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}

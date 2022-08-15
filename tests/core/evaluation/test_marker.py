@@ -26,7 +26,7 @@ from rasa.core.evaluation.marker_base import (
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered, SessionStarted
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import TextSlot
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.tracker_store import InMemoryTrackerStore
@@ -496,7 +496,7 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     assert evaluation[1]["my-marker"][0].idx == 8  # i.e. NOT the index in the dialogue
 
 
-def test_markers_cli_results_save_correctly(tmp_path: Path):
+async def test_markers_cli_results_save_correctly(tmp_path: Path):
     domain = Domain.empty()
     store = InMemoryTrackerStore(domain)
 
@@ -508,7 +508,7 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
         tracker.update_with_events(
             [SlotSet(str(5 + j), "slot") for j in range(5)], domain
         )
-        store.save(tracker)
+        await store.save(tracker)
 
     tracker_loader = MarkerTrackerLoader(store, "all")
 
@@ -517,7 +517,7 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
     markers = OrMarker(
         markers=[SlotSetMarker("2", name="marker1"), SlotSetMarker("7", name="marker2")]
     )
-    markers.evaluate_trackers(tracker_loader.load(), results_path)
+    await markers.evaluate_trackers(tracker_loader.load(), results_path)
 
     with open(results_path, "r") as results:
         result_reader = csv.DictReader(results)
@@ -565,7 +565,7 @@ def test_domain_validation_with_valid_marker(depth: int, max_branches: int, seed
         constant_negated=None,
     )
 
-    slots = [Slot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
+    slots = [TextSlot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
     actions = list(_collect_parameters(marker, ActionExecutedMarker))
     intents = _collect_parameters(marker, IntentDetectedMarker)
     domain = Domain(intents, [], slots, {}, actions, {}, {})

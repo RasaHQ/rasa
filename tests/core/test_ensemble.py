@@ -214,9 +214,9 @@ def test_default_combine_predictions(
     # ... not quite there yet, because old implementation creates a policy with
     # best_policy.priority as priority and the first one is a tuple which then
     # becomes a tuple with a tuple with an int, so...
-    predictions[expected_winner_idx].policy_priority = (
-        predictions[expected_winner_idx].policy_priority,
-    )
+    predictions[expected_winner_idx].policy_priority = predictions[
+        expected_winner_idx
+    ].policy_priority
 
     # now, we can compare:
     assert best_prediction == predictions[expected_winner_idx]

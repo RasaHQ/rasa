@@ -118,9 +118,9 @@ async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
         OSError,
         aiormq.exceptions.AMQPError,
         pamqp.exceptions.PAMQPException,
-        pamqp.specification.AMQPConnectionForced,
-        pamqp.specification.AMQPNotFound,
-        pamqp.specification.AMQPInternalError,
+        pamqp.exceptions.AMQPConnectionForced,
+        pamqp.exceptions.AMQPNotFound,
+        pamqp.exceptions.AMQPInternalError,
     ),
 )
 async def test_aio_pika_exceptions_caught(
@@ -310,10 +310,14 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         with pytest.raises(Exception):
             await broker.connect()
 
+    caplog_records = [
+        record for record in caplog.records if record.name != "ddtrace.internal.writer"
+    ]
+
     # Only Rasa Open Source logs, but logs from the library itself.
     assert all(
         record.name in ["rasa.core.brokers.pika", "asyncio"]
-        for record in caplog.records
+        for record in caplog_records
     )
 
 

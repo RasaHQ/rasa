@@ -1,5 +1,6 @@
+from typing import Any, Text, Dict, Union, List, Optional, TYPE_CHECKING
+
 import rasa.shared.constants
-import typing
 
 # WARNING: Be careful about adding any top level imports at this place!
 #   These functions are imported in `rasa.__init__` and any top level import
@@ -9,8 +10,7 @@ import typing
 #   please check that in the chain you are importing, no slow packages
 #   are getting imported.
 
-if typing.TYPE_CHECKING:
-    from typing import Any, Text, Dict, Union, List, Optional, NoReturn
+if TYPE_CHECKING:
     from rasa.model_training import TrainingResult
 
 
@@ -20,7 +20,7 @@ def run(
     connector: "Text" = None,
     credentials: "Text" = None,
     **kwargs: "Dict[Text, Any]",
-) -> "NoReturn":
+) -> None:
     """Runs a Rasa model.
 
     Args:
@@ -140,5 +140,5 @@ def test(
     if additional_arguments is None:
         additional_arguments = {}
 
-    test_core(model, stories, output, additional_arguments)
-    test_nlu(model, nlu_data, output, additional_arguments)
+    test_core(model, stories, output, additional_arguments)  # type: ignore[unused-coroutine] # noqa: E501
+    test_nlu(model, nlu_data, output, additional_arguments)  # type: ignore[unused-coroutine] # noqa: E501

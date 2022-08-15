@@ -18,13 +18,16 @@ from tests.conftest import (
     MockExporter,
     random_user_uttered_event,
     write_endpoint_config_to_yaml,
+    AsyncMock,
 )
+
+from tests.cli.conftest import RASA_EXE
 
 
 def test_export_help(run: Callable[..., RunResult]):
     output = run("export", "--help")
 
-    help_text = """usage: rasa export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
+    help_text = f"""usage: {RASA_EXE} export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
                    [--minimum-timestamp MINIMUM_TIMESTAMP]
                    [--maximum-timestamp MAXIMUM_TIMESTAMP]
                    [--conversation-ids CONVERSATION_IDS]"""
@@ -64,7 +67,7 @@ def test_validate_timestamp_options_with_invalid_timestamps():
 
 
 # noinspection PyProtectedMember
-def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path):
+async def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path):
     # write valid config to file
     endpoints_path = write_endpoint_config_to_yaml(
         tmp_path,
@@ -80,7 +83,7 @@ def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path)
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     # fetching the event broker is successful
-    assert export._get_event_broker(available_endpoints)
+    assert await export._get_event_broker(available_endpoints)
     assert export._get_tracker_store(available_endpoints)
 
 
@@ -207,15 +210,15 @@ def prepare_namespace_and_mocked_tracker_store_with_events(
         all_conversation_ids[2]: [events[5]],
     }
 
-    def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
+    async def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
         return DialogueStateTracker.from_events(
             conversation_id, events_for_conversation_id[conversation_id]
         )
 
     # mock tracker store
     tracker_store = Mock()
-    tracker_store.keys.return_value = all_conversation_ids
-    tracker_store.retrieve_full_tracker.side_effect = _get_tracker
+    tracker_store.keys = AsyncMock(return_value=all_conversation_ids)
+    tracker_store.retrieve_full_tracker = _get_tracker
 
     monkeypatch.setattr(export, "_get_tracker_store", lambda _: tracker_store)
 

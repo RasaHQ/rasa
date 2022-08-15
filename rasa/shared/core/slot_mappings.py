@@ -90,7 +90,7 @@ class SlotMapping:
             active_loop_match = any(match_list)
 
         if active_loop_match:
-            form_ignored_intents = domain.forms[active_loop_name].get(
+            form_ignored_intents = domain.forms.get(active_loop_name, {}).get(
                 IGNORED_INTENTS, []
             )
             ignored_intents = SlotMapping.to_list(form_ignored_intents)
@@ -107,7 +107,7 @@ class SlotMapping:
 
         active_loop_name = tracker.active_loop_name
         if active_loop_name:
-            mapping_not_intents = set(
+            mapping_not_intents = (
                 mapping_not_intents
                 + SlotMapping._get_active_loop_ignored_intents(
                     mapping, domain, active_loop_name
@@ -119,7 +119,9 @@ class SlotMapping:
         else:
             intent = None
 
-        intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
+        intent_not_blocked = not mapping_intents and intent not in set(
+            mapping_not_intents
+        )
 
         return intent_not_blocked or intent in mapping_intents
 
