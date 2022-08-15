@@ -469,3 +469,18 @@ class EntityExtractor(abc.ABC):
                         docs=DOCS_URL_TRAINING_DATA_NLU,
                     )
                     break
+
+
+class EntityExtractorMixin(EntityExtractor):
+    """Class for backward compatibility in 3.x.
+
+    EntityExtractorMixin was renamed to EntityExtractor in 3.3.
+    This class will be removed in 4.0
+    """
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "EntityExtractorMixin was renamed to EntityExtractor in Rasa 3.3. "
+            "Please replace uses of EntityExtractorMixin in custom components "
+            "with EntityExtractor instead."
+        )
