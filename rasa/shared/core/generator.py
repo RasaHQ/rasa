@@ -62,6 +62,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
         self._states_for_hashing = None
+        self._omit_unset_slots = None
         self.domain = domain
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented
@@ -151,6 +152,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
     def clear_states(self) -> None:
         """Reset the states."""
         self._states_for_hashing = None
+        self._omit_unset_slots = None
 
     def init_copy(self) -> "TrackerWithCachedStates":
         """Create a new state tracker with the same initial values."""
@@ -183,16 +185,27 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         tracker._states_for_hashing = copy.copy(self._states_for_hashing)
         tracker._omit_unset_slots = (
-            tracker._omit_unset_slots if hasattr(self, "_omit_unset_slots") else None
+            self._omit_unset_slots if hasattr(self, "_omit_unset_slots") else None
         )
 
         return tracker
 
     def _append_current_state(self) -> None:
         if self._states_for_hashing is None:
-            self._states_for_hashing = self.past_states_for_hashing(self.domain)
+            self._states_for_hashing = self.past_states_for_hashing(
+                self.domain,
+                omit_unset_slots=self._omit_unset_slots
+                if hasattr(self, "_omit_unset_slots")
+                else False,
+            )
+            self._omit_unset_slots = False
         else:
-            state = self.domain.get_active_state(self)
+            state = self.domain.get_active_state(
+                self,
+                omit_unset_slots=self._omit_unset_slots
+                if hasattr(self, "_omit_unset_slots")
+                else False,
+            )
             frozen_state = self.freeze_current_state(state)
             self._states_for_hashing.append(frozen_state)
 
@@ -205,7 +218,12 @@ class TrackerWithCachedStates(DialogueStateTracker):
         if self._states_for_hashing is None and not skip_states:
             # rest of this function assumes we have the previous state
             # cached. let's make sure it is there.
-            self._states_for_hashing = self.past_states_for_hashing(self.domain)
+            self._states_for_hashing = self.past_states_for_hashing(
+                self.domain,
+                omit_unset_slots=self._omit_unset_slots
+                if hasattr(self, "_omit_unset_slots")
+                else False,
+            )
 
         super().update(event)
 
