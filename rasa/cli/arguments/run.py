@@ -138,7 +138,7 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     server_arguments.add_argument(
         "--ssl-password",
         help="If your ssl-keyfile is protected by a password, you can specify it "
-        "using this paramer.",
+        "using this parameter.",
     )
     channel_arguments = parser.add_argument_group("Channels")
     channel_arguments.add_argument(

@@ -17,7 +17,7 @@ class SocketBlueprint(Blueprint):
     def __init__(
         self, sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any
     ) -> None:
-        """Creates a :class:`sanic.Blueprint` for routing socketio connenctions.
+        """Creates a :class:`sanic.Blueprint` for routing socketio connections.
 
         :param sio: Instance of :class:`socketio.AsyncServer` class
         :param socketio_path: string indicating the route to accept requests on.

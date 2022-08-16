@@ -593,7 +593,7 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
 def run_in_thread(f: Callable[..., Coroutine]) -> Callable:
     """Decorator which runs request on a separate thread.
 
-    Some requests (e.g. training or cross-validation) are computional intense requests.
+    Some requests (e.g. training or cross-validation) are computational intense requests.
     This means that they will block the event loop and hence the processing of other
     requests. This decorator can be used to process these requests on a separate thread
     to avoid blocking the processing of incoming requests.

@@ -115,7 +115,7 @@ class MattermostBot(OutputChannel):
 
 
 class MattermostInput(InputChannel):
-    """Mattermost input channel implemenation."""
+    """Mattermost input channel implementation."""
 
     @classmethod
     def name(cls) -> Text:
