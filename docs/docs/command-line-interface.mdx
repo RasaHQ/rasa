@@ -58,6 +58,10 @@ LOG_LEVEL_LIBRARIES=DEBUG LOG_LEVEL_MATPLOTLIB=DEBUG rasa shell --verbose
 
 As an aside, CLI log level sets the level at the root logger (which has the important handler - `coloredlogs` handler); this means even if an environment variable sets a library logger to a lower level, the root logger will reject messages from that library. If not specified, the CLI log level is set to `INFO`.
 
+:::tip Disable Log colors
+If you prefer that Rasa do not print colored logs, you can just assign any value to the NO_COLOR environment variable. That will disable colors.
+:::
+
 ## rasa init
 
 This command sets up a complete assistant for you with some example training data:
