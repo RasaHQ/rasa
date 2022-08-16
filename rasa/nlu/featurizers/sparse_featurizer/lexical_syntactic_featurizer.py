@@ -473,10 +473,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
                 if feature_idx > -1:
                     rows.append(token_idx)
                     cols.append(feature_idx)
-        rows = np.array(rows)
-        cols = np.array(cols)
         data = np.ones(len(rows))
-        return scipy.sparse.coo_matrix((data, (rows, cols)), shape=shape)
+        return scipy.sparse.coo_matrix(
+            (data, (np.array(rows), np.array(cols))), shape=shape
+        )
 
     @classmethod
     def create(

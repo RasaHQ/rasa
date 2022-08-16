@@ -142,7 +142,8 @@ class SingleStateFeaturizer:
             # its value
             if state_feature in self._default_feature_states[attribute]:
                 features[self._default_feature_states[attribute][state_feature]] = value
-        features = np.expand_dims(features, 0)
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        features = np.expand_dims(features, 0)  # type: ignore[no-untyped-call]
 
         if sparse:
             features = scipy.sparse.coo_matrix(features)
