@@ -48,15 +48,12 @@ def training_data():
             Message({"text": "hi there", "intent": "greet"}),
             Message({"text": "ciao", "intent": "goodbye"}),
             Message({"text": "bye", "intent": "goodbye"}),
+            Message({"text": "I am so hungry", "intent": "hungry"}),
+            Message({"text": "I want pizza", "intent": "hungry"}),
+            Message({"text": "I want pizza, now!!", "intent": "hangry"}),
+            Message({"text": "just gimme a pizza already", "intent": "hangry"}),
         ]
     )
-
-
-def is_sorted(ranking):
-    """Confirms if the ranking is sorted."""
-    for i in range(len(ranking) - 1):
-        assert ranking[i]["confidence"] >= ranking[i + 1]["confidence"]
-    return True
 
 
 def test_predictions_added(training_data, tmpdir, featurizer_sparse):
@@ -65,8 +62,9 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
     node_storage = LocalModelStorage(pathlib.Path(tmpdir))
     node_resource = Resource("classifier")
     context = ExecutionContext(node_storage, node_resource)
+    ranking_length = 2
     classifier = LogisticRegressionClassifier(
-        config=LogisticRegressionClassifier.get_default_config(),
+        config={"ranking_length": ranking_length},
         name=context.node_name,
         resource=node_resource,
         model_storage=node_storage,
@@ -91,7 +89,15 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
         # Confidence should be between 0 and 1.
         assert 0 < conf < 1
         ranking = msg.get("intent_ranking")
-        assert is_sorted(ranking)
+        # check that ranking_length is adhered to
+        if len(training_data.intents()) > ranking_length:
+            assert len(ranking) == ranking_length
+        else:
+            assert len(ranking) == len(training_data.intents())
+
+        confidences = [r["confidence"] for r in ranking]
+        assert all([confidences[i] > confidences[i+1]
+                    for i in range(len(confidences) - 1)])
         assert {i["name"] for i in ranking} == {"greet", "goodbye"}
         # Confirm the sum of confidences is 1.0
         assert np.isclose(np.sum([i["confidence"] for i in ranking]), 1.0)
