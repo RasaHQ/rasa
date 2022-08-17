@@ -1,7 +1,6 @@
 import copy
 import pytest
 import pathlib
-import numpy as np
 from rasa.shared.nlu.training_data.message import Message
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -85,10 +84,12 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
 
     # Check that the messages have been processed correctly
     for msg in training_data.training_examples:
-        _, conf = msg.get("intent")["name"], msg.get("intent")["confidence"]
-        # Confidence should be between 0 and 1.
-        assert 0 < conf < 1
+        intent = msg.get("intent")
         ranking = msg.get("intent_ranking")
+        # check that first ranking element is the same as the winning intent
+        assert intent["name"] == ranking[0]["name"] \
+               and intent["confidence"] == ranking[0]["confidence"]
+
         # check that ranking_length is adhered to
         if len(training_data.intents()) > ranking_length:
             assert len(ranking) == ranking_length
@@ -98,9 +99,13 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
         confidences = [r["confidence"] for r in ranking]
         assert all([confidences[i] > confidences[i+1]
                     for i in range(len(confidences) - 1)])
-        assert {i["name"] for i in ranking} == {"greet", "goodbye"}
-        # Confirm the sum of confidences is 1.0
-        assert np.isclose(np.sum([i["confidence"] for i in ranking]), 1.0)
+
+        # check that all ranking names are from training data
+        assert all([r["name"] in training_data.intents()
+                    for r in ranking])
+
+        # confirm that all confidences are between 0 and 1
+        assert all([0 <= r["confidence"] <= 1 for r in ranking])
 
     classifier.persist()
 

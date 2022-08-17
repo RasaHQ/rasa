@@ -135,7 +135,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> GraphComponent:
+    ) -> "LogisticRegressionClassifier":
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, execution_context.node_name, model_storage, resource)
 
@@ -171,7 +171,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> GraphComponent:
+    ) -> "LogisticRegressionClassifier":
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_dir:
@@ -186,7 +186,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-            return cls(config, model_storage, resource, execution_context)
+            return cls.create(config, model_storage, resource, execution_context)
 
     def process_training_data(self, training_data: TrainingData) -> TrainingData:
         """Process the training data."""
