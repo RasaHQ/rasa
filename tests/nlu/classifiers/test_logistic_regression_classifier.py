@@ -87,8 +87,10 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
         intent = msg.get("intent")
         ranking = msg.get("intent_ranking")
         # check that first ranking element is the same as the winning intent
-        assert intent["name"] == ranking[0]["name"] \
-               and intent["confidence"] == ranking[0]["confidence"]
+        assert (
+            intent["name"] == ranking[0]["name"]
+            and intent["confidence"] == ranking[0]["confidence"]
+        )
 
         # check that ranking_length is adhered to
         if len(training_intents) > ranking_length:
@@ -97,12 +99,12 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
             assert len(ranking) == len(training_intents)
 
         confidences = [r["confidence"] for r in ranking]
-        assert all([confidences[i] > confidences[i + 1]
-                    for i in range(len(confidences) - 1)])
+        assert all(
+            [confidences[i] > confidences[i + 1] for i in range(len(confidences) - 1)]
+        )
 
         # check that all ranking names are from training data
-        assert all([r["name"] in training_intents
-                    for r in ranking])
+        assert all([r["name"] in training_intents for r in ranking])
 
         # confirm that all confidences are between 0 and 1
         assert all([0 <= r["confidence"] <= 1 for r in ranking])
