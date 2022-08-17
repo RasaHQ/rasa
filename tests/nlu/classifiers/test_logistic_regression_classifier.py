@@ -97,7 +97,7 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
             assert len(ranking) == len(training_intents)
 
         confidences = [r["confidence"] for r in ranking]
-        assert all([confidences[i] > confidences[i+1]
+        assert all([confidences[i] > confidences[i + 1]
                     for i in range(len(confidences) - 1)])
 
         # check that all ranking names are from training data
