@@ -68,7 +68,7 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
         resource=node_resource,
         model_storage=node_storage,
     )
-    training_intents = training_data.intents()
+    training_intents = training_data.intents
     # First we add tokens.
     tokeniser.process(training_data.training_examples)
 
