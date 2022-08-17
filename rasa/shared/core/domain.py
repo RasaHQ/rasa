@@ -1179,14 +1179,12 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker", omit_unset_slots: bool = False
+        tracker: "DialogueStateTracker"
     ) -> SubState:
         """Sets all set slots with the featurization of the stored value.
 
         Args:
             tracker: dialog state tracker containing the dialog so far
-            omit_unset_slots: If `True` do not include the initial values of slots.
-
         Returns:
             a mapping of slot names to their featurization
         """
@@ -1197,9 +1195,7 @@ class Domain:
             # included in featurised sub-states.
             # Note that this condition checks if the slot itself is None. An unset slot
             # will be a Slot object and its `value` attribute will be None.
-            if slot is not None and slot.as_feature():
-                if omit_unset_slots and not slot.has_been_set:
-                    continue
+            if slot is not None and slot.as_feature() and slot.has_been_set:
                 if slot.value == rasa.shared.core.constants.SHOULD_NOT_BE_SET:
                     slots[slot_name] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
                 elif any(slot.as_feature()):
@@ -1249,22 +1245,17 @@ class Domain:
         }
 
     def get_active_state(
-        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False
-    ) -> State:
+        self, tracker: "DialogueStateTracker") -> State:
         """Given a dialogue tracker, makes a representation of current dialogue state.
 
         Args:
             tracker: dialog state tracker containing the dialog so far
-            omit_unset_slots: If `True` do not include the initial values of slots.
-
         Returns:
             A representation of the dialogue's current state.
         """
         state = {
             rasa.shared.core.constants.USER: self._get_user_sub_state(tracker),
-            rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(
-                tracker, omit_unset_slots=omit_unset_slots
-            ),
+            rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(tracker),
             rasa.shared.core.constants.PREVIOUS_ACTION: self._get_prev_action_sub_state(
                 tracker
             ),
@@ -1317,7 +1308,6 @@ class Domain:
     def states_for_tracker_history(
         self,
         tracker: "DialogueStateTracker",
-        omit_unset_slots: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
@@ -1325,7 +1315,6 @@ class Domain:
 
         Args:
             tracker: Dialogue state tracker containing the dialogue so far.
-            omit_unset_slots: If `True` do not include the initial values of slots.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
             rule_only_data: Slots and loops,
@@ -1355,7 +1344,7 @@ class Domain:
                 if turn_was_hidden:
                     continue
 
-            state = self.get_active_state(tr, omit_unset_slots=omit_unset_slots)
+            state = self.get_active_state(tr)
 
             if ignore_rule_only_turns:
                 # clean state from only rule features

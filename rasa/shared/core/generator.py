@@ -101,13 +101,12 @@ class TrackerWithCachedStates(DialogueStateTracker):
         return tracker
 
     def past_states_for_hashing(
-        self, domain: Domain, omit_unset_slots: bool = False
+        self, domain: Domain
     ) -> Deque[FrozenState]:
-        """Generates and caches the past states of this tracker based on the history.
+        self.states_ = """Generates and caches the past states of this tracker based on the history.
 
         Args:
             domain: a :class:`rasa.shared.core.domain.Domain`
-            omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
             A list of states
@@ -121,7 +120,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # from the events
         states_for_hashing = self._states_for_hashing
         if not states_for_hashing:
-            states = super().past_states(domain, omit_unset_slots=omit_unset_slots)
+            states = super().past_states(domain)
             states_for_hashing = deque(self.freeze_current_state(s) for s in states)
 
         self._states_for_hashing = states_for_hashing
@@ -138,7 +137,6 @@ class TrackerWithCachedStates(DialogueStateTracker):
     def past_states(
         self,
         domain: Domain,
-        omit_unset_slots: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
@@ -146,7 +144,6 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         Args:
             domain: The Domain.
-            omit_unset_slots: If `True` do not include the initial values of slots.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
             rule_only_data: Slots and loops,
@@ -156,7 +153,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             a list of states
         """
         states_for_hashing = self.past_states_for_hashing(
-            domain, omit_unset_slots=omit_unset_slots
+            domain
         )
         return self._unfreeze_states(states_for_hashing)
 

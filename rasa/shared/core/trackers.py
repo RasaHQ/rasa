@@ -297,7 +297,6 @@ class DialogueStateTracker:
     def past_states(
         self,
         domain: Domain,
-        omit_unset_slots: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
@@ -305,7 +304,6 @@ class DialogueStateTracker:
 
         Args:
             domain: The Domain.
-            omit_unset_slots: If `True` do not include the initial values of slots.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
             rule_only_data: Slots and loops,
@@ -316,7 +314,6 @@ class DialogueStateTracker:
         """
         return domain.states_for_tracker_history(
             self,
-            omit_unset_slots=omit_unset_slots,
             ignore_rule_only_turns=ignore_rule_only_turns,
             rule_only_data=rule_only_data,
         )
