@@ -68,7 +68,7 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
         resource=node_resource,
         model_storage=node_storage,
     )
-
+    training_intents = training_data.intents()
     # First we add tokens.
     tokeniser.process(training_data.training_examples)
 
@@ -91,17 +91,17 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
                and intent["confidence"] == ranking[0]["confidence"]
 
         # check that ranking_length is adhered to
-        if len(training_data.intents()) > ranking_length:
+        if len(training_intents) > ranking_length:
             assert len(ranking) == ranking_length
         else:
-            assert len(ranking) == len(training_data.intents())
+            assert len(ranking) == len(training_intents)
 
         confidences = [r["confidence"] for r in ranking]
         assert all([confidences[i] > confidences[i+1]
                     for i in range(len(confidences) - 1)])
 
         # check that all ranking names are from training data
-        assert all([r["name"] in training_data.intents()
+        assert all([r["name"] in training_intents
                     for r in ranking])
 
         # confirm that all confidences are between 0 and 1
