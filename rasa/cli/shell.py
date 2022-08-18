@@ -78,7 +78,14 @@ def shell_nlu(args: argparse.Namespace) -> None:
             "server using `rasa train nlu`."
         )
         return
-
+    
+    if model == None:
+        print_error(
+            "Error importing model. Train a model before running the "
+            "server using `rasa train nlu`."
+        )
+        return
+    
     metadata = LocalModelStorage.metadata_from_archive(model)
     if metadata.training_type == TrainingType.CORE:
         print_error(
@@ -106,6 +113,13 @@ def shell(args: argparse.Namespace) -> None:
         print_error(
             "No model found. Train a model before running the "
             "server using `rasa train`."
+        )
+        return
+    
+    if model == None:
+        print_error(
+            "Error importing model. Train a model before running the "
+            "server using `rasa train nlu`."
         )
         return
 
