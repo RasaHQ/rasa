@@ -450,7 +450,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
-        uses: 8398a7/action-slack@a74b761b4089b5d730d813fbedcd2ec5d394f3af  # v3
+        uses: 8398a7/action-slack@547417cbfcd5c7deaa7e6e2b75685c686f80bec5  # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -645,7 +645,7 @@ jobs:
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@a74b761b4089b5d730d813fbedcd2ec5d394f3af #v3
+        uses: 8398a7/action-slack@547417cbfcd5c7deaa7e6e2b75685c686f80bec5 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
