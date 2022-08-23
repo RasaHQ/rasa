@@ -205,7 +205,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         tracker.sender_id = sender_id
         tracker.sender_source = sender_source
 
-        with self._skip_states_manager():
+        with tracker._skip_states_manager():
             for event in self.events:
                 tracker.update(event)
 
