@@ -113,8 +113,10 @@ class TrackerWithCachedStates(DialogueStateTracker):
             A list of states
         """
         if domain != self.domain:
-            raise ValueError("TrackerWithCachedStates cannot be used with a domain "
-                             "that is different from the one it was created with.")
+            raise ValueError(
+                "TrackerWithCachedStates cannot be used with a domain "
+                "that is different from the one it was created with."
+            )
 
         if omit_unset_slots:
             # the tracker caches states with omit_unset_slots=False

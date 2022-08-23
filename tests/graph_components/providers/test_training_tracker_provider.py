@@ -56,14 +56,14 @@ def test_generating_trackers(
 
 
 def test_generated_trackers_can_omit_unset_slots(
-        default_model_storage: ModelStorage,
-        default_execution_context: ExecutionContext
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     reader = YAMLStoryReader()
     steps = reader.read_from_file("data/test_yaml_stories/rules_greet_and_goodbye.yml")
 
     domain = Domain.from_path(
-        "data/test_domains/initial_slot_values_greet_and_goodbye.yml")
+        "data/test_domains/initial_slot_values_greet_and_goodbye.yml"
+    )
 
     component = TrainingTrackerProvider.create(
         TrainingTrackerProvider.get_default_config(),
