@@ -77,5 +77,8 @@ def test_generated_trackers_can_omit_unset_slots(
     assert len(trackers) == 2
     assert all([t.is_rule_tracker for t in trackers])
 
-    past_states = trackers[0].past_states(domain, omit_unset_slots=True)
-    assert not any(["slots" in state for state in past_states])
+    states_without_unset_slots = trackers[0].past_states(domain, omit_unset_slots=True)
+    assert not any(["slots" in state for state in states_without_unset_slots])
+
+    states_with_unset_slots = trackers[0].past_states(domain, omit_unset_slots=False)
+    assert all(["slots" in state for state in states_with_unset_slots])
