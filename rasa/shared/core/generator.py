@@ -112,19 +112,26 @@ class TrackerWithCachedStates(DialogueStateTracker):
         Returns:
             A list of states
         """
-        # we need to make sure this is the same domain, otherwise things will
-        # go wrong. but really, the same tracker shouldn't be used across
-        # domains
-        assert domain == self.domain
+        if domain != self.domain:
+            raise ValueError("TrackerWithCachedStates cannot be used with a domain "
+                             "that is different from the one it was created with.")
 
-        # if don't have it cached, we use the domain to calculate the states
-        # from the events
-        states_for_hashing = self._states_for_hashing
-        if not states_for_hashing:
+        if omit_unset_slots:
+            # the tracker caches states with omit_unset_slots=False
+            # Retrieving them from cache with omit_unset_slots=True is not possible as
+            # this information is lost after a position in the event stream is turned
+            # into a state
             states = super().past_states(domain, omit_unset_slots=omit_unset_slots)
             states_for_hashing = deque(self.freeze_current_state(s) for s in states)
+        else:
+            # if don't have it cached, we use the domain to calculate the states
+            # from the events
+            states_for_hashing = self._states_for_hashing
+            if not states_for_hashing:
+                states = super().past_states(domain)
+                states_for_hashing = deque(self.freeze_current_state(s) for s in states)
 
-        self._states_for_hashing = states_for_hashing
+            self._states_for_hashing = states_for_hashing
 
         return states_for_hashing
 
