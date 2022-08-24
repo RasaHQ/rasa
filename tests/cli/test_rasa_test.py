@@ -264,7 +264,8 @@ def test_test_core_comparison_after_train(
 def test_test_help(run: Callable[..., RunResult]):
     output = run("test", "--help")
 
-    help_text = f"""usage: {RASA_EXE} test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
+    help_text = f"""usage: {RASA_EXE} test [-h] [-v] [-vv] [--quiet]
+                 [-m MODEL] [-s STORIES]
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU]
@@ -284,7 +285,8 @@ def test_test_help(run: Callable[..., RunResult]):
 def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
-    help_text = f"""usage: {RASA_EXE} test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
+    help_text = f"""usage: {RASA_EXE} test nlu [-h] [-v] [-vv] [--quiet]
+                     [-m MODEL] [-u NLU] [--out OUT]
                      [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
                      [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                      [--no-plot] [--successes] [--no-errors] [--no-warnings]"""
@@ -299,7 +301,8 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
 def test_test_core_help(run: Callable[..., RunResult]):
     output = run("test", "core", "--help")
 
-    help_text = f"""usage: {RASA_EXE} test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
+    help_text = f"""usage: {RASA_EXE} test core [-h] [-v] [-vv] [--quiet]
+                      [-m MODEL [MODEL ...]]
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]

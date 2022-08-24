@@ -12,7 +12,8 @@ def test_shell_help(run: Callable[..., RunResult]):
         # This is required because `argparse` behaves differently on
         # Python 3.9 and above. The difference is the changed formatting of help
         # output for CLI arguments with `nargs="*"
-        version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN] [--cors [CORS ...]]
+        version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
+                  [--cors [CORS ...]]
                   [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""
     else:
         version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]

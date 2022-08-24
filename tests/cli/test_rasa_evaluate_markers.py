@@ -80,7 +80,8 @@ def test_evaluate_markers_sample_n_help(run: Callable[..., RunResult]):
     # We need to specify an output_filename as that's the first positional parameter
     output = run("evaluate", "markers", "sample_n", "--help")
 
-    help_text = f"""usage: {RASA_EXE} evaluate markers sample_n [-h] [-v] [-vv] [--quiet] [--seed SEED]
+    help_text = f"""usage: {RASA_EXE} evaluate markers sample_n [-h] [-v] [-vv]
+    [--quiet] [--seed SEED]
     [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
@@ -97,7 +98,8 @@ def test_evaluate_markers_all_help(run: Callable[..., RunResult]):
     # We need to specify an output_filename as that's the first positional parameter
     output = run("evaluate", "markers", "all", "--help")
 
-    help_text = f"""usage: {RASA_EXE} evaluate markers all [-h] [-v] [-vv] [--quiet] [--config CONFIG]
+    help_text = f"""usage: {RASA_EXE} evaluate markers all [-h] [-v] [-vv] [--quiet]
+    [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
     output_filename"""
