@@ -3,13 +3,13 @@ name: Continuous Integration
 on:
   push:
     branches:
-    - main
+      - main
     tags:
-    - '*'
+      - "*"
   pull_request:
 
 concurrency:
-  group: continous-integration-${{ github.ref }}  # branch or tag name
+  group: continous-integration-${{ github.ref }} # branch or tag name
   cancel-in-progress: true
 
 # SECRETS
@@ -35,12 +35,11 @@ env:
 
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
-  DEFAULT_PYTHON_VERSION: '3.9'
+  DEFAULT_PYTHON_VERSION: "3.9"
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
   WAIT_INTERVAL_SECS: 60
-
 
 jobs:
   changes:
@@ -70,13 +69,12 @@ jobs:
           echo "::set-output name=docker::true"
           echo "::set-output name=docs::true"
 
-
   wait_for_docs_tests:
     # Looks for doc test workflows and waits for it to complete successfully
     # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
     name: Wait for docs tests
     runs-on: ubuntu-latest
-    needs: [ changes ]
+    needs: [changes]
 
     steps:
       - name: Wait for doc tests
@@ -95,100 +93,98 @@ jobs:
           echo "Could not find the doc tests run."
           exit 1
 
-
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
     needs: [changes]
 
     steps:
-    - name: Checkout git repository 🕝
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v3
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@v3
 
-    - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
-      with:
-        python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
-    - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
-    - name: Install poetry 🦄
-      if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Load Poetry Cached Libraries ⬇
-      id: cache-poetry
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
 
-    - name: Clear Poetry cache
-      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-      run: rm -r .venv
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
 
-    - name: Create virtual environment
-      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
-      run: python -m venv create .venv
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
 
-    - name: Set up virtual environment
-      if: needs.changes.outputs.backend == 'true'
-      run: poetry config virtualenvs.in-project true
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        run: poetry config virtualenvs.in-project true
 
-    - name: Install Dependencies 📦
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        sudo apt-get -y install libpq-dev
-        make install-full
+      - name: Install Dependencies 📦
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full
 
-    - name: Checkout target branch to be able to diff
-      if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
-      run: |
-        git fetch origin ${{ github.base_ref }}
-        echo "DOCSTRING_DIFF_BRANCH=origin/${{ github.base_ref }}" >> $GITHUB_ENV
+      - name: Checkout target branch to be able to diff
+        if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          echo "DOCSTRING_DIFF_BRANCH=origin/${{ github.base_ref }}" >> $GITHUB_ENV
 
-        # Fetch entire history for current branch so that `make lint-docstrings`
-        # can calculate the proper diff between the branches
-        git fetch --unshallow origin "${{ github.ref }}"
+          # Fetch entire history for current branch so that `make lint-docstrings`
+          # can calculate the proper diff between the branches
+          git fetch --unshallow origin "${{ github.ref }}"
 
-    - name: Add github workflow problem matchers
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        echo "::add-matcher::.github/matchers/flake8-error-matcher.json"
+      - name: Add github workflow problem matchers
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "::add-matcher::.github/matchers/flake8-error-matcher.json"
 
-    - name: Lint Code 🎎
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        # If it's not a pull request, $DOCSTRING_DIFF_BRANCH is unset.
-        # This will result in an empty diff, which effictively means that
-        # make lint-docstrings will be skipped for other events than `pull_request`
-        make lint BRANCH=$DOCSTRING_DIFF_BRANCH
+      - name: Lint Code 🎎
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          # If it's not a pull request, $DOCSTRING_DIFF_BRANCH is unset.
+          # This will result in an empty diff, which effictively means that
+          # make lint-docstrings will be skipped for other events than `pull_request`
+          make lint BRANCH=$DOCSTRING_DIFF_BRANCH
 
-    - name: Check Types 📚
-      if: needs.changes.outputs.backend == 'true'
-      run: make types
+      - name: Check Types 📚
+        if: needs.changes.outputs.backend == 'true'
+        run: make types
 
-    - name: Lint Changelog Filenames 📝
-      if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
-      run: make lint-changelog
+      - name: Lint Changelog Filenames 📝
+        if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
+        run: make lint-changelog
 
-    - name: Test CLI 🖥
-      if: needs.changes.outputs.backend == 'true'
-      # makes sure we catch any dependency error early. they will create strange
-      # errors during the docs build, so easier to catch them early on by
-      # trying to run the `rasa` command once before the docs build.
-      run: poetry run rasa --help
-
+      - name: Test CLI 🖥
+        if: needs.changes.outputs.backend == 'true'
+        # makes sure we catch any dependency error early. they will create strange
+        # errors during the docs build, so easier to catch them early on by
+        # trying to run the `rasa` command once before the docs build.
+        run: poetry run rasa --help
 
   changelog:
     name: Check for changelog
@@ -221,134 +217,133 @@ jobs:
       fail-fast: false
       matrix:
         test:
-        - test-cli
-        - test-core-featurizers
-        - test-policies
-        - test-nlu-featurizers
-        - test-nlu-predictors
-        - test-full-model-training
-        - test-other-unit-tests
-        - test-performance
-        os: [ ubuntu-latest, windows-2019 ]
-        python-version: [ 3.7, 3.8, 3.9 ]
+          - test-cli
+          - test-core-featurizers
+          - test-policies
+          - test-nlu-featurizers
+          - test-nlu-predictors
+          - test-full-model-training
+          - test-other-unit-tests
+          - test-performance
+        os: [ubuntu-latest, windows-2019]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
-    - name: Run DataDog Agent
-      if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
-      run: |
-        docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
-        docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
-        docker port dd_agent
+      - name: Run DataDog Agent
+        if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
+        run: |
+          docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
+          docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
+          docker port dd_agent
 
-    - name: Checkout git repository 🕝
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v3
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }} 🐍
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
-    - name: Install poetry 🦄
-      if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Load Poetry Cached Libraries ⬇
-      id: cache-poetry
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
-    - name: Clear Poetry cache
-      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-      run: rm -r .venv
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
 
-      # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
-      # The virtualenv simply doesn't work on Windows with our setup,
-      # that's why we use venv to create virtual environment
-    - name: Create virtual environment
-      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
-      run: python -m venv create .venv
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
 
-    - name: Set up virtual environment
-      if: needs.changes.outputs.backend == 'true'
-      # Poetry on Windows cannot pick up the virtual environments directory properly,
-      # and it creates a new one every time the pipeline runs.
-      # This step solves this problem — it tells poetry to always use `.venv` directory inside
-      # the project itself, which also makes it easier for us to determine the correct directory
-      # that needs to be cached.
-      run: poetry config virtualenvs.in-project true
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
 
-    - name: Install Dependencies (Linux) 📦
-      if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get -y install libpq-dev
-        make install-full | tee .output
-        if grep 'The lock file is not up to date' .output; then exit 1; fi
-        make prepare-tests-ubuntu
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
 
-    - name: Install Dependencies (Windows) 📦
-      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-      # Restoring cache doesn't work properly on Windows due to symlinks.
-      # We create symlinks for spacy models, that's why we need to clean them up
-      # before caching the dependencies directory.
-      # More information: https://github.com/actions/cache/issues/120
-      run: |
-        $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
-        if (Test-Path $spacy_data_dir) {
-          Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-          Remove-Item -Force -Recurse $spacy_data_dir
-          New-Item -Path $spacy_data_dir -Type Directory
-        }
-        make install-full
-        make prepare-tests-windows-gha
+      - name: Install Dependencies (Windows) 📦
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        # Restoring cache doesn't work properly on Windows due to symlinks.
+        # We create symlinks for spacy models, that's why we need to clean them up
+        # before caching the dependencies directory.
+        # More information: https://github.com/actions/cache/issues/120
+        run: |
+          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
+          if (Test-Path $spacy_data_dir) {
+            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+            Remove-Item -Force -Recurse $spacy_data_dir
+            New-Item -Path $spacy_data_dir -Type Directory
+          }
+          make install-full
+          make prepare-tests-windows-gha
 
-    - name: Add github workflow problem matchers
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-latest'
-      # only annotate based on test runs on ubuntu: otherwise
-      # all errors will be duplicated for each python / os combination
-      # therefore, we only enable for the one where most tests are run
-      # (tests will still run in other envs, they will just not create annotations)
-      run: pip install pytest-github-actions-annotate-failures
+      - name: Add github workflow problem matchers
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-latest'
+        # only annotate based on test runs on ubuntu: otherwise
+        # all errors will be duplicated for each python / os combination
+        # therefore, we only enable for the one where most tests are run
+        # (tests will still run in other envs, they will just not create annotations)
+        run: pip install pytest-github-actions-annotate-failures
 
-    - name: Install ddtrace
-      if: needs.changes.outputs.backend == 'true'
-      run: poetry run pip install -U ddtrace
+      - name: Install ddtrace
+        if: needs.changes.outputs.backend == 'true'
+        run: poetry run pip install -U ddtrace
 
-    - name: Test Code 🔍 (multi-process)
-      if: needs.changes.outputs.backend == 'true'
-      env:
-        JOBS: 2
-        PYTHONIOENCODING: "utf-8"
-        DD_ENV: ${{ matrix.test }}
-        DD_SERVICE: rasa
-        DD_ARGS: --ddtrace --ddtrace-patch-all
-      run: |
-        make ${{ matrix.test }}
-        if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
-        fi
-      shell: bash  # bash shell is a way to make code run for both Linux and Windows
+      - name: Test Code 🔍 (multi-process)
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          JOBS: 2
+          PYTHONIOENCODING: "utf-8"
+          DD_ENV: ${{ matrix.test }}
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all
+        run: |
+          make ${{ matrix.test }}
+          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
+            mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+          fi
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
 
-    - name: Store coverage reports
-      if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ matrix.test }}-coverage
-        path: |
-          ${{ github.workspace }}/${{ matrix.test }}-coverage
-
+      - name: Store coverage reports
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.test }}-coverage
+          path: |
+            ${{ github.workspace }}/${{ matrix.test }}-coverage
 
   upload_coverage_reports:
     name: Upload coverage reports to codeclimate
@@ -364,7 +359,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
           python-version: 3.9
 
@@ -454,83 +449,83 @@ jobs:
           - 5672:5672
 
     steps:
-    - name: Checkout git repository 🕝
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v3
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@v3
 
-    - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
-      with:
-        python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
-    - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
-    - name: Install poetry 🦄
-      if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Load Poetry Cached Libraries ⬇
-      id: cache-poetry
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
-    - name: Clear Poetry cache
-      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-      run: rm -r .venv
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
 
-      # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
-      # The virtualenv simply doesn't work on Windows with our setup,
-      # that's why we use venv to create virtual environment
-    - name: Create virtual environment
-      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
-      run: python -m venv create .venv
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
 
-    - name: Set up virtual environment
-      if: needs.changes.outputs.backend == 'true'
-      # Poetry on Windows cannot pick up the virtual environments directory properly,
-      # and it creates a new one every time the pipeline runs.
-      # This step solves this problem — it tells poetry to always use `.venv` directory inside
-      # the project itself, which also makes it easier for us to determine the correct directory
-      # that needs to be cached.
-      run: poetry config virtualenvs.in-project true
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
 
-    - name: Install Dependencies (Linux) 📦
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        sudo apt-get -y install libpq-dev
-        make install-full | tee .output
-        if grep 'The lock file is not up to date' .output; then exit 1; fi
-        make prepare-tests-ubuntu
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
 
-    - name: Test Code with Services 🩺
-      if: needs.changes.outputs.backend == 'true'
-      env:
-        JOBS: 2
-        INTEGRATION_TEST_PYTEST_MARKERS: '"not sequential"'
-        PYTHONIOENCODING: "utf-8"
-      run: |
-        make test-integration
+      - name: Test Code with Services 🩺
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          JOBS: 2
+          INTEGRATION_TEST_PYTEST_MARKERS: '"not sequential"'
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-integration
 
-    # these integration tests need to be ran in a sequential fashion,
-    # due to environment constraints, so we're running them in a single process.
-    - name: Test Code with Services 🩺 (sequential)
-      if: needs.changes.outputs.backend == 'true'
-      env:
-        JOBS: 1
-        INTEGRATION_TEST_PYTEST_MARKERS: "sequential"
-        PYTHONIOENCODING: "utf-8"
-      run: |
-        make test-integration
+      # these integration tests need to be ran in a sequential fashion,
+      # due to environment constraints, so we're running them in a single process.
+      - name: Test Code with Services 🩺 (sequential)
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          JOBS: 1
+          INTEGRATION_TEST_PYTEST_MARKERS: "sequential"
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-integration
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
@@ -547,147 +542,147 @@ jobs:
       # Due to an issue with checking out a wrong commit, we make sure
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
-    - name: Checkout pull request HEAD commit instead of merge commit 🕝
-      uses: actions/checkout@v3
-      if: github.event_name == 'pull_request'
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@v3
+        if: github.event_name == 'pull_request'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
-    - name: Checkout git repository 🕝
-      uses: actions/checkout@v3
-      if: github.event_name != 'pull_request'
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v3
+        if: github.event_name != 'pull_request'
 
-    - name: Read Poetry Version 🔢
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.6.0
-      with:
-        version: v0.5.1
-        driver: docker
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.6.0
+        with:
+          version: v0.5.1
+          driver: docker
 
-    - name: Login to DockerHub Registry 🔢
-      run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
+      - name: Login to DockerHub Registry 🔢
+        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
-    - name: Check if tag version is equal or higher than the latest tagged Rasa version
-      id: rasa_get_version
-      if: env.IS_TAG_BUILD == 'true'
-      run: |
-        # Get latest tagged Rasa version
-        git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
-        # Fetch branch history
-        git fetch --prune --unshallow
-        LATEST_TAGGED_NON_ALPHA_RASA_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | head -n1)
-        CURRENT_TAG=${GITHUB_REF#refs/tags/}
-        # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
-        IS_NEWEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$CURRENT_TAG" \
-          | sort -V -C && echo true || echo false) || true)
-        # Avoid that the script gets released for alphas or release candidates
-        if [[ "${IS_NEWEST_VERSION}" == "true" && "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
-          echo "::set-output name=is_newest_version::true"
-        else
-          echo "::set-output name=is_newest_version::false"
-        fi
+      - name: Check if tag version is equal or higher than the latest tagged Rasa version
+        id: rasa_get_version
+        if: env.IS_TAG_BUILD == 'true'
+        run: |
+          # Get latest tagged Rasa version
+          git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
+          # Fetch branch history
+          git fetch --prune --unshallow
+          LATEST_TAGGED_NON_ALPHA_RASA_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | head -n1)
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
+          IS_NEWEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$CURRENT_TAG" \
+            | sort -V -C && echo true || echo false) || true)
+          # Avoid that the script gets released for alphas or release candidates
+          if [[ "${IS_NEWEST_VERSION}" == "true" && "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
+            echo "::set-output name=is_newest_version::true"
+          else
+            echo "::set-output name=is_newest_version::false"
+          fi
 
-    - name: Check if a base image exists
-      id: check_image
-      env:
-        DOCKER_CLI_EXPERIMENTAL: enabled
-      run: |
-        # Base image
-        BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
-        echo "::set-output name=base_image_hash::${BASE_IMAGE_HASH}"
+      - name: Check if a base image exists
+        id: check_image
+        env:
+          DOCKER_CLI_EXPERIMENTAL: enabled
+        run: |
+          # Base image
+          BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
+          echo "::set-output name=base_image_hash::${BASE_IMAGE_HASH}"
 
-        BASE_IMAGE_EXISTS=$((docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
-        echo "::set-output name=base_exists::${BASE_IMAGE_EXISTS}"
+          BASE_IMAGE_EXISTS=$((docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
+          echo "::set-output name=base_exists::${BASE_IMAGE_EXISTS}"
 
-        # Base MITIE image
-        BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
-        MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-        echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}"
+          # Base MITIE image
+          BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
+          MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
+          echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}"
 
-        BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
-        echo "::set-output name=base_mitie_exists::${BASE_IMAGE_MITIE_EXISTS}"
+          BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
+          echo "::set-output name=base_mitie_exists::${BASE_IMAGE_MITIE_EXISTS}"
 
-        # Base poetry image
-        BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect rasa/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
-        echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
+          # Base poetry image
+          BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect rasa/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
+          echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
 
-        # Base builder image
-        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
-        echo "::set-output name=base_builder_image_hash::${BASE_IMAGE_BUILDER_HASH}"
+          # Base builder image
+          BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
+          echo "::set-output name=base_builder_image_hash::${BASE_IMAGE_BUILDER_HASH}"
 
-        BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
-        echo "::set-output name=base_builder_exists::${BASE_IMAGE_BUILDER_EXISTS}"
+          BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
+          echo "::set-output name=base_builder_exists::${BASE_IMAGE_BUILDER_EXISTS}"
 
-    - name: Build Docker base image and push 🛠 ⬆
-      if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
-      run: |
-        export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-        docker buildx bake -f docker/docker-bake.hcl base --push
+      - name: Build Docker base image and push 🛠 ⬆
+        if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          docker buildx bake -f docker/docker-bake.hcl base --push
 
-    - name: Build Docker mitie base image and push 🛠 ⬆
-      if: steps.check_image.outputs.base_mitie_exists == 'false'
-      run: |
-        export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-        docker buildx bake -f docker/docker-bake.hcl base-mitie --push
+      - name: Build Docker mitie base image and push 🛠 ⬆
+        if: steps.check_image.outputs.base_mitie_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
+          docker buildx bake -f docker/docker-bake.hcl base-mitie --push
 
-    - name: Build Docker poetry base image and push 🛠 ⬆
-      if: steps.check_image.outputs.base_poetry_exists == 'false'
-      run: |
-        export IMAGE_TAG=${{ env.POETRY_VERSION }}
-        export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
-        docker buildx bake -f docker/docker-bake.hcl base-poetry --push
+      - name: Build Docker poetry base image and push 🛠 ⬆
+        if: steps.check_image.outputs.base_poetry_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ env.POETRY_VERSION }}
+          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
+          docker buildx bake -f docker/docker-bake.hcl base-poetry --push
 
-    - name: Build Docker builder base image and push 🛠 ⬆
-      if: steps.check_image.outputs.base_builder_exists == 'false'
-      run: |
-        export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
-        docker buildx bake -f docker/docker-bake.hcl base-builder --push
+      - name: Build Docker builder base image and push 🛠 ⬆
+        if: steps.check_image.outputs.base_builder_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          docker buildx bake -f docker/docker-bake.hcl base-builder --push
 
-    # Set environment variables for a pull request
-    #
-    # In this scenario, we've created a PR #1234
-    #
-    # Example output:
-    # IMAGE_TAG=1234
-    - name: Set environment variables - pull_request
-      if: github.event_name == 'pull_request' && env.IS_TAG_BUILD == 'false'
-      run: |
-        echo "IMAGE_TAG=${{ github.event.number }}" >> $GITHUB_ENV
+      # Set environment variables for a pull request
+      #
+      # In this scenario, we've created a PR #1234
+      #
+      # Example output:
+      # IMAGE_TAG=1234
+      - name: Set environment variables - pull_request
+        if: github.event_name == 'pull_request' && env.IS_TAG_BUILD == 'false'
+        run: |
+          echo "IMAGE_TAG=${{ github.event.number }}" >> $GITHUB_ENV
 
-    # Set environment variables for a tag
-    #
-    # In this scenario, we've pushed the '2.0.6' tag
-    #
-    # Example output:
-    # TAG_NAME=2.0.6
-    # IMAGE_TAG=2.0.6
-    - name: Set environment variables - push - tag
-      if: github.event_name == 'push' && env.IS_TAG_BUILD == 'true'
-      run: |
-        TAG_NAME=${GITHUB_REF#refs/tags/}
-        echo "IMAGE_TAG=${TAG_NAME}" >> $GITHUB_ENV
+      # Set environment variables for a tag
+      #
+      # In this scenario, we've pushed the '2.0.6' tag
+      #
+      # Example output:
+      # TAG_NAME=2.0.6
+      # IMAGE_TAG=2.0.6
+      - name: Set environment variables - push - tag
+        if: github.event_name == 'push' && env.IS_TAG_BUILD == 'true'
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "IMAGE_TAG=${TAG_NAME}" >> $GITHUB_ENV
 
-    # Set environment variables for a branch
-    #
-    # In this scenario, we've pushed changes into the main branch
-    #
-    # Example output:
-    # IMAGE_TAG=main
-    - name: Set environment variables - push - branch
-      if: github.event_name == 'push' && env.IS_TAG_BUILD == 'false'
-      run: |
-        BRANCH_NAME=${GITHUB_REF#refs/heads/}
-        SAFE_BRANCH_NAME="$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\\*+.$\#\-\/]/-/g')"
-        echo "IMAGE_TAG=${SAFE_BRANCH_NAME}" >> $GITHUB_ENV
+      # Set environment variables for a branch
+      #
+      # In this scenario, we've pushed changes into the main branch
+      #
+      # Example output:
+      # IMAGE_TAG=main
+      - name: Set environment variables - push - branch
+        if: github.event_name == 'push' && env.IS_TAG_BUILD == 'false'
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          SAFE_BRANCH_NAME="$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\\*+.$\#\-\/]/-/g')"
+          echo "IMAGE_TAG=${SAFE_BRANCH_NAME}" >> $GITHUB_ENV
 
-    - name: Set output
-      id: set_output
-      run: |
-        echo "::set-output name=image_tag::${{ env.IMAGE_TAG }}"
+      - name: Set output
+        id: set_output
+        run: |
+          echo "::set-output name=image_tag::${{ env.IMAGE_TAG }}"
 
   docker:
     name: Build Docker
@@ -707,80 +702,80 @@ jobs:
       # Due to an issue with checking out a wrong commit, we make sure
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
-    - name: Checkout pull request HEAD commit instead of merge commit 🕝
-      uses: actions/checkout@v3
-      if: github.event_name == 'pull_request'
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@v3
+        if: github.event_name == 'pull_request'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
-    - name: Checkout git repository 🕝
-      uses: actions/checkout@v3
-      if: github.event_name != 'pull_request'
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v3
+        if: github.event_name != 'pull_request'
 
-    - name: Free disk space
-      if: needs.changes.outputs.docker == 'true'
-      # tries to make sure we do not run out of disk space, see
-      # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
-      run: |
-        sudo swapoff -a
-        sudo rm -f /swapfile
-        sudo apt clean
-        docker rmi $(docker image ls -aq)
-        df -h
+      - name: Free disk space
+        if: needs.changes.outputs.docker == 'true'
+        # tries to make sure we do not run out of disk space, see
+        # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt clean
+          docker rmi $(docker image ls -aq)
+          df -h
 
-    - name: Read Poetry Version 🔢
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.6.0
-      with:
-        version: v0.5.1
-        driver: docker
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.6.0
+        with:
+          version: v0.5.1
+          driver: docker
 
-    - name: Login to DockerHub Registry 🔢
-      if: needs.changes.outputs.docker == 'true'
-      run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
+      - name: Login to DockerHub Registry 🔢
+        if: needs.changes.outputs.docker == 'true'
+        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
-    - name: Copy Segment write key to the package
-      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-      env:
-        RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
-        RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
-      run: |
-        ./scripts/write_keys_file.sh
+      - name: Copy Segment write key to the package
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+        env:
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+        run: |
+          ./scripts/write_keys_file.sh
 
-    - name: Build Docker image
-      if: needs.changes.outputs.docker == 'true'
-      run: |
-        docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }}
+      - name: Build Docker image
+        if: needs.changes.outputs.docker == 'true'
+        run: |
+          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }}
 
-    - name: Push image with main tag 📦
-      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
-      run: |
-        docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
+      - name: Push image with main tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
+        run: |
+          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
-    - name: Push image with ${{github.ref}} tag 📦
-      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
-      run: |
-        IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
+      - name: Push image with ${{github.ref}} tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
+        run: |
+          IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
-        docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
-        # Tag the image as latest
-        if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
-          if [[ "${{ matrix.image }}" == "default" ]]; then
-            RELEASE_TAG="${IMAGE_TAG}"
-          else
-            RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
+          # Tag the image as latest
+          if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
+            if [[ "${{ matrix.image }}" == "default" ]]; then
+              RELEASE_TAG="${IMAGE_TAG}"
+            else
+              RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
+            fi
+
+            LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
+
+            docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
+            docker push rasa/rasa:${LATEST_TAG}
           fi
-
-          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
-
-          docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
-          docker push rasa/rasa:${LATEST_TAG}
-        fi
 
   deploy:
     name: Deploy to PyPI
@@ -788,68 +783,67 @@ jobs:
 
     # deploy will only be run when there is a tag available
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-    needs: [quality, test, wait_for_docs_tests, docker]  # only run after all other stages succeeded
+    needs: [quality, test, wait_for_docs_tests, docker] # only run after all other stages succeeded
 
     steps:
-    - name: Checkout git repository 🕝
-      uses: actions/checkout@v3
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v3
 
-    - name: Set up Python 3.9 🐍
-      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
-      with:
-        python-version: 3.9
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        with:
+          python-version: 3.9
 
-    - name: Read Poetry Version 🔢
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
-    - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Copy Segment write key to the package
-      env:
-        RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
-        RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
-      run: |
-        ./scripts/write_keys_file.sh
+      - name: Copy Segment write key to the package
+        env:
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+        run: |
+          ./scripts/write_keys_file.sh
 
-    - name: Build ⚒️ Distributions
-      run: poetry build
+      - name: Build ⚒️ Distributions
+        run: poetry build
 
-    - name: Publish to PyPI 📦
-      uses: pypa/gh-action-pypi-publish@37f50c210e3d2f9450da2cd423303d6a14a6e29f
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_TOKEN }}
+      - name: Publish to PyPI 📦
+        uses: pypa/gh-action-pypi-publish@37f50c210e3d2f9450da2cd423303d6a14a6e29f
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
 
-    - name: Notify Sentry about the release
-      env:
-        GITHUB_TAG: ${{ github.ref }}
-        SENTRY_ORG: rasahq
-        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      run: |
-        curl -sL https://sentry.io/get-cli/ | bash
-        GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-        sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
-        sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
-        sentry-cli releases finalize "rasa-$GITHUB_TAG"
+      - name: Notify Sentry about the release
+        env:
+          GITHUB_TAG: ${{ github.ref }}
+          SENTRY_ORG: rasahq
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+          sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
+          sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
+          sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
-    - name: Notify Slack & Publish Release Notes 🗞
-      env:
-        GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
-        SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
-        GITHUB_TAG: ${{ github.ref }}
-        GITHUB_REPO_SLUG: ${{ github.repository }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-        pip install -U github3.py pep440-version-utils
-        python3 scripts/publish_gh_release_notes.py
-        ./scripts/ping_slack_about_package_release.sh
-
+      - name: Notify Slack & Publish Release Notes 🗞
+        env:
+          GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
+          SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+          GITHUB_TAG: ${{ github.ref }}
+          GITHUB_REPO_SLUG: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+          pip install -U github3.py pep440-version-utils
+          python3 scripts/publish_gh_release_notes.py
+          ./scripts/ping_slack_about_package_release.sh
 
   send_slack_notification_for_release_on_failure:
     name: Notify Slack & Publish Release Notes
