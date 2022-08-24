@@ -24,6 +24,8 @@ help:
 	@echo "        Run all python static checks."
 	@echo "    prepare-tests-ubuntu"
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
+	@echo "    prepare-tests-arch"
+	@echo "        Install system requirements for running tests on Manjaro and Arch based systems."
 	@echo "    prepare-tests-macos"
 	@echo "        Install system requirements for running tests on macOS."
 	@echo "    prepare-tests-windows"
@@ -146,6 +148,9 @@ prepare-tests-macos: prepare-wget-macos prepare-tests-files
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python-tk
+
+prepare-tests-arch: prepare-tests-files
+	sudo pacman -S graphviz tk
 
 prepare-wget-windows:
 	choco install wget

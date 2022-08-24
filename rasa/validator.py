@@ -1,7 +1,12 @@
 import itertools
 import logging
+import queue
 from collections import defaultdict
+from platform import node
+from re import A
 from typing import Set, Text, Optional, Dict, Any, List
+
+from numpy import False_
 
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
@@ -23,6 +28,10 @@ from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
+
+from rasa.shared.core.training_data.structures import (
+    STORY_START,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +99,47 @@ class Validator:
                 )
                 everything_is_alright = False
 
+        return everything_is_alright
+    
+    def verify_loop_in_intents(
+        self, ignore_warnings: bool = True
+    ) -> bool:
+        row = queue.Queue()
+        nodes = dict()
+        visited = dict()
+        loops_cp = []
+        
+        everything_is_alright = True
+        
+        for story in self.story_graph.story_steps:
+            start_cp = story.start_checkpoints[0].name
+            if start_cp not in nodes:
+                nodes[start_cp] = []
+                visited[start_cp] = False
+            if len(story.end_checkpoints) > 0:
+                end_cp = story.end_checkpoints[0].name
+                if(end_cp not in nodes):
+                    nodes[end_cp] = []
+                    visited[end_cp] = False
+                nodes[start_cp].append(end_cp)
+
+        if STORY_START in nodes:
+            row.put(STORY_START)
+        while not row.empty():
+            x = row.get()
+            visited[x] = True
+            for node in nodes[x]:
+                if visited[node]:
+                    loops_cp.append(f"{x} => {node}")
+                    everything_is_alright = ignore_warnings and everything_is_alright
+                else:
+                    row.put(node)
+        
+        if(len(loops_cp) > 0):
+            rasa.shared.utils.io.raise_warning(
+                f"These checkpoints '{loops_cp}' is causing loop"
+            )
+        
         return everything_is_alright
 
     def verify_example_repetition_in_intents(
@@ -327,10 +377,14 @@ class Validator:
         there_is_no_duplication = self.verify_example_repetition_in_intents(
             ignore_warnings
         )
+        
+        logger.info("Validating loop of checkpoints...")
+        loop_in_checkpoint = self.verify_loop_in_intents(ignore_warnings)
 
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
-        return intents_are_valid and stories_are_valid and there_is_no_duplication
+        return (intents_are_valid and stories_are_valid and there_is_no_duplication
+                and loop_in_checkpoint)
 
     def verify_form_slots(self) -> bool:
         """Verifies that form slots match the slot mappings in domain."""
