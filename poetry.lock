@@ -3482,7 +3482,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "5aa6998fcb0292c42fe5bf865e67aa7b4261d495920c883ceb99150b6fd20a86"
+content-hash = "5dfceaada005a0e9f7c8fcc3c01003827a9b44a59dc3cce6359ea5e1d87d2461"
 
 [metadata.files]
 absl-py = [
