@@ -163,11 +163,11 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
     )
 
-    file_importer = TrainingDataImporter.load_from_config(
+    importer = TrainingDataImporter.load_from_config(
         domain_path=args.domain, training_data_paths=args.data, config_path=config
     )
 
-    validator = Validator.from_importer(file_importer)
+    validator = Validator.from_importer(importer)
 
     if stories_only:
         all_good = _validate_story_structure(validator, args)
