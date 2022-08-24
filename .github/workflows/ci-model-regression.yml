@@ -44,7 +44,7 @@ jobs:
         sudo chmod +x /usr/local/bin/gomplate
 
     - name: Find a comment with configuration
-      uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
+      uses: tczekajlo/find-comment@fa3e57c01f0b3f5eb3f3f9e057d4d0cded349664
       id: fc_config
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -127,7 +127,7 @@ jobs:
         body: ${{ steps.fc_config.outputs.comment-body }}
 
     - name: Find a comment with configuration - update
-      uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
+      uses: tczekajlo/find-comment@fa3e57c01f0b3f5eb3f3f9e057d4d0cded349664
       id: fc_config_update
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
