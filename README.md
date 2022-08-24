@@ -303,16 +303,18 @@ The values for a given version number (MAJOR.MINOR.PATCH) are incremented as fol
 The following table describes the version types and their expected *release cadence*:
 
 | Version Type |                                                                  Description                                                                  |  Target Cadence |
-|:------------:|:---------------------------------------------------------------------------------------------------------------------------------------------:|:---------------:|
+|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
 | Major        | For significant changes, or when any backward-incompatible changes are introduced to the API or data model.                                   | Every 1 - 2 yrs |
 | Minor        | For when new backward-compatible functionality is introduced, a minor feature is introduced, or when a set of smaller features is rolled out. | +/- Quarterly   |
 | Patch        | For backward-compatible bug fixes that fix incorrect behavior.                                                                                | As needed       |
 
 While this table represents our target release frequency, we reserve the right to modify it based on changing market conditions and technical requirements.
 
+### Maintenance Policy
+Our End of Life policy defines how long a given release is considered supported, as well as how long a release is 
+considered to be still in active development or maintenance.
 
-### Release Timeline for Minor Releases
-
+The maintentance duration and end of life for every release are shown on our website as part of the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
 
 ### Cutting a Major / Minor release
 #### A week before release day
