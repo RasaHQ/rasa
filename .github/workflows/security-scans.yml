@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, labeled]
 
 concurrency:
-  group: security-scans-${{ github.head_ref }}  # head branch name
+  group: security-scans-${{ github.head_ref }} # head branch name
   cancel-in-progress: true
 
 jobs:
@@ -68,56 +68,56 @@ jobs:
     needs: [changes]
 
     steps:
-    - name: Checkout git repository 🕝
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v3
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@v3
 
-    - name: Set up Python 3.9 🐍
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
-      with:
-        python-version: 3.9
+      - name: Set up Python 3.9 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        with:
+          python-version: 3.9
 
-    - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
-    - name: Install poetry 🦄
-      if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Load Poetry Cached Libraries ⬇
-      id: cache-poetry
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-3.9
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          restore-keys: ${{ runner.os }}-poetry-3.9
 
-    - name: Clear Poetry cache
-      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')
-      run: rm -r .venv
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')
+        run: rm -r .venv
 
-    - name: Create virtual environment
-      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')) && needs.changes.outputs.backend == 'true'
-      run: python -m venv create .venv
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
 
-    - name: Set up virtual environment
-      if: needs.changes.outputs.backend == 'true'
-      run: poetry config virtualenvs.in-project true
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        run: poetry config virtualenvs.in-project true
 
-    - name: Install Dependencies (Linux) 📦
-      if: needs.changes.outputs.backend == 'true'
-      run: make install
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true'
+        run: make install
 
-    - name: Run Bandit 🔪
-      if: needs.changes.outputs.backend == 'true'
-      run: make lint-security
+      - name: Run Bandit 🔪
+        if: needs.changes.outputs.backend == 'true'
+        run: make lint-security
 
   snyk:
     runs-on: ubuntu-latest
