@@ -217,6 +217,9 @@ jobs:
     name: Run Tests
     runs-on: ${{ matrix.os }}
     needs: [changes]
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -233,16 +236,18 @@ jobs:
         python-version: [ 3.7, 3.8, 3.9 ]
 
     steps:
-    - name: Run DataDog Agent
-      if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
-      run: |
-        docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
-        docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
-        docker port dd_agent
-
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v3
+
+    - name: Run DataDog Agent
+      if: needs.changes.outputs.backend == 'true'
+      uses: datadog/agent-github-action@9e31e08e9eebe3eb04401dd3e5a1dedefe989d97
+      with:
+        api_key: ${{ secrets.DD_API_KEY }}
+        image_name: datadog/agent
+        datadog_site: datadoghq.eu
+        extra_env: GITHUB_ACTIONS=true, CI=true, DD_HOSTNAME=${{ matrix.os }}
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
@@ -254,7 +259,6 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       run: |
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
@@ -300,6 +304,7 @@ jobs:
 
     - name: Install Dependencies (Windows) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+      shell: powershell
       # Restoring cache doesn't work properly on Windows due to symlinks.
       # We create symlinks for spacy models, that's why we need to clean them up
       # before caching the dependencies directory.
@@ -326,20 +331,34 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       run: poetry run pip install -U ddtrace
 
+    - name: Read current Rasa version
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        RASA_VERSION=$(python -c "import sys; import os; sys.path.append('rasa/'); from version import __version__; print(__version__)")
+        echo "RASA_VERSION=$RASA_VERSION" >> $GITHUB_ENV
+
     - name: Test Code 🔍 (multi-process)
       if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
-        DD_ENV: ${{ matrix.test }}
-        DD_SERVICE: rasa
+        DD_ENV: rasa-ci
+        DD_SERVICE: rasa-${{ matrix.test }}
+        DD_VERSION: ${{ env.RASA_VERSION }}
+        DD_PROFILING_TAGS: git_commit_sha:${{ github.sha }},git_branch:${{ github.ref_name }}
         DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
+        # multi-process profiling on windows does not work becuase it requires os.register_at_fork(), which only supports Unix
+        # Source: https://docs.python.org/3.8/library/os.html#os.register_at_fork
+        if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
+          export DD_TRACT_RUN_ARG=ddtrace-run
+          export DD_PROFILING_ENABLED=true
+        fi
+
         make ${{ matrix.test }}
         if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
           mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
         fi
-      shell: bash  # bash shell is a way to make code run for both Linux and Windows
 
     - name: Store coverage reports
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
