@@ -272,7 +272,7 @@ def test_test_help(run: Callable[..., RunResult]):
                  [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  [--no-plot] [--successes] [--no-errors] [--no-warnings]
                  [--out OUT]
-                 {{core,nlu}} ..."""
+                 {{core,nlu}} ..."""  # noqa: E501
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -287,7 +287,7 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
     help_text = f"""usage: {RASA_EXE} test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
                      [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
                      [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
-                     [--no-plot] [--successes] [--no-errors] [--no-warnings]"""
+                     [--no-plot] [--successes] [--no-errors] [--no-warnings]"""  # noqa: E501
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -304,7 +304,7 @@ def test_test_core_help(run: Callable[..., RunResult]):
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
                       [--evaluate-model-directory] [--no-plot] [--successes]
-                      [--no-errors] [--no-warnings]"""
+                      [--no-errors] [--no-warnings]"""  # noqa: E501
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
