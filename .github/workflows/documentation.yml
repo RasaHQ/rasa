@@ -41,7 +41,7 @@ jobs:
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
       - uses: actions/checkout@v3
-      - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
+      - uses: RasaHQ/pr-changed-files-filter@1cbb925a174b3b91b9ba408bc912aaca905656c0
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
