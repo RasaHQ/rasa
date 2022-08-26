@@ -128,6 +128,8 @@ class TrackerWithCachedStates(DialogueStateTracker):
         else:
             # if don't have it cached, we use the domain to calculate the states
             # from the events
+            # note: we ignore omit_unset_slots here as the cache was generated
+            # with the default value
             states_for_hashing = self._states_for_hashing
             if not states_for_hashing:
                 states = super().past_states(domain)
