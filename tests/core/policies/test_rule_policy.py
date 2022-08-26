@@ -7,8 +7,9 @@ import pytest
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.graph_components.providers.training_tracker_provider import \
-    TrainingTrackerProvider
+from rasa.graph_components.providers.training_tracker_provider import (
+    TrainingTrackerProvider,
+)
 from rasa.shared.constants import (
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
@@ -36,8 +37,9 @@ from rasa.shared.core.constants import (
     RULE_ONLY_LOOPS,
     ACTION_UNLIKELY_INTENT_NAME,
 )
-from rasa.shared.core.training_data.story_reader.yaml_story_reader import \
-    YAMLStoryReader
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME, ENTITY_ATTRIBUTE_TYPE
 from rasa.shared.core.domain import Domain, InvalidDomain
@@ -3144,8 +3146,9 @@ def test_raise_if_incompatible_with_domain():
 
 
 def test_initial_values_are_not_incorporated_into_rule_policy(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
-    policy: RulePolicy
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    policy: RulePolicy,
 ):
     reader = YAMLStoryReader()
     steps = reader.read_from_file("data/test_yaml_stories/rules_greet_and_goodbye.yml")
