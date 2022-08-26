@@ -1,0 +1,21 @@
+version: "2.0"
+
+intents:
+  - greet
+  - goodbye
+
+slots:
+  has_said_hi:
+    type: bool
+    initial_value: false
+
+responses:
+  utter_greet:
+  - text: "Hey! How are you?"
+
+  utter_goodbye:
+  - text: "Bye"
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
