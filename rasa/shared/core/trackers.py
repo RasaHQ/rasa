@@ -271,7 +271,7 @@ class DialogueStateTracker:
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[misc]  # noqa: E501
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[literal-required]  # noqa: E501
 
         return parse_data_with_nlu_state
 
@@ -393,7 +393,7 @@ class DialogueStateTracker:
         group in latest message.
 
         If you are only interested in the first entity of a given type use
-        `next(tracker.get_latest_entity_values("my_entity_name"), None)`.
+        `next(tracker.get_latest_entity_values(`"`my_entity_name`"`), None)`.
         If no entity is found `None` is the default result.
 
         Args:

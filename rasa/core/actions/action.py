@@ -405,7 +405,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return None
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[literal-required]
         ]
 
         if (
@@ -438,7 +438,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return []
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[literal-required]
         ]
 
         if (
@@ -762,15 +762,21 @@ class RemoteAction(Action):
                 logger.error(exception.message)
                 raise exception
             else:
-                raise RasaException("Failed to execute custom action.") from e
+                raise RasaException(
+                    f"Failed to execute custom action '{self.name()}'"
+                ) from e
 
         except aiohttp.ClientConnectionError as e:
             logger.error(
-                "Failed to run custom action '{}'. Couldn't connect "
-                "to the server at '{}'. Is the server running? "
-                "Error: {}".format(self.name(), self.action_endpoint.url, e)
+                f"Failed to run custom action '{self.name()}'. Couldn't connect "
+                f"to the server at '{self.action_endpoint.url}'. "
+                f"Is the server running? "
+                f"Error: {e}"
             )
-            raise RasaException("Failed to execute custom action.")
+            raise RasaException(
+                f"Failed to execute custom action '{self.name()}'. Couldn't connect "
+                f"to the server at '{self.action_endpoint.url}."
+            )
 
         except aiohttp.ClientError as e:
             # not all errors have a status attribute, but
@@ -954,7 +960,7 @@ class ActionDefaultAskAffirmation(Action):
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[misc]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[literal-required] # noqa: E501
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
@@ -1228,8 +1234,9 @@ class ActionExtractSlots(Action):
                     if not isinstance(slot, ListSlot):
                         value = value[-1]
 
-                    if tracker.get_slot(slot.name) != value:
+                    if value is not None or tracker.get_slot(slot.name) is not None:
                         slot_events.append(SlotSet(slot.name, value))
+                        break
 
                 should_fill_custom_slot = mapping_type == SlotMappingType.CUSTOM
 

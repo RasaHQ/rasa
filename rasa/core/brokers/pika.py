@@ -33,7 +33,7 @@ class PikaEventBroker(EventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queues: Union[List[Text], Tuple[Text], Text, None] = None,
+        queues: Union[List[Text], Tuple[Text, ...], Text, None] = None,
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         event_loop: Optional[AbstractEventLoop] = None,
@@ -86,13 +86,13 @@ class PikaEventBroker(EventBroker):
 
         self._loop = event_loop or asyncio.get_event_loop()
 
-        self._connection: Optional[aio_pika.RobustConnection] = None
+        self._connection: Optional[aio_pika.abc.AbstractRobustConnection] = None
         self._exchange: Optional[aio_pika.RobustExchange] = None
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None]
-    ) -> Union[List[Text], Tuple[Text]]:
+        queues_arg: Union[List[Text], Tuple[Text, ...], Text, None]
+    ) -> Union[List[Text], Tuple[Text, ...]]:
         """Get queues for this event broker.
 
         The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
@@ -147,7 +147,7 @@ class PikaEventBroker(EventBroker):
     async def connect(self) -> None:
         """Connects to RabbitMQ."""
         self._connection = await self._connect()
-        self._connection.add_reconnect_callback(self._publish_unpublished_messages)
+        self._connection.reconnect_callbacks.add(self._publish_unpublished_messages)
         logger.info(f"RabbitMQ connection to '{self.host}' was established.")
 
         channel = await self._connection.channel()
@@ -158,7 +158,7 @@ class PikaEventBroker(EventBroker):
 
         self._exchange = await self._set_up_exchange(channel)
 
-    async def _connect(self) -> aio_pika.RobustConnection:
+    async def _connect(self) -> aio_pika.abc.AbstractRobustConnection:
         url = None
         # The `url` parameter will take precedence over parameters like `login` or
         # `password`.
@@ -285,7 +285,7 @@ class PikaEventBroker(EventBroker):
                 self._unpublished_events.append(event)
 
             if self.raise_on_failure:
-                self.close()
+                self.close()  # type: ignore[unused-coroutine]
                 raise e
 
     def _message(

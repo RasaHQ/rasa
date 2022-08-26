@@ -605,10 +605,16 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         logger.debug("No label features found. Computing default label features.")
 
         eye_matrix = np.eye(len(labels_example), dtype=np.float32)
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         # add sequence dimension to one-hot labels
         return [
             FeatureArray(
-                np.array([np.expand_dims(a, 0) for a in eye_matrix]),
+                np.array(
+                    [
+                        np.expand_dims(a, 0)  # type: ignore[no-untyped-call]
+                        for a in eye_matrix
+                    ]
+                ),
                 number_of_dimensions=3,
             )
         ]
@@ -658,12 +664,18 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             )
 
         label_ids = np.array([idx for (idx, _) in labels_idx_examples])
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            [
+                FeatureArray(
+                    np.expand_dims(label_ids, -1),  # type: ignore[no-untyped-call]
+                    number_of_dimensions=2,
+                )
+            ],
         )
 
         label_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
@@ -788,10 +800,16 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                     label_ids.append(label_id_dict[example.get(label_attribute)])
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             model_data.add_features(
                 LABEL_KEY,
                 LABEL_SUB_KEY,
-                [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+                [
+                    FeatureArray(
+                        np.expand_dims(label_ids, -1),  # type: ignore[no-untyped-call]
+                        number_of_dimensions=2,
+                    )
+                ],
             )
 
         if (
@@ -853,7 +871,15 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     @staticmethod
     def _check_enough_labels(model_data: RasaModelData) -> bool:
-        return len(np.unique(model_data.get(LABEL_KEY, LABEL_SUB_KEY))) >= 2
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        return (
+            len(
+                np.unique(  # type: ignore[no-untyped-call]
+                    model_data.get(LABEL_KEY, LABEL_SUB_KEY)
+                )
+            )
+            >= 2
+        )
 
     def train(self, training_data: TrainingData) -> Resource:
         """Train the embedding intent classifier on a data set."""
@@ -1569,7 +1595,7 @@ class DIET(TransformerRasaModel):
         )
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -1733,7 +1759,7 @@ class DIET(TransformerRasaModel):
             _, self.all_labels_embed = self._create_all_labels()
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, tf.Tensor]:
         """Predicts the output of the given batch.
 

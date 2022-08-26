@@ -234,7 +234,7 @@ class Validator:
                     # To support setting `active_loop` to `null`
                     continue
 
-                if event.name not in self.domain.form_names:
+                if event.name not in self.domain.action_names_or_texts:
                     rasa.shared.utils.io.raise_warning(
                         f"The form '{event.name}' is used in the "
                         f"'{story.block_name}' block, but it "

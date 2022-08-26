@@ -7,6 +7,9 @@ on:
     - '[0-9]+.[0-9]+.x'
     # Don't merge 2.8.x into main
     - '!2.8.x'
+    # Don't merge 3.0 and 3.1 into main
+    - '!3.0.x'
+    - '!3.1.x'
 
     types:
     # means that the PR is closed, we still have to check if it was merged
@@ -90,7 +93,7 @@ jobs:
 
       - name: Open pull request ☄️
         if: always()
-        uses: repo-sync/pull-request@5ba2c80b97c87b9174c1548141b7acd80f6376e1
+        uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde
         with:
           # using this token to make sure it triggers other actions
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}

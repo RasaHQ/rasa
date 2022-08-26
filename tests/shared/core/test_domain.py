@@ -2046,3 +2046,15 @@ def test_domain_slots_for_entities_with_entity_mapping_to_multiple_slots():
         SlotSet("departure_city", "London"),
         SlotSet("arrival_city", "Berlin"),
     ]
+
+
+def test_merge_domain_with_separate_session_config():
+    domain_dir = "data/test_domains/test_domain_with_separate_session_config"
+    domain = Domain.load(domain_dir)
+
+    expected_session_expiration_time = 1
+
+    assert (
+        domain.session_config.session_expiration_time
+        == expected_session_expiration_time
+    )
