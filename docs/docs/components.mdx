@@ -1116,6 +1116,7 @@ pipeline:
   solver: lbfgs
   tol: 0.0001
   random_state: 42
+  ranking_length: 10
 ```
 
 There configuration parameters are briefly explained below. 
@@ -1124,6 +1125,7 @@ There configuration parameters are briefly explained below.
 - `solver`: Solver to be used. For very small datasets you might consider `liblinear`.
 - `tol`: Tolerance for stopping criteria of the optimizer.
 - `random_state`: Used to shuffle the data before training.
+- `ranking_length`: Number of top intents to report. Set to 0 to report all intents
 
 More details on the parameters can be found on the [scikit-learn documentation page](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
 
