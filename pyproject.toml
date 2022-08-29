@@ -62,6 +62,12 @@ directory = "misc"
 name = "Miscellaneous internal changes"
 showcontent = false
 
+[[tool.poetry.source]]
+# additional registry used to distribute macosx arm images for psycopg2-binary
+# can be removed once the pacakge is properly distributed through pypi.org
+name = "internal repository mirroring psycopg binary for macos"
+url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
+
 [tool.poetry.dependencies]
 python = ">=3.7,<3.10"
 boto3 = "^1.12"
