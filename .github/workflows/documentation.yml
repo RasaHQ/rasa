@@ -70,6 +70,10 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
+      - name: Install version library
+        run: |
+          python3 -m pip install pep440_version_utils
+
       - name: Check if tag version is equal or higher than the latest tagged Rasa version
         id: rasa_get_version
         if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
