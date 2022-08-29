@@ -38,7 +38,7 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
-    HIDDEN_LAYERS_SIZES,
+    HIDDEN_LAYERS_SIZES, EMBEDDING_DIMENSION, NUM_TRANSFORMER_LAYERS,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -614,8 +614,8 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
 @pytest.mark.parametrize(
     "classifier_params",
     [
-        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: False},
-        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
+        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: False, NUM_TRANSFORMER_LAYERS: 0},
+        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True, NUM_TRANSFORMER_LAYERS: 0},
     ],
 )
 @pytest.mark.timeout(300, func_only=True)
