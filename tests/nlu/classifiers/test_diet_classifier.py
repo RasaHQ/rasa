@@ -38,7 +38,8 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
-    HIDDEN_LAYERS_SIZES, NUM_TRANSFORMER_LAYERS,
+    HIDDEN_LAYERS_SIZES,
+    NUM_TRANSFORMER_LAYERS,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
