@@ -72,7 +72,8 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.model_testing import compare_nlu_models
-from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
+from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION, \
+    NUM_TRANSFORMER_LAYERS
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -512,8 +513,6 @@ async def test_run_cv_evaluation_no_entities():
     assert len(entity_results.evaluation) == 0
 
 
-# FIXME: these tests take too long to run in CI on Windows, disabling them for now
-@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     280, func_only=True
 )  # these can take a longer time than the default timeout
@@ -531,7 +530,7 @@ async def test_run_cv_evaluation_with_response_selector():
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 25},
+            {"name": "DIETClassifier", EPOCHS: 4, NUM_TRANSFORMER_LAYERS: 0},
             {"name": "ResponseSelector", EPOCHS: 2},
         ],
     }
