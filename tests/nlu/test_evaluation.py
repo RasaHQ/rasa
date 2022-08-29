@@ -72,8 +72,11 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.model_testing import compare_nlu_models
-from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION, \
-    NUM_TRANSFORMER_LAYERS
+from rasa.utils.tensorflow.constants import (
+    EPOCHS,
+    ENTITY_RECOGNITION,
+    NUM_TRANSFORMER_LAYERS,
+)
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
