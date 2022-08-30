@@ -1,4 +1,4 @@
-# The image tagged with the 'spacy-de' suffix
+# The image tagged with the 'spacy-it' suffix
 ARG IMAGE_BASE_NAME
 ARG BASE_IMAGE_HASH
 ARG BASE_BUILDER_IMAGE_HASH
