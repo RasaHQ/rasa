@@ -102,7 +102,7 @@ jobs:
         name: Authenticate with gcloud for release registry 🎫
         uses: 'google-github-actions/auth@ceee102ec2387dd9e844e01b530ccd4ec87ce955'
         with:
-          credentials_json: '${{ secrets.RASA_PLUS_RELEASE_ACCOUNT_KEY }}'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v0'
@@ -112,5 +112,5 @@ jobs:
           pip install keyring
           pip install keyrings.google-artifactregistry-auth
           pip install twine
-          gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-plus-py --location=europe-west3 > ~/.pypirc
-          twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/ ${{ format('{0}/dist/*', github.workspace) }} 
+          gcloud artifacts print-settings python --project=rasa-releases --repository=rasa --location=europe-west3 > ~/.pypirc
+          twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa/ ${{ format('{0}/dist/*', github.workspace) }} 
