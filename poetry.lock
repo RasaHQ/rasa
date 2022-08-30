@@ -8,7 +8,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "aio-pika"
-version = "8.1.1"
+version = "8.2.0"
 description = "Wrapper for the aiormq for asyncio and humans."
 category = "main"
 optional = false
@@ -20,7 +20,7 @@ typing-extensions = {version = "*", markers = "python_version < \"3.8.0\""}
 yarl = "*"
 
 [package.extras]
-develop = ["aiomisc (>=16.0,<17.0)", "coverage (!=4.3)", "coveralls", "nox", "pylava", "pytest", "pytest-cov", "shortuuid", "sphinx", "sphinx-autobuild", "timeout-decorator", "tox (>=2.4)"]
+develop = ["aiomisc (>=16.0,<17.0)", "coverage (!=4.3)", "coveralls", "nox", "pyflakes (<2.5)", "pylava", "pytest", "pytest-cov", "shortuuid", "sphinx", "sphinx-autobuild", "timeout-decorator", "tox (>=2.4)"]
 
 [[package]]
 name = "aiofiles"
@@ -3619,8 +3619,8 @@ absl-py = [
     {file = "absl_py-1.2.0-py3-none-any.whl", hash = "sha256:5d15f85b8cc859c6245bc9886ba664460ed96a6fee895416caa37d669ee74a9a"},
 ]
 aio-pika = [
-    {file = "aio-pika-8.1.1.tar.gz", hash = "sha256:12ed9230dc9900969158ed8024361bfd05bbc05df05c75ccae1c278c1d975b71"},
-    {file = "aio_pika-8.1.1-py3-none-any.whl", hash = "sha256:d9fb83ece6f57cddd497fc3fe06728bd900bee86fbfd89cefc10f87d0c5d5f77"},
+    {file = "aio-pika-8.2.0.tar.gz", hash = "sha256:250bc2c2198d56adfe9ebd8722c6c85df26409341dd438c3a7277fd9f26d4f36"},
+    {file = "aio_pika-8.2.0-py3-none-any.whl", hash = "sha256:a53271732f66e60746458dcd467768ce670223838e3e535dc12847d3975cbb0a"},
 ]
 aiofiles = [
     {file = "aiofiles-0.8.0-py3-none-any.whl", hash = "sha256:7a973fc22b29e9962d0897805ace5856e6a566ab1f0c8e5c91ff6c866519c937"},
