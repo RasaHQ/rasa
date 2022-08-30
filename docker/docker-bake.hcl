@@ -149,7 +149,7 @@ target "spacy-de" {
 }
 
 target "spacy-it" {
-  dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_de"
+  dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_it"
   tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-it"]
 
   args = {
