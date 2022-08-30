@@ -574,6 +574,7 @@ def e2e_bot_test_stories_with_unknown_bot_utterances() -> Path:
     return Path("data/test_e2ebot/tests/test_stories_with_unknown_bot_utterances.yml")
 
 
+# FIXME: This fixture is very slow, do not use it without fixing that first
 @pytest.fixture(scope="session")
 async def e2e_bot(
     trained_async: Callable,

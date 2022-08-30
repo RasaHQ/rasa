@@ -143,16 +143,16 @@ class LockStore:
 
     def update_lock(self, conversation_id: Text) -> None:
         """Fetch lock for `conversation_id`, remove expired tickets and save lock."""
-
         lock = self.get_lock(conversation_id)
         if lock:
             lock.remove_expired_tickets()
             self.save_lock(lock)
 
     def get_or_create_lock(self, conversation_id: Text) -> TicketLock:
-        """Fetch existing lock for `conversation_id` or create a new one if
-        it doesn't exist."""
+        """Fetch existing lock for `conversation_id`.
 
+        Alternatively, create a new one if it doesn't exist.
+        """
         existing_lock = self.get_lock(conversation_id)
 
         if existing_lock:
@@ -161,9 +161,7 @@ class LockStore:
         return self.create_lock(conversation_id)
 
     def is_someone_waiting(self, conversation_id: Text) -> bool:
-        """Return whether someone is waiting for lock associated with
-        `conversation_id`."""
-
+        """Return whether someone is waiting for lock for this `conversation_id`."""
         lock = self.get_lock(conversation_id)
         if lock:
             return lock.is_someone_waiting()

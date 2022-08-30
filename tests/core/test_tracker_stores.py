@@ -9,7 +9,7 @@ import uuid
 from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from moto import mock_dynamodb2
+from moto import mock_dynamodb
 from pymongo.errors import OperationFailure
 
 from rasa.core.agent import Agent
@@ -75,12 +75,12 @@ def test_get_or_create():
 
 
 # noinspection PyPep8Naming
-@mock_dynamodb2
+@mock_dynamodb
 def test_dynamo_get_or_create():
     get_or_create_tracker_store(DynamoTrackerStore(test_domain))
 
 
-@mock_dynamodb2
+@mock_dynamodb
 async def test_dynamo_tracker_floats():
     conversation_id = uuid.uuid4().hex
 
@@ -964,5 +964,15 @@ def test_create_non_async_tracker_store(domain: Domain):
     )
     with pytest.warns(FutureWarning):
         tracker_store = TrackerStore.create(endpoint_config)
+    assert isinstance(tracker_store, AwaitableTrackerStore)
+    assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
+
+
+def test_create_awaitable_tracker_store_with_endpoint_config():
+    endpoint_config = EndpointConfig(
+        type="tests.core.test_tracker_stores.NonAsyncTrackerStore"
+    )
+    tracker_store = AwaitableTrackerStore.create(endpoint_config)
+
     assert isinstance(tracker_store, AwaitableTrackerStore)
     assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)

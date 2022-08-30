@@ -1,0 +1,61 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - block
+
+entities:
+  - account_type
+
+slots:
+  account_type: 
+    type: categorical
+    influence_conversation: true
+    values:
+      - savings
+      - checking
+      - credit
+    mappings: 
+    - type: from_entity
+      entity: account_type
+
+responses:
+  utter_block_account:
+  - text: "your account has been blocked"
+
+  utter_checking:
+  - text: "checking account"
+
+  utter_credit:
+  - text: "credit account"
+
+  utter_nothing:
+  - text: "no account type was specified"
+
+  utter_goodbye:
+  - text: "Bye"
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
+
+  utter_greet:
+  - text: "Hey! How are you?"
+
+  utter_cheer_up:
+  - text: 'Here is something to cheer you up'
+
+  utter_did_that_help:
+  - text: Did that help you?
+
+  utter_happy:
+  - text: Great, carry on!
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

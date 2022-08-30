@@ -16,6 +16,86 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.2.5] - 2022-08-05                         
+### Bugfixes
+- [#11294](https://github.com/rasahq/rasa/issues/11294): Fix `KeyError` which resulted when `action_two_stage_fallback` got executed in a project whose domain contained slot mappings.
+- [#11390](https://github.com/rasahq/rasa/issues/11390): Fixes regression in which slot mappings were prioritized according to reverse order as they were listed in the domain, instead of in order from first to last, as was implicitly expected in `2.x`.
+  Clarifies this implicit priority order in the docs.
+- [#11394](https://github.com/rasahq/rasa/issues/11394): Enables the dispatching of bot messages returned as events by slot validation actions.
+
+
+## [3.2.4] - 2022-07-21                         
+### Bugfixes
+- [#11061](https://github.com/rasahq/rasa/issues/11061): Added session_config key as valid domain key during domain loading from directory containing a separate domain file with session configuration.
+- [#11362](https://github.com/rasahq/rasa/issues/11362): Run default action `action_extract_slots` after a custom action returns a `UserUttered` event to fill any applicable slots.
+- [#11368](https://github.com/rasahq/rasa/issues/11368): Handle the case when an `EndpointConfig` object is given as parameter to the `AwaitableTrackerStore.create()` method.
+
+
+## [3.2.3] - 2022-07-18                         
+### Bugfixes
+- [#11305](https://github.com/rasahq/rasa/issues/11305): - Fixed error in creating response when slack sends retry messages. Assigning `None` to `response.text` caused `TypeError: Bad body type. Expected str, got NoneType`.
+  - Fixed Slack triggering timeout after 3 seconds if the action execution is too slow. Running `on_new_message` as an asyncio background task instead of a blocking await fixes this by immediately returning a response with code 200.
+- [#11326](https://github.com/rasahq/rasa/issues/11326): Revert change in #10295 that removed running the form validation action on activation of the form before the loop is active.
+- [#11333](https://github.com/rasahq/rasa/issues/11333): `SlotSet` events will be emitted when the value set by the current user turn is the same as the existing value.
+
+  Previously, `ActionExtractSlots` would not emit any `SlotSet` events if the new value was the same as the existing
+  one. This caused the augmented memoization policy to lose these slot values when truncating the tracker.
+
+
+## [3.2.2] - 2022-07-05                         
+### Improved Documentation
+- [#11207](https://github.com/rasahq/rasa/issues/11207): Update documentation for customizable classes such as tracker stores, event brokers and lock stores.
+
+### Miscellaneous internal changes
+- [#11296](https://github.com/rasahq/rasa/issues/11296)
+
+
+## [3.2.1] - 2022-06-17                         
+### Bugfixes
+- [#10430](https://github.com/rasahq/rasa/issues/10430): Fix failed check in `rasa data validate` that verifies forms in rules or stories are consistent with the domain when the rule or story contains a default action as `active_loop` step.
+
+
+## [3.2.0] - 2022-06-14                         
+### Deprecations and Removals
+- [#10989](https://github.com/rasahq/rasa/issues/10989): [NLU training data](nlu-training-data.mdx) in JSON format is deprecated and will be
+  removed in Rasa Open Source 4.0.
+  Please use `rasa data convert nlu -f yaml --data <path to NLU data>` to convert your
+  NLU JSON data to YAML format before support for NLU JSON data is removed.
+
+### Improvements
+- [#10696](https://github.com/rasahq/rasa/issues/10696): Make `TrackerStore` interface methods asynchronous and supply an `AwaitableTrackerstore` wrapper for custom tracker stores which do not implement the methods as asynchronous.
+- [#10897](https://github.com/rasahq/rasa/issues/10897): Added flag `use_gpu` to `TEDPolicy` and `UnexpecTEDIntentPolicy` that can be used to enable training on CPU even when a GPU is available.
+- [#11102](https://github.com/rasahq/rasa/issues/11102): Add `--endpoints` command line parameter to `rasa train` parser.
+
+### Bugfixes
+- [#11129](https://github.com/rasahq/rasa/issues/11129): The azure botframework channel now validates the incoming JSON Web Tokens (including signature).
+
+  Previously, JWTs were not validated at all.
+- [#9386](https://github.com/rasahq/rasa/issues/9386): `rasa shell` now outputs custom json unicode characters instead of `\uxxxx` codes
+
+### Improved Documentation
+- [#11130](https://github.com/rasahq/rasa/issues/11130): Clarify aspects of the API spec
+  GET /status endpoint: Correct response schema for model_id - a string, not an object.
+
+  GET /conversations/{conversation_id}/tracker: Describe each of the enum options for include_events query parameter
+
+  POST & PUT /conversations/{conversation_id}/tracker/eventss: Events schema added for each event type
+
+  GET /conversations/{conversation_id}/story: Clarified the all_sessions query parameter and default behaviour.
+
+  POST /model/test/intents : Remove JSON payload option since it is not supported
+
+  POST /model/parse: Explain what emulation_mode is and how it affects response results
+
+### Miscellaneous internal changes
+- [#11088](https://github.com/rasahq/rasa/issues/11088), [#11123](https://github.com/rasahq/rasa/issues/11123), [#9093](https://github.com/rasahq/rasa/issues/9093), [#9099](https://github.com/rasahq/rasa/issues/9099)
+
+
+## [3.1.2] - 2022-06-08                         
+### Miscellaneous internal changes
+- [#11156](https://github.com/rasahq/rasa/issues/11156), [#11173](https://github.com/rasahq/rasa/issues/11173)
+
+
 ## [3.1.1] - 2022-06-03                         
 ### Bugfixes
 - [#10480](https://github.com/rasahq/rasa/issues/10480): Remove warning for Rasa X localmode not being supported when the `--production` flag is present.
