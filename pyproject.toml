@@ -171,7 +171,7 @@ sanic-testing = "^0.8.0"
 analytics-python = "^1.4.0"
 datadog-api-client = "^2.0.0"
 datadog = "^0.43.0"
-types-redis = "^4.3.4"
+types-redis = "^4.3.19"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
