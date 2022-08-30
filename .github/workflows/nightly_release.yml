@@ -1,9 +1,11 @@
 name: Nightly Builds
 on:
-  schedule:
-    # Runs every weekday at 1am
-    - cron: 0 1 * * 1-5
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
 
 
 jobs:
