@@ -16,6 +16,14 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.2.6] - 2022-08-12                         
+### Bugfixes
+- [#11433](https://github.com/rasahq/rasa/issues/11433): This fix makes sure that when a Domain object is loaded from multiple files where one file specifies a custom session config and the rest do not, the default session configuration does not override the custom session config.
+
+### Miscellaneous internal changes
+- [#11426](https://github.com/rasahq/rasa/issues/11426), [#11434](https://github.com/rasahq/rasa/issues/11434)
+
+
 ## [3.2.5] - 2022-08-05                         
 ### Bugfixes
 - [#11294](https://github.com/rasahq/rasa/issues/11294): Fix `KeyError` which resulted when `action_two_stage_fallback` got executed in a project whose domain contained slot mappings.
