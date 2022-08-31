@@ -31,11 +31,9 @@ jobs:
 
           LATEST_NIGHTLY_VERSION=$(echo ${LATEST_RASA_MINOR})
 
-          echo "New nightly release version: ${LATEST_NIGHTLY_VERSION}"
-
           echo "Composing nightly build tag name..."
           GH_TAG=${LATEST_NIGHTLY_VERSION}.dev${DATE}
-          echo ${GH_TAG}
+          echo "New nightly release version: ${GH_TAG}"
           echo "::set-output name=tag_name::${GH_TAG}"
 
       - name: Tag latest main commit as nightly

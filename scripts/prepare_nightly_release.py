@@ -31,26 +31,6 @@ def project_root() -> Path:
     return Path(os.path.dirname(__file__)).parent
 
 
-def get_current_version() -> Text:
-    """Return the current library version."""
-
-    version_file = project_root() / VERSION_FILE_PATH
-
-    if not version_file.is_file():
-        raise FileNotFoundError(
-            f"Failed to find version file at {version_file.absolute()}"
-        )
-
-    # context in which we evaluate the version py -
-    # to be able to access the defined version, it already needs to live in the
-    # context passed to exec
-    _globals = {"__version__": ""}
-    with version_file.open() as f:
-        exec(f.read(), _globals)
-
-    return _globals["__version__"]
-
-
 def write_version_file(path: Text, version: Version) -> None:
     """Dump a new version into the python version file."""
 
