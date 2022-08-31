@@ -151,7 +151,12 @@ module.exports = {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: ['changelog', 'migration-guide', 'actively-maintained-versions'],
+      items: ['changelog', 'migration-guide', 
+      {
+        type: 'link',
+        label: 'Actively Maintained Versions',
+        href: 'https://rasa.com/rasa-product-release-and-maintenance-policy/',
+      }]
     },
   ],
 };
