@@ -82,7 +82,8 @@ jobs:
           git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
           # Fetch branch history
           git fetch --prune --unshallow
-          python scripts/evaluate_release_tag.py $TAG_NAME
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          python scripts/evaluate_release_tag.py $CURRENT_TAG
           exit_status=$?
 
           if [[ "${exit_status}" == "0" ]]; then
