@@ -16,6 +16,14 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.2.7] - 2022-08-31                         
+### Improvements
+- [#11448](https://github.com/rasahq/rasa/issues/11448): Improve `rasa data validate` command so that it uses custom importers when they are defined in config file.
+
+### Bugfixes
+- [#11311](https://github.com/rasahq/rasa/issues/11311): Re-instates the REST channel metadata feature.  Metadata can be provided on the `metadata` key.
+
+
 ## [3.2.6] - 2022-08-12                         
 ### Bugfixes
 - [#11433](https://github.com/rasahq/rasa/issues/11433): This fix makes sure that when a Domain object is loaded from multiple files where one file specifies a custom session config and the rest do not, the default session configuration does not override the custom session config.
