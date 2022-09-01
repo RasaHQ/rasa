@@ -257,7 +257,7 @@ class SocketIOInput(InputChannel):
 
             metadata = data.get(self.metadata_key, {})
             if metadata:
-                metadata = ast.literal_eval(data.get(self.metadata_key, {}))
+                metadata = ast.literal_eval(metadata)
             message = UserMessage(
                 data.get("message", ""),
                 output_channel,
