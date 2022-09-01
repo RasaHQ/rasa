@@ -16,6 +16,8 @@ from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.validator import Validator
 import rasa.shared.utils.io
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
     responses_yml = (
@@ -112,7 +114,7 @@ def test_data_convert_nlu_yml(
 def test_data_split_help(run: Callable[..., RunResult]):
     output = run("data", "split", "nlu", "--help")
 
-    help_text = """usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
+    help_text = f"""usage: {RASA_EXE} data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
                            [--training-fraction TRAINING_FRACTION]
                            [--random-seed RANDOM_SEED] [--out OUT]"""
 
@@ -126,25 +128,24 @@ def test_data_split_help(run: Callable[..., RunResult]):
 def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("data", "convert", "nlu", "--help")
 
-    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,yaml}]
-                             [--data DATA [DATA ...]] [--out OUT]
-                             [-l LANGUAGE]"""
+    help_text = (
+        f"""usage: {RASA_EXE} data convert nlu [-h] [-v] [-vv]"""
+        """ [--quiet] [-f {json,yaml}]"""
+    )
 
-    lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
     printed_help = set(output.outlines)
-    for line in lines:
-        assert line in printed_help
+    assert help_text in printed_help
 
 
 def test_data_validate_help(run: Callable[..., RunResult]):
     output = run("data", "validate", "--help")
 
-    help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet]
+    help_text = f"""usage: {RASA_EXE} data validate [-h] [-v] [-vv] [--quiet]
                           [--max-history MAX_HISTORY] [-c CONFIG]
                           [--fail-on-warnings] [-d DOMAIN]
                           [--data DATA [DATA ...]]
-                          {stories} ..."""
+                          {{stories}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -157,7 +158,7 @@ def test_data_migrate_help(run: Callable[..., RunResult]):
     output = run("data", "migrate", "--help")
     printed_help = set(output.outlines)
 
-    help_text = "usage: rasa data migrate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [--out OUT]"  # noqa: E501
+    help_text = f"""usage: {RASA_EXE} data migrate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [--out OUT]"""  # noqa: E501
     assert help_text in printed_help
 
 
