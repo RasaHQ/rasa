@@ -70,15 +70,20 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
+      - name: Install version library
+        run: |
+          python3 -m pip install pep440_version_utils
+
       - name: Check if tag version is equal or higher than the latest tagged Rasa version
         id: rasa_get_version
-        if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
+        if: env.IS_TAG_BUILD == 'true'
         run: |
           # Get latest tagged Rasa version
           git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
           # Fetch branch history
           git fetch --prune --unshallow
-          python scripts/evaluate_release_tag.py $TAG_NAME
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          python scripts/evaluate_release_tag.py $CURRENT_TAG
           exit_status=$?
 
           if [[ "${exit_status}" == "0" ]]; then
