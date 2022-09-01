@@ -24,8 +24,10 @@ def test_rasa_validate_debug_no_errors(
     # validates that the data in 'data/test/test_integration' throws no cli errors
     # in 'debug' mode
     test_data_dir = Path(request.config.rootdir, "data", "test", "test_integration")
+    test_config_dir = Path(request.config.rootdir, "data", "test_config")
     source_file = (test_data_dir).absolute()
     domain_file = (test_data_dir / "domain.yml").absolute()
+    config_file = (test_config_dir / "config_defaults.yml").absolute()
     result = run(
         "data",
         "validate",
@@ -33,6 +35,8 @@ def test_rasa_validate_debug_no_errors(
         str(source_file),
         "-d",
         str(domain_file),
+        "-c",
+        str(config_file),
         "--debug",
     )
     assert result.ret == 0
@@ -59,8 +63,10 @@ def test_rasa_validate_debug_with_errors(
         "but is not found in the NLU training data."
     )
     test_data_dir = Path(request.config.rootdir, "data", "test", "test_integration_err")
+    test_config_dir = Path(request.config.rootdir, "data", "test_config")
     source_file = (test_data_dir).absolute()
     domain_file = (test_data_dir / "domain.yml").absolute()
+    config_file = (test_config_dir / "config_defaults.yml").absolute()
     result = run(
         "data",
         "validate",
@@ -68,6 +74,8 @@ def test_rasa_validate_debug_with_errors(
         str(source_file),
         "-d",
         str(domain_file),
+        "-c",
+        str(config_file),
         "--debug",
     )
     assert result.ret == 1
@@ -81,8 +89,10 @@ def test_rasa_validate_verbose_no_errors(
     # and validates that the data in 'data/test/test_integration' throws no cli errors
     # in 'verbose' mode
     test_data_dir = Path(request.config.rootdir, "data", "test", "test_integration")
+    test_config_dir = Path(request.config.rootdir, "data", "test_config")
     source_file = (test_data_dir).absolute()
     domain_file = (test_data_dir / "domain.yml").absolute()
+    config_file = (test_config_dir / "config_defaults.yml").absolute()
     result = run(
         "data",
         "validate",
@@ -90,6 +100,8 @@ def test_rasa_validate_verbose_no_errors(
         str(source_file),
         "-d",
         str(domain_file),
+        "-c",
+        str(config_file),
         "--verbose",
     )
     assert result.ret == 0
@@ -111,8 +123,10 @@ def test_rasa_validate_quiet_no_errors(
     # and validates that the data in 'data/test/test_integration' throws no cli errors
     # in 'quiet' mode
     test_data_dir = Path(request.config.rootdir, "data", "test", "test_integration")
+    test_config_dir = Path(request.config.rootdir, "data", "test_config")
     source_file = (test_data_dir).absolute()
     domain_file = (test_data_dir / "domain.yml").absolute()
+    config_file = (test_config_dir / "config_defaults.yml").absolute()
     result = run(
         "data",
         "validate",
@@ -120,6 +134,8 @@ def test_rasa_validate_quiet_no_errors(
         str(source_file),
         "-d",
         str(domain_file),
+        "-c",
+        str(config_file),
         "--quiet",
     )
     assert result.ret == 0
