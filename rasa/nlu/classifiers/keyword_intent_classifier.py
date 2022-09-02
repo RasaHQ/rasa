@@ -119,14 +119,14 @@ class KeywordIntentClassifier(GraphComponent, IntentClassifier):
             )
 
     def process(self, messages: List[Message]) -> List[Message]:
-        """Set the message intent and add it to the output if it exists."""
+        """Sets the message intent and add it to the output if it exists."""
         for message in messages:
             intent_name = self._map_keyword_to_intent(message.get(TEXT))
 
             confidence = 0.0 if intent_name is None else 1.0
             intent = {"name": intent_name, "confidence": confidence}
 
-            if message.get(INTENT) is None or intent is not None:
+            if message.get(INTENT) is None or intent_name is not None:
                 message.set(INTENT, intent, add_to_output=True)
 
         return messages
