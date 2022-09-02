@@ -7,7 +7,12 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
-from rasa.shared.nlu.constants import TEXT, INTENT, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    PREDICTED_CONFIDENCE_KEY,
+    INTENT_NAME_KEY,
+)
 
 from rasa.shared.nlu.training_data.formats.rasa import RasaReader
 import rasa.shared.nlu.training_data.loading
@@ -61,61 +66,69 @@ def test_persist_and_load(
 @pytest.mark.parametrize(
     "message, previous_intent, expected_intent",
     [
-        ("hey there joe", None, {"name": "greet", "confidence": 1.0}),  # Keyword match
+        (
+            "hey there joe",
+            None,
+            {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1.0},
+        ),  # Keyword match
         # Keyword match
         (
             "hello weiouaosdhalkh",
             None,
-            {"name": "greet", "confidence": 1.0},
+            {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1.0},
         ),
         # Keyword match
         (
             "show me chinese restaurants in the north of town",
             None,
-            {"name": "restaurant_search", "confidence": 1.0},
+            {INTENT_NAME_KEY: "restaurant_search", PREDICTED_CONFIDENCE_KEY: 1.0},
         ),
-        ("great", None, {"name": "affirm", "confidence": 1.0}),  # Keyword match
+        (
+            "great",
+            None,
+            {INTENT_NAME_KEY: "affirm", PREDICTED_CONFIDENCE_KEY: 1.0},
+        ),  # Keyword match
         # Keyword match
         (
             "bye bye birdie",
             None,
-            {"name": "goodbye", "confidence": 1.0},
+            {INTENT_NAME_KEY: "goodbye", PREDICTED_CONFIDENCE_KEY: 1.0},
         ),
         # No keyword match, no previous intent
         (
             "show me a mexican place",
             None,
-            {"name": None, "confidence": 0.0},
+            {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
         ),
         # No keyword match, no previous intent
         (
             "i",
             None,
-            {"name": None, "confidence": 0.0},
+            {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
         ),
         # No keyword match, no previous intent
         (
             "in",
             None,
-            {"name": None, "confidence": 0.0},
+            {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
         ),
         # No keyword match, no previous intent
         (
             "eet",
             None,
-            {"name": None, "confidence": 0.0},
+            {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
         ),
         # previous and no keyword match
         (
             "The Neapolitan",
-            {"name": "greet", "confidence": 0.123},
-            {"name": "greet", "confidence": 0.123},
+            {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 0.123},
+            {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 0.123},
         ),
         # previous and keyword match
         (
             "I am searching for a dinner spot",
-            {"name": "greet", "confidence": 0.123},
-            {"name": "restaurant_search", "confidence": 1.0},
+            {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 0.123},
+            {INTENT_NAME_KEY: "restaurant_search", PREDICTED_CONFIDENCE_KEY: 1.0},
         ),
     ],
 )
