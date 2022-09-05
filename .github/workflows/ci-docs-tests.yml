@@ -44,10 +44,10 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
-      - name: Set up Node 12.x 🦙
+      - name: Set up Node 16.x 🦙
         uses: actions/setup-node@v3.4.1
         with:
-          node-version: "12.x"
+          node-version: "16.x"
 
       - name: Read Poetry Version 🔢
         run: |
@@ -83,8 +83,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: docs/node_modules
-          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-12.x
+          key: ${{ runner.os }}-yarn-16.x-${{ hashFiles('docs/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-16.x
 
       - name: Install Dependencies 📦
         run: |
@@ -115,10 +115,10 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
-      - name: Set up Node 12.x 🦙
+      - name: Set up Node 16.x 🦙
         uses: actions/setup-node@v2.3.0
         with:
-          node-version: "12.x"
+          node-version: "16.x"
 
       - name: Read Poetry Version 🔢
         run: |
@@ -154,8 +154,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: docs/node_modules
-          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-12.x
+          key: ${{ runner.os }}-yarn-16.x-${{ hashFiles('docs/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-16.x
 
       - name: Install Dependencies 📦
         run: |
