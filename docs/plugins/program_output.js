@@ -23,7 +23,7 @@
 */
 const fs = require('fs');
 const globby = require('globby');
-const {visitChildren} = import('unist-util-visit-children');
+const visitChildren = require('unist-util-visit-children');
 const { promisify } = require('util');
 
 const exec = promisify(require('child_process').exec);
