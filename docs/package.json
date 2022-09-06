@@ -61,7 +61,7 @@
   "engines": {
     "node": ">=16.14"
   },
-  "telemetryReference": {
+    "telemetryReference": {
     "outputPath": "./docs/telemetry/reference.mdx"
   }
 }

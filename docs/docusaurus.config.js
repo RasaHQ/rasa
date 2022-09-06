@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 // Note: type annotations allow type checking and IDEs autocompletion
 const path = require('path');
 const lightCodeTheme = require('prism-react-renderer/themes/github');
@@ -14,7 +14,10 @@ const SITE_URL = 'https://rasa.com';
 const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 /** @type {import('@docusaurus/types').Config} */
 
-
+const routeBasePath = '/';
+let existingVersions = [];
+// @ts-ignore
+try { existingVersions = require('./versions.json'); } catch (e) { console.info('no versions.json file found') }
 
 const versionLabels = {
   current: 'Main/Unreleased'
@@ -44,18 +47,18 @@ const config = {
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
+          routeBasePath: routeBasePath,
           sidebarPath: require.resolve('./sidebars.js'),
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
-        },
-        blog: {
-          showReadingTime: true,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          editUrl: 'https://github.com/rasahq/rasa/edit/main/docs/',
+          showLastUpdateTime: true,
+          showLastUpdateAuthor: true,
+          lastVersion: existingVersions[0] || 'current', // aligns / to last versioned folder in production
+          versions: {
+            current: {
+              label: versionLabels['current'],
+              path: existingVersions.length < 1 ? '' : 'next',
+            },
+          },
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
