@@ -13,7 +13,7 @@ def test_shell_help(run: Callable[..., RunResult]):
         # Python 3.9 and above. The difference is the changed formatting of help
         # output for CLI arguments with `nargs="*"
         version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN] [--cors [CORS ...]]
-                  [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""
+                  [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""  # noqa: E501
     else:
         version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
                   [--cors [CORS [CORS ...]]] [--enable-api]
