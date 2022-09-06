@@ -1,0 +1,21 @@
+loaders:
+  - type: python
+    search_path: [../]
+    packages:
+    - rasa
+processors:
+  - type: filter
+    skip_empty_modules: true
+  - type: smart
+  - type: crossref
+renderer:
+  type: docusaurus
+  docs_base_path: docs/
+  sidebar_top_level_label: null
+  sidebar_top_level_module_label: 'Code reference'
+  markdown:
+    render_module_header_template: |
+      ---
+      sidebar_label: {module_name}
+      title: {module_name}
+      ---
