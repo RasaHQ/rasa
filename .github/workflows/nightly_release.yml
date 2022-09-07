@@ -87,14 +87,6 @@ jobs:
         run: |
           poetry build
 
-      - name: Publish to PyPI 📦
-        uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
-        with:
-          user: "github-ci"
-          password: ${{ secrets.PYPI_PASSWORD }}
-          repository_url: "https://pypi.rasa.com/simple/"
-          packages_dir: ${{ format('{0}/dist', github.workspace) }}
-
       # Authenticate and push to the release registry
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
