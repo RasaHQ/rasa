@@ -403,9 +403,9 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         **kwargs: Dict[Text, Any],
     ) -> None:
         """Initializes the tracker store."""
-        import redis
+        from redis import asyncio as aioredis
 
-        self.red = redis.StrictRedis(
+        self.red = aioredis.StrictRedis(
             host=host,
             port=port,
             db=db,
@@ -447,7 +447,7 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
             timeout = self.record_exp
 
         serialised_tracker = self.serialise_tracker(tracker)
-        self.red.set(
+        await self.red.set(
             self.key_prefix + tracker.sender_id, serialised_tracker, ex=timeout
         )
 
@@ -462,7 +462,7 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         Returns:
             Tracker containing events from the latest conversation sessions.
         """
-        stored = self.red.get(self.key_prefix + sender_id)
+        stored = await self.red.get(self.key_prefix + sender_id)
         if stored is not None:
             return self.deserialise_tracker(sender_id, stored)
         else:
@@ -470,7 +470,7 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
 
     async def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store."""
-        return self.red.keys(self.key_prefix + "*")
+        return await self.red.keys(self.key_prefix + "*")
 
 
 class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
