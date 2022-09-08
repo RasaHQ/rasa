@@ -147,6 +147,8 @@ class BotFramework(OutputChannel):
         buttons: List[Dict[Text, Any]],
         **kwargs: Any,
     ) -> None:
+        buttons = [self._add_button_metadata(button) for button in buttons]
+
         hero_content = {
             "contentType": "application/vnd.microsoft.card.hero",
             "content": {"subtitle": text, "buttons": buttons},
@@ -174,6 +176,17 @@ class BotFramework(OutputChannel):
         ).setdefault("alert", "true")
         json_message.setdefault("text", "")
         await self.send(json_message)
+    
+    @staticmethod
+    def _add_button_metadata(button: Dict[Text, Any]) -> Dict[Text, Any]:    
+        button.update(
+            {
+                "type": "messageBack",
+                "value": button.get("payload"),
+                "text": button.get('title'),
+            }
+        )
+        return button
 
 
 class BotFrameworkInput(InputChannel):
