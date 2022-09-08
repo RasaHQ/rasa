@@ -415,7 +415,7 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
             ssl_certfile=ssl_certfile,
             ssl_ca_certs=ssl_ca_certs,
             decode_responses=True,
-        )
+        )  # type: aioredis.StrictRedis
         self.record_exp = record_exp
 
         self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
