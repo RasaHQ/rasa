@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 from typing import List, Text, Dict, Any, Type
 
-import fakeredis
+import fakeredis.aioredis
 import freezegun
 import pytest
 
@@ -86,7 +86,7 @@ class MockRedisTrackerStore(RedisTrackerStore):
         super().__init__(_domain)
 
         # Patch the Redis connection in RedisTrackerStore using fakeredis
-        self.red = fakeredis.FakeStrictRedis()
+        self.red = fakeredis.aioredis.FakeRedis()
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
