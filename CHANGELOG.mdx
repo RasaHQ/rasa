@@ -16,6 +16,12 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.2.8] - 2022-09-08                         
+### Bugfixes
+- [#11540](https://github.com/rasahq/rasa/issues/11540): Fix bug where `KeywordIntentClassifier` overrides preceding intent classifiers' predictions
+  although the `KeyWordIntentClassifier` was not matching any keywords.
+
+
 ## [3.2.7] - 2022-08-31                         
 ### Improvements
 - [#11448](https://github.com/rasahq/rasa/issues/11448): Improve `rasa data validate` command so that it uses custom importers when they are defined in config file.
