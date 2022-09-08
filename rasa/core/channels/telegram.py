@@ -1,3 +1,4 @@
+import ast
 import logging
 from copy import deepcopy
 from sanic import Blueprint, response
@@ -37,13 +38,15 @@ class TelegramOutput(Bot, OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
+        """Sends text message."""
         for message_part in text.strip().split("\n\n"):
             await self.send_message(recipient_id, message_part)
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
-        self.send_photo(recipient_id, image)
+        """Sends an image."""
+        await self.send_photo(recipient_id, image)
 
     async def send_text_with_buttons(
         self,
@@ -200,7 +203,7 @@ class TelegramInput(InputChannel):
 
         @telegram_webhook.route("/set_webhook", methods=["GET", "POST"])
         async def set_webhook(_: Request) -> HTTPResponse:
-            s = out_channel.setWebhook(self.webhook_url)
+            s = await out_channel.set_webhook(self.webhook_url)
             if s:
                 logger.info("Webhook Setup Successful")
                 return response.text("Webhook setup successful")
@@ -213,6 +216,8 @@ class TelegramInput(InputChannel):
             if request.method == "POST":
 
                 request_dict = request.json
+                if isinstance(request_dict, Text):
+                    request_dict = ast.literal_eval(request_dict)
                 update = Update(**request_dict)
                 credentials = await out_channel.get_me()
                 if not credentials.username == self.verify:
