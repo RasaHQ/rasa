@@ -37,12 +37,14 @@ class TelegramOutput(TeleBot, OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
+        """Send a text message."""
         for message_part in text.strip().split("\n\n"):
             self.send_message(recipient_id, message_part)
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
+        """Send an image."""
         self.send_photo(recipient_id, image)
 
     async def send_text_with_buttons(
