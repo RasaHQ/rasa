@@ -1578,8 +1578,9 @@
           "id": "version-3.x/migration-guide"
         },
         {
-          "type": "doc",
-          "id": "version-3.x/actively-maintained-versions"
+          type: 'link',
+          label: 'Actively Maintained Versions',
+          href: 'https://rasa.com/rasa-product-release-and-maintenance-policy/',
         }
       ]
     }
