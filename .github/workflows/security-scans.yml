@@ -24,43 +24,44 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
 
-  trufflehog:
-    name: Detect Secrets
-    runs-on: ubuntu-latest
+  trivy:
+    name: Detecting hardcoded secrets
+    runs-on: ubuntu-20.04
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: TruffleHog Secrets Scan
-        id: trufflehog
-        uses: trufflesecurity/trufflehog@8826e369cff542af0bad1952e0a2b7c7b0b0cc69
-        continue-on-error: true
-        with:
-          path: ./
-          base: ${{ github.base_ref }}
-          head: ${{ github.head_ref }}
-          extra_args: --exclude-paths=trufflehogignore.txt
-      - name: Alert on secret finding
-        if: steps.trufflehog.outcome == 'failure'
-        uses: slackapi/slack-github-action@936158bbe252e9a6062e793ea4609642c966e302
-        with:
-          payload: |
-            {
-              "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
-                  }
+    - uses: actions/checkout@v3
+      with:
+        # Fetch all history for all tags and branches
+        fetch-depth: '0'
+    - name: Run Trivy vulnerability scanner
+      id: trivy
+      uses: aquasecurity/trivy-action@d63413b0a4a4482237085319f7f4a1ce99a8f2ac
+      continue-on-error: true
+      with:
+        format: 'table'
+        scan-type: 'fs'
+        exit-code: '1'
+        security-checks: 'secret'
+    - name: Alert on secret finding
+      if: steps.trivy.outcome == 'failure'
+      uses: slackapi/slack-github-action@936158bbe252e9a6062e793ea4609642c966e302
+      with:
+        payload: |
+          {
+            "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
                 }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
 
   bandit:
     name: Detect python security issues
