@@ -28,7 +28,7 @@ updates to 3.0. Read more about [our contributor guidelines](#how-to-contribute)
 
 <img align="right" height="255" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
 
-Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
+Rasa is an open source machine learning framework to automate text and voice-based conversations. With Rasa, you can build contextual assistants on:
 - Facebook Messenger
 - Slack
 - Google Hangouts
