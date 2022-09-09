@@ -85,7 +85,7 @@ jobs:
           python scripts/evaluate_release_tag.py $TAG_NAME
           exit_status=$?
 
-          if [[ "${exit_status}" == "0" ]]; then
+          if [[ ${exit_status} -eq 0 ]]; then
             echo "::set-output name=build_docs::true"
           else
             echo "::set-output name=build_docs::false"
