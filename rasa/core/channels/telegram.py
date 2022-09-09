@@ -1,4 +1,4 @@
-import ast
+import json
 import logging
 from copy import deepcopy
 from sanic import Blueprint, response
@@ -217,7 +217,7 @@ class TelegramInput(InputChannel):
 
                 request_dict = request.json
                 if isinstance(request_dict, Text):
-                    request_dict = ast.literal_eval(request_dict)
+                    request_dict = json.loads(request_dict)
                 update = Update(**request_dict)
                 credentials = await out_channel.get_me()
                 if not credentials.username == self.verify:
