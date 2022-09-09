@@ -74,7 +74,7 @@ jobs:
           python3 -m pip install pep440_version_utils
 
       - name: Check if tag version is equal or higher than the latest tagged Rasa version
-        id: rasa_get_version
+        id: check_tag
         if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
         run: |
           # Get latest tagged Rasa version
@@ -85,9 +85,11 @@ jobs:
           python scripts/evaluate_release_tag.py $TAG_NAME
           exit_status=$?
 
-          if [[ ${exit_status} -eq 0 ]]; then
+          if [[ ${exit_status} -eq 0 || "${IS_MAIN_BRANCH}" == "true" ]]; then
+            echo "Setting buid docs to true."
             echo "::set-output name=build_docs::true"
           else
+            echo "Setting buid docs to false."
             echo "::set-output name=build_docs::false"
           fi
 
