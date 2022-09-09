@@ -624,26 +624,30 @@ jobs:
         if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base --push
+          docker buildx bake --set *.platform=linux/amd64 -f docker/docker-bake.hcl base --push
+          docker buildx bake --set *.platform=linux/arm64 -f docker/docker-bake.hcl base --push
 
       - name: Build Docker mitie base image and push 🛠 ⬆
         if: steps.check_image.outputs.base_mitie_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-mitie --push
+          docker buildx bake --set *.platform=linux/amd64 -f docker/docker-bake.hcl base-mitie --push
+          docker buildx bake --set *.platform=linux/arm64 -f docker/docker-bake.hcl base-mitie --push
 
       - name: Build Docker poetry base image and push 🛠 ⬆
         if: steps.check_image.outputs.base_poetry_exists == 'false'
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-poetry --push
+          docker buildx bake --set *.platform=linux/amd64 -f docker/docker-bake.hcl base-poetry --push
+          docker buildx bake --set *.platform=linux/arm64 -f docker/docker-bake.hcl base-poetry --push
 
       - name: Build Docker builder base image and push 🛠 ⬆
         if: steps.check_image.outputs.base_builder_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-builder --push
+          docker buildx bake --set *.platform=linux/amd64 -f docker/docker-bake.hcl base-builder --push
+          docker buildx bake --set *.platform=linux/arm64 -f docker/docker-bake.hcl base-builder --push
 
       # Set environment variables for a pull request
       #
@@ -742,7 +746,7 @@ jobs:
           version: v0.5.1
           driver: docker
 
-      - name: Available platforms
+      - name: Echo Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Login to DockerHub Registry 🔢
