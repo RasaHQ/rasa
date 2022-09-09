@@ -1,6 +1,6 @@
 import logging
 import uuid
-import ast
+import json
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
 import rasa.core.channels.channel
@@ -257,7 +257,7 @@ class SocketIOInput(InputChannel):
 
             metadata = data.get(self.metadata_key, {})
             if metadata:
-                metadata = ast.literal_eval(metadata)
+                metadata = json.loads(metadata)
             message = UserMessage(
                 data.get("message", ""),
                 output_channel,
