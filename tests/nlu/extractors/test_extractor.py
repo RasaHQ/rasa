@@ -487,6 +487,7 @@ def test_check_correct_entity_annotations(
 
 def test_entity_extractor_mixin_raises_deprecation_warning():
     with pytest.warns(FutureWarning) as record:
+
         class DeprecatedEntityExtractorMixin(GraphComponent, EntityExtractorMixin):
             @classmethod
             def create(

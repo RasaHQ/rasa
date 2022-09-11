@@ -477,6 +477,7 @@ class EntityExtractorMixin(EntityExtractor):
     EntityExtractorMixin was renamed to EntityExtractor in 3.3.
     This class will be removed in 4.0
     """
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         rasa.shared.utils.io.raise_deprecation_warning(
