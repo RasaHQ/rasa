@@ -27,7 +27,7 @@ def test_run_help(
         # Python 3.9 and above. The difference is the changed formatting of help
         # output for CLI arguments with `nargs="*"
         version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN] [--cors [CORS ...]]
-                [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""
+                [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""  # noqa: E501
     else:
         version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
                 [--cors [CORS [CORS ...]]] [--enable-api]
@@ -38,7 +38,7 @@ def test_run_help(
                 [--use-syslog] [--syslog-address SYSLOG_ADDRESS]
                 [--syslog-port SYSLOG_PORT]
                 [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
-                """
+                """  # noqa: E501
         + version_dependent
         + """
                 [--remote-storage REMOTE_STORAGE]
@@ -67,10 +67,10 @@ def test_run_action_help(
         # Python 3.9 and above. The difference is the changed formatting of help
         # output for CLI arguments with `nargs="*"
         help_text = f"""usage: {RASA_EXE} run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
-                        [--cors [CORS ...]] [--actions ACTIONS]"""
+                        [--cors [CORS ...]] [--actions ACTIONS]"""  # noqa: E501
     else:
         help_text = f"""usage: {RASA_EXE} run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
-                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]"""
+                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]"""  # noqa: E501
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

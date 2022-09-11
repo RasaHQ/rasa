@@ -4,7 +4,7 @@ name: CI - Model Regression on schedule
 on:
   schedule:
     # Run once a week
-    - cron: '1 23 * * */7'
+    - cron: "1 23 * * */7"
 
 env:
   GKE_ZONE: us-central1
@@ -22,33 +22,33 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix_length: ${{ steps.set-matrix.outputs.matrix_length }}
     steps:
-    - name: Checkout main
-      uses: actions/checkout@v3
+      - name: Checkout main
+        uses: actions/checkout@v3
 
-    - name: Checkout dataset
-      uses: actions/checkout@v3
-      with:
-        repository: ${{ secrets.DATASET_REPOSITORY }}
-        token: ${{ secrets.ML_TEST_SA_PAT }}
-        path: 'dataset'
-        ref: "main"
+      - name: Checkout dataset
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ secrets.DATASET_REPOSITORY }}
+          token: ${{ secrets.ML_TEST_SA_PAT }}
+          path: "dataset"
+          ref: "main"
 
-    - name: Download gomplate
-      run: |-
-        sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
-        sudo chmod +x /usr/local/bin/gomplate
+      - name: Download gomplate
+        run: |-
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
 
-    - name: Check if a configuration file exists
-      run: test -f .github/configs/mr-test-schedule.json
+      - name: Check if a configuration file exists
+        run: test -f .github/configs/mr-test-schedule.json
 
-    - name: Set matrix values
-      id: set-matrix
-      shell: bash
-      run: |-
-        matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=.github/configs/mr-test-schedule.json -f .github/templates/model_regression_test_config_to_json.tmpl)
-        matrix_length=$(echo $matrix | jq '.[] | length')
-        echo "::set-output name=matrix_length::$matrix_length"
-        echo "::set-output name=matrix::$matrix"
+      - name: Set matrix values
+        id: set-matrix
+        shell: bash
+        run: |-
+          matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=.github/configs/mr-test-schedule.json -f .github/templates/model_regression_test_config_to_json.tmpl)
+          matrix_length=$(echo $matrix | jq '.[] | length')
+          echo "::set-output name=matrix_length::$matrix_length"
+          echo "::set-output name=matrix::$matrix"
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
@@ -72,7 +72,7 @@ jobs:
           echo "TensorFlow version: $TF_VERSION"
           echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
 
-       # Use compatible CUDA/cuDNN with the given TF version
+        # Use compatible CUDA/cuDNN with the given TF version
       - name: Prepare GitHub runner image tag
         run: |-
           GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
@@ -137,7 +137,6 @@ jobs:
           status: FAILED
           color: danger
 
-
   model_regression_test_gpu:
     name: Model Regression Tests - GPU
     continue-on-error: true
@@ -148,7 +147,7 @@ jobs:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       ACCELERATOR_TYPE: "GPU"
-      GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Failed'
+      GITHUB_ISSUE_TITLE: "Scheduled Model Regression Test Failed"
     runs-on: [self-hosted, gpu, "${{ github.run_id }}"]
     strategy:
       # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
@@ -163,7 +162,7 @@ jobs:
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
-          path: 'dataset'
+          path: "dataset"
           ref: "main"
 
       - name: Set env variables
@@ -240,7 +239,7 @@ jobs:
         with:
           repository: ${{ env.DATASET }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
-          path: 'dataset_external'
+          path: "dataset_external"
           ref: ${{ env.EXTERNAL_DATASET_REPOSITORY_BRANCH }}
 
       - name: Set dataset commit
@@ -266,7 +265,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.9
@@ -405,7 +404,7 @@ jobs:
 
       - name: Check duplicate issue
         if: failure() && github.event_name == 'schedule'
-        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da  # v4
+        uses: actions/github-script@c713e510dbd7d213d92d41b7a7805a986f4c5c66  # v4
         id: issue-exists
         with:
           result-encoding: string
@@ -434,7 +433,7 @@ jobs:
       - name: Create GitHub Issue 📬
         id: create-issue
         if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
-        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da  # v4
+        uses: actions/github-script@c713e510dbd7d213d92d41b7a7805a986f4c5c66  # v4
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
           github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
@@ -450,7 +449,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
-        uses: 8398a7/action-slack@a74b761b4089b5d730d813fbedcd2ec5d394f3af  # v3
+        uses: 8398a7/action-slack@22048831299719d772f51719ca7384e34b4cc61d # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -499,7 +498,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
           python-version: 3.9
 
@@ -535,7 +534,7 @@ jobs:
       - model_regression_test_gpu
       - combine_reports
     env:
-      GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Performance Drops'
+      GITHUB_ISSUE_TITLE: "Scheduled Model Regression Test Performance Drops"
 
     steps:
       - name: Checkout
@@ -596,7 +595,7 @@ jobs:
 
       - name: Check duplicate issue
         if: steps.performance.outputs.is_dropped == 'true'
-        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da  # v4
+        uses: actions/github-script@c713e510dbd7d213d92d41b7a7805a986f4c5c66  # v4
         id: issue-exists
         with:
           result-encoding: string
@@ -623,7 +622,7 @@ jobs:
       - name: Create GitHub Issue 📬
         id: create-issue
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da  # v4
+        uses: actions/github-script@c713e510dbd7d213d92d41b7a7805a986f4c5c66  # v4
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
           github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
@@ -642,10 +641,9 @@ jobs:
             })
             return issue.data.number
 
-
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@a74b761b4089b5d730d813fbedcd2ec5d394f3af #v3
+        uses: 8398a7/action-slack@22048831299719d772f51719ca7384e34b4cc61d #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
