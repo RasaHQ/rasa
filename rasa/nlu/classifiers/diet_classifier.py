@@ -1613,7 +1613,7 @@ class DIET(TransformerRasaModel):
             sequence_feature_lengths + sentence_feature_lengths
         )
 
-        if self.config[MASKED_LM]:
+        if self.config[MASKED_LM] and self._training:
             loss, acc = self._mask_loss(
                 text_transformed, text_in, text_seq_ids, mlm_mask_boolean_text, TEXT
             )
