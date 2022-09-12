@@ -241,8 +241,6 @@ docs: prepare-docs
 
 livedocs:
 	cd docs/ && poetry run yarn start
-quickdocs:
-	cd docs/ && poetry run yarn start
 
 preview-docs:
 	cd docs/ && yarn build && yarn deploy-preview --alias=${PULL_REQUEST_NUMBER} --message="Preview for Pull Request #${PULL_REQUEST_NUMBER}"
