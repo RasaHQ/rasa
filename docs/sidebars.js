@@ -161,7 +161,6 @@ module.exports = {
           ],
           },
           'rasa-sdk/deploy-action-server',
-          'rasa-sdk/rasa-sdk-changelog',
         ]},
       ]
     },
