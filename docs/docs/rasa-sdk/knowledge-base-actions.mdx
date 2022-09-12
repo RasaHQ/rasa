@@ -48,7 +48,7 @@ The data used to answer the user's requests will be stored in a knowledge base.
 A knowledge base can be used to store complex data structures.
 We suggest you get started by using the `InMemoryKnowledgeBase`.
 Once you want to start working with a large amount of data, you can switch to a custom knowledge base
-(see [Creating Your Own Knowledge Base](./knowledge-base-actions.mdx#custom-knowledge-base)).
+(see [Creating Your Own Knowledge Base](./knowledge-base-actions.mdx#create-a-knowledge-base)).
 
 To initialize an `InMemoryKnowledgeBase`, you need to provide the data in a json file.
 The following example contains data about restaurants and hotels.
@@ -119,7 +119,7 @@ Once the data is defined in a json file, called, for example, `data.json`, you w
 `InMemoryKnowledgeBase`, which will be passed to the action that queries the knowledge base.
 
 Every object in your knowledge base should have at least the `"name"` and `"id"` fields to use the default implementation.
-If it doesn't, you'll have to [customize your InMemoryKnowledgeBase](./knowledge-base-actions.mdx#customize-in-memory-knowledge-base).
+If it doesn't, you'll have to [customize your InMemoryKnowledgeBase](./knowledge-base-actions.mdx#customizing-the-inmemoryknowledgebase).
 
 ### Define the NLU Data
 
@@ -130,7 +130,7 @@ In this section:
 * we will annotate `mention` entities so that our model detects indirect mentions of objects like “the
   first one”
 
-* we will use [synonyms](https://rasa.com/docs/rasa/training-data-format.mdx#entity-synonyms) extensively
+* we will use [synonyms](../training-data-format.mdx#synonyms) extensively
 
 For the bot to understand that the user wants to retrieve information from the knowledge base, you need to define
 a new intent. We will call it `query_knowledge_base`.
@@ -166,7 +166,7 @@ In addition to adding a variety of training examples for each query type,
 you need to specify and annotate the following entities in your training examples:
 
 * `object_type`: Whenever a training example references a specific object type from your knowledge base, the object type should
-  be marked as an entity. Use [synonyms](https://rasa.com/docs/rasa/training-data-format.mdx#entity-synonyms) to map e.g. `restaurants` to `restaurant`, the correct
+  be marked as an entity. Use [synonyms](../training-data-format.mdx#synonyms) to map e.g. `restaurants` to `restaurant`, the correct
   object type listed as a key in the knowledge base.
 
 * `mention`: If the user refers to an object via “the first one”, “that one”, or “it”, you should mark those terms
@@ -225,7 +225,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
 Whenever you create an `ActionQueryKnowledgeBase`, you need to pass a `KnowledgeBase` to the constructor.
 It can be either an `InMemoryKnowledgeBase` or your own implementation of a `KnowledgeBase`
-(see [Creating Your Own Knowledge Base](./knowledge-base-actions.mdx#custom-knowledge-base)).
+(see [Creating Your Own Knowledge Base](./knowledge-base-actions.mdx#create-a-knowledge-base)).
 You can only pull information from one knowledge base, as the usage of multiple knowledge bases at the same time is not supported.
 
 This is the entirety of the code for this action! The name of the action is `action_query_knowledge_base`.
@@ -383,7 +383,7 @@ The ordinal mention mapping maps a string, such as “1”, to the object in a l
 object at index `0`.
 
 As the ordinal mention mapping does not, for example, include an entry for “the first one”,
-it is important that you use [Entity Synonyms](https://rasa.com/docs/rasa/next/training-data-format#entity-synonyms) to map “the first one” in your NLU data to “1”:
+it is important that you use [Entity Synonyms](https://rasa.com/docs/rasa/next/training-data-format#synonyms) to map “the first one” in your NLU data to “1”:
 
 ```yaml-rasa
 intents:
@@ -397,7 +397,7 @@ Thus, our action can take the `mention` slot together with the ordinal mention m
 the actual object “I due forni”.
 
 You can overwrite the ordinal mention mapping by calling the function `set_ordinal_mention_mapping()` on your
-`KnowledgeBase` implementation (see [Customizing the InMemoryKnowledgeBase](./knowledge-base-actions.mdx#customize-in-memory-knowledge-base)).
+`KnowledgeBase` implementation (see [Customizing the InMemoryKnowledgeBase](./knowledge-base-actions.mdx#customizing-the-inmemoryknowledgebase)).
 
 **Other Mentions**
 
@@ -491,7 +491,7 @@ alongside your new custom action.
 If you write a knowledge base action that tackles one of the above use cases or a new one, be sure to tell us about
 it on the [forum](https://forum.rasa.com)!
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="customize-in-memory-knowledge-base"></a>
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="customizing-the-inmemoryknowledgebase"></a>
 
 ### Customizing the `InMemoryKnowledgeBase`
 
@@ -573,7 +573,7 @@ Just inherit `KnowledgeBase` and implement the methods `get_objects()`, `get_obj
 provides more information on what those methods should do.
 
 You can also customize your knowledge base further, by adapting the methods mentioned in the section
-[Customizing the InMemoryKnowledgeBase](./knowledge-base-actions.mdx#customize-in-memory-knowledge-base).
+[Customizing the InMemoryKnowledgeBase](./knowledge-base-actions.mdx#customizing-the-inmemoryknowledgebase).
 
 :::note
 We wrote a [blog post](https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/)
