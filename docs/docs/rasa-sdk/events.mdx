@@ -131,7 +131,7 @@ All reminders which match the supplied parameters will be cancelled.
 
 ### `pause`
 
-Stops the bot from responding to user messages. The conversation will remain paused and no actions will be predicted until  the conversation is explicitly [resumed](#resume-a-conversation).
+Stops the bot from responding to user messages. The conversation will remain paused and no actions will be predicted until  the conversation is explicitly [resumed](#resume).
 
 **Automatic Tracking**: Never
 
@@ -249,7 +249,7 @@ Starts a new conversation by resetting the tracker and running the default actio
 * Whenever a user starts a conversation with the bot for the first time.
 * Whenever a session expires (after `session_expiration_time` specified in the domain), and the user resumes their conversation
 
-Restarting a conversation with [`restart`](#restart-a-conversation) event **does not** automatically cause a `session_started` event. 
+Restarting a conversation with [`restart`](#restart) event **does not** automatically cause a `session_started` event. 
 
 **JSON**:
 
