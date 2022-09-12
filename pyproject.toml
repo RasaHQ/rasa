@@ -120,9 +120,9 @@ sklearn-crfsuite = "~0.3"
 # https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/
 psycopg2-binary = ">=2.8.2,<2.10.0"
 python-dateutil = "~2.8"
-tensorflow = { version = "~2.8.2", markers="sys_platform != 'darwin' or platform_machine != 'arm64'"} 
-tensorflow-macos = { version = "2.8.0", markers="sys_platform == 'darwin' and platform_machine == 'arm64'"}
-tensorflow-metal = { version = "0.5.1", markers="sys_platform == 'darwin' and platform_machine == 'arm64'"}
+tensorflow = { version = "~2.8.2", markers="platform_machine != 'arm64'"} 
+tensorflow-macos = { version = "2.8.0", markers="platform_machine == 'arm64'"}
+tensorflow-metal = { version = "0.5.1", markers="platform_machine == 'arm64'"}
 # protobuf in newer versions currenlty creates issues for tensorflow
 # see: https://github.com/tensorflow/tensorflow/blob/v2.8.2/tensorflow/tools/pip_package/setup.py#L84
 protobuf = ">=3.9.2,< 3.20"
