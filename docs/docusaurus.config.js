@@ -91,12 +91,6 @@ module.exports = {
           href: `${SWAP_URL}/docs/rasa-enterprise/`,
         },
         {
-          target: '_self',
-          label: 'Rasa Action Server',
-          position: 'left',
-          href: 'https://rasa.com/docs/action-server',
-        },
-        {
           href: 'https://github.com/rasahq/rasa',
           className: 'header-github-link',
           'aria-label': 'GitHub repository',
