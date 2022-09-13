@@ -2,7 +2,6 @@ import logging
 
 from rasa import version  # noqa: F401
 from rasa.api import run, train, test  # noqa: F401
-from rasa.plugin import plugin_manager
 
 # define the version before the other imports since these need it
 __version__ = version.__version__
@@ -11,8 +10,8 @@ __version__ = version.__version__
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 try:
-    import rasa_plus.hooks
+    import rasa_plus
 
-    rasa_plus.hooks.init(plugin_manager)
+    rasa_plus.init_hooks()
 except ModuleNotFoundError:
     pass
