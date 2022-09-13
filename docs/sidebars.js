@@ -133,34 +133,34 @@ module.exports = {
       label: 'Rasa SDK',
       collapsed: true,
       items: [
-        'rasa-sdk/index',
+        'action-server/index',
         {'Action Server Fundamentals': [
-          'rasa-sdk/actions',
-          'rasa-sdk/events'
+          'action-server/actions',
+          'action-server/events'
         ]},
         {'Using the Rasa SDK': [
-          'rasa-sdk/running-action-server',
+          'action-server/running-action-server',
           {
           type: 'category',
           label: 'Writing Custom Actions',
           collapsed: true,
           items: [
-            'rasa-sdk/sdk-actions',
-            'rasa-sdk/sdk-tracker',
-            'rasa-sdk/sdk-dispatcher',
-            'rasa-sdk/sdk-events',
+            'action-server/sdk-actions',
+            'action-server/sdk-tracker',
+            'action-server/sdk-dispatcher',
+            'action-server/sdk-events',
             {
               type: 'category',
               label: 'Special Action Types',
               collapsed: true,
               items: [
-                'rasa-sdk/knowledge-bases',
-                'rasa-sdk/validation-action',
+                'action-server/knowledge-bases',
+                'action-server/validation-action',
               ]
             }
           ],
           },
-          'rasa-sdk/deploy-action-server',
+          'action-server/deploy-action-server',
         ]},
       ]
     },
