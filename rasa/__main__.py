@@ -27,6 +27,7 @@ from rasa.cli import (
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
+from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_error
 from rasa.utils.common import configure_logging_and_warnings
@@ -71,6 +72,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     export.add_subparser(subparsers, parents=parent_parsers)
     x.add_subparser(subparsers, parents=parent_parsers)
     evaluate.add_subparser(subparsers, parents=parent_parsers)
+    plugin_manager.hook.refine_cli(subparsers, parent_parsers)
 
     return parser
 
