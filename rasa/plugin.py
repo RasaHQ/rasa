@@ -14,7 +14,7 @@ class CLICommandSpec:
     @hookspec  # type: ignore[misc]
     def refine_cli(
         self,
-        arg: argparse._SubParsersAction,
+        subparsers: argparse._SubParsersAction,
         parent_parsers: List[argparse.ArgumentParser],
     ) -> None:
         """Customizable hook for adding CLI commands."""

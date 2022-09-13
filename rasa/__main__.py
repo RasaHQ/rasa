@@ -72,7 +72,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     export.add_subparser(subparsers, parents=parent_parsers)
     x.add_subparser(subparsers, parents=parent_parsers)
     evaluate.add_subparser(subparsers, parents=parent_parsers)
-    plugin_manager.hook.refine_cli(arg=subparsers, parent_parsers=parent_parsers)
+    plugin_manager.hook.refine_cli(subparsers=subparsers, parent_parsers=parent_parsers)
 
     return parser
 
