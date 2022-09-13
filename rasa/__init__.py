@@ -11,6 +11,7 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 try:
     import rasa_plus
+
     rasa_plus.init()
 except ModuleNotFoundError:
     pass
