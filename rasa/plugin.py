@@ -5,7 +5,6 @@ import pluggy
 
 
 hookspec = pluggy.HookspecMarker("rasa")
-hookimpl = pluggy.HookimplMarker("rasa")
 
 
 class CLICommandSpec:

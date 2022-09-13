@@ -11,8 +11,8 @@ __version__ = version.__version__
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 try:
-    import rasa_plus
+    import rasa_plus.hooks
 
-    rasa_plus.init(plugin_manager)
+    rasa_plus.hooks.init(plugin_manager)
 except ModuleNotFoundError:
     pass
