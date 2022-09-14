@@ -98,10 +98,11 @@ def print_version() -> None:
     print(f"Python Version    :         {platform.python_version()}")
     print(f"Operating System  :         {platform.platform()}")
     print(f"Python Path       :         {sys.executable}")
-    print("Plugins            :         ")
 
-    plugin_name, plugin_version = plugin_manager.hook.get_version_info()
-    print(f"\t{plugin_name}   :         {plugin_version}")
+    result = plugin_manager.hook.get_version_info()
+    if result:
+        print("Plugins           :         ")
+        print(f"\t{result[0]}    :         {result[1]}")
 
 
 def main() -> None:

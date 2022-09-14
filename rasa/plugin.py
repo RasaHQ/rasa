@@ -38,4 +38,4 @@ def get_version_help_text() -> Text:
 
 
 plugin_manager = pluggy.PluginManager("rasa")
-plugin_manager.add_hookspecs(sys.modules[__name__])
+plugin_manager.add_hookspecs(sys.modules["rasa.plugin"])
