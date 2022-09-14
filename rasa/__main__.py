@@ -37,28 +37,41 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Parse all the command line arguments for the training script."""
+    description = plugin_manager.hook.get_description()
+    if not description:
+        description = (
+            "Rasa command line interface. Rasa allows you to build "
+            "your own conversational assistants 🤖. The 'rasa' command "
+            "allows you to easily run most common commands like "
+            "creating a new bot, training or evaluating models."
+        )
 
     parser = argparse.ArgumentParser(
         prog="rasa",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description="Rasa command line interface. Rasa allows you to build "
-        "your own conversational assistants 🤖. The 'rasa' command "
-        "allows you to easily run most common commands like "
-        "creating a new bot, training or evaluating models.",
+        description=description,
     )
+
+    version_help = plugin_manager.hook.get_version_help_text()
+    if not version_help:
+        version_help = "Print installed Rasa version"
 
     parser.add_argument(
         "--version",
         action="store_true",
         default=argparse.SUPPRESS,
-        help="Print installed Rasa version",
+        help=version_help,
     )
 
     parent_parser = argparse.ArgumentParser(add_help=False)
     add_logging_options(parent_parser)
     parent_parsers = [parent_parser]
 
-    subparsers = parser.add_subparsers(help="Rasa commands")
+    help_text = plugin_manager.hook.get_parent_help_text()
+    if not help_text:
+        help_text = "Rasa commands"
+
+    subparsers = parser.add_subparsers(help=help_text)
 
     scaffold.add_subparser(subparsers, parents=parent_parsers)
     run.add_subparser(subparsers, parents=parent_parsers)
@@ -85,6 +98,10 @@ def print_version() -> None:
     print(f"Python Version    :         {platform.python_version()}")
     print(f"Operating System  :         {platform.platform()}")
     print(f"Python Path       :         {sys.executable}")
+    print("Plugins            :         ")
+
+    plugin_name, plugin_version = plugin_manager.hook.get_version_info()
+    print(f"\t{plugin_name}   :         {plugin_version}")
 
 
 def main() -> None:
