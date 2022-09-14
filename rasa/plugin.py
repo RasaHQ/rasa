@@ -1,6 +1,6 @@
 import argparse
 import sys
-from typing import List, Text, Tuple
+from typing import List
 
 import pluggy
 
@@ -15,11 +15,6 @@ def refine_cli(
     parent_parsers: List[argparse.ArgumentParser],
 ) -> None:
     """Customizable hook for adding CLI commands."""
-
-
-@hookspec  # type: ignore[misc]
-def get_version_info() -> Tuple[Text, Text]:
-    """Adds extra info on plugin versions."""
 
 
 plugin_manager = pluggy.PluginManager("rasa")

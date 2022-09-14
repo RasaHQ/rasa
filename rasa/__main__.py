@@ -85,12 +85,6 @@ def print_version() -> None:
     print(f"Operating System  :         {platform.platform()}")
     print(f"Python Path       :         {sys.executable}")
 
-    result = plugin_manager.hook.get_version_info()
-    print(result)
-    if result:
-        print("Plugins           :         ")
-        print(f"\t{result[0][0]}    :         {result[0][1]}")
-
 
 def main() -> None:
     """Run as standalone python application."""
