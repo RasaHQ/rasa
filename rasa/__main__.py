@@ -37,41 +37,27 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Parse all the command line arguments for the training script."""
-    description = plugin_manager.hook.get_description()
-    if not description:
-        description = (
-            "Rasa command line interface. Rasa allows you to build "
-            "your own conversational assistants 🤖. The 'rasa' command "
-            "allows you to easily run most common commands like "
-            "creating a new bot, training or evaluating models."
-        )
-
     parser = argparse.ArgumentParser(
         prog="rasa",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description=description,
+        description="Rasa command line interface. Rasa allows you to build "
+        "your own conversational assistants 🤖. The 'rasa' command "
+        "allows you to easily run most common commands like "
+        "creating a new bot, training or evaluating models.",
     )
-
-    version_help = plugin_manager.hook.get_version_help_text()
-    if not version_help:
-        version_help = "Print installed Rasa version"
 
     parser.add_argument(
         "--version",
         action="store_true",
         default=argparse.SUPPRESS,
-        help=version_help,
+        help="Print installed Rasa version",
     )
 
     parent_parser = argparse.ArgumentParser(add_help=False)
     add_logging_options(parent_parser)
     parent_parsers = [parent_parser]
 
-    help_text = plugin_manager.hook.get_parent_help_text()
-    if not help_text:
-        help_text = "Rasa commands"
-
-    subparsers = parser.add_subparsers(help=help_text)
+    subparsers = parser.add_subparsers(help="Rasa commands")
 
     scaffold.add_subparser(subparsers, parents=parent_parsers)
     run.add_subparser(subparsers, parents=parent_parsers)
@@ -100,9 +86,10 @@ def print_version() -> None:
     print(f"Python Path       :         {sys.executable}")
 
     result = plugin_manager.hook.get_version_info()
+    print(result)
     if result:
         print("Plugins           :         ")
-        print(f"\t{result[0]}    :         {result[1]}")
+        print(f"\t{result[0][0]}    :         {result[0][1]}")
 
 
 def main() -> None:
