@@ -87,9 +87,15 @@ def print_version() -> None:
     print(f"Operating System  :         {platform.platform()}")
     print(f"Python Path       :         {sys.executable}")
 
+    result = plugin_manager().hook.get_version_info()
+    if result:
+        print(f"\t{result[0][0]}  :         {result[0][1]}")
+
 
 def main() -> None:
     """Run as standalone python application."""
+    plugin_manager().hook.validate_license()
+
     parse_last_positional_argument_as_model_path()
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
@@ -108,8 +114,15 @@ def main() -> None:
     try:
         if hasattr(cmdline_arguments, "func"):
             rasa.utils.io.configure_colored_logging(log_level)
+
+            endpoints_file = plugin_manager().hook.configure_commandline(
+                cmdline_arguments=cmdline_arguments
+            )
+
             rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()
+            plugin_manager().hook.init_telemetry(endpoints_file=endpoints_file)
+
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
             print_version()
