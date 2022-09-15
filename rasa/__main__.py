@@ -115,13 +115,13 @@ def main() -> None:
         if hasattr(cmdline_arguments, "func"):
             rasa.utils.io.configure_colored_logging(log_level)
 
-            endpoints_file = plugin_manager().hook.configure_commandline(
+            result = plugin_manager().hook.configure_commandline(
                 cmdline_arguments=cmdline_arguments
             )
 
             rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()
-            plugin_manager().hook.init_telemetry(endpoints_file=endpoints_file)
+            plugin_manager().hook.init_telemetry(endpoints_file=result[0])
 
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
