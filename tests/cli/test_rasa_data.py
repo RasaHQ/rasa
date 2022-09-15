@@ -184,6 +184,8 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "data/test_moodbot/data",
             "--max-history",
             0,
+            "--config",
+            "data/test_moodbot/config.yml",
         ]
     )
 
@@ -217,7 +219,7 @@ def test_validate_files_action_not_found_invalid_domain(
         "domain": "data/test_moodbot/domain.yml",
         "data": [file_name],
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
@@ -245,7 +247,7 @@ def test_validate_files_form_not_found_invalid_domain(
         "domain": "data/test_restaurantbot/domain.yml",
         "data": [file_name],
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
@@ -275,7 +277,7 @@ def test_validate_files_with_active_loop_null(
         "domain": "data/test_domains/restaurant_form.yml",
         "data": [file_name],
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
         "fail_on_warnings": False,
     }
     with pytest.warns(None):
@@ -307,7 +309,7 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
         "domain": domain_file_name,
         "data": None,
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
@@ -319,7 +321,7 @@ def test_validate_files_exit_early():
             "domain": "data/test_domains/duplicate_intents.yml",
             "data": None,
             "max_history": None,
-            "config": None,
+            "config": "data/test_config/config_defaults.yml",
         }
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
@@ -332,7 +334,7 @@ def test_validate_files_invalid_domain():
         "domain": "data/test_domains/default_with_mapping.yml",
         "data": None,
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
 
     with pytest.raises(SystemExit):
@@ -370,6 +372,11 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
                 - location
                 """
     )
-    args = {"domain": str(domain), "data": None, "max_history": None, "config": None}
+    args = {
+        "domain": str(domain),
+        "data": None,
+        "max_history": None,
+        "config": "data/test_config/config_defaults.yml",
+    }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
