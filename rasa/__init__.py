@@ -8,10 +8,3 @@ __version__ = version.__version__
 
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
-
-try:
-    import rasa_plus
-
-    rasa_plus.init_hooks()
-except ModuleNotFoundError:
-    pass
