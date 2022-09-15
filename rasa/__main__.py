@@ -118,10 +118,11 @@ def main() -> None:
             result = plugin_manager().hook.configure_commandline(
                 cmdline_arguments=cmdline_arguments
             )
+            endpoints_file = result[0] if result else None
 
             rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()
-            plugin_manager().hook.init_telemetry(endpoints_file=result[0])
+            plugin_manager().hook.init_telemetry(endpoints_file=endpoints_file)
 
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
