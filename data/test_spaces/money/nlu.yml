@@ -1,0 +1,24 @@
+version: "3.1"
+
+nlu:
+- intent: send_money
+  examples: |
+    - I want to send some money
+    - Let me send some money
+    - send money
+    - make a transaction
+    - I want to make a transaction
+    - new transaction
+    - send cash
+    - send money to a friend
+    - send money to a business partner
+
+- intent: receive_money
+  examples: |
+    - give me money
+    - I want to receive some money
+    - collect my receivables
+    - get me some money
+    - I need more money
+    - pay me
+    - please, I want to have money    

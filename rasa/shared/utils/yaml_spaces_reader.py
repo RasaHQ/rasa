@@ -20,11 +20,11 @@ SPACES_SCHEMA_FILE = "shared/utils/schemas/spaces.yml"
 @dataclass
 class Space:
     name: Text
-    domain_location: Text
+    domain_path: Text
     entry_intents: List[Text]
     active_at_session_start: bool
-    nlu_location: Optional[Text]
-    stories_location: Optional[Text]
+    nlu_path: Optional[Text]
+    stories_path: Optional[Text]
 
 
 class YAMLSpacesReader:

@@ -1,0 +1,9 @@
+intents:
+ - send_money
+ - receive_money
+
+responses:
+  utter_money_sent:
+    - text: Your money was sent successfully!
+  utter_money_received:
+    - text: Yup, here's some more of that stuff!
