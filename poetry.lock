@@ -65,14 +65,14 @@ aiohttp = ">=2.0.0,<4.0.0"
 
 [[package]]
 name = "aiormq"
-version = "6.4.1"
+version = "6.4.2"
 description = "Pure python AMQP asynchronous client library"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
-pamqp = "3.2.0"
+pamqp = "3.2.1"
 yarl = "*"
 
 [package.extras]
@@ -310,14 +310,14 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.24.71"
+version = "1.24.73"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.27.71,<1.28.0"
+botocore = ">=1.27.73,<1.28.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -326,7 +326,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.27.71"
+version = "1.27.73"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -378,7 +378,7 @@ zipp = {version = ">=0.5", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "certifi"
-version = "2022.6.15.1"
+version = "2022.9.14"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -408,11 +408,11 @@ unicode_backport = ["unicodedata2"]
 
 [[package]]
 name = "click"
-version = "8.1.3"
+version = "8.0.4"
 description = "Composable command line interface toolkit"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.6"
 
 [package.dependencies]
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
@@ -1128,7 +1128,7 @@ socks = ["socksio (>=1.0.0,<2.0.0)"]
 
 [[package]]
 name = "httptools"
-version = "0.4.0"
+version = "0.5.0"
 description = "A collection of framework independent HTTP protocol utils."
 category = "main"
 optional = false
@@ -1197,7 +1197,7 @@ pyreadline3 = {version = "*", markers = "sys_platform == \"win32\" and python_ve
 
 [[package]]
 name = "idna"
-version = "3.3"
+version = "3.4"
 description = "Internationalized Domain Names in Applications (IDNA)"
 category = "main"
 optional = false
@@ -1348,7 +1348,7 @@ format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-
 
 [[package]]
 name = "jwcrypto"
-version = "1.3.1"
+version = "1.4.1"
 description = "Implementation of JOSE Web standards"
 category = "main"
 optional = true
@@ -1710,7 +1710,7 @@ pyparsing = ">=2.0.2"
 
 [[package]]
 name = "pamqp"
-version = "3.2.0"
+version = "3.2.1"
 description = "RabbitMQ Focused AMQP low-level library"
 category = "main"
 optional = false
@@ -1852,7 +1852,7 @@ wcwidth = "*"
 
 [[package]]
 name = "protobuf"
-version = "3.19.4"
+version = "3.19.5"
 description = "Protocol Buffers"
 category = "main"
 optional = false
@@ -2403,7 +2403,7 @@ requests = ">=2.0.1,<3.0.0"
 
 [[package]]
 name = "responses"
-version = "0.20.0"
+version = "0.21.0"
 description = "A utility library for mocking out the `requests` Python library."
 category = "dev"
 optional = false
@@ -2411,6 +2411,7 @@ python-versions = ">=3.7"
 
 [package.dependencies]
 requests = ">=2.0,<3.0"
+typing-extensions = {version = "*", markers = "python_version < \"3.8\""}
 urllib3 = ">=1.25.10"
 
 [package.extras]
@@ -2755,7 +2756,7 @@ python-versions = "*"
 
 [[package]]
 name = "spacy"
-version = "3.2.3"
+version = "3.2.4"
 description = "Industrial-strength Natural Language Processing (NLP) in Python"
 category = "main"
 optional = true
@@ -2764,6 +2765,7 @@ python-versions = ">=3.6"
 [package.dependencies]
 blis = ">=0.4.0,<0.8.0"
 catalogue = ">=2.0.6,<2.1.0"
+click = "<8.1.0"
 cymem = ">=2.0.2,<2.1.0"
 jinja2 = "*"
 langcodes = ">=3.2.0,<4.0.0"
@@ -3475,16 +3477,16 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "uvloop"
-version = "0.16.0"
+version = "0.17.0"
 description = "Fast implementation of asyncio event loop on top of libuv"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 
 [package.extras]
-dev = ["Cython (>=0.29.24,<0.30.0)", "pytest (>=3.6.0)", "Sphinx (>=4.1.2,<4.2.0)", "sphinxcontrib-asyncio (>=0.3.0,<0.4.0)", "sphinx-rtd-theme (>=0.5.2,<0.6.0)", "aiohttp", "flake8 (>=3.9.2,<3.10.0)", "psutil", "pycodestyle (>=2.7.0,<2.8.0)", "pyOpenSSL (>=19.0.0,<19.1.0)", "mypy (>=0.800)"]
+dev = ["Cython (>=0.29.32,<0.30.0)", "pytest (>=3.6.0)", "Sphinx (>=4.1.2,<4.2.0)", "sphinxcontrib-asyncio (>=0.3.0,<0.4.0)", "sphinx-rtd-theme (>=0.5.2,<0.6.0)", "flake8 (>=3.9.2,<3.10.0)", "psutil", "pycodestyle (>=2.7.0,<2.8.0)", "pyOpenSSL (>=22.0.0,<22.1.0)", "mypy (>=0.800)", "aiohttp"]
 docs = ["Sphinx (>=4.1.2,<4.2.0)", "sphinxcontrib-asyncio (>=0.3.0,<0.4.0)", "sphinx-rtd-theme (>=0.5.2,<0.6.0)"]
-test = ["aiohttp", "flake8 (>=3.9.2,<3.10.0)", "psutil", "pycodestyle (>=2.7.0,<2.8.0)", "pyOpenSSL (>=19.0.0,<19.1.0)", "mypy (>=0.800)"]
+test = ["flake8 (>=3.9.2,<3.10.0)", "psutil", "pycodestyle (>=2.7.0,<2.8.0)", "pyOpenSSL (>=22.0.0,<22.1.0)", "mypy (>=0.800)", "Cython (>=0.29.32,<0.30.0)", "aiohttp"]
 
 [[package]]
 name = "wasabi"
@@ -3605,7 +3607,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "22d81a17adbd429e4fb8dcb4a762e3f2390ee49ce336808d536d1c36f3f39160"
+content-hash = "6c1d9eeb606ff42fd9c9b4f31815b4bbf084ece4a962cf28171b0f10e8249566"
 
 [metadata.files]
 absl-py = []
@@ -3680,10 +3682,7 @@ catalogue = []
 certifi = []
 cffi = []
 charset-normalizer = []
-click = [
-    {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
-    {file = "click-8.1.3.tar.gz", hash = "sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"},
-]
+click = []
 click-default-group = [
     {file = "click-default-group-1.2.2.tar.gz", hash = "sha256:d9560e8e8dfa44b3562fbc9425042a0fd6d21956fcc2db0077f63f34253ab904"},
 ]
@@ -3827,9 +3826,7 @@ jmespath = []
 joblib = []
 jsonpickle = []
 jsonschema = []
-jwcrypto = [
-    {file = "jwcrypto-1.3.1.tar.gz", hash = "sha256:54b551b115ffb4d12b1f1ee93b8ba2a71bb8556ba3d85d62f707549613da877c"},
-]
+jwcrypto = []
 kafka-python = []
 keras = []
 keras-preprocessing = []
@@ -4002,10 +3999,7 @@ regex = []
 requests = []
 requests-oauthlib = []
 requests-toolbelt = []
-responses = [
-    {file = "responses-0.20.0-py3-none-any.whl", hash = "sha256:18831bc2d72443b67664d98038374a6fa1f27eaaff4dd9a7d7613723416fea3c"},
-    {file = "responses-0.20.0.tar.gz", hash = "sha256:644905bc4fb8a18fa37e3882b2ac05e610fe8c2f967d327eed669e314d94a541"},
-]
+responses = []
 rfc3986 = [
     {file = "rfc3986-1.5.0-py2.py3-none-any.whl", hash = "sha256:a86d6e1f5b1dc238b218b012df0aa79409667bb209e58da56d0b94704e712a97"},
     {file = "rfc3986-1.5.0.tar.gz", hash = "sha256:270aaf10d87d0d4e095063c65bf3ddbc6ee3d0b226328ce21e036f946e421835"},
@@ -4079,7 +4073,24 @@ sortedcontainers = [
     {file = "sortedcontainers-2.4.0-py2.py3-none-any.whl", hash = "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0"},
     {file = "sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88"},
 ]
-spacy = []
+spacy = [
+    {file = "spacy-3.2.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:7e20c63ba47eaa33ebd4b2cc6eefa3e8906505273799138ad8ab231b146d8875"},
+    {file = "spacy-3.2.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bc9184973c9052e1bb9eeb975801e6906aacbe0c009533ec0c34f443832473fd"},
+    {file = "spacy-3.2.4-cp310-cp310-win_amd64.whl", hash = "sha256:0168d97e7fbbddd3258016e4d3c10d1593b7129dddff146c14f3b103ade6b1cd"},
+    {file = "spacy-3.2.4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:cff47cdaa824802cd38ae94fe98af9cde6810d86334cd283659c868e0011831a"},
+    {file = "spacy-3.2.4-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:400af3490c36c1b6c895de526ec06f6c7655af5ca595743c07e09e9bc8f378ea"},
+    {file = "spacy-3.2.4-cp36-cp36m-win_amd64.whl", hash = "sha256:87bd072ccacedbf8bc5a692fea1d5c320abd26821c63af157a7c95baa47dc36d"},
+    {file = "spacy-3.2.4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:36e9ef5a32834383d37bbd27fca49388e31e9b53f77c91ba8ccbf19af10e3aef"},
+    {file = "spacy-3.2.4-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0e9a98999b0fce03d4f483112837ac7111378449ace069c7cd050908f0fa5d9f"},
+    {file = "spacy-3.2.4-cp37-cp37m-win_amd64.whl", hash = "sha256:89be328ff378e4cdcfb4dcf38ca2fad740f87213825ed10e8ce9f54b822277b8"},
+    {file = "spacy-3.2.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:ed29278fc89f07c1999ceca5f6702b379589c8e884a57816bdaeb05a1a7b2bbb"},
+    {file = "spacy-3.2.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:090e684eec551b5b7d56d9242cea18742515a706191ad158e32e16e8f2fe15ac"},
+    {file = "spacy-3.2.4-cp38-cp38-win_amd64.whl", hash = "sha256:2053cb78bcf4eec38aa266890a5700167a284d1a26197f851710d29f3d7071b3"},
+    {file = "spacy-3.2.4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:6db861f69f18ba5e00d0bd44744cf1662e00cc3b564d17a1ccdc4625ec3d5c3d"},
+    {file = "spacy-3.2.4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ac2288e87de1066ad65676e930f53978d6ee97c34044dca4d24f64a24e2a88b6"},
+    {file = "spacy-3.2.4-cp39-cp39-win_amd64.whl", hash = "sha256:e759e27da39e469b6367b82281a10eb4e50de04260ba49d42091cbdfe2d99633"},
+    {file = "spacy-3.2.4.tar.gz", hash = "sha256:3e4c6f298d54044582daca1142b082ee38831bb3d7bb931d2ee601e8b8dce64f"},
+]
 spacy-legacy = []
 spacy-loggers = []
 sqlalchemy = []
