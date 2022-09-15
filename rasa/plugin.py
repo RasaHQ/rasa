@@ -1,7 +1,6 @@
 import argparse
 import functools
 import sys
-from importlib.metadata import entry_points
 from typing import List
 
 import pluggy
@@ -30,7 +29,11 @@ def plugin_manager() -> pluggy.PluginManager:
 
 
 def _discover_plugins(manager: pluggy.PluginManager) -> None:
-    rasa_plugin_eps = entry_points().get("rasa.plugin_init", [])
-    for plugin in rasa_plugin_eps:
-        plugin_init = plugin.load()
-        plugin_init(manager)
+    try:
+        # rasa_plus is an enterprise-ready version of rasa open source
+        # which extends existing functionality via plugins
+        import rasa_plus
+
+        rasa_plus.init_hooks(manager)
+    except ModuleNotFoundError:
+        pass
