@@ -1,0 +1,12 @@
+spaces:
+  - include_at: main
+    domain: main/domain.yml
+    nlu: main/nlu/
+    stories: main/core_data
+  - include_at: transfer_money
+    domain: transfer_money/domain.yml
+    active_at_session_start: false
+    entry_intents:
+      - entry
+    nlu: transfer_money/nlu/nlu.yml
+    stories: transfer_money/stories

@@ -1,0 +1,29 @@
+allowempty: True
+mapping:
+  spaces:
+    type: "seq"
+    required: False
+    sequence:
+    - type: "map"
+      allowempty: True
+      mapping:
+        include_at:
+          type: str
+          required: True
+        domain:
+          type: str
+          required: True
+        nlu:
+          type: str
+          required: False
+        stories:
+          type: str
+          required: False
+        active_at_session_start:
+          type: bool
+          required: False
+        entry_intents:
+          type: "seq"
+          required: False
+          sequence:
+            - type: str
