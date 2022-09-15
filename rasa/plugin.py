@@ -18,7 +18,7 @@ def refine_cli(
     """Customizable hook for adding CLI commands."""
 
 
-@functools.lru_cache
+@functools.lru_cache(maxsize=2)
 def plugin_manager() -> pluggy.PluginManager:
     """Initialises a plugin manager which registers hook implementations."""
     _plugin_manager = pluggy.PluginManager("rasa")
