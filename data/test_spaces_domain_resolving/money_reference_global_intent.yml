@@ -1,0 +1,29 @@
+intents:
+ - send_money:
+     use_entities:
+       - amount
+       - xxx
+ - receive_money
+
+entities:
+  - amount
+
+slots:
+  amount:
+    type: text
+    initial_value: "0"
+    mappings:
+      - type: from_entity
+        entity: amount
+  has_said_hi:
+    type: bool
+    initial_value: false
+    mappings:
+      - type: from_intent
+        intent: greet
+
+responses:
+  utter_money_sent:
+    - text: Your money was sent successfully ({amount})!
+  utter_money_received:
+    - text: Yup, here's some more of that stuff!
