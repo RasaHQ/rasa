@@ -45,11 +45,6 @@ def get_version_info() -> Tuple[Text, Text]:
 
 
 @hookspec  # type: ignore[misc]
-def validate_license() -> None:
-    """Hook specification for validating plugin license."""
-
-
-@hookspec  # type: ignore[misc]
 def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]:
     """Hook specification for configuring plugin CLI."""
 
