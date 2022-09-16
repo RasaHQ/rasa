@@ -94,8 +94,6 @@ def print_version() -> None:
 
 def main() -> None:
     """Run as standalone python application."""
-    plugin_manager().hook.validate_license()
-
     parse_last_positional_argument_as_model_path()
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
