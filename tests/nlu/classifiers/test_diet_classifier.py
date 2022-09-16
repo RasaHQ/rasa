@@ -10,6 +10,7 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import (
@@ -324,6 +325,21 @@ async def test_train_persist_load_with_nested_dict_config(
     create_diet: Callable[..., DIETClassifier],
 ):
     config = {HIDDEN_LAYERS_SIZES: {"text": [256, 512]}, ENTITY_RECOGNITION: False}
+    create_train_load_and_process_diet(config)
+    create_diet(config, load=True, finetune=True)
+
+
+@pytest.mark.timeout(240, func_only=True)
+async def test_train_persist_load_with_masked_lm_and_eval(
+    nlu_data_path: Text,
+    create_train_load_and_process_diet: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
+):
+    # need at least number of intents as eval num examples...
+    # reading the used data here so that the test doesn't break if data is changed
+    importer = RasaFileImporter(training_data_paths=[nlu_data_path])
+    training_data = importer.get_nlu_data()
+    config = {MASKED_LM: True, EVAL_NUM_EXAMPLES: len(training_data.intents)}
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 
