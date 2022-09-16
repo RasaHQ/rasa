@@ -105,7 +105,6 @@ class TrainingData:
             "lookup_tables": [
                 self._load_lookup_table(table) for table in self.lookup_tables
             ],
-            "responses": self.responses,
         }
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
 
