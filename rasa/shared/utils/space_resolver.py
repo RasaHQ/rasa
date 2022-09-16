@@ -2,7 +2,6 @@ import copy
 import functools
 from typing import Text, Tuple, Optional, List
 
-from rasa.shared.core.constants import DEFAULT_INTENTS
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import INTENT
