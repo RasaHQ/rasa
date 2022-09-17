@@ -39,6 +39,8 @@ responses:
     - text: "where are you leaving from?"
   utter_ask_GPE_destination:
     - text: "where are you going to?"
+  utter_travel_plan:
+    - text: "Alright, so you'll be flying from {GPE_origin} to {GPE_destination}."
 
 actions:
   - action_search_travel

@@ -1,16 +1,16 @@
 import copy
 from typing import Dict, Text, Tuple, List, Set
-
+import re
 from rasa.shared.constants import DOMAIN_SCHEMA_FILE, REQUIRED_SLOTS_KEY, \
-    IGNORED_INTENTS
-from rasa.shared.core.constants import SLOT_MAPPINGS
+    IGNORED_INTENTS, RESPONSE_CONDITION
+from rasa.shared.core.constants import SLOT_MAPPINGS, MAPPING_TYPE
 from rasa.shared.core.domain import KEY_ENTITIES, Domain, KEY_INTENTS, \
-    IGNORE_ENTITIES_KEY, USE_ENTITIES_KEY, KEY_SLOTS, KEY_FORMS
+    IGNORE_ENTITIES_KEY, USE_ENTITIES_KEY, KEY_SLOTS, KEY_FORMS, KEY_RESPONSES
 import rasa.shared.data
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
 from rasa.shared.exceptions import YamlException
-from rasa.shared.nlu.constants import INTENT, NOT_INTENT, ENTITY_ATTRIBUTE_TYPE
+from rasa.shared.nlu.constants import INTENT, NOT_INTENT, ENTITY_ATTRIBUTE_TYPE, TEXT
 
 
 class DomainResolver:
@@ -152,12 +152,50 @@ class DomainResolver:
         domain_yaml[KEY_FORMS] = prefixed_form_section
         return domain_yaml, forms
 
+    @classmethod
+    def collect_and_prefix_responses(cls, prefix: Text,
+                                     domain_yaml: Dict,
+                                     slots: Set[Text],
+                                     forms: Set[Text]) -> Tuple[Dict, Set[Text]]:
+        """Collect and prefix responses and their referenced slots in the domain."""
+        response_slot_regex = re.compile("{(" + "|".join(slots) + ")}")
+        form_ask_response_regex = re.compile("utter_ask_(" + "|".join(forms) +
+                                             ")_(" + "|".join(slots) + ")")
+        responses = set()
+        prefixed_response_section = {}
+        for response_name in domain_yaml.get(KEY_RESPONSES, []):
+            responses.add(response_name)
+            if form_ask_response_regex.match(response_name):
+                prefixed_response_name = \
+                    form_ask_response_regex.sub(f"utter_ask_{prefix}"
+                                                r"!\g<1>_"
+                                                f"{prefix}!"
+                                                r"\g<2>",
+                                                response_name)
+            else:
+                prefixed_response_name = f"utter_{prefix}!{response_name[6:]}"
+            prefixed_response_variations = \
+                copy.deepcopy(domain_yaml[KEY_RESPONSES][response_name])
+            for variation in prefixed_response_variations:
+                if TEXT in variation:
+                    variation[TEXT] = \
+                        response_slot_regex.sub("{" + prefix + r"!\g<1>}",
+                                                variation[TEXT])
+                if RESPONSE_CONDITION in variation:
+                    for condition in variation[RESPONSE_CONDITION]:
+                        if condition[MAPPING_TYPE] == "slot":
+                            cls.maybe_prefix_name_or_list(prefix, condition, "name",
+                                                          slots)
+            prefixed_response_section[prefixed_response_name] = \
+                prefixed_response_variations
+        domain_yaml[KEY_RESPONSES] = prefixed_response_section
+        return domain_yaml, responses
 
     @classmethod
     def resolve(cls, prefix: Text,
                 domain_yaml: Dict) -> Tuple[Dict, Set[Text],
                                             Set[Text], Set[Text],
-                                            Set[Text]]:
+                                            Set[Text], Set[Text]]:
         """Resolve a domain yaml, prefixing space-internal names."""
         domain_yaml = copy.deepcopy(domain_yaml)
         domain_yaml, entities = \
@@ -171,14 +209,17 @@ class DomainResolver:
         domain_yaml, forms = \
             DomainResolver.collect_and_prefix_forms(prefix, domain_yaml,
                                                     slots, intents)
+        domain_yaml, responses = \
+            DomainResolver.collect_and_prefix_responses(prefix, domain_yaml,
+                                                        slots, forms)
 
-        return domain_yaml, entities, intents, slots, forms
+        return domain_yaml, entities, intents, slots, forms, responses
 
     @classmethod
     def load_and_resolve(cls, domain_path: Text,
                          prefix: Text) -> Tuple[Dict, Set[Text],
                                                 Set[Text], Set[Text],
-                                                Set[Text]]:
+                                                Set[Text], Set[Text]]:
         """Load domain yaml(s) from disc, and prefix space-internal names."""
         domain_yaml = cls.load_domain_yaml(domain_path)
         return cls.resolve(prefix, domain_yaml)
