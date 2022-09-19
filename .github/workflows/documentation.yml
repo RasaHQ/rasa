@@ -318,7 +318,7 @@ jobs:
     name: Publish Docs
     runs-on: ubuntu-latest
     # don't run this for main branches of forks; only run on documentation branch
-    if: github.repository == 'RasaHQ/rasa' && github.ref == 'refs/heads/documentation'
+    if: github.repository == 'RasaHQ/rasa' && github.ref == 'refs/heads/documentation-oss'
 
     steps:
     - name: Checkout git repository 🕝
@@ -342,7 +342,7 @@ jobs:
     - name: Publish production build ✅
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_OSS_ID }}
       run: make publish-docs
 
     - name: Notify slack on failure
