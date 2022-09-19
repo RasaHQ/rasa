@@ -38,6 +38,17 @@ your machine and continue development locally.
   </TabItem>
   <TabItem value="macos">
 
+:::info
+
+Rasa supports **x86_64 (Intel) and M1 / M2 (Apple Silicon)** architectures.
+The support is for development purposes only and we strongly recommend 
+production deployments to use Ubuntu / Linux on x86_64.
+
+Installations on Apple Silicon have some 
+[limitations listed further down](#m1--m2-apple-silicon-limitations).
+
+:::
+
   Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
 
   ```bash
@@ -85,10 +96,6 @@ rasa init
 ```
 
 You can learn about the most important Rasa commands in the [Command Line Interface](./command-line-interface.mdx).
-
-:::note
-Due to the lack of official TensorFlow support for the Apple M1, Rasa Open Source is currently unable to train a model using M1.
-:::
 
 ## Step-by-step Installation Guide
 
@@ -316,3 +323,25 @@ To download a specific version, specify the version number:
 ```bash
 pip3 install rasa==3.0
 ```
+
+## M1 / M2 (Apple Silicon) Limitations
+
+Rasa installations on Apple Silicon use Apple Metal leading to reduced training times
+for local development.
+
+Currently, not all of Rasa's dependencies support Apple Silicon natively. This leads
+to the follow restrictions
+
+* Duckling can currently not be run as a docker container on Apple Silicon. If you want
+  to use the [duckling entity extractor](components.mdx#ducklingentityextractor) we recommend a cloud deployment of 
+  duckling. Progress on this can be tracked on the 
+  [Duckling project](https://github.com/facebook/duckling/issues/695).
+* Rasa can not be run in a Docker container on Apple Silicon, only native installations
+  currently work. An installation in docker requires support for Ubuntu aarch64
+  which the current tensorflow version 2.8 does not provide - only MacOS is 
+  supported as an opperating system running on aarch64. We expect a future
+  upgrade of Tensorflow to allow Apple Silicon users to run Rasa inside of Docker.
+* Rasa on Apple Silicon does not support the [`ConveRTFeaturizer` component](components.mdx#convertfeaturizer) or pipelines
+  containing it. The component relies on `tensorflow-text` which currently
+  isn't available for Apple Silicon. Progress on this can be tracked on the 
+  [Tensorflow Text project](https://github.com/tensorflow/text/issues/823).
