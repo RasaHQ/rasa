@@ -173,15 +173,15 @@ by sending a "/back" message to the assistant if the [RulePolicy](./policies.mdx
                                                                                                                                                                                                                                                                         |
 ## Form Action
 
-By default Rasa Open Source uses `FormAction` for processing any
+By default Rasa uses `FormAction` for processing any
 [form logic](forms.mdx). You can override this default action with a custom action by
 adding a custom action with the form's name to the domain.
 Overriding the default action for forms should **only** be used during the process of
-migrating from Rasa Open Source 1.0 to 2.0.
+migrating from Rasa 1.0 to 2.0.
 
 ## action_unlikely_intent
 
-Rasa Open Source triggers `action_unlikely_intent` via [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy).
+Rasa triggers `action_unlikely_intent` via [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy).
 You can control how often this action is predicted by tuning the [`tolerance`](./policies.mdx#unexpected-intent-policy)
 parameter of `UnexpecTEDIntentPolicy`.
 
