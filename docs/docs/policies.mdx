@@ -50,7 +50,7 @@ to the desired number of maximum predictions.
 
 In the case that two policies predict with equal confidence (for example, the Memoization
 and Rule Policies might both predict with confidence 1), the priority of the
-policies is considered. Rasa Open Source policies have default priorities that are set to ensure the
+policies is considered. Rasa policies have default priorities that are set to ensure the
 expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
 
 <!-- We want to have high priority policies first; it's not possible to use a Markdown ordered list for that. -->
@@ -910,7 +910,7 @@ policies:
 
 ### Max History
 
-One important hyperparameter for Rasa Open Source policies is the `max_history`.
+One important hyperparameter for Rasa policies is the `max_history`.
 This controls how much dialogue history the model looks at to decide which
 action to take next.
 
@@ -960,7 +960,7 @@ slot. Slot information is always available for every featurizer.
 
 ### Data Augmentation
 
-When you train a model, Rasa Open Source will create
+When you train a model, Rasa will create
 longer stories by randomly combining
 the ones in your stories files.
 Take the stories below as an example:
@@ -1127,7 +1127,7 @@ The featurized trackers will be identical to each other but the target labels in
 ## Custom Policies
 
 :::info New in 3.0
-Rasa Open Source 3.0 unified the implementation of NLU components and policies.
+Rasa 3.0 unified the implementation of NLU components and policies.
 This requires changes to custom policies written for earlier versions of Rasa Open
 Source. Please see the
 [migration guide](migration-guide.mdx#custom-policies-and-custom-components) for a

@@ -60,7 +60,7 @@ module.exports = {
   themeConfig: {
     announcementBar: {
       id: 'pre_release_notice', // Any value that will identify this message.
-      content: 'These docs are for version 3.x of Rasa Open Source. <a href="https://rasa.com/docs/rasa/2.x/">Docs for the 2.x series can be found here.</a>',
+      content: 'These docs are for version 3.x of Rasa. <a href="https://rasa.com/docs/rasa/2.x/">Docs for the 2.x series can be found here.</a>',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
@@ -79,17 +79,6 @@ module.exports = {
       hideOnScroll: false,
       title: 'Rasa Open Source',
       items: [
-        {
-          label: 'Rasa Open Source',
-          to: path.join('/', BASE_URL),
-          position: 'left',
-        },
-        {
-          target: '_self',
-          label: 'Rasa Enterprise',
-          position: 'left',
-          href: `${SWAP_URL}/docs/rasa-enterprise/`,
-        },
         {
           href: 'https://github.com/rasahq/rasa',
           className: 'header-github-link',

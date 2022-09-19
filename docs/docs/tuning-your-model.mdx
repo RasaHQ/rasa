@@ -2,14 +2,14 @@
 id: tuning-your-model
 sidebar_label: Tuning Your NLU Model
 title: Tuning Your NLU Model
-abstract: Rasa Open Source will provide you with a suggested NLU config on initialization of the project, but as your project grows, it's likely that you will need to adjust your config to suit your training data.
+abstract: Rasa will provide you with a suggested NLU config on initialization of the project, but as your project grows, it's likely that you will need to adjust your config to suit your training data.
 ---
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
 
 ## How to Choose a Pipeline
 
-In Rasa Open Source, incoming messages are processed by a sequence of components.
+In Rasa, incoming messages are processed by a sequence of components.
 These components are executed one after another in a so-called processing `pipeline` defined in your `config.yml`.
 Choosing an NLU pipeline allows you to customize your model and finetune it on your dataset.
 
@@ -348,7 +348,7 @@ Here is an example configuration file where the `DIETClassifier` is using all av
 
 ### Entity Extraction
 
-Entity extraction involves parsing user messages for required pieces of information. Rasa Open Source
+Entity extraction involves parsing user messages for required pieces of information. Rasa
 provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
 Here is a summary of the available extractors and what they are best used for:
 
@@ -419,9 +419,9 @@ print(f"{prediction.diagnostic_data.get('attention_weights')}")
 ## Configuring Tensorflow
 
 TensorFlow allows configuring options in the runtime environment via
-[TF Config submodule](https://www.tensorflow.org/api_docs/python/tf/config). Rasa Open Source supports a smaller subset of these
+[TF Config submodule](https://www.tensorflow.org/api_docs/python/tf/config). Rasa supports a smaller subset of these
 configuration options and makes appropriate calls to the `tf.config` submodule.
-This smaller subset comprises of configurations that developers frequently use with Rasa Open Source.
+This smaller subset comprises of configurations that developers frequently use with Rasa.
 All configuration options are specified using environment variables as shown in subsequent sections.
 
 ### Deterministic Operations
@@ -511,12 +511,12 @@ To understand more about how these two options differ from each other, refer to 
 #### Limiting GPU Memory Growth
 
 TensorFlow by default blocks all the available GPU memory for the running process. This can be limiting if you are running
-multiple TensorFlow processes and want to distribute memory across them. To prevent Rasa Open Source from blocking all
+multiple TensorFlow processes and want to distribute memory across them. To prevent Rasa from blocking all
 of the available GPU memory, set the environment variable `TF_FORCE_GPU_ALLOW_GROWTH` to `True`.
 
 #### Restricting Absolute GPU Memory Available
 
-You may want to limit the absolute amount of GPU memory that can be used by a Rasa Open Source process.
+You may want to limit the absolute amount of GPU memory that can be used by a Rasa process.
 
 For example, say you have two visible GPUs(`GPU:0` and `GPU:1`) and you want to allocate 1024 MB from the first GPU
 and 2048 MB from the second GPU. You can do this by setting the environment variable `TF_GPU_MEMORY_ALLOC` to `"0:1024, 1:2048"`.
