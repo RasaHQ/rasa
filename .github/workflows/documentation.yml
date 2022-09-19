@@ -296,7 +296,7 @@ jobs:
       id: preview_draft_build
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_OSS_ID }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_OSS_SITE_ID }}
         DOCS_SITE_BASE_URL: /docs/rasa
         PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
       run: |
@@ -342,7 +342,7 @@ jobs:
     - name: Publish production build ✅
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_OSS_ID }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_OSS_SITE_ID }}
       run: make publish-docs
 
     - name: Notify slack on failure
