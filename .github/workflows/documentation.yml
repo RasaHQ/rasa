@@ -4,14 +4,14 @@ on:
   push:
     branches:
     - 'main'
-    - 'documentation'
+    - 'documentation-oss'
     tags:
     - '**'
   pull_request:
 
 concurrency:
   # group workflow runs based on the branch or the tag ref
-  group: documentation-${{ github.ref }}
+  group: documentation-oss-${{ github.ref }}
   cancel-in-progress: true
 
 # SECRETS
@@ -23,7 +23,7 @@ concurrency:
 
 env:
   DOCS_FOLDER: docs
-  DOCS_BRANCH: documentation
+  DOCS_BRANCH: documentation-oss
   TAG_NAME: ${GITHUB_REF#refs/tags/}
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   IS_MAIN_BRANCH: ${{ github.ref == 'refs/heads/main' }}
@@ -62,7 +62,7 @@ jobs:
     name: Evaluate release tag
     runs-on: ubuntu-latest
     # don't run this for main branches of forks and on documentation branch
-    if: github.repository == 'RasaHQ/rasa' && github.ref != 'refs/heads/documentation' && github.event_name != 'pull_request'
+    if: github.repository == 'RasaHQ/rasa' && github.ref != 'refs/heads/documentation-oss' && github.event_name != 'pull_request'
     outputs:
       build_docs: ${{ steps.check_tag.outputs.build_docs }}
 
@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ evaluate_release_tag ]
     # don't run this for main branches of forks, would fail anyways
-    if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.build_docs == 'true' && github.ref != 'refs/heads/documentation' && github.event_name != 'pull_request'
+    if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.build_docs == 'true' && github.ref != 'refs/heads/documentation-oss' && github.event_name != 'pull_request'
 
     steps:
     - name: Checkout git repository 🕝
@@ -194,7 +194,7 @@ jobs:
     - name: Push docs to documentation branch 🏃‍♀️
       env:
         GH_DOCS_WRITE_KEY: ${{ secrets.GH_DOCS_WRITE_KEY }}
-        TMP_DOCS_FOLDER: /tmp/documentation-${{ github.run_id }}
+        TMP_DOCS_FOLDER: /tmp/documentation-oss-${{ github.run_id }}
         TMP_SSH_KEY_PATH: /tmp/docs_key
       run: |
         eval "$(ssh-agent -s)"; touch $TMP_SSH_KEY_PATH; chmod 0600 $TMP_SSH_KEY_PATH
@@ -296,12 +296,12 @@ jobs:
       id: preview_draft_build
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_OSS_ID }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_OSS_SITE_ID }}
         DOCS_SITE_BASE_URL: /docs/rasa
         PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
       run: |
         make preview-docs
-        DEPLOY_URL="https://$PULL_REQUEST_NUMBER--rasahq-docs-rasa-v2.netlify.app${DOCS_SITE_BASE_URL}"
+        DEPLOY_URL="https://$PULL_REQUEST_NUMBER--rasa-community-docs.netlify.app${DOCS_SITE_BASE_URL}"
         echo "::set-output name=preview_url::$DEPLOY_URL"
 
     - name: Create a comment with help description
@@ -317,7 +317,7 @@ jobs:
   publish_docs:
     name: Publish Docs
     runs-on: ubuntu-latest
-    # don't run this for main branches of forks; only run on documentation branch
+    # don't run this for main branches of forks; only run on documentation-oss branch
     if: github.repository == 'RasaHQ/rasa' && github.ref == 'refs/heads/documentation-oss'
 
     steps:
@@ -342,7 +342,7 @@ jobs:
     - name: Publish production build ✅
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_OSS_ID }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_OSS_SITE_ID }}
       run: make publish-docs
 
     - name: Notify slack on failure
