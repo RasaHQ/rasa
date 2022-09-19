@@ -3,15 +3,15 @@ name: Publish Documentation
 on:
   push:
     branches:
-      - "main"
-      - "documentation"
+    - 'main'
+    - 'documentation-oss'
     tags:
-      - "**"
+    - '**'
   pull_request:
 
 concurrency:
   # group workflow runs based on the branch or the tag ref
-  group: documentation-${{ github.ref }}
+  group: documentation-oss-${{ github.ref }}
   cancel-in-progress: true
 
 # SECRETS
@@ -23,7 +23,8 @@ concurrency:
 
 env:
   DOCS_FOLDER: docs
-  DOCS_BRANCH: documentation
+  DOCS_BRANCH: documentation-oss
+  TAG_NAME: ${GITHUB_REF#refs/tags/}
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   IS_MAIN_BRANCH: ${{ github.ref == 'refs/heads/main' }}
 
@@ -61,260 +62,295 @@ jobs:
     name: Evaluate release tag
     runs-on: ubuntu-latest
     # don't run this for main branches of forks and on documentation branch
-    if: github.repository == 'RasaHQ/rasa' && github.ref != 'refs/heads/documentation' && github.event_name != 'pull_request'
+    if: github.repository == 'RasaHQ/rasa' && github.ref != 'refs/heads/documentation-oss' && github.event_name != 'pull_request'
     outputs:
       build_docs: ${{ steps.check_tag.outputs.build_docs }}
 
     steps:
-      - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v3
 
-      - name: Install version library
-        run: |
-          python3 -m pip install pep440_version_utils
+    - name: Check if tag version is equal or higher than the latest tagged Rasa version
+      id: rasa_get_version
+      run: |
+        # Get latest tagged Rasa version
+        git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
+        # Fetch branch history
+        git fetch --prune --unshallow
+        LATEST_TAGGED_NON_ALPHA_RASA_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | head -n1)
 
-      - name: Check if tag version is equal or higher than the latest tagged Rasa version
-        id: check_tag
-        if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
-        run: |
-          # Get latest tagged Rasa version
-          git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
-          # Fetch branch history
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          git fetch --prune --unshallow
-          python scripts/evaluate_release_tag.py $TAG_NAME
-          exit_status=$?
+        echo "LATEST_TAGGED_NON_ALPHA_RASA_VERSION=${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" >> $GITHUB_ENV
 
-          if [[ ${exit_status} -eq 0 || "${IS_MAIN_BRANCH}" == "true" ]]; then
-            echo "Setting buid docs to true."
-            echo "::set-output name=build_docs::true"
-          else
-            echo "Setting buid docs to false."
-            echo "::set-output name=build_docs::false"
-          fi
+        # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
+        IS_LATEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$TAG_NAME" \
+          | sort -V -C && echo true || echo false) || true)
+
+
+        if [[ "${IS_LATEST_VERSION}" == "true" && "$TAG_NAME" =~ ^[0-9.]+$ ]]; then
+          echo "::set-output name=is_latest_version::true"
+        else
+          echo "::set-output name=is_latest_version::false"
+        fi
+
+
+    # MAJOR.MINOR.MICRO(PATCH)
+    # docs are built on every minor tag for the latest major (when 3.0 is out, the latest major is 3.0)
+    # (technically it'll be always the latest version)
+    #
+    # docs are built on every micro tag for the latest minor of
+    # - the latest major (when 3.0 is out, the latest major is 3.0)
+    # - the previous major (when 3.0 is out, the previous major is 2.0, the latest minor on this version being 2.8)
+    - name: Check if it's a micro tag for the latest minor
+      if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
+      id: check_tag
+      run: |
+        IS_LATEST_VERSION=${{ steps.rasa_get_version.outputs.is_latest_version }}
+
+        # the latest major (when 3.0 is out, the latest major is 3.0)
+        # build docs on push to the main branch
+        if [[ "${IS_LATEST_VERSION}" == "true" || "${IS_MAIN_BRANCH}" == "true" ]]; then
+          echo "::set-output name=build_docs::true"
+          exit 0
+        fi
+
+        # the previous major (when 3.0 is out, the previous major is 2.0, the latest minor on this version being 2.8)
+        CURRENT_MAJOR_VERSION=$(echo ${LATEST_TAGGED_NON_ALPHA_RASA_VERSION} | awk -F\. '{print $1}')
+        PREVIOUS_MAJOR_LATEST_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | grep -vE "^${CURRENT_MAJOR_VERSION}" | head -n1)
+
+        # Return 'true' if tag version is equal or higher than the latest previous major version
+        IS_PREVIOUS_MAJOR_LATEST_VERSION=$((printf '%s\n%s\n' "${PREVIOUS_MAJOR_LATEST_VERSION}" "$TAG_NAME" \
+          | sort -V -C && echo true || echo false) || true)
+
+        if [[ "${IS_PREVIOUS_MAJOR_LATEST_VERSION}" == "true" ]]; then
+          echo "::set-output name=build_docs::true"
+          exit 0
+        fi
+
+        echo "::set-output name=build_docs::false"
 
   prebuild_docs:
     name: Prebuild Docs
     runs-on: ubuntu-latest
-    needs: [evaluate_release_tag]
+    needs: [ evaluate_release_tag ]
     # don't run this for main branches of forks, would fail anyways
-    if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.build_docs == 'true' && github.ref != 'refs/heads/documentation' && github.event_name != 'pull_request'
+    if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.build_docs == 'true' && github.ref != 'refs/heads/documentation-oss' && github.event_name != 'pull_request'
 
     steps:
-      - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6 # v3.0
-        with:
-          python-version: 3.9
+    - name: Set up Python 3.9 🐍
+      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
+      with:
+        python-version: 3.9
 
-      - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@v2.3.0
-        with:
-          node-version: "12.x"
+    - name: Set up Node 12.x 🦙
+      uses: actions/setup-node@v3.4.1
+      with:
+        node-version: '12.x'
 
-      - name: Read Poetry Version 🔢
-        run: |
-          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-        shell: bash
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
 
-      - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
-        with:
-          poetry-version: ${{ env.POETRY_VERSION }}
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
 
-      - name: Load Poetry Cached Libraries ⬇
-        id: cache-poetry
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-          restore-keys: ${{ runner.os }}-poetry-3.9-non-full
+    - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-3.9-non-full
 
-      - name: Clear Poetry cache
-        if: steps.cache-poetry.outputs.cache-hit == 'true'
-        run: rm -r .venv
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true'
+      run: rm -r .venv
 
-      - name: Create virtual environment
-        if: steps.cache-poetry.outputs.cache-hit != 'true'
-        run: python -m venv create .venv
+    - name: Create virtual environment
+      if: steps.cache-poetry.outputs.cache-hit != 'true'
+      run: python -m venv create .venv
 
-      - name: Set up virtual environment
-        run: poetry config virtualenvs.in-project true
+    - name: Set up virtual environment
+      run: poetry config virtualenvs.in-project true
 
-      - name: Load Yarn Cached Packages ⬇
-        uses: actions/cache@v3
-        with:
-          path: docs/node_modules
-          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-12.x
+    - name: Load Yarn Cached Packages ⬇
+      uses: actions/cache@v3
+      with:
+        path: docs/node_modules
+        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
+        restore-keys: ${{ runner.os }}-yarn-12.x
 
-      - name: Install Dependencies 📦
-        run: make install install-docs
+    - name: Install Dependencies 📦
+      run: make install install-docs
 
-      - name: Pre-build Docs 🧶
-        run: make prepare-docs
+    - name: Pre-build Docs 🧶
+      run: make prepare-docs
 
-      - name: Push docs to documentation branch 🏃‍♀️
-        env:
-          GH_DOCS_WRITE_KEY: ${{ secrets.GH_DOCS_WRITE_KEY }}
-          TMP_DOCS_FOLDER: /tmp/documentation-${{ github.run_id }}
-          TMP_SSH_KEY_PATH: /tmp/docs_key
-        run: |
-          eval "$(ssh-agent -s)"; touch $TMP_SSH_KEY_PATH; chmod 0600 $TMP_SSH_KEY_PATH
-          echo "$GH_DOCS_WRITE_KEY" > $TMP_SSH_KEY_PATH
-          ssh-add $TMP_SSH_KEY_PATH
+    - name: Push docs to documentation branch 🏃‍♀️
+      env:
+        GH_DOCS_WRITE_KEY: ${{ secrets.GH_DOCS_WRITE_KEY }}
+        TMP_DOCS_FOLDER: /tmp/documentation-oss-${{ github.run_id }}
+        TMP_SSH_KEY_PATH: /tmp/docs_key
+      run: |
+        eval "$(ssh-agent -s)"; touch $TMP_SSH_KEY_PATH; chmod 0600 $TMP_SSH_KEY_PATH
+        echo "$GH_DOCS_WRITE_KEY" > $TMP_SSH_KEY_PATH
+        ssh-add $TMP_SSH_KEY_PATH
 
-          git config --global user.email "builds@github-ci.com"
-          git config --global user.name "GitHub CI"
-          git remote set-url --push origin "git@github.com:${{github.repository}}"
+        git config --global user.email "builds@github-ci.com"
+        git config --global user.name "GitHub CI"
+        git remote set-url --push origin "git@github.com:${{github.repository}}"
 
-          ./scripts/push_docs_to_branch.sh
+        ./scripts/push_docs_to_branch.sh
 
-      - name: Notify slack on failure
-        if: failure()
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985 # v1.5.0
-        with:
-          channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
-          status: FAILED
-          color: warning
+    - name: Notify slack on failure
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985  # v1.5.0
+      with:
+        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+        status: FAILED
+        color: warning
+
 
   preview_docs:
     name: Preview Docs
     runs-on: ubuntu-latest
-    needs: [changes]
+    needs: [ changes ]
     # don't run this for pull requests from forks
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'RasaHQ/rasa'
 
     steps:
-      - name: Checkout git repository 🕝
-        if: needs.changes.outputs.docs == 'true'
-        uses: actions/checkout@v3
+    - name: Checkout git repository 🕝
+      if: needs.changes.outputs.docs == 'true'
+      uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
-        if: needs.changes.outputs.docs == 'true'
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6 # v3.0
-        with:
-          python-version: 3.9
+    - name: Set up Python 3.9 🐍
+      if: needs.changes.outputs.docs == 'true'
+      uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
+      with:
+        python-version: 3.9
 
-      - name: Set up Node 12.x 🦙
-        if: needs.changes.outputs.docs == 'true'
-        uses: actions/setup-node@v2.3.0
-        with:
-          node-version: "12.x"
+    - name: Set up Node 12.x 🦙
+      if: needs.changes.outputs.docs == 'true'
+      uses: actions/setup-node@v3.4.1
+      with:
+        node-version: '12.x'
 
-      - name: Read Poetry Version 🔢
-        if: needs.changes.outputs.docs == 'true'
-        run: |
-          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-        shell: bash
+    - name: Read Poetry Version 🔢
+      if: needs.changes.outputs.docs == 'true'
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
 
-      - name: Install poetry 🦄
-        if: needs.changes.outputs.docs == 'true'
-        uses: Gr1N/setup-poetry@v7
-        with:
-          poetry-version: ${{ env.POETRY_VERSION }}
+    - name: Install poetry 🦄
+      if: needs.changes.outputs.docs == 'true'
+      uses: Gr1N/setup-poetry@v7
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
 
-      - name: Load Poetry Cached Libraries ⬇
-        id: cache-poetry
-        if: needs.changes.outputs.docs == 'true'
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-          restore-keys: ${{ runner.os }}-poetry-3.9-non-full
+    - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
+      if: needs.changes.outputs.docs == 'true'
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-3.9-non-full
 
-      - name: Clear Poetry cache
-        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.docs == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-preview-docs')
-        run: rm -r .venv
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.docs == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-preview-docs')
+      run: rm -r .venv
 
-      - name: Create virtual environment
-        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-preview-docs')) && needs.changes.outputs.docs == 'true'
-        run: python -m venv create .venv
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-preview-docs')) && needs.changes.outputs.docs == 'true'
+      run: python -m venv create .venv
 
-      - name: Set up virtual environment
-        if: needs.changes.outputs.docs == 'true'
-        run: poetry config virtualenvs.in-project true
+    - name: Set up virtual environment
+      if: needs.changes.outputs.docs == 'true'
+      run: poetry config virtualenvs.in-project true
 
-      - name: Load Yarn Cached Packages ⬇
-        if: needs.changes.outputs.docs == 'true'
-        uses: actions/cache@v3
-        with:
-          path: docs/node_modules
-          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-12.x
+    - name: Load Yarn Cached Packages ⬇
+      if: needs.changes.outputs.docs == 'true'
+      uses: actions/cache@v3
+      with:
+        path: docs/node_modules
+        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
+        restore-keys: ${{ runner.os }}-yarn-12.x
 
-      - name: Install Dependencies 📦
-        if: needs.changes.outputs.docs == 'true'
-        run: make install install-docs
+    - name: Install Dependencies 📦
+      if: needs.changes.outputs.docs == 'true'
+      run: make install install-docs
 
-      - name: Pre-build Docs 🧶
-        if: needs.changes.outputs.docs == 'true'
-        run: make prepare-docs
+    - name: Pre-build Docs 🧶
+      if: needs.changes.outputs.docs == 'true'
+      run: make prepare-docs
 
-      - name: Preview draft build 🔬
-        if: needs.changes.outputs.docs == 'true'
-        id: preview_draft_build
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          DOCS_SITE_BASE_URL: /docs/rasa
-          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          make preview-docs
-          DEPLOY_URL="https://$PULL_REQUEST_NUMBER--rasahq-docs-rasa-v2.netlify.app${DOCS_SITE_BASE_URL}"
-          echo "::set-output name=preview_url::$DEPLOY_URL"
+    - name: Preview draft build 🔬
+      if: needs.changes.outputs.docs == 'true'
+      id: preview_draft_build
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_OSS_SITE_ID }}
+        DOCS_SITE_BASE_URL: /docs/rasa
+        PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        make preview-docs
+        DEPLOY_URL="https://$PULL_REQUEST_NUMBER--rasa-community-docs.netlify.app${DOCS_SITE_BASE_URL}"
+        echo "::set-output name=preview_url::$DEPLOY_URL"
 
-      - name: Create a comment with help description
-        if: needs.changes.outputs.docs == 'true'
-        uses: RasaHQ/create-comment@v1
-        with:
-          mode: "delete-previous"
-          id: comment_docs_previews
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            🚀 A preview of the docs have been deployed at the following URL: ${{ steps.preview_draft_build.outputs.preview_url }}
+    - name: Create a comment with help description
+      if: needs.changes.outputs.docs == 'true'
+      uses: RasaHQ/create-comment@v1
+      with:
+        mode: 'delete-previous'
+        id: comment_docs_previews
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        body: |
+          🚀 A preview of the docs have been deployed at the following URL: ${{ steps.preview_draft_build.outputs.preview_url }}
 
   publish_docs:
     name: Publish Docs
     runs-on: ubuntu-latest
-    # don't run this for main branches of forks; only run on documentation branch
-    if: github.repository == 'RasaHQ/rasa' && github.ref == 'refs/heads/documentation'
+    # don't run this for main branches of forks; only run on documentation-oss branch
+    if: github.repository == 'RasaHQ/rasa' && github.ref == 'refs/heads/documentation-oss'
 
     steps:
-      - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v3
 
-      - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@v2.3.0
-        with:
-          node-version: "12.x"
+    - name: Set up Node 12.x 🦙
+      uses: actions/setup-node@v3.4.1
+      with:
+        node-version: '12.x'
 
-      - name: Load Yarn Cached Packages ⬇
-        uses: actions/cache@v3
-        with:
-          path: docs/node_modules
-          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-12.x
+    - name: Load Yarn Cached Packages ⬇
+      uses: actions/cache@v3
+      with:
+        path: docs/node_modules
+        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
+        restore-keys: ${{ runner.os }}-yarn-12.x
 
-      - name: Install Dependencies 📦
-        run: make install-docs
+    - name: Install Dependencies 📦
+      run: make install-docs
 
-      - name: Publish production build ✅
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: make publish-docs
+    - name: Publish production build ✅
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_OSS_SITE_ID }}
+      run: make publish-docs
 
-      - name: Notify slack on failure
-        if: failure()
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985 # v1.5.0
-        with:
-          channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
-          status: FAILED
-          color: warning
+    - name: Notify slack on failure
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985  # v1.5.0
+      with:
+        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+        status: FAILED
+        color: warning
