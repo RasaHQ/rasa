@@ -79,17 +79,6 @@ module.exports = {
       title: 'Rasa Open Source',
       items: [
         {
-          label: 'Rasa Open Source',
-          to: path.join('/', BASE_URL),
-          position: 'left',
-        },
-        {
-          target: '_self',
-          label: 'Rasa Enterprise',
-          position: 'left',
-          href: `${SWAP_URL}/docs/rasa-enterprise/`,
-        },
-        {
           href: 'https://github.com/rasahq/rasa',
           className: 'header-github-link',
           'aria-label': 'GitHub repository',
