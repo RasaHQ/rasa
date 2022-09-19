@@ -5,12 +5,12 @@ title: NLG Servers
 ---
 
 Retraining the bot just to change the text copy can be suboptimal for
-some workflows. That's why Rasa Open Source also allows you to outsource the
+some workflows. That's why Rasa also allows you to outsource the
 response generation and separate it from the dialogue learning.
 
 The assistant will still learn to predict actions and to react to user input
 based on past dialogues, but the responses it sends back to the user
-will be generated outside of Rasa Open Source.
+will be generated outside of Rasa.
 
 When the assistant wants to send a message to the user, it will call an
 external HTTP server that you define.
@@ -170,7 +170,7 @@ Here is an overview of the high-level keys in the post request:
 
 Key | Description
 ---|---
-`response` | The name of the response predicted by Rasa Open Source.
+`response` | The name of the response predicted by Rasa.
 `arguments` | Optional keyword arguments that can be provided by custom actions.
 `tracker` | A dictionary containing the entire conversation history.
 `channel` | The output channel this message will be sent to.
@@ -212,14 +212,14 @@ your stories.
 
 ## Configuring the Server URL
 
-To tell Rasa Open Source where to find your NLG server, add the URL to your `endpoints.yml`: 
+To tell Rasa where to find your NLG server, add the URL to your `endpoints.yml`: 
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
   url: http://localhost:5055/nlg
 ```
 
-If your NLG server is protected and Rasa Open Source will need authentication to
+If your NLG server is protected and Rasa will need authentication to
 access it, you can configure authentication in the endpoints:
 
 ```yaml-rasa title="endpoints.yml"
