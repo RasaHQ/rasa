@@ -1283,7 +1283,7 @@ def extract_slot_value_from_predefined_mapping(
 
     trigger_mapping_condition_met = True
 
-    if active_loops_in_mapping_conditions and tracker.active_loop_name is None:
+    if tracker.active_loop_name is None:
         trigger_mapping_condition_met = False
     elif (
         active_loops_in_mapping_conditions

@@ -1,4 +1,3 @@
-import itertools
 import logging
 from collections import defaultdict
 from typing import Set, Text, Optional, Dict, Any, List
@@ -357,16 +356,11 @@ class Validator:
         """Verifies that slot mappings match forms."""
         everything_is_alright = True
 
-        all_form_slots = [
-            required_slots[REQUIRED_SLOTS_KEY]
-            for required_slots in self.domain.forms.values()
-        ]
-        all_required_slots = set(itertools.chain.from_iterable(all_form_slots))
-
         for slot in self.domain.slots:
             for mapping in slot.mappings:
                 for condition in mapping.get(MAPPING_CONDITIONS, []):
                     condition_active_loop = condition.get(ACTIVE_LOOP)
+                    mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
                     if (
                         condition_active_loop
                         and condition_active_loop not in self.domain.form_names
@@ -382,7 +376,11 @@ class Validator:
                     form_slots = self.domain.forms.get(condition_active_loop, {}).get(
                         REQUIRED_SLOTS_KEY, {}
                     )
-                    if form_slots and slot.name not in form_slots:
+                    if (
+                        form_slots
+                        and slot.name not in form_slots
+                        and mapping_type != SlotMappingType.FROM_TRIGGER_INTENT
+                    ):
                         rasa.shared.utils.io.raise_warning(
                             f"Slot '{slot.name}' has a mapping condition for form "
                             f"'{condition_active_loop}', but it's not present in "
@@ -390,16 +388,6 @@ class Validator:
                             f"The slot needs to be added to this key."
                         )
                         everything_is_alright = False
-
-                if (
-                    mapping[MAPPING_TYPE] == str(SlotMappingType.FROM_TRIGGER_INTENT)
-                    and slot.name not in all_required_slots
-                ):
-                    rasa.shared.utils.io.raise_warning(
-                        f"Slot '{slot.name}' has a 'from_trigger_intent' mapping, "
-                        f"but it's not listed in any form '{REQUIRED_SLOTS_KEY}'."
-                    )
-                    everything_is_alright = False
 
         return everything_is_alright
 
