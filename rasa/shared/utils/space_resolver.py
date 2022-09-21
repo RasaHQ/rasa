@@ -1,62 +1,59 @@
-import copy
-import functools
-from typing import Text, Tuple, Optional, List
+import os
+import tempfile
+from typing import Text, Tuple, Optional, List, Dict
 
-from rasa.shared.core.domain import Domain
-from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.nlu.constants import INTENT
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.yaml_spaces_reader import Space
+from rasa.shared.utils.domain_resolver import DomainResolver, DomainInfo
+from rasa.shared.utils.nlu_resolver import NLUResolver
+import rasa.shared.utils.io
 
 MAIN_SPACE = "main"
+
 
 class SpaceResolver:
 
     @classmethod
-    def prefix_training_data(cls, prefix: Text, domain: Domain,
-                             training_data: TrainingData) -> TrainingData:
-        """Prefix training data according to the prefix and domain."""
-        for msg in training_data.training_examples:
-            intent = msg.get(INTENT)
-            if intent and intent in domain.intents:
-                msg.set(INTENT, f"{prefix}!{intent}")
-        # TODO: entities, lookups, regexes, responses
-        return training_data
+    def resolve_nlu(cls, nlu_path: Optional[Text], prefix: Text,
+                    domain_info: DomainInfo) -> TrainingData:
+        return NLUResolver.load_and_resolve(nlu_path, prefix, domain_info)
 
     @classmethod
-    def prefix_domain(cls, prefix: Text, domain: Domain) -> Domain:
-        domain_as_dict = copy.deepcopy(domain.as_dict())
-        domain_as_dict["intents"] = [f"{prefix}!{intent}"
-                                     for intent in domain_as_dict["intents"]]
-        return Domain.from_dict(domain_as_dict)
-
+    def resolve_domain(cls, domain_path: Text, prefix: Text) -> Tuple[Dict, DomainInfo]:
+        return DomainResolver.load_and_resolve(domain_path, prefix)
 
     @classmethod
-    def resolve_space(cls, space: Space) -> Tuple[Domain, Optional[TrainingData]]:
-        """Loads a space an prefixes its data."""
-        domain = Domain.from_path(space.domain_path)
-        if space.nlu_path:
-            importer = RasaFileImporter(training_data_paths=space.nlu_path)
-            training_data = importer.get_nlu_data()
-            if space.name != MAIN_SPACE:
-                cls.prefix_training_data(space.name, domain, training_data)
-        else:
-            training_data = None
-
+    def resolve_space(cls, space: Space) -> Tuple[Dict, TrainingData]:
+        """Loads a space and prefixes its data."""
         if space.name != MAIN_SPACE:
-            domain = cls.prefix_domain(space.name, domain)
-
-        return domain, training_data
+            domain_yaml, domain_info = cls.resolve_domain(space.domain_path, space.name)
+            training_data = cls.resolve_nlu(space.nlu_path, space.name, domain_info)
+        else:
+            domain_yaml = DomainResolver.load_domain_yaml(space.domain_path)
+            training_data = NLUResolver.load_nlu(space.nlu_path)
+        return domain_yaml, training_data
 
     @classmethod
-    def resolve_spaces(cls, spaces: List[Space]) -> Tuple[Domain,
-                                                          Optional[TrainingData]]:
+    def resolve_spaces(cls, spaces: List[Space],
+                       target_folder: Optional[Text] = None) -> Text:
         """Loads multiple spaces, prefixes their data and joins their files."""
-        domains, training_data_instances = \
-            zip(*[cls.resolve_space(space) for space in spaces])
+        if target_folder:
+            os.makedirs(target_folder, exist_ok=True)
+        else:
+            target_folder = tempfile.mkdtemp()
 
-        domain = functools.reduce(lambda d1, d2: d1.merge(d2), domains, Domain.empty())
-        training_data = functools.reduce(lambda t1, t2: t1.merge(t2),
-                                         training_data_instances, TrainingData())
+        domain_folder = os.path.join(target_folder, "domain")
+        nlu_folder = os.path.join(target_folder, "nlu")
+        os.makedirs(domain_folder, exist_ok=True)
+        os.makedirs(nlu_folder, exist_ok=True)
 
-        return domain, training_data
+        for space in spaces:
+            domain_yaml, training_data = cls.resolve_space(space)
+            domain_yaml_path = os.path.join(domain_folder, f"{space.name}_domain.yml")
+            rasa.shared.utils.io.write_yaml(domain_yaml, domain_yaml_path, True)
+            nlu_yaml_path = os.path.join(nlu_folder, f"{space.name}_nlu.yml")
+            rasa_yaml_writer = RasaYAMLWriter()
+            rasa_yaml_writer.dump(nlu_yaml_path, training_data)
+
+        return target_folder

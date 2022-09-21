@@ -21,6 +21,7 @@ slots:
     mappings:
       - type: from_intent
         intent: greet
+        value: true
 
 responses:
   utter_money_sent:
