@@ -1,0 +1,110 @@
+---
+sidebar_label: Installing Rasa Pro
+title: Rasa Pro Setup
+description: Installation of Rasa Pro
+abstract: Install Rasa Pro in your production environment to create an enterprise ready Rasa deployment.
+---
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+Rasa Pro is compromised of two packages. The packages need to be installed
+separately and in different environments:
+
+- **Rasa Plus**, a drop in replacement for Rasa Open Source for an
+  enterprise deployment. Rasa Plus should be used to deploy your assistant
+  into production.
+- **Rasa Pro Services**, flexible infrastructure and APIs on top of Rasa
+  Open Source. Rasa Pro Services should be deployed alongside, but separately
+  from your production assistant.
+
+## Rasa Plus
+
+:::warning
+I think this content is written currently in the rasa-plus repo.
+:::
+
+## Rasa Pro Services
+
+Installation of the data pipeline requires the deployment of a docker
+container. The container will receive data from a Kafka instance and
+write information into a database.
+
+### Prerequisites
+
+#### Existing Services
+
+- A production deployment of Kafka is required to set up Rasa Pro.
+  We recommend to use [Amazon Managed Streaming for
+  Apache Kafka](https://aws.amazon.com/msk/).
+- A production deployment of a data lake needs to be connected to
+  the data pipeline. Rasa Pro support the following data lakes:
+  1. [Amazon Redshift](https://aws.amazon.com/redshift/) (recommended)
+  2. [PostgreSQL](https://aws.amazon.com/rds/postgresql/) (version >= 11)
+
+#### Hardware requirements
+
+:::warning
+TODO: add once we have done load testing. add minimal and recommended.
+should be aligned with AWS machine types.
+:::
+
+- CPU
+- Disk
+- Memory
+
+### Installation and Configuration
+
+Rasa Plus streams data to Kafka which gets consumed by Rasa Pro Services.
+The different services need to be run and configured to be able to communicate.
+
+1.  Configure Rasa Plus to stream data to Kafka. The configuration for
+    Kafka should be put in a configuration
+    file `endpoints.yml`:
+
+    ```yaml-rasa title="endpoints.yml"
+    event_broker:
+      type: kafka
+      partition_by_sender: True
+      topic: rasa-events
+      url: <BROKER URL>
+    ```
+
+    The `<BROKER_URL>` needs to be replaced with an address of a bootstrap
+    server of your Kafka cluster. Configuration examples for different
+    security protocols and other parameters can be found in the
+    [Kafka Event Broker](https://rasa.com/docs/rasa/event-brokers/#kafka-event-broker)
+    documentation.
+
+2.  Rasa Pro Services is a docker image. Authenticate to pull
+    the docker images:
+
+    ```shell
+    gcloud auth configure-docker europe-west3-docker.pkg.dev
+    ```
+
+    Pull the Rasa Pro Services image to your machine:
+
+    ```shell
+    docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
+    ```
+
+3.  Run the Rasa Pro Services docker image and configure it to receive data
+    from your Rasa Plus assistant connected to Kafka:
+
+    ```shell
+    docker run \
+        -e FRAMEWORK_PLUS_LICENSE=<your_license> \
+        -e KAFKA_BROKER_ADDRESS=<BROKER_URL> \
+        -e KAFKA_TOPIC=rasa-events \
+        -e RASA_ANALYTICS_DB_USER=<DATA_LAKE_USER> \
+        -e RASA_ANALYTICS_DB_PASSWORD=<DATA_LAKE_PASSWORD> \
+        -e RASA_ANALYTICS_DB_URL=<DATA_LAKE_URL> \
+        europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
+    ```
+
+    The `<DATA_LAKE_URL>` should have a JDBC format, e.g.
+    `jdbc:postgresql://postgres:5432/rasa`. If no data lake URL is configured,
+    the [Analytics](analytics.mdx) will be disabled
+
+    For production deployments we recommend to us
+    [Amazon Elastic Container Service](https://docs.docker.com/cloud/ecs-integration/).

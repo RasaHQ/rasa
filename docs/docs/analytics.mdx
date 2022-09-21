@@ -1,0 +1,126 @@
+---
+id: analytics
+sidebar_label: Analytics
+title: Analytics
+description:
+abstract: Rasa Pro Analytics is an ETL pipeline that extracts model, training, and conversation data from the Rasa platform and creates a queryable and extensible database schema.
+---
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+:::warning
+TODO: Lots of content missing, more a structure atm.
+:::
+
+You can query and
+visualise metrics in a frontend tool of your choice (e.g. Metabase, PowerBI)
+
+Measure the success of a Rasa assistant and making strategic investments
+will lead to better business outcomes. It will also help you understand
+the needs of your end users and better serve them.
+
+Rasa Pro Analytics will start analyzing your conversations as soon as
+the docker container is successfully deployed
+and connected to your database and Kafka instances.
+
+## Getting Started
+
+### Ingesting past Conversational data
+
+- if you've previously already streamed the data of your assistant to Kafka
+  and Kafka is configured to retain events on this topic, you can
+  connect Analytics to your Kafka instance and it will process all prior
+  events.
+- if not, ingest the data using
+
+  ```shell
+  rasa export --endpoints endpoints.yml
+  ```
+
+  The export needs to be configured to read from your production tracker store
+  and write to Kafka as an event broker, e.g.
+
+  ```yaml-rasa title="endpoints.yml"
+    tracker_store:
+        type: SQL
+        dialect: "postgresql"
+        url: "localhost"
+        db: "tracker"
+        username: postgres
+        password: password
+
+    event_broker:
+        type: kafka
+        topic: rasa-events
+        url: localhost:29092
+        partition_by_sender: true # VERY IMPORTANT!!!!
+
+  ```
+
+### Connecting your Business Intelligence Solution
+
+#### Example: Connecting Metabase
+
+[Connecting Metabase to Redshift](https://www.metabase.com/data_sources/amazon-redshift)
+
+#### Example: Connecting Tableau to Rasa Pro Analytics
+
+[Connecting Tableau to Redshift](https://help.tableau.com/current/pro/desktop/en-us/examples_amazonredshift.htm)
+
+## Example Queries
+
+Inspiration on how to analyze the conversations your assistant is having. The
+example queries are created using Metabase.
+
+### Daily Chatbot Users
+
+#### Query using SQL
+
+```sql
+SELECT CAST("public"."rasa_users"."FIRST_SEEN" AS date) AS "FIRST_SEEN", count(*) AS "count"
+FROM "public"."rasa_users"
+GROUP BY CAST("public"."rasa_users"."FIRST_SEEN" AS date)
+ORDER BY CAST("public"."rasa_users"."FIRST_SEEN" AS date) ASC
+```
+
+#### Using the Metabase Query Builder
+
+<div align="center">
+  <img
+    alt="Example query for a query showcasing the number of users per day."
+    src={useBaseUrl("/img/analytics/number-of-users-query.png")}
+    width="100%"
+  />
+</div>
+
+#### Result
+
+<div align="center">
+  <img
+    alt="Example result for a query showcasing the number of users per day."
+    src={useBaseUrl("/img/analytics/number-of-users-result.png")}
+    width="100%"
+  />
+</div>
+
+## Data Structure Reference
+
+<div align="center">
+  <img
+    alt="An overview over the components of Rasa Pro."
+    src={useBaseUrl("/img/analytics-db-schema.png")}
+    width="100%"
+  />
+</div>
+
+### Table `rasa_actions`
+
+The `rasa_actions` table contains information about all actions that got
+executed by the assistant across all conversations.
+
+| Column | Type        | Description                                   |
+| :----- | :---------- | :-------------------------------------------- |
+| id     | varchar 255 | Unique ID of this event. Same as the event_id |
+| ...    | ...         | ...                                           |
+
+### Table `...`
