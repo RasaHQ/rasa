@@ -1,0 +1,106 @@
+name: Nightly Builds
+on:
+  schedule:
+    # Runs every weekday at 1am
+    - cron: 0 1 * * 1-5
+  workflow_dispatch:
+
+
+jobs:
+  run_script_and_tag_nightly_release:
+    name: Run release script and tag a new nightly release
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.set_tagname.outputs.tag_name }}
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compose tag name
+        id: set_tagname
+        run: |
+          DATE=$(date +'%Y%m%d')
+
+          # Find latest rasa-oss version
+          echo "Trying to find the latest rasa-oss version..."
+          LATEST_RASA_MINOR=$(python -c "import sys; import os; sys.path.append('${{ github.workspace }}/rasa'); from rasa.version import __version__; print(__version__)")
+          echo "Current RASA version: ${LATEST_RASA_MINOR}"
+
+          LATEST_NIGHTLY_VERSION=$(echo ${LATEST_RASA_MINOR})
+
+          echo "Composing nightly build tag name..."
+          GH_TAG=${LATEST_NIGHTLY_VERSION}.dev${DATE}
+          echo "New nightly release version: ${GH_TAG}"
+          echo "::set-output name=tag_name::${GH_TAG}"
+
+      - name: Tag latest main commit as nightly
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          git tag -a ${{ steps.set_tagname.outputs.tag_name }} -m "This is an internal development build"
+          git push origin ${{ steps.set_tagname.outputs.tag_name }} --tags
+
+
+  deploy:
+    name: Deploy to PyPI
+    runs-on: ubuntu-latest
+
+    # deploy will only be run when there is a tag available
+    needs: run_script_and_tag_nightly_release  # only run after all other stages succeeded
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+        with:
+          python-version: 3.9
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Copy Segment write key to the package
+        env:
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+        run: |
+          ./scripts/write_keys_file.sh
+
+      - name: Update version (nightly releases) 🚀
+        run: |
+          poetry run pip install toml pep440_version_utils
+          poetry run python ./scripts/prepare_nightly_release.py --next_version "${{ needs.run_script_and_tag_nightly_release.outputs.tag_name }}"
+
+      - name: Build ⚒️ Distributions
+        run: |
+          poetry build
+
+      # Authenticate and push to the release registry
+      - id: 'auth-release'
+        name: Authenticate with gcloud for release registry 🎫
+        uses: 'google-github-actions/auth@dac4e13deb3640f22e3ffe758fd3f95e6e89f712'
+        with:
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v0'
+
+      - name: Release via GCP Artifact Registry
+        run: |
+          pip install keyring
+          pip install keyrings.google-artifactregistry-auth
+          pip install twine
+          gcloud artifacts print-settings python --project=rasa-releases --repository=rasa --location=europe-west3 > ~/.pypirc
+          twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa/ ${{ format('{0}/dist/*', github.workspace) }} 

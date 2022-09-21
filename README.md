@@ -28,7 +28,7 @@ updates to 3.0. Read more about [our contributor guidelines](#how-to-contribute)
 
 <img align="right" height="255" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
 
-Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
+Rasa is an open source machine learning framework to automate text and voice-based conversations. With Rasa, you can build contextual assistants on:
 - Facebook Messenger
 - Slack
 - Google Hangouts
@@ -293,15 +293,28 @@ We host the site on netlify. On `main` branch builds (see `.github/workflows/doc
 the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
 
 ## Releases
-### Release Timeline for Minor Releases
-**For Rasa Open Source, we usually commit to time-based releases, specifically on a monthly basis.**
-This means that we commit beforehand to releasing a specific version of Rasa Open Source on a specific day,
-and we cannot be 100% sure what will go in a release, because certain features may not be ready.
+Rasa has implemented robust policies governing version naming, as well as release pace for major, minor, and patch releases. 
 
-At the beginning of each quarter, the Rasa team will review the scheduled release dates for all products and make sure
-they work for the projected work we have planned for the quarter, as well as work well across products.
+The values for a given version number (MAJOR.MINOR.PATCH) are incremented as follows:
+- MAJOR version for incompatible API changes or other breaking changes.
+- MINOR version for functionality added in a backward compatible manner.
+- PATCH version for backward compatible bug fixes.
 
-**Once the dates are settled upon, we update the respective [milestones](https://github.com/RasaHQ/rasa/milestones).**
+The following table describes the version types and their expected *release cadence*:
+
+| Version Type |                                                                  Description                                                                  |  Target Cadence |
+|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| Major        | For significant changes, or when any backward-incompatible changes are introduced to the API or data model.                                   | Every 1 - 2 yrs |
+| Minor        | For when new backward-compatible functionality is introduced, a minor feature is introduced, or when a set of smaller features is rolled out. | +/- Quarterly   |
+| Patch        | For backward-compatible bug fixes that fix incorrect behavior.                                                                                | As needed       |
+
+While this table represents our target release frequency, we reserve the right to modify it based on changing market conditions and technical requirements.
+
+### Maintenance Policy
+Our End of Life policy defines how long a given release is considered supported, as well as how long a release is 
+considered to be still in active development or maintenance.
+
+The maintentance duration and end of life for every release are shown on our website as part of the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
 
 ### Cutting a Major / Minor release
 #### A week before release day
@@ -344,21 +357,16 @@ After a Major release has been completed, please follow [these instructions to c
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
 
-*Terminology*:
-* micro release (third version part increases): 1.1.2 -> 1.1.3
-* minor release (second version part increases): 1.1.3 -> 1.2.0
-* major release (first version part increases): 1.2.0 -> 2.0.0
-
 *Release steps*:
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
-    - For Rasa SDK, except in the case of a micro release, that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
+    - For Rasa SDK, except in the case of a patch release, that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
 2. In case of a minor release, create a new branch that corresponds to the new release, e.g. 
    ```bash
     git checkout -b 1.2.x
     git push origin 1.2.x
     ```
-3. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and micros)
+3. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and patches)
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
 4. If this is a major release, update the list of actively maintained versions [in the README](#actively-maintained-versions) and in [the docs](./docs/docs/actively-maintained-versions.mdx).
@@ -380,17 +388,17 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
 10.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
     
-### Cutting a Micro release
+### Cutting a Patch release
 
-Micro releases are simpler to cut, since they are meant to contain only bugfixes.
+Patch releases are simpler to cut, since they are meant to contain only bugfixes.
 
-**The only things you need to do to cut a micro are:**
+**The only things you need to do to cut a patch release are:**
 
-1. Notify the engineering team on Slack that you are planning to cut a micro, in case someone has an important fix
+1. Notify the engineering team on Slack that you are planning to cut a patch, in case someone has an important fix
 to add.
-2. Make sure the bugfix(es) are in the release branch you will use (p.e if you are cutting a `2.0.4` micro, you will
-need your fixes to be on the `2.0.x` release branch). All micros must come from a `.x` branch!
-3. Once you're ready to release the Rasa Open Source micro, checkout the branch, run `make release` and follow the
+2. Make sure the bugfix(es) are in the release branch you will use (p.e if you are cutting a `2.0.4` patch, you will
+need your fixes to be on the `2.0.x` release branch). All patch releases must come from a `.x` branch!
+3. Once you're ready to release the Rasa Open Source patch, checkout the branch, run `make release` and follow the
 steps + get the PR merged.
 4. Once the PR is in, pull the `.x` branch again and push the tag!
 

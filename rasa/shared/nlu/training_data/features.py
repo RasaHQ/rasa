@@ -98,8 +98,8 @@ class Features:
                 f"Cannot combine dense features as sequence dimensions do not "
                 f"match: {self.features.ndim} != {additional_features.features.ndim}."
             )
-
-        self.features = np.concatenate(
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        self.features = np.concatenate(  # type: ignore[no-untyped-call]
             (self.features, additional_features.features), axis=-1
         )
 
@@ -149,7 +149,7 @@ class Features:
     def fingerprint(self) -> Text:
         """Calculate a stable string fingerprint for the features."""
         if self.is_dense():
-            f_as_text = self.features.tostring()
+            f_as_text = self.features.tobytes()
         else:
             f_as_text = rasa.shared.nlu.training_data.util.sparse_matrix_to_string(
                 self.features
@@ -317,7 +317,10 @@ class Features:
         # Combine the features
         arbitrary_feature = features_list[0]
         if not arbitrary_feature.is_sparse():
-            features = np.concatenate([f.features for f in features_list], axis=-1)
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+            features = np.concatenate(  # type: ignore[no-untyped-call]
+                [f.features for f in features_list], axis=-1
+            )
         else:
             features = scipy.sparse.hstack([f.features for f in features_list])
         return Features(

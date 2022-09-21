@@ -106,6 +106,8 @@ def _custom_prediction_states_for_rules(
     return _prediction_states
 
 
+# FIXME: these tests take too long to run in the CI, disabling them for now
+@pytest.mark.skip_on_ci
 async def test_testing_warns_if_action_unknown(
     capsys: CaptureFixture,
     e2e_bot_agent: Agent,
