@@ -5,7 +5,7 @@ import yaml
 from pydot import frozendict
 
 from rasa.shared.core.domain import KEY_INTENTS, KEY_ENTITIES, KEY_SLOTS, KEY_FORMS, \
-    KEY_RESPONSES
+    KEY_RESPONSES, KEY_ACTIONS
 from rasa.shared.utils.domain_resolver import DomainResolver
 
 
@@ -31,7 +31,7 @@ def test_load_domain_yaml_from_multiple_files():
 def test_collect_and_prefix_entities():
     domain_path = "data/test_domains/test_domain_from_directory_tree"
     prefix = "games"
-    domain_yaml, entities, intents, slots, forms, responses = \
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
         DomainResolver.load_and_resolve(domain_path, prefix)
 
     assert entities == {"monopoly", "ball", "chess", "pandemic", "cluedo"}
@@ -43,7 +43,7 @@ def test_collect_and_prefix_entities():
 def test_collect_and_prefix_entities_with_entity_attributes():
     domain_path = "data/test_domains/travel_form.yml"
     prefix = "travel"
-    domain_yaml, entities, intents, slots, forms, responses = \
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
         DomainResolver.load_and_resolve(domain_path, prefix)
 
     expected_yaml_text = f"""
@@ -60,7 +60,7 @@ def test_collect_and_prefix_entities_with_entity_attributes():
 def test_collect_and_prefix_intents():
     domain_path = "data/test_domains/test_domain_from_directory_tree"
     prefix = "games"
-    domain_yaml, entities, intents, slots, forms, responses = \
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
         DomainResolver.load_and_resolve(domain_path, prefix)
 
     expected_intents = {"utter_subskill", "utter_subroot",
@@ -74,7 +74,7 @@ def test_collect_and_prefix_intents():
 def test_collect_and_prefix_intents_with_intent_attributes():
     domain_path = "data/test_domains/travel_form.yml"
     prefix = "travel"
-    domain_yaml, entities, intents, slots, forms, responses = \
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
         DomainResolver.load_and_resolve(domain_path, prefix)
 
     assert intents == {"inform", "greet"}
@@ -96,7 +96,7 @@ def test_collect_and_prefix_intents_with_intent_attributes_referencing_global_en
     domain_path = "data/test_spaces_domain_resolving/" \
                   "travel_form_reference_global_entity.yml"
     prefix = "travel"
-    domain_yaml, entities, intents, slots, forms, responses = \
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
         DomainResolver.load_and_resolve(domain_path, prefix)
 
     expected_yaml_text = f"""
@@ -117,7 +117,7 @@ def test_collect_and_prefix_intents_with_intent_attributes_referencing_global_en
 def test_collect_and_prefix_slots():
     domain_path = "data/test_domains/travel_form.yml"
     prefix = "travel"
-    domain_yaml, entities, intents, slots, forms, responses = \
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
         DomainResolver.load_and_resolve(domain_path, prefix)
 
     assert slots == {"GPE_origin", "GPE_destination", "requested_slot"}
@@ -147,7 +147,7 @@ def test_collect_and_prefix_slots():
 def test_collect_and_prefix_slots_with_mapping_referencing_global_intent():
     domain_path = "data/test_spaces_domain_resolving/money_reference_global_intent.yml"
     prefix = "money"
-    domain_yaml, entities, intents, slots, forms, responses = \
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
         DomainResolver.load_and_resolve(domain_path, prefix)
 
     # don't prefix the reference to greet
@@ -171,7 +171,7 @@ def test_collect_and_prefix_slots_with_mapping_referencing_global_intent():
 def test_collect_and_prefix_forms():
     domain_path = "data/test_domains/restaurant_form.yml"
     prefix = "travel"
-    domain_yaml, entities, intents, slots, forms, responses = \
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
         DomainResolver.load_and_resolve(domain_path, prefix)
     assert forms == {"restaurant_form"}
     expected_yaml_text = f"""
@@ -188,7 +188,7 @@ def test_collect_and_prefix_responses():
     domain_path = "data/test_spaces_domain_resolving" \
                   "/travel_form_reference_global_entity.yml"
     prefix = "travel"
-    domain_yaml, entities, intents, slots, forms, responses = \
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
         DomainResolver.load_and_resolve(domain_path, prefix)
 
     expected_yaml_text = f"""
@@ -203,3 +203,23 @@ def test_collect_and_prefix_responses():
     prefixed_responses = {KEY_RESPONSES: domain_yaml[KEY_RESPONSES]}
     assert freeze_yaml_dict(expected_yaml_text) == \
            frozendict(prefixed_responses)
+
+
+def test_collect_and_prefix_actions():
+    domain_path = "data/test_spaces_domain_resolving" \
+                  "/travel_form_reference_global_entity.yml"
+    prefix = "travel"
+    domain_yaml, entities, intents, slots, forms, responses, actions = \
+        DomainResolver.load_and_resolve(domain_path, prefix)
+
+    expected_actions = {"action_search_travel"}
+    assert expected_actions == actions
+
+    expected_yaml_text = f"""      
+        actions:
+          - {prefix}!action_search_travel
+    """
+    prefixed_actions = {KEY_ACTIONS: domain_yaml[KEY_ACTIONS]}
+    assert freeze_yaml_dict(expected_yaml_text) == \
+           frozendict(prefixed_actions)
+

@@ -5,7 +5,8 @@ from rasa.shared.constants import DOMAIN_SCHEMA_FILE, REQUIRED_SLOTS_KEY, \
     IGNORED_INTENTS, RESPONSE_CONDITION
 from rasa.shared.core.constants import SLOT_MAPPINGS, MAPPING_TYPE
 from rasa.shared.core.domain import KEY_ENTITIES, Domain, KEY_INTENTS, \
-    IGNORE_ENTITIES_KEY, USE_ENTITIES_KEY, KEY_SLOTS, KEY_FORMS, KEY_RESPONSES
+    IGNORE_ENTITIES_KEY, USE_ENTITIES_KEY, KEY_SLOTS, KEY_FORMS, KEY_RESPONSES, \
+    KEY_ACTIONS
 import rasa.shared.data
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
@@ -192,10 +193,19 @@ class DomainResolver:
         return domain_yaml, responses
 
     @classmethod
+    def collect_and_prefix_actions(cls, prefix: Text,
+                                   domain_yaml: Dict) -> Tuple[Dict, Set[Text]]:
+        """Collect and prefix actions in the domain."""
+        actions = set(domain_yaml.get(KEY_ACTIONS, []))
+        cls.maybe_prefix_name_or_list(prefix, domain_yaml, KEY_ACTIONS, actions)
+        return domain_yaml, actions
+
+
+    @classmethod
     def resolve(cls, prefix: Text,
                 domain_yaml: Dict) -> Tuple[Dict, Set[Text],
                                             Set[Text], Set[Text],
-                                            Set[Text], Set[Text]]:
+                                            Set[Text], Set[Text], Set[Text]]:
         """Resolve a domain yaml, prefixing space-internal names."""
         domain_yaml = copy.deepcopy(domain_yaml)
         domain_yaml, entities = \
@@ -213,13 +223,16 @@ class DomainResolver:
             DomainResolver.collect_and_prefix_responses(prefix, domain_yaml,
                                                         slots, forms)
 
-        return domain_yaml, entities, intents, slots, forms, responses
+        domain_yaml, actions = \
+            DomainResolver.collect_and_prefix_actions(prefix, domain_yaml)
+
+        return domain_yaml, entities, intents, slots, forms, responses, actions
 
     @classmethod
     def load_and_resolve(cls, domain_path: Text,
                          prefix: Text) -> Tuple[Dict, Set[Text],
                                                 Set[Text], Set[Text],
-                                                Set[Text], Set[Text]]:
+                                                Set[Text], Set[Text], Set[Text]]:
         """Load domain yaml(s) from disc, and prefix space-internal names."""
         domain_yaml = cls.load_domain_yaml(domain_path)
         return cls.resolve(prefix, domain_yaml)
