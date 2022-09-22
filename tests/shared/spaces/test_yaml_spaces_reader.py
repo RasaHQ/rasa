@@ -1,7 +1,7 @@
 import pytest
 
 from rasa.shared.exceptions import YamlException
-from rasa.shared.utils.yaml_spaces_reader import YAMLSpacesReader
+from rasa.shared.spaces.yaml_spaces_reader import YAMLSpacesReader
 
 
 def test_yaml_spaces_reader():

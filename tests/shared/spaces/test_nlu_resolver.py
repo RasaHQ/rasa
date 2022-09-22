@@ -2,8 +2,8 @@ from typing import Text, Set
 
 import pytest
 
-from rasa.shared.utils.domain_resolver import DomainResolver
-from rasa.shared.utils.nlu_resolver import NLUResolver
+from rasa.shared.spaces.domain_resolver import DomainResolver
+from rasa.shared.spaces.nlu_resolver import NLUResolver
 
 
 @pytest.mark.parametrize("prefix, domain_path, nlu_path, "

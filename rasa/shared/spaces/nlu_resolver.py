@@ -3,7 +3,7 @@ from typing import Text, Optional
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import INTENT, ENTITIES, ENTITY_ATTRIBUTE_TYPE
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.utils.domain_resolver import DomainInfo
+from rasa.shared.spaces.domain_resolver import DomainInfo
 
 
 class NLUResolver:

@@ -3,8 +3,8 @@ import os
 from rasa.shared.core.constants import DEFAULT_INTENTS
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.utils.yaml_spaces_reader import YAMLSpacesReader
-from rasa.shared.utils.space_resolver import SpaceResolver
+from rasa.shared.spaces.yaml_spaces_reader import YAMLSpacesReader
+from rasa.shared.spaces.space_resolver import SpaceResolver
 
 
 def test_simple_resolving():

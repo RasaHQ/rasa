@@ -1,12 +1,11 @@
 from typing import Text
 
-import pytest
 import yaml
 from pydot import frozendict
 
 from rasa.shared.core.domain import KEY_INTENTS, KEY_ENTITIES, KEY_SLOTS, KEY_FORMS, \
     KEY_RESPONSES, KEY_ACTIONS
-from rasa.shared.utils.domain_resolver import DomainResolver
+from rasa.shared.spaces.domain_resolver import DomainResolver
 
 
 def freeze_yaml_dict(yaml_text: Text) -> frozendict:

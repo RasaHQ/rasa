@@ -4,9 +4,9 @@ from typing import Text, Tuple, Optional, List, Dict
 
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.utils.yaml_spaces_reader import Space
-from rasa.shared.utils.domain_resolver import DomainResolver, DomainInfo
-from rasa.shared.utils.nlu_resolver import NLUResolver
+from rasa.shared.spaces.yaml_spaces_reader import Space
+from rasa.shared.spaces.domain_resolver import DomainResolver, DomainInfo
+from rasa.shared.spaces.nlu_resolver import NLUResolver
 import rasa.shared.utils.io
 
 MAIN_SPACE = "main"
