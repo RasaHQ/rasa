@@ -185,7 +185,8 @@ class DomainResolver:
                                                 r"\g<2>",
                                                 response_name)
             else:
-                prefixed_response_name = f"utter_{prefix}!{response_name[6:]}"
+                prefixed_response_name = f"utter_{prefix}!" \
+                                         f"{response_name[len('utter_'):]}"
             prefixed_response_variations = \
                 copy.deepcopy(domain_yaml[KEY_RESPONSES][response_name])
             for variation in prefixed_response_variations:

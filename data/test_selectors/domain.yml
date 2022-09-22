@@ -1,0 +1,31 @@
+intents:
+ - faq
+
+responses:
+  utter_faq/meta_inquire-ask_bot-challenge:
+    - text: Yes, I am a bot! And I'm part of a research project.
+
+  utter_faq/ask_howdoing:
+    - text: I'm great! Thanks for asking.
+
+  utter_faq/meta_inquire_capabilities:
+    - text: I can help you calculate and buy carbon offsets for your flights.
+
+  utter_faq/oos-future_inquire-ask:
+    - text: That sounds like a relevant question, but I don't know the answer.
+
+  utter_faq/oos_inform:
+    - text: Good to know
+
+  utter_faq/oos_inquire:
+    - text: I'm afraid I have no idea
+
+  utter_faq/oos_request:
+    - text: that's not something I can help with
+
+  utter_faq/placeholder:
+    - text: so
+
+  utter_faq/takeacut:
+    - text: No, my creators don't get a cut from the offsets you buy. I'm just here to help!
+
