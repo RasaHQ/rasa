@@ -57,7 +57,7 @@ class DomainResolver:
         """Collect and prefix the entities in the domain."""
         entities = set()
         prefixed_entity_section = []
-        for entity in domain_yaml[KEY_ENTITIES]:
+        for entity in domain_yaml.get(KEY_ENTITIES, []):
             if isinstance(entity, str):
                 entities.add(entity)
                 prefixed_entity_section.append(f"{prefix}!{entity}")
@@ -77,7 +77,7 @@ class DomainResolver:
         """Collect and prefix the intents in the domain."""
         intents = set()
         prefixed_intent_section = []
-        for intent in domain_yaml[KEY_INTENTS]:
+        for intent in domain_yaml.get(KEY_INTENTS, []):
             if isinstance(intent, str):
                 intents.add(intent)
                 prefixed_intent_section.append(f"{prefix}!{intent}")
@@ -123,7 +123,7 @@ class DomainResolver:
         # TODO: deal with common slots like `requested_slot`
         slots = set()
         prefixed_slot_section = {}
-        for slot_name in domain_yaml[KEY_SLOTS]:
+        for slot_name in domain_yaml.get(KEY_SLOTS, []):
             slots.add(slot_name)
             prefixed_slot_name = f"{prefix}!{slot_name}"
 

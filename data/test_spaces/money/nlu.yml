@@ -21,4 +21,20 @@ nlu:
     - get me some money
     - I need more money
     - pay me
-    - please, I want to have money    
+    - please, I want to have money
+
+- intent: greet
+  examples: |
+    - good morning my little money friend
+    - How's the money this morning?
+
+- regex: account_number
+  examples: |
+    - \d{10,12}
+    - DEXX\d{10,12}
+
+- lookup: credit_card
+  examples: |
+    - visa
+    - mastercard
+    - chase

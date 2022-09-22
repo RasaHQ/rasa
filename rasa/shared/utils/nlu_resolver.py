@@ -7,9 +7,7 @@ from rasa.shared.utils.domain_resolver import DomainInfo
 
 
 class NLUResolver:
-    # TODO: lookups
-    # TODO: regexes
-    # TODO: synonyms
+    # TODO: synonyms (needs adjustment for entity synonym mapper)
     # TODO: responses
     @classmethod
     def prefix_intents(cls, prefix: Text, training_data: TrainingData,
@@ -31,10 +29,15 @@ class NLUResolver:
                         f"{prefix}!{entity[ENTITY_ATTRIBUTE_TYPE]}"
 
     @classmethod
-    def prefix_regexes(cls, prefix, training_data: TrainingData,
-                       domain_info: DomainInfo):
+    def prefix_regexes(cls, prefix, training_data: TrainingData) -> None:
         """Prefix name of regex features in the training data."""
-        pass
+        for regex_feature in training_data.regex_features:
+            regex_feature["name"] = f"{prefix}!{regex_feature['name']}"
+
+    @classmethod
+    def prefix_lookups(cls, prefix, training_data: TrainingData) -> None:
+        for lookup_table in training_data.lookup_tables:
+            lookup_table["name"] = f"{prefix}!{lookup_table['name']}"
 
     @classmethod
     def load_nlu(cls, nlu_path: Text) -> TrainingData:
@@ -49,5 +52,7 @@ class NLUResolver:
         training_data = cls.load_nlu(nlu_path)
         cls.prefix_intents(prefix, training_data, domain_info)
         cls.prefix_entities(prefix, training_data, domain_info)
+        cls.prefix_lookups(prefix, training_data)
+        cls.prefix_regexes(prefix, training_data)
         return training_data
 
