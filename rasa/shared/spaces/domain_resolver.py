@@ -26,7 +26,9 @@ class DomainInfo:
 
 
 class DomainResolver:
-
+    # TODO: slot mapping conditions
+    # TODO: deal with common slots like `requested_slot`
+    # TODO: button payloads that contain intents
     @classmethod
     def load_domain_yaml(cls, domain_path: Text) -> Dict:
         """Load the domain yaml without doing internal logic consistency checks.
@@ -113,14 +115,13 @@ class DomainResolver:
             elif isinstance(yaml[key], list):
                 yaml[key] = [f"{prefix}!{name}" if name in comparing_set else name
                              for name in yaml[key]]
+
     @classmethod
     def collect_and_prefix_slots(cls, prefix: Text,
                                  domain_yaml: Dict,
                                  intents: Set[Text],
                                  entities: Set[Text]) -> Tuple[Dict, Set[Text]]:
         """Collect and prefix the slots and their attributes in the domain."""
-        # TODO: slot mapping conditions
-        # TODO: deal with common slots like `requested_slot`
         slots = set()
         prefixed_slot_section = {}
         for slot_name in domain_yaml.get(KEY_SLOTS, []):

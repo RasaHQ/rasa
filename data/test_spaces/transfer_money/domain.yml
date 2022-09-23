@@ -1,0 +1,75 @@
+version: "3.1"
+
+intents:
+  - entry
+  - inform
+  - ask_transfer_charge
+  - check_recipients
+
+entities:
+  - amount-of-money
+
+actions:
+  - deactivate_space
+
+slots:
+  recipient:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: person
+  amount_of_money:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: amount-of-money
+  zz_confirm_form:
+    type: bool
+    mappings:
+    - intent: affirm
+      type: from_intent
+      value: true
+      conditions:
+      - active_loop: form
+        requested_slot: zz_confirm_form
+    - intent: deny
+      type: from_intent
+      value: false
+      conditions:
+      - active_loop: form
+        requested_slot: zz_confirm_form
+
+responses:
+  utter_ask_form_amount_of_money:
+  - text: How much money do you want to transfer to {recipient}?
+  utter_ask_form_recipient:
+  - text: Who do you want to transfer money to?
+  utter_transfer_successful:
+  - text: Successfully transferred {amount_of_money} to {recipient}.
+  utter_transfer_charge:
+  - text: You are entitled to six transfers within a statement cycle before being charged. For subsequent transfers you will be charged $10 per transaction.
+  utter_ask_form_zz_confirm_form:
+  - buttons:
+    - payload: /affirm
+      title: Yes
+    - payload: /deny
+      title: No, cancel the transaction
+    text: Would you like to transfer {amount_of_money} to {recipient}?
+  utter_transfer_cancelled:
+  - text: Transfer cancelled.
+  utter_recipients:
+  - text: These are your known recpients to whom you can send money ...
+
+forms:
+  form:
+    ignored_intents: []
+    required_slots:
+    - recipient
+    - amount_of_money
+    - zz_confirm_form
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

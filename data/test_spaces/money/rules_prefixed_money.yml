@@ -1,0 +1,11 @@
+version: "3.1"
+
+rules:
+- rule: (money) send money
+  steps:
+    - intent: money!send_money
+    - action: utter_money!money_sent
+- rule: (money) receive money
+  steps:
+    - intent: money!receive_money
+    - action: utter_money!money_received

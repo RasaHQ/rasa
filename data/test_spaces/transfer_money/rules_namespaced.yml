@@ -1,0 +1,44 @@
+version: "3.1"
+
+rules:
+- rule: (transfer_money) is there a transfer charge
+  steps:
+  - intent: transfer_money!ask_transfer_charge
+  - action: utter_transfer_money!transfer_charge
+
+- rule: (transfer_money) Show list of known recipients
+  steps:
+  - intent: transfer_money!check_recipients
+  - action: utter_transfer_money!recipients
+
+- rule: (transfer_money) activate transfer_money space
+  steps:
+  - intent: transfer_money!entry
+  - action: transfer_money!form
+  - active_loop: transfer_money!form
+
+- rule: (transfer_money) Submit transfer_money form
+  condition:
+  - active_loop: transfer_money!form
+  - slot_was_set:
+    - transfer_money!zz_confirm_form: true
+  steps:
+  - action: transfer_money!form
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+  - action: utter_transfer_money!transfer_successful
+  - action: transfer_money!deactivate_space
+
+- rule: (transfer_money) Cancel submit transfer_money form
+  condition:
+    - active_loop: transfer_money!form
+    - slot_was_set:
+      - transfer_money!zz_confirm_form: false
+  steps:
+  - action: transfer_money!form
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+  - action: utter_transfer_money!transfer_cancelled
+  - action: transfer_money!deactivate_space

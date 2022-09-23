@@ -1,0 +1,9 @@
+spaces:
+  - include_at: main
+    domain: data/test_spaces/greet_and_goodbye/domain.yml
+    nlu: data/test_spaces/greet_and_goodbye/nlu.yml
+    stories: data/test_spaces/greet_and_goodbye/rules.yml
+  - include_at: transfer_money
+    domain: data/test_spaces/transfer_money/domain.yml
+    nlu: data/test_spaces/transfer_money/nlu.yml
+    stories: data/test_spaces/transfer_money/rules.yml

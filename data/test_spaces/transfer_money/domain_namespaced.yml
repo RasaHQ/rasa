@@ -1,0 +1,79 @@
+version: "3.1"
+
+intents:
+  - transfer_money!entry
+  - transfer_money!inform
+  - transfer_money!ask_transfer_charge
+  - transfer_money!check_recipients
+
+entities:
+  - transfer_money!amount-of-money
+
+slots:
+  transfer_money!recipient:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: person
+  transfer_money!amount_of_money:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: transfer_money!amount-of-money
+  transfer_money!zz_confirm_form:
+    type: bool
+    mappings:
+    - intent: affirm
+      type: from_intent
+      value: true
+      conditions:
+      - active_loop: transfer_money!form
+        requested_slot: transfer_money!zz_confirm_form
+    - intent: deny
+      type: from_intent
+      value: false
+      conditions:
+      - active_loop: transfer_money!form
+        requested_slot: transfer_money!zz_confirm_form
+  transfer_money!is_space_active:
+    type: bool
+    initial_value: false
+    mappings:
+      - type: from_intent
+        intent: transfer_money!entry
+        value: true
+
+responses:
+  utter_ask_transfer_money!form_transfer_money!amount_of_money:
+  - text: How much money do you want to transfer to {transfer_money!recipient}?
+  utter_ask_transfer_money!form_transfer_money!recipient:
+  - text: Who do you want to transfer money to?
+  utter_transfer_money!transfer_successful:
+  - text: Successfully transferred {transfer_money!amount_of_money} to {transfer_money!recipient}.
+  utter_transfer_money!transfer_charge:
+  - text: You are entitled to six transfers within a statement cycle before being charged. For subsequent transfers you will be charged $10 per transaction.
+  utter_ask_transfer_money!form_transfer_money!zz_confirm_form:
+  - buttons:
+    - payload: /affirm
+      title: Yes
+    - payload: /deny
+      title: No, cancel the transaction
+    text: Would you like to transfer {transfer_money!amount_of_money} to {transfer_money!recipient}?
+  utter_transfer_money!transfer_cancelled:
+  - text: Transfer cancelled.
+  utter_transfer_money!recipients:
+  - text: These are your known recpients to whom you can send money ...
+
+forms:
+  transfer_money!form:
+    ignored_intents: []
+    required_slots:
+    - transfer_money!recipient
+    - transfer_money!amount_of_money
+    - transfer_money!zz_confirm_form
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

@@ -1,0 +1,26 @@
+version: "3.1"
+
+nlu:
+- intent: ask_transfer_charge
+  examples: |
+    - Will I be charged for transferring money
+    - do transfers cost something?
+    - is there a transfer charge?
+    - Is there a charge
+- intent: inform
+  examples: |
+    - [$10](amount-of-money)
+    - [5000](amount-of-money)
+    - [500](amount-of-money)
+    - to [Karen Lancaster](person)
+    - to [Percy Donald](person)
+- intent: entry
+  examples: |
+    - I want to pay [John](person)
+    - I want to transfer [$100](amount-of-money) to [Bob](person)
+    - can i transfer money to [Sally](person)
+- intent: check_recipients
+  examples: |
+    - Who can I send money to?
+    - Who are my known recipients
+    - Show me my list of recipients
