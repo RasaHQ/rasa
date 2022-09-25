@@ -66,9 +66,8 @@ module.exports = {
       // isCloseable: false, // Defaults to `true`.
     },
     algolia: {
-      // this is configured via DocSearch here:
-      // https://github.com/algolia/docsearch-configs/blob/master/configs/rasa.json
-      apiKey: '1f9e0efb89e98543f6613a60f847b176',
+      appId: '94J0KRFPTZ',
+      apiKey: '75ea5a8c8f4b16405c560a4ba786256b',
       indexName: 'rasa',
       inputSelector: '.search-bar',
       searchParameters: {
