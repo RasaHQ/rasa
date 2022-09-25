@@ -5,6 +5,8 @@ import multiprocessing
 import os
 import tempfile
 import traceback
+import sys
+import re
 from collections import defaultdict
 from functools import reduce, wraps
 from inspect import isawaitable
@@ -43,6 +45,7 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa import model
 from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
@@ -91,6 +94,14 @@ YAML_CONTENT_TYPE = "application/x-yaml"
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
 EXECUTE_SIDE_EFFECTS_QUERY_KEY = "execute_side_effects"
+
+API_TEMP_DATA_FOLDER = "data"
+API_TEMP_NLU_YAML_FILE = "nlu.yml"
+API_TEMP_RULES_YAML_FILE = "rules.yml"
+API_TEMP_STORIES_YAML_FILE = "stories.yml"
+API_TEMP_DOMAIN_YAML_FILE = "domain.yml"
+API_TEMP_CONFIG_YAML_FILE = 'config.yml'
+
 
 
 class ErrorResponse(Exception):
@@ -656,6 +667,7 @@ def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
     async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
         with tempfile.TemporaryDirectory() as directory:
             # Decorated request handles need to have a parameter `temporary_directory`
+            Path(os.path.join(directory, API_TEMP_DATA_FOLDER)).mkdir(parents=True, exist_ok=True)
             return await f(*args, temporary_directory=Path(directory), **kwargs)
 
     return decorated_function
@@ -1557,7 +1569,6 @@ def _validate_json_training_payload(rjs: Dict) -> None:
             docs=_docs("/api/http-api"),
         )
 
-
 def _training_payload_from_yaml(
     request: Request, temp_dir: Path, file_name: Text = "data.yml"
 ) -> Dict[Text, Any]:
@@ -1565,24 +1576,50 @@ def _training_payload_from_yaml(
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
     _validate_yaml_training_payload(decoded)
+    request_payload = rasa.shared.utils.io.read_yaml(
+            decoded, reader_type=["safe"]
+        )
+    
+    if "nlu" in request_payload:
+        nlu_path = os.path.join(temp_dir, API_TEMP_DATA_FOLDER, API_TEMP_NLU_YAML_FILE)
+        nlu_data = {'nlu': request_payload["nlu"]}
+        rasa.shared.utils.io.write_yaml(nlu_data, nlu_path)
 
-    training_data = temp_dir / file_name
-    rasa.shared.utils.io.write_text_file(decoded, training_data)
+    if "stories" in request_payload:
+        stories_path = os.path.join(temp_dir, API_TEMP_DATA_FOLDER, API_TEMP_STORIES_YAML_FILE)
+        stories_data = {'stories':request_payload["stories"]}
+        rasa.shared.utils.io.write_yaml(stories_data, stories_path)
+    
+    if "rules" in request_payload:
+        rules_path = os.path.join(temp_dir, API_TEMP_DATA_FOLDER, API_TEMP_RULES_YAML_FILE)
+        rules_data = {'rules':request_payload["rules"]}
+        rasa.shared.utils.io.write_yaml(rules_data, rules_path)
 
+    if "domain" in request_payload:
+        domain_path = os.path.join(temp_dir, API_TEMP_DOMAIN_YAML_FILE)
+        domain_data = request_payload["domain"]
+        rasa.shared.utils.io.write_yaml(domain_data, domain_path)
+    
+    if "config" in request_payload:
+        config_path = os.path.join(temp_dir, API_TEMP_CONFIG_YAML_FILE)
+        config_data = request_payload["config"]
+        rasa.shared.utils.io.write_yaml(config_data, config_path)
+    
+    training_files_path = os.path.join(temp_dir, API_TEMP_DATA_FOLDER)
     model_output_directory = str(temp_dir)
+
     if rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True):
         model_output_directory = DEFAULT_MODELS_PATH
 
     return dict(
-        domain=str(training_data),
-        config=str(training_data),
-        training_files=str(temp_dir),
+        domain=domain_path,
+        config=config_path,
+        training_files=training_files_path,
         output=model_output_directory,
         force_training=rasa.utils.endpoints.bool_arg(request, "force_training", False),
         core_additional_arguments=_extract_core_additional_arguments(request),
         nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
-
 
 def _validate_yaml_training_payload(yaml_text: Text) -> None:
     try:
