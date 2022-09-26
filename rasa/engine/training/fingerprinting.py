@@ -34,14 +34,16 @@ def calculate_fingerprint_key(
     Returns:
         The fingerprint key.
     """
-    dependency_versions = {package: importlib.metadata.version(package)
-                           for package in graph_component_class.required_packages()}
+    dependency_versions = {
+        package: importlib.metadata.version(package)
+        for package in graph_component_class.required_packages()
+    }
     fingerprint_data = {
         "node_name": rasa.utils.common.module_path_from_class(graph_component_class),
         "component_implementation": inspect.getsource(graph_component_class),
         "config": config,
         "inputs": inputs,
-        "dependency_versions": dependency_versions
+        "dependency_versions": dependency_versions,
     }
 
     fingerprint_key = rasa.shared.utils.io.deep_container_fingerprint(fingerprint_data)

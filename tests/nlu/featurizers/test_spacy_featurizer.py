@@ -127,8 +127,9 @@ def test_spacy_featurizer_default_case_insensitive(spacy_nlp_component):
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
     for e in td.intent_examples:
         doc = spacy_nlp_component._doc_for_text(spacy_nlp, e.get(TEXT))
-        doc_capitalized = spacy_nlp_component._doc_for_text(spacy_nlp,
-                                                            e.get(TEXT).capitalize())
+        doc_capitalized = spacy_nlp_component._doc_for_text(
+            spacy_nlp, e.get(TEXT).capitalize()
+        )
 
         vecs = ftr._features_for_doc(doc)
         vecs_capitalized = ftr._features_for_doc(doc_capitalized)
@@ -146,11 +147,10 @@ def test_spacy_featurizer_can_be_case_sensitive(spacy_case_sensitive_nlp_compone
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
     example_is_case_insentive = []
     for e in td.intent_examples:
-        doc = spacy_case_sensitive_nlp_component._doc_for_text(spacy_nlp,
-                                                               e.get(TEXT))
-        doc_capitalized = \
-            spacy_case_sensitive_nlp_component._doc_for_text(spacy_nlp,
-                                                             e.get(TEXT).capitalize())
+        doc = spacy_case_sensitive_nlp_component._doc_for_text(spacy_nlp, e.get(TEXT))
+        doc_capitalized = spacy_case_sensitive_nlp_component._doc_for_text(
+            spacy_nlp, e.get(TEXT).capitalize()
+        )
 
         vecs = ftr._features_for_doc(doc)
         vecs_capitalized = ftr._features_for_doc(doc_capitalized)
