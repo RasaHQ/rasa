@@ -120,7 +120,7 @@ class SpacyNLP(GraphComponent):
         model = cls.load_model(spacy_model_name)
 
         cls.ensure_proper_language_model(model.model)
-        return cls(model, config)
+        return cls(model, {**cls.get_default_config(), **config})
 
     @staticmethod
     def ensure_proper_language_model(nlp: Optional[Language]) -> None:
