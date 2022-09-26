@@ -63,6 +63,7 @@ class Message:
         self.output_properties.add(TEXT)
 
     def add_features(self, features: Optional["Features"]) -> None:
+        """Add more vectorized features to the message."""
         if features is not None:
             self.features.append(features)
         self.cached_fingerprint = None
@@ -98,6 +99,7 @@ class Message:
         self.cached_fingerprint = None
 
     def get(self, prop: Text, default: Optional[Any] = None) -> Any:
+        """Retrieve message property."""
         return self.data.get(prop, default)
 
     def as_dict_nlu(self) -> dict:
