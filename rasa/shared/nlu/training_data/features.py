@@ -151,7 +151,7 @@ class Features:
 
     def fingerprint(self) -> Text:
         """Calculate a stable string fingerprint for the features."""
-        if self._cached_fingerprint is None:
+        if not isinstance(self._cached_fingerprint, str):
             if self.is_dense():
                 f_as_text = self.features.tobytes()
             else:

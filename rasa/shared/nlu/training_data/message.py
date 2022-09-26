@@ -149,7 +149,7 @@ class Message:
         Returns:
             Fingerprint of the message.
         """
-        if self._cached_fingerprint is None:
+        if not isinstance(self._cached_fingerprint, str):
             self._cached_fingerprint = rasa.shared.utils.io.deep_container_fingerprint(
                 [self.data, self.features]
             )
