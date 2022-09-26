@@ -54,6 +54,7 @@ class Message:
         self.features = features if features else []
 
         self.data.update(**kwargs)
+        self.cached_fingerprint = None
 
         if output_properties:
             self.output_properties = output_properties
@@ -64,6 +65,7 @@ class Message:
     def add_features(self, features: Optional["Features"]) -> None:
         if features is not None:
             self.features.append(features)
+        self.cached_fingerprint = None
 
     def add_diagnostic_data(self, origin: Text, data: Dict[Text, Any]) -> None:
         """Adds diagnostic data from the `origin` component.
@@ -80,6 +82,7 @@ class Message:
             )
         self.data.setdefault(DIAGNOSTIC_DATA, {})
         self.data[DIAGNOSTIC_DATA][origin] = data
+        self.cached_fingerprint = None
 
     def set(self, prop: Text, info: Any, add_to_output: bool = False) -> None:
         """Sets the message's property to the given value.
@@ -92,6 +95,7 @@ class Message:
         self.data[prop] = info
         if add_to_output:
             self.output_properties.add(prop)
+        self.cached_fingerprint = None
 
     def get(self, prop: Text, default: Optional[Any] = None) -> Any:
         return self.data.get(prop, default)
@@ -143,9 +147,11 @@ class Message:
         Returns:
             Fingerprint of the message.
         """
-        return rasa.shared.utils.io.deep_container_fingerprint(
-            [self.data, self.features]
-        )
+        if self.cached_fingerprint is None:
+            self.cached_fingerprint = rasa.shared.utils.io.deep_container_fingerprint(
+                [self.data, self.features]
+            )
+        return self.cached_fingerprint
 
     @classmethod
     def build(
