@@ -1280,9 +1280,21 @@ def extract_slot_value_from_predefined_mapping(
         active_loop.get(ACTIVE_LOOP)
         for active_loop in mapping.get(MAPPING_CONDITIONS, [])
     ]
+
+    trigger_mapping_condition_met = True
+
+    if tracker.active_loop_name is None:
+        trigger_mapping_condition_met = False
+    elif (
+        active_loops_in_mapping_conditions
+        and tracker.active_loop_name is not None
+        and (tracker.active_loop_name not in active_loops_in_mapping_conditions)
+    ):
+        trigger_mapping_condition_met = False
+
     should_fill_trigger_slot = (
         mapping_type == SlotMappingType.FROM_TRIGGER_INTENT
-        and tracker.active_loop_name not in active_loops_in_mapping_conditions
+        and trigger_mapping_condition_met
     )
 
     value: List[Any] = []
