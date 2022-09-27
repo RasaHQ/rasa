@@ -59,8 +59,8 @@ module.exports = {
   projectName: 'rasa',
   themeConfig: {
     announcementBar: {
-      id: 'pre_release_notice', // Any value that will identify this message.
-      content: 'These docs are for version 3.x of Rasa Open Source. <a href="https://rasa.com/docs/rasa/2.x/">Docs for the 2.x series can be found here.</a>',
+      id: 'rasa_sdk_change', // Any value that will identify this message.
+      content: '<strong>Rasa SDK<strong> documentation has been moved to a <a href="https://rasa.com/docs/rasa/action-server/">section</a> of <strong>Rasa Open Source</strong>.',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
