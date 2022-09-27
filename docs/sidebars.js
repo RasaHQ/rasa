@@ -187,7 +187,7 @@ module.exports = {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: ['changelog', 'migration-guide', 
+      items: ['changelog', 'sdk_changelog','migration-guide', 
       {
         type: 'link',
         label: 'Actively Maintained Versions',
