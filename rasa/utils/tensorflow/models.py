@@ -45,7 +45,7 @@ from rasa.utils.tensorflow.data_generator import (
 )
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
-
+from rasa.utils.tensorflow.types import BatchData, MaybeNestedBatchData
 
 if TYPE_CHECKING:
     from tensorflow.python.types.core import GenericFunction
@@ -234,7 +234,8 @@ class RasaModel(TmpKerasModel):
         element_spec = []
         for tensor in batch_in:
             if len(tensor.shape) > 1:
-                shape = [None] * (len(tensor.shape) - 1) + [tensor.shape[-1]]
+                shape: List[Union[None, int]] = [None] * (len(tensor.shape) - 1)
+                shape += [tensor.shape[-1]]
             else:
                 shape = [None]
             element_spec.append(tf.TensorSpec(shape, tensor.dtype))
@@ -330,9 +331,9 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def _merge_batch_outputs(
-        all_outputs: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
+        all_outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]],
         batch_output: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
-    ) -> Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]]:
+    ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
         """Merges a batch's output into the output for all batches.
 
         Function assumes that the schema of batch output remains the same,
@@ -350,8 +351,9 @@ class RasaModel(TmpKerasModel):
         if not all_outputs:
             return batch_output
         for key, val in batch_output.items():
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if isinstance(val, np.ndarray):
-                all_outputs[key] = np.concatenate(
+                all_outputs[key] = np.concatenate(  # type: ignore[no-untyped-call]
                     [all_outputs[key], batch_output[key]], axis=0
                 )
 
@@ -367,7 +369,7 @@ class RasaModel(TmpKerasModel):
 
         def _recurse(
             x: Union[Dict[Text, Any], List[Any], np.ndarray]
-        ) -> Optional[Union[Dict[Text, Any], List[np.ndarray]]]:
+        ) -> Optional[Union[Dict[Text, Any], List[Any], np.ndarray]]:
             if isinstance(x, dict):
                 return {k: _recurse(v) for k, v in x.items()}
             elif (isinstance(x, list) or isinstance(x, np.ndarray)) and np.size(x) == 0:
@@ -441,7 +443,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def batch_to_model_data_format(
-        batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
+        batch: MaybeNestedBatchData,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
     ) -> Dict[Text, Dict[Text, List[tf.Tensor]]]:
         """Convert input batch tensors into batch data format.
@@ -454,8 +456,7 @@ class RasaModel(TmpKerasModel):
         # during training batch is a tuple of input and target data
         # as our target data is inside the input data, we are just interested in the
         # input data
-        if isinstance(batch[0], Tuple):
-            batch = batch[0]
+        unpacked_batch = batch[0] if isinstance(batch[0], Tuple) else batch
 
         batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]] = defaultdict(
             lambda: defaultdict(list)
@@ -471,11 +472,11 @@ class RasaModel(TmpKerasModel):
                     )
                     if is_sparse:
                         tensor, idx = RasaModel._convert_sparse_features(
-                            batch, feature_dimension, idx, number_of_dimensions
+                            unpacked_batch, feature_dimension, idx, number_of_dimensions
                         )
                     else:
                         tensor, idx = RasaModel._convert_dense_features(
-                            batch, feature_dimension, idx, number_of_dimensions
+                            unpacked_batch, feature_dimension, idx, number_of_dimensions
                         )
                     batch_data[key][sub_key].append(tensor)
 
@@ -483,22 +484,23 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def _convert_dense_features(
-        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        batch: BatchData,
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,
     ) -> Tuple[tf.Tensor, int]:
-        if isinstance(batch[idx], tf.Tensor):
+        batch_at_idx = batch[idx]
+        if isinstance(batch_at_idx, tf.Tensor):
             # explicitly substitute last dimension in shape with known
             # static value
             if number_of_dimensions > 1 and (
-                batch[idx].shape is None or batch[idx].shape[-1] is None
+                batch_at_idx.shape is None or batch_at_idx.shape[-1] is None
             ):
                 shape: List[Optional[int]] = [None] * (number_of_dimensions - 1)
                 shape.append(feature_dimension)
-                batch[idx].set_shape(shape)
+                batch_at_idx.set_shape(shape)
 
-            return batch[idx], idx + 1
+            return batch_at_idx, idx + 1
 
         # convert to Tensor
         return (
@@ -508,7 +510,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def _convert_sparse_features(
-        batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
+        batch: BatchData,
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,

@@ -358,8 +358,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             )
             attention_mask.append(padded_sequence)
 
-        attention_mask = np.array(attention_mask).astype(np.float32)
-        return attention_mask
+        return np.array(attention_mask).astype(np.float32)
 
     def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
@@ -542,8 +541,9 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         reshaped_sequence_embeddings = []
         for index, embedding in enumerate(sequence_embeddings):
             embedding_size = embedding.shape[-1]
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if actual_sequence_lengths[index] > self.max_model_sequence_length:
-                embedding = np.concatenate(
+                embedding = np.concatenate(  # type: ignore[no-untyped-call]
                     [
                         embedding,
                         np.zeros(
@@ -654,9 +654,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         sequence_final_embeddings = []
         for embeddings, tokens in zip(sequence_embeddings, batch_tokens):
             sequence_final_embeddings.append(embeddings[: len(tokens)])
-        sequence_final_embeddings = np.array(sequence_final_embeddings)
 
-        return sentence_embeddings, sequence_final_embeddings
+        return sentence_embeddings, np.array(sequence_final_embeddings)
 
     def _get_docs_for_batch(
         self,

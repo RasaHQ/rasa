@@ -21,14 +21,16 @@ from tests.conftest import (
     AsyncMock,
 )
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_export_help(run: Callable[..., RunResult]):
     output = run("export", "--help")
 
-    help_text = """usage: rasa export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
+    help_text = f"""usage: {RASA_EXE} export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
                    [--minimum-timestamp MINIMUM_TIMESTAMP]
                    [--maximum-timestamp MAXIMUM_TIMESTAMP]
-                   [--conversation-ids CONVERSATION_IDS]"""
+                   [--conversation-ids CONVERSATION_IDS]"""  # noqa: E501
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
