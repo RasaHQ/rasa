@@ -54,7 +54,7 @@ class Message:
         self.features = features if features else []
 
         self.data.update(**kwargs)
-        self._cached_fingerprint = None
+        self._cached_fingerprint: Optional[Text] = None
 
         if output_properties:
             self.output_properties = output_properties
@@ -149,7 +149,7 @@ class Message:
         Returns:
             Fingerprint of the message.
         """
-        if not isinstance(self._cached_fingerprint, str):
+        if self._cached_fingerprint is None:
             self._cached_fingerprint = rasa.shared.utils.io.deep_container_fingerprint(
                 [self.data, self.features]
             )

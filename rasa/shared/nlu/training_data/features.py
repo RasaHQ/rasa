@@ -32,7 +32,7 @@ class Features:
         self.type = feature_type
         self.origin = origin
         self.attribute = attribute
-        self._cached_fingerprint = None
+        self._cached_fingerprint: Optional[Text] = None
         if not self.is_dense() and not self.is_sparse():
             raise ValueError(
                 "Features must either be a numpy array for dense "
@@ -151,7 +151,7 @@ class Features:
 
     def fingerprint(self) -> Text:
         """Calculate a stable string fingerprint for the features."""
-        if not isinstance(self._cached_fingerprint, str):
+        if self._cached_fingerprint is None:
             if self.is_dense():
                 f_as_text = self.features.tobytes()
             else:
