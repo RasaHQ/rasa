@@ -49,7 +49,7 @@ proxy = ["aiohttp-socks (>=0.5.3,<0.6.0)"]
 
 [[package]]
 name = "aiohttp"
-version = "3.8.2"
+version = "3.8.3"
 description = "Async http client/server framework (asyncio)"
 category = "main"
 optional = false
@@ -62,7 +62,7 @@ asynctest = {version = "0.13.0", markers = "python_version < \"3.8\""}
 attrs = ">=17.3.0"
 charset-normalizer = ">=2.0,<3.0"
 frozenlist = ">=1.1.1"
-multidict = ">=4.5,<6.0"
+multidict = ">=4.5,<7.0"
 typing-extensions = {version = ">=3.7.4", markers = "python_version < \"3.8\""}
 yarl = ">=1.0,<2.0"
 
@@ -338,14 +338,14 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.24.77"
+version = "1.24.81"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.27.77,<1.28.0"
+botocore = ">=1.27.81,<1.28.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -354,7 +354,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.27.77"
+version = "1.27.81"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -406,7 +406,7 @@ zipp = {version = ">=0.5", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "certifi"
-version = "2022.9.14"
+version = "2022.9.24"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -1136,7 +1136,7 @@ docs = ["sphinx"]
 
 [[package]]
 name = "grpcio"
-version = "1.49.0"
+version = "1.49.1"
 description = "HTTP/2-based RPC framework"
 category = "main"
 optional = false
@@ -1146,7 +1146,7 @@ python-versions = ">=3.7"
 six = ">=1.5.2"
 
 [package.extras]
-protobuf = ["grpcio-tools (>=1.49.0)"]
+protobuf = ["grpcio-tools (>=1.49.1)"]
 
 [[package]]
 name = "h11"
@@ -2673,7 +2673,7 @@ python-versions = "*"
 
 [[package]]
 name = "sentry-sdk"
-version = "1.9.8"
+version = "1.9.9"
 description = "Python client for Sentry (https://sentry.io)"
 category = "main"
 optional = false
@@ -3126,7 +3126,6 @@ python-versions = "*"
 [package.dependencies]
 tensorflow = {version = ">=2.8.0,<2.9", markers = "platform_machine != \"arm64\" or platform_system != \"Darwin\""}
 tensorflow-hub = ">=0.8.0"
-tensorflow-macos = {version = ">=2.8.0,<2.9", markers = "platform_machine == \"arm64\" and platform_system == \"Darwin\""}
 
 [package.extras]
 tensorflow_cpu = ["tensorflow-cpu (>=2.8.0,<2.9)"]
@@ -3345,7 +3344,7 @@ vision = ["pillow"]
 
 [[package]]
 name = "twilio"
-version = "7.14.0"
+version = "7.14.1"
 description = "Twilio API client and TwiML generator"
 category = "main"
 optional = false
@@ -3427,7 +3426,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-redis"
-version = "4.3.20"
+version = "4.3.21"
 description = "Typing stubs for redis"
 category = "dev"
 optional = false
@@ -3435,7 +3434,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-requests"
-version = "2.28.10"
+version = "2.28.11"
 description = "Typing stubs for requests"
 category = "dev"
 optional = false
@@ -3454,7 +3453,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-urllib3"
-version = "1.26.24"
+version = "1.26.25"
 description = "Typing stubs for urllib3"
 category = "dev"
 optional = false
@@ -3481,7 +3480,7 @@ test = ["pytest"]
 
 [[package]]
 name = "tzdata"
-version = "2022.2"
+version = "2022.4"
 description = "Provider of IANA time zone data"
 category = "main"
 optional = false
