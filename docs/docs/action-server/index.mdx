@@ -4,7 +4,7 @@ sidebar_label: Introduction
 title: Introduction to Rasa Action Server
 ---
 
-A Rasa action server runs [custom actions](custom-actions.mdx) for a Rasa Open Source
+A Rasa action server runs [custom actions](../custom-actions.mdx) for a Rasa Open Source
 conversational assistant.
 
 ## How it works
@@ -15,7 +15,7 @@ the name of the predicted action,
 the conversation ID, the contents of the tracker and the contents of the domain.
 
 When the action server finishes running a custom action, it returns a json payload
-of [responses](responses.mdx) and [events](events.mdx).
+of [responses](../responses.mdx) and [events](./events.mdx).
 See the [API spec](/pages/action-server-api) for details about the request and response payloads.
 
 The Rasa server then returns the responses to the user and adds the events
@@ -42,5 +42,5 @@ If you have legacy code or existing business logic in another language,
 you may not want to use the Rasa SDK. In this case you can write
 your own action server in any language you want. The only requirement
 for the action server is that it provide a `/webhook` endpoint which accepts HTTP `POST` requests
-from the Rasa server and returns a payload of [events](events.mdx) and responses.
+from the Rasa server and returns a payload of [events](./events.mdx) and responses.
 See the [API spec](/pages/action-server-api) for details about the required `/webhook` endpoint.
