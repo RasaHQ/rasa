@@ -2,13 +2,16 @@ import inspect
 import logging
 from typing import Any, Dict, Text, Type
 from typing_extensions import Protocol, runtime_checkable
-import importlib
+import pkg_resources
 import rasa.utils.common
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent
 
 logger = logging.getLogger(__name__)
 
+import_name_to_package_map = {
+    "sklearn": "scikit_learn"
+}
 
 @runtime_checkable
 class Fingerprintable(Protocol):
@@ -35,7 +38,9 @@ def calculate_fingerprint_key(
         The fingerprint key.
     """
     dependency_versions = {
-        package: importlib.import_module(package).__version__
+        package: pkg_resources
+        .get_distribution(import_name_to_package_map.get(package, package))
+        .version
         for package in graph_component_class.required_packages()
     }
     fingerprint_data = {
