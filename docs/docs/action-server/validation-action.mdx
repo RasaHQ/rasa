@@ -22,7 +22,7 @@ can be set or updated outside of a form context.
 :::note
 `ValidationAction` is intended for extracting slots **outside** the context of a form.
 It will ignore extraction and validation methods for any slots that have a form specified under the
-[slot mapping's `conditions`](https://rasa.com/docs/rasa/next/domain#mapping-conditions).
+[slot mapping's `conditions`](domain.mdx#mapping-conditions).
 It will not run these methods when the specified form is active nor when no form is active.
 Please extend the [`FormValidationAction`](./validation-action.mdx#formvalidationaction-class) class to apply
 custom slot mappings only within the context of a form.
@@ -38,8 +38,8 @@ original name is hardcoded in the call that the default action `action_extract_s
 You should create only one subclass of `ValidationAction` which should contain all extraction and validation
 methods for different slots according to your use-case.
 
-With this option, you do not need to specify the `action` key in the [custom slot mapping](https://rasa.com/docs/rasa/next/domain#custom-slot-mappings),
-since the default action [`action_extract_slots`](https://rasa.com/docs/rasa/next/default-actions#action_extract_slots) runs `action_validate_slot_mappings`
+With this option, you do not need to specify the `action` key in the [custom slot mapping](domain.mdx#custom-slot-mappings),
+since the default action [`action_extract_slots`](default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
 automatically if present in the `actions` section of the domain.
 
 #### Validation of Slots with Predefined Mappings
@@ -210,7 +210,7 @@ the custom action should inherit from `FormValidationAction` rather than from `V
 Since a custom action extending `FormValidationAction` runs on every user turn only as long as the form is active, it is
 not required to use mapping conditions in this case.
 
-To learn more about how to implement this class, see Forms [Advanced Usage](https://rasa.com/docs/rasa/forms#advanced-usage).
+To learn more about how to implement this class, see Forms [Advanced Usage](forms.mdx#advanced-usage).
 
 ### `FormValidationAction` class implementation
 

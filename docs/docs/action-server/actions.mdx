@@ -230,7 +230,7 @@ events, the order won't matter, but with other event types it can.
 ### `responses`
 
 A response can be of any of the response types described in the
-[Rasa Open Source documentation on rich responses](https://rasa.com/docs/rasa/next/responses#rich-responses).
+[ documentation on rich responses](responses.mdx#rich-responses).
 See the response sample of the [API spec](/pages/action-server-api) for the expected formats. 
 
 In the example case, you want to send the user a message with the weather forecast. 
@@ -300,12 +300,12 @@ and return both messages to the user.
 
 ## Special Action Types
 
-There are special action types that are automatically triggered under certain circumstances, namely [default actions](https://rasa.com/docs/rasa/next/default-actions)
-and  [slot validation actions](https://rasa.com/docs/rasa/next/slot-validation-actions).
+There are special action types that are automatically triggered under certain circumstances, namely [default actions](default-actions.mdx)
+and  [slot validation actions](slot-validation-actions.mdx).
 These special action types have predefined naming conventions that must be followed to maintain the automatic triggering behavior.
 
 You can customize a default action by implementing a custom action with exactly the same name.
-Please see the [docs on default actions](https://rasa.com/docs/rasa/next/default-actions) for the expected behavior of each action.
+Please see the [docs on default actions](default-actions.mdx) for the expected behavior of each action.
 
 Slot validation actions are run on every user turn, depending on whether a form is active or not.
 A slot validation action that should run when a form is not active must be called `action_validate_slot_mappings`.

@@ -56,7 +56,7 @@ Passing multiple arguments will result in a rich response (e.g. text and buttons
   dispatcher.utter_message(image = "https://i.imgur.com/nGF1K8f.jpg")
   ```
 
-  - `json_message`: A custom json payload as a dictionary. It can be used to send [channel specific responses](http://rasa.com/docs/rasa/responses).
+  - `json_message`: A custom json payload as a dictionary. It can be used to send [channel specific responses](responses.mdx).
                   The following example would return a date picker in Slack:
 
   ```python
@@ -85,7 +85,7 @@ Passing multiple arguments will result in a rich response (e.g. text and buttons
   ```
 
   - `response`: The name of a response to return to the user. This response should
-              be specified in your assistants [domain](http://rasa.com/docs/rasa/domain).
+              be specified in your assistants [domain](domain.mdx).
 
   ```python
   dispatcher.utter_message(response = "utter_greet")
@@ -115,7 +115,7 @@ Passing multiple arguments will result in a rich response (e.g. text and buttons
               of expected format see [Facebook's documentation](https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic/)
 
   - `**kwargs`: arbitrary keyword arguments, which can be
-              used to specify values for [variable interpolation in response variations](http://rasa.com/docs/rasa/responses). For example,
+              used to specify values for [variable interpolation in response variations](responses.mdx). For example,
               given the following response:
 
   ```yaml
