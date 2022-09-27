@@ -130,7 +130,7 @@ module.exports = {
     },
     {
       type: 'category',
-      label: 'Rasa SDK',
+      label: 'Action Server',
       collapsed: true,
       items: [
         'action-server/index',
