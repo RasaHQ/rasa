@@ -404,7 +404,7 @@ jobs:
 
       - name: Check duplicate issue
         if: failure() && github.event_name == 'schedule'
-        uses: actions/github-script@c713e510dbd7d213d92d41b7a7805a986f4c5c66  # v4
+        uses: actions/github-script@d4560e157075e2d93aa3022b5b51a42a880f1f93  # v4
         id: issue-exists
         with:
           result-encoding: string
@@ -433,7 +433,7 @@ jobs:
       - name: Create GitHub Issue 📬
         id: create-issue
         if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
-        uses: actions/github-script@c713e510dbd7d213d92d41b7a7805a986f4c5c66  # v4
+        uses: actions/github-script@d4560e157075e2d93aa3022b5b51a42a880f1f93  # v4
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
           github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
@@ -449,7 +449,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
-        uses: 8398a7/action-slack@22048831299719d772f51719ca7384e34b4cc61d # v3
+        uses: 8398a7/action-slack@a189acbf0b7ea434558662ae25a0de71df69a435 # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -595,7 +595,7 @@ jobs:
 
       - name: Check duplicate issue
         if: steps.performance.outputs.is_dropped == 'true'
-        uses: actions/github-script@c713e510dbd7d213d92d41b7a7805a986f4c5c66  # v4
+        uses: actions/github-script@d4560e157075e2d93aa3022b5b51a42a880f1f93  # v4
         id: issue-exists
         with:
           result-encoding: string
@@ -622,7 +622,7 @@ jobs:
       - name: Create GitHub Issue 📬
         id: create-issue
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: actions/github-script@c713e510dbd7d213d92d41b7a7805a986f4c5c66  # v4
+        uses: actions/github-script@d4560e157075e2d93aa3022b5b51a42a880f1f93  # v4
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
           github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
@@ -643,7 +643,7 @@ jobs:
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@22048831299719d772f51719ca7384e34b4cc61d #v3
+        uses: 8398a7/action-slack@a189acbf0b7ea434558662ae25a0de71df69a435 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
