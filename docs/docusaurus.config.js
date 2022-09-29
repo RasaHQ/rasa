@@ -59,17 +59,15 @@ module.exports = {
   projectName: 'rasa',
   themeConfig: {
     announcementBar: {
-      id: 'pre_release_notice', // Any value that will identify this message.
-      content: 'These docs are for version 3.x of Rasa Open Source. <a href="https://rasa.com/docs/rasa/2.x/">Docs for the 2.x series can be found here.</a>',
+      id: 'rasa_sdk_change', // Any value that will identify this message.
+      content: '<strong>Rasa SDK<strong> documentation has been moved to a <a href="https://rasa.com/docs/rasa/action-server/">section</a> of <strong>Rasa Open Source</strong>.',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
     },
     algolia: {
-      // this is configured via DocSearch here:
-      // https://github.com/algolia/docsearch-configs/blob/master/configs/rasa.json
-      apiKey: '1f9e0efb89e98543f6613a60f847b176',
-      indexName: 'rasa',
+      appId: '94J0KRFPTZ',
+      apiKey: '75ea5a8c8f4b16405c560a4ba786256b',      indexName: 'rasa',
       inputSelector: '.search-bar',
       searchParameters: {
         'facetFilters': ["tags:rasa"]
@@ -77,10 +75,10 @@ module.exports = {
     },
     navbar: {
       hideOnScroll: false,
-      title: 'Rasa Open Source',
+      title: 'Rasa',
       items: [
         {
-          label: 'Rasa Open Source',
+          label: 'Rasa',
           to: path.join('/', BASE_URL),
           position: 'left',
         },
@@ -89,12 +87,6 @@ module.exports = {
           label: 'Rasa Enterprise',
           position: 'left',
           href: `${SWAP_URL}/docs/rasa-enterprise/`,
-        },
-        {
-          target: '_self',
-          label: 'Rasa Action Server',
-          position: 'left',
-          href: 'https://rasa.com/docs/action-server',
         },
         {
           href: 'https://github.com/rasahq/rasa',

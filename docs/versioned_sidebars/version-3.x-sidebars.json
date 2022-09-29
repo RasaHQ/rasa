@@ -321,6 +321,85 @@
       ]
     },
     {
+      "type": "category",
+      "label": "Action Server",
+      "collapsed": true,
+      "items": [
+        {
+          "type": "doc",
+          "id": "version-3.x/action-server/index"
+        },
+        {
+          "type": "category",
+          "label": "Action Server Fundamentals",
+          "collapsed": true,
+          "items": [
+            {
+              "type": "doc",
+              "id": "version-3.x/action-server/actions"
+            },
+            {
+              "type": "doc",
+              "id": "version-3.x/action-server/events"
+            }
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Using the Rasa SDK",
+          "collapsed": true,
+          "items": [
+            {
+              "type": "doc",
+              "id": "version-3.x/action-server/running-action-server"
+            },
+            {
+              "type": "category",
+              "label": "Writing Custom Actions",
+              "collapsed": true,
+              "items": [
+                {
+                  "type": "doc",
+                  "id": "version-3.x/action-server/sdk-actions"
+                },
+                {
+                  "type": "doc",
+                  "id": "version-3.x/action-server/sdk-tracker"
+                },
+                {
+                  "type": "doc",
+                  "id": "version-3.x/action-server/sdk-dispatcher"
+                },
+                {
+                  "type": "doc",
+                  "id": "version-3.x/action-server/sdk-events"
+                },
+                {
+                  "type": "category",
+                  "label": "Special Action Types",
+                  "collapsed": true,
+                  "items": [
+                    {
+                      "type": "doc",
+                      "id": "version-3.x/action-server/knowledge-bases"
+                    },
+                    {
+                      "type": "doc",
+                      "id":  "version-3.x/action-server/validation-action"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "doc",
+              "id": "version-3.x/action-server/deploy-action-server"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "collapsed": true,
       "type": "category",
       "label": "APIs",
