@@ -130,6 +130,42 @@ module.exports = {
     },
     {
       type: 'category',
+      label: 'Action Server',
+      collapsed: true,
+      items: [
+        'action-server/index',
+        {'Action Server Fundamentals': [
+          'action-server/actions',
+          'action-server/events'
+        ]},
+        {'Using the Rasa SDK': [
+          'action-server/running-action-server',
+          {
+          type: 'category',
+          label: 'Writing Custom Actions',
+          collapsed: true,
+          items: [
+            'action-server/sdk-actions',
+            'action-server/sdk-tracker',
+            'action-server/sdk-dispatcher',
+            'action-server/sdk-events',
+            {
+              type: 'category',
+              label: 'Special Action Types',
+              collapsed: true,
+              items: [
+                'action-server/knowledge-bases',
+                'action-server/validation-action',
+              ]
+            }
+          ],
+          },
+          'action-server/deploy-action-server',
+        ]},
+      ]
+    },
+    {
+      type: 'category',
       label: 'APIs',
       collapsed: true,
       items: [
@@ -151,7 +187,7 @@ module.exports = {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: ['changelog', 'migration-guide', 
+      items: ['changelog', 'sdk_changelog','migration-guide', 
       {
         type: 'link',
         label: 'Actively Maintained Versions',
