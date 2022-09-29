@@ -76,8 +76,19 @@ module.exports = {
     },
     navbar: {
       hideOnScroll: false,
-      title: 'Rasa Open Source',
+      title: 'Rasa',
       items: [
+        {
+          label: 'Rasa',
+          to: path.join('/', BASE_URL),
+          position: 'left',
+        },
+        {
+          target: '_self',
+          label: 'Rasa Enterprise',
+          position: 'left',
+          href: `${SWAP_URL}/docs/rasa-enterprise/`,
+        },
         {
           href: 'https://github.com/rasahq/rasa',
           className: 'header-github-link',

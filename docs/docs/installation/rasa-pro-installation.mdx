@@ -1,0 +1,38 @@
+---
+sidebar_label: Rasa Pro setup
+title: Rasa Pro setup
+description: Install Rasa Open Source on premises to enable local and customizable Natural Language Understanding and Dialogue Management.
+---
+
+import RasaProLabel from '@theme/RasaProLabel';
+
+<RasaProLabel/>
+
+:::tip Rasa Pro License
+You'll need a license to get started with Rasa Pro. [Contact Sales](https://info.rasa.com/rasa-technical-demo)
+
+Not sure if you need Rasa Pro yet? [Try it for free](https://info.rasa.com/rasa-technical-demo)
+:::
+
+
+## Rasa Pro setup
+
+
+#### Install rasa-pro component
+
+```bash
+rasa install pro
+```
+
+#### Add your license information
+
+```bash
+rasa pro add-license <your license string>
+```
+
+#### Add Rasa Pro componenents
+
+
+```bash
+rasa install tracing etl concurrent-redis-ls
+```

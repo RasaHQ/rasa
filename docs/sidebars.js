@@ -2,12 +2,23 @@ module.exports = {
   default: [
     'introduction',
     'playground',
+
+    {
+      type: 'category',
+      label: 'Installation',
+      collapsed: true,
+      items: [
+        'installation/quick-installation',
+        'installation/step-by-step-guide',
+        'installation/rasa-pro-installation',
+      ],
+    },
     {
       type: 'category',
       label: 'Building Assistants',
       collapsed: false,
       items: [
-          'installation',
+       
           'migrate-from',
           'command-line-interface',
         {
@@ -45,12 +56,11 @@ module.exports = {
     },
     {
         type: 'category',
-        label: 'Deploying Assistants',
+        label: 'Monitoring and Analyzing Assistants',
         collapsed: true,
       items: [
-        'deploy/introduction',
-        'deploy/deploy-rasa',
-        'deploy/deploy-action-server',
+        'monitoring/tracing',
+        'monitoring/analytics',
       ],
     },
     {
