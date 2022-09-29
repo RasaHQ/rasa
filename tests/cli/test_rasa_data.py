@@ -336,29 +336,32 @@ def test_validate_files_invalid_domain():
 
 def test_validate_files_invalid_slot_mappings(tmp_path: Path):
     domain = tmp_path / "domain.yml"
-    slot_name = "started_booking_form"
+    tested_slot = "duration"
+    form_name = "booking_form"
+    # form required_slots does not include the tested_slot
     domain.write_text(
         f"""
             version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intents:
-            - activate_booking
+            - state_length_of_time
             entities:
             - city
             slots:
-              {slot_name}:
-                type: bool
+              {tested_slot}:
+                type: text
                 influence_conversation: false
                 mappings:
-                - type: from_trigger_intent
-                  intent: activate_booking
-                  value: true
+                - type: from_text
+                  intent: state_length_of_time
+                  conditions:
+                  - active_loop: {form_name}
               location:
                 type: text
                 mappings:
                 - type: from_entity
                   entity: city
             forms:
-              booking_form:
+              {form_name}:
                 required_slots:
                 - location
                 """
@@ -368,6 +371,7 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
         "data": None,
         "max_history": None,
         "config": "data/test_config/config_defaults.yml",
+        "fail_on_warnings": False,
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
