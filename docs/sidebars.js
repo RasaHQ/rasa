@@ -55,6 +55,16 @@ module.exports = {
       ],
     },
     {
+      type: 'category',
+      label: 'Deploying Assistants',
+      collapsed: true,
+    items: [
+      'deploy/introduction',
+      'deploy/deploy-rasa',
+      'deploy/deploy-action-server',
+    ],
+  },
+    {
         type: 'category',
         label: 'Monitoring and Analyzing Assistants',
         collapsed: true,
