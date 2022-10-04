@@ -1257,14 +1257,15 @@ async def test_action_extract_slots_with_from_trigger_mappings():
             forms:
               registration_form:
                 required_slots:
-                  - existing_customer
                   - email"""
         )
     )
 
     action_extract_slots = ActionExtractSlots(action_endpoint=None)
     user_event = UserUttered(text="I'd like to register", intent={"name": "register"})
-    tracker = DialogueStateTracker.from_events("sender", evts=[user_event])
+    tracker = DialogueStateTracker.from_events(
+        "sender", evts=[user_event, ActiveLoop("registration_form")]
+    )
     events = await action_extract_slots.run(
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.responses),
@@ -1838,24 +1839,20 @@ async def test_trigger_slot_mapping_applies(
                     "mappings": [trigger_slot_mapping],
                 },
             },
-            "forms": {
-                form_name: {
-                    REQUIRED_SLOTS_KEY: [entity_name, slot_filled_by_trigger_mapping]
-                }
-            },
+            "forms": {form_name: {REQUIRED_SLOTS_KEY: [entity_name]}},
         }
     )
 
     tracker = DialogueStateTracker.from_events(
         "default",
         [
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "bla",
                 intent={"name": "greet", "confidence": 1.0},
                 entities=[{"entity": entity_name, "value": "some_value"}],
             ),
-            ActionExecuted(ACTION_LISTEN_NAME),
         ],
     )
 

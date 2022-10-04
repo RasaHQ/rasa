@@ -552,6 +552,9 @@ jobs:
         uses: actions/checkout@v3
         if: github.event_name != 'pull_request'
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
       - name: Read Poetry Version 🔢
         run: |
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
@@ -617,27 +620,52 @@ jobs:
           BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
           echo "::set-output name=base_builder_exists::${BASE_IMAGE_BUILDER_EXISTS}"
 
-      - name: Build Docker base image and push 🛠 ⬆
+      - name: Build Docker base image 🛠
         if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          docker buildx bake -f docker/docker-bake.hcl base
+
+      - name: Push Docker base image if it's not building from a fork ⬆ 
+        if: (steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base --push
 
-      - name: Build Docker mitie base image and push 🛠 ⬆
+      - name: Build Docker mitie base image 🛠
         if: steps.check_image.outputs.base_mitie_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
+          docker buildx bake -f docker/docker-bake.hcl base-mitie
+
+      - name: Push Docker mitie base image if it's not building from a fork ⬆ 
+        if: steps.check_image.outputs.base_mitie_exists == 'false' && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-mitie --push
 
-      - name: Build Docker poetry base image and push 🛠 ⬆
+      - name: Build Docker poetry base image 🛠
         if: steps.check_image.outputs.base_poetry_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ env.POETRY_VERSION }}
+          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
+          docker buildx bake -f docker/docker-bake.hcl base-poetry
+
+      - name: Push Docker poetry base image if it's not building from a fork ⬆
+        if: steps.check_image.outputs.base_poetry_exists == 'false' && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-poetry --push
 
-      - name: Build Docker builder base image and push 🛠 ⬆
+      - name: Build Docker builder base image 🛠
         if: steps.check_image.outputs.base_builder_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          docker buildx bake -f docker/docker-bake.hcl base-builder
+
+      - name: Push Docker builder base image if it's not building from a fork ⬆
+        if: steps.check_image.outputs.base_builder_exists == 'false' && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-builder --push
@@ -697,6 +725,7 @@ jobs:
     strategy:
       matrix:
         image: [default, full, mitie-en, spacy-de, spacy-en]
+        arch: [linux/amd64, linux/arm64]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
@@ -711,6 +740,9 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
         if: github.event_name != 'pull_request'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
       - name: Free disk space
         if: needs.changes.outputs.docker == 'true'
@@ -729,10 +761,14 @@ jobs:
         shell: bash
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.6.0
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v2
+        id: buildx
         with:
           version: v0.5.1
           driver: docker
+
+      - name: Echo Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Login to DockerHub Registry 🔢
         if: needs.changes.outputs.docker == 'true'
@@ -749,19 +785,19 @@ jobs:
       - name: Build Docker image
         if: needs.changes.outputs.docker == 'true'
         run: |
-          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }}
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }}
 
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
         run: |
-          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
       - name: Push image with ${{github.ref}} tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
         run: |
           IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
-          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
           # Tag the image as latest
           if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
