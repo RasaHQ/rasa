@@ -326,8 +326,11 @@ pip3 install rasa==3.0
 
 ## M1 / M2 (Apple Silicon) Limitations
 
-Rasa installations on Apple Silicon use [Apple Metal](https://developer.apple.com/metal/) leading to reduced training times
-for local development.
+Rasa installations on Apple Silicon *don't* use [Apple Metal](https://developer.apple.com/metal/) by default.
+We found that using the GPU on Apple Silicon increased training time for the
+[`DIETClassifier`](components#DIETClassifier) and [`TEDPolicy`](components#TEDPolicy) dramatically.
+You can, however, install the optional dependency to test it yourself
+or try it with other components using: `pip3 install rasa[metal]`.
 
 Currently, not all of Rasa's dependencies support Apple Silicon natively. This leads
 to the following restrictions:
