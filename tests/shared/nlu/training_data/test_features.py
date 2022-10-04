@@ -33,6 +33,34 @@ def test_print(type: Text, is_sparse: bool):
     assert str(feat)
 
 
+def test_fingerprint_changes_after_combining_dense():
+    existing_features = Features(
+        np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "test"
+    )
+    original_fingerprint = existing_features.fingerprint()
+    new_features = Features(
+        np.array([[1, 0], [0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "origin"
+    )
+
+    existing_features.combine_with_features(new_features)
+    after_combining_fingerprint = existing_features.fingerprint()
+    assert original_fingerprint != after_combining_fingerprint
+
+
+def test_fingerprint_changes_after_combining_sparse():
+    existing_features = Features(
+        np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "test"
+    )
+    original_fingerprint = existing_features.fingerprint()
+    new_features = Features(
+        scipy.sparse.csr_matrix([[1, 0], [0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "origin"
+    )
+
+    existing_features.combine_with_features(new_features)
+    after_combining_fingerprint = existing_features.fingerprint()
+    assert original_fingerprint != after_combining_fingerprint
+
+
 def test_combine_with_existing_dense_features():
     existing_features = Features(
         np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "test"
