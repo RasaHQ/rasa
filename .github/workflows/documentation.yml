@@ -24,7 +24,6 @@ concurrency:
 env:
   DOCS_FOLDER: docs
   DOCS_BRANCH: documentation
-  TAG_NAME: ${GITHUB_REF#refs/tags/}
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   IS_MAIN_BRANCH: ${{ github.ref == 'refs/heads/main' }}
 
@@ -75,20 +74,22 @@ jobs:
           python3 -m pip install pep440_version_utils
 
       - name: Check if tag version is equal or higher than the latest tagged Rasa version
-        id: rasa_get_version
-        if: env.IS_TAG_BUILD == 'true'
+        id: check_tag
+        if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
         run: |
           # Get latest tagged Rasa version
           git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
           # Fetch branch history
+          TAG_NAME=${GITHUB_REF#refs/tags/}
           git fetch --prune --unshallow
-          CURRENT_TAG=${GITHUB_REF#refs/tags/}
-          python scripts/evaluate_release_tag.py $CURRENT_TAG
+          python scripts/evaluate_release_tag.py $TAG_NAME
           exit_status=$?
 
-          if [[ "${exit_status}" == "0" ]]; then
+          if [[ ${exit_status} -eq 0 || "${IS_MAIN_BRANCH}" == "true" ]]; then
+            echo "Setting buid docs to true."
             echo "::set-output name=build_docs::true"
           else
+            echo "Setting buid docs to false."
             echo "::set-output name=build_docs::false"
           fi
 
