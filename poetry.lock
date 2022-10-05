@@ -8,7 +8,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "aio-pika"
-version = "8.2.1"
+version = "8.2.3"
 description = "Wrapper for the aiormq for asyncio and humans."
 category = "main"
 optional = false
@@ -16,7 +16,7 @@ python-versions = ">3.6, <4"
 
 [package.dependencies]
 aiormq = ">=6.4.0,<6.5.0"
-typing_extensions = {version = "*", markers = "python_version < \"3.8.0\""}
+typing-extensions = {version = "*", markers = "python_version < \"3.8.0\""}
 yarl = "*"
 
 [package.extras]
@@ -32,7 +32,7 @@ python-versions = ">=3.7,<4.0"
 
 [[package]]
 name = "aiohttp"
-version = "3.8.1"
+version = "3.8.3"
 description = "Async http client/server framework (asyncio)"
 category = "main"
 optional = false
@@ -205,15 +205,16 @@ tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>
 
 [[package]]
 name = "azure-core"
-version = "1.22.1"
+version = "1.25.1"
 description = "Microsoft Azure Core Library for Python"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 requests = ">=2.18.4"
 six = ">=1.11.0"
+typing-extensions = ">=4.0.1"
 
 [[package]]
 name = "azure-storage-blob"
@@ -310,14 +311,14 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.24.75"
+version = "1.24.86"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.27.75,<1.28.0"
+botocore = ">=1.27.86,<1.28.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -326,7 +327,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.27.75"
+version = "1.27.86"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -378,7 +379,7 @@ zipp = {version = ">=0.5", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "certifi"
-version = "2022.9.14"
+version = "2022.9.24"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -431,7 +432,7 @@ click = "*"
 
 [[package]]
 name = "cloudpickle"
-version = "2.1.0"
+version = "2.2.0"
 description = "Extended pickling support for Python objects"
 category = "main"
 optional = false
@@ -469,15 +470,28 @@ cron = ["capturer (>=2.4)"]
 
 [[package]]
 name = "colorhash"
-version = "1.0.4"
+version = "1.1.0"
 description = "Generate color based on any object"
 category = "main"
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = ">=3.6.2,<4.0"
+
+[[package]]
+name = "confection"
+version = "0.0.2"
+description = "The sweetest config system for Python"
+category = "main"
+optional = true
+python-versions = ">=3.6"
+
+[package.dependencies]
+pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<1.10.0"
+srsly = ">=2.4.0,<3.0.0"
+typing-extensions = {version = ">=3.7.4.1,<4.2.0", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "coverage"
-version = "6.4.4"
+version = "6.5.0"
 description = "Code coverage measurement for Python"
 category = "dev"
 optional = false
@@ -615,7 +629,7 @@ requests = ">=2.6.0"
 
 [[package]]
 name = "datadog-api-client"
-version = "2.3.0"
+version = "2.4.0"
 description = "Collection of all Datadog Public endpoints"
 category = "dev"
 optional = false
@@ -628,10 +642,10 @@ typing-extensions = "*"
 urllib3 = ">=1.15"
 
 [package.extras]
-zstandard = ["zstandard"]
-tests = ["zstandard", "types-python-dateutil", "mypy", "python-dateutil", "pytest-recording", "pytest-randomly", "pytest-asyncio", "pytest-bdd (>=5.0.0)", "pytest", "jinja2", "glom", "aiosonic"]
-async = ["aiosonic"]
 apm = ["ddtrace (>=1.2.0)"]
+async = ["aiosonic"]
+tests = ["aiosonic", "glom", "jinja2", "pytest", "pytest-bdd (>=5.0.0)", "pytest-asyncio", "pytest-randomly", "pytest-recording", "python-dateutil", "mypy", "types-python-dateutil", "zstandard"]
+zstandard = ["zstandard"]
 
 [[package]]
 name = "deprecated"
@@ -715,7 +729,7 @@ testing = ["pre-commit"]
 
 [[package]]
 name = "fakeredis"
-version = "1.9.1"
+version = "1.9.3"
 description = "Fake implementation of redis API for testing purposes."
 category = "dev"
 optional = false
@@ -723,7 +737,6 @@ python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 redis = "<4.4"
-six = ">=1.16.0,<2.0.0"
 sortedcontainers = ">=2.4.0,<3.0.0"
 
 [package.extras]
@@ -793,7 +806,7 @@ pydocstyle = ">=2.1"
 
 [[package]]
 name = "flatbuffers"
-version = "2.0.7"
+version = "22.9.24"
 description = "The FlatBuffers serialization format for Python"
 category = "main"
 optional = false
@@ -801,7 +814,7 @@ python-versions = "*"
 
 [[package]]
 name = "fonttools"
-version = "4.37.2"
+version = "4.37.4"
 description = "Tools to manipulate font files"
 category = "main"
 optional = false
@@ -947,7 +960,7 @@ grpc = ["grpcio (>=1.33.2,<2.0dev)", "grpcio-status (>=1.33.2,<2.0dev)"]
 
 [[package]]
 name = "google-auth"
-version = "2.11.0"
+version = "2.12.0"
 description = "Google Authentication Library"
 category = "main"
 optional = false
@@ -1037,11 +1050,11 @@ six = "*"
 
 [[package]]
 name = "google-resumable-media"
-version = "2.3.3"
+version = "2.4.0"
 description = "Utilities for Google Media Downloads and Resumable Uploads"
 category = "dev"
 optional = false
-python-versions = ">= 3.6"
+python-versions = ">= 3.7"
 
 [package.dependencies]
 google-crc32c = ">=1.0,<2.0dev"
@@ -1077,7 +1090,7 @@ docs = ["sphinx"]
 
 [[package]]
 name = "grpcio"
-version = "1.49.0"
+version = "1.49.1"
 description = "HTTP/2-based RPC framework"
 category = "main"
 optional = false
@@ -1087,7 +1100,7 @@ python-versions = ">=3.7"
 six = ">=1.5.2"
 
 [package.extras]
-protobuf = ["grpcio-tools (>=1.49.0)"]
+protobuf = ["grpcio-tools (>=1.49.1)"]
 
 [[package]]
 name = "h11"
@@ -1159,7 +1172,7 @@ socks = ["socksio (>=1.0.0,<2.0.0)"]
 
 [[package]]
 name = "huggingface-hub"
-version = "0.9.1"
+version = "0.10.0"
 description = "Client library to download and publish models, datasets and other repos on the huggingface.co hub"
 category = "main"
 optional = true
@@ -1176,12 +1189,13 @@ typing-extensions = ">=3.7.4.3"
 
 [package.extras]
 torch = ["torch"]
-testing = ["soundfile", "datasets", "pytest-cov", "pytest"]
+testing = ["soundfile", "pytest-cov", "pytest", "jinja2", "jedi", "isort (>=5.5.4)", "InquirerPy (==0.3.4)"]
 tensorflow = ["graphviz", "pydot", "tensorflow"]
-quality = ["flake8-bugbear", "flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (==22.3)"]
+quality = ["mypy", "isort (>=5.5.4)", "flake8-bugbear", "flake8 (>=3.8.3)", "black (==22.3)"]
 fastai = ["fastcore (>=1.3.27)", "fastai (>=2.4)", "toml"]
-dev = ["flake8-bugbear", "flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (==22.3)", "soundfile", "datasets", "pytest-cov", "pytest"]
-all = ["flake8-bugbear", "flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (==22.3)", "soundfile", "datasets", "pytest-cov", "pytest"]
+dev = ["mypy", "flake8-bugbear", "flake8 (>=3.8.3)", "black (==22.3)", "soundfile", "pytest-cov", "pytest", "jinja2", "jedi", "isort (>=5.5.4)", "InquirerPy (==0.3.4)"]
+cli = ["InquirerPy (==0.3.4)"]
+all = ["mypy", "flake8-bugbear", "flake8 (>=3.8.3)", "black (==22.3)", "soundfile", "pytest-cov", "pytest", "jinja2", "jedi", "isort (>=5.5.4)", "InquirerPy (==0.3.4)"]
 
 [[package]]
 name = "humanfriendly"
@@ -1304,11 +1318,11 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "joblib"
-version = "1.1.0"
+version = "1.2.0"
 description = "Lightweight pipelining with Python functions"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [[package]]
 name = "jsonpickle"
@@ -1328,7 +1342,7 @@ docs = ["rst.linker (>=1.9)", "jaraco.packaging (>=3.2)", "sphinx"]
 
 [[package]]
 name = "jsonschema"
-version = "4.14.0"
+version = "4.16.0"
 description = "An implementation of JSON Schema validation for Python"
 category = "main"
 optional = false
@@ -1522,7 +1536,7 @@ python-versions = "*"
 
 [[package]]
 name = "moto"
-version = "4.0.3"
+version = "4.0.6"
 description = "A library that allows your python tests to easily mock out the boto library"
 category = "dev"
 optional = false
@@ -1576,13 +1590,14 @@ python-versions = "*"
 
 [[package]]
 name = "msrest"
-version = "0.6.21"
+version = "0.7.1"
 description = "AutoRest swagger generator Python client runtime."
 category = "dev"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 
 [package.dependencies]
+azure-core = ">=1.24.0"
 certifi = ">=2017.4.17"
 isodate = ">=0.6.0"
 requests = ">=2.16,<3.0"
@@ -1852,7 +1867,7 @@ wcwidth = "*"
 
 [[package]]
 name = "protobuf"
-version = "3.19.5"
+version = "3.19.6"
 description = "Protocol Buffers"
 category = "main"
 optional = false
@@ -1927,8 +1942,8 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "pydantic"
-version = "1.8.2"
-description = "Data validation and settings management using python 3.6 type hinting"
+version = "1.9.2"
+description = "Data validation and settings management using python type hints"
 category = "main"
 optional = true
 python-versions = ">=3.6.1"
@@ -2263,7 +2278,7 @@ client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
 name = "pytz"
-version = "2022.2.1"
+version = "2022.4"
 description = "World timezone definitions, modern and historical"
 category = "main"
 optional = false
@@ -2316,7 +2331,7 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.2.1"
+version = "3.2.2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
@@ -2352,7 +2367,7 @@ ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"
 
 [[package]]
 name = "regex"
-version = "2022.8.17"
+version = "2022.9.13"
 description = "Alternative regular expression module, to replace re."
 category = "main"
 optional = false
@@ -2456,14 +2471,14 @@ pyasn1 = ">=0.1.3"
 
 [[package]]
 name = "ruamel.yaml"
-version = "0.16.13"
+version = "0.17.21"
 description = "ruamel.yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3"
 
 [package.dependencies]
-"ruamel.yaml.clib" = {version = ">=0.1.2", markers = "platform_python_implementation == \"CPython\" and python_version < \"3.10\""}
+"ruamel.yaml.clib" = {version = ">=0.2.6", markers = "platform_python_implementation == \"CPython\" and python_version < \"3.11\""}
 
 [package.extras]
 docs = ["ryd"]
@@ -2566,7 +2581,7 @@ python-versions = "*"
 
 [[package]]
 name = "sanic-testing"
-version = "22.6.0"
+version = "22.9.0"
 description = "Core testing clients for Sanic"
 category = "dev"
 optional = false
@@ -2624,7 +2639,7 @@ python-versions = "*"
 
 [[package]]
 name = "sentry-sdk"
-version = "1.9.8"
+version = "1.9.10"
 description = "Python client for Sentry (https://sentry.io)"
 category = "main"
 optional = false
@@ -2757,14 +2772,13 @@ python-versions = "*"
 
 [[package]]
 name = "spacy"
-version = "3.2.3"
+version = "3.4.1"
 description = "Industrial-strength Natural Language Processing (NLP) in Python"
 category = "main"
 optional = true
 python-versions = ">=3.6"
 
 [package.dependencies]
-blis = ">=0.4.0,<0.8.0"
 catalogue = ">=2.0.6,<2.1.0"
 cymem = ">=2.0.2,<2.1.0"
 jinja2 = "*"
@@ -2774,19 +2788,19 @@ numpy = ">=1.15.0"
 packaging = ">=20.0"
 pathy = ">=0.3.5"
 preshed = ">=3.0.2,<3.1.0"
-pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<1.9.0"
+pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<1.10.0"
 requests = ">=2.13.0,<3.0.0"
-spacy-legacy = ">=3.0.8,<3.1.0"
+spacy-legacy = ">=3.0.9,<3.1.0"
 spacy-loggers = ">=1.0.0,<2.0.0"
-srsly = ">=2.4.1,<3.0.0"
-thinc = ">=8.0.12,<8.1.0"
+srsly = ">=2.4.3,<3.0.0"
+thinc = ">=8.1.0,<8.2.0"
 tqdm = ">=4.38.0,<5.0.0"
 typer = ">=0.3.0,<0.5.0"
-typing-extensions = {version = ">=3.7.4,<4.0.0.0", markers = "python_version < \"3.8\""}
-wasabi = ">=0.8.1,<1.1.0"
+typing-extensions = {version = ">=3.7.4,<4.2.0", markers = "python_version < \"3.8\""}
+wasabi = ">=0.9.1,<1.1.0"
 
 [package.extras]
-apple = ["thinc-apple-ops (>=0.0.4,<1.0.0)"]
+apple = ["thinc-apple-ops (>=0.1.0.dev0,<1.0.0)"]
 cuda = ["cupy (>=5.0.0b4,<11.0.0)"]
 cuda100 = ["cupy-cuda100 (>=5.0.0b4,<11.0.0)"]
 cuda101 = ["cupy-cuda101 (>=5.0.0b4,<11.0.0)"]
@@ -2797,6 +2811,8 @@ cuda112 = ["cupy-cuda112 (>=5.0.0b4,<11.0.0)"]
 cuda113 = ["cupy-cuda113 (>=5.0.0b4,<11.0.0)"]
 cuda114 = ["cupy-cuda114 (>=5.0.0b4,<11.0.0)"]
 cuda115 = ["cupy-cuda115 (>=5.0.0b4,<11.0.0)"]
+cuda116 = ["cupy-cuda116 (>=5.0.0b4,<11.0.0)"]
+cuda117 = ["cupy-cuda117 (>=5.0.0b4,<11.0.0)"]
 cuda80 = ["cupy-cuda80 (>=5.0.0b4,<11.0.0)"]
 cuda90 = ["cupy-cuda90 (>=5.0.0b4,<11.0.0)"]
 cuda91 = ["cupy-cuda91 (>=5.0.0b4,<11.0.0)"]
@@ -3059,7 +3075,7 @@ name = "tensorflow-metal"
 version = "0.5.1"
 description = "TensorFlow acceleration for Mac GPUs."
 category = "main"
-optional = false
+optional = true
 python-versions = "*"
 
 [package.dependencies]
@@ -3110,26 +3126,28 @@ python-versions = "*"
 
 [[package]]
 name = "thinc"
-version = "8.0.17"
+version = "8.1.2"
 description = "A refreshing functional take on deep learning, compatible with your favorite libraries"
 category = "main"
 optional = true
 python-versions = ">=3.6"
 
 [package.dependencies]
-blis = ">=0.4.0,<0.8.0"
+blis = ">=0.7.8,<0.8.0"
 catalogue = ">=2.0.4,<2.1.0"
+confection = ">=0.0.1,<1.0.0"
 cymem = ">=2.0.2,<2.1.0"
 murmurhash = ">=1.0.2,<1.1.0"
 numpy = ">=1.15.0"
 preshed = ">=3.0.2,<3.1.0"
-pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<1.9.0"
+pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<1.10.0"
 srsly = ">=2.4.0,<3.0.0"
 typing-extensions = {version = ">=3.7.4.1,<4.2.0", markers = "python_version < \"3.8\""}
 wasabi = ">=0.8.1,<1.1.0"
 
 [package.extras]
 cuda = ["cupy (>=5.0.0b4)"]
+cuda-autodetect = ["cupy-wheel (>=11.0.0)"]
 cuda100 = ["cupy-cuda100 (>=5.0.0b4)"]
 cuda101 = ["cupy-cuda101 (>=5.0.0b4)"]
 cuda102 = ["cupy-cuda102 (>=5.0.0b4)"]
@@ -3139,6 +3157,9 @@ cuda112 = ["cupy-cuda112 (>=5.0.0b4)"]
 cuda113 = ["cupy-cuda113 (>=5.0.0b4)"]
 cuda114 = ["cupy-cuda114 (>=5.0.0b4)"]
 cuda115 = ["cupy-cuda115 (>=5.0.0b4)"]
+cuda116 = ["cupy-cuda116 (>=5.0.0b4)"]
+cuda117 = ["cupy-cuda117 (>=5.0.0b4)"]
+cuda11x = ["cupy-cuda11x (>=11.0.0)"]
 cuda80 = ["cupy-cuda80 (>=5.0.0b4)"]
 cuda90 = ["cupy-cuda90 (>=5.0.0b4)"]
 cuda91 = ["cupy-cuda91 (>=5.0.0b4)"]
@@ -3294,7 +3315,7 @@ vision = ["pillow"]
 
 [[package]]
 name = "twilio"
-version = "7.13.0"
+version = "7.14.1"
 description = "Twilio API client and TwiML generator"
 category = "main"
 optional = false
@@ -3368,7 +3389,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-pytz"
-version = "2022.2.1.0"
+version = "2022.4.0.0"
 description = "Typing stubs for pytz"
 category = "dev"
 optional = false
@@ -3376,7 +3397,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-redis"
-version = "4.3.20"
+version = "4.3.21.1"
 description = "Typing stubs for redis"
 category = "dev"
 optional = false
@@ -3384,7 +3405,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-requests"
-version = "2.28.10"
+version = "2.28.11.1"
 description = "Typing stubs for requests"
 category = "dev"
 optional = false
@@ -3395,7 +3416,7 @@ types-urllib3 = "<1.27"
 
 [[package]]
 name = "types-setuptools"
-version = "65.3.0"
+version = "65.4.0.0"
 description = "Typing stubs for setuptools"
 category = "dev"
 optional = false
@@ -3403,7 +3424,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-urllib3"
-version = "1.26.24"
+version = "1.26.25"
 description = "Typing stubs for urllib3"
 category = "dev"
 optional = false
@@ -3411,11 +3432,11 @@ python-versions = "*"
 
 [[package]]
 name = "typing-extensions"
-version = "3.10.0.2"
-description = "Backported and Experimental Type Hints for Python 3.5+"
+version = "4.1.1"
+description = "Backported and Experimental Type Hints for Python 3.6+"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 
 [[package]]
 name = "typing-utils"
@@ -3430,7 +3451,7 @@ test = ["pytest"]
 
 [[package]]
 name = "tzdata"
-version = "2022.2"
+version = "2022.4"
 description = "Provider of IANA time zone data"
 category = "main"
 optional = false
@@ -3608,13 +3629,14 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 full = ["spacy", "transformers", "sentencepiece", "jieba"]
 gh-release-notes = ["github3.py"]
 jieba = ["jieba"]
+metal = ["tensorflow-metal"]
 spacy = ["spacy"]
 transformers = ["transformers", "sentencepiece"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "e1e33f2ea4cc3b5f436298f3e9e9cbf2e7ba1ccb21ab16b6a417e1f0ec373d58"
+content-hash = "f8fdd73fc8d7aa0838127f5137a6530b3378f265d7895828d7d9ab49f5fc37cf"
 
 [metadata.files]
 absl-py = []
@@ -3655,6 +3677,7 @@ colorama = []
 colorclass = []
 coloredlogs = []
 colorhash = []
+confection = []
 coverage = []
 coveralls = []
 cryptography = []

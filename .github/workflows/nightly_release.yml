@@ -19,6 +19,9 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install Python module
+        run: python3 -m pip install pluggy
+
       - name: Compose tag name
         id: set_tagname
         run: |
