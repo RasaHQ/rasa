@@ -74,8 +74,7 @@ class Exporter:
             f"Selected {len(events)} events for publishing. Ready to go 🚀"
         )
 
-        if self.offset_timestamps_by_seconds is not None:
-            self._print_offset_info()
+        self._print_offset_info()
 
         published_events = 0
         current_timestamp = None
@@ -98,6 +97,9 @@ class Exporter:
 
     def _print_offset_info(self) -> None:
         """Output information about the offset applied to event timestamps."""
+        if self.offset_timestamps_by_seconds is None:
+            return
+
         delta = datetime.timedelta(seconds=abs(self.offset_timestamps_by_seconds))
         operator = "-" if self.offset_timestamps_by_seconds > 0 else ""
         rasa.shared.utils.cli.print_info(
