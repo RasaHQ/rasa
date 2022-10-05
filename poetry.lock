@@ -31,6 +31,23 @@ optional = false
 python-versions = ">=3.7,<4.0"
 
 [[package]]
+name = "aiogram"
+version = "2.19"
+description = "Is a pretty simple and fully asynchronous framework for Telegram Bot API"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+aiohttp = ">=3.8.0,<3.9.0"
+Babel = ">=2.9.1,<2.10.0"
+certifi = ">=2021.10.8"
+
+[package.extras]
+fast = ["uvloop (>=0.16.0,<0.17.0)", "ujson (>=1.35)"]
+proxy = ["aiohttp-socks (>=0.5.3,<0.6.0)"]
+
+[[package]]
 name = "aiohttp"
 version = "3.8.3"
 description = "Async http client/server framework (asyncio)"
@@ -228,6 +245,17 @@ python-versions = ">=3.6"
 azure-core = ">=1.15.0,<2.0.0"
 cryptography = ">=2.1.4"
 msrest = ">=0.6.21"
+
+[[package]]
+name = "babel"
+version = "2.9.1"
+description = "Internationalization utilities"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.dependencies]
+pytz = ">=2015.7"
 
 [[package]]
 name = "backoff"
@@ -2098,26 +2126,6 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
-name = "pytelegrambotapi"
-version = "4.7.0"
-description = "Python Telegram bot api."
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-requests = "*"
-
-[package.extras]
-PIL = ["pillow"]
-aiohttp = ["aiohttp"]
-aioredis = ["aioredis"]
-fastapi = ["fastapi"]
-json = ["ujson"]
-redis = ["redis (>=3.4.1)"]
-uvicorn = ["uvicorn"]
-
-[[package]]
 name = "pytest"
 version = "7.1.3"
 description = "pytest: simple powerful testing with Python"
@@ -3636,12 +3644,13 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "f8fdd73fc8d7aa0838127f5137a6530b3378f265d7895828d7d9ab49f5fc37cf"
+content-hash = "e7426ac5728258f360ef2049915f90f45eb0252ba14c25e15a6ffd24374109a6"
 
 [metadata.files]
 absl-py = []
 aio-pika = []
 aiofiles = []
+aiogram = []
 aiohttp = []
 aioresponses = []
 aiormq = []
@@ -3656,6 +3665,7 @@ asynctest = []
 attrs = []
 azure-core = []
 azure-storage-blob = []
+babel = []
 backoff = []
 "backports.zoneinfo" = []
 bandit = []
@@ -3804,7 +3814,6 @@ pyparsing = []
 pyreadline = []
 pyreadline3 = []
 pyrsistent = []
-pytelegrambotapi = []
 pytest = []
 pytest-asyncio = []
 pytest-cov = []

@@ -46,6 +46,7 @@ from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
+    ActiveLoop,
     BotUttered,
     ReminderCancelled,
     ReminderScheduled,
@@ -1662,3 +1663,124 @@ async def test_processor_executes_bot_uttered_returned_by_action_extract_slots(
 
         tracker = await processor.get_tracker(sender_id)
         assert tracker.get_slot(slot_name) is None
+
+
+@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.parametrize(
+    "sender_id, message_text, message_intent",
+    [
+        ("happy_path", "Hi", "greet"),
+        ("another_form_activation", "switch forms", "switch_another_form"),
+    ],
+)
+async def test_from_trigger_intent_with_mapping_conditions_when_form_not_activated(
+    trained_async: Callable,
+    sender_id: Text,
+    message_text: Text,
+    message_intent: Text,
+):
+    parent_folder = "data/test_from_trigger_intent_with_mapping_conditions"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = f"{parent_folder}/config.yml"
+    stories_path = f"{parent_folder}/stories.yml"
+    nlu_path = f"{parent_folder}/nlu.yml"
+
+    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
+    agent = Agent.load(model_path)
+    processor = agent.processor
+
+    slot_name = "test_trigger"
+    slot_value = "testing123"
+
+    user_messages = [
+        UserMessage(
+            text=message_text,
+            output_channel=CollectingOutputChannel(),
+            sender_id=sender_id,
+            parse_data={
+                "intent": {"name": message_intent, "confidence": 1},
+                "entities": [],
+            },
+        ),
+        UserMessage(
+            text="great",
+            output_channel=CollectingOutputChannel(),
+            sender_id=sender_id,
+            parse_data={
+                "intent": {"name": "mood_great", "confidence": 1},
+                "entities": [],
+            },
+        ),
+    ]
+
+    for msg in user_messages:
+        await processor.handle_message(msg)
+
+    tracker = await processor.get_tracker(sender_id)
+    assert SlotSet(slot_name, slot_value) not in tracker.events
+    assert tracker.get_slot(slot_name) is None
+
+
+@pytest.mark.timeout(120, func_only=True)
+async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
+    trained_async: Callable,
+):
+    parent_folder = "data/test_from_trigger_intent_with_no_mapping_conditions"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = f"{parent_folder}/config.yml"
+    stories_path = f"{parent_folder}/stories.yml"
+    nlu_path = f"{parent_folder}/nlu.yml"
+
+    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
+    agent = Agent.load(model_path)
+    processor = agent.processor
+
+    slot_name = "test_trigger"
+    slot_value = "testing123"
+
+    sender_id = uuid.uuid4().hex
+    user_messages = [
+        UserMessage(
+            text="Hi",
+            output_channel=CollectingOutputChannel(),
+            sender_id=sender_id,
+            parse_data={
+                "intent": {"name": "greet", "confidence": 1},
+                "entities": [],
+            },
+        ),
+        UserMessage(
+            text="great",
+            output_channel=CollectingOutputChannel(),
+            sender_id=sender_id,
+            parse_data={
+                "intent": {"name": "mood_great", "confidence": 1},
+                "entities": [],
+            },
+        ),
+    ]
+    for msg in user_messages:
+        await processor.handle_message(msg)
+
+    tracker = await processor.get_tracker(sender_id)
+    assert SlotSet(slot_name, slot_value) not in tracker.events
+    assert tracker.get_slot(slot_name) is None
+
+    # test that the form activation path works as expected
+    sender_id_form_activation = "test_form_activation"
+    await processor.handle_message(
+        UserMessage(
+            text="great",
+            output_channel=CollectingOutputChannel(),
+            sender_id=sender_id_form_activation,
+            parse_data={
+                "intent": {"name": "mood_great", "confidence": 1},
+                "entities": [],
+            },
+        )
+    )
+
+    tracker = await processor.get_tracker(sender_id_form_activation)
+    assert ActiveLoop("test_form") in tracker.events
+    assert SlotSet(slot_name, slot_value) in tracker.events
+    assert tracker.get_slot(slot_name) == slot_value
