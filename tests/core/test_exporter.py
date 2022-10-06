@@ -163,61 +163,6 @@ async def test_fetch_events_within_time_range_with_session_events(tmp_path: Path
     assert len(fetched_events) == len(events)
 
 
-# noinspection PyProtectedMember
-def test_sort_and_select_events_by_timestamp():
-    events = [
-        event.as_dict()
-        for event in [
-            random_user_uttered_event(3),
-            random_user_uttered_event(2),
-            random_user_uttered_event(1),
-        ]
-    ]
-
-    tracker_store = Mock()
-    exporter = MockExporter(tracker_store)
-
-    selected_events = exporter._sort_and_select_events_by_timestamp(events)
-
-    # events are sorted
-    assert selected_events == list(
-        sorted(selected_events, key=lambda e: e["timestamp"])
-    )
-
-    # apply minimum timestamp requirement, expect to get only two events back
-    exporter.minimum_timestamp = 2.0
-    assert exporter._sort_and_select_events_by_timestamp(events) == [
-        events[1],
-        events[0],
-    ]
-    exporter.minimum_timestamp = None
-
-    # apply maximum timestamp requirement, expect to get only one
-    exporter.maximum_timestamp = 1.1
-    assert exporter._sort_and_select_events_by_timestamp(events) == [events[2]]
-
-    # apply both requirements, get one event back
-    exporter.minimum_timestamp = 2.0
-    exporter.maximum_timestamp = 2.1
-    assert exporter._sort_and_select_events_by_timestamp(events) == [events[1]]
-
-
-# noinspection PyProtectedMember
-def test_sort_and_select_events_by_timestamp_error():
-    tracker_store = Mock()
-    exporter = MockExporter(tracker_store)
-
-    # no events given
-    with pytest.raises(NoEventsInTimeRangeError):
-        exporter._sort_and_select_events_by_timestamp([])
-
-    # supply list of events, apply timestamp constraint and no events survive
-    exporter.minimum_timestamp = 3.1
-    events = [random_user_uttered_event(3).as_dict()]
-    with pytest.raises(NoEventsInTimeRangeError):
-        exporter._sort_and_select_events_by_timestamp(events)
-
-
 def test_get_message_headers_pika_event_broker():
     event_broker = Mock(spec=PikaEventBroker)
     exporter = MockExporter(event_broker=event_broker)
