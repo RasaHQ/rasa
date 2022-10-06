@@ -67,11 +67,9 @@ module.exports = {
     },
     algolia: {
       appId: '94J0KRFPTZ',
-      apiKey: '75ea5a8c8f4b16405c560a4ba786256b',      indexName: 'rasa',
+      apiKey: '75ea5a8c8f4b16405c560a4ba786256b',      
+      indexName: 'rasa',
       inputSelector: '.search-bar',
-      searchParameters: {
-        'facetFilters': ["tags:rasa"]
-      }
     },
     navbar: {
       hideOnScroll: false,
