@@ -4,16 +4,123 @@ title: Analytics
 description: Install Rasa Open Source on premises to enable local and customizable Natural Language Understanding and Dialogue Management.
 ---
 
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
 :::tip Rasa Pro License
 Rasa plus provides Enterprise-grade, flexible infrastructure and APIs, on top of Rasa, for enterprise scale, complexity, and interoperability.
 
 [Schedule a technical demo ->](https://info.rasa.com/rasa-technical-demo)
 :::
 
+You can query and
+visualise metrics in a frontend tool of your choice (e.g. Metabase, PowerBI)
 
+Measure the success of a Rasa assistant and making strategic investments
+will lead to better business outcomes. It will also help you understand
+the needs of your end users and better serve them.
 
-## Analytics
+Rasa Pro Analytics will start analyzing your conversations as soon as
+the docker container is successfully deployed
+and connected to your database and Kafka instances.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec in velit id mauris auctor pretium sed nec nisl. Vivamus varius vulputate nulla, ac elementum orci pulvinar at. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Quisque quam nulla, gravida quis nulla id, sollicitudin mollis justo. Vestibulum facilisis mi nisl, eget suscipit sapien vestibulum nec. Duis sit amet libero quis orci aliquam iaculis. Fusce eu augue at ante lobortis congue. Fusce tincidunt quam in turpis tincidunt, id pharetra turpis sollicitudin. Etiam sed erat quis ligula dignissim consectetur a eget nisi. Nunc eleifend nibh a odio vehicula, in dignissim lorem mattis. Sed ultrices nulla rhoncus ligula sodales, quis accumsan tortor consectetur. Curabitur malesuada felis est, nec semper nibh gravida vel. Curabitur convallis fringilla pulvinar. Vestibulum at consequat lorem, vehicula auctor ante.
+## Getting Started
 
-Vivamus placerat mollis tortor nec tincidunt. Curabitur posuere neque sed magna convallis, et vulputate orci feugiat. Ut lacinia hendrerit blandit. Pellentesque quis justo id lorem vulputate efficitur quis vel felis. Nulla pulvinar odio risus, a cursus nulla maximus non. In ac sem at augue convallis mollis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
+### Ingesting past Conversational data
+
+- if you've previously already streamed the data of your assistant to Kafka
+  and Kafka is configured to retain events on this topic, you can
+  connect Analytics to your Kafka instance and it will process all prior
+  events.
+- if not, ingest the data using
+
+  ```shell
+  rasa export --endpoints endpoints.yml
+  ```
+
+  The export needs to be configured to read from your production tracker store
+  and write to Kafka as an event broker, e.g.
+
+  ```yaml-rasa title="endpoints.yml"
+    tracker_store:
+        type: SQL
+        dialect: "postgresql"
+        url: "localhost"
+        db: "tracker"
+        username: postgres
+        password: password
+
+    event_broker:
+        type: kafka
+        topic: rasa-events
+        url: localhost:29092
+        partition_by_sender: true # VERY IMPORTANT!!!!
+
+  ```
+
+### Connecting your Business Intelligence Solution
+
+#### Example: Connecting Metabase
+
+[Connecting Metabase to Redshift](https://www.metabase.com/data_sources/amazon-redshift)
+
+#### Example: Connecting Tableau to Rasa Pro Analytics
+
+[Connecting Tableau to Redshift](https://help.tableau.com/current/pro/desktop/en-us/examples_amazonredshift.htm)
+
+## Example Queries
+
+Inspiration on how to analyze the conversations your assistant is having. The
+example queries are created using Metabase.
+
+### Daily Chatbot Users
+
+#### Query using SQL
+
+```sql
+SELECT CAST("public"."rasa_users"."FIRST_SEEN" AS date) AS "FIRST_SEEN", count(*) AS "count"
+FROM "public"."rasa_users"
+GROUP BY CAST("public"."rasa_users"."FIRST_SEEN" AS date)
+ORDER BY CAST("public"."rasa_users"."FIRST_SEEN" AS date) ASC
+```
+
+#### Using the Metabase Query Builder
+
+<div align="center">
+  <img
+    alt="Example query for a query showcasing the number of users per day."
+    src={useBaseUrl("/img/analytics/number-of-users-query.png")}
+    width="100%"
+  />
+</div>
+
+#### Result
+
+<div align="center">
+  <img
+    alt="Example result for a query showcasing the number of users per day."
+    src={useBaseUrl("/img/analytics/number-of-users-result.png")}
+    width="100%"
+  />
+</div>
+
+## Data Structure Reference
+
+<div align="center">
+  <img
+    alt="An overview over the components of Rasa Pro."
+    src={useBaseUrl("/img/analytics-db-schema.png")}
+    width="100%"
+  />
+</div>
+
+### Table `rasa_actions`
+
+The `rasa_actions` table contains information about all actions that got
+executed by the assistant across all conversations.
+
+| Column | Type        | Description                                   |
+| :----- | :---------- | :-------------------------------------------- |
+| id     | varchar 255 | Unique ID of this event. Same as the event_id |
+| ...    | ...         | ...                                           |
+
+### Table `...`

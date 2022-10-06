@@ -1,12 +1,13 @@
 ---
 sidebar_label: Rasa Pro setup
 title: Rasa Pro setup
-description: Install Rasa Open Source on premises to enable local and customizable Natural Language Understanding and Dialogue Management.
+description: Install Rasa Pro in your production environment to create an enterprise ready Rasa deployment.
 ---
 
-import RasaProLabel from '@theme/RasaProLabel';
+import RasaProLabel from "@theme/RasaProLabel";
+import useBaseUrl from "@docusaurus/useBaseUrl";
 
-<RasaProLabel/>
+<RasaProLabel />
 
 :::tip Rasa Pro License
 You'll need a license to get started with Rasa Pro. [Contact Sales](https://info.rasa.com/rasa-technical-demo)
@@ -14,25 +15,363 @@ You'll need a license to get started with Rasa Pro. [Contact Sales](https://info
 Not sure if you need Rasa Pro yet? [Try it for free](https://info.rasa.com/rasa-technical-demo)
 :::
 
+Rasa Pro is compromised of two packages. The packages need to be installed
+separately and in different environments:
 
-## Rasa Pro setup
+- **Rasa Plus**, a drop in replacement for Rasa Open Source for an
+  enterprise deployment. Rasa Plus should be used to deploy your assistant
+  into production.
+- **Rasa Pro Services**, flexible infrastructure and APIs on top of Rasa
+  Open Source. Rasa Pro Services should be deployed alongside, but separately
+  from your production assistant.
 
+## Rasa Plus Setup
 
-#### Install rasa-pro component
+Rasa Pro includes the Rasa Plus Python package, which is a drop-in replacement
+for Rasa Open Source that includes all the functionality of Rasa Open Source
+as well as additional features. Rasa Pro requires access credentials to
+install and a license to use. The instructions below assume you have
+credentials and a license already.
 
-```bash
-rasa install pro
+### Install for Development
+
+Rasa Plus is a drop-in replacement and enterprise-ready version of Rasa Open Source.
+Additional functionality is provided through plugins while allowing you to continue using the existing Rasa Open Source CLI commands and parameters as you used to.
+
+Installing Rasa Plus instead of Rasa Open Source will not break any existing scripts, automation or functionality you have built around Rasa Open Source.
+
+We have a GCP artifact registry running which hosts the `rasa-plus` python packages as well as the docker containers.
+As a prerequisite, you will need:
+
+- to verify that the user or service account you are using has the required permissions to access the repository.
+- to [install](https://cloud.google.com/sdk/docs/install) and [initialize](https://cloud.google.com/sdk/docs/initializing) the Google Cloud CLI.
+
+#### Authentication Set-Up
+
+In order for the package manager of choice (e.g, `pip` or `poetry`) to have the necessary credentials to authenticate with the registry, follow the steps in the [Google documentation](https://cloud.google.com/artifact-registry/docs/python/authentication#keyring).
+
+Where required, input the following parameters:
+
+```sh
+gcloud artifacts print-settings python \
+    --project=rasa-releases \
+    --repository=rasa-plus-py \
+    --location=europe-west3
 ```
 
-#### Add your license information
+Enter the following settings to the `.pypirc` file:
 
-```bash
-rasa pro add-license <your license string>
+```
+[distutils]
+index-servers =
+    rasa-plus-py
+
+[rasa-plus-py]
+repository: https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/
+
 ```
 
-#### Add Rasa Pro componenents
+Next, add these specific settings to the pip configuration file as instructed in the [GCP authentication documentation](https://cloud.google.com/artifact-registry/docs/python/authentication#keyring-setup):
 
+```
+[global]
+extra-index-url = https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/simple/
+
+```
+
+Finally, you should be able to run `pip install rasa-plus`.
+
+#### Installing with `poetry`
+
+To install `rasa-plus` with `poetry`, you will need to associate the artifact registry URL with `rasa-plus` before installing it.
+Note that you must upgrade poetry to the latest minor (`1.2.0`) in order for `poetry` to work with the GCP authentication set-up.
+Proceed with the following steps:
+
+1. Run `poetry self add "keyrings.google-artifactregistry-auth"`
+2. Add this section to `pyproject.toml`:
+
+```toml
+[[tool.poetry.source]]
+name = "rasa-plus"
+url = "https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/simple"
+default = false
+secondary = true
+
+```
+
+3. Run `poetry install`.
+
+#### Installing with Docker
+
+To be able to pull the docker using `pull` you need to be authenticated first.
 
 ```bash
-rasa install tracing etl concurrent-redis-ls
+gcloud auth configure-docker europe-west3-docker.pkg.dev
+docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
+```
+
+### Run Rasa Plus
+
+Rasa Plus will look for your license in the env var `RASA_PRO_LICENSE`.
+You can set this env var temporarily in your terminal, but it is recommended
+to set it persistently so that you don't have to set it every time you run
+Rasa Plus.
+
+Bash:
+
+```sh
+## Temporary
+export RASA_PRO_LICENSE=<your-license-string>
+
+## Persistent
+echo "export RASA_PRO_LICENSE=<your-license-string>" >> ~/.bashrc
+## If you're using a different flavour of bash e.g. Zsh, replace .bashrc with your shell's initialization script e.g. ~/.zshrc
+```
+
+Windows Powershell:
+
+```powershell
+## Temporary
+$env: RASA_PRO_LICENSE=<your-license-string>
+
+## Persistent
+[System.Environment]::SetEnvironmentVariable('RASA_PRO_LICENSE','<your-license-string>')
+```
+
+Then you can use the [`rasa` CLI](https://rasa.com/docs/rasa/command-line-interface) as usual, for example:
+
+```sh
+rasa init
+```
+
+:::note
+
+If you run `rasa train` or `rasa run` after you’ve enabled tracing using Jaeger as a backend in your local development environment,
+you might come across this error `OSError: [Errno 40] Message too long`.
+
+This could be caused by the OS of your local development environment restricting UDP packet size.
+You can find out the current UDP packet size by running `sysctl net.inet.udp.maxdgram` on macOS.
+You can increase UDP packet size by running `sudo sysctl -w net.inet.udp.maxdgram=65535`.
+
+:::
+
+### Deploy in Production
+
+To use the Rasa Plus image in a Helm deployment, you will need to substitute `rasa` with `rasa-plus` as
+the image name. You will also need to pass your license in an env var
+and [specify a pull secret for the image](#creating-a-pull-secret).
+
+For the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa),
+that means your values should be updated as follows:
+
+```yaml
+registry: <registry-for-rasa-plus-image>
+command:
+  - rasa
+image:
+  name: rasa-plus
+  tag: 0.1.1
+  pullSecrets:
+    - name: rasa-plus-pull-secret
+extraEnv:
+  - name: RASA_PRO_LICENSE
+    value: <your-license-string>
+```
+
+For the [Rasa Enterprise Helm Chart](https://github.com/RasaHQ/rasa-x-helm), update
+your values as follows:
+
+```yaml
+images:
+  imagePullSecrets:
+    - name: rasa-plus-pull-secret
+rasa:
+  command:
+    - rasa
+  name: <registry-for-rasa-plus-image>
+  tag: 0.1.1
+  extraEnv:
+    - name: RASA_PRO_LICENSE
+      value: <your-license-string>
+```
+
+#### Creating a Pull Secret
+
+You will need to create a pull secret to access the `rasa-plus` image. You should have
+been provided with a JSON credentials file to access the registry.
+The file content should look similar to this:
+
+```json
+{
+  "type": "service_account",
+  "project_id": "rasa-platform",
+  "private_key_id": "somerandomcharacters",
+  "private_key": "-----BEGIN PRIVATE KEY-----\n\nPBTu1lAJDLo136ZGTdMKi+/TuRqrIMg/..................................................................................................................................\nsjAsuAH4Iz1XdfdenzGnyBZH\n-----END PRIVATE KEY-----\n",
+  "client_email": "company@rasa-platform.iam.gserviceaccount.com",
+  "client_id": "12345678910123",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/company%40rasa-platform.iam.gserviceaccount.com"
+}
+```
+
+Create the pull secret by running the corresponding command for your cluster environment:
+
+```bash
+# kubernetes
+kubectl --namespace <your namespace> \
+    create secret docker-registry rasa-plus-pull-secret \
+    --docker-server=gcr.io \
+    --docker-username=_json_key \
+    --docker-password="$(cat <your-json-registry-creds-file>.json)"
+```
+
+```bash
+# openshift
+oc --namespace <your namespace> \
+    create secret docker-registry rasa-plus-pull-secret \
+    --docker-server=gcr.io \
+    --docker-username=_json_key \
+    --docker-password="$(cat <your-json-registry-creds-file>.json)"
+```
+
+## Rasa Pro Services Setup
+
+Installation of Rasa Pro Services requires the deployment of a docker
+container. The container can be deployed in a different enviornment than
+Rasa Plus. Both deployments need to be able to connect to the same
+Kafka cluster to communicate.
+
+### Prerequisites
+
+A Rasa Pro Services deployment needs to be connected to existing services,
+be deployed on a machine meeting the minimal hardware requirements supplying
+a license.
+
+#### Existing Services
+
+- A production deployment of Kafka is required to set up Rasa Pro.
+  We recommend to use [Amazon Managed Streaming for
+  Apache Kafka](https://aws.amazon.com/msk/).
+- A production deployment of a data lake needs to be connected to
+  the data pipeline. Rasa Pro support the following data lakes:
+
+  - [Amazon Redshift](https://aws.amazon.com/redshift/) (recommended)
+  - [PostgreSQL](https://aws.amazon.com/rds/postgresql/) (version >= 11)
+
+  We recommend managed deployments of your data lake to minimize maintenance
+  efforts.
+
+#### System Requirements
+
+The minimum hardware requirements include information about the
+requirements you need to install and use Rasa Pro Services. Harware
+requirements are dependent on the average number of conversations and
+expected workload. Your exact needs may be more, depending on your workload.
+
+The following is the recommended minimum hardware guidance:
+
+- CPU: 2 vCPU
+- Memory: 4 GB
+- Disk space: 10 GB
+  These requirements correspond to the `t3.medium` instance type on AWS.
+
+#### License
+
+Running Rasa Pro Services requires a valid license. You need to supply the
+license as an environment variable to the service.
+
+### Installation and Configuration
+
+Rasa Plus streams data to Kafka which gets consumed by Rasa Pro Services.
+The different services need to be run and configured to be able to communicate.
+
+1.  Configure Rasa Plus to stream data to Kafka. The configuration for
+    Kafka should be put in a configuration
+    file `endpoints.yml`:
+
+    ```yaml-rasa title="endpoints.yml"
+    event_broker:
+      type: kafka
+      partition_by_sender: True
+      topic: rasa-events
+      url: <BROKER URL>
+    ```
+
+    The `<BROKER_URL>` needs to be replaced with an address of a bootstrap
+    server of your Kafka cluster. Configuration examples for different
+    security protocols and other parameters can be found in the
+    [Kafka Event Broker](https://rasa.com/docs/rasa/event-brokers/#kafka-event-broker)
+    documentation.
+
+2.  Rasa Pro Services is a docker image. Authenticate to pull
+    the docker images:
+
+    ```shell
+    gcloud auth configure-docker europe-west3-docker.pkg.dev
+    ```
+
+    Pull the Rasa Pro Services image to your machine:
+
+    ```shell
+    docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
+    ```
+
+3.  Run the Rasa Pro Services docker image and configure it to receive data
+    from your Rasa Plus assistant connected to Kafka:
+
+    ```shell
+    docker run \
+        -e RASA_PRO_LICENSE=<your_license> \
+        -e KAFKA_BROKER_ADDRESS=<BROKER_URL> \
+        -e KAFKA_TOPIC=rasa-events \
+        -e RASA_ANALYTICS_DB_URL=<DATA_LAKE_URL> \
+        europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
+    ```
+
+    The `<DATA_LAKE_URL>` should have a DBAPI format, e.g.
+    `postgresql+psycopg2://user:password@postgres.host:5432/rasa`.
+    If no data lake URL is configured, [Analytics](./monitoring/analytics.mdx)
+    will be disabled.
+
+    For production deployments we recommend to us
+    [Amazon Elastic Container Service](https://docs.docker.com/cloud/ecs-integration/).
+
+### Docker Container Configuration (Reference)
+
+The Rasa Pro Services docker container supports configuration through a number
+of environment variables. The following table lists the available environment
+variables:
+
+| Environment Variable      | Description                                                                       | Default            |
+| :------------------------ | :-------------------------------------------------------------------------------- | :----------------- |
+| `RASA_PRO_LICENSE`        | **Required**. The license key for Rasa Pro Services.                              |                    |
+| `KAFKA_BROKER_ADDRESS`    | **Required**. The address of the Kafka broker.                                    |                    |
+| `KAFKA_TOPIC`             | **Required**. The topic Rasa Plus publishes events to and Rasa Pro consumes from. | `rasa_core_events` |
+| `RASA_ANALYTICS_DB_URL`   | The URL of the data lake to store analytics data in.                              |                    |
+| `KAFKA_SASL_MECHANISM`    | The SASL mechanism to use for authentication.                                     | `PLAIN`            |
+| `KAFKA_SASL_USERNAME`     | The username for SASL authentication.                                             |                    |
+| `KAFKA_SASL_PASSWORD`     | The password for SASL authentication.                                             |                    |
+| `KAFKA_SECURITY_PROTOCOL` | The security protocol to use for communication with Kafka.                        | `PLAINTEXT`        |
+
+### Healthcheck Endpoint
+
+Rasa Pro Services exposes a healtcheck endpoint at `/healthcheck`.
+The endpoint will return a `200` status code if the service is healthy.
+If any other status code is returned or if the endpoint is not reachable
+the service is unhealthy.
+
+Example response for `/healthcheck`:
+
+```json
+{
+  "details": {
+    "analytics-consumer": {
+      "alive": 1,
+      "isHealthy": true
+    }
+  },
+  "isHealthy": true
+}
 ```

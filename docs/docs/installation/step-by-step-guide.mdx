@@ -4,6 +4,8 @@ title: Step-by-step guide
 description: Install Rasa Open Source on premises to enable local and customizable Natural Language Understanding and Dialogue Management.
 ---
 
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
 ## Step-by-step Installation Guide
 
 Prefer following video instructions? Watch our installation series on
@@ -27,37 +29,37 @@ Otherwise, proceed with the instructions below to install them.
 <Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
   <TabItem value="ubuntu">
 
-  Fetch the relevant packages using `apt`, and install virtualenv using `pip`.
+Fetch the relevant packages using `apt`, and install virtualenv using `pip`.
 
-  ```bash
-  sudo apt update
-  sudo apt install python3-dev python3-pip
-  ```
+```bash
+sudo apt update
+sudo apt install python3-dev python3-pip
+```
 
   </TabItem>
   <TabItem value="macos">
 
-  Install the [Homebrew](https://brew.sh) package manager if you haven't already.
+Install the [Homebrew](https://brew.sh) package manager if you haven't already.
 
-  Once you're done, you can install Python3.
+Once you're done, you can install Python3.
 
-  ```bash
-  brew update
-  brew install python
-  ```
+```bash
+brew update
+brew install python
+```
 
   </TabItem>
   <TabItem value="windows">
 
-  Make sure the Microsoft VC++ Compiler is installed, so python can compile
-  any dependencies. You can get the compiler from <a className="reference external"
+Make sure the Microsoft VC++ Compiler is installed, so python can compile
+any dependencies. You can get the compiler from <a className="reference external"
   href="https://visualstudio.microsoft.com/visual-cpp-build-tools/"
   target="_blank">Visual Studio</a>. Download the installer and select
-  VC++ Build tools in the list.Install [Python 3](https://www.python.org/downloads/windows/) (64-bit version) for Windows.
+VC++ Build tools in the list.Install [Python 3](https://www.python.org/downloads/windows/) (64-bit version) for Windows.
 
-  ```bat
-  C:\> pip3 install -U pip
-  ```
+```bat
+C:\> pip3 install -U pip
+```
 
   </TabItem>
 </Tabs>
@@ -75,47 +77,47 @@ without root privileges.
 <Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
   <TabItem value="ubuntu">
 
-  Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
 
-  ```bash
-  python3 -m venv ./venv
-  ```
+```bash
+python3 -m venv ./venv
+```
 
-  Activate the virtual environment:
+Activate the virtual environment:
 
-  ```bash
-  source ./venv/bin/activate
-  ```
+```bash
+source ./venv/bin/activate
+```
 
   </TabItem>
   <TabItem value="macos">
 
-  Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
 
-  ```bash
-  python3 -m venv ./venv
-  ```
+```bash
+python3 -m venv ./venv
+```
 
-  Activate the virtual environment:
+Activate the virtual environment:
 
-  ```bash
-  source ./venv/bin/activate
-  ```
+```bash
+source ./venv/bin/activate
+```
 
   </TabItem>
   <TabItem value="windows">
 
-  Create a new virtual environment by choosing a Python interpreter and making a `.\\venv` directory to hold it:
+Create a new virtual environment by choosing a Python interpreter and making a `.\\venv` directory to hold it:
 
-  ```bat
-  C:\> python3 -m venv ./venv
-  ```
+```bat
+C:\> python3 -m venv ./venv
+```
 
-  Activate the virtual environment:
+Activate the virtual environment:
 
-  ```bat
-  C:\> .\venv\Scripts\activate
-  ```
+```bat
+C:\> .\venv\Scripts\activate
+```
 
   </TabItem>
 </Tabs>
@@ -125,17 +127,17 @@ without root privileges.
 <Tabs values={[{"label": "Ubuntu / macOS / Windows", "value": "ubuntu/macos/windows"}]} defaultValue="ubuntu/macos/windows">
   <TabItem value="ubuntu/macos/windows">
 
-  First make sure your `pip` version is up to date:
+First make sure your `pip` version is up to date:
 
-  ```bash
-  pip3 install -U pip
-  ```
+```bash
+pip3 install -U pip
+```
 
-  To install Rasa Open Source:
+To install Rasa Open Source:
 
-  ```bash
-  pip3 install rasa
-  ```
+```bash
+pip3 install rasa
+```
 
   </TabItem>
 </Tabs>
@@ -151,8 +153,9 @@ You can read more about how that data is pulled out and what it is used for in t
 
 Next step: Use the Rasa Playground to prototype your first assistant in the browser and download it afterwards
 
-
-<Button as="a" href={useBaseUrl("/playground")}>Rasa Playground</Button>
+<Button as="a" href={useBaseUrl("/playground")}>
+  Rasa Playground
+</Button>
 
 ## Building from Source
 
@@ -164,6 +167,7 @@ git clone https://github.com/RasaHQ/rasa.git
 cd rasa
 poetry install
 ```
+
 ## Additional Dependencies
 
 For some machine learning algorithms you need to install additional python packages.
@@ -199,7 +203,6 @@ for the English language, but many other languages are availabe too.
 We recommend using at least the "medium" sized models (`_md`) instead of the spaCy's
 default small `en_core_web_sm` model. Small models require less
 memory to run, but will likely reduce intent classification performance.
-
 
 ### Dependencies for MITIE
 
