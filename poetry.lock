@@ -8,7 +8,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "aio-pika"
-version = "8.2.3"
+version = "8.2.4"
 description = "Wrapper for the aiormq for asyncio and humans."
 category = "main"
 optional = false
@@ -222,7 +222,7 @@ tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>
 
 [[package]]
 name = "azure-core"
-version = "1.25.1"
+version = "1.26.0"
 description = "Microsoft Azure Core Library for Python"
 category = "dev"
 optional = false
@@ -232,6 +232,9 @@ python-versions = ">=3.7"
 requests = ">=2.18.4"
 six = ">=1.11.0"
 typing-extensions = ">=4.0.1"
+
+[package.extras]
+aio = ["aiohttp (>=3.0)"]
 
 [[package]]
 name = "azure-storage-blob"
@@ -305,11 +308,11 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "black"
-version = "22.8.0"
+version = "22.10.0"
 description = "The uncompromising code formatter."
 category = "dev"
 optional = false
-python-versions = ">=3.6.2"
+python-versions = ">=3.7"
 
 [package.dependencies]
 click = ">=8.0.0"
@@ -339,14 +342,14 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.24.86"
+version = "1.24.88"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.27.86,<1.28.0"
+botocore = ">=1.27.88,<1.28.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -355,7 +358,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.27.86"
+version = "1.27.88"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -959,7 +962,7 @@ sni = ["pyasn1", "ndg-httpsclient", "pyopenssl"]
 
 [[package]]
 name = "gitpython"
-version = "3.1.27"
+version = "3.1.28"
 description = "GitPython is a python library used to interact with Git repositories"
 category = "dev"
 optional = false
@@ -1914,16 +1917,11 @@ test = ["ipaddress", "mock", "enum34", "pywin32", "wmi"]
 
 [[package]]
 name = "psycopg2-binary"
-version = "2.9.3"
+version = "2.9.4"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
 category = "main"
 optional = false
 python-versions = ">=3.6"
-
-[package.source]
-type = "legacy"
-url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple"
-reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "py"
@@ -2416,11 +2414,11 @@ rsa = ["oauthlib[signedtoken] (>=3.0.0)"]
 
 [[package]]
 name = "requests-toolbelt"
-version = "0.9.1"
+version = "0.10.0"
 description = "A utility belt for advanced users of python-requests"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [package.dependencies]
 requests = ">=2.0.1,<3.0.0"
@@ -2589,7 +2587,7 @@ python-versions = "*"
 
 [[package]]
 name = "sanic-testing"
-version = "22.9.0"
+version = "22.6.0"
 description = "Core testing clients for Sanic"
 category = "dev"
 optional = false
@@ -2909,11 +2907,11 @@ pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 
 [[package]]
 name = "tabulate"
-version = "0.8.10"
+version = "0.9.0"
 description = "Pretty-print tabular data"
 category = "main"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+python-versions = ">=3.7"
 
 [package.extras]
 widechars = ["wcwidth"]
@@ -3323,7 +3321,7 @@ vision = ["pillow"]
 
 [[package]]
 name = "twilio"
-version = "7.14.1"
+version = "7.14.2"
 description = "Twilio API client and TwiML generator"
 category = "main"
 optional = false
@@ -3413,7 +3411,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-requests"
-version = "2.28.11.1"
+version = "2.28.11.2"
 description = "Typing stubs for requests"
 category = "dev"
 optional = false
@@ -3644,7 +3642,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "e7426ac5728258f360ef2049915f90f45eb0252ba14c25e15a6ffd24374109a6"
+content-hash = "a95ecc484bc0f6fccca8048f2d8bd7b0844e4f2bd7fdad8b31b3d620a7620ab0"
 
 [metadata.files]
 absl-py = []
