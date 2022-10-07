@@ -15,7 +15,7 @@ You'll need a license to get started with Rasa Pro. [Contact Sales](https://info
 Not sure if you need Rasa Pro yet? [Try it for free](https://info.rasa.com/rasa-technical-demo)
 :::
 
-Rasa Pro is compromised of two packages. The packages need to be installed
+Rasa Pro consists of two packages. The packages need to be installed
 separately and in different environments:
 
 - **Rasa Plus**, a drop in replacement for Rasa Open Source for an
@@ -25,12 +25,23 @@ separately and in different environments:
   Open Source. Rasa Pro Services should be deployed alongside, but separately
   from your production assistant.
 
+## Rasa Plus Architecture
+
+Rasa Pro includes the Rasa Plus Python package, which is a drop-in replacement for Rasa Open Source that includes all the functionality of Rasa Open Source as well as additional features.
+Rasa Plus features are built on a plugin architecture that is seamlessly integrated with Rasa Open Source.
+
+For example, in the below diagram, tracing is run as a hook implementation in Rasa Plus, whose specification is defined and registered in Rasa Open Source.
+
+<img alt="image" src={useBaseUrl("/img/rasa-plus-architecture.png")} />
+
+The hook configures the tracing backend as specified in the `endpoints.yml` and instruments model training and message handling actions.
+The hook is then called within the Rasa Open Source main module, which is the entrypoint for the Rasa Open Source command line.
+
+The plugin architecture enables Rasa Plus to continue enhancing the Rasa Open Source argument parser, while maintaining the same runnable command name (`rasa`).
+
 ## Rasa Plus Setup
 
-Rasa Pro includes the Rasa Plus Python package, which is a drop-in replacement
-for Rasa Open Source that includes all the functionality of Rasa Open Source
-as well as additional features. Rasa Pro requires access credentials to
-install and a license to use. The instructions below assume you have
+Rasa Pro requires access credentials to install and a license to use. The instructions below assume you have
 credentials and a license already.
 
 ### Install for Development
