@@ -971,6 +971,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 f"data."
             )
             return None
+        elif message.get('text') == "":
+            return None
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
