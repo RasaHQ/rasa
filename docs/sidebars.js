@@ -145,7 +145,8 @@ module.exports = {
       items: [
         'telemetry/telemetry',
         'telemetry/reference',
-        require('./docs/reference/sidebar.json')],
+        // require('./docs/reference/sidebar.json')
+      ],
     },
     {
       type: 'category',

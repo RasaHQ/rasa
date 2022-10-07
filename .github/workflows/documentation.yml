@@ -109,10 +109,10 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Set up Node 12.x 🦙
+      - name: Set up Node 16.x 🦙
         uses: actions/setup-node@v3.4.1
         with:
-          node-version: "12.x"
+          node-version: "16.x"
 
       - name: Read Poetry Version 🔢
         run: |
@@ -147,8 +147,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: docs/node_modules
-          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-12.x
+          key: ${{ runner.os }}-yarn-16.x-${{ hashFiles('docs/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-16.x
 
       - name: Install Dependencies 📦
         run: make install install-docs
@@ -200,11 +200,11 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Set up Node 12.x 🦙
+      - name: Set up Node 16.x 🦙
         if: needs.changes.outputs.docs == 'true'
         uses: actions/setup-node@v3.4.1
         with:
-          node-version: "12.x"
+          node-version: "16.x"
 
       - name: Read Poetry Version 🔢
         if: needs.changes.outputs.docs == 'true'
@@ -244,8 +244,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: docs/node_modules
-          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-12.x
+          key: ${{ runner.os }}-yarn-16.x-${{ hashFiles('docs/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-16.x
 
       - name: Install Dependencies 📦
         if: needs.changes.outputs.docs == 'true'
@@ -288,17 +288,17 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
-      - name: Set up Node 12.x 🦙
+      - name: Set up Node 16.x 🦙
         uses: actions/setup-node@v3.4.1
         with:
-          node-version: "12.x"
+          node-version: "16.x"
 
       - name: Load Yarn Cached Packages ⬇
         uses: actions/cache@v3
         with:
           path: docs/node_modules
-          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-12.x
+          key: ${{ runner.os }}-yarn-16.x-${{ hashFiles('docs/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-16.x
 
       - name: Install Dependencies 📦
         run: make install-docs

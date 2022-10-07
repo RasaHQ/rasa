@@ -1,0 +1,37 @@
+.playgroundHeader {
+  letter-spacing: 0.08rem;
+  padding: 0.75rem;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.playgroundEditorHeader {
+  background: rgb(32, 35, 42);
+  color: #999;
+}
+
+.playgroundPreviewHeader {
+  background: rgb(236, 236, 236);
+  color: rgb(109, 109, 109);
+}
+
+.playgroundPreview {
+  border: 1px solid #f0f0f0;
+  border-bottom-left-radius: var(--ifm-global-radius);
+  border-bottom-right-radius: var(--ifm-global-radius);
+  position: relative;
+  padding: 1rem;
+}
+
+.playgroundEditor {
+  flex: 1;
+  overflow-y: scroll;
+}
+
+.playgroundEditorAssistantBuilder {
+  border-radius: 0 0 8px 0;
+}
+
+.playgroundEditorAssistantBuilder pre, .playgroundEditorAssistantBuilder textarea {
+  padding: 28px 24px !important;
+}
