@@ -1,0 +1,110 @@
+---
+id: sdk-actions
+sidebar_label: Actions
+title: Actions
+---
+
+
+The `Action` class is the base class for any custom action. To 
+define a custom action, create a subclass of the `Action` class
+and overwrite the two required methods, `name` and `run`. The
+action server will call an action according to the return value 
+of its `name` method when it receives a request to run an action.
+
+A skeleton custom action looks like this:
+
+```python
+class MyCustomAction(Action):
+
+    def name(self) -> Text:
+
+        return "action_name"
+
+    async def run(
+        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+
+        return []
+```
+
+## Methods
+
+### Action.name
+
+Defines the action's name. The name returned by this method is the one used in your bot's domain.
+
+* **Returns**:
+
+  Name of action
+
+* **Return type**: 
+
+  `str`
+
+### Action.run
+
+```python
+async Action.run(dispatcher, tracker, domain)
+```
+
+The `run` method executes the side effects of the action. 
+
+
+
+#### **Parameters**
+
+  * **dispatcher** – the dispatcher which is used to
+    send messages back to the user. Use
+    `dispatcher.utter_message()` or any other
+    `rasa_sdk.executor.CollectingDispatcher`
+    method. See the [documentation for the dispatcher](sdk-dispatcher.mdx)
+
+  * **tracker** – the state tracker for the current
+    user. You can access slot values using
+    `tracker.get_slot(slot_name)`, the most recent user message
+    is `tracker.latest_message.text` and any other
+    `rasa_sdk.Tracker` property. See the [documentation for the tracker](sdk-tracker.mdx).
+
+  * **domain** – the bot's domain
+
+
+
+#### **Returns**
+
+  A list of `rasa_sdk.events.Event` instances. See the [documentation for events](sdk-events.mdx).
+
+#### **Return type**
+
+  `List`[`Dict`[`str`, `Any`]]
+
+
+## Example
+
+In a restaurant bot, if the user says “show me a Mexican restaurant”,
+your bot could execute the action `ActionCheckRestaurants`,
+which might look like this:
+
+```python
+from typing import Text, Dict, Any, List
+from rasa_sdk import Action
+from rasa_sdk.events import SlotSet
+
+class ActionCheckRestaurants(Action):
+   def name(self) -> Text:
+      return "action_check_restaurants"
+
+   def run(self,
+           dispatcher: CollectingDispatcher,
+           tracker: Tracker,
+           domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+      cuisine = tracker.get_slot('cuisine')
+      q = "select * from restaurants where cuisine='{0}' limit 1".format(cuisine)
+      result = db.query(q)
+
+      return [SlotSet("matches", result if result is not None else [])]
+```
+
+This action queries a database to find restaurants matching
+the requested cuisine, and uses the list of restaurants found 
+to set the value of the `matches` slot. 
