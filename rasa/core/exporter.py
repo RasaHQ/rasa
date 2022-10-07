@@ -1,10 +1,8 @@
-import itertools
 import logging
 import uuid
-from typing import AsyncIterator, Text, Optional, List, Set, Dict, Any, Iterable
+from typing import AsyncIterator, Text, Optional, List, Set, Dict, Any
 
 from tqdm import tqdm
-from tqdm.asyncio import tqdm as tqdm_async
 
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
@@ -16,7 +14,6 @@ from rasa.shared.core.trackers import EventVerbosity
 from rasa.exceptions import (
     NoEventsToMigrateError,
     NoConversationsInTrackerStoreError,
-    NoEventsInTimeRangeError,
     PublishingError,
 )
 
