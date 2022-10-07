@@ -1,0 +1,45 @@
+---
+id: running-action-server
+sidebar_label: Running a Rasa SDK Server
+title: Running a Rasa SDK Action Server
+---
+
+There are two ways to run the action server, depending on whether you 
+are using an environment with 
+`rasa` installed or not:
+
+If `rasa` is installed, you can run the action server using a `rasa` command:
+
+```bash
+rasa run actions
+```
+
+Alternatively you can make your assistant listen on a specific address using the `SANIC_HOST` environment
+variable:
+
+```bash
+SANIC_HOST=192.168.69.150 rasa run actions
+```
+
+If `rasa` is not installed, you can run the action server directly as a python module:
+
+```bash
+python -m rasa_sdk --actions actions
+```
+
+Running the action server directly as a python module allows for `SANIC_HOST` too:
+
+```bash
+SANIC_HOST=192.168.69.150 python -m rasa_sdk --actions actions
+```
+
+Using the command above, `rasa_sdk` will expect to find your actions 
+in a file called `actions.py`
+or in a package directory called `actions`. 
+You can specify a different actions module or package with the 
+`--actions` flag.
+
+The full list of options for running the action server with either command is:
+
+```text [python -m rasa_sdk --help]
+```
