@@ -1376,9 +1376,7 @@ def create_app(
     async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
         # FIXME: this is a false positive mypy error after upgrading to 0.931
-        accepts = request.headers.get(  # type: ignore[call-overload]
-            "Accept", default=JSON_CONTENT_TYPE
-        )
+        accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
         if accepts.endswith("json"):
             domain = app.ctx.agent.domain.as_dict()
             return response.json(domain)

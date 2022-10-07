@@ -1,6 +1,7 @@
 import itertools
 import logging
 import uuid
+import datetime
 from typing import Text, Optional, List, Set, Dict, Any, Iterable
 
 from tqdm import tqdm
@@ -47,6 +48,7 @@ class Exporter:
         requested_conversation_ids: Optional[Text] = None,
         minimum_timestamp: Optional[float] = None,
         maximum_timestamp: Optional[float] = None,
+        offset_timestamps_by_seconds: Optional[int] = None,
     ) -> None:
         self.endpoints_path = endpoints_path
         self.tracker_store = tracker_store
@@ -55,6 +57,7 @@ class Exporter:
         self.requested_conversation_ids = requested_conversation_ids
         self.minimum_timestamp = minimum_timestamp
         self.maximum_timestamp = maximum_timestamp
+        self.offset_timestamps_by_seconds = offset_timestamps_by_seconds
 
     async def publish_events(self) -> int:
         """Publish events in a tracker store using an event broker.
@@ -70,6 +73,8 @@ class Exporter:
         rasa.shared.utils.cli.print_info(
             f"Selected {len(events)} events for publishing. Ready to go 🚀"
         )
+
+        self._print_offset_info()
 
         published_events = 0
         current_timestamp = None
@@ -90,6 +95,17 @@ class Exporter:
 
         return published_events
 
+    def _print_offset_info(self) -> None:
+        """Output information about the offset applied to event timestamps."""
+        if self.offset_timestamps_by_seconds is None:
+            return
+
+        delta = datetime.timedelta(seconds=abs(self.offset_timestamps_by_seconds))
+        operator = "-" if self.offset_timestamps_by_seconds > 0 else ""
+        rasa.shared.utils.cli.print_info(
+            f"All event timestamps will be offset by {operator}{delta}! ⏰"
+        )
+
     def _get_message_headers(self) -> Optional[Dict[Text, Text]]:
         """Generate a message header for publishing events to a `PikaEventBroker`.
 
@@ -105,16 +121,22 @@ class Exporter:
         return None
 
     def _publish_with_message_headers(
-        self, event: Dict[Text, Any], headers: Optional[Dict[Text, Text]]
+        self, original_event: Dict[Text, Any], headers: Optional[Dict[Text, Text]]
     ) -> None:
         """Publish `event` to a message broker with `headers`.
 
         Args:
-            event: Serialized event to be published.
+            original_event: Serialized event to be published.
             headers: Message headers to be published if `self.event_broker` is a
                 `PikaEventBroker`.
 
         """
+        if self.offset_timestamps_by_seconds is not None:
+            event = dict(original_event)
+            event["timestamp"] += self.offset_timestamps_by_seconds
+        else:
+            event = original_event
+
         if isinstance(self.event_broker, PikaEventBroker):
             self.event_broker.publish(event=event, headers=headers)
         else:

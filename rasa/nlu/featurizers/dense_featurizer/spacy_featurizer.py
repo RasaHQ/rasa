@@ -38,6 +38,11 @@ class SpacyFeaturizer(DenseFeaturizer, GraphComponent):
         return [SpacyTokenizer]
 
     @staticmethod
+    def required_packages() -> List[Text]:
+        """Any extra python dependencies required for this component to run."""
+        return ["spacy"]
+
+    @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
