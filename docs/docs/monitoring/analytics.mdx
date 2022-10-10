@@ -37,35 +37,47 @@ and connected to your database and Kafka instances.
 
 ### Ingesting past Conversational data
 
-- if you've previously already streamed the data of your assistant to Kafka
-  and Kafka is configured to retain events on this topic, you can
-  connect Analytics to your Kafka instance and it will process all prior
-  events.
-- if not, ingest the data using
+If you've previously already streamed the data of your assistant to Kafka
+and Kafka is configured to retain events on this topic, you can
+connect Analytics to your Kafka instance and it will process all prior
+events.
 
-  ```shell
-  rasa export --endpoints endpoints.yml
-  ```
+By default, the analytics pipeline will start processing events from the
+beginning of the Kafka topic.
 
-  The export needs to be configured to read from your production tracker store
-  and write to Kafka as an event broker, e.g.
+You can ingest data of past conversations by running the following command:
 
-  ```yaml-rasa title="endpoints.yml"
-    tracker_store:
-        type: SQL
-        dialect: "postgresql"
-        url: "localhost"
-        db: "tracker"
-        username: postgres
-        password: password
+```shell
+rasa export --endpoints endpoints.yml
+```
 
-    event_broker:
-        type: kafka
-        topic: rasa-events
-        url: localhost:29092
-        partition_by_sender: true # VERY IMPORTANT!!!!
+The export needs to be configured to read from your production tracker store
+and write to Kafka as an event broker, e.g.
 
-  ```
+```yaml-rasa title="endpoints.yml"
+  tracker_store:
+      type: SQL
+      dialect: "postgresql"
+      url: "localhost"
+      db: "tracker"
+      username: postgres
+      password: password
+
+  event_broker:
+      type: kafka
+      topic: rasa-events
+      url: localhost:29092
+      partition_by_sender: true # VERY IMPORTANT!!!!
+
+```
+
+:::note
+
+Running the ingestion of past events multiple times will result in duplicated
+events. There is currently no deduplication implemented in Analytics. Every
+event which gets ingested will be stored in the database, even if it has
+been processed previously.
+:::
 
 ### Connecting your Business Intelligence Solution
 

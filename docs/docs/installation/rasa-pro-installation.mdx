@@ -268,8 +268,8 @@ a license.
 - A production deployment of a data lake needs to be connected to
   the data pipeline. Rasa Pro support the following data lakes:
 
-  - [Amazon Redshift](https://aws.amazon.com/redshift/) (recommended)
-  - [PostgreSQL](https://aws.amazon.com/rds/postgresql/) (version >= 11)
+  - [PostgreSQL](https://aws.amazon.com/rds/postgresql/) (**recommended**. All PostgreSQL >= 11.0 are supported)
+  - [Amazon Redshift](https://aws.amazon.com/redshift/)
 
   We recommend managed deployments of your data lake to minimize maintenance
   efforts.
@@ -355,16 +355,16 @@ The Rasa Pro Services docker container supports configuration through a number
 of environment variables. The following table lists the available environment
 variables:
 
-| Environment Variable      | Description                                                                       | Default            |
-| :------------------------ | :-------------------------------------------------------------------------------- | :----------------- |
-| `RASA_PRO_LICENSE`        | **Required**. The license key for Rasa Pro Services.                              |                    |
-| `KAFKA_BROKER_ADDRESS`    | **Required**. The address of the Kafka broker.                                    |                    |
-| `KAFKA_TOPIC`             | **Required**. The topic Rasa Plus publishes events to and Rasa Pro consumes from. | `rasa_core_events` |
-| `RASA_ANALYTICS_DB_URL`   | The URL of the data lake to store analytics data in.                              |                    |
-| `KAFKA_SASL_MECHANISM`    | The SASL mechanism to use for authentication.                                     | `PLAIN`            |
-| `KAFKA_SASL_USERNAME`     | The username for SASL authentication.                                             |                    |
-| `KAFKA_SASL_PASSWORD`     | The password for SASL authentication.                                             |                    |
-| `KAFKA_SECURITY_PROTOCOL` | The security protocol to use for communication with Kafka.                        | `PLAINTEXT`        |
+| Environment Variable      | Description                                                                                                           | Default            |
+| :------------------------ | :-------------------------------------------------------------------------------------------------------------------- | :----------------- |
+| `RASA_PRO_LICENSE`        | **Required**. The license key for Rasa Pro Services.                                                                  |                    |
+| `KAFKA_BROKER_ADDRESS`    | **Required**. The address of the Kafka broker.                                                                        |                    |
+| `KAFKA_TOPIC`             | **Required**. The topic Rasa Plus publishes events to and Rasa Pro consumes from.                                     | `rasa_core_events` |
+| `RASA_ANALYTICS_DB_URL`   | The URL of the data lake to store analytics data in.                                                                  |                    |
+| `KAFKA_SASL_MECHANISM`    | The SASL mechanism to use for authentication. Valid mechanisms are                                                    | `PLAIN`            |
+| `KAFKA_SASL_USERNAME`     | The username for SASL authentication.                                                                                 |                    |
+| `KAFKA_SASL_PASSWORD`     | The password for SASL authentication.                                                                                 |                    |
+| `KAFKA_SECURITY_PROTOCOL` | The security protocol to use for communication with Kafka. Supported machanisms are `PLAINTEXT` and `SASL_PLAINTEXT`. | `PLAINTEXT`        |
 
 ### Healthcheck Endpoint
 
@@ -386,3 +386,19 @@ Example response for `/healthcheck`:
   "isHealthy": true
 }
 ```
+
+### Installation FAQ
+
+#### Setting up Rasa Pro with a secured Kafka instance
+
+The connection to a secured Kafka instance can be configured by setting the
+following environment variables on the Rasa Pro docker container:
+`KAFKA_SASL_MECHANISM`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` and
+`KAFKA_SECURITY_PROTOCOL`. A detailed description of the parameters can
+be found in the
+[environment variable reference](#docker-container-configuration-reference).
+
+The environment variables need to be configured upon startup of the Rasa Pro
+docker container.
+
+Support for truststores and keystores is currently not implemented.
