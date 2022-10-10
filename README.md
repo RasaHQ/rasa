@@ -116,13 +116,7 @@ also be asked to sign a
 ### Installing Poetry
 
 Rasa uses Poetry for packaging and dependency management. If you want to build it from source,
-you have to install Poetry first. This is how it can be done:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-```
-
-There are several other ways to install Poetry. Please, follow
+you have to install Poetry first. Please follow
 [the official guide](https://python-poetry.org/docs/#installation) to see all possible options.
 
 ### Managing environments
