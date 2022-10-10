@@ -104,6 +104,7 @@ def main() -> None:
     set_log_level(log_level)
 
     tf_env.setup_tf_environment()
+    tf_env.check_deterministic_ops()
 
     # insert current path in syspath so custom modules are found
     sys.path.insert(1, os.getcwd())

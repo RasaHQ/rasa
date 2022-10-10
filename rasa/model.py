@@ -222,13 +222,14 @@ def unpack_model(
 
     """
     import tarfile
+    from tarsafe import TarSafe
 
     if working_directory is None:
         working_directory = tempfile.mkdtemp()
 
     # All files are in a subdirectory.
     try:
-        with tarfile.open(model_file, mode="r:gz") as tar:
+        with TarSafe.open(model_file, mode="r:gz") as tar:
             tar.extractall(working_directory)
             logger.debug(f"Extracted model to '{working_directory}'.")
     except (tarfile.TarError, ValueError) as e:

@@ -1,0 +1,5 @@
+version: "2.0"
+
+entities:
+  - ball
+  - chess

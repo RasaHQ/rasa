@@ -13,7 +13,7 @@ from rasa.core.agent import Agent
 
 def nlg_app(base_url="/"):
 
-    app = Sanic(__name__)
+    app = Sanic("test_nlg", register=False)
 
     @app.route(base_url, methods=["POST"])
     async def generate(request):

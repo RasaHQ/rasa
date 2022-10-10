@@ -1,0 +1,22 @@
+version: "2.0"
+
+intents:
+- cure_network
+
+slots:
+  display_method_artwork:
+    type: text
+    influence_conversation: false
+  display_cure_method:
+    type: text
+    influence_conversation: false
+  display_drum_cure_horns:
+    type: text
+    influence_conversation: false
+
+actions:
+- utter_cure_standard
+- utter_cure_specific
+- utter_non_standard
+- action_utter_cure_standard
+

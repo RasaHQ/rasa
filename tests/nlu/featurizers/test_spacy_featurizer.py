@@ -10,6 +10,12 @@ from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 
 
+@pytest.fixture(scope="module")
+def spacy_nlp_component(component_builder, blank_config):
+    spacy_nlp_config = {"name": "SpacyNLP", "model": "en_core_web_md"}
+    return component_builder.create_component(spacy_nlp_config, blank_config)
+
+
 def test_spacy_featurizer_cls_vector(spacy_nlp):
     featurizer = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 

@@ -133,6 +133,10 @@ class ActionSessionStart(Action):
         return [SessionStarted(), ActionExecuted("action_listen")]
 ```
 
+:::info New in 2.3
+The slot `session_started_metadata` was added.
+:::
+
 ## action_default_fallback
 
 This action undoes the last user-bot interaction and sends the `utter_default` response if it is defined.
@@ -189,6 +193,10 @@ action to instruct Rasa Open Source to use the deprecated `FormAction` which is 
 the Rasa SDK.
 
 ## action_unlikely_intent
+
+:::info New in 2.8
+`action_unlikely_intent` was added together with `UnexpecTEDIntentPolicy`.
+:::
 
 Rasa Open Source triggers `action_unlikely_intent` via [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy).
 You can control how often this action is predicted by tuning the [`tolerance`](./policies.mdx#unexpected-intent-policy)

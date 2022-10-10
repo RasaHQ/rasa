@@ -1,11 +1,41 @@
-from typing import Text
+from typing import Text, Any, Optional, List, Dict
 
 import pytest
 
 from rasa.validator import Validator
+
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.core.domain import Domain
 from pathlib import Path
+
+
+async def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
+    print()
+    story_file_name = tmp_path / "stories.yml"
+    with open(story_file_name, "w") as file:
+        file.write(
+            """
+            stories:
+            - story: path 1
+              steps:
+              - user: |
+                  hello assistant! Can you help me today?
+              - action: utter_greet
+            - story: path 2
+              steps:
+              - intent: greet
+              - action: utter_greet
+            """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path="data/test_moodbot/domain.yml",
+        training_data_paths=[story_file_name, nlu_data_path],
+        training_type=TrainingType.NLU,
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_nlu()
 
 
 async def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
@@ -312,6 +342,78 @@ async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path
         "The action 'action_test_2' is used in the 'rule path 1' block, "
         "but it is not listed in the domain file." in warning[0].message.args[0]
     )
+
+
+@pytest.mark.parametrize(
+    "duplicates,is_valid,warning_type,messages",
+    [
+        (None, True, None, []),
+        ({}, True, None, []),
+        ({"responses": []}, True, None, []),
+        (
+            {"responses": ["some_response"]},
+            False,
+            UserWarning,
+            [
+                "The following duplicated responses has been found across "
+                "multiple domain files: some_response"
+            ],
+        ),
+        (
+            {"slots": ["some_slot"]},
+            False,
+            UserWarning,
+            [
+                "The following duplicated slots has been found across "
+                "multiple domain files: some_slot"
+            ],
+        ),
+        (
+            {"forms": ["form1", "form2"]},
+            False,
+            UserWarning,
+            [
+                "The following duplicated forms has been found across "
+                "multiple domain files: form1, form2"
+            ],
+        ),
+        (
+            {"forms": ["form1", "form2"], "slots": []},
+            False,
+            UserWarning,
+            [
+                "The following duplicated forms has been found across "
+                "multiple domain files: form1, form2"
+            ],
+        ),
+        (
+            {"forms": ["form1", "form2"], "slots": ["slot1", "slot2", "slot3"]},
+            False,
+            UserWarning,
+            [
+                "The following duplicated forms has been found across "
+                "multiple domain files: form1, form2",
+                "The following duplicated slots has been found across "
+                "multiple domain files: slot1, slot2, slot3",
+            ],
+        ),
+    ],
+)
+def test_verify_domain_with_duplicates(
+    duplicates: Optional[Dict[Text, List[Text]]],
+    is_valid: bool,
+    warning_type: Any,
+    messages: List[Text],
+):
+    domain = Domain([], [], [], {}, [], {}, duplicates=duplicates)
+    validator = Validator(domain, None, None, None)
+
+    with pytest.warns(warning_type) as warning:
+        assert validator.verify_domain_duplicates() is is_valid
+
+    assert len(warning) == len(messages)
+    for i in range(len(messages)):
+        assert messages[i] in warning[i].message.args[0]
 
 
 async def test_verify_form_slots_invalid_domain(tmp_path: Path):

@@ -275,6 +275,7 @@ def validate_stories(args: argparse.Namespace) -> None:
 def _validate_domain(validator: "Validator") -> bool:
     return (
         validator.verify_domain_validity()
+        and validator.verify_domain_duplicates()
         and validator.verify_actions_in_stories_rules()
         and validator.verify_form_slots()
     )
@@ -299,9 +300,8 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
     import rasa.nlu.convert
-
     from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
-        NLUMarkdownToYamlConverter,
+        NLUToYamlConverter,
     )
 
     if args.format in ["json", "md"]:
@@ -311,7 +311,7 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
         telemetry.track_data_convert(args.format, "nlu")
     elif args.format == "yaml":
         rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.data, NLUMarkdownToYamlConverter())
+            _convert_to_yaml(args.out, args.data, NLUToYamlConverter())
         )
         telemetry.track_data_convert(args.format, "nlu")
     else:

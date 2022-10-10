@@ -69,6 +69,10 @@ For example if you define the greeting rule as above and don't add it to any of 
 after `RulePolicy` predicts `utter_greet`, `TEDPolicy` will
 make predictions as if the `greet, utter_greet` turn did not occur.
 
+:::caution Changed in 2.5
+The ML-only policies behavior of ignoring rule-only dialogue turns at prediction time was added.
+:::
+
 
 ### Rules for the Conversation Start
 

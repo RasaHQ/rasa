@@ -1,7 +1,7 @@
 DOCS_BASE_URL = "https://rasa.com/docs/rasa"
 LEGACY_DOCS_BASE_URL = "https://legacy-docs-v1.rasa.com"
 DOCS_URL_TRAINING_DATA = DOCS_BASE_URL + "/training-data-format"
-DOCS_URL_TRAINING_DATA_NLU = DOCS_URL_TRAINING_DATA + "#nlu-training-data"
+DOCS_URL_TRAINING_DATA_NLU = DOCS_BASE_URL + "/nlu-training-data"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/domain"
 DOCS_URL_SLOTS = DOCS_URL_DOMAINS + "#slots"
 DOCS_URL_INTENTS = DOCS_URL_DOMAINS + "#intents"
@@ -94,3 +94,5 @@ DIAGNOSTIC_DATA = "diagnostic_data"
 
 RESPONSE_CONDITION = "condition"
 CHANNEL = "channel"
+DEFAULT_YAML_SEQUENCE_INDENT_ENV_VAR = "DEFAULT_YAML_SEQUENCE_INDENT"
+DEFAULT_YAML_SEQUENCE_INDENT = 2

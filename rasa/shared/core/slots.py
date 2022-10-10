@@ -343,9 +343,24 @@ class CategoricalSlot(Slot):
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
-        self.values = [str(v).lower() for v in values] if values else []
+        if values and None in values:
+            rasa.shared.utils.io.raise_warning(
+                f"Categorical slot '{self.name}' has `null` listed as a possible value"
+                f" in the domain file, which translates to `None` in Python. This value"
+                f" is reserved for when the slot is not set, and should not be listed"
+                f" as a value in the slot's definition."
+                f" Rasa will ignore `null` as a possible value for the '{self.name}'"
+                f" slot. Consider changing this value in your domain file to, for"
+                f" example, `unset`, or provide the value explicitly as a string by"
+                f' using quotation marks: "null".',
+                category=UserWarning,
+            )
+        self.values = (
+            [str(v).lower() for v in values if v is not None] if values else []
+        )
 
     def add_default_value(self) -> None:
+        """Adds the special default value to the list of possible values."""
         values = set(self.values)
         if rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE not in values:
             self.values.append(
@@ -367,31 +382,36 @@ class CategoricalSlot(Slot):
     def _as_feature(self) -> List[float]:
         r = [0.0] * self.feature_dimensionality()
 
+        # Return the zero-filled array if the slot is unset (i.e. set to None).
+        # Conceptually, this is similar to the case when the featurisation process
+        # fails, hence the returned features here are the same as for that case.
+        if self.value is None:
+            return r
+
         try:
             for i, v in enumerate(self.values):
                 if v == str(self.value).lower():
                     r[i] = 1.0
                     break
             else:
-                if self.value is not None:
-                    if (
+                if (
+                    rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
+                    in self.values
+                ):
+                    i = self.values.index(
                         rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
-                        in self.values
-                    ):
-                        i = self.values.index(
-                            rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
-                        )
-                        r[i] = 1.0
-                    else:
-                        rasa.shared.utils.io.raise_warning(
-                            f"Categorical slot '{self.name}' is set to a value "
-                            f"('{self.value}') "
-                            "that is not specified in the domain. "
-                            "Value will be ignored and the slot will "
-                            "behave as if no value is set. "
-                            "Make sure to add all values a categorical "
-                            "slot should store to the domain."
-                        )
+                    )
+                    r[i] = 1.0
+                else:
+                    rasa.shared.utils.io.raise_warning(
+                        f"Categorical slot '{self.name}' is set to a value "
+                        f"('{self.value}') "
+                        "that is not specified in the domain. "
+                        "Value will be ignored and the slot will "
+                        "behave as if no value is set. "
+                        "Make sure to add all values a categorical "
+                        "slot should store to the domain."
+                    )
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r

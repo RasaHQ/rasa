@@ -151,6 +151,27 @@ Here are some examples:
   ```
 
   </TabItem>
+  <TabItem value="entities">
+
+  ```yaml-rasa title="tests/test_stories.yml" {5,9,13}
+  stories:
+  - story: A basic test story with mutliple entities for a single token
+    steps:
+    - user: |
+        hello
+      intent: greet
+    - action: utter_ask_howcanhelp
+    - user: |
+       show me [chinese]{"entity": "cuisine"} restaurants
+      intent: inform
+    - action: utter_ask_location
+    - user: |
+        in [Paris][{"entity": "location"}, {"entity": "city"}]
+      intent: inform
+    - action: utter_ask_price
+  ```
+
+  </TabItem>
 </Tabs>
 
 By default, the command will run tests on stories from any files with names starting with `test_`. You can also provide
@@ -323,6 +344,20 @@ your trainable entity extractors are trained to recognize.
 Only trainable entity extractors, such as the `DIETClassifier` and `CRFEntityExtractor` are
 evaluated by `rasa test`. Pretrained extractors like the `DucklingHTTPExtractor` are not evaluated.
 
+If you have multiple entity extractors in your pipeline, or use some custom extractors,
+multiple entities might be associated with the same token. In this case,
+you can use a list notation in the test files, such as
+
+```yaml
+stories:
+- story: A basic test story with mutliple entities for a single token
+  steps:
+    - user: |
+        I like [ice cream][{\"entity\": \"food\"}, {\"entity\": \"desert\"}]
+      intent: inform
+    # ...
+```
+
 :::caution incorrect entity annotations
 If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
 is that an entity cannot stop or start inside a token.
@@ -378,6 +413,10 @@ matrix shows how often the action was correctly predicted and how often an
 incorrect action was predicted instead.
 
 ### Interpreting the generated warnings
+
+:::info New in 2.8
+Warnings for stories were added.
+:::
 
 The test script will also generate a warnings file called `results/stories_with_warnings.yml`.
 This file contains all test stories for which [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)

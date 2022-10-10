@@ -1,0 +1,93 @@
+version: "2.0"
+
+intents:
+- drum_robot:
+      use_entities: ["pistachio_robot"]
+- drum_robot_chocolate:
+      ignore_entities:
+      - caramel_robot
+      - strawberry_robot 
+      - rum_and_raisin_robot
+      - vanilla_robot
+      - other_robot
+- drum_wallets:
+      use_entities:
+      - caramel_robot
+      ignore_entities:
+      - chocolate_robot
+- drum_soups:
+      use_entities: True
+- drum_clocks:
+      use_entities: False
+- drum_lampshades:
+      use_entities: False
+- view_offers:
+      use_entities: True
+- delay:
+      use_entities: ["chocolate_robot", "strawberry_robot"]
+
+entities:
+  - chocolate_robot
+  - other_robot
+  - strawberry_robot
+  - vanilla_robot
+
+slots:
+  drumChocolateWallets:
+    type: text
+    influence_conversation: false
+  drumStrawberryWallets:
+    type: text
+    influence_conversation: false
+  drumOtherWallets:
+    type: text
+    influence_conversation: false 
+  drumSnareWallets:
+    type: text
+    influence_conversation: false
+  drumClockCovers:
+    type: text
+    influence_conversation: false
+  drumClockAdapters:
+    type: text
+    influence_conversation: false
+  drumMindspace:
+    type: text
+    influence_conversation: false
+  drumAllLampshades:
+    type: text
+    influence_conversation: false
+  drumSoupChocolate:
+    type: text
+    influence_conversation: false
+  drumSoupStrawberry:
+    type: text
+    influence_conversation: false
+  drumAllSoups:
+    type: text
+    influence_conversation: false
+  drumClocksChocolate:
+    type: text
+    influence_conversation: false
+  drumClocksStrawberry:
+    type: text
+    influence_conversation: false
+  drumAllClocks:
+    type: text
+    influence_conversation: false
+  offers:
+    type: text
+    influence_conversation: false
+
+
+
+actions:
+- action_utter_drum_menu
+- action_increase_15
+- utter_anythingelse_menu
+- utter_std_drum_menu
+- utter_drumwallets
+- utter_drumlampshades
+- utter_drumsoups
+- utter_drumclocks
+- action_utter_robot_menu

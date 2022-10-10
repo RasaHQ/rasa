@@ -234,9 +234,10 @@ def test_test_help(run: Callable[..., RunResult]):
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU]
-                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                 [--successes] [--no-errors] [--no-warnings] [--out OUT]
+                 [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                 [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--no-plot] [--successes] [--no-errors] [--no-warnings]
+                 [--out OUT]
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -250,9 +251,9 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                     [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                     [--successes] [--no-errors] [--no-warnings]"""
+                     [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                     [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                     [--no-plot] [--successes] [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -276,3 +277,59 @@ def test_test_core_help(run: Callable[..., RunResult]):
     printed_help = set(output.outlines)
     for line in lines:
         assert line in printed_help
+
+
+def test_test_core_with_entities_and_no_user_utterance(
+    run_in_simple_project_with_model: Callable[..., RunResult]
+):
+    write_yaml(
+        {"pipeline": "KeywordIntentClassifier", "policies": [{"name": "TEDPolicy"}],},
+        "config.yml",
+    )
+
+    domain_with_entity_yaml = """
+    version: "2.0"
+    intents:
+    - greet
+    entities:
+    - name
+    responses:
+     utter_greet:
+      - text: "Hey There!"
+    """
+    with open("domain.yml", "w") as domain:
+        domain.write(domain_with_entity_yaml)
+
+    nlu_yaml = """
+    version: "2.0"
+    nlu:
+    - intent: greet
+      examples: |
+      - hi [sara](name)
+      - hey
+      - hi [rasa](name)
+    """
+    with open("data/nlu.yml", "w") as nlu:
+        nlu.write(nlu_yaml)
+
+    simple_story_yaml = """
+version: "2.0"
+stories:
+- story: happy path
+  steps:
+  - intent: greet
+    entities:
+    - name
+  - action: utter_greet
+"""
+
+    with open("data/stories.yml", "w") as stories:
+        stories.write(simple_story_yaml)
+
+    run_in_simple_project_with_model(
+        "test", "core", "-s", "data/", "--fail-on-prediction-errors"
+    )
+    assert os.path.exists("results")
+
+    with open("results/failed_test_stories.yml", "r") as failed:
+        assert "# None of the test stories failed - all good!" == failed.read()

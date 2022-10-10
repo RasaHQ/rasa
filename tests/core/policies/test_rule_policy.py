@@ -3067,3 +3067,19 @@ def test_include_action_unlikely_intent():
         RegexInterpreter(),
     )
     test_utils.assert_predicted_action(prediction, domain, utter_2)
+
+
+async def test_initial_values_are_not_incorporated_into_rule_policy():
+
+    domain = Domain.from_path(
+        "data/test_domains/initial_slot_values_greet_and_goodbye.yml"
+    )
+
+    trackers = await training.load_data(
+        "data/test_yaml_stories/rules_greet_and_goodbye.yml", domain
+    )
+    policy = RulePolicy()
+
+    policy.train(trackers, domain, RegexInterpreter())
+
+    assert not any(["has_said_hi" in rule for rule in policy.lookup[RULES]])
