@@ -3,7 +3,9 @@ id: analytics
 sidebar_label: Analytics
 title: Analytics
 description:
-abstract: Rasa Pro Analytics is an ETL pipeline that extracts model, training, and conversation data from the Rasa platform and creates a queryable and extensible database schema.
+abstract: Rasa Pro Analytics is a data pipeline that extracts model, training,
+  and conversation data from the Rasa platform and streams the data to
+  your data warehouse for analysis.
 ---
 
 import useBaseUrl from "@docusaurus/useBaseUrl";
@@ -18,24 +20,40 @@ on top of Rasa, for enterprise scale, complexity, and interoperability.
 [Schedule a technical demo ->](https://info.rasa.com/rasa-technical-demo)
 :::
 
-:::warning
-TODO: Lots of content missing, more a structure atm.
-:::
-
 You can query and
 visualise metrics in a frontend tool of your choice (e.g. Metabase, PowerBI)
+
+<div align="center">
+  <img
+    alt="Rasa Pro Analytics example dashboard"
+    src={useBaseUrl("/img/analytics/analytics-examples.png")}
+    width="100%"
+  />
+</div>
 
 Measure the success of a Rasa assistant and making strategic investments
 will lead to better business outcomes. It will also help you understand
 the needs of your end users and better serve them.
 
-Rasa Pro Analytics will start analyzing your conversations as soon as
-the docker container is successfully deployed
-and connected to your database and Kafka instances.
+<div align="center">
+  <img
+    alt="An overview over the components of Rasa Pro."
+    src={useBaseUrl("/img/rasa_pro_overview.png")}
+    width="100%"
+  />
+</div>
+
+Rasa Pro will connect to your production assistant using Kafka. The
+analytics will be computed as soon as the docker container is successfully
+deployed and connected to your data warehouse and Kafka instances.
 
 ## Getting Started
 
-### Ingesting past Conversational data
+### Connect an assistant
+
+### Connect a data warehouse
+
+### Ingest past conversations
 
 When Analytics is conencted to your Kafka instance, it will consume
 all prior events on the Kafka topic and ingest them into the database.
@@ -82,7 +100,11 @@ Analytics. Every event which gets ingested will be stored in the database,
 even if it has been processed previously.
 :::
 
-### Connecting your Business Intelligence Solution
+### Connect a BI Solution
+
+Connecting a business intelligence platform to the data warehouse varies for
+each platform. We provide example instructions for Metabase and Tableau but
+you can use any BI platform which supports AWS Redshift or PostgreSQL.
 
 #### Example: Connecting Metabase
 
@@ -128,12 +150,12 @@ ORDER BY CAST("public"."rasa_users"."FIRST_SEEN" AS date) ASC
   />
 </div>
 
-## Data Structure Reference
+## Data Structure
 
 <div align="center">
   <img
     alt="An overview over the components of Rasa Pro."
-    src={useBaseUrl("/img/analytics-db-schema.png")}
+    src={useBaseUrl("/img/analytics/analytics-db-schema.png")}
     width="100%"
   />
 </div>
@@ -149,3 +171,9 @@ executed by the assistant across all conversations.
 | ...    | ...         | ...                                           |
 
 ### Table `...`
+
+## Architecture
+
+:::warning
+check if there is a better title
+:::

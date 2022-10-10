@@ -18,7 +18,6 @@ module.exports = {
       label: 'Building Assistants',
       collapsed: false,
       items: [
-       
           'migrate-from',
           'command-line-interface',
         {
