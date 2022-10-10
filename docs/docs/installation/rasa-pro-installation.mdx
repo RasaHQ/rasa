@@ -260,19 +260,9 @@ A Rasa Pro Services deployment needs to be connected to existing services,
 be deployed on a machine meeting the minimal hardware requirements supplying
 a license.
 
-#### Existing Services
-
-- A production deployment of Kafka is required to set up Rasa Pro.
-  We recommend to use [Amazon Managed Streaming for
-  Apache Kafka](https://aws.amazon.com/msk/).
-- A production deployment of a data lake needs to be connected to
-  the data pipeline. Rasa Pro support the following data lakes:
-
-  - [PostgreSQL](https://aws.amazon.com/rds/postgresql/) (**recommended**. All PostgreSQL >= 11.0 are supported)
-  - [Amazon Redshift](https://aws.amazon.com/redshift/)
-
-  We recommend managed deployments of your data lake to minimize maintenance
-  efforts.
+A production deployment of Kafka is required to set up Rasa Pro.
+We recommend to use
+[Amazon Managed Streaming for Apache Kafka](https://aws.amazon.com/msk/).
 
 #### System Requirements
 
@@ -337,14 +327,8 @@ The different services need to be run and configured to be able to communicate.
         -e RASA_PRO_LICENSE=<your_license> \
         -e KAFKA_BROKER_ADDRESS=<BROKER_URL> \
         -e KAFKA_TOPIC=rasa-events \
-        -e RASA_ANALYTICS_DB_URL=<DATA_LAKE_URL> \
         europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
     ```
-
-    The `<DATA_LAKE_URL>` should have a DBAPI format, e.g.
-    `postgresql+psycopg2://user:password@postgres.host:5432/rasa`.
-    If no data lake URL is configured, [Analytics](../monitoring/analytics.mdx)
-    will be disabled.
 
     For production deployments we recommend to us
     [Amazon Elastic Container Service](https://docs.docker.com/cloud/ecs-integration/).

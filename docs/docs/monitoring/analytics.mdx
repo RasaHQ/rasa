@@ -48,9 +48,42 @@ deployed and connected to your data warehouse and Kafka instances.
 
 ## Getting Started
 
+### Prerequisites
+
+- A production deployment of Kafka is required to set up Rasa Pro.
+  We recommend to use [Amazon Managed Streaming for
+  Apache Kafka](https://aws.amazon.com/msk/).
+- A production deployment of a data lake needs to be connected to
+  the data pipeline. Rasa Pro support the following data lakes:
+
+  - [PostgreSQL](https://aws.amazon.com/rds/postgresql/) (**recommended**. All PostgreSQL >= 11.0 are supported)
+  - [Amazon Redshift](https://aws.amazon.com/redshift/)
+
+  We recommend managed deployments of your data lake to minimize maintenance
+  efforts.
+
 ### Connect an assistant
 
+The `<DATA_LAKE_URL>` should have a DBAPI format, e.g.
+`postgresql+psycopg2://user:password@postgres.host:5432/rasa`.
+If no data lake URL is configured, [Analytics](../monitoring/analytics.mdx)
+will be disabled.
+
+`RASA_ANALYTICS_DB_URL=<DATA_LAKE_URL>`
+
 ### Connect a data warehouse
+
+#### PostgreSQL
+
+TODO: general instructions.
+
+TODO: instructions for AWS RDS
+
+#### Redshift
+
+TODO: streaming to Redshift from Postgres
+
+TODO: direct connection with disclaimer on performance
 
 ### Ingest past conversations
 
