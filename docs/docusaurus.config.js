@@ -70,9 +70,7 @@ module.exports = {
       apiKey: '75ea5a8c8f4b16405c560a4ba786256b',
       indexName: 'rasa',
       inputSelector: '.search-bar',
-      searchParameters: {
-        'facetFilters': ["tags:rasa"]
-      }
+
     },
     navbar: {
       hideOnScroll: false,

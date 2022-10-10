@@ -3,3 +3,10 @@
     background-color: rgb(238, 249, 253) !important;
     border-left: 8px solid rgb(76, 179, 212) !important;
 }
+
+
+@media (max-width: 996px) {
+    .dropdown {
+        display: none !important;
+    }
+}
