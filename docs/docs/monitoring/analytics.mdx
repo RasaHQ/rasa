@@ -37,15 +37,19 @@ and connected to your database and Kafka instances.
 
 ### Ingesting past Conversational data
 
-If you've previously already streamed the data of your assistant to Kafka
-and Kafka is configured to retain events on this topic, you can
-connect Analytics to your Kafka instance and it will process all prior
-events.
+When Analytics is conencted to your Kafka instance, it will consume
+all prior events on the Kafka topic and ingest them into the database.
+Kafka has a retention policy for events on a [topic which defaults to
+7 days](https://docs.confluent.io/platform/current/installation/configuration/topic-configs.html#topicconfigs_retention.ms).
 
-By default, the analytics pipeline will start processing events from the
-beginning of the Kafka topic.
+If you want to process events from conversations that are older than the
+retention policy configured for the Rasa topic, you can manually
+ingest events from past conversations.
 
-You can ingest data of past conversations by running the following command:
+Manually ingesting data of past conversations requires a connection to the
+tracker store that contains the past conversations and a connection to the
+Kafka cluster. The `rasa export` command can be used to export the events
+stored in the tracker store to Kafka:
 
 ```shell
 rasa export --endpoints endpoints.yml
@@ -67,16 +71,15 @@ and write to Kafka as an event broker, e.g.
       type: kafka
       topic: rasa-events
       url: localhost:29092
-      partition_by_sender: true # VERY IMPORTANT!!!!
-
+      partition_by_sender: true
 ```
 
 :::note
 
-Running the ingestion of past events multiple times will result in duplicated
-events. There is currently no deduplication implemented in Analytics. Every
-event which gets ingested will be stored in the database, even if it has
-been processed previously.
+Running manuall ingestion of past events multiple times will result in
+duplicated events. There is currently no deduplication implemented in
+Analytics. Every event which gets ingested will be stored in the database,
+even if it has been processed previously.
 :::
 
 ### Connecting your Business Intelligence Solution
