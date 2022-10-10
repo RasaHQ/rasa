@@ -526,6 +526,40 @@ def create_directory(directory_path: Text) -> None:
         if e.errno != errno.EEXIST:
             raise
 
+def refactor_payload_to_training_directory(
+    payload: Dict,
+    temp_directory: Text,
+) -> Dict[Text, Text]:
+    """Refactors payload to seperated files with standard training directory structure.
+
+    Args:
+        payload: The dict with all training data needed.
+        temp_directory: The temp folder to place files with standard training directory structure.
+
+    Returns:
+        The dict contains paths of domain.yml, config.yml and NLU data.
+    """
+    temp_data_directory = f"{temp_directory}/data"
+    target_keys = ["nlu", "stories", "rules", "domain", "config"]
+
+    for key in target_keys:
+        if key in ["nlu", "stories", "rules"] and key in payload.keys():
+            path = f"{temp_data_directory}/{key}.yml"
+            content = {key: payload[key]}
+        elif key in ["domain", "config"] and key in payload.keys():
+            path = f"{temp_directory}/{key}.yml"
+            content = payload[key]
+        else:
+            path = f"{temp_data_directory}/{key}.yml" if key in ["nlu", "stories", "rules"] else f"{temp_directory}/{key}.yml"
+            content = {key: {}} if key in ["nlu", "stories", "rules"] else {}
+        
+        write_yaml(content, path)
+    
+    return dict(
+            domain=f"{temp_directory}/domain.yml",
+            config=f"{temp_directory}/config.yml",
+            training_files=temp_data_directory
+        )
 
 def raise_deprecation_warning(
     message: Text,

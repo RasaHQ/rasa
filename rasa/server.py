@@ -95,15 +95,6 @@ OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
 EXECUTE_SIDE_EFFECTS_QUERY_KEY = "execute_side_effects"
 
-API_TEMP_DATA_FOLDER = "data"
-API_TEMP_NLU_YAML_FILE = "nlu.yml"
-API_TEMP_RULES_YAML_FILE = "rules.yml"
-API_TEMP_STORIES_YAML_FILE = "stories.yml"
-API_TEMP_DOMAIN_YAML_FILE = "domain.yml"
-API_TEMP_CONFIG_YAML_FILE = 'config.yml'
-
-
-
 class ErrorResponse(Exception):
     """Common exception to handle failing API requests."""
 
@@ -667,7 +658,7 @@ def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
     async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
         with tempfile.TemporaryDirectory() as directory:
             # Decorated request handles need to have a parameter `temporary_directory`
-            Path(os.path.join(directory, API_TEMP_DATA_FOLDER)).mkdir(parents=True, exist_ok=True)
+            rasa.shared.utils.io.create_directory(Path(directory, "data"))
             return await f(*args, temporary_directory=Path(directory), **kwargs)
 
     return decorated_function
@@ -1580,41 +1571,15 @@ def _training_payload_from_yaml(
             decoded, reader_type=["safe"]
         )
     
-    if "nlu" in request_payload:
-        nlu_path = os.path.join(temp_dir, API_TEMP_DATA_FOLDER, API_TEMP_NLU_YAML_FILE)
-        nlu_data = {'nlu': request_payload["nlu"]}
-        rasa.shared.utils.io.write_yaml(nlu_data, nlu_path)
-
-    if "stories" in request_payload:
-        stories_path = os.path.join(temp_dir, API_TEMP_DATA_FOLDER, API_TEMP_STORIES_YAML_FILE)
-        stories_data = {'stories':request_payload["stories"]}
-        rasa.shared.utils.io.write_yaml(stories_data, stories_path)
+    training_directory_path = rasa.shared.utils.io.refactor_payload_to_training_directory(request_payload, temp_directory=temp_dir)
     
-    if "rules" in request_payload:
-        rules_path = os.path.join(temp_dir, API_TEMP_DATA_FOLDER, API_TEMP_RULES_YAML_FILE)
-        rules_data = {'rules':request_payload["rules"]}
-        rasa.shared.utils.io.write_yaml(rules_data, rules_path)
-
-    if "domain" in request_payload:
-        domain_path = os.path.join(temp_dir, API_TEMP_DOMAIN_YAML_FILE)
-        domain_data = request_payload["domain"]
-        rasa.shared.utils.io.write_yaml(domain_data, domain_path)
-    
-    if "config" in request_payload:
-        config_path = os.path.join(temp_dir, API_TEMP_CONFIG_YAML_FILE)
-        config_data = request_payload["config"]
-        rasa.shared.utils.io.write_yaml(config_data, config_path)
-    
-    training_files_path = os.path.join(temp_dir, API_TEMP_DATA_FOLDER)
     model_output_directory = str(temp_dir)
-
+    
     if rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True):
         model_output_directory = DEFAULT_MODELS_PATH
 
     return dict(
-        domain=domain_path,
-        config=config_path,
-        training_files=training_files_path,
+        **training_directory_path,
         output=model_output_directory,
         force_training=rasa.utils.endpoints.bool_arg(request, "force_training", False),
         core_additional_arguments=_extract_core_additional_arguments(request),
