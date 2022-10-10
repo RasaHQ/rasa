@@ -16,6 +16,26 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.3.0a1] - 2022-10-10                           
+### Deprecations and Removals
+- [#11190](https://github.com/rasahq/rasa/issues/11190): Remove code related to Rasa X local mode as it is deprecated and scheduled for removal.
+
+### Improvements
+- [#11568](https://github.com/rasahq/rasa/issues/11568): Adds new dependency pluggy, with which it was possible to implement new plugin functionality.
+  This plugin manager enables the extension and/or enhancement of the Rasa command line interface with functionality made available in the rasa-plus package.
+- [#11596](https://github.com/rasahq/rasa/issues/11596): Caching `Message` and `Features` fingerprints unless they are altered, saving up to 2/3 of fingerprinting time in our tests.
+- [#11578](https://github.com/rasahq/rasa/issues/11578): Rasa supports native installations on Apple Silicon (M1 / M2). Please
+  follow the installation instructions and take a look at the limitations.
+- [#11561](https://github.com/rasahq/rasa/issues/11561): Added option `--offset-timestamps-by-seconds` to offset the timestamp of events when using `rasa export`
+- [#11598](https://github.com/rasahq/rasa/issues/11598): Added package versions of component  dependencies as an additional part of fingerprinting calculation. Upgrading an dependency will thus lead to a retraining of the component in the future. Also, by changing fingerprint calculation, the next training after this change will be a complete retraining.
+
+### Bugfixes
+- [#11395](https://github.com/rasahq/rasa/issues/11395): Fixes a bug that lead to initial slot values being incorporated into all rules by default, thus breaking most rules when the slot value changed from its initial value
+- [#11429](https://github.com/rasahq/rasa/issues/11429): Made logistic regression classifier output a proper intent ranking and made ranking length configurable
+
+### Miscellaneous internal changes
+- [#11548](https://github.com/rasahq/rasa/issues/11548)
+
 
 ## [3.2.10] - 2022-09-29                          
 ### Bugfixes
