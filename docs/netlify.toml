@@ -176,6 +176,8 @@
   from = "/docs/rasa/prototype-an-assistant"
   to = "/docs/rasa/playground/"
 
+
+
 # Redirects for latest version permalinks
 # this needs to be updated when we cut a new version
 [[redirects]]

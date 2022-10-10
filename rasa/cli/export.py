@@ -195,6 +195,7 @@ async def _export_trackers(args: argparse.Namespace) -> None:
         requested_conversation_ids,
         args.minimum_timestamp,
         args.maximum_timestamp,
+        args.offset_timestamps_by_seconds,
     )
 
     try:
@@ -240,6 +241,11 @@ def _get_continuation_command(exporter: "Exporter", timestamp: float) -> Text:
     if exporter.requested_conversation_ids:
         command += (
             f" --conversation-ids {','.join(exporter.requested_conversation_ids)}"
+        )
+
+    if exporter.offset_timestamps_by_seconds is not None:
+        command += (
+            f" --offset-timestamps-by-seconds {exporter.offset_timestamps_by_seconds}"
         )
 
     return command

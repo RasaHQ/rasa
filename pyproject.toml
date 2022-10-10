@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.2.8"
+version = "3.2.10"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -120,9 +120,8 @@ sklearn-crfsuite = "~0.3"
 # https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/
 psycopg2-binary = ">=2.8.2,<2.10.0"
 python-dateutil = "~2.8"
-tensorflow = { version = "~2.8.2", markers="platform_machine != 'arm64'"} 
-tensorflow-macos = { version = "2.8.0", markers="platform_machine == 'arm64'"}
-tensorflow-metal = { version = "0.5.1", markers="platform_machine == 'arm64'"}
+tensorflow = { version = "~2.8.2", markers="sys_platform != 'darwin' or platform_machine != 'arm64'"} 
+tensorflow-macos = { version = "2.8.0", markers="sys_platform == 'darwin' and platform_machine == 'arm64'"}
 # protobuf in newer versions currenlty creates issues for tensorflow
 # see: https://github.com/tensorflow/tensorflow/blob/v2.8.2/tensorflow/tools/pip_package/setup.py#L84
 protobuf = ">=3.9.2,< 3.20"
@@ -145,6 +144,10 @@ CacheControl = "^0.12.9"
 randomname = "^0.1.5"
 sanic-routing = "^0.7.2"
 pluggy = "^1.0.0"
+spacy = [
+    { version = "^3.4", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+    { version = ">=3.1,<3.5", markers = "sys_platform != 'darwin' or platform_machine != 'arm64'", optional = true}
+]
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^3.0.0"
@@ -178,7 +181,10 @@ types-setuptools = "^65.1.0"
 memory-profiler = "^0.60.0"
 psutil = "^5.8.0"
 mypy-extensions = "^0.4.3"
-sanic-testing = "^22.6.0"
+# newer versions of sanic testing are not compatible 
+# with our version of sanic. sanic-testing 22.9.0 introduced
+# changes that don't work for our sanic version
+sanic-testing = ">=21.12.0,<22.9.0"
 analytics-python = "^1.4.0"
 datadog-api-client = "^2.0.0"
 datadog = "^0.44.0"
@@ -190,6 +196,7 @@ jieba = [ "jieba",]
 transformers = [ "transformers", "sentencepiece",]
 full = [ "spacy", "transformers", "sentencepiece", "jieba",]
 gh-release-notes = [ "github3.py",]
+metal = [ "tensorflow-metal",]
 
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
@@ -202,8 +209,9 @@ extras = [ "crypto",]
 version = "^0.4.4"
 markers = "sys_platform == 'win32'"
 
-[tool.poetry.dependencies.spacy]
-version = ">=3.1,<3.3"
+[tool.poetry.dependencies.tensorflow-metal]
+version = "0.5.1"
+markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
