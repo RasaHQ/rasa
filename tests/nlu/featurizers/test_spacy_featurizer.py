@@ -33,13 +33,8 @@ def test_spacy_featurizer_cls_vector(spacy_nlp):
     if sen_vecs:
         sen_vecs = sen_vecs.features
 
-    expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
-    expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
-
     assert 5 == len(seq_vecs)
     assert 1 == len(sen_vecs)
-    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(sen_vecs[-1][:5], expected_cls, atol=1e-5)
 
 
 @pytest.mark.parametrize("sentence", ["hey how are you today"])
@@ -100,12 +95,8 @@ def test_spacy_intent_featurizer(
     assert not any(intent_features_exist)
 
 
-@pytest.mark.parametrize(
-    "sentence, expected",
-    [("hey how are you today", [-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])],
-)
-def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
-
+def test_spacy_featurizer_sequence(spacy_nlp):
+    sentence = "hey how are you today"
     doc = spacy_nlp(sentence)
     token_vectors = [t.vector for t in doc]
 
@@ -127,23 +118,18 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
     vecs = seq_vecs[0][:5]
 
     assert np.allclose(token_vectors[0][:5], vecs, atol=1e-4)
-    assert np.allclose(vecs, expected, atol=1e-4)
     assert sen_vecs is not None
 
 
-def test_spacy_featurizer_casing(spacy_nlp):
-
-    # if this starts failing for the default model, we should think about
-    # removing the lower casing the spacy nlp component does when it
-    # retrieves vectors. For compressed spacy models (e.g. models
-    # ending in _sm) this test will most likely fail.
-
+def test_spacy_featurizer_default_case_insensitive(spacy_nlp_component):
     ftr = create_spacy_featurizer({})
-
+    spacy_nlp = spacy_nlp_component.provide().model
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
     for e in td.intent_examples:
-        doc = spacy_nlp(e.get(TEXT))
-        doc_capitalized = spacy_nlp(e.get(TEXT).capitalize())
+        doc = spacy_nlp_component._doc_for_text(spacy_nlp, e.get(TEXT))
+        doc_capitalized = spacy_nlp_component._doc_for_text(
+            spacy_nlp, e.get(TEXT).capitalize()
+        )
 
         vecs = ftr._features_for_doc(doc)
         vecs_capitalized = ftr._features_for_doc(doc_capitalized)
@@ -151,8 +137,26 @@ def test_spacy_featurizer_casing(spacy_nlp):
         assert np.allclose(
             vecs, vecs_capitalized, atol=1e-5
         ), "Vectors are unequal for texts '{}' and '{}'".format(
-            e.text, e.text.capitalize()
+            e.get(TEXT), e.get(TEXT).capitalize()
         )
+
+
+def test_spacy_featurizer_can_be_case_sensitive(spacy_case_sensitive_nlp_component):
+    ftr = create_spacy_featurizer({})
+    spacy_nlp = spacy_case_sensitive_nlp_component.provide().model
+    td = loading.load_data("data/examples/rasa/demo-rasa.json")
+    example_is_case_insentive = []
+    for e in td.intent_examples:
+        doc = spacy_case_sensitive_nlp_component._doc_for_text(spacy_nlp, e.get(TEXT))
+        doc_capitalized = spacy_case_sensitive_nlp_component._doc_for_text(
+            spacy_nlp, e.get(TEXT).capitalize()
+        )
+
+        vecs = ftr._features_for_doc(doc)
+        vecs_capitalized = ftr._features_for_doc(doc_capitalized)
+
+        example_is_case_insentive.append(np.allclose(vecs, vecs_capitalized, atol=1e-5))
+    assert not all(example_is_case_insentive)
 
 
 def test_spacy_featurizer_train(spacy_nlp):
@@ -168,9 +172,6 @@ def test_spacy_featurizer_train(spacy_nlp):
 
     featurizer.process_training_data(TrainingData([message]))
 
-    expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
-    expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
-
     seq_vecs, sen_vecs = message.get_dense_features(TEXT, [])
     if seq_vecs:
         seq_vecs = seq_vecs.features
@@ -179,8 +180,6 @@ def test_spacy_featurizer_train(spacy_nlp):
 
     assert 5 == len(seq_vecs)
     assert 1 == len(sen_vecs)
-    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(sen_vecs[-1][:5], expected_cls, atol=1e-5)
 
     seq_vecs, sen_vecs = message.get_dense_features(RESPONSE, [])
     if seq_vecs:
@@ -190,8 +189,6 @@ def test_spacy_featurizer_train(spacy_nlp):
 
     assert 5 == len(seq_vecs)
     assert 1 == len(sen_vecs)
-    assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
-    assert np.allclose(sen_vecs[-1][:5], expected_cls, atol=1e-5)
 
     seq_vecs, sen_vecs = message.get_dense_features(INTENT, [])
     if seq_vecs:

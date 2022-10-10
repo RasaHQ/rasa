@@ -8,6 +8,7 @@
     "theme:upgrade": "yarn upgrade @rasahq/docusaurus-theme-tabula --latest",
     "pre-build": "yarn copy-md-files && yarn variables && yarn program-outputs && yarn included-sources && yarn autodoc && yarn telemetry",
     "start": "yarn pre-build && yarn develop",
+    "clear": "docusaurus clear",
     "develop": "docusaurus start --port 3000",
     "build": "docusaurus build --out-dir build/docs/rasa",
     "serve": "netlify dev --dir=build --port=5000",
