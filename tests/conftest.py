@@ -520,6 +520,13 @@ def spacy_nlp_component() -> SpacyNLP:
 
 
 @pytest.fixture(scope="session")
+def spacy_case_sensitive_nlp_component() -> SpacyNLP:
+    return SpacyNLP.create(
+        {"model": "en_core_web_md", "case_sensitive": True}, Mock(), Mock(), Mock()
+    )
+
+
+@pytest.fixture(scope="session")
 def spacy_model(spacy_nlp_component: SpacyNLP) -> SpacyModel:
     return spacy_nlp_component.provide()
 
