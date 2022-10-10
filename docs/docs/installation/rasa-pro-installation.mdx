@@ -18,8 +18,8 @@ Not sure if you need Rasa Pro yet? [Try it for free](https://info.rasa.com/rasa-
 Rasa Pro consists of two packages. The packages need to be installed
 separately and in different environments:
 
-- **Rasa Plus**, a drop in replacement for Rasa Open Source for an
-  enterprise deployment. Rasa Plus should be used to deploy your assistant
+- **Rasa Plus**, a drop-in replacement for Rasa Open Source enterprise
+  deployments. Rasa Plus should be used to deploy your assistant
   into production.
 - **Rasa Pro Services**, flexible infrastructure and APIs on top of Rasa
   Open Source. Rasa Pro Services should be deployed alongside, but separately
@@ -35,9 +35,9 @@ For example, in the below diagram, tracing is run as a hook implementation in Ra
 <img alt="image" src={useBaseUrl("/img/rasa-plus-architecture.png")} />
 
 The hook configures the tracing backend as specified in the `endpoints.yml` and instruments model training and message handling actions.
-The hook is then called within the Rasa Open Source main module, which is the entrypoint for the Rasa Open Source command line.
+The hook is then called within the Rasa Open Source main module, which is the entry point for the Rasa Open Source command line.
 
-The plugin architecture enables Rasa Plus to continue enhancing the Rasa Open Source argument parser, while maintaining the same runnable command name (`rasa`).
+The plugin architecture enables Rasa Plus to continue enhancing the Rasa Open Source argument parser while maintaining the same runnable command name (`rasa`).
 
 ## Rasa Plus Setup
 
@@ -136,7 +136,7 @@ export RASA_PRO_LICENSE=<your-license-string>
 
 ## Persistent
 echo "export RASA_PRO_LICENSE=<your-license-string>" >> ~/.bashrc
-## If you're using a different flavour of bash e.g. Zsh, replace .bashrc with your shell's initialization script e.g. ~/.zshrc
+## If you're using a different flavor of bash e.g. Zsh, replace .bashrc with your shell's initialization script e.g. ~/.zshrc
 ```
 
 Windows Powershell:
@@ -250,7 +250,7 @@ oc --namespace <your namespace> \
 ## Rasa Pro Services Setup
 
 Installation of Rasa Pro Services requires the deployment of a docker
-container. The container can be deployed in a different enviornment than
+container. The container can be deployed in a different environment than
 Rasa Plus. Both deployments need to be able to connect to the same
 Kafka cluster to communicate.
 
@@ -261,13 +261,13 @@ be deployed on a machine meeting the minimal hardware requirements supplying
 a license.
 
 A production deployment of Kafka is required to set up Rasa Pro.
-We recommend to use
+We recommend using
 [Amazon Managed Streaming for Apache Kafka](https://aws.amazon.com/msk/).
 
 #### System Requirements
 
 The minimum hardware requirements include information about the
-requirements you need to install and use Rasa Pro Services. Harware
+requirements you need to install and use Rasa Pro Services. Hardware
 requirements are dependent on the average number of conversations and
 expected workload. Your exact needs may be more, depending on your workload.
 
@@ -330,14 +330,14 @@ The different services need to be run and configured to be able to communicate.
         europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
     ```
 
-    For production deployments we recommend to us
+    For production deployments, we recommend to us
     [Amazon Elastic Container Service](https://docs.docker.com/cloud/ecs-integration/).
 
 ### Docker Container Configuration (Reference)
 
-The Rasa Pro Services docker container supports configuration through a number
-of environment variables. The following table lists the available environment
-variables:
+The Rasa Pro Services docker container supports configuration through
+several environment variables. The following table lists the available
+environment variables:
 
 | Environment Variable      | Description                                                                                                           | Default            |
 | :------------------------ | :-------------------------------------------------------------------------------------------------------------------- | :----------------- |
@@ -348,11 +348,11 @@ variables:
 | `KAFKA_SASL_MECHANISM`    | The SASL mechanism to use for authentication. Valid mechanisms are                                                    | `PLAIN`            |
 | `KAFKA_SASL_USERNAME`     | The username for SASL authentication.                                                                                 |                    |
 | `KAFKA_SASL_PASSWORD`     | The password for SASL authentication.                                                                                 |                    |
-| `KAFKA_SECURITY_PROTOCOL` | The security protocol to use for communication with Kafka. Supported machanisms are `PLAINTEXT` and `SASL_PLAINTEXT`. | `PLAINTEXT`        |
+| `KAFKA_SECURITY_PROTOCOL` | The security protocol to use for communication with Kafka. Supported mechanisms are `PLAINTEXT` and `SASL_PLAINTEXT`. | `PLAINTEXT`        |
 
 ### Healthcheck Endpoint
 
-Rasa Pro Services exposes a healtcheck endpoint at `/healthcheck`.
+Rasa Pro Services exposes a health check endpoint at `/healthcheck`.
 The endpoint will return a `200` status code if the service is healthy.
 If any other status code is returned or if the endpoint is not reachable
 the service is unhealthy.
@@ -385,4 +385,4 @@ be found in the
 The environment variables need to be configured upon startup of the Rasa Pro
 docker container.
 
-Support for truststores and keystores is currently not implemented.
+Using Kafka `truststores` and `keystores` is currently not supported.
