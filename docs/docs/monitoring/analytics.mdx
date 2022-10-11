@@ -76,11 +76,25 @@ will be disabled.
 
 TODO: general instructions.
 
-TODO: instructions for AWS RDS
+You can create a PostgreSQL instance using Amazon Relational Database Service (RDS).
+First you must set up Amazon RDS by completing the instructions listed [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_SettingUp.html).
+Next, create a PostgreSQL DB instance which is the environment that will run your PostgreSQL database to which the analytics pipeline will stream the transformed conversational data.
+The instructions you must follow are listed in the **Creating a PostgreSQL DB instance** [section](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html#CHAP_GettingStarted.Creating.PostgreSQL)
+
+Finally, when running the Analytics pipeline Docker container, set the environment variable `RASA_ANALYTICS_DB_URL` to the PostgreSQL Amazon RDS DB instance URL
+in the DBAPI format specified in **Connect an assistance** [section](#connect-an-assistant).
 
 #### Redshift
 
-TODO: streaming to Redshift from Postgres
+If you prefer instead to set up Amazon Redshift as your choice of data lake, you will need to stream the data from the
+PostgreSQL database within the Amazon RDS DB instance created at the [**PostgreSQL step**](#postgresql) to the Redshift target.
+
+If you meet the [prerequisites](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.Redshift.html#CHAP_Target.Redshift.Prerequisites) for using an Amazon Redshift database as a target, you will need to implement two steps:
+
+1. configure the PostgreSQL source for AWS Database Migration Service (DMS) by following these [instructions](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Source.PostgreSQL.html)
+2. configure the Redshift target for AWS DMS following the instructions [here](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.Redshift.html).
+
+You must update the `RASA_ANALYTICS_DB_URL` to the Redshift target [endpoint](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Endpoints.Creating.html).
 
 TODO: direct connection with disclaimer on performance
 
