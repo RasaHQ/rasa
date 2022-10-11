@@ -1,0 +1,91 @@
+---
+id: deploy-rasa-plus
+sidebar_label: "Deploy Rasa Plus"
+title: "Deploy Rasa Plus in Production"
+description: Deploy Rasa Plus
+---
+import RasaProLabel from '@theme/RasaProLabel';
+import RasaProBanner from '@theme/RasaProBanner';
+
+<RasaProLabel />
+
+<RasaProBanner/>
+
+To use the Rasa Plus image in a Helm deployment, you will need to substitute `rasa` with `rasa-plus` as
+the image name. You will also need to pass your license in an env var
+and [specify a pull secret for the image](#creating-a-pull-secret).
+
+For the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa),
+that means your values should be updated as follows:
+
+```yaml
+registry: <registry-for-rasa-plus-image>
+command:
+  - rasa
+image:
+  name: rasa-plus
+  tag: 0.1.1
+  pullSecrets:
+    - name: rasa-plus-pull-secret
+extraEnv:
+  - name: RASA_PRO_LICENSE
+    value: <your-license-string>
+```
+
+For the [Rasa Enterprise Helm Chart](https://github.com/RasaHQ/rasa-x-helm), update
+your values as follows:
+
+```yaml
+images:
+  imagePullSecrets:
+    - name: rasa-plus-pull-secret
+rasa:
+  command:
+    - rasa
+  name: <registry-for-rasa-plus-image>
+  tag: 0.1.1
+  extraEnv:
+    - name: RASA_PRO_LICENSE
+      value: <your-license-string>
+```
+
+#### Creating a Pull Secret
+
+You will need to create a pull secret to access the `rasa-plus` image. You should have
+been provided with a JSON credentials file to access the registry.
+The file content should look similar to this:
+
+```json
+{
+  "type": "service_account",
+  "project_id": "rasa-platform",
+  "private_key_id": "somerandomcharacters",
+  "private_key": "-----BEGIN PRIVATE KEY-----\n\nPBTu1lAJDLo136ZGTdMKi+/TuRqrIMg/..................................................................................................................................\nsjAsuAH4Iz1XdfdenzGnyBZH\n-----END PRIVATE KEY-----\n",
+  "client_email": "company@rasa-platform.iam.gserviceaccount.com",
+  "client_id": "12345678910123",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/company%40rasa-platform.iam.gserviceaccount.com"
+}
+```
+
+Create the pull secret by running the corresponding command for your cluster environment:
+
+```bash
+# kubernetes
+kubectl --namespace <your namespace> \
+    create secret docker-registry rasa-plus-pull-secret \
+    --docker-server=gcr.io \
+    --docker-username=_json_key \
+    --docker-password="$(cat <your-json-registry-creds-file>.json)"
+```
+
+```bash
+# openshift
+oc --namespace <your namespace> \
+    create secret docker-registry rasa-plus-pull-secret \
+    --docker-server=gcr.io \
+    --docker-username=_json_key \
+    --docker-password="$(cat <your-json-registry-creds-file>.json)"
+```

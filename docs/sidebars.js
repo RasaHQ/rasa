@@ -8,9 +8,24 @@ module.exports = {
       label: 'Installation',
       collapsed: true,
       items: [
-        'installation/quick-installation',
-        'installation/step-by-step-guide',
-        'installation/rasa-pro-installation',
+        {
+          label: 'Installing Rasa Open Source',
+          collapsed: true,
+          type: 'category',
+          items: [
+            'installation/rasa-open-source/quick-installation',
+            'installation/rasa-open-source/step-by-step-guide',
+          ]
+        },
+        {
+          label: 'Installing Rasa Pro',
+          collapsed: true,
+          type: 'category',
+          items: [
+            'installation/rasa-pro/architecture-overview',
+            'installation/rasa-pro/installation',
+          ]
+        }
       ],
     },
     {
@@ -61,6 +76,8 @@ module.exports = {
       'deploy/introduction',
       'deploy/deploy-rasa',
       'deploy/deploy-action-server',
+      'deploy/deploy-rasa-plus',
+      'deploy/deploy-rasa-pro-services',
     ],
   },
     {
