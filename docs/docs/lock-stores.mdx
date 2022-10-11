@@ -5,6 +5,10 @@ title: Lock Stores
 description: Messages that are being processed lock Rasa for a given conversation ID to ensure that multiple incoming messages for that conversation do not interfere with each other. Rasa provides multiple implementations to maintain conversation locks.
 ---
 
+
+import RasaProLabel from '@theme/RasaProLabel';
+import RasaProBanner from '@theme/RasaProBanner';
+
 Rasa uses a ticket lock mechanism to ensure that incoming messages for a given
 conversation ID are processed in the right order, and locks conversations while
 messages are actively processed. This means multiple Rasa servers can
@@ -30,11 +34,9 @@ address the same node when sending messages for a given conversation ID.
 
 ## ConcurrentRedisLockStore
 
-:::tip Rasa Pro License
-You'll need a license to get started with Rasa Pro. [Contact Sales](https://rasa.com/connect-with-rasa/)
+<RasaProLabel/>
 
-Not sure if you need Rasa Pro yet? [Try it for free](https://info.rasa.com/rasa-platform-trial-request)
-:::
+<RasaProBanner/>
 
 `ConcurrentRedisLockStore` is a new lock store that uses Redis as a persistence layer and is safe for use with multiple Rasa server replicas.
 See the [migration section](#migration-guide) to learn how to switch to this lock store.

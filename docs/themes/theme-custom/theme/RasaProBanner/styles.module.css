@@ -1,0 +1,18 @@
+
+
+.label {
+    background-color:#F6D261;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 2px 12px;
+    font-size: 15px !important;
+    font-weight: 600;
+
+    display: inline-block;
+}
+
+.label[disabled] {
+    background-color: var(--ifm-color-gray-500);
+    cursor: default;
+}
+
