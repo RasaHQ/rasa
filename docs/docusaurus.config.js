@@ -29,7 +29,7 @@ module.exports = {
     // either (A): create a more sophisticated solution to link the precise branch and doc to be edited, according to branch settings
     // or (B): create a README document (or a section in the main README) which explains how to contribute docs fixes, and link all edit links to this
     rootEditUrl: 'https://github.com/rasahq/rasa/',
-    productLogo: '/img/logo-rasa-oss.png',
+    productLogo: '/img/blocks.png',
     versionLabels,
     legacyVersions: [{
       label: 'Legacy 1.x',
@@ -50,8 +50,7 @@ module.exports = {
       }
     ]
   },
-  title: 'Rasa Open Source Documentation',
-  tagline: 'An open source machine learning framework for automated text and voice-based conversations',
+  title: 'Rasa & Rasa Pro Documentation',
   url: SITE_URL,
   baseUrl: BASE_URL,
   favicon: '/img/favicon.ico',
