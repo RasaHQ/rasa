@@ -216,27 +216,27 @@ for every new user and for users who return to the assistant. The
 conditions that trigger a new session to start can be
 configured in the [Rasa Domain](./domain.mdx#session-configuration).
 
-##### `id` session identifier
+#### `id` session identifier
 
 The unique identifier of the session. Every session gets a different,
 generated id assigned.
 
 Example: `63b150a6-21a3-4e6c-bb24-5ab6ddc30cf1`
 
-##### `sender_id` sender who started the session
+#### `sender_id` sender who started the session
 
 The unique identifier of the sender who started the session. It is a
 foreign key to the [`rasa_sender.id`](#rasa_sender) column.
 
 Example: `9e4ebded-f232-4cc5-af78-d98daa0c1a53`
 
-##### `timestamp` creation date time
+#### `timestamp` creation date time
 
 The timestamp when the session was created. The timestamp is a UTC.
 
 Example: `2022-06-28 02:15:49.326936`
 
-##### `start_sequence_number` start of the session
+#### `start_sequence_number` start of the session
 
 The sequence number of the first event in this session. All events belong
 to exactly one session. The start sequence number is always smaller or equal
@@ -246,7 +246,7 @@ sequence numbers are incremented across multiple conversations.
 
 Example: `78`
 
-##### `end_sequence_number` end of the session
+#### `end_sequence_number` end of the session
 
 The sequence number of the last event in the session.
 
@@ -259,41 +259,41 @@ are created for every user message, bot response, and action that is executed
 as well as for a lot of internal changes to a conversation session.
 [Overview of all Rasa Events](./action-server/events.mdx).
 
-##### `id` event identifier
+#### `id` event identifier
 
 The unique identifier of the event. Every event gets different,
 generated id assigned.
 
 Example: `f5adcd16-b18d-4c5c-95f0-1747b20cb0e6`
 
-##### `sender_id` sender who's conversation the event belongs to
+#### `sender_id` sender who's conversation the event belongs to
 
 The unique identifier of the sender whose conversation this event is part of.
 It is a foreign key to the [`rasa_sender.id`](#rasa_sender) column.
 
 Example: `9e4ebded-f232-4cc5-af78-d98daa0c1a53`
 
-##### `session_id` session identifier
+#### `session_id` session identifier
 
 The unique identifier of the session this event is part of.
 It is a foreign key to the [`rasa_sender.id`](#rasa_sender) column.
 
 Example: `9e4ebded-f232-4cc5-af78-d98daa0c1a53`
 
-##### `timestamp` creation date time
+#### `timestamp` creation date time
 
 The timestamp when the event was created. The timestamp is a UTC.
 
 Example: `2022-06-28 02:15:49.326936`
 
-##### `model_id` model identifier
+#### `model_id` model identifier
 
 The identifier of the Rasa model that was running as part of the assistant
 when this event was created.
 
 Example: `75a985b7b86d442ca013d61ea4781b22`
 
-##### `sequence_number` start of the event
+#### `sequence_number` start of the event
 
 The sequence number of the event. The events of a session always have
 increasing sequence numbers. Sequence numbers are not guaranteed to be
