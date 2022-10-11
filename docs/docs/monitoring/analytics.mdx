@@ -140,11 +140,21 @@ you can use any BI platform which supports AWS Redshift or PostgreSQL.
 
 #### Example: Connecting Metabase
 
-[Connecting Metabase to Redshift](https://www.metabase.com/data_sources/amazon-redshift)
+Metabase is a free and open-source business intelligence platform. It
+provides a simple interface to query and visualize data. Metabase can
+be connected to PostgreSQL or Redshift databases.
 
-#### Example: Connecting Tableau to Rasa Pro Analytics
+- [Connecting Metabase to PostgreSQL](https://www.metabase.com/data_sources/postgresql)
+- [Connecting Metabase to Redshift](https://www.metabase.com/data_sources/amazon-redshift)
 
-[Connecting Tableau to Redshift](https://help.tableau.com/current/pro/desktop/en-us/examples_amazonredshift.htm)
+#### Example: Connecting Tableau
+
+Tableau is a business intelligence platform. It provides a flexible interface
+to build business intelligence dashboards. Tableau can be connected to
+PostgreSQL or Redshift databases.
+
+- [Connecting Tableau to PostgreSQL](https://help.tableau.com/current/pro/desktop/en-us/examples_postgresql.htm)
+- [Connecting Tableau to Redshift](https://help.tableau.com/current/pro/desktop/en-us/examples_amazonredshift.htm)
 
 ## Example Queries
 
@@ -156,10 +166,10 @@ example queries are created using Metabase.
 #### Query using SQL
 
 ```sql
-SELECT CAST("public"."rasa_users"."FIRST_SEEN" AS date) AS "FIRST_SEEN", count(*) AS "count"
-FROM "public"."rasa_users"
-GROUP BY CAST("public"."rasa_users"."FIRST_SEEN" AS date)
-ORDER BY CAST("public"."rasa_users"."FIRST_SEEN" AS date) ASC
+SELECT CAST(rasa_sender.first_seen AS date) AS "Date", COUNT(*) AS "Number of Users"
+FROM rasa_sender
+GROUP BY CAST(rasa_sender.first_seen AS date)
+ORDER BY CAST(rasa_sender.first_seen AS date) ASC
 ```
 
 #### Using the Metabase Query Builder
@@ -182,27 +192,129 @@ ORDER BY CAST("public"."rasa_users"."FIRST_SEEN" AS date) ASC
   />
 </div>
 
-## Data Structure
+## Data Structure Reference
+
+Descriptions and examples of the data structure created by Analytics.
+The data structure is created by the Analytics pipeline and treated as
+a public API.
+
+Table overview:
 
 <div align="center">
   <img
-    alt="An overview over the components of Rasa Pro."
+    alt="An overview of the components of Rasa Pro."
     src={useBaseUrl("/img/analytics/analytics-db-schema.png")}
     width="100%"
   />
 </div>
 
-### Table `rasa_actions`
+### rasa_session
 
-The `rasa_actions` table contains information about all actions that got
-executed by the assistant across all conversations.
+The `rasa_session` table contains information about all conversation
+sessions that users started with the assistant. New sessions are created
+for every new user and for users who return to the assistant. The
+conditions that trigger a new session to start can be
+configured in the [Rasa Domain](./domain.mdx#session-configuration).
 
-| Column | Type        | Description                                   |
-| :----- | :---------- | :-------------------------------------------- |
-| id     | varchar 255 | Unique ID of this event. Same as the event_id |
-| ...    | ...         | ...                                           |
+##### `id` session identifier
 
-### Table `...`
+The unique identifier of the session. Every session gets a different,
+generated id assigned.
+
+Example: `63b150a6-21a3-4e6c-bb24-5ab6ddc30cf1`
+
+##### `sender_id` sender who started the session
+
+The unique identifier of the sender who started the session. It is a
+foreign key to the [`rasa_sender.id`](#rasa_sender) column.
+
+Example: `9e4ebded-f232-4cc5-af78-d98daa0c1a53`
+
+##### `timestamp` creation date time
+
+The timestamp when the session was created. The timestamp is a UTC.
+
+Example: `2022-06-28 02:15:49.326936`
+
+##### `start_sequence_number` start of the session
+
+The sequence number of the first event in this session. All events belong
+to exactly one session. The start sequence number is always smaller or equal
+to the `end_sequence_number`. The difference between start and end sequence
+numbers does not equal the number of events in this session since
+sequence numbers are incremented across multiple conversations.
+
+Example: `78`
+
+##### `end_sequence_number` end of the session
+
+The sequence number of the last event in the session.
+
+Example: `91`
+
+### rasa_event
+
+The `rasa_event` table contains all events that an assistant created. Events
+are created for every user message, bot response, and action that is executed
+as well as for a lot of internal changes to a conversation session.
+[Overview of all Rasa Events](./action-server/events.mdx).
+
+##### `id` event identifier
+
+The unique identifier of the event. Every event gets different,
+generated id assigned.
+
+Example: `f5adcd16-b18d-4c5c-95f0-1747b20cb0e6`
+
+##### `sender_id` sender who's conversation the event belongs to
+
+The unique identifier of the sender whose conversation this event is part of.
+It is a foreign key to the [`rasa_sender.id`](#rasa_sender) column.
+
+Example: `9e4ebded-f232-4cc5-af78-d98daa0c1a53`
+
+##### `session_id` session identifier
+
+The unique identifier of the session this event is part of.
+It is a foreign key to the [`rasa_sender.id`](#rasa_sender) column.
+
+Example: `9e4ebded-f232-4cc5-af78-d98daa0c1a53`
+
+##### `timestamp` creation date time
+
+The timestamp when the event was created. The timestamp is a UTC.
+
+Example: `2022-06-28 02:15:49.326936`
+
+##### `model_id` model identifier
+
+The identifier of the Rasa model that was running as part of the assistant
+when this event was created.
+
+Example: `75a985b7b86d442ca013d61ea4781b22`
+
+##### `sequence_number` start of the event
+
+The sequence number of the event. The events of a session always have
+increasing sequence numbers. Sequence numbers are not guaranteed to be
+sequential for events following one another. But sequence numbers can
+be used to order the events of a session.
+
+Example: `78`
+
+### rasa_sender
+
+### rasa_bot_message
+
+### rasa_user_message
+
+### rasa_slot
+
+### rasa_action
+
+### rasa_session_slot_state
+
+### rasa_turn
 
 ## Architecture
 
