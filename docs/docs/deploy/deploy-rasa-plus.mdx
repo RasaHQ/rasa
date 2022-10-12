@@ -15,7 +15,7 @@ To use the Rasa Plus image in a Helm deployment, you will need to substitute `ra
 the image name. You will also need to pass your license in an env var
 and [specify a pull secret for the image](#creating-a-pull-secret).
 
-### **Step 1 - create a pull secret**
+## **Step 1 - create a pull secret**
 
 You will need to create a pull secret to access the `rasa-plus` image. You should have
 been provided with a JSON credentials file to access the registry.
@@ -58,7 +58,7 @@ oc --namespace <your namespace> \
     --docker-password="$(cat <your-json-registry-creds-file>.json)"
 ```
 
-### **Step 2: securely store the license key in a secret**
+## **Step 2: securely store the license key in a secret**
 
 Step 1: Save the license string to a file, for example:
 ```sh
@@ -74,7 +74,7 @@ Step 3. Remove the file on disk, for example:
 /bin/rm license.txt
 ```
 
-### **Step 3: update your `values.yml`**
+## **Step 3: update your `values.yml`**
 
 For the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa), update as follows:
 
