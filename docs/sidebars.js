@@ -8,15 +8,8 @@ module.exports = {
       label: 'Installation',
       collapsed: true,
       items: [
-        {
-          label: 'Installing Rasa Open Source',
-          collapsed: true,
-          type: 'category',
-          items: [
-            'installation/rasa-open-source/quick-installation',
-            'installation/rasa-open-source/step-by-step-guide',
-          ]
-        },
+        'installation/environment-set-up',
+        'installation/installing-rasa-open-source',
         {
           label: 'Installing Rasa Pro',
           collapsed: true,
@@ -25,7 +18,7 @@ module.exports = {
             'installation/rasa-pro/architecture-overview',
             'installation/rasa-pro/installation',
           ]
-        }
+        },
       ],
     },
     {
