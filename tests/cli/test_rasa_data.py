@@ -176,6 +176,8 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "data/test_moodbot/data",
             "--max-history",
             0,
+            "--config",
+            "data/test_moodbot/config.yml",
         ]
     )
 
@@ -209,7 +211,7 @@ def test_validate_files_action_not_found_invalid_domain(
         "domain": "data/test_moodbot/domain.yml",
         "data": [file_name],
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
@@ -237,7 +239,7 @@ def test_validate_files_form_not_found_invalid_domain(
         "domain": "data/test_restaurantbot/domain.yml",
         "data": [file_name],
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
@@ -267,7 +269,7 @@ def test_validate_files_with_active_loop_null(
         "domain": "data/test_domains/restaurant_form.yml",
         "data": [file_name],
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
         "fail_on_warnings": False,
     }
     with pytest.warns(None):
@@ -299,7 +301,7 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
         "domain": domain_file_name,
         "data": None,
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
@@ -311,7 +313,7 @@ def test_validate_files_exit_early():
             "domain": "data/test_domains/duplicate_intents.yml",
             "data": None,
             "max_history": None,
-            "config": None,
+            "config": "data/test_config/config_defaults.yml",
         }
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
@@ -324,7 +326,7 @@ def test_validate_files_invalid_domain():
         "domain": "data/test_domains/default_with_mapping.yml",
         "data": None,
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
 
     with pytest.raises(SystemExit):
@@ -335,33 +337,42 @@ def test_validate_files_invalid_domain():
 
 def test_validate_files_invalid_slot_mappings(tmp_path: Path):
     domain = tmp_path / "domain.yml"
-    slot_name = "started_booking_form"
+    tested_slot = "duration"
+    form_name = "booking_form"
+    # form required_slots does not include the tested_slot
     domain.write_text(
         f"""
             version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intents:
-            - activate_booking
+            - state_length_of_time
             entities:
             - city
             slots:
-              {slot_name}:
-                type: bool
+              {tested_slot}:
+                type: text
                 influence_conversation: false
                 mappings:
-                - type: from_trigger_intent
-                  intent: activate_booking
-                  value: true
+                - type: from_text
+                  intent: state_length_of_time
+                  conditions:
+                  - active_loop: {form_name}
               location:
                 type: text
                 mappings:
                 - type: from_entity
                   entity: city
             forms:
-              booking_form:
+              {form_name}:
                 required_slots:
                 - location
                 """
     )
-    args = {"domain": str(domain), "data": None, "max_history": None, "config": None}
+    args = {
+        "domain": str(domain),
+        "data": None,
+        "max_history": None,
+        "config": "data/test_config/config_defaults.yml",
+        "fail_on_warnings": False,
+    }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
