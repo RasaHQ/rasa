@@ -428,11 +428,10 @@ def _extract_features(
     attribute: Text,
 ) -> Tuple[
     List[np.ndarray],
-    Dict[Text, List[List["Features"]]],
-    Dict[Text, List[List["Features"]]],
+    Dict[Text, List[List[np.ndarray]]],
+    Dict[Text, List[List[scipy.sparse.spmatrix]]],
 ]:
-    """Create masks for all attributes of the given features and split the features
-    into sparse and dense features.
+    """Create masks for feature attributes and split into dense and sparse features.
 
     Args:
         features: all features
@@ -490,7 +489,10 @@ def _extract_features(
         # add additional dimension to attribute mask
         # to get a vector of shape (dialogue length x 1),
         # the batch dim will be added later
-        attribute_mask = np.expand_dims(attribute_mask, -1)
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        attribute_mask = np.expand_dims(
+            attribute_mask, -1
+        )  # type: ignore[no-untyped-call]
         attribute_masks.append(attribute_mask)
 
     return attribute_masks, dense_features, sparse_features

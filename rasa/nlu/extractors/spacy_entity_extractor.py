@@ -52,8 +52,8 @@ class SpacyEntityExtractor(GraphComponent, EntityExtractorMixin):
         """Creates a new component (see parent class for full docstring)."""
         return cls(config)
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Lists required dependencies (see parent class for full docstring)."""
         return ["spacy"]
 

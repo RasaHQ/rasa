@@ -272,9 +272,9 @@ class SlackInput(InputChannel):
             # can be adjusted to taste later if needed,
             # but is a good first approximation
             for regex, replacement in [
-                (fr"<@{uid_to_remove}>\s", ""),
-                (fr"\s<@{uid_to_remove}>", ""),  # a bit arbitrary but probably OK
-                (fr"<@{uid_to_remove}>", " "),
+                (rf"<@{uid_to_remove}>\s", ""),
+                (rf"\s<@{uid_to_remove}>", ""),  # a bit arbitrary but probably OK
+                (rf"<@{uid_to_remove}>", " "),
             ]:
                 text = re.sub(regex, replacement, text)
 
