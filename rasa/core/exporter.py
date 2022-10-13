@@ -1,8 +1,7 @@
-import itertools
 import logging
 import uuid
 import datetime
-from typing import Text, Optional, List, Set, Dict, Any, Iterable
+from typing import AsyncIterator, Text, Optional, List, Set, Dict, Any
 
 from tqdm import tqdm
 
@@ -16,7 +15,6 @@ from rasa.shared.core.trackers import EventVerbosity
 from rasa.exceptions import (
     NoEventsToMigrateError,
     NoConversationsInTrackerStoreError,
-    NoEventsInTimeRangeError,
     PublishingError,
 )
 
@@ -68,12 +66,6 @@ class Exporter:
         Returns:
             The number of successfully published events.
         """
-        events = await self._fetch_events_within_time_range()
-
-        rasa.shared.utils.cli.print_info(
-            f"Selected {len(events)} events for publishing. Ready to go 🚀"
-        )
-
         self._print_offset_info()
 
         published_events = 0
@@ -81,7 +73,7 @@ class Exporter:
 
         headers = self._get_message_headers()
 
-        for event in tqdm(events, "events"):
+        async for event in self._fetch_events_within_time_range():
             # noinspection PyBroadException
             try:
                 self._publish_with_message_headers(event, headers)
@@ -218,7 +210,7 @@ class Exporter:
 
         return conversation_ids_to_process
 
-    async def _fetch_events_within_time_range(self) -> List[Dict[Text, Any]]:
+    async def _fetch_events_within_time_range(self) -> AsyncIterator[Dict[Text, Any]]:
         """Fetch all events for `conversation_ids` within the supplied time range.
 
         Returns:
@@ -231,9 +223,6 @@ class Exporter:
             f"Fetching events for {len(conversation_ids_to_process)} "
             f"conversation IDs:"
         )
-
-        events = []
-
         for conversation_id in tqdm(conversation_ids_to_process, "conversation IDs"):
             tracker = await self.tracker_store.retrieve_full_tracker(conversation_id)
             if not tracker:
@@ -251,12 +240,20 @@ class Exporter:
                 )
                 continue
 
+            events = self._get_events_for_conversation_id(_events, conversation_id)
             # the conversation IDs are needed in the event publishing
-            events.extend(
-                self._get_events_for_conversation_id(_events, conversation_id)
-            )
-
-        return self._sort_and_select_events_by_timestamp(events)
+            for event in events:
+                if (
+                    self.minimum_timestamp is not None
+                    and event["timestamp"] < self.minimum_timestamp
+                ):
+                    continue
+                if (
+                    self.maximum_timestamp is not None
+                    and event["timestamp"] >= self.maximum_timestamp
+                ):
+                    continue
+                yield event
 
     @staticmethod
     def _get_events_for_conversation_id(
@@ -279,44 +276,3 @@ class Exporter:
             events_with_conversation_id.append(event)
 
         return events_with_conversation_id
-
-    def _sort_and_select_events_by_timestamp(
-        self, events: Iterable[Dict[Text, Any]]
-    ) -> List[Dict[Text, Any]]:
-        """Sort list of events by ascending timestamp, select events within time range.
-
-        Args:
-            events: List of serialized events to be sorted and selected from.
-
-        Returns:
-            List of serialized and sorted (by timestamp) events within the requested
-            time range.
-
-        Raises:
-             `NoEventsInTimeRangeError` error if no events are found within the
-             requested time range.
-
-        """
-        logger.debug(f"Sorting and selecting from {len(events)} total events found.")
-        # sort the events by timestamp just in case they're not sorted already
-        events = sorted(events, key=lambda x: x["timestamp"])
-
-        # drop events failing minimum timestamp requirement
-        if self.minimum_timestamp is not None:
-            events = itertools.dropwhile(
-                lambda x: x["timestamp"] < self.minimum_timestamp, events
-            )
-
-        # select events passing maximum timestamp requirement
-        if self.maximum_timestamp is not None:
-            events = itertools.takewhile(
-                lambda x: x["timestamp"] < self.maximum_timestamp, events
-            )
-
-        events = list(events)
-        if not events:
-            raise NoEventsInTimeRangeError(
-                "Could not find any events within requested time range. Exiting."
-            )
-
-        return events

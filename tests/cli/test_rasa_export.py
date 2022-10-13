@@ -264,8 +264,8 @@ def test_export_trackers_with_offset(tmp_path: Path, monkeypatch: MonkeyPatch):
 
     # check that the timestamps of the published events are offset by 100 seconds
     assert all(
-        call[1][0]["timestamp"] == event.timestamp + 100
-        for call, event in zip(calls, events[:4])
+        any(call[1][0]["timestamp"] == event.timestamp + 100 for call in calls)
+        for event in events[:4]
     )
 
 
