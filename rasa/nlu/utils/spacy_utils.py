@@ -99,8 +99,8 @@ class SpacyNLP(GraphComponent):
                 f"More information can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Lists required dependencies (see parent class for full docstring)."""
         return ["spacy"]
 
@@ -120,7 +120,7 @@ class SpacyNLP(GraphComponent):
         model = cls.load_model(spacy_model_name)
 
         cls.ensure_proper_language_model(model.model)
-        return cls(model, config)
+        return cls(model, {**cls.get_default_config(), **config})
 
     @staticmethod
     def ensure_proper_language_model(nlp: Optional[Language]) -> None:

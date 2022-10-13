@@ -520,6 +520,13 @@ def spacy_nlp_component() -> SpacyNLP:
 
 
 @pytest.fixture(scope="session")
+def spacy_case_sensitive_nlp_component() -> SpacyNLP:
+    return SpacyNLP.create(
+        {"model": "en_core_web_md", "case_sensitive": True}, Mock(), Mock(), Mock()
+    )
+
+
+@pytest.fixture(scope="session")
 def spacy_model(spacy_nlp_component: SpacyNLP) -> SpacyModel:
     return spacy_nlp_component.provide()
 
@@ -574,6 +581,7 @@ def e2e_bot_test_stories_with_unknown_bot_utterances() -> Path:
     return Path("data/test_e2ebot/tests/test_stories_with_unknown_bot_utterances.yml")
 
 
+# FIXME: This fixture is very slow, do not use it without fixing that first
 @pytest.fixture(scope="session")
 async def e2e_bot(
     trained_async: Callable,

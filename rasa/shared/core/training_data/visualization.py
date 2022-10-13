@@ -455,7 +455,7 @@ def visualize_neighborhood(
                 break
             if isinstance(el, UserUttered):
                 message = el.parse_data
-                message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"  # type: ignore[misc]  # noqa: E501
+                message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"  # type: ignore[literal-required]  # noqa: E501
             elif (
                 isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):

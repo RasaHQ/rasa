@@ -1,0 +1,154 @@
+---
+id: getting-started-with-analytics
+sidebar_label: Getting started
+title: Getting started with Analytics
+description:
+abstract: Rasa Pro Analytics is a data pipeline that extracts model, training,
+  and conversation data from the Rasa platform and streams the data to
+  your data warehouse for analysis.
+---
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaProBanner from "@theme/RasaProBanner";
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+Analytics helps visualize and process Rasa assistant metrics in the
+tooling (BI tools, data warehouses) of your choice. Visualizations
+and analysis of the production assistant and its conversations allow
+you to assess ROI and improve the performance of the assistant over time.
+
+<div align="center">
+  <img
+    alt="Rasa Pro Analytics example dashboard"
+    src={useBaseUrl("/img/analytics/analytics-examples.png")}
+    width="100%"
+  />
+</div>
+
+Measuring a Rasa assistant's success and making strategic investments
+will lead to better business outcomes. It will also help you understand
+the needs of your end users and better serve them.
+
+<div align="center">
+  <img
+    alt="An overview of the components of Rasa Pro."
+    src={useBaseUrl("/img/rasa_pro_overview.png")}
+    width="100%"
+  />
+</div>
+
+Rasa Pro will connect to your production assistant using Kafka.
+The pipeline will compute analytics as soon as the docker container is successfully
+deployed and connected to your data warehouse and Kafka instances.
+
+
+## Prerequisites
+
+- A production deployment of Kafka is required to set up Rasa Pro.
+  We recommend using [Amazon Managed Streaming for
+  Apache Kafka](https://aws.amazon.com/msk/).
+- A production deployment of a data lake needs to be connected to
+  the data pipeline. Rasa Pro supports the following data lakes:
+
+  - [PostgreSQL](https://aws.amazon.com/rds/postgresql/) (**recommended**. All PostgreSQL >= 11.0 are supported)
+  - [Amazon Redshift](https://aws.amazon.com/redshift/)
+
+  We recommend managed deployments of your data lake to minimize maintenance
+  efforts.
+
+## Connect an assistant
+
+The `<DATA_LAKE_URL>` should have a DBAPI format, e.g.
+`postgresql+psycopg2://user:password@postgres.host:5432/rasa`.
+If no data lake URL is configured, Analytics will be disabled.
+
+`RASA_ANALYTICS_DB_URL=<DATA_LAKE_URL>`
+
+## Connect a data warehouse
+
+### PostgreSQL
+
+TODO: general instructions.
+
+TODO: instructions for AWS RDS
+
+### Redshift
+
+TODO: streaming to Redshift from Postgres
+
+TODO: direct connection with disclaimer on performance
+
+## Ingest past conversations
+
+When Analytics is connected to your Kafka instance, it will consume
+all prior events on the Kafka topic and ingest them into the database.
+Kafka has a retention policy for events on a [topic which defaults to
+7 days](https://docs.confluent.io/platform/current/installation/configuration/topic-configs.html#topicconfigs_retention.ms).
+
+If you want to process events from conversations that are older than the
+retention policy configured for the Rasa topic, you can manually
+ingest events from past conversations.
+
+Manually ingesting data from past conversations requires a connection to the
+tracker store. The tracker store contains past conversations and a
+connection to the Kafka cluster. Use the `rasa export` command to export
+the events stored in the tracker store to Kafka:
+
+```shell
+rasa export --endpoints endpoints.yml
+```
+
+Configure the export to read from your production tracker store
+and write to Kafka as an event broker, e.g.
+
+```yaml-rasa title="endpoints.yml"
+  tracker_store:
+      type: SQL
+      dialect: "postgresql"
+      url: "localhost"
+      db: "tracker"
+      username: postgres
+      password: password
+
+  event_broker:
+      type: kafka
+      topic: rasa-events
+      url: localhost:29092
+      partition_by_sender: true
+```
+
+:::note
+
+Running manual ingestion of past events multiple times will result in
+duplicated events. There is currently no deduplication implemented in
+Analytics. Every ingested event will be stored in the database,
+even if it was processed previously.
+:::
+
+## Connect a BI Solution
+
+Connecting a business intelligence platform to the data warehouse varies for
+each platform. We provide example instructions for Metabase and Tableau but
+you can use any BI platform which supports AWS Redshift or PostgreSQL.
+
+### Example: Connecting Metabase
+
+Metabase is a free and open-source business intelligence platform. It
+provides a simple interface to query and visualize data. Metabase can
+be connected to PostgreSQL or Redshift databases.
+
+- [Connecting Metabase to PostgreSQL](https://www.metabase.com/data_sources/postgresql)
+- [Connecting Metabase to Redshift](https://www.metabase.com/data_sources/amazon-redshift)
+
+### Example: Connecting Tableau
+
+Tableau is a business intelligence platform. It provides a flexible interface
+to build business intelligence dashboards. Tableau can be connected to
+PostgreSQL or Redshift databases.
+
+- [Connecting Tableau to PostgreSQL](https://help.tableau.com/current/pro/desktop/en-us/examples_postgresql.htm)
+- [Connecting Tableau to Redshift](https://help.tableau.com/current/pro/desktop/en-us/examples_amazonredshift.htm)

@@ -139,6 +139,8 @@ class FeatureArray(np.ndarray):
             A tuple.
         """
         pickled_state = super(FeatureArray, self).__reduce__()
+        if isinstance(pickled_state, str):
+            raise TypeError("np array __reduce__ returned string instead of tuple.")
         new_state = pickled_state[2] + (
             self.number_of_dimensions,
             self.is_sparse,
@@ -158,7 +160,10 @@ class FeatureArray(np.ndarray):
         self.number_of_dimensions = state[-3]
         self.is_sparse = state[-2]
         self.units = state[-1]
-        super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        super(FeatureArray, self).__setstate__(
+            state[0:-3], **kwargs
+        )  # type: ignore[no-untyped-call]
 
     # pytype: enable=attribute-error
 
@@ -601,7 +606,16 @@ class RasaModelData:
             label_ids = self._create_label_ids(
                 self.data[self.label_key][self.label_sub_key][0]
             )
-            label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+            label_counts: Dict[int, int] = dict(
+                zip(
+                    *np.unique(
+                        label_ids,  # type: ignore[no-untyped-call]
+                        return_counts=True,
+                        axis=0,
+                    )
+                )
+            )
 
             self._check_train_test_sizes(number_of_test_examples, label_counts)
 
@@ -699,7 +713,8 @@ class RasaModelData:
 
         label_ids = self._create_label_ids(data[self.label_key][self.label_sub_key][0])
 
-        unique_label_ids, counts_label_ids = np.unique(
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        unique_label_ids, counts_label_ids = np.unique(  # type: ignore[no-untyped-call]
             label_ids, return_counts=True, axis=0
         )
         num_label_ids = len(unique_label_ids)
@@ -723,7 +738,7 @@ class RasaModelData:
             if shuffle:
                 indices_of_labels = np.random.permutation(num_label_ids)
             else:
-                indices_of_labels = range(num_label_ids)
+                indices_of_labels = np.asarray(range(num_label_ids))
 
             for index in indices_of_labels:
                 if num_data_cycles[index] > 0 and not skipped[index]:
@@ -754,12 +769,15 @@ class RasaModelData:
                     break
 
         final_data: Data = defaultdict(lambda: defaultdict(list))
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
                     final_data[key][sub_key].append(
                         FeatureArray(
-                            np.concatenate(np.array(f)),
+                            np.concatenate(  # type: ignore[no-untyped-call]
+                                np.array(f)
+                            ),
                             number_of_dimensions=f[0].number_of_dimensions,
                         )
                     )
@@ -930,9 +948,10 @@ class RasaModelData:
             return FeatureArray(
                 scipy.sparse.vstack([feature_1, feature_2]), number_of_dimensions
             )
-
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         return FeatureArray(
-            np.concatenate([feature_1, feature_2]), number_of_dimensions
+            np.concatenate([feature_1, feature_2]),  # type: ignore[no-untyped-call]
+            number_of_dimensions,
         )
 
     @staticmethod

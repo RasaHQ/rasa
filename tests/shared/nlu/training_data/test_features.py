@@ -37,6 +37,7 @@ def test_combine_with_existing_dense_features():
     existing_features = Features(
         np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "test"
     )
+    fingerprint = existing_features.fingerprint()
     new_features = Features(
         np.array([[1, 0], [0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "origin"
     )
@@ -45,6 +46,8 @@ def test_combine_with_existing_dense_features():
     existing_features.combine_with_features(new_features)
 
     assert np.all(expected_features == existing_features.features)
+    # check that combining features changes fingerprint
+    assert fingerprint != existing_features.fingerprint()
 
 
 def test_combine_with_existing_dense_features_shape_mismatch():
@@ -64,6 +67,7 @@ def test_combine_with_existing_sparse_features():
         TEXT,
         "test",
     )
+    fingerprint = existing_features.fingerprint()
     new_features = Features(
         scipy.sparse.csr_matrix([[1, 0], [0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "origin"
     )
@@ -73,6 +77,8 @@ def test_combine_with_existing_sparse_features():
     actual_features = existing_features.features.toarray()
 
     assert np.all(expected_features == actual_features)
+    # check that combining features changes fingerprint
+    assert fingerprint != existing_features.fingerprint()
 
 
 def test_combine_with_existing_sparse_features_shape_mismatch():
