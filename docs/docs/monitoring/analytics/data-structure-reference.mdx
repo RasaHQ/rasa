@@ -7,7 +7,6 @@ description:
 
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-
 Descriptions and examples of the data structure created by Analytics.
 The data structure is created by the Analytics pipeline and treated as
 a public API. [Internal tables](#internal-tables) should be considered private and may change
@@ -23,11 +22,22 @@ Table overview:
   />
 </div>
 
-Concepts / :
+Common Terms:
 
-- **a sender**
-- **a session**
-- **a turn**
+- **a sender** is a user who is talking to the assistant through a channel.
+  A user might have multiple senders if they use multiple channels, e.g.
+  communicating with the assistant through a website and through a
+  channel integrated into a mobile app.
+- **a session** is a conversation between a sender and the assistant. A
+  session is started when a sender sends a message to the assistant and
+  ends when the session either has been timed out or explicitly ended.
+  If a session is interrupted by a longer period of inactivity new
+  activity will trigger a new session to be created ([configurable
+  through the session timeout](../../domain.mdx#session-configuration)).
+- **a turn** always starts with a message from a sender and ends right before
+  the next message from the sender. A turn can also end with a session
+  being timed out or explicitly ended. A turn will usually contain at least
+  one bot response.
 
 ## rasa_sender
 
