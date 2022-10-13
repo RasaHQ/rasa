@@ -1,4 +1,4 @@
-.PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
+.PHONY: clean test lint init docs format formatter build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
 
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
@@ -78,6 +78,8 @@ install-docs:
 
 formatter:
 	poetry run black rasa tests
+
+format: formatter
 
 lint:
      # Ignore docstring errors when running on the entire project
