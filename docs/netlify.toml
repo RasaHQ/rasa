@@ -176,7 +176,6 @@
   from = "/docs/rasa/prototype-an-assistant"
   to = "/docs/rasa/playground/"
 
-
 # Redirects for latest version permalinks
 # this needs to be updated when we cut a new version
 [[redirects]]
@@ -189,3 +188,8 @@
   from = "/docs/rasa/*"
   to = "/docs/rasa/index.html"
   status = 404
+
+
+[[redirects]]
+  from = "/docs/rasa/installation"
+  to = "/docs/rasa/installation/environment-set-up/"
