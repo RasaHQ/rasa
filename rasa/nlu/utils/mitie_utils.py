@@ -69,8 +69,8 @@ class MitieNLP(GraphComponent):
         self._path_to_model_file = path_to_model_file
         self._extractor = extractor
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Lists required dependencies (see parent class for full docstring)."""
         return ["mitie"]
 

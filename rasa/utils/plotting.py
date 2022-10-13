@@ -167,11 +167,21 @@ def _extract_paired_histogram_specification(
     Raises:
         ValueError: If histogram_data does not contain values.
     """
-    if not histogram_data or not np.concatenate(histogram_data).size:
+    # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+    if (
+        not histogram_data
+        or not np.concatenate(histogram_data).size  # type: ignore[no-untyped-call]
+    ):
         rasa.shared.utils.io.raise_warning("No data to plot paired histogram.")
         raise ValueError("No data to plot paired histogram.")
-    min_data_value = np.min(np.concatenate(histogram_data))
-    max_data_value = np.max(np.concatenate(histogram_data))
+    # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+    min_data_value = np.min(
+        np.concatenate(histogram_data)  # type: ignore[no-untyped-call]
+    )
+    # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+    max_data_value = np.max(
+        np.concatenate(histogram_data)  # type: ignore[no-untyped-call]
+    )
     bin_width = (max_data_value - min_data_value) / num_bins
     bins = [
         min_data_value + i * bin_width
@@ -181,7 +191,10 @@ def _extract_paired_histogram_specification(
     ]
     histograms = [
         # A list of counts - how often a value in `data` falls into a particular bin
-        np.histogram(data, bins=bins, density=density)[0]
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        np.histogram(data, bins=bins, density=density)[  # type: ignore[no-untyped-call]
+            0
+        ]
         for data in histogram_data
     ]
 
@@ -274,7 +287,8 @@ def plot_paired_histogram(
         axes[side].barh(
             bins[:-1],
             tallies[side],
-            height=np.diff(bins),
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+            height=np.diff(bins),  # type: ignore[no-untyped-call]
             align="center",
             color=colors[side],
             linewidth=1,

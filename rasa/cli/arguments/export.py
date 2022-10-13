@@ -33,6 +33,16 @@ def set_export_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "--offset-timestamps-by-seconds",
+        type=int,
+        help=(
+            "Offset all event timestamps by the specified amount of seconds. "
+            "This won't modify the stored events in the tracker store, but only "
+            "change the timestamps in the events exported to the broker."
+        ),
+    )
+
+    parser.add_argument(
         "--conversation-ids",
         help=(
             "Comma-separated list of conversation IDs to migrate. If unset, "

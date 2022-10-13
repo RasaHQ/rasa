@@ -23,7 +23,7 @@ To learn more about deployments, please visit the following sections:
 
 
 Rasa Plus requires access credentials to install and a license to use. The instructions below assume you have
-credentials and a license already.
+credentials and a license.
 
 ### Install for Development
 
@@ -50,6 +50,8 @@ gcloud artifacts print-settings python \
     --repository=rasa-plus-py \
     --location=europe-west3
 ```
+
+#### Installing with `pip`
 
 Enter the following settings to the `.pypirc` file:
 
@@ -102,7 +104,7 @@ gcloud auth configure-docker europe-west3-docker.pkg.dev
 docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
 ```
 
-### Run Rasa Plus
+### Run Rasa Plus locally
 
 Rasa Plus will look for your license in the env var `RASA_PRO_LICENSE`.
 You can set this env var temporarily in your terminal, but it is recommended
