@@ -70,17 +70,56 @@ If no data lake URL is configured, Analytics will be disabled.
 
 ## Connect a data warehouse
 
+You can choose to configure the analytics pipeline to stream the transformed conversational data to two different data warehouse types in AWS:
+
+- [PostgreSQL](#postgresql)
+- [Redshift](#redshift)
+
+
 ### PostgreSQL
 
-TODO: general instructions.
+You can use Amazon Relational Database Service (RDS) to create a PostgreSQL DB instance which is the environment that will run your PostgreSQL database.
 
-TODO: instructions for AWS RDS
+First you must set up Amazon RDS by completing the instructions listed [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_SettingUp.html).
+Next, create the PostgreSQL DB instance. You can follow one of the following instruction sets:
+
+- the AWS *Easy create* instructions listed in the [**Creating a PostgreSQL DB instance** section](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html#CHAP_GettingStarted.Creating.PostgreSQL)
+- the AWS [*Standard create* instructions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateDBInstance.html)
+
+To build the DB URL in the DBAPI format specified in the [**Connect an assistance** section](#connect-an-assistant) you must enter the database credentials.
+You must obtain the database username and password after you select a database authentication option during the process of the PostgreSQL DB instance creation:
+
+- **Password authentication** to use database credentials only, in which case you must enter a username for the master username, as well as generate the master password.
+- [**Password and IAM DB authentication**](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.html) to use IAM users and roles for authentication of database users.
+- [**Password and Kerberos authentication**](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/postgresql-kerberos.html)
+
+Finally, when running the Analytics pipeline Docker container, set the [environment variable `RASA_ANALYTICS_DB_URL`](../../deploy/deploy-rasa-pro-services.mdx#docker-container-configuration-reference) to the PostgreSQL Amazon RDS DB instance URL.
 
 ### Redshift
 
-TODO: streaming to Redshift from Postgres
+If you prefer instead to set up Amazon Redshift as your choice of data lake, you can choose to either stream the data from the
+PostgreSQL source database within the Amazon RDS DB instance created at the [**PostgreSQL step**](#postgresql) to the Redshift target or [connect directly](#direct-connection) to Amazon Redshift.
 
-TODO: direct connection with disclaimer on performance
+#### Streaming from PostgreSQL to Redshift
+
+If you meet the [prerequisites](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.Redshift.html#CHAP_Target.Redshift.Prerequisites) for using an Amazon Redshift database as a target, you will need to implement two steps:
+
+1. configure the PostgreSQL source for AWS Database Migration Service (DMS) by following these [instructions](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Source.PostgreSQL.html)
+2. configure the Redshift target for AWS DMS following the instructions [here](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.Redshift.html).
+
+#### Direct connection
+
+You can get started on enabling the direct connection with Redshift by following these resources on creating an [Amazon Redshift cluster](https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-clusters.html).
+Before you do so, you should take into account that streaming historical data directly to Redshift could take much longer than streaming directly to or via the PostgreSQL RDS instance.
+
+You must update the `RASA_ANALYTICS_DB_URL` to the Redshift cluster DB URL which must follow the format `redshift://<USER>:<PASSWORD>@<AWS URL>:5439/<DB NAME>`,  e.g. `redshift://awsuser:4324312adfaGQ@analytics.cp1yucixmagz.us-east-1.redshift.amazonaws.com:5439/analytics`.
+
+:::caution Redshift write performance
+
+As a result of performance considerations, we strongly advise against choosing a direct connection to Redshift.
+Redshift is a great data lake for analytics but lacks the necessary write performance to directly stream data to it.
+
+:::
 
 ## Ingest past conversations
 
