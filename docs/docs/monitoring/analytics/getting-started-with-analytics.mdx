@@ -148,8 +148,17 @@ data directly to Redshift could take much longer than streaming directly
 to or via the PostgreSQL RDS instance.
 
 You must update the `RASA_ANALYTICS_DB_URL` to the Redshift cluster DB URL
-which must follow the format `redshift://<USER>:<PASSWORD>@<AWS URL>:5439/<DB NAME>`,
-e.g. `redshift://awsuser:4324312adfaGQ@analytics.cp1yucixmagz.us-east-1.redshift.amazonaws.com:5439/analytics`.
+which must follow the following format:
+
+```
+redshift://<USER>:<PASSWORD>@<AWS URL>:5439/<DB NAME>
+```
+
+For example:
+
+```
+redshift://awsuser:4324312adfaGQ@analytics.cp1yucixmagz.us-east-1.redshift.amazonaws.com:5439/analytics
+```
 
 :::caution Redshift write performance
 
