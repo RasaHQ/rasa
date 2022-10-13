@@ -78,8 +78,8 @@ module.exports = {
         label: 'Monitoring and Analyzing Assistants',
         collapsed: true,
       items: [
-        'monitoring/tracing',
         'monitoring/analytics',
+        'monitoring/tracing',
       ],
     },
     {
