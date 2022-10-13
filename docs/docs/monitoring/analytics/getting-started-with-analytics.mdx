@@ -11,6 +11,7 @@ abstract: Rasa Pro Analytics is a data pipeline that extracts model, training,
 import useBaseUrl from "@docusaurus/useBaseUrl";
 import RasaProLabel from "@theme/RasaProLabel";
 import RasaProBanner from "@theme/RasaProBanner";
+import {Grid} from "@theme/Grid"
 
 <RasaProLabel />
 
@@ -21,13 +22,28 @@ tooling (BI tools, data warehouses) of your choice. Visualizations
 and analysis of the production assistant and its conversations allow
 you to assess ROI and improve the performance of the assistant over time.
 
-<div align="center">
+<Grid  columns="1fr 1fr" noMargin noGap verticalAlign="middle">
   <img
-    alt="Rasa Pro Analytics example dashboard"
-    src={useBaseUrl("/img/analytics/analytics-examples.png")}
+    alt="Rasa Pro Analytics - Sessions per channel"
+    src={useBaseUrl("/img/analytics/graph-number-sessions-channel.png")}
     width="100%"
   />
-</div>
+  <img
+    alt="Rasa Pro Analytics - Escalation rate"
+    src={useBaseUrl("/img/analytics/graph-escalation-rate.png")}
+    width="100%"
+  />
+  <img
+    alt="Rasa Pro Analytics - Intents distribution over time"
+    src={useBaseUrl("/img/analytics/graph-intent-distribution.png")}
+    width="100%"
+  />
+  <img
+    alt="Rasa Pro Analytics - Top intents"
+    src={useBaseUrl("/img/analytics/graph-top-5-intents.png")}
+    width="100%"
+  />
+</Grid>
 
 Measuring a Rasa assistant's success and making strategic investments
 will lead to better business outcomes. It will also help you understand
