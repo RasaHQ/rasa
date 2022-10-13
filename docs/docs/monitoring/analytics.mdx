@@ -112,15 +112,15 @@ If you meet the [prerequisites](https://docs.aws.amazon.com/dms/latest/userguide
 #### Direct connection
 
 You can get started on enabling the direct connection with Redshift by following these resources on creating an [Amazon Redshift cluster](https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-clusters.html).
-Before you do so, you should take into account the following considerations:
+Before you do so, you should take into account that streaming historical data directly to Redshift could take much longer than streaming directly to or via the PostgreSQL RDS instance.
 
-- Although Redshift is based on PostgreSQL, Redshift does not support all the latest PostgreSQL features, data types and functions: read the [Amazon documentation](https://docs.aws.amazon.com/redshift/latest/dg/c_redshift-and-postgres-sql.html) on core differences.
-- This has an immediate knock-on effect on performance: streaming historical data directly to Redshift could take up to **REPLACE ME WITH INT** times longer than streaming directly to or via the PostgreSQL RDS instance.
+You must update the `RASA_ANALYTICS_DB_URL` to the Redshift cluster DB URL which must follow the format `redshift://<USER>:<PASSWORD>@<AWS URL>:5439/<DB NAME>`,  e.g. `redshift://awsuser:4324312adfaGQ@analytics.cp1yucixmagz.us-east-1.redshift.amazonaws.com:5439/analytics`.
 
-You must update the `RASA_ANALYTICS_DB_URL` to the Redshift cluster URL.
+:::caution Redshift write performance
 
-:::warning
 As a result of performance considerations, we strongly advise against choosing a direct connection to Redshift.
+Redshift is a great data lake for analytics but lacks the necessary write performance to directly stream data to it.
+
 :::
 
 ### Ingest past conversations
