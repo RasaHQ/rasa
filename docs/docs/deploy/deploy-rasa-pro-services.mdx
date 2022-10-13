@@ -21,7 +21,7 @@ Kafka cluster to communicate.
 ### Prerequisites
 
 A Rasa Pro Services deployment needs to be connected to existing services,
-be deployed on a machine meeting the minimal hardware requirements supplying
+be deployed on a machine meeting the minimal hardware requirements and be supplied
 a license.
 
 A production deployment of Kafka is required to set up Rasa Pro.
@@ -51,7 +51,7 @@ license as an environment variable to the service.
 ### Installation and Configuration
 
 Rasa Plus streams data to Kafka which gets consumed by Rasa Pro Services.
-The different services need to be run and configured to be able to communicate.
+These different services need to be run and configured to be able to communicate.
 
 1.  Configure Rasa Plus to stream data to Kafka. The configuration for
     Kafka should be put in a configuration
@@ -68,7 +68,7 @@ The different services need to be run and configured to be able to communicate.
     The `<BROKER_URL>` needs to be replaced with an address of a bootstrap
     server of your Kafka cluster. Configuration examples for different
     security protocols and other parameters can be found in the
-    [Kafka Event Broker](https://rasa.com/docs/rasa/event-brokers/#kafka-event-broker)
+    [Kafka Event Broker](../event-brokers.mdx#kafka-event-broker)
     documentation.
 
 2.  Rasa Pro Services is a docker image. Authenticate to pull
