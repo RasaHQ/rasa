@@ -32,6 +32,7 @@ class Features:
         self.type = feature_type
         self.origin = origin
         self.attribute = attribute
+        self._cached_fingerprint: Optional[Text] = None
         if not self.is_dense() and not self.is_sparse():
             raise ValueError(
                 "Features must either be a numpy array for dense "
@@ -98,10 +99,11 @@ class Features:
                 f"Cannot combine dense features as sequence dimensions do not "
                 f"match: {self.features.ndim} != {additional_features.features.ndim}."
             )
-
-        self.features = np.concatenate(
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        self.features = np.concatenate(  # type: ignore[no-untyped-call]
             (self.features, additional_features.features), axis=-1
         )
+        self._cached_fingerprint = None
 
     def _combine_sparse_features(self, additional_features: Features) -> None:
         from scipy.sparse import hstack
@@ -114,6 +116,7 @@ class Features:
             )
 
         self.features = hstack([self.features, additional_features.features])
+        self._cached_fingerprint = None
 
     def __key__(
         self,
@@ -148,16 +151,17 @@ class Features:
 
     def fingerprint(self) -> Text:
         """Calculate a stable string fingerprint for the features."""
-        if self.is_dense():
-            f_as_text = self.features.tostring()
-        else:
-            f_as_text = rasa.shared.nlu.training_data.util.sparse_matrix_to_string(
-                self.features
+        if self._cached_fingerprint is None:
+            if self.is_dense():
+                f_as_text = self.features.tobytes()
+            else:
+                f_as_text = rasa.shared.nlu.training_data.util.sparse_matrix_to_string(
+                    self.features
+                )
+            self._cached_fingerprint = rasa.shared.utils.io.deep_container_fingerprint(
+                [self.type, self.origin, self.attribute, f_as_text]
             )
-
-        return rasa.shared.utils.io.deep_container_fingerprint(
-            [self.type, self.origin, self.attribute, f_as_text]
-        )
+        return self._cached_fingerprint
 
     @staticmethod
     def filter(
@@ -317,7 +321,10 @@ class Features:
         # Combine the features
         arbitrary_feature = features_list[0]
         if not arbitrary_feature.is_sparse():
-            features = np.concatenate([f.features for f in features_list], axis=-1)
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+            features = np.concatenate(  # type: ignore[no-untyped-call]
+                [f.features for f in features_list], axis=-1
+            )
         else:
             features = scipy.sparse.hstack([f.features for f in features_list])
         return Features(

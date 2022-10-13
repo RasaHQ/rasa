@@ -455,10 +455,16 @@ class TEDPolicy(Policy):
             SEQUENCE,
         )
         label_ids = np.arange(domain.num_actions)
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            [
+                FeatureArray(
+                    np.expand_dims(label_ids, -1),  # type: ignore[no-untyped-call]
+                    number_of_dimensions=2,
+                )
+            ],
         )
         return label_data
 
@@ -521,8 +527,12 @@ class TEDPolicy(Policy):
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
         if label_ids is not None and encoded_all_labels is not None:
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             label_ids = np.array(
-                [np.expand_dims(seq_label_ids, -1) for seq_label_ids in label_ids]
+                [
+                    np.expand_dims(seq_label_ids, -1)  # type: ignore[no-untyped-call]
+                    for seq_label_ids in label_ids
+                ]
             )
             model_data.add_features(
                 LABEL_KEY,
@@ -790,10 +800,15 @@ class TEDPolicy(Policy):
             logger.debug(f"User intent lead to '{non_e2e_action_name}'.")
             e2e_action_name = domain.action_names_or_texts[np.argmax(confidences[1])]
             logger.debug(f"User text lead to '{e2e_action_name}'.")
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if (
-                np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
+                np.max(confidences[1])  # type: ignore[no-untyped-call]
+                > self.config[E2E_CONFIDENCE_THRESHOLD]
                 # TODO maybe compare confidences is better
-                and np.max(similarities[1]) > np.max(similarities[0])
+                and np.max(similarities[1])  # type: ignore[no-untyped-call]
+                > np.max(similarities[0])  # type: ignore[no-untyped-call]
             ):
                 logger.debug(f"TED predicted '{e2e_action_name}' based on user text.")
                 return confidences[1], True
@@ -827,11 +842,19 @@ class TEDPolicy(Policy):
             tracker, domain, precomputations, rule_only_data=rule_only_data
         )
         model_data = self._create_model_data(tracker_state_features)
-        outputs: Dict[Text, np.ndarray] = self.model.run_inference(model_data)
+        outputs = self.model.run_inference(model_data)
 
-        # take the last prediction in the sequence
-        similarities = outputs["similarities"][:, -1, :]
-        confidences = outputs["scores"][:, -1, :]
+        if isinstance(outputs["similarities"], np.ndarray):
+            # take the last prediction in the sequence
+            similarities = outputs["similarities"][:, -1, :]
+        else:
+            raise TypeError(
+                "model output for `similarities` " "should be a numpy array"
+            )
+        if isinstance(outputs["scores"], np.ndarray):
+            confidences = outputs["scores"][:, -1, :]
+        else:
+            raise TypeError("model output for `scores` should be a numpy array")
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
             confidences, similarities, domain

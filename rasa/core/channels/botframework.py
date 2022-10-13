@@ -221,7 +221,7 @@ class BotFrameworkInput(InputChannel):
         self.jwt_update_time = datetime.datetime.now()
 
     def _validate_jwt_token(self, jwt_token: Text) -> None:
-        jwt_header = jwt.get_unverified_header(jwt_token)  # type: ignore
+        jwt_header = jwt.get_unverified_header(jwt_token)
         key_id = jwt_header["kid"]
         if key_id not in self.jwt_keys:
             raise InvalidKeyError(f"JWT Key with ID {key_id} not found.")

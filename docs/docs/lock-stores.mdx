@@ -61,22 +61,22 @@ To set up Rasa with Redis the following steps are required:
 
 2. Add required configuration to your `endpoints.yml`
 
-   ```yaml-rasa
-   lock_store:
-       type: rasa_plus.components.concurrent_lock_store.ConcurrentRedisLockStore
-       host: <host of the redis instance, e.g. localhost>
-       port: <port of your redis instance, usually 6379>
-       password: <password used for authentication>
-       db: <number of your database within redis, e.g. 0>
-       key_prefix: <alphanumeric value to prepend to lock store keys>
-   ```
+```yaml-rasa
+lock_store:
+    type: rasa_plus.components.concurrent_lock_store.ConcurrentRedisLockStore
+    host: <host of the redis instance, e.g. localhost>
+    port: <port of your redis instance, usually 6379>
+    password: <password used for authentication>
+    db: <number of your database within redis, e.g. 0>
+    key_prefix: <alphanumeric value to prepend to lock store keys>
+```
 
 3. To start the Rasa Core server using your Redis backend, add the `--endpoints`
    flag, e.g.:
 
-```bash
-rasa run -m models --endpoints endpoints.yml
-```
+    ```bash
+    rasa run -m models --endpoints endpoints.yml
+    ```
 
 ### Parameters
 
@@ -128,22 +128,22 @@ The `ConcurrentRedisLockStore` recreates the `TicketLock` from the persisted `Ti
 
   2. Add required configuration to your `endpoints.yml`
 
-     ```yaml-rasa
-     lock_store:
-         type: "redis"
-         url: <url of the redis instance, e.g. localhost>
-         port: <port of your redis instance, usually 6379>
-         password: <password used for authentication>
-         db: <number of your database within redis, e.g. 0>
-         key_prefix: <alphanumeric value to prepend to lock store keys>
-     ```
+      ```yaml-rasa
+      lock_store:
+          type: "redis"
+          url: <url of the redis instance, e.g. localhost>
+          port: <port of your redis instance, usually 6379>
+          password: <password used for authentication>
+          db: <number of your database within redis, e.g. 0>
+          key_prefix: <alphanumeric value to prepend to lock store keys>
+      ```
 
   3. To start the Rasa Core server using your Redis backend, add the `--endpoints`
      flag, e.g.:
 
-  ```bash
-  rasa run -m models --endpoints endpoints.yml
-  ```
+    ```bash
+    rasa run -m models --endpoints endpoints.yml
+    ```
 
 - **Parameters**
 

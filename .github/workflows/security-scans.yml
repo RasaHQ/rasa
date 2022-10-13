@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, labeled]
 
 concurrency:
-  group: security-scans-${{ github.head_ref }}  # head branch name
+  group: security-scans-${{ github.head_ref }} # head branch name
   cancel-in-progress: true
 
 jobs:
@@ -24,19 +24,44 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
 
-  gitleaks:
+  trivy:
     name: Detecting hardcoded secrets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
       with:
         # Fetch all history for all tags and branches
         fetch-depth: '0'
-
-    - name: Gitleaks - detecting hardcoded secrets
-      uses: zricethezav/gitleaks-action@518e4898c0cd1cc5d9aab6627a2eabd46e81d8da # v1.6.0
+    - name: Run Trivy vulnerability scanner
+      id: trivy
+      uses: aquasecurity/trivy-action@d63413b0a4a4482237085319f7f4a1ce99a8f2ac
+      continue-on-error: true
       with:
-        config-path: .gitleaks.toml
+        format: 'table'
+        scan-type: 'fs'
+        exit-code: '1'
+        security-checks: 'secret'
+    - name: Alert on secret finding
+      if: steps.trivy.outcome == 'failure'
+      uses: slackapi/slack-github-action@936158bbe252e9a6062e793ea4609642c966e302
+      with:
+        payload: |
+          {
+            "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                }
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
 
   bandit:
     name: Detect python security issues
@@ -44,56 +69,56 @@ jobs:
     needs: [changes]
 
     steps:
-    - name: Checkout git repository 🕝
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v3
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@v3
 
-    - name: Set up Python 3.9 🐍
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
-      with:
-        python-version: 3.9
+      - name: Set up Python 3.9 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        with:
+          python-version: 3.9
 
-    - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
-    - name: Install poetry 🦄
-      if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Load Poetry Cached Libraries ⬇
-      id: cache-poetry
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-3.9
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          restore-keys: ${{ runner.os }}-poetry-3.9
 
-    - name: Clear Poetry cache
-      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')
-      run: rm -r .venv
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')
+        run: rm -r .venv
 
-    - name: Create virtual environment
-      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')) && needs.changes.outputs.backend == 'true'
-      run: python -m venv create .venv
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
 
-    - name: Set up virtual environment
-      if: needs.changes.outputs.backend == 'true'
-      run: poetry config virtualenvs.in-project true
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        run: poetry config virtualenvs.in-project true
 
-    - name: Install Dependencies (Linux) 📦
-      if: needs.changes.outputs.backend == 'true'
-      run: make install
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true'
+        run: make install
 
-    - name: Run Bandit 🔪
-      if: needs.changes.outputs.backend == 'true'
-      run: make lint-security
+      - name: Run Bandit 🔪
+        if: needs.changes.outputs.backend == 'true'
+        run: make lint-security
 
   snyk:
     runs-on: ubuntu-latest

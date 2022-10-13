@@ -65,21 +65,30 @@ module.exports = {
       type: 'category',
       label: 'Deploying Assistants',
       collapsed: true,
-    items: [
-      'deploy/introduction',
-      'deploy/deploy-rasa',
-      'deploy/deploy-action-server',
-      'deploy/deploy-rasa-plus',
-      'deploy/deploy-rasa-pro-services',
-    ],
-  },
-    {
-        type: 'category',
-        label: 'Monitoring and Analyzing Assistants',
-        collapsed: true,
       items: [
+        'deploy/introduction',
+        'deploy/deploy-rasa',
+        'deploy/deploy-action-server',
+        'deploy/deploy-rasa-plus',
+        'deploy/deploy-rasa-pro-services',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Monitoring and Analyzing Assistants',
+      collapsed: true,
+      items: [
+        {
+          type: 'category',
+          label: 'Analytics',
+          collapsed: true,
+          items: [
+            'monitoring/analytics/getting-started-with-analytics',
+            'monitoring/analytics/example-queries',
+            'monitoring/analytics/data-structure-reference',
+          ],
+        },
         'monitoring/tracing',
-        'monitoring/analytics',
       ],
     },
     {

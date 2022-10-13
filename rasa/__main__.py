@@ -27,6 +27,7 @@ from rasa.cli import (
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
+from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_error
 from rasa.utils.common import configure_logging_and_warnings
@@ -36,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Parse all the command line arguments for the training script."""
-
     parser = argparse.ArgumentParser(
         prog="rasa",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -71,6 +71,9 @@ def create_argument_parser() -> argparse.ArgumentParser:
     export.add_subparser(subparsers, parents=parent_parsers)
     x.add_subparser(subparsers, parents=parent_parsers)
     evaluate.add_subparser(subparsers, parents=parent_parsers)
+    plugin_manager().hook.refine_cli(
+        subparsers=subparsers, parent_parsers=parent_parsers
+    )
 
     return parser
 
@@ -83,6 +86,10 @@ def print_version() -> None:
     print(f"Python Version    :         {platform.python_version()}")
     print(f"Operating System  :         {platform.platform()}")
     print(f"Python Path       :         {sys.executable}")
+
+    result = plugin_manager().hook.get_version_info()
+    if result:
+        print(f"\t{result[0][0]}  :         {result[0][1]}")
 
 
 def main() -> None:
@@ -105,8 +112,16 @@ def main() -> None:
     try:
         if hasattr(cmdline_arguments, "func"):
             rasa.utils.io.configure_colored_logging(log_level)
+
+            result = plugin_manager().hook.configure_commandline(
+                cmdline_arguments=cmdline_arguments
+            )
+            endpoints_file = result[0] if result else None
+
             rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()
+            plugin_manager().hook.init_telemetry(endpoints_file=endpoints_file)
+
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
             print_version()
