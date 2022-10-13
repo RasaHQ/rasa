@@ -9,10 +9,18 @@ import useBaseUrl from "@docusaurus/useBaseUrl";
 
 Descriptions and examples of the data structure created by Analytics.
 The data structure is created by the Analytics pipeline and treated as
-a public API. [Internal tables](#internal-tables) should be considered private and may change
-without notice.
+a public API. The versioning of the API follows the
+[Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
+[Internal tables](#internal-tables) should be considered private and may
+change without notice.
 
 Table overview:
+
+<!-- the diagram is generated from SQL create table statements using
+  https://dbdiagram.io/d/630dea770911f91ba5f6966a
+  to generate the SQL for the tables you can use
+  `cd services/analytics && make generate-init-sql` in the rasa-pro-services
+  repo -->
 
 <div align="center">
   <img
