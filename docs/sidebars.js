@@ -225,7 +225,7 @@ module.exports = {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: ['changelog', 'sdk_changelog','migration-guide', 
+      items: ['changelog', 'sdk_changelog', 'compatibility-matrix', 'migration-guide',
       {
         type: 'link',
         label: 'Actively Maintained Versions',
