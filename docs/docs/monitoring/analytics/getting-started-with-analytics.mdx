@@ -46,7 +46,7 @@ The pipeline will compute analytics as soon as the docker container is successfu
 deployed and connected to your data warehouse and Kafka instances.
 
 
-### Prerequisites
+## Prerequisites
 
 - A production deployment of Kafka is required to set up Rasa Pro.
   We recommend using [Amazon Managed Streaming for
@@ -60,7 +60,7 @@ deployed and connected to your data warehouse and Kafka instances.
   We recommend managed deployments of your data lake to minimize maintenance
   efforts.
 
-### Connect an assistant
+## Connect an assistant
 
 The `<DATA_LAKE_URL>` should have a DBAPI format, e.g.
 `postgresql+psycopg2://user:password@postgres.host:5432/rasa`.
@@ -68,21 +68,21 @@ If no data lake URL is configured, Analytics will be disabled.
 
 `RASA_ANALYTICS_DB_URL=<DATA_LAKE_URL>`
 
-### Connect a data warehouse
+## Connect a data warehouse
 
-#### PostgreSQL
+### PostgreSQL
 
 TODO: general instructions.
 
 TODO: instructions for AWS RDS
 
-#### Redshift
+### Redshift
 
 TODO: streaming to Redshift from Postgres
 
 TODO: direct connection with disclaimer on performance
 
-### Ingest past conversations
+## Ingest past conversations
 
 When Analytics is connected to your Kafka instance, it will consume
 all prior events on the Kafka topic and ingest them into the database.
@@ -129,13 +129,13 @@ Analytics. Every ingested event will be stored in the database,
 even if it was processed previously.
 :::
 
-### Connect a BI Solution
+## Connect a BI Solution
 
 Connecting a business intelligence platform to the data warehouse varies for
 each platform. We provide example instructions for Metabase and Tableau but
 you can use any BI platform which supports AWS Redshift or PostgreSQL.
 
-#### Example: Connecting Metabase
+### Example: Connecting Metabase
 
 Metabase is a free and open-source business intelligence platform. It
 provides a simple interface to query and visualize data. Metabase can
@@ -144,7 +144,7 @@ be connected to PostgreSQL or Redshift databases.
 - [Connecting Metabase to PostgreSQL](https://www.metabase.com/data_sources/postgresql)
 - [Connecting Metabase to Redshift](https://www.metabase.com/data_sources/amazon-redshift)
 
-#### Example: Connecting Tableau
+### Example: Connecting Tableau
 
 Tableau is a business intelligence platform. It provides a flexible interface
 to build business intelligence dashboards. Tableau can be connected to
