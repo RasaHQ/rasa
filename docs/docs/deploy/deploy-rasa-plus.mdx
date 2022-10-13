@@ -13,43 +13,9 @@ import RasaProBanner from '@theme/RasaProBanner';
 
 To use the Rasa Plus image in a Helm deployment, you will need to substitute `rasa` with `rasa-plus` as
 the image name. You will also need to pass your license in an env var
-and [specify a pull secret for the image](#creating-a-pull-secret).
+and [specify a pull secret for the image](#step-1-image-pull-secret).
 
-For the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa),
-that means your values should be updated as follows:
-
-```yaml
-registry: <registry-for-rasa-plus-image>
-command:
-  - rasa
-image:
-  name: rasa-plus
-  tag: 0.1.1
-  pullSecrets:
-    - name: rasa-plus-pull-secret
-extraEnv:
-  - name: RASA_PRO_LICENSE
-    value: <your-license-string>
-```
-
-For the [Rasa Enterprise Helm Chart](https://github.com/RasaHQ/rasa-x-helm), update
-your values as follows:
-
-```yaml
-images:
-  imagePullSecrets:
-    - name: rasa-plus-pull-secret
-rasa:
-  command:
-    - rasa
-  name: <registry-for-rasa-plus-image>
-  tag: 0.1.1
-  extraEnv:
-    - name: RASA_PRO_LICENSE
-      value: <your-license-string>
-```
-
-## Creating a Pull Secret
+## Step 1: image pull secret
 
 You will need to create a pull secret to access the `rasa-plus` image. You should have
 been provided with a JSON credentials file to access the registry.
@@ -77,6 +43,7 @@ Create the pull secret by running the corresponding command for your cluster env
 kubectl --namespace <your namespace> \
     create secret docker-registry rasa-plus-pull-secret \
     --docker-server=gcr.io \
+    --docker-email=company@rasa-platform.iam.gserviceaccount.com \ # this value needs to be updated with correct client email
     --docker-username=_json_key \
     --docker-password="$(cat <your-json-registry-creds-file>.json)"
 ```
@@ -86,6 +53,63 @@ kubectl --namespace <your namespace> \
 oc --namespace <your namespace> \
     create secret docker-registry rasa-plus-pull-secret \
     --docker-server=gcr.io \
+    --docker-email=company@rasa-platform.iam.gserviceaccount.com \ # this value needs to be updated with correct client email
     --docker-username=_json_key \
     --docker-password="$(cat <your-json-registry-creds-file>.json)"
+```
+
+## Step 2: store license in a secret
+
+Step a: Save the license string to a file, for example:
+```sh
+echo "<rasaplus-license-key-you-were-emailed>" > license.txt
+```
+
+Step b: Create a secret to hold the license key:
+```sh
+kubectl -n <your-namespace> create secret generic rasapro-license --from-file=licensekey=./license.txt
+```
+Step c: Remove the file on disk, for example:
+```sh
+/bin/rm license.txt
+```
+
+## Step 3: update `values.yml`
+
+For the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa), update as follows:
+
+```yaml
+registry: europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
+command:
+  - rasa
+image:
+  name: rasa-plus
+  tag: 0.1.1
+  pullSecrets:
+    - name: rasa-plus-pull-secret
+extraEnv:
+  - name: RASA_PRO_LICENSE
+    valueFrom:
+      secretKeyRef:
+        name: rasapro-license
+        key: licensekey
+```
+
+For the [Rasa Enterprise Helm Chart](https://github.com/RasaHQ/rasa-x-helm), update as follows:
+
+```yaml
+images:
+  imagePullSecrets:
+    - name: rasa-plus-pull-secret
+rasa:
+  command:
+  - rasa
+  name: europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
+  tag: 0.1.1
+  extraEnv:
+    - name: RASA_PRO_LICENSE
+      valueFrom:
+        secretKeyRef:
+          name: rasapro-license
+          key: licensekey
 ```
