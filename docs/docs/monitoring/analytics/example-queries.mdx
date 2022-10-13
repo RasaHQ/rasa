@@ -61,8 +61,8 @@ ORDER BY 1 ASC, 2 ASC
 
 ### Top N intents
 
-When improving your assistant, it's common to look at the variety of intents your users express.
-The "Top 5 intents" metric below will help you have a good perspective on that topic:
+To improve your assistant, you could looking into the variety of intents your users express.
+The query below selects the top 5 intents which could help you have a good perspective on that topic:
 
 ```sql
 SELECT
@@ -105,7 +105,9 @@ ORDER BY 1 ASC, 2 ASC
 
 ### Escalation rate
 
-Escalation rate or human hand-off rate is a measure of how many conversations does the assistant pass to a human agent. This metric can help you gain a better understanding of what happens during a conversation. Let's say you have an intent named `handoff_to_support`. You'll get the escalation rate over time
+Escalation rate or human hand-off rate is a measure of how many conversations does the assistant pass to a human agent.
+This metric can help you gain a better understanding of what happens during a conversation.
+Let's say you have an intent named `handoff_to_support`. You'll get the escalation rate over time
 with this sample query:
 
 ```sql
@@ -153,7 +155,8 @@ ORDER BY 1 ASC
 
 ### Abandonment rate
 
-Abandonment rate can be defined in many different custom ways, however here we'll define it as a session ending without a user message after a specific message was uttered by the bot, e.g. `utter_ask_name`.
+Abandonment rate can be defined in many different custom ways, however here we'll define it as a session ending
+without a user message after a specific message was uttered by the bot, e.g. `utter_ask_name`.
 You could adapt the metric to detect sessions ending without a user message after a specific set of intents.
 The SQL query would look like this:
 
