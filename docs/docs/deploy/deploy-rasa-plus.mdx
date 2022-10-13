@@ -15,7 +15,7 @@ To use the Rasa Plus image in a Helm deployment, you will need to substitute `ra
 the image name. You will also need to pass your license in an env var
 and [specify a pull secret for the image](#step-1---create-a-pull-secret).
 
-## **Step 1 - create a pull secret**
+## **Step 1: image pull secret**
 
 You will need to create a pull secret to access the `rasa-plus` image. You should have
 been provided with a JSON credentials file to access the registry.
@@ -43,7 +43,7 @@ Create the pull secret by running the corresponding command for your cluster env
 kubectl --namespace <your namespace> \
     create secret docker-registry rasa-plus-pull-secret \
     --docker-server=gcr.io \
-    --docker-email=test-customer@rasa-releases.iam.gserviceaccount.com \
+    --docker-email=company@rasa-platform.iam.gserviceaccount.com \ # this value needs to be updated with correct client email
     --docker-username=_json_key \
     --docker-password="$(cat <your-json-registry-creds-file>.json)"
 ```
@@ -53,33 +53,33 @@ kubectl --namespace <your namespace> \
 oc --namespace <your namespace> \
     create secret docker-registry rasa-plus-pull-secret \
     --docker-server=gcr.io \
-    --docker-email=test-customer@rasa-releases.iam.gserviceaccount.com \
+    --docker-email=company@rasa-platform.iam.gserviceaccount.com \ # this value needs to be updated with correct client email
     --docker-username=_json_key \
     --docker-password="$(cat <your-json-registry-creds-file>.json)"
 ```
 
-## **Step 2: securely store the license key in a secret**
+## **Step 2: store license in a secret**
 
-Step 1: Save the license string to a file, for example:
+Step a: Save the license string to a file, for example:
 ```sh
-echo "rasaplus-license-key-you-were-emailed" > license.txt
+echo "<rasaplus-license-key-you-were-emailed>" > license.txt
 ```
 
-Step 2: Create a secret to hold the license key:
+Step b: Create a secret to hold the license key:
 ```sh
 kubectl -n <your-namespace> create secret generic rasapro-license --from-file=licensekey=./license.txt
 ```
-Step 3. Remove the file on disk, for example:
+Step c: Remove the file on disk, for example:
 ```sh
 /bin/rm license.txt
 ```
 
-## **Step 3: update your `values.yml`**
+## **Step 3: update `values.yml`**
 
 For the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa), update as follows:
 
 ```yaml
-registry: <registry-for-rasa-plus-image>
+registry: europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
 command:
   - rasa
 image:
@@ -104,7 +104,7 @@ images:
 rasa:
   command:
   - rasa
-  name: <registry-for-rasa-plus-image>
+  name: europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
   tag: 0.1.1
   extraEnv:
     - name: RASA_PRO_LICENSE
