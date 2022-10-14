@@ -67,11 +67,13 @@ Kafka instances.
   We recommend using [Amazon Managed Streaming for
   Apache Kafka](https://aws.amazon.com/msk/).
 - A production deployment of a data lake needs to be connected to
-  the data pipeline. Rasa Pro supports the following data lakes:
+  the data pipeline. Rasa Pro directly supports the following data lakes:
 
   - [PostgreSQL](https://aws.amazon.com/rds/postgresql/) (
     **recommended**. All PostgreSQL >= 11.0 are supported)
   - [Amazon Redshift](https://aws.amazon.com/redshift/)
+
+  Virtually any other data lakes can be configured to sync with your deployment of PostgreSQL.
 
   We recommend managed deployments of your data lake to minimize maintenance
   efforts.
@@ -91,6 +93,9 @@ transformed conversational data to two different data warehouse types in AWS:
 
 - [PostgreSQL](#postgresql)
 - [Redshift](#redshift)
+
+Additionally, any data warehouse is supported if it is configured in sync with
+your deployment of PostgreSQL, [as we recommend it for Redshift](#streaming-from-postgresql-to-redshift).
 
 ### PostgreSQL
 
