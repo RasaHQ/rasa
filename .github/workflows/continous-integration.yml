@@ -7,6 +7,8 @@ on:
     tags:
       - "*"
   pull_request:
+  pull_request_target:
+    types: [labeled]
 
 concurrency:
   group: continous-integration-${{ github.ref }} # branch or tag name
@@ -29,6 +31,9 @@ concurrency:
 #                      created at https://sentry.io/settings/account/api/auth-tokens/
 
 env:
+  # Make sure to check if label is assigned before running pull_request_target
+  IS_PULL_REQUEST_TARGET_FORK: ${{ (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'security-review:done')) }}
+
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
@@ -53,17 +58,22 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
-        # Run the normal filters if the all-tests-required label is not set
+        # Run the normal filters if the `all-tests-required` label is not set
         id: changed-files
-        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
+        if: |
+          contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == 'false' &&
+          (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
+
+      # Set all filters to true if the `all-tests-required` label is set
+      # Bypasses all the change filters in change_filters.yml and forces all outputs to true
       - name: Set all filters to true if all tests are required
-        # Set all filters to true if the all-tests-required label is set
-        # Bypasses all the change filters in change_filters.yml and forces all outputs to true
         id: run-all
-        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
+        if: |
+          contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') &&
+          (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           echo "::set-output name=backend::true"
           echo "::set-output name=docker::true"
@@ -100,8 +110,15 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        if: needs.changes.outputs.backend == 'true'
+        # Checkout git repository in all cases except on pull_request_target for security reasons
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'false'
         uses: actions/checkout@v3
+
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@v3
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
@@ -131,11 +148,17 @@ jobs:
           restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Clear Poetry cache
-        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        if: |
+          steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && 
+          contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests') && 
+          (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: rm -r .venv
 
       - name: Create virtual environment
-        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        if: |
+          needs.changes.outputs.backend == 'true' && 
+          (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && 
+          (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: python -m venv create .venv
 
       - name: Set up virtual environment
@@ -149,7 +172,7 @@ jobs:
           make install-full
 
       - name: Checkout target branch to be able to diff
-        if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
+        if: needs.changes.outputs.backend == 'true' && (github.event_name == 'pull_request' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           git fetch origin ${{ github.base_ref }}
           echo "DOCSTRING_DIFF_BRANCH=origin/${{ github.base_ref }}" >> $GITHUB_ENV
@@ -176,7 +199,7 @@ jobs:
         run: make types
 
       - name: Lint Changelog Filenames 📝
-        if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
+        if: needs.changes.outputs.backend == 'true' && (github.event_name == 'pull_request' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: make lint-changelog
 
       - name: Test CLI 🖥
@@ -192,7 +215,14 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'false'
         uses: actions/checkout@v3
+
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@v3
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
@@ -237,8 +267,14 @@ jobs:
           docker port dd_agent
 
       - name: Checkout git repository 🕝
-        if: needs.changes.outputs.backend == 'true'
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'false'
         uses: actions/checkout@v3
+
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@v3
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
@@ -267,14 +303,21 @@ jobs:
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
       - name: Clear Poetry cache
-        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        if: |
+          steps.cache-poetry.outputs.cache-hit == 'true' && 
+          needs.changes.outputs.backend == 'true' && 
+          contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests') && 
+          (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: rm -r .venv
 
         # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
         # The virtualenv simply doesn't work on Windows with our setup,
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
-        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        if: |
+          (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && 
+          needs.changes.outputs.backend == 'true' && 
+          (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: python -m venv create .venv
 
       - name: Set up virtual environment
@@ -355,8 +398,14 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        if: needs.changes.outputs.backend == 'true'
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'false'
         uses: actions/checkout@v3
+
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@v3
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
@@ -450,8 +499,14 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        if: needs.changes.outputs.backend == 'true'
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'false'
         uses: actions/checkout@v3
+
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@v3
+        if: needs.changes.outputs.backend == 'true' && env.IS_PULL_REQUEST_TARGET_FORK == 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
@@ -480,14 +535,21 @@ jobs:
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
       - name: Clear Poetry cache
-        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        if: 
+          steps.cache-poetry.outputs.cache-hit == 'true' && 
+          needs.changes.outputs.backend == 'true' && 
+          contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests') &&
+          (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: rm -r .venv
 
         # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
         # The virtualenv simply doesn't work on Windows with our setup,
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
-        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        if: |
+          (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && 
+          needs.changes.outputs.backend == 'true' &&
+          (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: python -m venv create .venv
 
       - name: Set up virtual environment
@@ -544,13 +606,13 @@ jobs:
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
         uses: actions/checkout@v3
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || env.IS_PULL_REQUEST_TARGET_FORK == 'true'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
+        if: github.event_name != 'pull_request' && env.IS_PULL_REQUEST_TARGET_FORK == 'false'
         uses: actions/checkout@v3
-        if: github.event_name != 'pull_request'
 
       - name: Read Poetry Version 🔢
         run: |
@@ -617,52 +679,29 @@ jobs:
           BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
           echo "::set-output name=base_builder_exists::${BASE_IMAGE_BUILDER_EXISTS}"
 
-      - name: Build Docker base image 🛠
-        if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base
-
-      - name: Push Docker base image if it's not building from a fork ⬆
-        if: (steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+      - name: Build Docker base image 🛠⬆
+        if: |
+          (steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') &&
+          (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base --push
 
-      - name: Build Docker mitie base image 🛠
-        if: steps.check_image.outputs.base_mitie_exists == 'false'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-mitie
-
-      - name: Push Docker mitie base image if it's not building from a fork ⬆
-        if: steps.check_image.outputs.base_mitie_exists == 'false' && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+      - name: Build Docker mitie base image 🛠⬆
+        if: steps.check_image.outputs.base_mitie_exists == 'false' && (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-mitie --push
 
       - name: Build Docker poetry base image 🛠
-        if: steps.check_image.outputs.base_poetry_exists == 'false'
-        run: |
-          export IMAGE_TAG=${{ env.POETRY_VERSION }}
-          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-poetry
-
-      - name: Push Docker poetry base image if it's not building from a fork ⬆
-        if: steps.check_image.outputs.base_poetry_exists == 'false' && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        if: steps.check_image.outputs.base_poetry_exists == 'false' && (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-poetry --push
 
       - name: Build Docker builder base image 🛠
-        if: steps.check_image.outputs.base_builder_exists == 'false'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-builder
-
-      - name: Push Docker builder base image if it's not building from a fork ⬆
-        if: steps.check_image.outputs.base_builder_exists == 'false' && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        if: steps.check_image.outputs.base_builder_exists == 'false' && (github.event_name != 'pull_request_target' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-builder --push
@@ -674,7 +713,7 @@ jobs:
       # Example output:
       # IMAGE_TAG=1234
       - name: Set environment variables - pull_request
-        if: github.event_name == 'pull_request' && env.IS_TAG_BUILD == 'false'
+        if: env.IS_TAG_BUILD && (github.event_name == 'pull_request' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           echo "IMAGE_TAG=${{ github.event.number }}" >> $GITHUB_ENV
 
@@ -729,13 +768,13 @@ jobs:
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
         uses: actions/checkout@v3
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || env.IS_PULL_REQUEST_TARGET_FORK == 'true'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
+        if: github.event_name != 'pull_request' && env.IS_PULL_REQUEST_TARGET_FORK == 'false'
         uses: actions/checkout@v3
-        if: github.event_name != 'pull_request'
 
       - name: Free disk space
         if: needs.changes.outputs.docker == 'true'
@@ -813,7 +852,14 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
+        if: env.IS_PULL_REQUEST_TARGET_FORK == 'false'
         uses: actions/checkout@v3
+
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@v3
+        if: env.IS_PULL_REQUEST_TARGET_FORK == 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
