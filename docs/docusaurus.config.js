@@ -82,7 +82,7 @@ module.exports = {
         },
         {
           target: '_self',
-          label: 'Rasa Enterprise',
+          label: 'Rasa X/Enterprise',
           position: 'left',
           href: `${SWAP_URL}/docs/rasa-enterprise/`,
         },
