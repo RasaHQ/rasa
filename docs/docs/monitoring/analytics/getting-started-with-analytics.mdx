@@ -61,6 +61,41 @@ The pipeline will compute analytics as soon as the docker container
 is successfully deployed and connected to your data warehouse and
 Kafka instances.
 
+# Types of metrics
+
+Metrics collected from your assistant can broadly be categorized as
+
+- User Analytics: Who are the users of the bot, and how do they feel 
+about it?  Examples: demographics, channels, sentiment analysis
+- Usage Analytics:  How is the bot’s overall health and what kind of 
+traffic is coming to it?  Examples:  total number of sessions, time per 
+session, errors and error rates
+- Conversation Analytics: What happened during the conversation?  
+Examples: number of messages sent, abandonment depth, number of topics 
+introduced by user, top N intents
+- Business Analytics: How is the bot performing with regard to business goals?
+Examples: ROI of bot per LoB, time comparison of bot vs agent, containment rate
+
+In this version of the Analytics pipeline, measurement of the following metrics 
+is possible 
+
+|| Metric || Category || Meaning ||
+||--------||----------||---------||
+| Number of conversations| Usage Analytics | Total number of conversations |
+| Number of users | Usage Analytics | Total number of users | 
+| Number of sessions | Usage Analytics | Gross traffic to bot |
+| Channels used | Usage Analytics | Sessions by channel | 
+| User session count | User Analytics | Total number of user sessions or average sessions per user |
+| Top N intents | Conversation Analytics | Top intents across all users | 
+| Avg response time | Conversation Analytics | Average response time for assistant | 
+| Containment rate | Business Analytics | % of conversations handled purely by assistant (not handed to human agent |
+| Abandonment rate | Business Analytics | % of abandoned conversations |
+| Escalation rate | Business Analytics | % of conversations escalated to human agent | 
+
+
+For examples of how you can extract these metrics, 
+see [Example queries](./example-queries) 
+
 ## Prerequisites
 
 - A production deployment of Kafka is required to set up Rasa Pro.
