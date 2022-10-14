@@ -42,10 +42,10 @@ The query you would need for this metric is:
 
 ```sql
 SELECT
-  "public"."rasa_user_message"."channel" AS "channel",
-  "public"."rasa_user_message"."timestamp" AS "timestamp",
-  count(distinct "public"."rasa_user_message"."session_id") AS "count"
-FROM "public"."rasa_user_message"
+  "public"."rasa_sender"."channel" AS "channel",
+  "public"."rasa_sender"."first_seen" AS "timestamp",
+  count(distinct "public"."rasa_sender"."sender_key") AS "count"
+FROM "public"."rasa_sender"
 GROUP BY 1, 2
 ORDER BY 1 ASC, 2 ASC
 ```
@@ -131,12 +131,7 @@ WITH "sessions" AS (
     SELECT
       "session_id",
       "timestamp",
-      SUM(
-        CASE
-          WHEN "has_handoff_to_support" > 0
-          THEN 1 ELSE 0
-        END
-      ) AS "has_handoff_to_support"
+      SUM("has_handoff_to_support") AS "has_handoff_to_support"
     FROM "sessions"
     GROUP BY 1, 2
 )
