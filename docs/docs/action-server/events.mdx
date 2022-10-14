@@ -46,7 +46,7 @@ to set any slot not auto-filled by an entity.
 * `value`: Value to set the slot to. The datatype must match the [type](../domain.mdx#slot-types)
    of the slot
 
-**Rasa Open Source Class**: `rasa.core.events.SlotSet`
+**Rasa Class**: `rasa.core.events.SlotSet`
 
 
 ### `reset_slots`
@@ -63,7 +63,7 @@ Resets all slots on the tracker to `null`.
 }
 ```
 
-**Rasa Open Source Class**: `rasa.core.events.AllSlotsReset`
+**Rasa Class**: `rasa.core.events.AllSlotsReset`
 
 
 ### `reminder`
@@ -93,7 +93,7 @@ Schedules an intent to be triggered at a certain time in the future.
 * `name`: ID of the reminder. If there are multiple reminders with the same id only the last will be run.
 * `kill_on_user_msg`: Whether a user message before the trigger time will abort the reminder
 
-**Rasa Open Source Class**: `rasa.core.events.ReminderScheduled`
+**Rasa Class**: `rasa.core.events.ReminderScheduled`
 
 
 ### `cancel_reminder`
@@ -127,7 +127,7 @@ All reminders which match the supplied parameters will be cancelled.
 * `name`: ID of the reminder.
 
 
-**Rasa Open Source Class**: `rasa.core.events.ReminderCancelled`
+**Rasa Class**: `rasa.core.events.ReminderCancelled`
 
 ### `pause`
 
@@ -143,7 +143,7 @@ Stops the bot from responding to user messages. The conversation will remain pau
 }
 ```
 
-**Rasa Open Source Class**: `rasa.core.events.ConversationPaused`
+**Rasa Class**: `rasa.core.events.ConversationPaused`
 
 ### `resume`
 
@@ -160,7 +160,7 @@ Resume a previously paused conversation. Once this event is added to the tracker
 ```
 
 
-**Rasa Open Source Class**: `rasa.core.events.ConversationResumed`
+**Rasa Class**: `rasa.core.events.ConversationResumed`
 
 ### `followup`
 
@@ -182,7 +182,7 @@ Force a follow up action, bypassing action prediction.
 * `name`: The name of the follow up action that will be executed.
 
 
-**Rasa Open Source Class**: `rasa.core.events.FollowupAction`
+**Rasa Class**: `rasa.core.events.FollowupAction`
 
 ### `rewind`
 
@@ -198,7 +198,7 @@ Reverts all side effects of the last user message and removes the last `user` ev
 }
 ```
 
-**Rasa Open Source Class**: `rasa.core.events.UserUtteranceReverted`
+**Rasa Class**: `rasa.core.events.UserUtteranceReverted`
 
 
 ### `undo`
@@ -215,7 +215,7 @@ Undoes all side effects of the last bot action and removes the last bot action f
 }
 ```
 
-**Rasa Open Source Class**: `rasa.core.events.ActionReverted`
+**Rasa Class**: `rasa.core.events.ActionReverted`
 
 
 
@@ -237,7 +237,7 @@ Resets the tracker. After a `restart` event, there will be no conversation histo
 ```
 
 
-**Rasa Open Source Class**: `rasa.core.events.Restarted`
+**Rasa Class**: `rasa.core.events.Restarted`
 
 
 ### `session_started`
@@ -259,7 +259,7 @@ Restarting a conversation with [`restart`](#restart) event **does not** automati
 }
 ```
 
-**Rasa Open Source Class**: `rasa.core.events.SessionStarted`
+**Rasa Class**: `rasa.core.events.SessionStarted`
 
 
 ### `user`
@@ -295,7 +295,7 @@ This event is not usually returned by a custom action.
 * `parse_data`: Parsed data of user message. This is ordinarily filled by NLU.
 * `metadata`: Arbitrary metadata that comes with the user message
 
-**Rasa Open Source Class**: `rasa.core.events.UserUttered`
+**Rasa Class**: `rasa.core.events.UserUttered`
 
 ### `bot`
 
@@ -324,7 +324,7 @@ This event is not usually returned explicitly by a custom action; `responses` wo
 * `text`: The text the bot sends to the user
 * `data`: Any non-text elements of the bot response. The structure of `data` matches that of `responses` given in the [API spec](/pages/action-server-api).
 
-**Rasa Open Source Class**: `rasa.core.events.BotUttered`
+**Rasa Class**: `rasa.core.events.BotUttered`
 
 
 ### `action`
@@ -348,5 +348,5 @@ This event is not usually returned explicitly by a custom action.
 
 * `name`: Name of the action that was called
 
-**Rasa Open Source Class**: `rasa.core.events.ActionExecuted`
+**Rasa Class**: `rasa.core.events.ActionExecuted`
 

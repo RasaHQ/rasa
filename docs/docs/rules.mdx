@@ -2,7 +2,7 @@
 id: rules
 sidebar_label: Rules
 title: Rules
-description: Use Rasa Open Source rules to respond to FAQs, fill forms, or handle fallbacks gracefully.
+description: Use Rasa rules to respond to FAQs, fill forms, or handle fallbacks gracefully.
 abstract: Rules are a type of training data used to train your assistant's dialogue management model.
   Rules describe short pieces of conversations that should always follow the same path.
 ---
@@ -121,7 +121,7 @@ rules:
   - action: utter_greet
   # - action: action_listen
   # Every rule implicitly includes a prediction for `action_listen` as last step.
-  # This means that Rasa Open Source will wait for the next user message.
+  # This means that Rasa will wait for the next user message.
 ```
 
 If you want to hand over the next action prediction to another story or rule, add
