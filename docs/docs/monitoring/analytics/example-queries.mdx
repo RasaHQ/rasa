@@ -11,6 +11,24 @@ This section helps you to started with ways how to analyze
 the conversations your assistant has. The examples use SQL queries
 together with an example visualization in Metabase.
 
+
+<!--
+The queries below are taken from a dashboard in Metabase:
+https://rasa-technologies-gmbh.metabaseapp.com/dashboard/3-example-queries-for-the-docs
+
+Please note that, given the data in the Metabase instance, we had to cheat and modify
+the HTML of the graphs before taking the screenshots, otherwise we'd have data from
+2020 instead of 2022.
+
+Please also note that some SQL queries in this page are not simple copy-paste from
+Metabase queries because we used filters in Metabase to remove the noise and make
+the graphs look nice.
+
+Please make sure that these SQL queries are kept in sync with the dashboard, it'll
+make your colleagues' work next time easier :)
+
+-->
+
 ## Number of sessions per month
 
 A common high-level usage metric of your assistant is the number of
@@ -42,10 +60,10 @@ The query you would need for this metric is:
 
 ```sql
 SELECT
-  "public"."rasa_user_message"."channel" AS "channel",
-  "public"."rasa_user_message"."timestamp" AS "timestamp",
-  count(distinct "public"."rasa_user_message"."session_id") AS "count"
-FROM "public"."rasa_user_message"
+  "public"."rasa_sender"."channel" AS "channel",
+  "public"."rasa_sender"."first_seen" AS "timestamp",
+  count(distinct "public"."rasa_sender"."sender_key") AS "count"
+FROM "public"."rasa_sender"
 GROUP BY 1, 2
 ORDER BY 1 ASC, 2 ASC
 ```
@@ -131,12 +149,7 @@ WITH "sessions" AS (
     SELECT
       "session_id",
       "timestamp",
-      SUM(
-        CASE
-          WHEN "has_handoff_to_support" > 0
-          THEN 1 ELSE 0
-        END
-      ) AS "has_handoff_to_support"
+      SUM("has_handoff_to_support") AS "has_handoff_to_support"
     FROM "sessions"
     GROUP BY 1, 2
 )

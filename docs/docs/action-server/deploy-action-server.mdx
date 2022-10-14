@@ -211,7 +211,7 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    name: Build Action Server image and upgrade Rasa Enterprise deployment
+    name: Build Action Server image and upgrade Rasa X/Enterprise deployment
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -235,7 +235,7 @@ jobs:
 
 4. Now, you can use your new brand docker image.
 
-5. You can also extend your workflow, so that you do not have to manually update your Rasa Enterprise deployment. The example below shows how to extend your workflow with an additional step that updates a Rasa Enterprise Helm Chart deployment.
+5. You can also extend your workflow, so that you do not have to manually update your Rasa X/Enterprise deployment. The example below shows how to extend your workflow with an additional step that updates a Rasa X/Enterprise Helm Chart deployment.
 
 ```yaml
 on:
@@ -246,7 +246,7 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    name: Build Action Server image and upgrade Rasa Enterprise deployment
+    name: Build Action Server image and upgrade Rasa X/Enterprise deployment
     steps:
     [..]
 
