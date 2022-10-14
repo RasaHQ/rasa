@@ -86,6 +86,14 @@ These different services need to be run and configured to be able to communicate
     docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
     ```
 
+    :::note
+
+    For a more complete walkthrough on how to manage the authentication
+    credentials and licenses in a production environment, see the
+    [Rasa Plus Deployment Guide](./deploy/deploy-rasa-plus.mdx#step-1-image-pull-secret).
+
+    :::
+
 3.  Run the Rasa Pro Services docker image and configure it to receive data
     from your Rasa Plus assistant connected to Kafka:
 
