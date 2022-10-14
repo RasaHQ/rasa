@@ -713,7 +713,7 @@ jobs:
       # Example output:
       # IMAGE_TAG=1234
       - name: Set environment variables - pull_request
-        if: env.IS_TAG_BUILD && (github.event_name == 'pull_request' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
+        if: env.IS_TAG_BUILD == 'false' && (github.event_name == 'pull_request' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           echo "IMAGE_TAG=${{ github.event.number }}" >> $GITHUB_ENV
 
