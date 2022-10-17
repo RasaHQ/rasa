@@ -1,0 +1,31 @@
+usage: __main__.py [-h] [-p PORT] [--cors [CORS [CORS ...]]]
+                   [--actions ACTIONS] [--ssl-keyfile SSL_KEYFILE]
+                   [--ssl-certificate SSL_CERTIFICATE]
+                   [--ssl-password SSL_PASSWORD] [--auto-reload] [-v] [-vv]
+                   [--quiet] [--log-file LOG_FILE]
+
+starts the action endpoint
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PORT, --port PORT  port to run the server at
+  --cors [CORS [CORS ...]]
+                        enable CORS for the passed origin. Use * to whitelist
+                        all origins
+  --actions ACTIONS     name of action package to be loaded
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL certificate to create a TLS secured
+                        server.
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL certificate to create a TLS secured
+                        server.
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer.
+  --auto-reload         Enable auto-reloading of modules containing Action
+                        subclasses.
+  -v, --verbose         Be verbose. Sets logging level to INFO
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG
+  --quiet               Be quiet! Sets logging level to WARNING
+  --log-file LOG_FILE   Store logs in specified file.
