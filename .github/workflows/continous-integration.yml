@@ -388,7 +388,7 @@ jobs:
 
       - name: Upload reports to codeclimate
         if: needs.changes.outputs.backend == 'true'
-        uses: paambaati/codeclimate-action@84cea27117a473d605400ca3a97fcef7e433e2d6
+        uses: paambaati/codeclimate-action@93c6213edc13fcb74a684a39a32956ebf417dd1c
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODECLIMATE_REPORTER_ID }}
         with:
