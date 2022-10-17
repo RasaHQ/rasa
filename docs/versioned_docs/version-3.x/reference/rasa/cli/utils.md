@@ -95,7 +95,7 @@ to type in free text.
 #### payload\_from\_button\_question
 
 ```python
-async payload_from_button_question(button_question: "Question") -> Text
+payload_from_button_question(button_question: "Question") -> Text
 ```
 
 Prompt user with a button question and returns the nlu payload.

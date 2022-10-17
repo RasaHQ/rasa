@@ -5,8 +5,7 @@ title: rasa.cli.arguments.data
 #### set\_convert\_arguments
 
 ```python
-def set_convert_arguments(parser: argparse.ArgumentParser,
-                          data_type: Text) -> None
+set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> None
 ```
 
 Sets convert command arguments.
@@ -14,7 +13,7 @@ Sets convert command arguments.
 #### set\_migrate\_arguments
 
 ```python
-def set_migrate_arguments(parser: argparse.ArgumentParser) -> None
+set_migrate_arguments(parser: argparse.ArgumentParser) -> None
 ```
 
 Sets migrate command arguments.

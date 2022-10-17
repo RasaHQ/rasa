@@ -13,8 +13,7 @@ A Slack communication channel
 #### send\_text\_message
 
 ```python
-async def send_text_message(recipient_id: Text, text: Text,
-                            **kwargs: Any) -> None
+ | async send_text_message(recipient_id: Text, text: Text, **kwargs: Any) -> None
 ```
 
 Send text message to Slack API.
@@ -22,8 +21,7 @@ Send text message to Slack API.
 #### send\_attachment
 
 ```python
-async def send_attachment(recipient_id: Text, attachment: Dict[Text, Any],
-                          **kwargs: Any) -> None
+ | async send_attachment(recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any) -> None
 ```
 
 Sends message with attachment.
@@ -39,15 +37,7 @@ Slack input channel implementation. Based on the HTTPInputChannel.
 #### \_\_init\_\_
 
 ```python
-def __init__(slack_token: Text,
-             slack_channel: Optional[Text] = None,
-             proxy: Optional[Text] = None,
-             slack_retry_reason_header: Optional[Text] = None,
-             slack_retry_number_header: Optional[Text] = None,
-             errors_ignore_retry: Optional[List[Text]] = None,
-             use_threads: Optional[bool] = False,
-             slack_signing_secret: Text = "",
-             conversation_granularity: Optional[Text] = "sender") -> None
+ | __init__(slack_token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None, slack_retry_reason_header: Optional[Text] = None, slack_retry_number_header: Optional[Text] = None, errors_ignore_retry: Optional[List[Text]] = None, use_threads: Optional[bool] = False, slack_signing_secret: Text = "", conversation_granularity: Optional[Text] = "sender") -> None
 ```
 
 Create a Slack input channel.
@@ -63,7 +53,7 @@ https://github.com/slackapi/python-slackclient
   Slack app and get your Bot User OAuth Access Token
   `here &lt;https://api.slack.com/slack-apps&gt;`_.
 - `slack_channel` - the string identifier for a channel to which
-  the bot posts, or channel name (e.g. &#x27;`bot`-test&#x27;)
+  the bot posts, or channel name (e.g. &#x27;#bot-test&#x27;)
   If not set, messages will be sent back
   to the &quot;App&quot; DM channel of your bot&#x27;s name.
 - `proxy` - A Proxy Server to route your traffic through
@@ -89,11 +79,7 @@ https://github.com/slackapi/python-slackclient
 #### process\_message
 
 ```python
-async def process_message(request: Request,
-                          on_new_message: Callable[[UserMessage],
-                                                   Awaitable[Any]], text: Text,
-                          sender_id: Optional[Text],
-                          metadata: Optional[Dict]) -> Any
+ | async process_message(request: Request, on_new_message: Callable[[UserMessage], Awaitable[Any]], text: Text, sender_id: Optional[Text], metadata: Optional[Dict]) -> Any
 ```
 
 Slack retries to post messages up to 3 times based on
@@ -103,7 +89,7 @@ https://api.slack.com/events-api#failure_conditions
 #### get\_metadata
 
 ```python
-def get_metadata(request: Request) -> Dict[Text, Any]
+ | get_metadata(request: Request) -> Dict[Text, Any]
 ```
 
 Extracts the metadata from a slack API event.
@@ -123,7 +109,7 @@ Slack Documentation: https://api.slack.com/types/event
 #### is\_request\_from\_slack\_authentic
 
 ```python
-def is_request_from_slack_authentic(request: Request) -> bool
+ | is_request_from_slack_authentic(request: Request) -> bool
 ```
 
 Validate a request from Slack for its authenticity.

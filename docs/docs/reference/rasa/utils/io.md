@@ -13,7 +13,7 @@ Describes a csv writer supporting a `writerow` method (workaround for typing).
 #### writerow
 
 ```python
-def writerow(row: List[Text]) -> None
+ | writerow(row: List[Text]) -> None
 ```
 
 Write the given row.
@@ -25,7 +25,7 @@ Write the given row.
 #### configure\_colored\_logging
 
 ```python
-def configure_colored_logging(loglevel: Text) -> None
+configure_colored_logging(loglevel: Text) -> None
 ```
 
 Configures coloredlogs library for specified loglevel.
@@ -37,9 +37,7 @@ Configures coloredlogs library for specified loglevel.
 #### enable\_async\_loop\_debugging
 
 ```python
-def enable_async_loop_debugging(
-        event_loop: AbstractEventLoop,
-        slow_callback_duration: float = 0.1) -> AbstractEventLoop
+enable_async_loop_debugging(event_loop: AbstractEventLoop, slow_callback_duration: float = 0.1) -> AbstractEventLoop
 ```
 
 Enables debugging on an event loop.
@@ -53,7 +51,7 @@ Enables debugging on an event loop.
 #### pickle\_dump
 
 ```python
-def pickle_dump(filename: Union[Text, Path], obj: Any) -> None
+pickle_dump(filename: Union[Text, Path], obj: Any) -> None
 ```
 
 Saves object to file.
@@ -66,7 +64,7 @@ Saves object to file.
 #### pickle\_load
 
 ```python
-def pickle_load(filename: Union[Text, Path]) -> Any
+pickle_load(filename: Union[Text, Path]) -> Any
 ```
 
 Loads an object from a file.
@@ -80,9 +78,7 @@ Loads an object from a file.
 #### create\_temporary\_file
 
 ```python
-def create_temporary_file(data: Any,
-                          suffix: Text = "",
-                          mode: Text = "w+") -> Text
+create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text
 ```
 
 Creates a tempfile.NamedTemporaryFile object for data.
@@ -90,7 +86,7 @@ Creates a tempfile.NamedTemporaryFile object for data.
 #### create\_temporary\_directory
 
 ```python
-def create_temporary_directory() -> Text
+create_temporary_directory() -> Text
 ```
 
 Creates a tempfile.TemporaryDirectory.
@@ -98,7 +94,7 @@ Creates a tempfile.TemporaryDirectory.
 #### create\_path
 
 ```python
-def create_path(file_path: Text) -> None
+create_path(file_path: Text) -> None
 ```
 
 Makes sure all directories in the &#x27;file_path&#x27; exists.
@@ -106,8 +102,7 @@ Makes sure all directories in the &#x27;file_path&#x27; exists.
 #### file\_type\_validator
 
 ```python
-def file_type_validator(valid_file_types: List[Text],
-                        error_message: Text) -> Type["Validator"]
+file_type_validator(valid_file_types: List[Text], error_message: Text) -> Type["Validator"]
 ```
 
 Creates a `Validator` class which can be used with `questionary` to validate
@@ -116,7 +111,7 @@ file paths.
 #### not\_empty\_validator
 
 ```python
-def not_empty_validator(error_message: Text) -> Type["Validator"]
+not_empty_validator(error_message: Text) -> Type["Validator"]
 ```
 
 Creates a `Validator` class which can be used with `questionary` to validate
@@ -125,8 +120,7 @@ that the user entered something other than whitespace.
 #### create\_validator
 
 ```python
-def create_validator(function: Callable[[Text], bool],
-                     error_message: Text) -> Type["Validator"]
+create_validator(function: Callable[[Text], bool], error_message: Text) -> Type["Validator"]
 ```
 
 Helper method to create `Validator` classes from callable functions. Should be
@@ -135,8 +129,7 @@ removed when questionary supports `Validator` objects.
 #### json\_unpickle
 
 ```python
-def json_unpickle(file_name: Union[Text, Path],
-                  encode_non_string_keys: bool = False) -> Any
+json_unpickle(file_name: Union[Text, Path], encode_non_string_keys: bool = False) -> Any
 ```
 
 Unpickle an object from file using json.
@@ -152,9 +145,7 @@ Unpickle an object from file using json.
 #### json\_pickle
 
 ```python
-def json_pickle(file_name: Union[Text, Path],
-                obj: Any,
-                encode_non_string_keys: bool = False) -> None
+json_pickle(file_name: Union[Text, Path], obj: Any, encode_non_string_keys: bool = False) -> None
 ```
 
 Pickle an object to a file using json.
@@ -169,7 +160,7 @@ Pickle an object to a file using json.
 #### get\_emoji\_regex
 
 ```python
-def get_emoji_regex() -> Pattern
+get_emoji_regex() -> Pattern
 ```
 
 Returns regex to identify emojis.
@@ -177,7 +168,7 @@ Returns regex to identify emojis.
 #### are\_directories\_equal
 
 ```python
-def are_directories_equal(dir1: Path, dir2: Path) -> bool
+are_directories_equal(dir1: Path, dir2: Path) -> bool
 ```
 
 Compares two directories recursively.

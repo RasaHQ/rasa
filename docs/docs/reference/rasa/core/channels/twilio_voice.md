@@ -13,8 +13,8 @@ Input channel for Twilio Voice.
 #### name
 
 ```python
-@classmethod
-def name(cls) -> Text
+ | @classmethod
+ | name(cls) -> Text
 ```
 
 Name of channel.
@@ -22,9 +22,8 @@ Name of channel.
 #### from\_credentials
 
 ```python
-@classmethod
-def from_credentials(cls, credentials: Optional[Dict[Text,
-                                                     Any]]) -> InputChannel
+ | @classmethod
+ | from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel
 ```
 
 Load custom configurations.
@@ -32,12 +31,7 @@ Load custom configurations.
 #### \_\_init\_\_
 
 ```python
-def __init__(initial_prompt: Optional[Text],
-             reprompt_fallback_phrase: Optional[Text],
-             assistant_voice: Optional[Text],
-             speech_timeout: Text = "5",
-             speech_model: Text = "default",
-             enhanced: Text = "false") -> None
+ | __init__(initial_prompt: Optional[Text], reprompt_fallback_phrase: Optional[Text], assistant_voice: Optional[Text], speech_timeout: Text = "5", speech_model: Text = "default", enhanced: Text = "false") -> None
 ```
 
 Creates a connection to Twilio voice.
@@ -54,8 +48,7 @@ Creates a connection to Twilio voice.
 #### blueprint
 
 ```python
-def blueprint(
-        on_new_message: Callable[[UserMessage], Awaitable[None]]) -> Blueprint
+ | blueprint(on_new_message: Callable[[UserMessage], Awaitable[None]]) -> Blueprint
 ```
 
 Defines endpoints for Twilio voice channel.
@@ -73,8 +66,8 @@ Output channel that collects send messages in a list.
 #### name
 
 ```python
-@classmethod
-def name(cls) -> Text
+ | @classmethod
+ | name(cls) -> Text
 ```
 
 Name of the output channel.
@@ -82,8 +75,7 @@ Name of the output channel.
 #### send\_text\_message
 
 ```python
-async def send_text_message(recipient_id: Text, text: Text,
-                            **kwargs: Any) -> None
+ | async send_text_message(recipient_id: Text, text: Text, **kwargs: Any) -> None
 ```
 
 Sends the text message after removing emojis.
@@ -91,9 +83,7 @@ Sends the text message after removing emojis.
 #### send\_text\_with\_buttons
 
 ```python
-async def send_text_with_buttons(recipient_id: Text, text: Text,
-                                 buttons: List[Dict[Text, Any]],
-                                 **kwargs: Any) -> None
+ | async send_text_with_buttons(recipient_id: Text, text: Text, buttons: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
 ```
 
 Convert buttons into a voice representation.
@@ -101,8 +91,7 @@ Convert buttons into a voice representation.
 #### send\_image\_url
 
 ```python
-async def send_image_url(recipient_id: Text, image: Text,
-                         **kwargs: Any) -> None
+ | async send_image_url(recipient_id: Text, image: Text, **kwargs: Any) -> None
 ```
 
 For voice channel do not send images.

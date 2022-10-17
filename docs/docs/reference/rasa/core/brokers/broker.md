@@ -13,10 +13,8 @@ Base class for any event broker implementation.
 #### create
 
 ```python
-@staticmethod
-async def create(
-        obj: Union[EventBroker, EndpointConfig, None],
-        loop: Optional[AbstractEventLoop] = None) -> Optional[EventBroker]
+ | @staticmethod
+ | async create(obj: Union[EventBroker, EndpointConfig, None], loop: Optional[AbstractEventLoop] = None) -> Optional[EventBroker]
 ```
 
 Factory to create an event broker.
@@ -24,11 +22,8 @@ Factory to create an event broker.
 #### from\_endpoint\_config
 
 ```python
-@classmethod
-async def from_endpoint_config(
-        cls: Type[EB],
-        broker_config: EndpointConfig,
-        event_loop: Optional[AbstractEventLoop] = None) -> Optional[EB]
+ | @classmethod
+ | async from_endpoint_config(cls: Type[EB], broker_config: EndpointConfig, event_loop: Optional[AbstractEventLoop] = None) -> Optional[EB]
 ```
 
 Creates an `EventBroker` from the endpoint configuration.
@@ -46,7 +41,7 @@ Creates an `EventBroker` from the endpoint configuration.
 #### publish
 
 ```python
-def publish(event: Dict[Text, Any]) -> None
+ | publish(event: Dict[Text, Any]) -> None
 ```
 
 Publishes a json-formatted Rasa Core event into an event queue.
@@ -54,7 +49,7 @@ Publishes a json-formatted Rasa Core event into an event queue.
 #### is\_ready
 
 ```python
-def is_ready() -> bool
+ | is_ready() -> bool
 ```
 
 Determine whether or not the event broker is ready.
@@ -66,7 +61,7 @@ Determine whether or not the event broker is ready.
 #### close
 
 ```python
-async def close() -> None
+ | async close() -> None
 ```
 
 Close the connection to an event broker.

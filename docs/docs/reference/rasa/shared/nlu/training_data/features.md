@@ -13,9 +13,7 @@ Stores the features produced by any featurizer.
 #### \_\_init\_\_
 
 ```python
-def __init__(features: Union[np.ndarray,
-                             scipy.sparse.spmatrix], feature_type: Text,
-             attribute: Text, origin: Union[Text, List[Text]]) -> None
+ | __init__(features: Union[np.ndarray, scipy.sparse.spmatrix], feature_type: Text, attribute: Text, origin: Union[Text, List[Text]]) -> None
 ```
 
 Initializes the Features object.
@@ -30,7 +28,7 @@ Initializes the Features object.
 #### is\_sparse
 
 ```python
-def is_sparse() -> bool
+ | is_sparse() -> bool
 ```
 
 Checks if features are sparse or not.
@@ -42,7 +40,7 @@ Checks if features are sparse or not.
 #### is\_dense
 
 ```python
-def is_dense() -> bool
+ | is_dense() -> bool
 ```
 
 Checks if features are dense or not.
@@ -54,7 +52,7 @@ Checks if features are dense or not.
 #### combine\_with\_features
 
 ```python
-def combine_with_features(additional_features: Optional[Features]) -> None
+ | combine_with_features(additional_features: Optional[Features]) -> None
 ```
 
 Combine the incoming features with this instance&#x27;s features.
@@ -71,8 +69,9 @@ Combine the incoming features with this instance&#x27;s features.
 #### \_\_key\_\_
 
 ```python
-def __key__() -> Tuple[Text, Text, Union[np.ndarray, scipy.sparse.spmatrix],
-                       Union[Text, List[Text]]]
+ | __key__() -> Tuple[
+ |         Text, Text, Union[np.ndarray, scipy.sparse.spmatrix], Union[Text, List[Text]]
+ |     ]
 ```
 
 Returns a 4-tuple of defining properties.
@@ -84,7 +83,7 @@ Returns a 4-tuple of defining properties.
 #### \_\_eq\_\_
 
 ```python
-def __eq__(other: Any) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Tests if the `self` `Feature` equals to the `other`.
@@ -102,7 +101,7 @@ Tests if the `self` `Feature` equals to the `other`.
 #### fingerprint
 
 ```python
-def fingerprint() -> Text
+ | fingerprint() -> Text
 ```
 
 Calculate a stable string fingerprint for the features.
@@ -110,12 +109,8 @@ Calculate a stable string fingerprint for the features.
 #### filter
 
 ```python
-@staticmethod
-def filter(features_list: List[Features],
-           attributes: Optional[Iterable[Text]] = None,
-           type: Optional[Text] = None,
-           origin: Optional[List[Text]] = None,
-           is_sparse: Optional[bool] = None) -> List[Features]
+ | @staticmethod
+ | filter(features_list: List[Features], attributes: Optional[Iterable[Text]] = None, type: Optional[Text] = None, origin: Optional[List[Text]] = None, is_sparse: Optional[bool] = None) -> List[Features]
 ```
 
 Filters the given list of features.
@@ -143,11 +138,8 @@ Filters the given list of features.
 #### groupby\_attribute
 
 ```python
-@staticmethod
-def groupby_attribute(
-        features_list: List[Features],
-        attributes: Optional[Iterable[Text]] = None
-) -> Dict[Text, List[Features]]
+ | @staticmethod
+ | groupby_attribute(features_list: List[Features], attributes: Optional[Iterable[Text]] = None) -> Dict[Text, List[Features]]
 ```
 
 Groups the given features according to their attribute.
@@ -170,9 +162,8 @@ Groups the given features according to their attribute.
 #### combine
 
 ```python
-@staticmethod
-def combine(features_list: List[Features],
-            expected_origins: Optional[List[Text]] = None) -> Features
+ | @staticmethod
+ | combine(features_list: List[Features], expected_origins: Optional[List[Text]] = None) -> Features
 ```
 
 Combine features of the same type and level that describe the same attribute.
@@ -200,9 +191,8 @@ sequence dimension.
 #### reduce
 
 ```python
-@staticmethod
-def reduce(features_list: List[Features],
-           expected_origins: Optional[List[Text]] = None) -> List[Features]
+ | @staticmethod
+ | reduce(features_list: List[Features], expected_origins: Optional[List[Text]] = None) -> List[Features]
 ```
 
 Combines features of same type and level into one Feature.

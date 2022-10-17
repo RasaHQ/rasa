@@ -8,7 +8,7 @@ title: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
-class RegexFeaturizer(SparseFeaturizer, GraphComponent)
+class RegexFeaturizer(SparseFeaturizer,  GraphComponent)
 ```
 
 Adds message features based on regex expressions.
@@ -16,8 +16,8 @@ Adds message features based on regex expressions.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -25,8 +25,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Returns the component&#x27;s default config.
@@ -34,11 +34,7 @@ Returns the component&#x27;s default config.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any],
-             model_storage: ModelStorage,
-             resource: Resource,
-             execution_context: ExecutionContext,
-             known_patterns: Optional[List[Dict[Text, Text]]] = None) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, known_patterns: Optional[List[Dict[Text, Text]]] = None) -> None
 ```
 
 Constructs new features for regexes and lookup table using regex expressions.
@@ -56,10 +52,8 @@ Constructs new features for regexes and lookup table using regex expressions.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
-           resource: Resource,
-           execution_context: ExecutionContext) -> RegexFeaturizer
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -67,7 +61,7 @@ Creates a new untrained component (see parent class for full docstring).
 #### train
 
 ```python
-def train(training_data: TrainingData) -> Resource
+ | train(training_data: TrainingData) -> Resource
 ```
 
 Trains the component with all patterns extracted from training data.
@@ -75,7 +69,7 @@ Trains the component with all patterns extracted from training data.
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData) -> TrainingData
+ | process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Processes the training examples (see parent class for full docstring).
@@ -83,7 +77,7 @@ Processes the training examples (see parent class for full docstring).
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Featurizes all given messages in-place.
@@ -95,10 +89,8 @@ Featurizes all given messages in-place.
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
-         resource: Resource, execution_context: ExecutionContext,
-         **kwargs: Any) -> RegexFeaturizer
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -106,8 +98,8 @@ Loads trained component (see parent class for full docstring).
 #### validate\_config
 
 ```python
-@classmethod
-def validate_config(cls, config: Dict[Text, Any]) -> None
+ | @classmethod
+ | validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
 Validates that the component is configured properly.

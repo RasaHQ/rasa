@@ -5,7 +5,7 @@ title: rasa.core.jobs
 #### scheduler
 
 ```python
-async def scheduler() -> AsyncIOScheduler
+async scheduler() -> AsyncIOScheduler
 ```
 
 Thread global scheduler to handle all recurring tasks.
@@ -15,7 +15,7 @@ If no scheduler exists yet, this will instantiate one.
 #### kill\_scheduler
 
 ```python
-def kill_scheduler() -> None
+kill_scheduler() -> None
 ```
 
 Terminate the scheduler if started.

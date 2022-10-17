@@ -8,7 +8,7 @@ title: rasa.nlu.extractors.entity_synonyms
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class EntitySynonymMapper(GraphComponent, EntityExtractorMixin)
+class EntitySynonymMapper(GraphComponent,  EntityExtractorMixin)
 ```
 
 Maps entities to their synonyms if they appear in the training data.
@@ -16,10 +16,7 @@ Maps entities to their synonyms if they appear in the training data.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Optional[Dict[Text, Any]],
-             model_storage: ModelStorage,
-             resource: Resource,
-             synonyms: Optional[Dict[Text, Any]] = None) -> None
+ | __init__(config: Optional[Dict[Text, Any]], model_storage: ModelStorage, resource: Resource, synonyms: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates the mapper.
@@ -36,13 +33,8 @@ Creates the mapper.
 #### create
 
 ```python
-@classmethod
-def create(cls,
-           config: Dict[Text, Any],
-           model_storage: ModelStorage,
-           resource: Resource,
-           execution_context: ExecutionContext,
-           synonyms: Optional[Dict[Text, Any]] = None) -> EntitySynonymMapper
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, synonyms: Optional[Dict[Text, Any]] = None) -> EntitySynonymMapper
 ```
 
 Creates component (see parent class for full docstring).
@@ -50,7 +42,7 @@ Creates component (see parent class for full docstring).
 #### train
 
 ```python
-def train(training_data: TrainingData) -> Resource
+ | train(training_data: TrainingData) -> Resource
 ```
 
 Trains the synonym lookup table.
@@ -58,7 +50,7 @@ Trains the synonym lookup table.
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Modifies entities attached to message to resolve synonyms.
@@ -76,10 +68,8 @@ Modifies entities attached to message to resolve synonyms.
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage,
-         resource: Resource, execution_context: ExecutionContext,
-         **kwargs: Any) -> EntitySynonymMapper
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> EntitySynonymMapper
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -87,7 +77,7 @@ Loads trained component (see parent class for full docstring).
 #### replace\_synonyms
 
 ```python
-def replace_synonyms(entities: List[Dict[Text, Any]]) -> None
+ | replace_synonyms(entities: List[Dict[Text, Any]]) -> None
 ```
 
 Replace any entities which match a synonym with the synonymous entity.

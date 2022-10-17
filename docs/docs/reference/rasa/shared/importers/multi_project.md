@@ -11,7 +11,7 @@ class MultiProjectImporter(TrainingDataImporter)
 #### get\_config\_file\_for\_auto\_config
 
 ```python
-def get_config_file_for_auto_config() -> Optional[Text]
+ | get_config_file_for_auto_config() -> Optional[Text]
 ```
 
 Returns config file path for auto-config only if there is a single one.
@@ -19,7 +19,7 @@ Returns config file path for auto-config only if there is a single one.
 #### training\_paths
 
 ```python
-def training_paths() -> Set[Text]
+ | training_paths() -> Set[Text]
 ```
 
 Returns the paths which should be searched for training data.
@@ -27,7 +27,7 @@ Returns the paths which should be searched for training data.
 #### is\_imported
 
 ```python
-def is_imported(path: Text) -> bool
+ | is_imported(path: Text) -> bool
 ```
 
 Checks whether a path is imported by a skill.
@@ -44,7 +44,7 @@ Checks whether a path is imported by a skill.
 #### get\_domain
 
 ```python
-def get_domain() -> Domain
+ | get_domain() -> Domain
 ```
 
 Retrieves model domain (see parent class for full docstring).
@@ -52,7 +52,7 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
-def get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -60,7 +60,7 @@ Retrieves training stories / rules (see parent class for full docstring).
 #### get\_conversation\_tests
 
 ```python
-def get_conversation_tests() -> StoryGraph
+ | get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -68,7 +68,7 @@ Retrieves conversation test stories (see parent class for full docstring).
 #### get\_config
 
 ```python
-def get_config() -> Dict
+ | get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -76,7 +76,7 @@ Retrieves model config (see parent class for full docstring).
 #### get\_nlu\_data
 
 ```python
-def get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+ | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves NLU training data (see parent class for full docstring).

@@ -16,50 +16,6 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
-## [3.2.10] - 2022-09-29                          
-### Bugfixes
-- [#11588](https://github.com/rasahq/rasa/issues/11588): Fixes scenarios in which a slot with `from_trigger_intent` mapping that specifies an `active_loop` condition was being filled despite that `active_loop` not being activated.
-  In addition, fixes scenario in which a slot with `from_trigger_intent` mapping without a specified `active_loop` mapping condition is only filled if the form gets activated.
-  Removes unnecessary validation warning that a slot with `from_trigger_intent` and a mapping condition should be included in the form's required_slots.
-- [#ato-161](https://github.com/rasahq/rasa/issues/ato-161): Fixed a bug where `DIETClassier` crashed during training 
-  when both masked language modelling and evaluation 
-  during training were used.
-
-### Improved Documentation
-- [#11571](https://github.com/rasahq/rasa/issues/11571): Rasa SDK documentation lives now in Rasa Open Source documentation under the _Rasa SDK_ category.
-
-### Miscellaneous internal changes
-- [#11552](https://github.com/rasahq/rasa/issues/11552)
-- 3.2.9 yanked
-
-
-## [3.2.9] - 2022-09-09                          
-
-No significant changes.
-
-
-## [3.2.8] - 2022-09-08                         
-### Bugfixes
-- [#11540](https://github.com/rasahq/rasa/issues/11540): Fix bug where `KeywordIntentClassifier` overrides preceding intent classifiers' predictions
-  although the `KeyWordIntentClassifier` was not matching any keywords.
-
-
-## [3.2.7] - 2022-08-31                         
-### Improvements
-- [#11448](https://github.com/rasahq/rasa/issues/11448): Improve `rasa data validate` command so that it uses custom importers when they are defined in config file.
-
-### Bugfixes
-- [#11311](https://github.com/rasahq/rasa/issues/11311): Re-instates the REST channel metadata feature.  Metadata can be provided on the `metadata` key.
-
-
-## [3.2.6] - 2022-08-12                         
-### Bugfixes
-- [#11433](https://github.com/rasahq/rasa/issues/11433): This fix makes sure that when a Domain object is loaded from multiple files where one file specifies a custom session config and the rest do not, the default session configuration does not override the custom session config.
-
-### Miscellaneous internal changes
-- [#11426](https://github.com/rasahq/rasa/issues/11426), [#11434](https://github.com/rasahq/rasa/issues/11434)
-
-
 ## [3.2.5] - 2022-08-05                         
 ### Bugfixes
 - [#11294](https://github.com/rasahq/rasa/issues/11294): Fix `KeyError` which resulted when `action_two_stage_fallback` got executed in a project whose domain contained slot mappings.

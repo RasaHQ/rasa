@@ -5,8 +5,7 @@ title: rasa.nlu.utils.hugging_face.transformers_pre_post_processors
 #### cleanup\_tokens
 
 ```python
-def cleanup_tokens(token_ids_string: List[Tuple[int, Text]],
-                   delimiter: Text) -> Tuple[List[int], List[Text]]
+cleanup_tokens(token_ids_string: List[Tuple[int, Text]], delimiter: Text) -> Tuple[List[int], List[Text]]
 ```
 
 Utility method to apply delimiter based cleanup on list of tokens.
@@ -25,7 +24,7 @@ Utility method to apply delimiter based cleanup on list of tokens.
 #### bert\_tokens\_pre\_processor
 
 ```python
-def bert_tokens_pre_processor(token_ids: List[int]) -> List[int]
+bert_tokens_pre_processor(token_ids: List[int]) -> List[int]
 ```
 
 Add BERT style special tokens(CLS and SEP).
@@ -42,7 +41,7 @@ Add BERT style special tokens(CLS and SEP).
 #### gpt\_tokens\_pre\_processor
 
 ```python
-def gpt_tokens_pre_processor(token_ids: List[int]) -> List[int]
+gpt_tokens_pre_processor(token_ids: List[int]) -> List[int]
 ```
 
 Add GPT style special tokens(None).
@@ -59,7 +58,7 @@ Add GPT style special tokens(None).
 #### xlnet\_tokens\_pre\_processor
 
 ```python
-def xlnet_tokens_pre_processor(token_ids: List[int]) -> List[int]
+xlnet_tokens_pre_processor(token_ids: List[int]) -> List[int]
 ```
 
 Add XLNET style special tokens.
@@ -76,7 +75,7 @@ Add XLNET style special tokens.
 #### roberta\_tokens\_pre\_processor
 
 ```python
-def roberta_tokens_pre_processor(token_ids: List[int]) -> List[int]
+roberta_tokens_pre_processor(token_ids: List[int]) -> List[int]
 ```
 
 Add RoBERTa style special tokens.
@@ -93,7 +92,7 @@ Add RoBERTa style special tokens.
 #### xlm\_tokens\_pre\_processor
 
 ```python
-def xlm_tokens_pre_processor(token_ids: List[int]) -> List[int]
+xlm_tokens_pre_processor(token_ids: List[int]) -> List[int]
 ```
 
 Add XLM style special tokens.
@@ -110,8 +109,7 @@ Add XLM style special tokens.
 #### bert\_embeddings\_post\_processor
 
 ```python
-def bert_embeddings_post_processor(
-        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+bert_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post-process embeddings from BERT.
@@ -132,8 +130,7 @@ sentence representation.
 #### gpt\_embeddings\_post\_processor
 
 ```python
-def gpt_embeddings_post_processor(
-        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+gpt_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post-process embeddings from GPT models.
@@ -154,8 +151,7 @@ representation.
 #### xlnet\_embeddings\_post\_processor
 
 ```python
-def xlnet_embeddings_post_processor(
-        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+xlnet_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post-process embeddings from XLNet models.
@@ -177,8 +173,7 @@ to special tokens from the sequence embeddings.
 #### roberta\_embeddings\_post\_processor
 
 ```python
-def roberta_embeddings_post_processor(
-        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+roberta_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post process embeddings from Roberta models.
@@ -200,8 +195,7 @@ corresponding to special tokens from the sequence embeddings.
 #### xlm\_embeddings\_post\_processor
 
 ```python
-def xlm_embeddings_post_processor(
-        sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+xlm_embeddings_post_processor(sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
 Post process embeddings from XLM models
@@ -223,9 +217,7 @@ corresponding to special tokens from the sequence embeddings.
 #### bert\_tokens\_cleaner
 
 ```python
-def bert_tokens_cleaner(
-        token_ids: List[int],
-        token_strings: List[Text]) -> Tuple[List[int], List[Text]]
+bert_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[List[int], List[Text]]
 ```
 
 Token cleanup method for BERT.
@@ -246,9 +238,7 @@ sub-tokens.
 #### openaigpt\_tokens\_cleaner
 
 ```python
-def openaigpt_tokens_cleaner(
-        token_ids: List[int],
-        token_strings: List[Text]) -> Tuple[List[int], List[Text]]
+openaigpt_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[List[int], List[Text]]
 ```
 
 Token cleanup method for GPT.
@@ -269,9 +259,7 @@ token into sub-tokens.
 #### gpt2\_tokens\_cleaner
 
 ```python
-def gpt2_tokens_cleaner(
-        token_ids: List[int],
-        token_strings: List[Text]) -> Tuple[List[int], List[Text]]
+gpt2_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[List[int], List[Text]]
 ```
 
 Token cleanup method for GPT2.
@@ -292,9 +280,7 @@ sub-tokens.
 #### xlnet\_tokens\_cleaner
 
 ```python
-def xlnet_tokens_cleaner(
-        token_ids: List[int],
-        token_strings: List[Text]) -> Tuple[List[int], List[Text]]
+xlnet_tokens_cleaner(token_ids: List[int], token_strings: List[Text]) -> Tuple[List[int], List[Text]]
 ```
 
 Token cleanup method for XLNet.

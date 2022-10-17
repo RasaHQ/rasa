@@ -14,9 +14,7 @@ Dataclass to represent an action fingerprint.
 #### create\_action\_fingerprints
 
 ```python
-def create_action_fingerprints(
-        trackers: List["DialogueStateTracker"],
-        domain: "Domain") -> Dict[Text, ActionFingerprint]
+create_action_fingerprints(trackers: List["DialogueStateTracker"], domain: "Domain") -> Dict[Text, ActionFingerprint]
 ```
 
 Fingerprint each action using the events it created during train.

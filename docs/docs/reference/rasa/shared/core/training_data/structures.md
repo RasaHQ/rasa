@@ -5,7 +5,7 @@ title: rasa.shared.core.training_data.structures
 ## EventTypeError Objects
 
 ```python
-class EventTypeError(RasaCoreException, ValueError)
+class EventTypeError(RasaCoreException,  ValueError)
 ```
 
 Represents an error caused by a Rasa Core event not being of the expected
@@ -26,7 +26,7 @@ This currently happens if
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, conditions: Optional[Dict[Text, Any]] = None) -> None
+ | __init__(name: Text, conditions: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates `Checkpoint`.
@@ -39,8 +39,7 @@ Creates `Checkpoint`.
 #### filter\_trackers
 
 ```python
-def filter_trackers(
-        trackers: List[DialogueStateTracker]) -> List[DialogueStateTracker]
+ | filter_trackers(trackers: List[DialogueStateTracker]) -> List[DialogueStateTracker]
 ```
 
 Filters out all trackers that do not satisfy the conditions.
@@ -60,11 +59,7 @@ multiple intents are separated in one line by chaining them with &quot;OR&quot;s
 #### \_\_init\_\_
 
 ```python
-def __init__(block_name: Text,
-             start_checkpoints: Optional[List[Checkpoint]] = None,
-             end_checkpoints: Optional[List[Checkpoint]] = None,
-             events: Optional[List[Union[Event, List[Event]]]] = None,
-             source_name: Optional[Text] = None) -> None
+ | __init__(block_name: Text, start_checkpoints: Optional[List[Checkpoint]] = None, end_checkpoints: Optional[List[Checkpoint]] = None, events: Optional[List[Union[Event, List[Event]]]] = None, source_name: Optional[Text] = None) -> None
 ```
 
 Initialise `StoryStep` default attributes.
@@ -72,7 +67,7 @@ Initialise `StoryStep` default attributes.
 #### as\_story\_string
 
 ```python
-def as_story_string(flat: bool = False, e2e: bool = False) -> Text
+ | as_story_string(flat: bool = False, e2e: bool = False) -> Text
 ```
 
 Returns a story as a string.
@@ -80,8 +75,8 @@ Returns a story as a string.
 #### is\_action\_unlikely\_intent
 
 ```python
-@staticmethod
-def is_action_unlikely_intent(event: Event) -> bool
+ | @staticmethod
+ | is_action_unlikely_intent(event: Event) -> bool
 ```
 
 Checks if the executed action is a `action_unlikely_intent`.
@@ -89,8 +84,8 @@ Checks if the executed action is a `action_unlikely_intent`.
 #### is\_action\_session\_start
 
 ```python
-@staticmethod
-def is_action_session_start(event: Event) -> bool
+ | @staticmethod
+ | is_action_session_start(event: Event) -> bool
 ```
 
 Checks if the executed action is a `action_session_start`.
@@ -98,8 +93,7 @@ Checks if the executed action is a `action_session_start`.
 #### explicit\_events
 
 ```python
-def explicit_events(domain: Domain,
-                    should_append_final_listen: bool = True) -> List[Event]
+ | explicit_events(domain: Domain, should_append_final_listen: bool = True) -> List[Event]
 ```
 
 Returns events contained in the story step including implicit events.
@@ -120,7 +114,7 @@ A Special type of StoryStep representing a Rule.
 #### get\_rules\_condition
 
 ```python
-def get_rules_condition() -> List[Union[Event, List[Event]]]
+ | get_rules_condition() -> List[Union[Event, List[Event]]]
 ```
 
 Returns a list of events forming a condition of the Rule.
@@ -128,7 +122,7 @@ Returns a list of events forming a condition of the Rule.
 #### get\_rules\_events
 
 ```python
-def get_rules_events() -> List[Union[Event, List[Event]]]
+ | get_rules_events() -> List[Union[Event, List[Event]]]
 ```
 
 Returns a list of events forming the Rule, that are not conditions.
@@ -136,7 +130,7 @@ Returns a list of events forming the Rule, that are not conditions.
 #### add\_event\_as\_condition
 
 ```python
-def add_event_as_condition(event: Event) -> None
+ | add_event_as_condition(event: Event) -> None
 ```
 
 Adds event to the Rule as part of its condition.
@@ -154,9 +148,8 @@ class Story()
 #### from\_events
 
 ```python
-@staticmethod
-def from_events(events: List[Event],
-                story_name: Optional[Text] = None) -> "Story"
+ | @staticmethod
+ | from_events(events: List[Event], story_name: Optional[Text] = None) -> "Story"
 ```
 
 Create a story from a list of events.
@@ -172,7 +165,7 @@ Graph of the story-steps pooled from all stories in the training data.
 #### \_\_hash\_\_
 
 ```python
-def __hash__() -> int
+ | __hash__() -> int
 ```
 
 Return hash for the story step.
@@ -184,7 +177,7 @@ Return hash for the story step.
 #### fingerprint
 
 ```python
-def fingerprint() -> Text
+ | fingerprint() -> Text
 ```
 
 Returns a unique hash for the stories which is stable across python runs.
@@ -196,7 +189,7 @@ Returns a unique hash for the stories which is stable across python runs.
 #### ordered\_steps
 
 ```python
-def ordered_steps() -> List[StoryStep]
+ | ordered_steps() -> List[StoryStep]
 ```
 
 Returns the story steps ordered by topological order of the DAG.
@@ -204,7 +197,7 @@ Returns the story steps ordered by topological order of the DAG.
 #### cyclic\_edges
 
 ```python
-def cyclic_edges() -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]
+ | cyclic_edges() -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]
 ```
 
 Returns the story steps ordered by topological order of the DAG.
@@ -212,7 +205,7 @@ Returns the story steps ordered by topological order of the DAG.
 #### merge
 
 ```python
-def merge(other: Optional["StoryGraph"]) -> "StoryGraph"
+ | merge(other: Optional["StoryGraph"]) -> "StoryGraph"
 ```
 
 Merge two StoryGraph together.
@@ -220,9 +213,8 @@ Merge two StoryGraph together.
 #### overlapping\_checkpoint\_names
 
 ```python
-@staticmethod
-def overlapping_checkpoint_names(cps: List[Checkpoint],
-                                 other_cps: List[Checkpoint]) -> Set[Text]
+ | @staticmethod
+ | overlapping_checkpoint_names(cps: List[Checkpoint], other_cps: List[Checkpoint]) -> Set[Text]
 ```
 
 Find overlapping checkpoints names.
@@ -230,7 +222,7 @@ Find overlapping checkpoints names.
 #### with\_cycles\_removed
 
 ```python
-def with_cycles_removed() -> "StoryGraph"
+ | with_cycles_removed() -> "StoryGraph"
 ```
 
 Create a graph with the cyclic edges removed from this graph.
@@ -238,9 +230,8 @@ Create a graph with the cyclic edges removed from this graph.
 #### order\_steps
 
 ```python
-@staticmethod
-def order_steps(
-        story_steps: List[StoryStep]) -> Tuple[deque, List[Tuple[Text, Text]]]
+ | @staticmethod
+ | order_steps(story_steps: List[StoryStep]) -> Tuple[deque, List[Tuple[Text, Text]]]
 ```
 
 Topological sort of the steps returning the ids of the steps.
@@ -248,9 +239,8 @@ Topological sort of the steps returning the ids of the steps.
 #### topological\_sort
 
 ```python
-@staticmethod
-def topological_sort(
-        graph: Dict[Text, Set[Text]]) -> Tuple[deque, List[Tuple[Text, Text]]]
+ | @staticmethod
+ | topological_sort(graph: Dict[Text, Set[Text]]) -> Tuple[deque, List[Tuple[Text, Text]]]
 ```
 
 Creates a top sort of a directed graph. This is an unstable sorting!
@@ -273,7 +263,7 @@ The graph should be represented as a dictionary, e.g.:
 #### is\_empty
 
 ```python
-def is_empty() -> bool
+ | is_empty() -> bool
 ```
 
 Checks if `StoryGraph` is empty.
@@ -281,7 +271,7 @@ Checks if `StoryGraph` is empty.
 #### \_\_repr\_\_
 
 ```python
-def __repr__() -> Text
+ | __repr__() -> Text
 ```
 
 Returns text representation of object.
@@ -289,7 +279,7 @@ Returns text representation of object.
 #### generate\_id
 
 ```python
-def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text
+generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text
 ```
 
 Generate a random UUID.

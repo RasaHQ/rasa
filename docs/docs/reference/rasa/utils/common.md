@@ -5,7 +5,7 @@ title: rasa.utils.common
 ## TempDirectoryPath Objects
 
 ```python
-class TempDirectoryPath(str, ContextManager)
+class TempDirectoryPath(str,  ContextManager)
 ```
 
 Represents a path to an temporary directory.
@@ -15,7 +15,7 @@ When used as a context manager, it erases the contents of the directory on exit.
 #### read\_global\_config
 
 ```python
-def read_global_config(path: Text) -> Dict[Text, Any]
+read_global_config(path: Text) -> Dict[Text, Any]
 ```
 
 Read global Rasa configuration.
@@ -31,9 +31,7 @@ Read global Rasa configuration.
 #### configure\_logging\_and\_warnings
 
 ```python
-def configure_logging_and_warnings(log_level: Optional[int] = None,
-                                   warn_only_once: bool = True,
-                                   filter_repeated_logs: bool = True) -> None
+configure_logging_and_warnings(log_level: Optional[int] = None, warn_only_once: bool = True, filter_repeated_logs: bool = True) -> None
 ```
 
 Sets log levels of various loggers and sets up filters for warnings and logs.
@@ -51,7 +49,7 @@ Sets log levels of various loggers and sets up filters for warnings and logs.
 #### configure\_library\_logging
 
 ```python
-def configure_library_logging() -> None
+configure_library_logging() -> None
 ```
 
 Configures log levels of used libraries such as kafka, matplotlib, pika.
@@ -59,7 +57,7 @@ Configures log levels of used libraries such as kafka, matplotlib, pika.
 #### update\_apscheduler\_log\_level
 
 ```python
-def update_apscheduler_log_level() -> None
+update_apscheduler_log_level() -> None
 ```
 
 Configures the log level of `apscheduler.*` loggers.
@@ -67,7 +65,7 @@ Configures the log level of `apscheduler.*` loggers.
 #### update\_socketio\_log\_level
 
 ```python
-def update_socketio_log_level() -> None
+update_socketio_log_level() -> None
 ```
 
 Set the log level of socketio.
@@ -75,7 +73,7 @@ Set the log level of socketio.
 #### update\_tensorflow\_log\_level
 
 ```python
-def update_tensorflow_log_level() -> None
+update_tensorflow_log_level() -> None
 ```
 
 Sets Tensorflow log level based on env variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
@@ -83,11 +81,7 @@ Sets Tensorflow log level based on env variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
 #### update\_sanic\_log\_level
 
 ```python
-def update_sanic_log_level(log_file: Optional[Text] = None,
-                           use_syslog: Optional[bool] = False,
-                           syslog_address: Optional[Text] = None,
-                           syslog_port: Optional[int] = None,
-                           syslog_protocol: Optional[Text] = None) -> None
+update_sanic_log_level(log_file: Optional[Text] = None, use_syslog: Optional[bool] = False, syslog_address: Optional[Text] = None, syslog_port: Optional[int] = None, syslog_protocol: Optional[Text] = None) -> None
 ```
 
 Set the log level to &#x27;LOG_LEVEL_LIBRARIES&#x27; environment variable .
@@ -95,7 +89,7 @@ Set the log level to &#x27;LOG_LEVEL_LIBRARIES&#x27; environment variable .
 #### update\_asyncio\_log\_level
 
 ```python
-def update_asyncio_log_level() -> None
+update_asyncio_log_level() -> None
 ```
 
 Set the log level of asyncio to the log level.
@@ -105,7 +99,7 @@ Uses the log level specified in the environment variable &#x27;LOG_LEVEL_LIBRARI
 #### update\_matplotlib\_log\_level
 
 ```python
-def update_matplotlib_log_level(library_log_level: Text) -> None
+update_matplotlib_log_level(library_log_level: Text) -> None
 ```
 
 Set the log level of matplotlib.
@@ -115,7 +109,7 @@ Uses the library specific log level or the general libraries log level.
 #### update\_kafka\_log\_level
 
 ```python
-def update_kafka_log_level(library_log_level: Text) -> None
+update_kafka_log_level(library_log_level: Text) -> None
 ```
 
 Set the log level of kafka.
@@ -125,7 +119,7 @@ Uses the library specific log level or the general libraries log level.
 #### update\_rabbitmq\_log\_level
 
 ```python
-def update_rabbitmq_log_level(library_log_level: Text) -> None
+update_rabbitmq_log_level(library_log_level: Text) -> None
 ```
 
 Set the log level of pika.
@@ -135,7 +129,7 @@ Uses the library specific log level or the general libraries log level.
 #### sort\_list\_of\_dicts\_by\_first\_key
 
 ```python
-def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]
+sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]
 ```
 
 Sorts a list of dictionaries by their first key.
@@ -143,7 +137,7 @@ Sorts a list of dictionaries by their first key.
 #### write\_global\_config\_value
 
 ```python
-def write_global_config_value(name: Text, value: Any) -> bool
+write_global_config_value(name: Text, value: Any) -> bool
 ```
 
 Read global Rasa configuration.
@@ -161,7 +155,7 @@ Read global Rasa configuration.
 #### read\_global\_config\_value
 
 ```python
-def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any
+read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any
 ```
 
 Read a value from the global Rasa configuration.
@@ -169,8 +163,7 @@ Read a value from the global Rasa configuration.
 #### update\_existing\_keys
 
 ```python
-def update_existing_keys(original: Dict[Any, Any],
-                         updates: Dict[Any, Any]) -> Dict[Any, Any]
+update_existing_keys(original: Dict[Any, Any], updates: Dict[Any, Any]) -> Dict[Any, Any]
 ```
 
 Iterate through all the updates and update a value in the original dictionary.
@@ -181,8 +174,7 @@ be ignored.
 #### override\_defaults
 
 ```python
-def override_defaults(defaults: Optional[Dict[Text, Any]],
-                      custom: Optional[Dict[Text, Any]]) -> Dict[Text, Any]
+override_defaults(defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]) -> Dict[Text, Any]
 ```
 
 Override default config with the given config.
@@ -210,7 +202,7 @@ Filter repeated log records.
 #### filter
 
 ```python
-def filter(record: logging.LogRecord) -> bool
+ | filter(record: logging.LogRecord) -> bool
 ```
 
 Determines whether current log is different to last log.
@@ -218,8 +210,7 @@ Determines whether current log is different to last log.
 #### call\_potential\_coroutine
 
 ```python
-async def call_potential_coroutine(
-        coroutine_or_return_value: Union[Any, Coroutine]) -> Any
+async call_potential_coroutine(coroutine_or_return_value: Union[Any, Coroutine]) -> Any
 ```
 
 Awaits coroutine or returns value directly if it&#x27;s not a coroutine.
@@ -237,9 +228,7 @@ Awaits coroutine or returns value directly if it&#x27;s not a coroutine.
 #### directory\_size\_in\_mb
 
 ```python
-def directory_size_in_mb(
-        path: Path,
-        filenames_to_exclude: Optional[List[Text]] = None) -> float
+directory_size_in_mb(path: Path, filenames_to_exclude: Optional[List[Text]] = None) -> float
 ```
 
 Calculates the size of a directory.
@@ -257,7 +246,7 @@ Calculates the size of a directory.
 #### copy\_directory
 
 ```python
-def copy_directory(source: Path, destination: Path) -> None
+copy_directory(source: Path, destination: Path) -> None
 ```
 
 Copies the content of one directory into another.
@@ -280,7 +269,7 @@ Unlike `shutil.copytree` this doesn&#x27;t raise if `destination` already exists
 #### find\_unavailable\_packages
 
 ```python
-def find_unavailable_packages(package_names: List[Text]) -> Set[Text]
+find_unavailable_packages(package_names: List[Text]) -> Set[Text]
 ```
 
 Tries to import all package names and returns the packages where it failed.
@@ -297,7 +286,7 @@ Tries to import all package names and returns the packages where it failed.
 #### module\_path\_from\_class
 
 ```python
-def module_path_from_class(clazz: Type) -> Text
+module_path_from_class(clazz: Type) -> Text
 ```
 
 Return the module path of an instance&#x27;s class.

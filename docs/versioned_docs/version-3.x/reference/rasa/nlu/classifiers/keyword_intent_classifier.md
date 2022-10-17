@@ -56,7 +56,7 @@ Trains the intent classifier on a data set.
  | process(messages: List[Message]) -> List[Message]
 ```
 
-Sets the message intent and add it to the output if it exists.
+Set the message intent and add it to the output if it exists.
 
 #### persist
 

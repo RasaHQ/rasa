@@ -400,15 +400,6 @@ Track when a user starts a bot using rasa shell.
 
 - `model_type` - Type of the model, core / nlu or rasa.
 
-#### track\_rasa\_x\_local
-
-```python
-@ensure_telemetry_enabled
-track_rasa_x_local() -> None
-```
-
-Track when a user runs Rasa X in local mode.
-
 #### track\_visualization
 
 ```python

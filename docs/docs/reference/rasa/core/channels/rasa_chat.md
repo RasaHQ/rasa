@@ -13,8 +13,8 @@ Chat input channel for Rasa Enterprise.
 #### name
 
 ```python
-@classmethod
-def name(cls) -> Text
+ | @classmethod
+ | name(cls) -> Text
 ```
 
 Name of the channel.
@@ -22,7 +22,7 @@ Name of the channel.
 #### \_\_init\_\_
 
 ```python
-def __init__(url: Optional[Text]) -> None
+ | __init__(url: Optional[Text]) -> None
 ```
 
 Initialise the channel with attributes.

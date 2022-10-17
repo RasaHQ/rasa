@@ -72,7 +72,7 @@ Raised when publishing of an event fails.
 #### \_\_str\_\_
 
 ```python
-def __str__() -> Text
+ | __str__() -> Text
 ```
 
 Returns string representation of exception.

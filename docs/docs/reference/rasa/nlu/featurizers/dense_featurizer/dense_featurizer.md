@@ -5,7 +5,7 @@ title: rasa.nlu.featurizers.dense_featurizer.dense_featurizer
 ## DenseFeaturizer Objects
 
 ```python
-class DenseFeaturizer(Featurizer[np.ndarray], ABC)
+class DenseFeaturizer(Featurizer[np.ndarray],  ABC)
 ```
 
 Base class for all dense featurizers.
@@ -13,11 +13,8 @@ Base class for all dense featurizers.
 #### aggregate\_sequence\_features
 
 ```python
-@staticmethod
-def aggregate_sequence_features(
-        dense_sequence_features: np.ndarray,
-        pooling_operation: Text,
-        only_non_zero_vectors: bool = True) -> np.ndarray
+ | @staticmethod
+ | aggregate_sequence_features(dense_sequence_features: np.ndarray, pooling_operation: Text, only_non_zero_vectors: bool = True) -> np.ndarray
 ```
 
 Aggregates the non-zero vectors of a dense sequence feature matrix.

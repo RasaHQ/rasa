@@ -1,5 +1,5 @@
 usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
-                        [--cors [CORS ...]] [--actions ACTIONS]
+                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]
                         [--ssl-keyfile SSL_KEYFILE]
                         [--ssl-certificate SSL_CERTIFICATE]
                         [--ssl-password SSL_PASSWORD] [--auto-reload]
@@ -7,7 +7,8 @@ usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
 optional arguments:
   -h, --help            show this help message and exit
   -p PORT, --port PORT  port to run the server at (default: 5055)
-  --cors [CORS ...]     enable CORS for the passed origin. Use * to whitelist
+  --cors [CORS [CORS ...]]
+                        enable CORS for the passed origin. Use * to whitelist
                         all origins (default: None)
   --actions ACTIONS     name of action package to be loaded (default: None)
   --ssl-keyfile SSL_KEYFILE

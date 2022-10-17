@@ -101,8 +101,9 @@ Fetch lock for `conversation_id`, remove expired tickets and save lock.
  | get_or_create_lock(conversation_id: Text) -> TicketLock
 ```
 
-Fetch existing lock for `conversation_id` or create a new one if
-it doesn&#x27;t exist.
+Fetch existing lock for `conversation_id`.
+
+Alternatively, create a new one if it doesn&#x27;t exist.
 
 #### is\_someone\_waiting
 
@@ -110,8 +111,7 @@ it doesn&#x27;t exist.
  | is_someone_waiting(conversation_id: Text) -> bool
 ```
 
-Return whether someone is waiting for lock associated with
-`conversation_id`.
+Return whether someone is waiting for lock for this `conversation_id`.
 
 #### finish\_serving
 

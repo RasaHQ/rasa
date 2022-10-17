@@ -5,7 +5,7 @@ title: rasa.telemetry
 #### print\_telemetry\_reporting\_info
 
 ```python
-def print_telemetry_reporting_info() -> None
+print_telemetry_reporting_info() -> None
 ```
 
 Print telemetry information to std out.
@@ -13,7 +13,7 @@ Print telemetry information to std out.
 #### is\_telemetry\_enabled
 
 ```python
-def is_telemetry_enabled() -> bool
+is_telemetry_enabled() -> bool
 ```
 
 Check if telemetry is enabled either in configuration or environment.
@@ -25,7 +25,7 @@ Check if telemetry is enabled either in configuration or environment.
 #### initialize\_telemetry
 
 ```python
-def initialize_telemetry() -> bool
+initialize_telemetry() -> bool
 ```
 
 Read telemetry configuration from the user&#x27;s Rasa config file in $HOME.
@@ -39,7 +39,7 @@ Creates a default configuration if no configuration exists.
 #### ensure\_telemetry\_enabled
 
 ```python
-def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]
+ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]
 ```
 
 Function decorator for telemetry functions that ensures telemetry is enabled.
@@ -57,7 +57,7 @@ WARNING: does not work as a decorator for async generators.
 #### telemetry\_write\_key
 
 ```python
-def telemetry_write_key() -> Optional[Text]
+telemetry_write_key() -> Optional[Text]
 ```
 
 Read the Segment write key from the segment key text file.
@@ -75,7 +75,7 @@ In local development, this should always return `None` to avoid logging telemetr
 #### sentry\_write\_key
 
 ```python
-def sentry_write_key() -> Optional[Text]
+sentry_write_key() -> Optional[Text]
 ```
 
 Read the sentry write key from the sentry key text file.
@@ -87,7 +87,7 @@ Read the sentry write key from the sentry key text file.
 #### segment\_request\_header
 
 ```python
-def segment_request_header(write_key: Text) -> Dict[Text, Any]
+segment_request_header(write_key: Text) -> Dict[Text, Any]
 ```
 
 Use a segment write key to create authentication headers for the segment API.
@@ -104,9 +104,7 @@ Use a segment write key to create authentication headers for the segment API.
 #### segment\_request\_payload
 
 ```python
-def segment_request_payload(distinct_id: Text, event_name: Text,
-                            properties: Dict[Text, Any],
-                            context: Dict[Text, Any]) -> Dict[Text, Any]
+segment_request_payload(distinct_id: Text, event_name: Text, properties: Dict[Text, Any], context: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Compose a valid payload for the segment API.
@@ -126,7 +124,7 @@ Compose a valid payload for the segment API.
 #### in\_continuous\_integration
 
 ```python
-def in_continuous_integration() -> bool
+in_continuous_integration() -> bool
 ```
 
 Returns `True` if currently running inside a continuous integration context.
@@ -134,7 +132,7 @@ Returns `True` if currently running inside a continuous integration context.
 #### print\_telemetry\_event
 
 ```python
-def print_telemetry_event(payload: Dict[Text, Any]) -> None
+print_telemetry_event(payload: Dict[Text, Any]) -> None
 ```
 
 Print a telemetry events payload to the commandline.
@@ -146,8 +144,7 @@ Print a telemetry events payload to the commandline.
 #### with\_default\_context\_fields
 
 ```python
-def with_default_context_fields(
-        context: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
+with_default_context_fields(context: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
 ```
 
 Return a new context dictionary with default and provided field values merged.
@@ -166,7 +163,7 @@ The default fields contain only the OS information for now.
 #### get\_telemetry\_id
 
 ```python
-def get_telemetry_id() -> Optional[Text]
+get_telemetry_id() -> Optional[Text]
 ```
 
 Return the unique telemetry identifier for this Rasa Open Source install.
@@ -180,7 +177,7 @@ The identifier can be any string, but it should be a UUID.
 #### toggle\_telemetry\_reporting
 
 ```python
-def toggle_telemetry_reporting(is_enabled: bool) -> None
+toggle_telemetry_reporting(is_enabled: bool) -> None
 ```
 
 Write to the configuration if telemetry tracking should be enabled or disabled.
@@ -193,9 +190,7 @@ Write to the configuration if telemetry tracking should be enabled or disabled.
 #### filter\_errors
 
 ```python
-def filter_errors(
-        event: Optional[Dict[Text, Any]],
-        hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]
+filter_errors(event: Optional[Dict[Text, Any]], hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]
 ```
 
 Filter errors.
@@ -214,10 +209,7 @@ Filter errors.
 #### before\_send
 
 ```python
-def before_send(
-    event: Dict[Text, Any],
-    _unused_hint: Optional[Dict[Text,
-                                Any]] = None) -> Optional[Dict[Text, Any]]
+before_send(event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]
 ```
 
 Strips the sensitive data and filters errors before sending to sentry.
@@ -236,10 +228,7 @@ Strips the sensitive data and filters errors before sending to sentry.
 #### strip\_sensitive\_data\_from\_sentry\_event
 
 ```python
-def strip_sensitive_data_from_sentry_event(
-    event: Dict[Text, Any],
-    _unused_hint: Optional[Dict[Text,
-                                Any]] = None) -> Optional[Dict[Text, Any]]
+strip_sensitive_data_from_sentry_event(event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]
 ```
 
 Remove any sensitive data from the event (e.g. path names).
@@ -259,7 +248,7 @@ Remove any sensitive data from the event (e.g. path names).
 
 ```python
 @ensure_telemetry_enabled
-def initialize_error_reporting() -> None
+initialize_error_reporting() -> None
 ```
 
 Sets up automated error reporting.
@@ -273,10 +262,7 @@ from the `rasa` package.
 
 ```python
 @contextlib.contextmanager
-def track_model_training(
-        training_data: "TrainingDataImporter",
-        model_type: Text,
-        is_finetuning: bool = False) -> typing.Generator[None, None, None]
+track_model_training(training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False) -> typing.Generator[None, None, None]
 ```
 
 Track a model training started.
@@ -296,7 +282,7 @@ fixed as soon as we drop python 3.6 support.
 
 ```python
 @ensure_telemetry_enabled
-def track_telemetry_disabled() -> None
+track_telemetry_disabled() -> None
 ```
 
 Track when a user disables telemetry.
@@ -305,7 +291,7 @@ Track when a user disables telemetry.
 
 ```python
 @ensure_telemetry_enabled
-def track_data_split(fraction: float, data_type: Text) -> None
+track_data_split(fraction: float, data_type: Text) -> None
 ```
 
 Track when a user splits data.
@@ -319,7 +305,7 @@ Track when a user splits data.
 
 ```python
 @ensure_telemetry_enabled
-def track_validate_files(validation_success: bool) -> None
+track_validate_files(validation_success: bool) -> None
 ```
 
 Track when a user validates data files.
@@ -332,7 +318,7 @@ Track when a user validates data files.
 
 ```python
 @ensure_telemetry_enabled
-def track_data_convert(output_format: Text, data_type: Text) -> None
+track_data_convert(output_format: Text, data_type: Text) -> None
 ```
 
 Track when a user converts data.
@@ -346,9 +332,7 @@ Track when a user converts data.
 
 ```python
 @ensure_telemetry_enabled
-def track_tracker_export(number_of_exported_events: int,
-                         tracker_store: "TrackerStore",
-                         event_broker: "EventBroker") -> None
+track_tracker_export(number_of_exported_events: int, tracker_store: "TrackerStore", event_broker: "EventBroker") -> None
 ```
 
 Track when a user exports trackers.
@@ -363,8 +347,7 @@ Track when a user exports trackers.
 
 ```python
 @ensure_telemetry_enabled
-def track_interactive_learning_start(skip_visualization: bool,
-                                     save_in_e2e: bool) -> None
+track_interactive_learning_start(skip_visualization: bool, save_in_e2e: bool) -> None
 ```
 
 Track when a user starts an interactive learning session.
@@ -378,10 +361,7 @@ Track when a user starts an interactive learning session.
 
 ```python
 @ensure_telemetry_enabled
-def track_server_start(input_channels: List["InputChannel"],
-                       endpoints: Optional["AvailableEndpoints"],
-                       model_directory: Optional[Text], number_of_workers: int,
-                       is_api_enabled: bool) -> None
+track_server_start(input_channels: List["InputChannel"], endpoints: Optional["AvailableEndpoints"], model_directory: Optional[Text], number_of_workers: int, is_api_enabled: bool) -> None
 ```
 
 Tracks when a user starts a rasa server.
@@ -398,7 +378,7 @@ Tracks when a user starts a rasa server.
 
 ```python
 @ensure_telemetry_enabled
-def track_project_init(path: Text) -> None
+track_project_init(path: Text) -> None
 ```
 
 Track when a user creates a project using rasa init.
@@ -411,7 +391,7 @@ Track when a user creates a project using rasa init.
 
 ```python
 @ensure_telemetry_enabled
-def track_shell_started(model_type: Text) -> None
+track_shell_started(model_type: Text) -> None
 ```
 
 Track when a user starts a bot using rasa shell.
@@ -424,7 +404,7 @@ Track when a user starts a bot using rasa shell.
 
 ```python
 @ensure_telemetry_enabled
-def track_visualization() -> None
+track_visualization() -> None
 ```
 
 Track when a user runs the visualization.
@@ -433,8 +413,7 @@ Track when a user runs the visualization.
 
 ```python
 @ensure_telemetry_enabled
-def track_core_model_test(num_story_steps: int, e2e: bool,
-                          agent: "Agent") -> None
+track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> None
 ```
 
 Track when a user tests a core model.
@@ -449,7 +428,7 @@ Track when a user tests a core model.
 
 ```python
 @ensure_telemetry_enabled
-def track_nlu_model_test(test_data: "TrainingData") -> None
+track_nlu_model_test(test_data: "TrainingData") -> None
 ```
 
 Track when a user tests an nlu model.
@@ -462,9 +441,7 @@ Track when a user tests an nlu model.
 
 ```python
 @ensure_telemetry_enabled
-def track_markers_extraction_initiated(strategy: Text, only_extract: bool,
-                                       seed: bool,
-                                       count: Optional[int]) -> None
+track_markers_extraction_initiated(strategy: Text, only_extract: bool, seed: bool, count: Optional[int]) -> None
 ```
 
 Track when a user tries to extract success markers.
@@ -481,7 +458,7 @@ Track when a user tries to extract success markers.
 
 ```python
 @ensure_telemetry_enabled
-def track_markers_extracted(trackers_count: int) -> None
+track_markers_extracted(trackers_count: int) -> None
 ```
 
 Track when markers have been extracted by a user.
@@ -494,7 +471,7 @@ Track when markers have been extracted by a user.
 
 ```python
 @ensure_telemetry_enabled
-def track_markers_stats_computed(trackers_count: int) -> None
+track_markers_stats_computed(trackers_count: int) -> None
 ```
 
 Track when stats over markers have been computed by a user.
@@ -507,8 +484,7 @@ Track when stats over markers have been computed by a user.
 
 ```python
 @ensure_telemetry_enabled
-def track_markers_parsed_count(marker_count: int, max_depth: int,
-                               branching_factor: int) -> None
+track_markers_parsed_count(marker_count: int, max_depth: int, branching_factor: int) -> None
 ```
 
 Track when markers have been successfully parsed from config.

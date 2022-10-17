@@ -44,7 +44,7 @@ Reader for Rasa NLU training data in JSON format.
 #### \_\_init\_\_
 
 ```python
-def __init__() -> None
+ | __init__() -> None
 ```
 
 Creates reader.
@@ -52,7 +52,7 @@ Creates reader.
 #### read\_from\_json
 
 ```python
-def read_from_json(js: Dict[Text, Any], **_: Any) -> "TrainingData"
+ | read_from_json(js: Dict[Text, Any], **_: Any) -> "TrainingData"
 ```
 
 Loads training data stored in the rasa NLU data format.
@@ -68,7 +68,7 @@ Dumps NLU data as Rasa JSON string.
 #### \_\_init\_\_
 
 ```python
-def __init__() -> None
+ | __init__() -> None
 ```
 
 Creates writer.
@@ -76,7 +76,7 @@ Creates writer.
 #### dumps
 
 ```python
-def dumps(training_data: "TrainingData", **kwargs: Any) -> Text
+ | dumps(training_data: "TrainingData", **kwargs: Any) -> Text
 ```
 
 Writes Training Data to a string in json format.

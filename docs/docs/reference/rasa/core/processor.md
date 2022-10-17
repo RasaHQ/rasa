@@ -13,15 +13,7 @@ The message processor is interface for communicating with a bot model.
 #### \_\_init\_\_
 
 ```python
-def __init__(
-        model_path: Union[Text, Path],
-        tracker_store: rasa.core.tracker_store.TrackerStore,
-        lock_store: LockStore,
-        generator: NaturalLanguageGenerator,
-        action_endpoint: Optional[EndpointConfig] = None,
-        max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
-        on_circuit_break: Optional[LambdaType] = None,
-        http_interpreter: Optional[RasaNLUHttpInterpreter] = None) -> None
+ | __init__(model_path: Union[Text, Path], tracker_store: rasa.core.tracker_store.TrackerStore, lock_store: LockStore, generator: NaturalLanguageGenerator, action_endpoint: Optional[EndpointConfig] = None, max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS, on_circuit_break: Optional[LambdaType] = None, http_interpreter: Optional[RasaNLUHttpInterpreter] = None) -> None
 ```
 
 Initializes a `MessageProcessor`.
@@ -29,8 +21,7 @@ Initializes a `MessageProcessor`.
 #### handle\_message
 
 ```python
-async def handle_message(
-        message: UserMessage) -> Optional[List[Dict[Text, Any]]]
+ | async handle_message(message: UserMessage) -> Optional[List[Dict[Text, Any]]]
 ```
 
 Handle a single message with this processor.
@@ -38,9 +29,7 @@ Handle a single message with this processor.
 #### run\_action\_extract\_slots
 
 ```python
-async def run_action_extract_slots(
-        output_channel: OutputChannel,
-        tracker: DialogueStateTracker) -> DialogueStateTracker
+ | async run_action_extract_slots(output_channel: OutputChannel, tracker: DialogueStateTracker) -> DialogueStateTracker
 ```
 
 Run action to extract slots and update the tracker accordingly.
@@ -58,8 +47,7 @@ Run action to extract slots and update the tracker accordingly.
 #### predict\_next\_for\_sender\_id
 
 ```python
-async def predict_next_for_sender_id(
-        sender_id: Text) -> Optional[Dict[Text, Any]]
+ | async predict_next_for_sender_id(sender_id: Text) -> Optional[Dict[Text, Any]]
 ```
 
 Predict the next action for the given sender_id.
@@ -76,10 +64,7 @@ Predict the next action for the given sender_id.
 #### predict\_next\_with\_tracker
 
 ```python
-def predict_next_with_tracker(
-    tracker: DialogueStateTracker,
-    verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART
-) -> Optional[Dict[Text, Any]]
+ | predict_next_with_tracker(tracker: DialogueStateTracker, verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART) -> Optional[Dict[Text, Any]]
 ```
 
 Predict the next action for a given conversation state.
@@ -97,10 +82,7 @@ Predict the next action for a given conversation state.
 #### fetch\_tracker\_and\_update\_session
 
 ```python
-async def fetch_tracker_and_update_session(
-        sender_id: Text,
-        output_channel: Optional[OutputChannel] = None,
-        metadata: Optional[Dict] = None) -> DialogueStateTracker
+ | async fetch_tracker_and_update_session(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> DialogueStateTracker
 ```
 
 Fetches tracker for `sender_id` and updates its conversation session.
@@ -121,10 +103,7 @@ If a new tracker is created, `action_session_start` is run.
 #### fetch\_tracker\_with\_initial\_session
 
 ```python
-async def fetch_tracker_with_initial_session(
-        sender_id: Text,
-        output_channel: Optional[OutputChannel] = None,
-        metadata: Optional[Dict] = None) -> DialogueStateTracker
+ | async fetch_tracker_with_initial_session(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> DialogueStateTracker
 ```
 
 Fetches tracker for `sender_id` and runs a session start if it&#x27;s a new
@@ -144,7 +123,7 @@ tracker.
 #### get\_tracker
 
 ```python
-async def get_tracker(conversation_id: Text) -> DialogueStateTracker
+ | async get_tracker(conversation_id: Text) -> DialogueStateTracker
 ```
 
 Get the tracker for a conversation.
@@ -167,8 +146,7 @@ conversation.
 #### get\_trackers\_for\_all\_conversation\_sessions
 
 ```python
-async def get_trackers_for_all_conversation_sessions(
-        conversation_id: Text) -> List[DialogueStateTracker]
+ | async get_trackers_for_all_conversation_sessions(conversation_id: Text) -> List[DialogueStateTracker]
 ```
 
 Fetches all trackers for a conversation.
@@ -189,9 +167,7 @@ for `conversation_id`.
 #### log\_message
 
 ```python
-async def log_message(
-        message: UserMessage,
-        should_save_tracker: bool = True) -> DialogueStateTracker
+ | async log_message(message: UserMessage, should_save_tracker: bool = True) -> DialogueStateTracker
 ```
 
 Log `message` on tracker belonging to the message&#x27;s conversation_id.
@@ -203,10 +179,7 @@ processing and saved at a later stage.
 #### execute\_action
 
 ```python
-async def execute_action(
-        sender_id: Text, action_name: Text, output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
-        prediction: PolicyPrediction) -> Optional[DialogueStateTracker]
+ | async execute_action(sender_id: Text, action_name: Text, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, prediction: PolicyPrediction) -> Optional[DialogueStateTracker]
 ```
 
 Execute an action for a conversation.
@@ -231,9 +204,7 @@ to execute certain behavior within a conversation (e.g. by using
 #### predict\_next\_with\_tracker\_if\_should
 
 ```python
-def predict_next_with_tracker_if_should(
-    tracker: DialogueStateTracker
-) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]
+ | predict_next_with_tracker_if_should(tracker: DialogueStateTracker) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]
 ```
 
 Predicts the next action the bot should take after seeing x.
@@ -253,8 +224,7 @@ ML to predict the action.
 #### handle\_reminder
 
 ```python
-async def handle_reminder(reminder_event: ReminderScheduled, sender_id: Text,
-                          output_channel: OutputChannel) -> None
+ | async handle_reminder(reminder_event: ReminderScheduled, sender_id: Text, output_channel: OutputChannel) -> None
 ```
 
 Handle a reminder that is triggered asynchronously.
@@ -262,10 +232,7 @@ Handle a reminder that is triggered asynchronously.
 #### trigger\_external\_user\_uttered
 
 ```python
-async def trigger_external_user_uttered(intent_name: Text, entities: Optional[
-    Union[List[Dict[Text, Any]], Dict[Text,
-                                      Text]]], tracker: DialogueStateTracker,
-                                        output_channel: OutputChannel) -> None
+ | async trigger_external_user_uttered(intent_name: Text, entities: Optional[Union[List[Dict[Text, Any]], Dict[Text, Text]]], tracker: DialogueStateTracker, output_channel: OutputChannel) -> None
 ```
 
 Triggers an external message.
@@ -283,9 +250,7 @@ used, e.g., by a reminder or the trigger_intent endpoint).
 #### parse\_message
 
 ```python
-async def parse_message(
-        message: UserMessage,
-        only_output_properties: bool = True) -> Dict[Text, Any]
+ | async parse_message(message: UserMessage, only_output_properties: bool = True) -> Dict[Text, Any]
 ```
 
 Interprets the passed message.
@@ -304,8 +269,7 @@ Interprets the passed message.
 #### is\_action\_limit\_reached
 
 ```python
-def is_action_limit_reached(tracker: DialogueStateTracker,
-                            should_predict_another_action: bool) -> bool
+ | is_action_limit_reached(tracker: DialogueStateTracker, should_predict_another_action: bool) -> bool
 ```
 
 Check whether the maximum number of predictions has been met.
@@ -324,8 +288,8 @@ Check whether the maximum number of predictions has been met.
 #### should\_predict\_another\_action
 
 ```python
-@staticmethod
-def should_predict_another_action(action_name: Text) -> bool
+ | @staticmethod
+ | should_predict_another_action(action_name: Text) -> bool
 ```
 
 Determine whether the processor should predict another action.
@@ -343,9 +307,7 @@ Determine whether the processor should predict another action.
 #### execute\_side\_effects
 
 ```python
-async def execute_side_effects(events: List[Event],
-                               tracker: DialogueStateTracker,
-                               output_channel: OutputChannel) -> None
+ | async execute_side_effects(events: List[Event], tracker: DialogueStateTracker, output_channel: OutputChannel) -> None
 ```
 
 Send bot messages, schedule and cancel reminders that are logged
@@ -354,7 +316,7 @@ in the events array.
 #### save\_tracker
 
 ```python
-async def save_tracker(tracker: DialogueStateTracker) -> None
+ | async save_tracker(tracker: DialogueStateTracker) -> None
 ```
 
 Save the given tracker to the tracker store.
