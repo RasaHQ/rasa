@@ -488,7 +488,7 @@ async def _print_history(conversation_id: Text, endpoint: EndpointConfig) -> Non
         slots_info = f"Current slots: \n\t{', '.join(slot_strings)}\n"
         loop.run_in_executor(None, print, slots_info)
 
-    print("------")
+    loop.run_in_executor(None, print, "------")
 
 
 def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
