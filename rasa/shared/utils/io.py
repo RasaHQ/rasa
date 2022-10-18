@@ -264,8 +264,9 @@ def get_list_fingerprint(
     Returns:
         the fingerprint of the list
     """
+    ordered_elements = sorted(elements, key=lambda x: str(x))
     stringified = json.dumps(
-        [deep_container_fingerprint(element, encoding) for element in elements]
+        [deep_container_fingerprint(element, encoding) for element in ordered_elements]
     )
     return get_text_hash(stringified, encoding)
 
