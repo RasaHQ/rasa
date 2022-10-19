@@ -14,8 +14,6 @@
 
 </div>
 
-<a href="https://grnh.se/05a908c02us" target="_blank"><img align="center" src="https://www.rasa.com/assets/img/github/hiring_banner.png" alt="An image with Sara, the Rasa mascot, standing next to a roadmap with future Rasa milestones: identifying unsuccessful conversations at scale, continuous model evaluation, controllable NLG and breaking free from intents. Are you excited about these milestones? Help us make these ideas become reality - we're hiring!" title="We're hiring! Learn more"></a>
-
 <hr />
 
 💡 **Rasa Open Source 3.0 is here!** 💡
@@ -53,26 +51,23 @@ There's a lot more background information in this
 [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
 
 ---
-- **What does Rasa do? 🤔**
-  [Check out our Website](https://rasa.com/)
+- 🤔 [Learn more about Rasa](https://rasa.community/)
 
-- **I'm new to Rasa 😄**
-  [Get Started with Rasa](https://rasa.com/docs/getting-started/)
+- 🤓 [Read The Docs](https://rasa.com/docs/rasa/)
 
-- **I'd like to read the detailed docs 🤓**
-  [Read The Docs](https://rasa.com/docs/)
+- 😁 [Install Rasa](https://rasa.com/docs/rasa/user-guide/installation/)
 
-- **I'm ready to install Rasa 🚀**
-  [Installation](https://rasa.com/docs/rasa/user-guide/installation/)
+- 🚀 [Dive deeper in the learning center](https://learning.rasa.com/)
 
-- **I want to learn how to use Rasa 🚀**
-  [Tutorial](https://rasa.com/docs/rasa/user-guide/rasa-tutorial/)
+- 🤗 [Contribute](#how-to-contribute)
 
-- **I have a question ❓**
-  [Rasa Community Forum](https://forum.rasa.com/)
+- ❓ [Get enterprise-grade support](https://rasa.com/support/)
 
-- **I would like to contribute 🤗**
-  [How to Contribute](#how-to-contribute)
+- 🏢 [Explore the features of our commercial platform](https://rasa.com/product/rasa-platform/)
+
+- 📚 [Learn more about research papers that leverage Rasa](https://scholar.google.com/scholar?oi=bibs&hl=en&authuser=1&cites=16243802403383697687,353275993797024115,14567308604105196228,9067977709825839723,9855847065463746011&as_sdt=5)
+
+
 
 ---
 ## Where to get help
@@ -103,7 +98,7 @@ To contribute via pull request, follow these steps:
 For more detailed instructions on how to contribute code, check out these [code contributor guidelines](CONTRIBUTING.md).
 
 You can find more information about how to contribute to Rasa (in lots of
-different ways!) [on our website.](http://rasa.com/community/contribute).
+different ways!) [on our website.](http://rasa.community).
 
 Your pull request will be reviewed by a maintainer, who will get
 back to you about any necessary changes or questions. You will
