@@ -50,6 +50,7 @@ def test_evaluate_markers_help(run: Callable[..., RunResult]):
     output = run("evaluate", "markers", "--help")
 
     help_text = f"""usage: {RASA_EXE} evaluate markers [-h] [-v] [-vv] [--quiet]
+    [--logging-config-file LOGGING_CONFIG_FILE]
     {{first_n,sample_n,all}} ..."""
 
     lines = [line.strip() for line in help_text.split("\n")]
@@ -64,6 +65,7 @@ def test_evaluate_markers_first_n_help(run: Callable[..., RunResult]):
     output = run("evaluate", "markers", "first_n", "--help")
 
     help_text = f"""usage: {RASA_EXE} evaluate markers first_n [-h] [-v] [-vv] [--quiet]
+    [--logging-config-file LOGGING_CONFIG_FILE]
     [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
