@@ -1,6 +1,7 @@
 import copy
 import inspect
 import logging
+import logging.config
 import logging.handlers
 import os
 import shutil
@@ -108,6 +109,7 @@ def read_global_config(path: Text) -> Dict[Text, Any]:
 
 def configure_logging_and_warnings(
     log_level: Optional[int] = None,
+    logging_config_file: Optional[Text] = None,
     warn_only_once: bool = True,
     filter_repeated_logs: bool = True,
 ) -> None:
@@ -117,11 +119,17 @@ def configure_logging_and_warnings(
         log_level: The log level to be used for the 'Rasa' logger. Pass `None` to use
             either the environment variable 'LOG_LEVEL' if it is specified, or the
             default log level otherwise.
+        logging_config_file: YAML file containing logging configuration to handle
+            custom formatting
         warn_only_once: determines whether user warnings should be filtered by the
             `warnings` module to appear only "once"
         filter_repeated_logs: determines whether `RepeatedLogFilter`s are added to
             the handlers of the root logger
     """
+    if logging_config_file is not None:
+        config_dict = rasa.shared.utils.io.read_yaml_file(logging_config_file)
+        logging.config.dictConfig(config_dict)
+
     if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
         log_level_name = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
         # Change log level from str to int (note that log_level in function parameter

@@ -1,3 +1,4 @@
+import json
 import os
 import logging
 from pathlib import Path
@@ -159,20 +160,20 @@ def test_cli_missing_log_level_default_used():
     configure_logging_and_warnings()
     rasa_logger = logging.getLogger("rasa")
     # Default log level is currently INFO
-    rasa_logger.level == logging.INFO
+    assert rasa_logger.level == logging.INFO
     matplotlib_logger = logging.getLogger("matplotlib")
     # Default log level for libraries is currently ERROR
-    matplotlib_logger.level == logging.ERROR
+    assert matplotlib_logger.level == logging.ERROR
 
 
 def test_cli_log_level_debug_used():
     """Test CLI with log level uses for rasa logger whereas libraries stay default."""
     configure_logging_and_warnings(logging.DEBUG)
     rasa_logger = logging.getLogger("rasa")
-    rasa_logger.level == logging.DEBUG
+    assert rasa_logger.level == logging.DEBUG
     matplotlib_logger = logging.getLogger("matplotlib")
     # Default log level for libraries is currently ERROR
-    matplotlib_logger.level == logging.ERROR
+    assert matplotlib_logger.level == logging.ERROR
 
 
 @mock.patch.dict(os.environ, {"LOG_LEVEL": "WARNING"})
@@ -180,10 +181,10 @@ def test_cli_log_level_overrides_env_var_used():
     """Test CLI log level has precedence over env var."""
     configure_logging_and_warnings(logging.DEBUG)
     rasa_logger = logging.getLogger("rasa")
-    rasa_logger.level == logging.DEBUG
+    assert rasa_logger.level == logging.DEBUG
     matplotlib_logger = logging.getLogger("matplotlib")
     # Default log level for libraries is currently ERROR
-    matplotlib_logger.level == logging.ERROR
+    assert matplotlib_logger.level == logging.ERROR
 
 
 @mock.patch.dict(os.environ, {"LOG_LEVEL": "WARNING", "LOG_LEVEL_MATPLOTLIB": "INFO"})
@@ -191,6 +192,31 @@ def test_cli_missing_log_level_env_var_used():
     """Test CLI without log level uses env var for both rasa and libraries."""
     configure_logging_and_warnings()
     rasa_logger = logging.getLogger("rasa")
-    rasa_logger.level == logging.WARNING
+    assert rasa_logger.level == logging.WARNING
     matplotlib_logger = logging.getLogger("matplotlib")
-    matplotlib_logger.level == logging.INFO
+    assert matplotlib_logger.level == logging.INFO
+
+
+def test_cli_logging_configuration() -> None:
+    logging_config_file = "data/test_logging_config.yml"
+    configure_logging_and_warnings(logging_config_file=logging_config_file)
+    rasa_logger = logging.getLogger("rasa")
+
+    handlers = rasa_logger.handlers
+    assert len(handlers) == 1
+    assert isinstance(handlers[0], logging.FileHandler)
+    assert "test_handler" == rasa_logger.handlers[0].name
+
+    logging_message = "This is a test info log."
+    rasa_logger.info(logging_message)
+
+    handler_filename = handlers[0].baseFilename
+    assert Path(handler_filename).exists()
+
+    with open(handler_filename, "r") as logs:
+        data = logs.readlines()
+        logs_dict = json.loads(data[-1])
+        assert logs_dict.get("message") == logging_message
+
+        for key in ["time", "name", "levelname"]:
+            assert key in logs_dict.keys()
