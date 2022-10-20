@@ -119,7 +119,7 @@ module.exports = {
             },
             {
               target: '_self',
-              href: 'https://rasa.com/showcase/',
+              href: 'https://rasa.community/showcase/',
               label: 'Community Showcase',
             },
           ],
