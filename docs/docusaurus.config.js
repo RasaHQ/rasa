@@ -104,12 +104,12 @@ module.exports = {
           items: [
             {
               target: '_self',
-              href: 'https://rasa.com/community/join/',
+              href: 'https://rasa.community/',
               label: 'Community Hub',
             },
             {
               target: '_self',
-              href: 'https://forum.rasa.com',
+              href: 'https://rasa.com/community/join/',
               label: 'Forum',
             },
             {
