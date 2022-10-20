@@ -109,12 +109,12 @@ module.exports = {
             },
             {
               target: '_self',
-              href: 'https://rasa.com/community/join/',
+              href: 'https://rasa.community/join/',
               label: 'Forum',
             },
             {
               target: '_self',
-              href: 'https://rasa.com/community/contribute/',
+              href: 'https://rasa.community/contribute/',
               label: 'How to Contribute',
             },
             {
