@@ -70,6 +70,9 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
 ]
 
 EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)
+PYTHON_LOGGING_SCHEMA_DOCS = (
+    "https://docs.python.org/3/library/logging.config.html#dictionary-schema-details"
+)
 
 
 class TempDirectoryPath(str, ContextManager):
@@ -127,8 +130,17 @@ def configure_logging_and_warnings(
             the handlers of the root logger
     """
     if logging_config_file is not None:
-        config_dict = rasa.shared.utils.io.read_yaml_file(logging_config_file)
-        logging.config.dictConfig(config_dict)
+        logging_config_dict = rasa.shared.utils.io.read_yaml_file(logging_config_file)
+
+        try:
+            logging.config.dictConfig(logging_config_dict)
+        except (ValueError, TypeError, AttributeError, ImportError):
+            logging.debug(
+                f"The logging config file {logging_config_file} could not "
+                f"be applied because it failed validation against "
+                f"the built-in Python logging schema. "
+                f"More info at {PYTHON_LOGGING_SCHEMA_DOCS}."
+            )
 
     if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
         log_level_name = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)

@@ -6,6 +6,7 @@ from typing import Any, Text, Type
 from unittest import mock
 
 import pytest
+from pytest import LogCaptureFixture
 
 from rasa.core.agent import Agent
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -197,8 +198,8 @@ def test_cli_missing_log_level_env_var_used():
     assert matplotlib_logger.level == logging.INFO
 
 
-def test_cli_logging_configuration() -> None:
-    logging_config_file = "data/test_logging_config.yml"
+def test_cli_valid_logging_configuration() -> None:
+    logging_config_file = "data/test_logging_config_files/test_logging_config.yml"
     configure_logging_and_warnings(logging_config_file=logging_config_file)
     rasa_logger = logging.getLogger("rasa")
 
@@ -220,3 +221,26 @@ def test_cli_logging_configuration() -> None:
 
         for key in ["time", "name", "levelname"]:
             assert key in logs_dict.keys()
+
+
+@pytest.mark.parametrize(
+    "logging_config_file",
+    [
+        "data/test_logging_config_files/test_missing_required_key_invalid_config.yml",
+        "data/test_logging_config_files/test_invalid_value_for_level_in_config.yml",
+        "data/test_logging_config_files/test_non_existent_handler_id.yml",
+        "data/test_logging_config_files/test_invalid_handler_key_in_config.yml",
+        "data/test_logging_config_files/test_invalid_format_value_in_config.yml",
+    ],
+)
+def test_cli_invalid_logging_configuration(
+    logging_config_file: Text, caplog: LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.DEBUG):
+        configure_logging_and_warnings(logging_config_file=logging_config_file)
+
+    assert (
+        f"The logging config file {logging_config_file} could not be applied "
+        f"because it failed validation against the built-in Python "
+        f"logging schema." in caplog.text
+    )
