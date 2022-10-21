@@ -38,9 +38,6 @@ def test_concat_url(base, subpath, expected_result):
 def test_warning_for_base_paths_with_trailing_slash(caplog):
     test_path = "base/"
 
-    utils_endpoints_logger = logging.getLogger("rasa.utils.endpoints")
-    utils_endpoints_logger.setLevel(logging.DEBUG)
-
     with caplog.at_level(logging.DEBUG, logger="rasa.utils.endpoints"):
         assert endpoint_utils.concat_url(test_path, None) == test_path
 
