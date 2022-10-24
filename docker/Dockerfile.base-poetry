@@ -5,6 +5,8 @@ FROM ${IMAGE_BASE_NAME}:base-${BASE_IMAGE_HASH}
 
 ARG POETRY_VERSION
 
+RUN echo "hello from the other side"
+
 # install poetry
 ENV POETRY_VERSION ${POETRY_VERSION}
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
