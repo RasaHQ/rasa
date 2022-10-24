@@ -61,6 +61,16 @@ jobs:
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
         SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+    - name: Fail build if a secret is found
+      if: steps.trivy.outcome == 'failure'
+      run: |
+        echo "=========================================================="
+        echo "| This build has failed because Trivy detected a secret. |"
+        echo "=========================================================="
+        echo "1. Check the step 'Run Trivy vulnerability scanner' for output to help you find the secret."
+        echo "2. If the finding is a false positive, add it as an entry to trivy-secret.yaml in the root of the repo to suppress the finding."
+        echo "3. If the finding is valid, the security team can help advise your next steps."
+        exit 1
 
 
   bandit:
