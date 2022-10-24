@@ -620,9 +620,3 @@ def test_deep_container_fingerprint_can_use_instance_fingerprint():
     m1 = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
     f = Features(m1, "sentence", "text", "CountVectorsFeaturizer")
     assert rasa.shared.utils.io.deep_container_fingerprint(f) == f.fingerprint()
-
-
-def test_get_list_fingerprint_consistent_despite_order() -> None:
-    assert rasa.shared.utils.io.get_list_fingerprint(
-        [20, 1, [], {1, 2, 3, 4}, {}, "abc"]
-    ) == rasa.shared.utils.io.get_list_fingerprint(["abc", [], 20, {}, {1, 2, 3, 4}, 1])
