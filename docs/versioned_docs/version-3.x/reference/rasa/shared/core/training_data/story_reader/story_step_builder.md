@@ -11,7 +11,7 @@ class StoryStepBuilder()
 #### add\_checkpoint
 
 ```python
- | add_checkpoint(name: Text, conditions: Optional[Dict[Text, Any]]) -> None
+def add_checkpoint(name: Text, conditions: Optional[Dict[Text, Any]]) -> None
 ```
 
 Add a checkpoint to story steps.
@@ -19,7 +19,7 @@ Add a checkpoint to story steps.
 #### add\_user\_messages
 
 ```python
- | add_user_messages(messages: List[UserUttered]) -> None
+def add_user_messages(messages: List[UserUttered]) -> None
 ```
 
 Adds next story steps with the user&#x27;s utterances.
@@ -31,7 +31,7 @@ Adds next story steps with the user&#x27;s utterances.
 #### add\_events
 
 ```python
- | add_events(events: List[Event]) -> None
+def add_events(events: List[Event]) -> None
 ```
 
 Adds next story steps with the specified list of events.

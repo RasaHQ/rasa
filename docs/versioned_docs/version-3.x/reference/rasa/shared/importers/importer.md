@@ -13,8 +13,11 @@ Common interface for different mechanisms to load training data.
 #### \_\_init\_\_
 
 ```python
- | @abstractmethod
- | __init__(config_file: Optional[Text] = None, domain_path: Optional[Text] = None, training_data_paths: Optional[Union[List[Text], Text]] = None, **kwargs: Any, ,) -> None
+@abstractmethod
+def __init__(config_file: Optional[Text] = None,
+             domain_path: Optional[Text] = None,
+             training_data_paths: Optional[Union[List[Text], Text]] = None,
+             **kwargs: Any) -> None
 ```
 
 Initialise the importer.
@@ -22,8 +25,8 @@ Initialise the importer.
 #### get\_domain
 
 ```python
- | @abstractmethod
- | get_domain() -> Domain
+@abstractmethod
+def get_domain() -> Domain
 ```
 
 Retrieves the domain of the bot.
@@ -35,8 +38,8 @@ Retrieves the domain of the bot.
 #### get\_stories
 
 ```python
- | @abstractmethod
- | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
+@abstractmethod
+def get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves the stories that should be used for training.
@@ -53,7 +56,7 @@ Retrieves the stories that should be used for training.
 #### get\_conversation\_tests
 
 ```python
- | get_conversation_tests() -> StoryGraph
+def get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves end-to-end conversation stories for testing.
@@ -65,8 +68,8 @@ Retrieves end-to-end conversation stories for testing.
 #### get\_config
 
 ```python
- | @abstractmethod
- | get_config() -> Dict
+@abstractmethod
+def get_config() -> Dict
 ```
 
 Retrieves the configuration that should be used for the training.
@@ -78,8 +81,8 @@ Retrieves the configuration that should be used for the training.
 #### get\_config\_file\_for\_auto\_config
 
 ```python
- | @abstractmethod
- | get_config_file_for_auto_config() -> Optional[Text]
+@abstractmethod
+def get_config_file_for_auto_config() -> Optional[Text]
 ```
 
 Returns config file path for auto-config only if there is a single one.
@@ -87,8 +90,8 @@ Returns config file path for auto-config only if there is a single one.
 #### get\_nlu\_data
 
 ```python
- | @abstractmethod
- | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+@abstractmethod
+def get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves the NLU training data that should be used for training.
@@ -105,8 +108,12 @@ Retrieves the NLU training data that should be used for training.
 #### load\_from\_config
 
 ```python
- | @staticmethod
- | load_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+@staticmethod
+def load_from_config(
+    config_path: Text,
+    domain_path: Optional[Text] = None,
+    training_data_paths: Optional[List[Text]] = None
+) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a configuration file.
@@ -114,8 +121,12 @@ Loads a `TrainingDataImporter` instance from a configuration file.
 #### load\_core\_importer\_from\_config
 
 ```python
- | @staticmethod
- | load_core_importer_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+@staticmethod
+def load_core_importer_from_config(
+    config_path: Text,
+    domain_path: Optional[Text] = None,
+    training_data_paths: Optional[List[Text]] = None
+) -> "TrainingDataImporter"
 ```
 
 Loads core `TrainingDataImporter` instance.
@@ -125,8 +136,12 @@ Instance loaded from configuration file will only read Core training data.
 #### load\_nlu\_importer\_from\_config
 
 ```python
- | @staticmethod
- | load_nlu_importer_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+@staticmethod
+def load_nlu_importer_from_config(
+    config_path: Text,
+    domain_path: Optional[Text] = None,
+    training_data_paths: Optional[List[Text]] = None
+) -> "TrainingDataImporter"
 ```
 
 Loads nlu `TrainingDataImporter` instance.
@@ -136,8 +151,13 @@ Instance loaded from configuration file will only read NLU training data.
 #### load\_from\_dict
 
 ```python
- | @staticmethod
- | load_from_dict(config: Optional[Dict] = None, config_path: Optional[Text] = None, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+@staticmethod
+def load_from_dict(
+    config: Optional[Dict] = None,
+    config_path: Optional[Text] = None,
+    domain_path: Optional[Text] = None,
+    training_data_paths: Optional[List[Text]] = None
+) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a dictionary.
@@ -145,7 +165,7 @@ Loads a `TrainingDataImporter` instance from a dictionary.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Returns a random fingerprint as data shouldn&#x27;t be cached.
@@ -153,7 +173,7 @@ Returns a random fingerprint as data shouldn&#x27;t be cached.
 #### \_\_repr\_\_
 
 ```python
- | __repr__() -> Text
+def __repr__() -> Text
 ```
 
 Returns text representation of object.
@@ -169,7 +189,7 @@ Importer that skips any Core-related file reading.
 #### \_\_init\_\_
 
 ```python
- | __init__(actual_importer: TrainingDataImporter)
+def __init__(actual_importer: TrainingDataImporter)
 ```
 
 Initializes the NLUDataImporter.
@@ -177,7 +197,7 @@ Initializes the NLUDataImporter.
 #### get\_domain
 
 ```python
- | get_domain() -> Domain
+def get_domain() -> Domain
 ```
 
 Retrieves model domain (see parent class for full docstring).
@@ -185,7 +205,7 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
- | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
+def get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -193,7 +213,7 @@ Retrieves training stories / rules (see parent class for full docstring).
 #### get\_conversation\_tests
 
 ```python
- | get_conversation_tests() -> StoryGraph
+def get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -201,7 +221,7 @@ Retrieves conversation test stories (see parent class for full docstring).
 #### get\_config
 
 ```python
- | get_config() -> Dict
+def get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -209,7 +229,7 @@ Retrieves model config (see parent class for full docstring).
 #### get\_nlu\_data
 
 ```python
- | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+def get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves NLU training data (see parent class for full docstring).
@@ -217,8 +237,8 @@ Retrieves NLU training data (see parent class for full docstring).
 #### get\_config\_file\_for\_auto\_config
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_config_file_for_auto_config() -> Optional[Text]
+@rasa.shared.utils.common.cached_method
+def get_config_file_for_auto_config() -> Optional[Text]
 ```
 
 Returns config file path for auto-config only if there is a single one.
@@ -237,8 +257,8 @@ to load the data as if they were a single instance.
 #### get\_config
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_config() -> Dict
+@rasa.shared.utils.common.cached_method
+def get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -246,8 +266,8 @@ Retrieves model config (see parent class for full docstring).
 #### get\_domain
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_domain() -> Domain
+@rasa.shared.utils.common.cached_method
+def get_domain() -> Domain
 ```
 
 Retrieves model domain (see parent class for full docstring).
@@ -255,8 +275,8 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
+@rasa.shared.utils.common.cached_method
+def get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -264,8 +284,8 @@ Retrieves training stories / rules (see parent class for full docstring).
 #### get\_conversation\_tests
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_conversation_tests() -> StoryGraph
+@rasa.shared.utils.common.cached_method
+def get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -273,8 +293,8 @@ Retrieves conversation test stories (see parent class for full docstring).
 #### get\_nlu\_data
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+@rasa.shared.utils.common.cached_method
+def get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves NLU training data (see parent class for full docstring).
@@ -282,8 +302,8 @@ Retrieves NLU training data (see parent class for full docstring).
 #### get\_config\_file\_for\_auto\_config
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_config_file_for_auto_config() -> Optional[Text]
+@rasa.shared.utils.common.cached_method
+def get_config_file_for_auto_config() -> Optional[Text]
 ```
 
 Returns config file path for auto-config only if there is a single one.
@@ -303,7 +323,7 @@ back to the Domain.
 #### \_\_init\_\_
 
 ```python
- | __init__(importer: TrainingDataImporter)
+def __init__(importer: TrainingDataImporter)
 ```
 
 Initializes the ResponsesSyncImporter.
@@ -311,7 +331,7 @@ Initializes the ResponsesSyncImporter.
 #### get\_config
 
 ```python
- | get_config() -> Dict
+def get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -319,8 +339,8 @@ Retrieves model config (see parent class for full docstring).
 #### get\_config\_file\_for\_auto\_config
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_config_file_for_auto_config() -> Optional[Text]
+@rasa.shared.utils.common.cached_method
+def get_config_file_for_auto_config() -> Optional[Text]
 ```
 
 Returns config file path for auto-config only if there is a single one.
@@ -328,8 +348,8 @@ Returns config file path for auto-config only if there is a single one.
 #### get\_domain
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_domain() -> Domain
+@rasa.shared.utils.common.cached_method
+def get_domain() -> Domain
 ```
 
 Merge existing domain with properties of retrieval intents in NLU data.
@@ -337,7 +357,7 @@ Merge existing domain with properties of retrieval intents in NLU data.
 #### get\_stories
 
 ```python
- | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
+def get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -345,7 +365,7 @@ Retrieves training stories / rules (see parent class for full docstring).
 #### get\_conversation\_tests
 
 ```python
- | get_conversation_tests() -> StoryGraph
+def get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -353,8 +373,8 @@ Retrieves conversation test stories (see parent class for full docstring).
 #### get\_nlu\_data
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+@rasa.shared.utils.common.cached_method
+def get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Updates NLU data with responses for retrieval intents from domain.
@@ -373,7 +393,7 @@ Importer with the following functionality.
 #### \_\_init\_\_
 
 ```python
- | __init__(importer: TrainingDataImporter) -> None
+def __init__(importer: TrainingDataImporter) -> None
 ```
 
 Initializes the E2EImporter.
@@ -381,8 +401,8 @@ Initializes the E2EImporter.
 #### get\_domain
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_domain() -> Domain
+@rasa.shared.utils.common.cached_method
+def get_domain() -> Domain
 ```
 
 Retrieves model domain (see parent class for full docstring).
@@ -390,7 +410,7 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
- | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
+def get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves the stories that should be used for training.
@@ -400,7 +420,7 @@ See parent class for details.
 #### get\_conversation\_tests
 
 ```python
- | get_conversation_tests() -> StoryGraph
+def get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -408,7 +428,7 @@ Retrieves conversation test stories (see parent class for full docstring).
 #### get\_config
 
 ```python
- | get_config() -> Dict
+def get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -416,8 +436,8 @@ Retrieves model config (see parent class for full docstring).
 #### get\_config\_file\_for\_auto\_config
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_config_file_for_auto_config() -> Optional[Text]
+@rasa.shared.utils.common.cached_method
+def get_config_file_for_auto_config() -> Optional[Text]
 ```
 
 Returns config file path for auto-config only if there is a single one.
@@ -425,8 +445,8 @@ Returns config file path for auto-config only if there is a single one.
 #### get\_nlu\_data
 
 ```python
- | @rasa.shared.utils.common.cached_method
- | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+@rasa.shared.utils.common.cached_method
+def get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves NLU training data (see parent class for full docstring).

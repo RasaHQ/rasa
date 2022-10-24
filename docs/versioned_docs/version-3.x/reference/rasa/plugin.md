@@ -6,7 +6,7 @@ title: rasa.plugin
 
 ```python
 @functools.lru_cache(maxsize=2)
-plugin_manager() -> pluggy.PluginManager
+def plugin_manager() -> pluggy.PluginManager
 ```
 
 Initialises a plugin manager which registers hook implementations.
@@ -15,7 +15,8 @@ Initialises a plugin manager which registers hook implementations.
 
 ```python
 @hookspec
-refine_cli(subparsers: SubParsersAction, parent_parsers: List[argparse.ArgumentParser]) -> None
+def refine_cli(subparsers: SubParsersAction,
+               parent_parsers: List[argparse.ArgumentParser]) -> None
 ```
 
 Customizable hook for adding CLI commands.
@@ -24,7 +25,7 @@ Customizable hook for adding CLI commands.
 
 ```python
 @hookspec
-get_version_info() -> Tuple[Text, Text]
+def get_version_info() -> Tuple[Text, Text]
 ```
 
 Hook specification for getting plugin version info.
@@ -33,7 +34,8 @@ Hook specification for getting plugin version info.
 
 ```python
 @hookspec
-configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]
+def configure_commandline(
+        cmdline_arguments: argparse.Namespace) -> Optional[Text]
 ```
 
 Hook specification for configuring plugin CLI.
@@ -42,7 +44,7 @@ Hook specification for configuring plugin CLI.
 
 ```python
 @hookspec
-init_telemetry(endpoints_file: Optional[Text]) -> None
+def init_telemetry(endpoints_file: Optional[Text]) -> None
 ```
 
 Hook specification for initialising plugin telemetry.

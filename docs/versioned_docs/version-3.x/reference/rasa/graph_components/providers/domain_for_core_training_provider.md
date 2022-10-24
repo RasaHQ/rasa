@@ -44,8 +44,11 @@ by core components
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DomainForCoreTrainingProvider
+@classmethod
+def create(
+        cls, config: Dict[Text, Any], model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext) -> DomainForCoreTrainingProvider
 ```
 
 Creates component (see parent class for full docstring).
@@ -53,7 +56,7 @@ Creates component (see parent class for full docstring).
 #### provide
 
 ```python
- | provide(domain: Domain) -> Domain
+def provide(domain: Domain) -> Domain
 ```
 
 Recreates the given domain but drops information that is irrelevant for core.
@@ -70,8 +73,8 @@ Recreates the given domain but drops information that is irrelevant for core.
 #### create\_pruned\_version
 
 ```python
- | @staticmethod
- | create_pruned_version(domain: Domain) -> Domain
+@staticmethod
+def create_pruned_version(domain: Domain) -> Domain
 ```
 
 Recreates the given domain but drops information that is irrelevant for core.

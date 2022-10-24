@@ -5,7 +5,7 @@ title: rasa.nlu.run
 #### run\_cmdline
 
 ```python
-run_cmdline(model_path: Text) -> None
+def run_cmdline(model_path: Text) -> None
 ```
 
 Loops over CLI input, passing each message to a loaded NLU model.

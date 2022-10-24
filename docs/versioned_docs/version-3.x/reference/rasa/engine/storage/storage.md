@@ -13,9 +13,9 @@ Serves as storage backend for `GraphComponents` which need persistence.
 #### create
 
 ```python
- | @classmethod
- | @abc.abstractmethod
- | create(cls, storage_path: Path) -> ModelStorage
+@classmethod
+@abc.abstractmethod
+def create(cls, storage_path: Path) -> ModelStorage
 ```
 
 Creates the storage.
@@ -27,9 +27,12 @@ Creates the storage.
 #### from\_model\_archive
 
 ```python
- | @classmethod
- | @abc.abstractmethod
- | from_model_archive(cls, storage_path: Path, model_archive_path: Union[Text, Path]) -> Tuple[ModelStorage, ModelMetadata]
+@classmethod
+@abc.abstractmethod
+def from_model_archive(
+    cls, storage_path: Path,
+    model_archive_path: Union[Text,
+                              Path]) -> Tuple[ModelStorage, ModelMetadata]
 ```
 
 Unpacks a model archive and initializes a `ModelStorage`.
@@ -53,8 +56,9 @@ Unpacks a model archive and initializes a `ModelStorage`.
 #### metadata\_from\_archive
 
 ```python
- | @classmethod
- | metadata_from_archive(cls, model_archive_path: Union[Text, Path]) -> ModelMetadata
+@classmethod
+def metadata_from_archive(
+        cls, model_archive_path: Union[Text, Path]) -> ModelMetadata
 ```
 
 Retrieves metadata from archive.
@@ -77,9 +81,9 @@ Retrieves metadata from archive.
 #### write\_to
 
 ```python
- | @contextmanager
- | @abc.abstractmethod
- | write_to(resource: Resource) -> Generator[Path, None, None]
+@contextmanager
+@abc.abstractmethod
+def write_to(resource: Resource) -> Generator[Path, None, None]
 ```
 
 Persists data for a given resource.
@@ -99,9 +103,9 @@ This `Resource` can then be accessed in dependent graph nodes via
 #### read\_from
 
 ```python
- | @contextmanager
- | @abc.abstractmethod
- | read_from(resource: Resource) -> Generator[Path, None, None]
+@contextmanager
+@abc.abstractmethod
+def read_from(resource: Resource) -> Generator[Path, None, None]
 ```
 
 Provides the data of a persisted `Resource`.
@@ -123,7 +127,9 @@ Provides the data of a persisted `Resource`.
 #### create\_model\_package
 
 ```python
- | create_model_package(model_archive_path: Union[Text, Path], model_configuration: GraphModelConfiguration, domain: Domain) -> ModelMetadata
+def create_model_package(model_archive_path: Union[Text, Path],
+                         model_configuration: GraphModelConfiguration,
+                         domain: Domain) -> ModelMetadata
 ```
 
 Creates a model archive containing all data to load and run the model.
@@ -151,7 +157,7 @@ Describes a trained model.
 #### \_\_post\_init\_\_
 
 ```python
- | __post_init__() -> None
+def __post_init__() -> None
 ```
 
 Raises an exception when the meta data indicates an unsupported version.
@@ -164,7 +170,7 @@ Raises an exception when the meta data indicates an unsupported version.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serializable version of the `ModelMetadata`.
@@ -172,8 +178,8 @@ Returns serializable version of the `ModelMetadata`.
 #### from\_dict
 
 ```python
- | @classmethod
- | from_dict(cls, serialized: Dict[Text, Any]) -> ModelMetadata
+@classmethod
+def from_dict(cls, serialized: Dict[Text, Any]) -> ModelMetadata
 ```
 
 Loads `ModelMetadata` which has been serialized using `metadata.as_dict()`.

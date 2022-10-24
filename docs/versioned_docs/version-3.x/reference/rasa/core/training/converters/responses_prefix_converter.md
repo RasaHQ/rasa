@@ -5,7 +5,7 @@ title: rasa.core.training.converters.responses_prefix_converter
 #### normalize\_utter\_action
 
 ```python
-normalize_utter_action(action_name: Text) -> Text
+def normalize_utter_action(action_name: Text) -> Text
 ```
 
 Ensure that response names start with `utter_`.
@@ -31,8 +31,8 @@ start with `utter_` instead of `respond_`.
 #### filter
 
 ```python
- | @classmethod
- | filter(cls, source_path: Path) -> bool
+@classmethod
+def filter(cls, source_path: Path) -> bool
 ```
 
 Only accept YAML story files.
@@ -49,8 +49,8 @@ Only accept YAML story files.
 #### convert\_and\_write
 
 ```python
- | @classmethod
- | async convert_and_write(cls, source_path: Path, output_path: Path) -> None
+@classmethod
+async def convert_and_write(cls, source_path: Path, output_path: Path) -> None
 ```
 
 Migrate retrieval intent responses to the new 2.0 format in stories.
@@ -75,8 +75,8 @@ start with `utter_` instead of `respond_`.
 #### filter
 
 ```python
- | @classmethod
- | filter(cls, source_path: Path) -> bool
+@classmethod
+def filter(cls, source_path: Path) -> bool
 ```
 
 Only accept domain files.
@@ -93,8 +93,8 @@ Only accept domain files.
 #### convert\_and\_write
 
 ```python
- | @classmethod
- | async convert_and_write(cls, source_path: Path, output_path: Path) -> None
+@classmethod
+async def convert_and_write(cls, source_path: Path, output_path: Path) -> None
 ```
 
 Migrate retrieval intent responses to the new 2.0 format in domains.

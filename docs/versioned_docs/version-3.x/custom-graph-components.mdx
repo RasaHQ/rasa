@@ -75,7 +75,7 @@ class MyPolicy(Policy):
 If you want to implement a custom NLU component then start out with the following
 skeleton:
 
-```python (docs/sources/data/test_classes/nlu_component_skeleton.py)
+```python (versioned_docs/version-3.x/sources/data/test_classes/nlu_component_skeleton.py)
 ```
 
 
@@ -94,7 +94,7 @@ already implemented so you only need to overwrite the `tokenize` method.
 ## The `GraphComponent` interface
 To run your custom NLU component or policy with Rasa it must implement the `GraphComponent` interface.
 
-```python (docs/sources/data/test_classes/graph_component_interface.py)
+```python (versioned_docs/version-3.x/sources/data/test_classes/graph_component_interface.py)
 ```
 
 ### `create`
@@ -336,7 +336,7 @@ Currently, Rasa supports the `default.v1` and the experimental `graph.v1` recipe
 For `default.v1` recipe, you need to register your graph component by using the `DefaultV1Recipe.register`
 decorator:
 
-```python (docs/sources/data/test_classes/registered_component.py)
+```python (versioned_docs/version-3.x/sources/data/test_classes/registered_component.py)
 ```
 
 Rasa uses the information provided in the `register` decorator and the
@@ -477,7 +477,7 @@ The sentence features are represented by a matrix of size `(1 x feature-dimensio
 The following is the example of a dense [message featurizer](components.mdx#featurizers)
 which uses a pretrained model:
 
-```python (docs/sources/data/test_classes/custom_graph_components/nlu_dense.py)
+```python (versioned_docs/version-3.x/sources/data/test_classes/custom_graph_components/nlu_dense.py)
 ```
 
 ### Sparse Message Featurizer
@@ -485,5 +485,5 @@ which uses a pretrained model:
 The following is the example of a dense [message featurizer](components.mdx#featurizers)
 which trains a new model:
 
-```python (docs/sources/data/test_classes/custom_graph_components/nlu_sparse.py)
+```python (versioned_docs/version-3.x/sources/data/test_classes/custom_graph_components/nlu_sparse.py)
 ```

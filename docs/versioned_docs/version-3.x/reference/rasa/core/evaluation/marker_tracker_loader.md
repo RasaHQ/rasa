@@ -5,7 +5,7 @@ title: rasa.core.evaluation.marker_tracker_loader
 #### strategy\_all
 
 ```python
-strategy_all(keys: List[Text], count: int) -> Iterable[Text]
+def strategy_all(keys: List[Text], count: int) -> Iterable[Text]
 ```
 
 Selects all keys from the set of keys.
@@ -13,7 +13,7 @@ Selects all keys from the set of keys.
 #### strategy\_first\_n
 
 ```python
-strategy_first_n(keys: List[Text], count: int) -> Iterable[Text]
+def strategy_first_n(keys: List[Text], count: int) -> Iterable[Text]
 ```
 
 Takes the first N keys from the set of keys.
@@ -21,7 +21,7 @@ Takes the first N keys from the set of keys.
 #### strategy\_sample\_n
 
 ```python
-strategy_sample_n(keys: List[Text], count: int) -> Iterable[Text]
+def strategy_sample_n(keys: List[Text], count: int) -> Iterable[Text]
 ```
 
 Samples N unique keys from the set of keys.
@@ -37,7 +37,10 @@ Represents a wrapper over a `TrackerStore` with a configurable access pattern.
 #### \_\_init\_\_
 
 ```python
- | __init__(tracker_store: TrackerStore, strategy: str, count: int = None, seed: Any = None) -> None
+def __init__(tracker_store: TrackerStore,
+             strategy: str,
+             count: int = None,
+             seed: Any = None) -> None
 ```
 
 Creates a MarkerTrackerLoader.
@@ -54,7 +57,7 @@ Creates a MarkerTrackerLoader.
 #### load
 
 ```python
- | async load() -> AsyncIterator[Optional[DialogueStateTracker]]
+async def load() -> AsyncIterator[Optional[DialogueStateTracker]]
 ```
 
 Loads trackers according to strategy.

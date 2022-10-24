@@ -16,14 +16,38 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.3.0] - 2022-10-24                         
+### Improvements
+- [#11561](https://github.com/rasahq/rasa/issues/11561): Added option `--offset-timestamps-by-seconds` to offset the timestamp of events when using `rasa export`
+- [#11578](https://github.com/rasahq/rasa/issues/11578): Rasa supports native installations on Apple Silicon (M1 / M2). Please
+  follow the installation instructions and take a look at the limitations.
+- [#11596](https://github.com/rasahq/rasa/issues/11596): Caching `Message` and `Features` fingerprints unless they are altered, saving up to 2/3 of fingerprinting time in our tests.
+- [#11598](https://github.com/rasahq/rasa/issues/11598): Added package versions of component  dependencies as an additional part of fingerprinting calculation. Upgrading an dependency will thus lead to a retraining of the component in the future. Also, by changing fingerprint calculation, the next training after this change will be a complete retraining.
+- [#11623](https://github.com/rasahq/rasa/issues/11623): Export events continuously rather than loading all events in memory first when
+  using `rasa export`. Events will be streamed right from the start rather
+  than loading all events first and pushing them to the broker afterwards.
+- [#11568](https://github.com/rasahq/rasa/issues/11568): Adds new dependency pluggy, with which it was possible to implement new plugin functionality.
+  This plugin manager enables the extension and/or enhancement of the Rasa command line interface with functionality made available in the rasa-plus package.
 
-## [3.2.10] - 2022-09-29
+### Bugfixes
+- [#11575](https://github.com/rasahq/rasa/issues/11575): Fix `BlockingIOError` when running `rasa interactive`, after the upgrade of `prompt-toolkit` dependency.
+- [#11395](https://github.com/rasahq/rasa/issues/11395): Fixes a bug that lead to initial slot values being incorporated into all rules by default, thus breaking most rules when the slot value changed from its initial value
+- [#11429](https://github.com/rasahq/rasa/issues/11429): Made logistic regression classifier output a proper intent ranking and made ranking length configurable
+
+### Deprecations and Removals
+- [#11190](https://github.com/rasahq/rasa/issues/11190): Remove code related to Rasa X local mode as it is deprecated and scheduled for removal.
+
+### Miscellaneous internal changes
+- [#11548](https://github.com/rasahq/rasa/issues/11548)
+
+
+## [3.2.10] - 2022-09-29                          
 ### Bugfixes
 - [#11588](https://github.com/rasahq/rasa/issues/11588): Fixes scenarios in which a slot with `from_trigger_intent` mapping that specifies an `active_loop` condition was being filled despite that `active_loop` not being activated.
   In addition, fixes scenario in which a slot with `from_trigger_intent` mapping without a specified `active_loop` mapping condition is only filled if the form gets activated.
   Removes unnecessary validation warning that a slot with `from_trigger_intent` and a mapping condition should be included in the form's required_slots.
-- [#ato-161](https://github.com/rasahq/rasa/issues/ato-161): Fixed a bug where `DIETClassier` crashed during training
-  when both masked language modelling and evaluation
+- [#ato-161](https://github.com/rasahq/rasa/issues/ato-161): Fixed a bug where `DIETClassier` crashed during training 
+  when both masked language modelling and evaluation 
   during training were used.
 
 ### Improved Documentation
@@ -33,18 +57,18 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 - [#11552](https://github.com/rasahq/rasa/issues/11552)
 
 
-## [3.2.9] - 2022-09-09
+## [3.2.9] - 2022-09-09                          
 
 Yanked.
 
 
-## [3.2.8] - 2022-09-08
+## [3.2.8] - 2022-09-08                         
 ### Bugfixes
 - [#11540](https://github.com/rasahq/rasa/issues/11540): Fix bug where `KeywordIntentClassifier` overrides preceding intent classifiers' predictions
   although the `KeyWordIntentClassifier` was not matching any keywords.
 
 
-## [3.2.7] - 2022-08-31
+## [3.2.7] - 2022-08-31                         
 ### Improvements
 - [#11448](https://github.com/rasahq/rasa/issues/11448): Improve `rasa data validate` command so that it uses custom importers when they are defined in config file.
 
@@ -52,7 +76,7 @@ Yanked.
 - [#11311](https://github.com/rasahq/rasa/issues/11311): Re-instates the REST channel metadata feature.  Metadata can be provided on the `metadata` key.
 
 
-## [3.2.6] - 2022-08-12
+## [3.2.6] - 2022-08-12                         
 ### Bugfixes
 - [#11433](https://github.com/rasahq/rasa/issues/11433): This fix makes sure that when a Domain object is loaded from multiple files where one file specifies a custom session config and the rest do not, the default session configuration does not override the custom session config.
 
@@ -60,7 +84,7 @@ Yanked.
 - [#11426](https://github.com/rasahq/rasa/issues/11426), [#11434](https://github.com/rasahq/rasa/issues/11434)
 
 
-## [3.2.5] - 2022-08-05
+## [3.2.5] - 2022-08-05                         
 ### Bugfixes
 - [#11294](https://github.com/rasahq/rasa/issues/11294): Fix `KeyError` which resulted when `action_two_stage_fallback` got executed in a project whose domain contained slot mappings.
 - [#11390](https://github.com/rasahq/rasa/issues/11390): Fixes regression in which slot mappings were prioritized according to reverse order as they were listed in the domain, instead of in order from first to last, as was implicitly expected in `2.x`.

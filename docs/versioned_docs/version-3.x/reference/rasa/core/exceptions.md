@@ -17,7 +17,7 @@ will be thrown.
 #### \_\_init\_\_
 
 ```python
- | __init__(message: Text) -> None
+def __init__(message: Text) -> None
 ```
 
 Initialize message attribute.

@@ -8,7 +8,7 @@ title: rasa.nlu.classifiers.regex_message_handler
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
 )
-class RegexMessageHandler(GraphComponent,  EntityExtractorMixin)
+class RegexMessageHandler(GraphComponent, EntityExtractorMixin)
 ```
 
 Handles hardcoded NLU predictions from messages starting with a `/`.
@@ -16,8 +16,10 @@ Handles hardcoded NLU predictions from messages starting with a `/`.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexMessageHandler
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> RegexMessageHandler
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -25,7 +27,8 @@ Creates a new untrained component (see parent class for full docstring).
 #### process
 
 ```python
- | process(messages: List[Message], domain: Optional[Domain] = None) -> List[Message]
+def process(messages: List[Message],
+            domain: Optional[Domain] = None) -> List[Message]
 ```
 
 Adds hardcoded intents and entities for messages starting with &#x27;/&#x27;.
