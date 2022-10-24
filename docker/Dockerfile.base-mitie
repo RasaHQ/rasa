@@ -3,6 +3,8 @@ FROM alpine:latest
 
 RUN apk add --update make wget
 
+RUN echo "hello from the mitie side"
+
 # download mitie model
 WORKDIR /build
 COPY ./Makefile .
