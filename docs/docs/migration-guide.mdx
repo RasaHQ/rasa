@@ -21,9 +21,9 @@ how you can migrate from one version to another.
 
 Due to the TensorFlow upgrade, we can't guarantee the exact same output and hence
 model performance if your configuration uses `LanguageModelFeaturizer`.
-This applies to the case where the model is re-trained with the new rasa open source
+This applies to the case where the model is re-trained with the new Rasa
 version without changing the configuration, random seeds, and data as well as to the
-case where a model trained with a previous version of rasa open source is loaded with
+case where a model trained with a previous version of Rasa is loaded with
 this new version for inference.
 
 Please check whether your trained model still performs as expected and retrain if needed.
@@ -31,7 +31,7 @@ Please check whether your trained model still performs as expected and retrain i
 ### NLU JSON Format
 
 [NLU training data](nlu-training-data.mdx) in JSON format is deprecated and will be
-removed in Rasa Open Source 4.0.
+removed in Rasa 4.0.
 Please use `rasa data convert nlu -f yaml --data <path to NLU data>` to convert your
 NLU JSON data to YAML format before support for NLU JSON data is removed.
 
@@ -52,7 +52,7 @@ to convert your data from Markdown to YAML. Please use the commands described
 ### Model Configuration
 
 It is required to specify the used `recipe` within the
-[model configuration](model-configuration.mdx). As of now Rasa Open Source only supports
+[model configuration](model-configuration.mdx). As of now Rasa only supports
 the `default.v1` recipe and will continue using it even if you don't specify a recipe
 in the model configuration. To avoid breaking changes in the future you should
 to specify `recipe: "default.v1"` at the top of your model configuration:
@@ -86,12 +86,12 @@ to specify `recipe: "default.v1"` at the top of your model configuration:
 
 ### Custom Policies and Custom Components
 
-Rasa Open Source 3.0 changed the way [NLU components](components.mdx) and
+Rasa 3.0 changed the way [NLU components](components.mdx) and
 [policies](policies.mdx) are trained and run during inference. As part of these changes
 the interfaces for NLU components and policies have been unified and adapted.
 
 The next sections outline which adaptions are required to run your custom NLU components
-and policies with Rasa Open Source 3.0.
+and policies with Rasa 3.0.
 
 :::caution
 
@@ -101,11 +101,11 @@ continuing to follow the step-by-step guide to migrate your own custom graph com
 
 **Type Annotations**
 
-Until Rasa Open Source 3.0 [type annotations](https://docs.python.org/3/library/typing.html)
+Until Rasa 3.0 [type annotations](https://docs.python.org/3/library/typing.html)
 were not required in custom policies or custom NLU components.
 It is now required to use
 [type annotations](https://docs.python.org/3/library/typing.html) in custom NLU
-components and policies. Rasa Open Source uses these type annotations to validate that
+components and policies. Rasa uses these type annotations to validate that
 your graph components are compatible and correctly configured. As outlined in the custom
 [components guide](custom-graph-components.mdx) it is not allowed to use
 [forward references](https://www.python.org/dev/peps/pep-0484/#forward-references).
@@ -285,7 +285,7 @@ from your model configuration file.
 
 NLU components used to be persisted by a call to the NLU component's `persist` method
 from outside the NLU component itself.
-With Rasa Open Source 3.0 NLU components are responsible for persisting themselves.
+With Rasa 3.0 NLU components are responsible for persisting themselves.
 Use the provided `model_storage` and `resource` parameters
 to persist your NLU component at the end of the training and then return the `resource`
 as result of your NLU component's `train` method.
@@ -473,9 +473,9 @@ NLU Components like [tokenizers](components.mdx#tokenizers) or
 [featurizers](components.mdx#featurizers) augment the training data with their
 output during the model training. Their output is required by NLU components later in the
 pipeline. Typically, featurizers require *tokenized* messages and intent
-classifiers require *featurized* training data to train themselves. Rasa Open Source
+classifiers require *featurized* training data to train themselves. Rasa
 3.0 makes these different purposes explicit. Previously both NLU component training and
-training data augmentation were done as part of the `train` method. In Rasa Open Source
+training data augmentation were done as part of the `train` method. In Rasa
 3.0 they are split into `train` and `process_training_data`:
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-component-train-process-split" defaultValue="new">
@@ -529,7 +529,7 @@ training data augmentation were done as part of the `train` method. In Rasa Open
 **Handling Lists of Messages During Inference in an NLU Component**
 
 NLU components used to receive a single `Message` object during inference.
-Starting with Rasa Open Source 3.0 all NLU components have to support a list of
+Starting with Rasa 3.0 all NLU components have to support a list of
 messages during inference. Unless your component supports batch predictions the easiest
 way to handle this is to loop over the messages. It is also required to return the
 message objects at the end of the `process` method.
@@ -761,7 +761,7 @@ featurizers itself.
 **Persisting a Trained Policy**
 
 Policies used to be persisted by a call to the policy's `persist` method from outside the policy itself.
-With Rasa Open Source 3.0 policies are responsible for persisting themselves.
+With Rasa 3.0 policies are responsible for persisting themselves.
 Use the provided `model_storage` and `resource` parameters
 to persist your graph component at the end of the training and then return the `resource`
 as result of your policy's `train` method. See [graph component persistence](custom-graph-components.mdx#model-persistence) for more details.
@@ -962,7 +962,7 @@ constructor but instead returned by the static method `get_default_config`:
 
 To use a custom [end-to-end policy](stories.mdx#end-to-end-training) in Rasa
 Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
-events manually. In Rasa Open Source 3.0,
+events manually. In Rasa 3.0,
 you need to [register](custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
 will be precomputed and passed into your policy during training and inference.
 
@@ -1099,12 +1099,12 @@ used during inference use `is_trainable=False`.
 
 **Providing Rule-only Data to a Policy**
 
-Rasa Open Source allows excluding [forms](forms.mdx) or [slots](domain.mdx#slots) which
+Rasa allows excluding [forms](forms.mdx) or [slots](domain.mdx#slots) which
 are completely handled by
 [rules](rules.mdx) from becoming features in other policies.
-In Rasa Open Source 2 this information was passed onto the
+In Rasa 2 this information was passed onto the
 policies using the `set_shared_policy_states` method which set the policy attribute
-`_rule_only_data`. Rasa Open Source passes the names of rule-only slots and forms via the
+`_rule_only_data`. Rasa passes the names of rule-only slots and forms via the
 `predict_action_probabilities` method. The passed `rule_only_data` can be `None`
 in case the [`RulePolicy`](policies.mdx#rule-policy) is not part of your model
 configuration.
@@ -1155,7 +1155,7 @@ At the top of your training data files, you need to change `version: "2.0"` to `
 We follow semantic versioning for training data versions. This means breaking changes result in a new
 major version, while new features result in a new minor version. The latest training data version is 3.1.
 
-The improvements to `slot mappings` in Rasa Open Source 3.0 were breaking changes, so we needed to upgrade
+The improvements to `slot mappings` in Rasa 3.0 were breaking changes, so we needed to upgrade
 from major version `2.0` to major version `3.0`.
 
 #### `TrainingDataImporter`
@@ -1461,7 +1461,7 @@ validation method to ensure it will be empty when added.
 
 :::caution
 This release **breaks backward compatibility of machine learning models**.
-It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
+It is not possible to load models trained with previous versions of Rasa. Please re-train
 your assistant before using this version.
 
 :::
@@ -1471,18 +1471,18 @@ your assistant before using this version.
 #### Tracker Featurizers
 
 `training_states_actions_and_entities` method of `TrackerFeaturizer`, `FullDialogueTrackerFeaturizer` and
-`MaxHistoryTrackerFeaturizer` classes is deprecated and will be removed in Rasa Open Source 3.0 .
+`MaxHistoryTrackerFeaturizer` classes is deprecated and will be removed in Rasa 3.0 .
 If you had a custom tracker featurizer which relied on this method from any of the above classes, please use
 `training_states_labels_and_entities` instead.
 
 `training_states_and_actions` method of `TrackerFeaturizer`, `FullDialogueTrackerFeaturizer` and
-`MaxHistoryTrackerFeaturizer` classes is deprecated and will be removed in Rasa Open Source 3.0 .
+`MaxHistoryTrackerFeaturizer` classes is deprecated and will be removed in Rasa 3.0 .
 If you had a custom tracker featurizer which relied on this method from any of the above classes, please use
 `training_states_and_labels` instead.
 
 #### State Featurizer
 
-`encode_all_actions` method of `SingleStateFeaturizer` class is deprecated and will be removed in Rasa Open Source 3.0 .
+`encode_all_actions` method of `SingleStateFeaturizer` class is deprecated and will be removed in Rasa 3.0 .
 It is recommended to use the method `encode_all_labels` instead.
 
 
@@ -1519,13 +1519,13 @@ pipeline:
 
 ### Machine Learning Components
 
-The option `model_confidence=linear_norm` is deprecated and will be removed in Rasa Open Source `3.0.0`.
+The option `model_confidence=linear_norm` is deprecated and will be removed in Rasa `3.0.0`.
 
-Rasa Open Source `2.3.0` introduced `linear_norm` as a possible value for `model_confidence`
+Rasa `2.3.0` introduced `linear_norm` as a possible value for `model_confidence`
 parameter in machine learning components such as `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
 Based on user feedback, we have identified multiple problems with this option.
 Therefore, `model_confidence=linear_norm` is now deprecated and
-will be removed in Rasa Open Source `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
+will be removed in Rasa `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
 we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
 we also recommend to [re-tune the thresholds for fallback components](./fallback-handoff.mdx#fallbacks).
 
@@ -1634,7 +1634,7 @@ pipeline:
 
 To make the transition easier, Rasa will try to fall back to a medium spaCy model whenever
 a compatible language is configured for the entire pipeline in `config.yml`, even if you don't
-specify a `model`. This fallback behavior is temporary and will be deprecated in Rasa Open Source 3.0.0.
+specify a `model`. This fallback behavior is temporary and will be deprecated in Rasa 3.0.0.
 
 We've updated our docs to reflect these changes. All examples now show a direct link to the
 correct spaCy model. We've also added a warning to the [SpaCyNLP](components.mdx#spacynlp)
@@ -1644,24 +1644,24 @@ docs that explains the fallback behavior.
 
 ### Deprecating `template` for `response`
 NLG Server
-- Changed request format to send `response` as well as `template` as a field. The `template` field will be removed in Rasa Open Source 3.0.0.
+- Changed request format to send `response` as well as `template` as a field. The `template` field will be removed in Rasa 3.0.0.
 
 `rasa.core.agent`
-- The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa Open Source 3.0.0. Please see [here](./nlg.mdx) for more details.
+- The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa 3.0.0. Please see [here](./nlg.mdx) for more details.
 
 `rasa.core.nlg.generator`
 - `generate()` now takes in  `utter_action` as a parameter.
-- The terminology `template` is deprecated and replaced by `response`. Support for `template` in the `NaturalLanguageGenerator` will be removed in Rasa Open Source 3.0.0.
+- The terminology `template` is deprecated and replaced by `response`. Support for `template` in the `NaturalLanguageGenerator` will be removed in Rasa 3.0.0.
 
 `rasa.shared.core.domain`
-- The property `templates` is deprecated. Use `responses` instead. It will be removed in Rasa Open Source 3.0.0.
-- `retrieval_intent_templates` will be removed in Rasa Open Source 3.0.0. Please use `retrieval_intent_responses` instead.
-- `is_retrieval_intent_template` will be removed in Rasa Open Source 3.0.0. Please use `is_retrieval_intent_response` instead.
-- `check_missing_templates` will be removed in Rasa Open Source 3.0.0. Please use `check_missing_responses` instead.
+- The property `templates` is deprecated. Use `responses` instead. It will be removed in Rasa 3.0.0.
+- `retrieval_intent_templates` will be removed in Rasa 3.0.0. Please use `retrieval_intent_responses` instead.
+- `is_retrieval_intent_template` will be removed in Rasa 3.0.0. Please use `is_retrieval_intent_response` instead.
+- `check_missing_templates` will be removed in Rasa 3.0.0. Please use `check_missing_responses` instead.
 
 Response Selector
-- The field `template_name` will be deprecated in Rasa Open Source 3.0.0. Please use `utter_action` instead. Please see [here](./components.mdx#selectors) for more details.
-- The field `response_templates` will be deprecated in Rasa Open Source 3.0.0. Please use `responses` instead. Please see [here](./components.mdx#selectors) for more details.
+- The field `template_name` will be deprecated in Rasa 3.0.0. Please use `utter_action` instead. Please see [here](./components.mdx#selectors) for more details.
+- The field `response_templates` will be deprecated in Rasa 3.0.0. Please use `responses` instead. Please see [here](./components.mdx#selectors) for more details.
 
 ## Rasa 2.3.3 to Rasa 2.3.4
 
@@ -1674,7 +1674,7 @@ It is not possible to load previously trained models if they were trained with `
 
 ### Machine Learning Components
 
-Rasa Open Source `2.3.0` introduced the option of using cosine similarities for model confidences by setting `model_confidence=cosine`. Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Open Source version `2.3.4`.
+Rasa `2.3.0` introduced the option of using cosine similarities for model confidences by setting `model_confidence=cosine`. Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa version `2.3.4`.
 
 `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break
 the logic of assistants in various other places.
@@ -1686,7 +1686,7 @@ We encourage you to try `model_confidence=linear_norm` which will produce a line
   constrain_similarities: True
 ```
 
-If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa Open Source, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
+If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
 
 
 ## Rasa 2.2 to Rasa 2.3
@@ -1701,7 +1701,7 @@ every (mini)batch, please use 'batch' instead of 'minibatch' as 'tensorboard_log
 
 A few changes have been made to the loss function inside machine learning (ML)
 components `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
-1. Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0.0. Use `loss_type=cross_entropy` instead.
+1. Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa 3.0.0. Use `loss_type=cross_entropy` instead.
 2. The default loss function (`loss_type=cross_entropy`) can add an optional sigmoid cross-entropy loss of all similarity values to constrain
 them to an approximate range. You can turn on this option by setting `constrain_similarities=True`. This should help the models to perform better on real world test sets.
 
@@ -1722,7 +1722,7 @@ We encourage you to try both the above recommendations. This can be done with th
 ```
 Once the assistant is re-trained with the above configuration, users should also [tune fallback confidence thresholds](./fallback-handoff.mdx#fallbacks).
 
-**EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Open Source version `2.3.4`.
+**EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa version `2.3.4`.
 
 ## Rasa 2.1 to Rasa 2.2
 
@@ -1779,7 +1779,7 @@ Training and test data in Markdown format is now deprecated. This includes:
 - reading and writing of NLU data in Markdown format
 - reading and writing of retrieval intent data in Markdown format
 
-Support for Markdown data will be removed entirely in Rasa Open Source 3.0.0.
+Support for Markdown data will be removed entirely in Rasa 3.0.0.
 
 Please convert your existing Markdown data by using the commands
 described [here](./migration-guide.mdx#training-data-files).
@@ -1795,9 +1795,9 @@ However when using [incremental training](./command-line-interface.mdx#increment
 
 #### Other
 
-* `Domain.random_template_for` is deprecated and will be removed in Rasa Open Source
+* `Domain.random_template_for` is deprecated and will be removed in Rasa
    3.0.0. You can alternatively use the `TemplatedNaturalLanguageGenerator`.
-* `Domain.action_names` is deprecated and will be removed in Rasa Open Source
+* `Domain.action_names` is deprecated and will be removed in Rasa
    3.0.0. Please use `Domain.action_names_or_texts` instead.
 
 
@@ -1843,7 +1843,7 @@ in the [forum](https://forum.rasa.com/t/rasa-open-source-2-0-is-out-now-internal
 ### Training data files
 
 As of version 2.0, the new default training data format is yaml. Markdown is still supported,
-but this will be deprecated in Rasa Open Source 3.0.0.
+but this will be deprecated in Rasa 3.0.0.
 
 You can convert existing NLU, Stories, and NLG (i.e. `responses.md`) training data
 files in the Markdown format to the new YAML format using following commands:
@@ -2029,7 +2029,7 @@ information.
 ### Forms
 
 As of version 2.0 the logic for [forms](./forms.mdx) has been moved from the
-Rasa SDK to Rasa Open Source to simplify implementation and make it easier to write
+Rasa SDK to Rasa to simplify implementation and make it easier to write
 action servers in other languages.
 
 This means that forms are no longer implemented using a `FormAction`, but instead
@@ -2199,16 +2199,16 @@ class RestaurantFormValidator(FormValidationAction):
             return {"cuisine": None}
 ```
 
-You can also migrate forms from Rasa SDK to Rasa Open Source 2 iteratively. You can for
-example migrate one form to the Rasa Open Source 2 implementation while continue using
+You can also migrate forms from Rasa SDK to Rasa 2 iteratively. You can for
+example migrate one form to the Rasa 2 implementation while continue using
 the deprecated Rasa SDK implementation for another form. To continue to use
 the deprecated Rasa SDK `FormAction`s, add a custom action with the name of your form to your domain. Note that you should complete the migration as soon as possible as the deprecated `FormAction`
-will be removed from the Rasa SDK in Rasa Open Source 3.
+will be removed from the Rasa SDK in Rasa 3.
 
 ```yaml-rasa title="domain.yml"
 actions:
 # Adding a custom action for a form will
-# instruct Rasa Open Source to use the
+# instruct Rasa to use the
 # deprecated Rasa SDK implementation of forms.
 - my_form
 
