@@ -16,7 +16,7 @@ repository if you discover bugs or have suggestions for improvements.
 
 :::
 
-In the sections below you can learn how to deploy Rasa Action Server by using helm, and how to connect an Action Server deployment to a Rasa Open Source deployment.
+In the sections below you can learn how to deploy Rasa Action Server by using helm, and how to connect an Action Server deployment to a Rasa deployment.
 
 ## Installation Requirements
 
@@ -211,14 +211,14 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    name: Build Action Server image and upgrade Rasa Enterprise deployment
+    name: Build Action Server image and upgrade Rasa X/Enterprise deployment
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
     - id: action_server
-      name: Build an action server with a custom actions
-      uses: RasaHQ/action-server-gha@master
+      name: Build an action server with custom actions
+      uses: RasaHQ/action-server-gha@main
       # Full list of parameters: https://github.com/RasaHQ/action-server-gha/tree/master#input-arguments
       with:
         docker_image_name: 'account_username/repository_name'
@@ -235,7 +235,7 @@ jobs:
 
 4. Now, you can use your new brand docker image.
 
-5. You can also extend your workflow, so that you do not have to manually update your Rasa Enterprise deployment. The example below shows how to extend your workflow with an additional step that updates a Rasa Enterprise Helm Chart deployment.
+5. You can also extend your workflow, so that you do not have to manually update your Rasa X/Enterprise deployment. The example below shows how to extend your workflow with an additional step that updates a Rasa X/Enterprise Helm Chart deployment.
 
 ```yaml
 on:
@@ -246,7 +246,7 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    name: Build Action Server image and upgrade Rasa Enterprise deployment
+    name: Build Action Server image and upgrade Rasa X/Enterprise deployment
     steps:
     [..]
 
@@ -352,12 +352,12 @@ helm upgrade --namespace <namespace> --reuse-values \
   -f values.yaml <release name> rasa/rasa-action-server
 ```
 
-## 2. Connect Rasa Action Server to a Rasa Open Source deployment
+## 2. Connect Rasa Action Server to a Rasa deployment
 
 If you have deployed your assistant using the Rasa Helm chart, and you have deployed your Rasa Action Server as well.
 Now it's time to connect them together. You can do this easily by following the steps:
 
-a. Create a `rasa-values.yaml` file which will include configuration for the Rasa Open Source deployment.
+a. Create a `rasa-values.yaml` file which will include configuration for the Rasa deployment.
 
   ```yaml
   # rasa-values.yaml
@@ -369,10 +369,10 @@ a. Create a `rasa-values.yaml` file which will include configuration for the Ras
       url: "http://rasa-action-server/webhook"
   ```
 
-  The configuration above tells Rasa Open Source which Rasa Action Server to use. In the example the `http://rasa-action-server/webhook` URL is used,
-  the URL indicates that Rasa Action Server is deployed with release name `rasa-action-server`, and is located in the same namespace as Rasa Open Source server deployment.
+  The configuration above tells Rasa which Rasa Action Server to use. In the example the `http://rasa-action-server/webhook` URL is used,
+  the URL indicates that Rasa Action Server is deployed with release name `rasa-action-server`, and is located in the same namespace as Rasa server deployment.
 
-b. Upgrade the Rasa Open Source deployment
+b. Upgrade the Rasa deployment
 
   ```text
   helm upgrade -n <namespace> --reuse-values -f rasa-values.yaml \

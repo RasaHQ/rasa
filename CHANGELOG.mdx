@@ -16,6 +16,30 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.3.0] - 2022-10-24                         
+### Improvements
+- [#11561](https://github.com/rasahq/rasa/issues/11561): Added option `--offset-timestamps-by-seconds` to offset the timestamp of events when using `rasa export`
+- [#11578](https://github.com/rasahq/rasa/issues/11578): Rasa supports native installations on Apple Silicon (M1 / M2). Please
+  follow the installation instructions and take a look at the limitations.
+- [#11596](https://github.com/rasahq/rasa/issues/11596): Caching `Message` and `Features` fingerprints unless they are altered, saving up to 2/3 of fingerprinting time in our tests.
+- [#11598](https://github.com/rasahq/rasa/issues/11598): Added package versions of component  dependencies as an additional part of fingerprinting calculation. Upgrading an dependency will thus lead to a retraining of the component in the future. Also, by changing fingerprint calculation, the next training after this change will be a complete retraining.
+- [#11623](https://github.com/rasahq/rasa/issues/11623): Export events continuously rather than loading all events in memory first when
+  using `rasa export`. Events will be streamed right from the start rather
+  than loading all events first and pushing them to the broker afterwards.
+- [#11568](https://github.com/rasahq/rasa/issues/11568): Adds new dependency pluggy, with which it was possible to implement new plugin functionality.
+  This plugin manager enables the extension and/or enhancement of the Rasa command line interface with functionality made available in the rasa-plus package.
+
+### Bugfixes
+- [#11575](https://github.com/rasahq/rasa/issues/11575): Fix `BlockingIOError` when running `rasa interactive`, after the upgrade of `prompt-toolkit` dependency.
+- [#11395](https://github.com/rasahq/rasa/issues/11395): Fixes a bug that lead to initial slot values being incorporated into all rules by default, thus breaking most rules when the slot value changed from its initial value
+- [#11429](https://github.com/rasahq/rasa/issues/11429): Made logistic regression classifier output a proper intent ranking and made ranking length configurable
+
+### Deprecations and Removals
+- [#11190](https://github.com/rasahq/rasa/issues/11190): Remove code related to Rasa X local mode as it is deprecated and scheduled for removal.
+
+### Miscellaneous internal changes
+- [#11548](https://github.com/rasahq/rasa/issues/11548)
+
 
 ## [3.2.10] - 2022-09-29                          
 ### Bugfixes
@@ -719,7 +743,7 @@ Yanked.
 ### Improved Documentation
 - [#9780](https://github.com/rasahq/rasa/issues/9780): Removing the experimental feature warning for `conditional response variations` from the Rasa docs.
   The behaviour of the feature remains unchanged.
-- [#9782](https://github.com/rasahq/rasa/issues/9782): Updates [quick install documentation](installation.mdx#quick-installation) with optional venv step, better pip install instructions, & M1 warning
+- [#9782](https://github.com/rasahq/rasa/issues/9782): Updates [quick install documentation](./installation/installing-rasa-open-source.mdx) with optional venv step, better pip install instructions, & M1 warning
 
 
 ## [2.8.7] - 2021-09-20

@@ -4,9 +4,9 @@ sidebar_label: Actions
 title: Actions
 ---
 
-When a Rasa Open Source assistant calls a custom action, it sends a request to the action server. 
-Rasa Open Source only knows about whatever events and responses come back in the request response;
-it's up to the action server to call the correct code based on the action name that Rasa Open Source provides.
+When a Rasa assistant calls a custom action, it sends a request to the action server. 
+Rasa only knows about whatever events and responses come back in the request response;
+it's up to the action server to call the correct code based on the action name that Rasa provides.
 
 To better understand what happens when Rasa calls a custom action, consider 
 the following example:
@@ -192,7 +192,7 @@ of the conversation.
 
 ### `version`
 
-This is the version of the Rasa Open Source server. A custom action
+This is the version of the Rasa server. A custom action
 is also unlikely to refer to this, although you might use it in a 
 verification step if your action server
 is only compatible with certain Rasa versions.
@@ -230,7 +230,7 @@ events, the order won't matter, but with other event types it can.
 ### `responses`
 
 A response can be of any of the response types described in the
-[ documentation on rich responses](../responses.mdx#rich-responses).
+[documentation on rich responses](../responses.mdx#rich-responses).
 See the response sample of the [API spec](/pages/action-server-api) for the expected formats. 
 
 In the example case, you want to send the user a message with the weather forecast. 
