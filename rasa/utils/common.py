@@ -111,7 +111,12 @@ def read_global_config(path: Text) -> Dict[Text, Any]:
 
 
 def configure_logging_from_file(logging_config_file: Text) -> None:
-    """TODO."""
+    """Parses YAML file content to configure logging.
+
+    Args:
+        logging_config_file: YAML file containing logging configuration to handle
+            custom formatting
+    """
     logging_config_dict = rasa.shared.utils.io.read_yaml_file(logging_config_file)
 
     try:
