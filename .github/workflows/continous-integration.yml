@@ -53,15 +53,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
-        # Run the normal filters if the all-tests-required label is not set
+        # Run the normal filters if the `all-tests-required` label is not set
         id: changed-files
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
       - name: Set all filters to true if all tests are required
-        # Set all filters to true if the all-tests-required label is set
-        # Bypasses all the change filters in change_filters.yml and forces all outputs to true
+        # Set all filters to true if the `all-tests-required` label is set
+        # Bypasses all the change filters in `change_filters.yml` and forces all outputs to `true`
         id: run-all
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
         run: |
