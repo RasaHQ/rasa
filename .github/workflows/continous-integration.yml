@@ -60,8 +60,7 @@ jobs:
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         # Run the normal filters if the `all-tests-required` label is not set
         id: changed-files
-        if: |
-          contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == 'false'
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == 'false'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
@@ -70,8 +69,7 @@ jobs:
       # Bypasses all the change filters in change_filters.yml and forces all outputs to true
       - name: Set all filters to true if all tests are required
         id: run-all
-        if: |
-          contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
         run: |
           echo "::set-output name=backend::true"
           echo "::set-output name=docker::true"
@@ -310,8 +308,8 @@ jobs:
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
         if: |
-          (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && 
-          needs.changes.outputs.backend == 'true'
+          needs.changes.outputs.backend == 'true' &&
+          (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests'))
         run: python -m venv create .venv
 
       - name: Set up virtual environment
@@ -540,8 +538,8 @@ jobs:
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
         if: |
-          (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && 
-          needs.changes.outputs.backend == 'true'
+          needs.changes.outputs.backend == 'true' &&
+          (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests'))
         run: python -m venv create .venv
 
       - name: Set up virtual environment
