@@ -680,20 +680,20 @@ jobs:
           docker buildx bake -f docker/docker-bake.hcl base --push
 
       - name: Build Docker mitie base image 🛠⬆
-        if: steps.check_image.outputs.base_mitie_exists == 'false' || (steps.check_image.outputs.base_mitie_exists == 'false' && env.IS_PULL_REQUEST_TARGET_FORK == 'true')
+        if: steps.check_image.outputs.base_mitie_exists == 'false' && (github.event.pull_request.head.repo.owner.login == 'RasaHQ' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-mitie --push
 
       - name: Build Docker poetry base image 🛠
-        if: steps.check_image.outputs.base_poetry_exists == 'false' || (steps.check_image.outputs.base_poetry_exists == 'false' && env.IS_PULL_REQUEST_TARGET_FORK == 'true')
+        if: steps.check_image.outputs.base_poetry_exists == 'false' && (github.event.pull_request.head.repo.owner.login == 'RasaHQ' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-poetry --push
 
       - name: Build Docker builder base image 🛠
-        if: steps.check_image.outputs.base_builder_exists == 'false' && (steps.check_image.outputs.base_builder_exists == 'false' && env.IS_PULL_REQUEST_TARGET_FORK == 'true')
+        if: steps.check_image.outputs.base_builder_exists == 'false' && (github.event.pull_request.head.repo.owner.login == 'RasaHQ' || env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-builder --push
