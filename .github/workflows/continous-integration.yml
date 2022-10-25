@@ -673,7 +673,7 @@ jobs:
 
       - name: Build Docker base image 🛠⬆
         if: |
-          (steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') ||
+          ((steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') && github.event_name != 'pull_request_target') ||
           ((steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') && env.IS_PULL_REQUEST_TARGET_FORK == 'true')
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
