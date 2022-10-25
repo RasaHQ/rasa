@@ -91,8 +91,8 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Any extra python dependencies required for this component to run."""
         return ["sklearn"]
 
