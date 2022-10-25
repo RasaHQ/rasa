@@ -1,6 +1,7 @@
 import json
 import os
 import logging
+import logging.config
 from pathlib import Path
 from typing import Any, Text, Type
 from unittest import mock
@@ -15,8 +16,23 @@ from rasa.utils.common import (
     RepeatedLogFilter,
     find_unavailable_packages,
     configure_logging_and_warnings,
+    configure_logging_from_file,
 )
 import tests.conftest
+
+
+def reset_logging() -> None:
+    manager = logging.root.manager
+    manager.disabled = logging.NOTSET
+    for logger in manager.loggerDict.values():
+        if isinstance(logger, logging.Logger):
+            logger.setLevel(logging.NOTSET)
+            logger.propagate = True
+            logger.disabled = False
+            logger.filters.clear()
+            handlers = logger.handlers.copy()
+            for handler in handlers:
+                logger.removeHandler(handler)
 
 
 def test_repeated_log_filter():
@@ -200,7 +216,7 @@ def test_cli_missing_log_level_env_var_used():
 
 def test_cli_valid_logging_configuration() -> None:
     logging_config_file = "data/test_logging_config_files/test_logging_config.yml"
-    configure_logging_and_warnings(logging_config_file=logging_config_file)
+    configure_logging_from_file(logging_config_file=logging_config_file)
     rasa_logger = logging.getLogger("rasa")
 
     handlers = rasa_logger.handlers
@@ -222,6 +238,9 @@ def test_cli_valid_logging_configuration() -> None:
         for key in ["time", "name", "levelname"]:
             assert key in logs_dict.keys()
 
+    # reset logging config
+    reset_logging()
+
 
 @pytest.mark.parametrize(
     "logging_config_file",
@@ -237,7 +256,7 @@ def test_cli_invalid_logging_configuration(
     logging_config_file: Text, caplog: LogCaptureFixture
 ) -> None:
     with caplog.at_level(logging.DEBUG):
-        configure_logging_and_warnings(logging_config_file=logging_config_file)
+        configure_logging_from_file(logging_config_file=logging_config_file)
 
     assert (
         f"The logging config file {logging_config_file} could not be applied "
