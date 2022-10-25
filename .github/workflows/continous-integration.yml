@@ -751,7 +751,6 @@ jobs:
     strategy:
       matrix:
         image: [default, full, mitie-en, spacy-it, spacy-de, spacy-en]
-        arch: [linux/amd64, linux/arm64]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
