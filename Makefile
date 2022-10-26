@@ -71,6 +71,7 @@ install-mitie:
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
 
 install-full: install install-mitie
+	poetry run python -m pip install setuptools --upgrade
 	poetry install -E full
 
 install-docs:
