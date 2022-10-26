@@ -4,6 +4,7 @@ import logging
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from pathlib import Path
 from collections import defaultdict
+import contextlib
 
 import numpy as np
 import tensorflow as tf
@@ -119,6 +120,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
     EPOCH_OVERRIDE,
+    USE_GPU,
 )
 
 
@@ -341,6 +343,7 @@ class TEDPolicy(Policy):
             POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
+            USE_GPU: True,
         }
 
     def __init__(
@@ -358,11 +361,9 @@ class TEDPolicy(Policy):
         super().__init__(
             config, model_storage, resource, execution_context, featurizer=featurizer
         )
-
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             config[SPLIT_ENTITIES_BY_COMMA], SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-
         self._load_params(config)
 
         self.model = model
@@ -454,10 +455,16 @@ class TEDPolicy(Policy):
             SEQUENCE,
         )
         label_ids = np.arange(domain.num_actions)
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            [
+                FeatureArray(
+                    np.expand_dims(label_ids, -1),  # type: ignore[no-untyped-call]
+                    number_of_dimensions=2,
+                )
+            ],
         )
         return label_data
 
@@ -520,8 +527,12 @@ class TEDPolicy(Policy):
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
         if label_ids is not None and encoded_all_labels is not None:
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             label_ids = np.array(
-                [np.expand_dims(seq_label_ids, -1) for seq_label_ids in label_ids]
+                [
+                    np.expand_dims(seq_label_ids, -1)  # type: ignore[no-untyped-call]
+                    for seq_label_ids in label_ids
+                ]
             )
             model_data.add_features(
                 LABEL_KEY,
@@ -724,7 +735,10 @@ class TEDPolicy(Policy):
             )
             return self._resource
 
-        self.run_training(model_data, label_ids)
+        with (
+            contextlib.nullcontext() if self.config["use_gpu"] else tf.device("/cpu:0")
+        ):
+            self.run_training(model_data, label_ids)
 
         self.persist()
 
@@ -786,10 +800,15 @@ class TEDPolicy(Policy):
             logger.debug(f"User intent lead to '{non_e2e_action_name}'.")
             e2e_action_name = domain.action_names_or_texts[np.argmax(confidences[1])]
             logger.debug(f"User text lead to '{e2e_action_name}'.")
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if (
-                np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
+                np.max(confidences[1])  # type: ignore[no-untyped-call]
+                > self.config[E2E_CONFIDENCE_THRESHOLD]
                 # TODO maybe compare confidences is better
-                and np.max(similarities[1]) > np.max(similarities[0])
+                and np.max(similarities[1])  # type: ignore[no-untyped-call]
+                > np.max(similarities[0])  # type: ignore[no-untyped-call]
             ):
                 logger.debug(f"TED predicted '{e2e_action_name}' based on user text.")
                 return confidences[1], True
@@ -823,11 +842,19 @@ class TEDPolicy(Policy):
             tracker, domain, precomputations, rule_only_data=rule_only_data
         )
         model_data = self._create_model_data(tracker_state_features)
-        outputs: Dict[Text, np.ndarray] = self.model.run_inference(model_data)
+        outputs = self.model.run_inference(model_data)
 
-        # take the last prediction in the sequence
-        similarities = outputs["similarities"][:, -1, :]
-        confidences = outputs["scores"][:, -1, :]
+        if isinstance(outputs["similarities"], np.ndarray):
+            # take the last prediction in the sequence
+            similarities = outputs["similarities"][:, -1, :]
+        else:
+            raise TypeError(
+                "model output for `similarities` " "should be a numpy array"
+            )
+        if isinstance(outputs["scores"], np.ndarray):
+            confidences = outputs["scores"][:, -1, :]
+        else:
+            raise TypeError("model output for `scores` should be a numpy array")
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
             confidences, similarities, domain
@@ -1074,13 +1101,16 @@ class TEDPolicy(Policy):
             predict_data_example,
         ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
-        model = cls._load_tf_model(
-            model_utilities,
-            model_data_example,
-            predict_data_example,
-            featurizer,
-            execution_context.is_finetuning,
-        )
+        model = None
+
+        with (contextlib.nullcontext() if config["use_gpu"] else tf.device("/cpu:0")):
+            model = cls._load_tf_model(
+                model_utilities,
+                model_data_example,
+                predict_data_example,
+                featurizer,
+                execution_context.is_finetuning,
+            )
 
         return cls._load_policy_with_model(
             config,
@@ -1949,7 +1979,7 @@ class TED(TransformerRasaModel):
         return labels_embed
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -2015,7 +2045,7 @@ class TED(TransformerRasaModel):
         _, self.all_labels_embed = self._create_all_labels_embed()
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 

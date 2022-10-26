@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import scipy.sparse
 from collections import defaultdict, OrderedDict
-from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict
+from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict, cast
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
@@ -268,7 +268,7 @@ def convert_to_data_format(
     fake_features: Optional[Dict[Text, List["Features"]]] = None,
     consider_dialogue_dimension: bool = True,
     featurizers: Optional[List[Text]] = None,
-) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
+) -> Tuple[Data, Dict[Text, List["Features"]]]:
     """Converts the input into "Data" format.
 
     "features" can, for example, be a dictionary of attributes (INTENT,
@@ -300,7 +300,9 @@ def convert_to_data_format(
 
     # unify format of incoming features
     if isinstance(features[0], Dict):
-        features = [[dicts] for dicts in features]
+        features = cast(
+            List[List[Dict[Text, List["Features"]]]], [[dicts] for dicts in features]
+        )
 
     attribute_to_features = _surface_attributes(features, featurizers)
 
@@ -426,11 +428,10 @@ def _extract_features(
     attribute: Text,
 ) -> Tuple[
     List[np.ndarray],
-    Dict[Text, List[List["Features"]]],
-    Dict[Text, List[List["Features"]]],
+    Dict[Text, List[List[np.ndarray]]],
+    Dict[Text, List[List[scipy.sparse.spmatrix]]],
 ]:
-    """Create masks for all attributes of the given features and split the features
-    into sparse and dense features.
+    """Create masks for feature attributes and split into dense and sparse features.
 
     Args:
         features: all features
@@ -488,7 +489,10 @@ def _extract_features(
         # add additional dimension to attribute mask
         # to get a vector of shape (dialogue length x 1),
         # the batch dim will be added later
-        attribute_mask = np.expand_dims(attribute_mask, -1)
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        attribute_mask = np.expand_dims(
+            attribute_mask, -1
+        )  # type: ignore[no-untyped-call]
         attribute_masks.append(attribute_mask)
 
     return attribute_masks, dense_features, sparse_features

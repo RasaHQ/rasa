@@ -16,8 +16,10 @@ from typing import (
     Union,
     TYPE_CHECKING,
     Iterable,
+    MutableMapping,
     NamedTuple,
     Callable,
+    cast,
 )
 from dataclasses import dataclass
 
@@ -90,6 +92,7 @@ ALL_DOMAIN_KEYS = [
     KEY_INTENTS,
     KEY_RESPONSES,
     KEY_E2E_ACTIONS,
+    SESSION_CONFIG_KEY,
 ]
 
 PREV_PREFIX = "prev_"
@@ -97,8 +100,8 @@ PREV_PREFIX = "prev_"
 # State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # representing the origin of a SubState;
 # the values are SubStates, that contain the information needed for featurization
-SubStateValue = Union[Text, Tuple[Union[float, Text]]]
-SubState = Dict[Text, SubStateValue]
+SubStateValue = Union[Text, Tuple[Union[float, Text], ...]]
+SubState = MutableMapping[Text, SubStateValue]
 State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
@@ -273,7 +276,7 @@ class Domain:
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
-        domain_dict: Dict[Text, Any] = {}
+        combined: Dict[Text, Any] = {}
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
@@ -282,9 +285,9 @@ class Domain:
                     other_dict = rasa.shared.utils.io.read_yaml(
                         rasa.shared.utils.io.read_file(full_path)
                     )
-                    domain_dict = Domain.merge_domain_dicts(other_dict, domain_dict)
+                    combined = Domain.merge_domain_dicts(other_dict, combined)
 
-        domain = Domain.from_dict(domain_dict)
+        domain = Domain.from_dict(combined)
         return domain
 
     def merge(
@@ -336,7 +339,10 @@ class Domain:
             override
             or combined.get(SESSION_CONFIG_KEY) == SessionConfig.default().as_dict()
             or combined.get(SESSION_CONFIG_KEY) is None
-        ) and domain_dict.get(SESSION_CONFIG_KEY):
+        ) and domain_dict.get(SESSION_CONFIG_KEY) not in [
+            None,
+            SessionConfig.default().as_dict(),
+        ]:
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
         # remove existing forms from new actions
@@ -361,10 +367,9 @@ class Domain:
                 combined.get(key, []), domain_dict.get(key, [])
             )
 
-            if merge_func == rasa.shared.utils.common.merge_dicts:
-                default: Dict[Text, Any] = {}
-            else:
-                default = []
+            default: Union[List[Any], Dict[Text, Any]] = (
+                {} if merge_func == rasa.shared.utils.common.merge_dicts else []
+            )
 
             combined[key] = merge_func(
                 combined.get(key, default), domain_dict.get(key, default), override
@@ -1134,9 +1139,7 @@ class Domain:
 
         return entity_names.intersection(wanted_entities)
 
-    def _get_user_sub_state(
-        self, tracker: "DialogueStateTracker"
-    ) -> Dict[Text, Union[None, Text, List[Optional[Text]], Tuple[str, ...]]]:
+    def _get_user_sub_state(self, tracker: "DialogueStateTracker") -> SubState:
         """Turns latest UserUttered event into a substate.
 
         The substate will contain intent, text, and entities (if any are present).
@@ -1152,9 +1155,7 @@ class Domain:
         if not latest_message or latest_message.is_empty():
             return {}
 
-        sub_state: Dict[
-            Text, Union[None, Text, List[Optional[Text]], Tuple[str, ...]]
-        ] = latest_message.as_sub_state()
+        sub_state = cast(SubState, latest_message.as_sub_state())
 
         # Filter entities based on intent config. We need to convert the set into a
         # tuple because sub_state will be later transformed into a frozenset (so it can
@@ -1179,7 +1180,7 @@ class Domain:
     @staticmethod
     def _get_slots_sub_state(
         tracker: "DialogueStateTracker", omit_unset_slots: bool = False
-    ) -> Dict[Text, Union[Text, Tuple[float]]]:
+    ) -> SubState:
         """Sets all set slots with the featurization of the stored value.
 
         Args:
@@ -1189,7 +1190,7 @@ class Domain:
         Returns:
             a mapping of slot names to their featurization
         """
-        slots: Dict[Text, Union[Text, Tuple[float]]] = {}
+        slots: SubState = {}
         for slot_name, slot in tracker.slots.items():
             # If the slot doesn't influence conversations, slot.as_feature() will return
             # a result that evaluates to False, meaning that the slot shouldn't be
@@ -1222,7 +1223,9 @@ class Domain:
         return tracker.latest_action
 
     @staticmethod
-    def _get_active_loop_sub_state(tracker: "DialogueStateTracker") -> Dict[Text, Text]:
+    def _get_active_loop_sub_state(
+        tracker: "DialogueStateTracker",
+    ) -> Dict[Text, Optional[Text]]:
         """Turn tracker's active loop into a state name.
 
         Args:
@@ -1232,11 +1235,8 @@ class Domain:
         """
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
-        active_loop: Optional[Text] = tracker.active_loop.get(
-            rasa.shared.core.constants.LOOP_NAME
-        )
-        if active_loop:
-            return {rasa.shared.core.constants.LOOP_NAME: active_loop}
+        if tracker.active_loop:
+            return {rasa.shared.core.constants.LOOP_NAME: tracker.active_loop.name}
         else:
             return {}
 
@@ -1366,9 +1366,12 @@ class Domain:
                     self._substitute_rule_only_user_input(state, states[-1])
                 # substitute previous rule action with last_ml_action_sub_state
                 if last_ml_action_sub_state:
-                    state[
-                        rasa.shared.core.constants.PREVIOUS_ACTION
-                    ] = last_ml_action_sub_state
+                    # FIXME: better type annotation for `State` would require
+                    # a larger refactoring (e.g. switch to dataclass)
+                    state[rasa.shared.core.constants.PREVIOUS_ACTION] = cast(
+                        SubState,
+                        last_ml_action_sub_state,
+                    )
 
             states.append(self._clean_state(state))
 

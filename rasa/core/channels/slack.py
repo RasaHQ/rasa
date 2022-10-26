@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import hmac
 from http import HTTPStatus
@@ -41,16 +42,20 @@ class SlackBot(OutputChannel):
         super().__init__()
 
     async def _post_message(self, channel: Text, **kwargs: Any) -> None:
+        # type issues below are ignored because the `run_async` paramenter
+        # above ensures chat_postMessage is await-able. mypy complains
+        # because the type annotations are not precise enough in Slack
         if self.thread_id:
-            await self.client.chat_postMessage(
+            await self.client.chat_postMessage(  # type: ignore[misc]
                 channel=channel, **kwargs, thread_ts=self.thread_id
             )
         else:
-            await self.client.chat_postMessage(channel=channel, **kwargs)
+            await self.client.chat_postMessage(channel=channel, **kwargs)  # type: ignore[misc]  # noqa: E501
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
+        """Send text message to Slack API."""
         recipient = self.slack_channel or recipient_id
         for message_part in text.strip().split("\n\n"):
             await self._post_message(
@@ -267,9 +272,9 @@ class SlackInput(InputChannel):
             # can be adjusted to taste later if needed,
             # but is a good first approximation
             for regex, replacement in [
-                (fr"<@{uid_to_remove}>\s", ""),
-                (fr"\s<@{uid_to_remove}>", ""),  # a bit arbitrary but probably OK
-                (fr"<@{uid_to_remove}>", " "),
+                (rf"<@{uid_to_remove}>\s", ""),
+                (rf"\s<@{uid_to_remove}>", ""),  # a bit arbitrary but probably OK
+                (rf"<@{uid_to_remove}>", " "),
             ]:
                 text = re.sub(regex, replacement, text)
 
@@ -359,7 +364,7 @@ class SlackInput(InputChannel):
             )
 
             return response.text(
-                None, status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": "1"}
+                "", status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": "1"}
             )
 
         if metadata is not None:
@@ -381,7 +386,7 @@ class SlackInput(InputChannel):
                 metadata=metadata,
             )
 
-            await on_new_message(user_msg)
+            asyncio.create_task(on_new_message(user_msg))
         except Exception as e:
             logger.error(f"Exception when trying to handle message.{e}")
             logger.error(str(e), exc_info=True)

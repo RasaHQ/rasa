@@ -154,7 +154,7 @@ class RasaDataGenerator(Sequence):
         return data_padded.astype(np.float32)
 
     @staticmethod
-    def _pad_4d_dense_data(array_of_array_of_dense: FeatureArray) -> np.ndarray:
+    def _pad_4d_dense_data(feature_array: FeatureArray) -> np.ndarray:
         # in case of dialogue data we may have 4 dimensions
         # batch size x dialogue history length x sequence length x number of features
 
@@ -168,9 +168,9 @@ class RasaDataGenerator(Sequence):
         # in order to create 4d tensor inputs, we created "fake" zero features
         # for nonexistent inputs. To save calculation we filter this features before
         # input to tf methods.
-        number_of_features = array_of_array_of_dense[0][0].shape[-1]
+        number_of_features = feature_array[0][0].shape[-1]
         array_of_array_of_dense = RasaDataGenerator._filter_out_fake_inputs(
-            array_of_array_of_dense
+            feature_array
         )
         if not array_of_array_of_dense:
             # return empty 3d array with appropriate last dims
@@ -216,7 +216,7 @@ class RasaDataGenerator(Sequence):
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
         if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
-            array_of_sparse = [x.tocoo() for x in array_of_sparse]
+            array_of_sparse = [x.tocoo() for x in array_of_sparse]  # type: ignore[assignment]  # noqa: E501
 
         max_seq_len = max([x.shape[0] for x in array_of_sparse])
 
@@ -240,9 +240,7 @@ class RasaDataGenerator(Sequence):
         ]
 
     @staticmethod
-    def _4d_scipy_matrix_to_values(
-        array_of_array_of_sparse: FeatureArray,
-    ) -> List[np.ndarray]:
+    def _4d_scipy_matrix_to_values(feature_array: FeatureArray) -> List[np.ndarray]:
         # in case of dialogue data we may have 4 dimensions
         # batch size x dialogue history length x sequence length x number of features
 
@@ -256,9 +254,9 @@ class RasaDataGenerator(Sequence):
         # in order to create 4d tensor inputs, we created "fake" zero features
         # for nonexistent inputs. To save calculation we filter this features before
         # input to tf methods.
-        number_of_features = array_of_array_of_sparse[0][0].shape[-1]
+        number_of_features = feature_array[0][0].shape[-1]
         array_of_array_of_sparse = RasaDataGenerator._filter_out_fake_inputs(
-            array_of_array_of_sparse
+            feature_array
         )
         if not array_of_array_of_sparse:
             # create empty array with appropriate last dims
@@ -272,7 +270,10 @@ class RasaDataGenerator(Sequence):
         # transformation does not work (e.g. you cannot access x.row, x.col)
         if not isinstance(array_of_array_of_sparse[0][0], scipy.sparse.coo_matrix):
             array_of_array_of_sparse = [
-                [x.tocoo() for x in array_of_sparse]
+                [
+                    x.tocoo() if isinstance(x, scipy.sparse.spmatrix) else x
+                    for x in array_of_sparse
+                ]
                 for array_of_sparse in array_of_array_of_sparse
             ]
 

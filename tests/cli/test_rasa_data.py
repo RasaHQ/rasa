@@ -16,6 +16,8 @@ from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.validator import Validator
 import rasa.shared.utils.io
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
     responses_yml = (
@@ -57,7 +59,8 @@ def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
 
 
 def test_data_convert_nlu_json(run_in_simple_project: Callable[..., RunResult]):
-    run_in_simple_project(
+
+    result = run_in_simple_project(
         "data",
         "convert",
         "nlu",
@@ -69,6 +72,7 @@ def test_data_convert_nlu_json(run_in_simple_project: Callable[..., RunResult]):
         "json",
     )
 
+    assert "NLU data in Rasa JSON format is deprecated" in str(result.stderr)
     assert os.path.exists("out_nlu_data.json")
 
 
@@ -110,7 +114,7 @@ def test_data_convert_nlu_yml(
 def test_data_split_help(run: Callable[..., RunResult]):
     output = run("data", "split", "nlu", "--help")
 
-    help_text = """usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
+    help_text = f"""usage: {RASA_EXE} data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
                            [--training-fraction TRAINING_FRACTION]
                            [--random-seed RANDOM_SEED] [--out OUT]"""
 
@@ -124,25 +128,24 @@ def test_data_split_help(run: Callable[..., RunResult]):
 def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("data", "convert", "nlu", "--help")
 
-    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,yaml}]
-                             [--data DATA [DATA ...]] [--out OUT]
-                             [-l LANGUAGE]"""
+    help_text = (
+        f"""usage: {RASA_EXE} data convert nlu [-h] [-v] [-vv]"""
+        """ [--quiet] [-f {json,yaml}]"""
+    )
 
-    lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
     printed_help = set(output.outlines)
-    for line in lines:
-        assert line in printed_help
+    assert help_text in printed_help
 
 
 def test_data_validate_help(run: Callable[..., RunResult]):
     output = run("data", "validate", "--help")
 
-    help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet]
+    help_text = f"""usage: {RASA_EXE} data validate [-h] [-v] [-vv] [--quiet]
                           [--max-history MAX_HISTORY] [-c CONFIG]
                           [--fail-on-warnings] [-d DOMAIN]
                           [--data DATA [DATA ...]]
-                          {stories} ..."""
+                          {{stories}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -155,7 +158,7 @@ def test_data_migrate_help(run: Callable[..., RunResult]):
     output = run("data", "migrate", "--help")
     printed_help = set(output.outlines)
 
-    help_text = "usage: rasa data migrate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [--out OUT]"  # noqa: E501
+    help_text = f"""usage: {RASA_EXE} data migrate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [--out OUT]"""  # noqa: E501
     assert help_text in printed_help
 
 
@@ -173,6 +176,8 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "data/test_moodbot/data",
             "--max-history",
             0,
+            "--config",
+            "data/test_moodbot/config.yml",
         ]
     )
 
@@ -206,7 +211,7 @@ def test_validate_files_action_not_found_invalid_domain(
         "domain": "data/test_moodbot/domain.yml",
         "data": [file_name],
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
@@ -234,7 +239,7 @@ def test_validate_files_form_not_found_invalid_domain(
         "domain": "data/test_restaurantbot/domain.yml",
         "data": [file_name],
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
@@ -249,7 +254,7 @@ def test_validate_files_with_active_loop_null(
     file_name = tmp_path / f"{file_type}.yml"
     file_name.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         {file_type}:
         - {data_type}: test path
           steps:
@@ -264,7 +269,7 @@ def test_validate_files_with_active_loop_null(
         "domain": "data/test_domains/restaurant_form.yml",
         "data": [file_name],
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
         "fail_on_warnings": False,
     }
     with pytest.warns(None):
@@ -296,7 +301,7 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
         "domain": domain_file_name,
         "data": None,
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
@@ -308,7 +313,7 @@ def test_validate_files_exit_early():
             "domain": "data/test_domains/duplicate_intents.yml",
             "data": None,
             "max_history": None,
-            "config": None,
+            "config": "data/test_config/config_defaults.yml",
         }
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
@@ -321,7 +326,7 @@ def test_validate_files_invalid_domain():
         "domain": "data/test_domains/default_with_mapping.yml",
         "data": None,
         "max_history": None,
-        "config": None,
+        "config": "data/test_config/config_defaults.yml",
     }
 
     with pytest.raises(SystemExit):
@@ -332,33 +337,42 @@ def test_validate_files_invalid_domain():
 
 def test_validate_files_invalid_slot_mappings(tmp_path: Path):
     domain = tmp_path / "domain.yml"
-    slot_name = "started_booking_form"
+    tested_slot = "duration"
+    form_name = "booking_form"
+    # form required_slots does not include the tested_slot
     domain.write_text(
         f"""
             version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intents:
-            - activate_booking
+            - state_length_of_time
             entities:
             - city
             slots:
-              {slot_name}:
-                type: bool
+              {tested_slot}:
+                type: text
                 influence_conversation: false
                 mappings:
-                - type: from_trigger_intent
-                  intent: activate_booking
-                  value: true
+                - type: from_text
+                  intent: state_length_of_time
+                  conditions:
+                  - active_loop: {form_name}
               location:
                 type: text
                 mappings:
                 - type: from_entity
                   entity: city
             forms:
-              booking_form:
+              {form_name}:
                 required_slots:
                 - location
                 """
     )
-    args = {"domain": str(domain), "data": None, "max_history": None, "config": None}
+    args = {
+        "domain": str(domain),
+        "data": None,
+        "max_history": None,
+        "config": "data/test_config/config_defaults.yml",
+        "fail_on_warnings": False,
+    }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))

@@ -1,0 +1,164 @@
+---
+sidebar_label: Tracing
+title: Tracing
+description: Resolve performance issues faster and identify bottlenecks
+  through OpenTelemetry-based tracing
+---
+
+import RasaProLabel from "@theme/RasaProLabel";
+
+import RasaProBanner from "@theme/RasaProBanner";
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+## Tracing
+
+Distributed tracing tracks requests as they flow through a distributed
+system (in this case: a Rasa assistant), sending data about the requests
+to a **tracing backend** which collects all trace data and enables
+inspecting it. Trace data helps you understand the flow of requests
+through both the components of a single service (Rasa itself), and across
+different distributed services, for example, your action server.
+
+### Supported Tracing Backends/Collectors
+
+To trace requests in Rasa Pro, you can either use
+[Jaeger](https://www.jaegertracing.io/) as a backend, or use
+the [OTEL Collector (OpenTelemetry Collector)](https://opentelemetry.io/docs/collector/).
+to collect traces and then send them to the backend of your choice.
+See [Configuring a Tracing Backend or Collector](#configuring-a-tracing-backend-or-collector)
+for instructions.
+
+### Enabling / Disabling
+
+Tracing is automatically enabled in Rasa Pro by
+[configuring a supported tracing backend](#configuring-a-tracing-backend-or-collector).
+No further action is required to enable tracing.
+
+You can disable tracing by leaving the `tracing:` configuration key empty
+in your endpoints file.
+
+### Action Server
+
+The trace context is sent along with requests to the custom action server
+using the [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/).
+You can use this trace context to continue tracing the request through
+your custom action code. See [traced events](#traced-events) for
+details on what attributes are made available as part of the trace context.
+
+## Configuring a Tracing Backend or Collector
+
+To configure a tracing backend or collector, add a `tracing` entry to your endpoints
+i.e. in your `endpoints.yml` file, or in the relevant section of your Helm values in a deployment.
+
+### Jaeger
+
+To configure a Jaeger tracing backend, specify the `type` as `jaeger`.
+
+```yaml
+tracing:
+  type: jaeger
+  host: localhost
+  port: 6831
+  service_name: rasa
+  sync_export: ~
+```
+
+### OTEL Collector
+
+Collectors are components that collect traces in a vendor-agnostic way and then forward them to various backends.
+For example, the OpenTelemetry Collector (OTEL) can collect traces from multiple different components and instrumentation libraries, and then export them to multiple different backends e.g. jaeger.
+
+To configure an OTEL Collector, specify the `type` as `otlp`.
+
+```yaml
+tracing:
+  type: otlp
+  endpoint: my-otlp-host:4318
+  insecure: false
+  service_name: rasa
+  root_certificates: ./tests/unit/tracing/fixtures/ca.pem
+```
+
+## Traced Events
+
+The Rasa service areas that are traceable cover the actions required to:
+
+- **train a model** (i.e., the training of each [graph component](https://rasa.com/docs/rasa/custom-graph-components#graph-components))
+- **handle a message**
+
+### Model Training
+
+Tracing is enabled for model training by instrumenting Rasa [`GraphTrainer`](https://rasa.com/docs/rasa/reference/rasa/engine/training/graph_trainer/#graphtrainer-objects) and [`GraphNode`](https://rasa.com/docs/rasa/reference/rasa/engine/graph/#graphnode-objects) classes.
+
+#### `GraphTrainer` Attributes
+
+The following attributes can be inspected during training of `GraphTrainer`:
+
+- `training_type` of model configuration:
+  - `"NLU"`
+  - `"CORE"`
+  - `"BOTH"`
+  - `"END-TO-END"`
+- `language` of model configuration
+- `recipe_name` used in the `config.yml` file
+- `output_filename`: the location where the packaged model is saved
+- `is_finetuning`: boolean argument, if `True` enables incremental training
+
+#### `GraphNode` Attributes
+
+The following attributes are captured during the training (as well as prediction during message handling) of every graph node:
+
+- `node_name`
+- `component_class`
+- `fn_name`: method of component class that gets called
+
+### Message Handling
+
+The following Rasa classes are instrumented to enable tracing during message handling:
+
+- [`Agent`](https://rasa.com/docs/rasa/reference/rasa/core/agent/#agent-objects)
+- [`MessageProcessor`](https://rasa.com/docs/rasa/reference/rasa/core/processor/#messageprocessor-objects)
+- [`TrackerStore`](https://rasa.com/docs/rasa/tracker-stores)
+- [`LockStore`](https://rasa.com/docs/rasa/lock-stores)
+
+Namely, these operations are now traceable:
+
+- receiving a message
+- parsing the message
+- predicting the next action
+- running the action
+- retrieving and saving the tracker
+- locking the conversation
+- publishing to the event broker
+- passing the trace context to the action server
+
+#### `Agent` Attributes
+
+Tracing the `Agent` instance handling a message captures the following attributes:
+
+- `input_channel`: the name of the channel connector
+- `sender_id`: the conversation id
+- `model_id`: a unique identifier for the model
+- `model_name`: the model name
+
+#### `MessageProcessor` Attributes
+
+The following `MessageProcessor` attributes are extracted during the tracing:
+
+- `number_of_events`: number of events in tracker
+- `action_name`: the name of the predicted and executed action
+- `sender_id`: the conversation id of the `DialogueStateTracker` object
+- `message_id`: the unique message id
+
+The latter three attributes are also injected in the trace context that gets passed to the requests made to the custom action server.
+
+#### `TrackerStore` & `LockStore` Attributes
+
+Observable `TrackerStore` and `LockStore` attributes include:
+
+- `number_of_streamed_events`: number of new events to stream
+- `broker_class`: the `EventBroker` on which the new events are published
+- `lock_store_class`: Name of lock store used to lock conversations while messages are actively processed

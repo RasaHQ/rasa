@@ -14,6 +14,7 @@ from typing import (
     Dict,
     Tuple,
     Deque,
+    DefaultDict,
     Any,
     Iterable,
     Generator,
@@ -111,19 +112,30 @@ class TrackerWithCachedStates(DialogueStateTracker):
         Returns:
             A list of states
         """
-        # we need to make sure this is the same domain, otherwise things will
-        # go wrong. but really, the same tracker shouldn't be used across
-        # domains
-        assert domain == self.domain
+        if domain != self.domain:
+            raise ValueError(
+                "TrackerWithCachedStates cannot be used with a domain "
+                "that is different from the one it was created with."
+            )
 
-        # if don't have it cached, we use the domain to calculate the states
-        # from the events
-        states_for_hashing = self._states_for_hashing
-        if not states_for_hashing:
+        if omit_unset_slots:
+            # the tracker caches states with omit_unset_slots=False
+            # Retrieving them from cache with omit_unset_slots=True is not possible as
+            # this information is lost after a position in the event stream is turned
+            # into a state
             states = super().past_states(domain, omit_unset_slots=omit_unset_slots)
             states_for_hashing = deque(self.freeze_current_state(s) for s in states)
+        else:
+            # if don't have it cached, we use the domain to calculate the states
+            # from the events
+            # note: we ignore omit_unset_slots here as the cache was generated
+            # with the default value
+            states_for_hashing = self._states_for_hashing
+            if not states_for_hashing:
+                states = super().past_states(domain)
+                states_for_hashing = deque(self.freeze_current_state(s) for s in states)
 
-        self._states_for_hashing = states_for_hashing
+            self._states_for_hashing = states_for_hashing
 
         return states_for_hashing
 
@@ -197,7 +209,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         tracker.sender_id = sender_id
         tracker.sender_source = sender_source
 
-        with self._skip_states_manager():
+        with tracker._skip_states_manager():
             for event in self.events:
                 tracker.update(event)
 
@@ -245,7 +257,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
 
 # define types
-TrackerLookupDict = Dict[Text, List[TrackerWithCachedStates]]
+TrackerLookupDict = DefaultDict[Text, List[TrackerWithCachedStates]]
 
 TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedStates]]
 
@@ -345,7 +357,9 @@ class TrainingDataGenerator:
             )
         self._mark_first_action_in_story_steps_as_unpredictable()
 
-        active_trackers = defaultdict(list)
+        active_trackers: DefaultDict[Text, List[TrackerWithCachedStates]] = defaultdict(
+            list
+        )
 
         init_tracker = TrackerWithCachedStates(
             "",

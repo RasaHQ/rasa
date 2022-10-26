@@ -45,7 +45,7 @@ class TmpKerasModel(Model):
     # This code is adapted from
     # https://github.com/keras-team/keras/blob/v2.7.0/keras/engine/training.py#L902
 
-    @traceback_utils.filter_traceback
+    @traceback_utils.filter_traceback  # type: ignore[misc]
     def fit(
         self,
         x: Optional[

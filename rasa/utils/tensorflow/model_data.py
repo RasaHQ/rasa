@@ -1,11 +1,23 @@
 import logging
+from typing import (
+    Optional,
+    DefaultDict,
+    Dict,
+    Text,
+    List,
+    Tuple,
+    Any,
+    Union,
+    NamedTuple,
+    ItemsView,
+    overload,
+)
+from collections import defaultdict, OrderedDict
 
 import numpy as np
 import scipy.sparse
-
 from sklearn.model_selection import train_test_split
-from typing import Optional, Dict, Text, List, Tuple, Any, Union, NamedTuple, ItemsView
-from collections import defaultdict, OrderedDict
+
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +88,7 @@ class FeatureArray(np.ndarray):
             return
 
         self.units = getattr(obj, "units", None)
-        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)
+        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)  # type: ignore[assignment] # noqa:E501
         self.is_sparse = getattr(obj, "is_sparse", None)
 
         default_attributes = {
@@ -127,6 +139,8 @@ class FeatureArray(np.ndarray):
             A tuple.
         """
         pickled_state = super(FeatureArray, self).__reduce__()
+        if isinstance(pickled_state, str):
+            raise TypeError("np array __reduce__ returned string instead of tuple.")
         new_state = pickled_state[2] + (
             self.number_of_dimensions,
             self.is_sparse,
@@ -146,7 +160,10 @@ class FeatureArray(np.ndarray):
         self.number_of_dimensions = state[-3]
         self.is_sparse = state[-2]
         self.units = state[-1]
-        super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        super(FeatureArray, self).__setstate__(
+            state[0:-3], **kwargs
+        )  # type: ignore[no-untyped-call]
 
     # pytype: enable=attribute-error
 
@@ -255,6 +272,14 @@ class RasaModelData:
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
         self.sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]] = {}
+
+    @overload
+    def get(self, key: Text, sub_key: Text) -> List[FeatureArray]:
+        ...
+
+    @overload
+    def get(self, key: Text, sub_key: None = ...) -> Dict[Text, List[FeatureArray]]:
+        ...
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
@@ -581,7 +606,16 @@ class RasaModelData:
             label_ids = self._create_label_ids(
                 self.data[self.label_key][self.label_sub_key][0]
             )
-            label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+            label_counts: Dict[int, int] = dict(
+                zip(
+                    *np.unique(
+                        label_ids,  # type: ignore[no-untyped-call]
+                        return_counts=True,
+                        axis=0,
+                    )
+                )
+            )
 
             self._check_train_test_sizes(number_of_test_examples, label_counts)
 
@@ -679,7 +713,8 @@ class RasaModelData:
 
         label_ids = self._create_label_ids(data[self.label_key][self.label_sub_key][0])
 
-        unique_label_ids, counts_label_ids = np.unique(
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        unique_label_ids, counts_label_ids = np.unique(  # type: ignore[no-untyped-call]
             label_ids, return_counts=True, axis=0
         )
         num_label_ids = len(unique_label_ids)
@@ -695,15 +730,15 @@ class RasaModelData:
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
-        new_data: defaultdict[
-            Text, defaultdict[Text, List[List[FeatureArray]]]
+        new_data: DefaultDict[
+            Text, DefaultDict[Text, List[List[FeatureArray]]]
         ] = defaultdict(lambda: defaultdict(list))
 
         while min(num_data_cycles) == 0:
             if shuffle:
                 indices_of_labels = np.random.permutation(num_label_ids)
             else:
-                indices_of_labels = range(num_label_ids)
+                indices_of_labels = np.asarray(range(num_label_ids))
 
             for index in indices_of_labels:
                 if num_data_cycles[index] > 0 and not skipped[index]:
@@ -734,12 +769,15 @@ class RasaModelData:
                     break
 
         final_data: Data = defaultdict(lambda: defaultdict(list))
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
                     final_data[key][sub_key].append(
                         FeatureArray(
-                            np.concatenate(np.array(f)),
+                            np.concatenate(  # type: ignore[no-untyped-call]
+                                np.array(f)
+                            ),
                             number_of_dimensions=f[0].number_of_dimensions,
                         )
                     )
@@ -848,10 +886,10 @@ class RasaModelData:
         Returns:
             The test and train RasaModelData
         """
-        data_train: defaultdict[
-            Text, defaultdict[Text, List[FeatureArray]]
+        data_train: DefaultDict[
+            Text, DefaultDict[Text, List[FeatureArray]]
         ] = defaultdict(lambda: defaultdict(list))
-        data_val: defaultdict[Text, defaultdict[Text, List[Any]]] = defaultdict(
+        data_val: DefaultDict[Text, DefaultDict[Text, List[Any]]] = defaultdict(
             lambda: defaultdict(list)
         )
 
@@ -910,9 +948,10 @@ class RasaModelData:
             return FeatureArray(
                 scipy.sparse.vstack([feature_1, feature_2]), number_of_dimensions
             )
-
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         return FeatureArray(
-            np.concatenate([feature_1, feature_2]), number_of_dimensions
+            np.concatenate([feature_1, feature_2]),  # type: ignore[no-untyped-call]
+            number_of_dimensions,
         )
 
     @staticmethod

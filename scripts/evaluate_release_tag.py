@@ -1,7 +1,10 @@
 """Evaluate release tag for whether docs should be built or not.
 
 """
+from ensurepip import version
+import os
 import argparse
+from pathlib import Path
 from subprocess import check_output
 from typing import List, Text, Set
 
@@ -54,8 +57,8 @@ def main(args: argparse.Namespace) -> None:
 
     if not is_plain_version(tag):
         print(f"Tag {tag} is an alpha, rc, nightly, or otherwise non-standard version.")
-    elif tag > latest_version:
-        print(f"Tag {tag} is higher than the latest version. Docs should be built.")
+    elif tag >= latest_version:
+        print(f"Tag {tag} is the latest version. Docs should be built.")
         build_docs = True
     elif tag.major == previous_major and tag > previous_major_latest_version:
         print(f"Tag {tag} is higher than the latest version for the previous major. Docs should be built.")
@@ -65,8 +68,8 @@ def main(args: argparse.Namespace) -> None:
         raise SystemExit(f"Docs should not be built for tag {tag}.")
 
 
-
 if __name__ == "__main__":
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
     main(cmdline_args)
+

@@ -79,13 +79,12 @@ def lazy_property(function: Callable) -> Any:
     """
     attr_name = "_lazy_" + function.__name__
 
-    @property
     def _lazyprop(self: Any) -> Any:
         if not hasattr(self, attr_name):
             setattr(self, attr_name, function(self))
         return getattr(self, attr_name)
 
-    return _lazyprop
+    return property(_lazyprop)
 
 
 def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:

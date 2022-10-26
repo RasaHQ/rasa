@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 
 def rank_and_mask(
     confidences: np.ndarray, ranking_length: int = 0, renormalize: bool = False
-) -> Tuple[np.array, np.array]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """Computes a ranking of the given confidences.
 
     First, it computes a list containing the indices that would sort all the given

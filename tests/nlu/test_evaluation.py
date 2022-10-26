@@ -418,6 +418,8 @@ async def test_eval_data(tmp_path: Path, project: Text, trained_rasa_model: Text
     assert len(entity_results) == 46
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     240, func_only=True
 )  # these can take a longer time than the default timeout
@@ -462,6 +464,8 @@ async def test_run_cv_evaluation():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     180, func_only=True
 )  # these can take a longer time than the default timeout
@@ -508,6 +512,8 @@ async def test_run_cv_evaluation_no_entities():
     assert len(entity_results.evaluation) == 0
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     280, func_only=True
 )  # these can take a longer time than the default timeout
@@ -587,6 +593,8 @@ async def test_run_cv_evaluation_with_response_selector():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(
     280, func_only=True
 )  # these can take a longer time than the default timeout

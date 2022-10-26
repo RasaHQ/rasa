@@ -139,7 +139,7 @@ def _two_fallbacks_in_a_row(tracker: DialogueStateTracker) -> bool:
 def _last_n_intent_names(
     tracker: DialogueStateTracker, number_of_last_intent_names: int
 ) -> List[Optional[Text]]:
-    intent_names = []
+    intent_names: List[Optional[Text]] = []
     for i in range(number_of_last_intent_names):
         message = tracker.get_last_event_for(
             (UserUttered, UserUtteranceReverted),
@@ -181,6 +181,6 @@ def _message_clarification(tracker: DialogueStateTracker) -> List[Event]:
         )
 
     clarification = copy.deepcopy(latest_message)
-    clarification.parse_data[INTENT][PREDICTED_CONFIDENCE_KEY] = 1.0
+    clarification.parse_data[INTENT][PREDICTED_CONFIDENCE_KEY] = 1.0  # type: ignore[literal-required]  # noqa E501
     clarification.timestamp = time.time()
     return [ActionExecuted(ACTION_LISTEN_NAME), clarification]

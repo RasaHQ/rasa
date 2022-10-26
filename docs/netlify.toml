@@ -188,3 +188,8 @@
   from = "/docs/rasa/*"
   to = "/docs/rasa/index.html"
   status = 404
+
+
+[[redirects]]
+  from = "/docs/rasa/installation"
+  to = "/docs/rasa/installation/environment-set-up/"

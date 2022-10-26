@@ -1,10 +1,10 @@
+import dataclasses
 import logging
-from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from pathlib import Path
+from typing import Any, List, Optional, Text, Dict, Type, Union
+
 import numpy as np
 import tensorflow as tf
-from pathlib import Path
-from typing import Any, List, Optional, Text, Dict, Type, TYPE_CHECKING
-
 import rasa.utils.common
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -25,6 +25,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import (
@@ -98,12 +99,7 @@ from rasa.utils.tensorflow.constants import (
     LABEL_PAD_ID,
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
-    RANKING_KEY,
-    SCORE_KEY,
-    THRESHOLD_KEY,
-    SEVERITY_KEY,
-    QUERY_INTENT_KEY,
-    NAME,
+    USE_GPU,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
@@ -112,23 +108,24 @@ import rasa.utils.io as io_utils
 from rasa.core.exceptions import RasaCoreException
 from rasa.shared.utils import common
 
-if TYPE_CHECKING:
-    from typing_extensions import TypedDict
 
-    RankingCandidateMetadata = TypedDict(
-        "RankingCandidateMetadata",
-        {
-            NAME: Text,
-            SCORE_KEY: float,
-            THRESHOLD_KEY: Optional[float],
-            SEVERITY_KEY: Optional[float],
-        },
-    )
+@dataclasses.dataclass
+class RankingCandidateMetadata:
+    """Dataclass to represent metada for a candidate intent."""
 
-    UnexpecTEDIntentPolicyMetadata = TypedDict(
-        "UnexpecTEDIntentPolicyMetadata",
-        {QUERY_INTENT_KEY: Text, RANKING_KEY: List["RankingCandidateMetadata"]},
-    )
+    name: Text
+    score: float
+    threshold: Optional[float]
+    severity: Optional[float]
+
+
+@dataclasses.dataclass
+class UnexpecTEDIntentPolicyMetadata:
+    """Dataclass to represent policy metadata."""
+
+    query_intent: RankingCandidateMetadata
+    ranking: List[RankingCandidateMetadata]
+
 
 logger = logging.getLogger(__name__)
 
@@ -285,6 +282,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             LOSS_TYPE: CROSS_ENTROPY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
+            USE_GPU: True,
         }
 
     def __init__(
@@ -372,10 +370,16 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE
         )
         label_ids = np.arange(len(domain.intents))
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            [
+                FeatureArray(
+                    np.expand_dims(label_ids, -1),  # type: ignore[no-untyped-call]
+                    number_of_dimensions=2,
+                )
+            ],
         )
         return label_data
 
@@ -489,8 +493,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         self.compute_label_quantiles_post_training(model_data, label_ids)
 
     def _collect_action_metadata(
-        self, domain: Domain, similarities: np.array, query_intent: Text
-    ) -> "UnexpecTEDIntentPolicyMetadata":
+        self, domain: Domain, similarities: np.ndarray, query_intent: Text
+    ) -> UnexpecTEDIntentPolicyMetadata:
         """Collects metadata to be attached to the predicted action.
 
         Metadata schema looks like this:
@@ -524,22 +528,20 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         def _compile_metadata_for_label(
             label_name: Text, similarity_score: float, threshold: Optional[float]
-        ) -> "RankingCandidateMetadata":
+        ) -> RankingCandidateMetadata:
             severity = float(threshold - similarity_score) if threshold else None
-            return {
-                NAME: label_name,
-                SCORE_KEY: float(similarity_score),
-                THRESHOLD_KEY: float(threshold) if threshold else None,
-                SEVERITY_KEY: severity,
-            }
-
-        metadata: "UnexpecTEDIntentPolicyMetadata" = {
-            QUERY_INTENT_KEY: _compile_metadata_for_label(
-                query_intent,
-                similarities[0][domain.intents.index(query_intent)],
-                self.label_thresholds.get(query_intent_index),
+            return RankingCandidateMetadata(
+                label_name,
+                float(similarity_score),
+                float(threshold) if threshold else None,
+                severity,
             )
-        }
+
+        query_intent_metadata = _compile_metadata_for_label(
+            query_intent,
+            similarities[0][domain.intents.index(query_intent)],
+            self.label_thresholds.get(query_intent_index),
+        )
 
         # Ranking in descending order of predicted similarities
         sorted_similarities = sorted(
@@ -550,7 +552,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         if self.config[RANKING_LENGTH] > 0:
             sorted_similarities = sorted_similarities[: self.config[RANKING_LENGTH]]
 
-        metadata[RANKING_KEY] = [
+        ranking_metadata = [
             _compile_metadata_for_label(
                 domain.intents[intent_index],
                 similarity,
@@ -559,7 +561,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             for intent_index, similarity in sorted_similarities
         ]
 
-        return metadata
+        return UnexpecTEDIntentPolicyMetadata(query_intent_metadata, ranking_metadata)
 
     def predict_action_probabilities(
         self,
@@ -608,8 +610,12 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         output = self.model.run_inference(model_data)
 
         # take the last prediction in the sequence
-        all_similarities: np.ndarray = output["similarities"]
-        sequence_similarities = all_similarities[:, -1, :]
+        if isinstance(output["similarities"], np.ndarray):
+            sequence_similarities = output["similarities"][:, -1, :]
+        else:
+            raise TypeError(
+                "model output for `similarities` " "should be a numpy array"
+            )
 
         # Check for unlikely intent
         last_user_uttered_event = tracker.get_last_event_for(UserUttered)
@@ -629,8 +635,10 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         return self._prediction(
             confidences,
-            action_metadata=self._collect_action_metadata(
-                domain, sequence_similarities, query_intent
+            action_metadata=dataclasses.asdict(
+                self._collect_action_metadata(
+                    domain, sequence_similarities, query_intent
+                )
             ),
         )
 
@@ -699,7 +707,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         return True
 
     def _check_unlikely_intent(
-        self, domain: Domain, similarities: np.array, query_intent: Text
+        self, domain: Domain, similarities: np.ndarray, query_intent: Text
     ) -> bool:
         """Checks if the query intent is probable according to model's predictions.
 
@@ -776,7 +784,10 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         Returns:
             Both buckets of similarity scores grouped by each unique label id.
         """
-        unique_label_ids = np.unique(label_ids).tolist()
+        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
+        unique_label_ids = np.unique(
+            label_ids
+        ).tolist()  # type: ignore[no-untyped-call]
         if LABEL_PAD_ID in unique_label_ids:
             unique_label_ids.remove(LABEL_PAD_ID)
 
@@ -828,8 +839,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
                 prediction_scores[NEGATIVE_SCORES_KEY],
             )
             minimum_positive_score = min(positive_scores)
+            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if negative_scores:
-                quantile_values = np.quantile(
+                quantile_values = np.quantile(  # type: ignore[no-untyped-call]
                     negative_scores, quantile_indices, interpolation="lower"
                 )
                 label_quantiles[label_id] = [
@@ -983,7 +995,9 @@ class IntentTED(TED):
 
         return labels_embed
 
-    def run_bulk_inference(self, model_data: RasaModelData) -> Dict[Text, np.ndarray]:
+    def run_bulk_inference(
+        self, model_data: RasaModelData
+    ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
         """Computes model's predictions for input data.
 
         Args:

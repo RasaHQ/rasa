@@ -90,7 +90,6 @@ TELEMETRY_INTERACTIVE_LEARNING_STARTED_EVENT = "Interactive Learning Started"
 TELEMETRY_SERVER_STARTED_EVENT = "Server Started"
 TELEMETRY_PROJECT_CREATED_EVENT = "Project Created"
 TELEMETRY_SHELL_STARTED_EVENT = "Shell Started"
-TELEMETRY_RASA_X_LOCAL_STARTED_EVENT = "Rasa X Local Started"
 TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
@@ -570,7 +569,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 
 def filter_errors(
-    event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None
+    event: Optional[Dict[Text, Any]], hint: Optional[Dict[Text, Any]] = None
 ) -> Optional[Dict[Text, Any]]:
     """Filter errors.
 
@@ -583,7 +582,7 @@ def filter_errors(
         an `ImportError` which should be discarded.
     """
     if hint and "exc_info" in hint:
-        exc_type, exc_value, tb = hint.get("exc_info")
+        exc_type, exc_value, tb = hint["exc_info"]
         if isinstance(exc_value, ImportError):
             return None
     return event
@@ -602,9 +601,8 @@ def before_send(
         the event without any sensitive / PII data or `None` if the event should
         be discarded.
     """
-    event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
-    event = filter_errors(event, _unused_hint)
-    return event
+    cleaned_event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
+    return filter_errors(cleaned_event, _unused_hint)
 
 
 def strip_sensitive_data_from_sentry_event(
@@ -963,12 +961,6 @@ def track_shell_started(model_type: Text) -> None:
         model_type: Type of the model, core / nlu or rasa.
     """
     _track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type})
-
-
-@ensure_telemetry_enabled
-def track_rasa_x_local() -> None:
-    """Track when a user runs Rasa X in local mode."""
-    _track(TELEMETRY_RASA_X_LOCAL_STARTED_EVENT)
 
 
 @ensure_telemetry_enabled

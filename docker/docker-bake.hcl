@@ -18,10 +18,10 @@ variable "BASE_BUILDER_IMAGE_HASH" {
   default = "localdev"
 }
 
-# keep this in sync with the version in pyproject.toml
+# keep this in sync with the version in .github/poetry_version.txt
 # the variable is set automatically for builds in CI
 variable "POETRY_VERSION" {
-  default = "1.1.11"
+  default = "1.1.13"
 }
 
 group "base-images" {
@@ -145,6 +145,25 @@ target "spacy-de" {
     "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
     "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${IMAGE_NAME}:latest-spacy-de",
+  ]
+}
+
+target "spacy-it" {
+  dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_it"
+  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-it"]
+
+  args = {
+    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
+    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
+  }
+
+  cache-to = ["type=inline"]
+
+  cache-from = [
+    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${IMAGE_NAME}:latest-spacy-it",
   ]
 }
 
