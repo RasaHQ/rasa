@@ -22,6 +22,7 @@ from rasa.utils.common import (
 import tests.conftest
 
 
+@pytest.fixture(autouse=True)
 def reset_logging() -> None:
     manager = logging.root.manager
     manager.disabled = logging.NOTSET
@@ -238,9 +239,6 @@ def test_cli_valid_logging_configuration() -> None:
 
         for key in ["time", "name", "levelname"]:
             assert key in logs_dict.keys()
-
-    # reset logging config
-    reset_logging()
 
 
 @pytest.mark.parametrize(

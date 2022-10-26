@@ -121,12 +121,13 @@ def configure_logging_from_file(logging_config_file: Text) -> None:
 
     try:
         logging.config.dictConfig(logging_config_dict)
-    except (ValueError, TypeError, AttributeError, ImportError):
+    except (ValueError, TypeError, AttributeError, ImportError) as e:
         logging.debug(
             f"The logging config file {logging_config_file} could not "
             f"be applied because it failed validation against "
             f"the built-in Python logging schema. "
-            f"More info at {PYTHON_LOGGING_SCHEMA_DOCS}."
+            f"More info at {PYTHON_LOGGING_SCHEMA_DOCS}.",
+            exc_info=e,
         )
 
 
