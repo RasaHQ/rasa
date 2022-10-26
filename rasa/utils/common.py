@@ -19,6 +19,7 @@ from typing import (
     Union,
     ContextManager,
     Set,
+    Tuple,
 )
 
 from socket import SOCK_DGRAM, SOCK_STREAM
@@ -38,14 +39,16 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-EXPECTED_PILLOW_DEPRECATION_WARNINGS = [
+
+EXPECTED_PILLOW_DEPRECATION_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # Keras uses deprecated Pillow features
     # cf. https://github.com/keras-team/keras/issues/16639
     (DeprecationWarning, f"{method} is deprecated and will be removed in Pillow 10 .*")
     for method in ["BICUBIC", "NEAREST", "BILINEAR", "HAMMING", "BOX", "LANCZOS"]
 ]
 
-EXPECTED_WARNINGS = [
+
+EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # TODO (issue #9932)
     (
         np.VisibleDeprecationWarning,
@@ -63,7 +66,9 @@ EXPECTED_WARNINGS = [
     # is not available on PyPi, so we cannot pin the newer version.
     # cf. https://github.com/google/flatbuffers/issues/6957
     (DeprecationWarning, "the imp module is deprecated in favour of importlib.*"),
-] + EXPECTED_PILLOW_DEPRECATION_WARNINGS
+]
+
+EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)
 
 
 class TempDirectoryPath(str, ContextManager):

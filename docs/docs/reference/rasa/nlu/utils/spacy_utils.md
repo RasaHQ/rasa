@@ -14,7 +14,7 @@ Wraps `SpacyNLP` output to make it fingerprintable.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Fingerprints the model name.
@@ -48,7 +48,7 @@ model is only loaded once and then shared by depending components.
 #### \_\_init\_\_
 
 ```python
- | __init__(model: SpacyModel, config: Dict[Text, Any]) -> None
+def __init__(model: SpacyModel, config: Dict[Text, Any]) -> None
 ```
 
 Initializes a `SpacyNLP`.
@@ -56,8 +56,8 @@ Initializes a `SpacyNLP`.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 Default config.
@@ -65,8 +65,8 @@ Default config.
 #### load\_model
 
 ```python
- | @staticmethod
- | load_model(spacy_model_name: Text) -> SpacyModel
+@staticmethod
+def load_model(spacy_model_name: Text) -> SpacyModel
 ```
 
 Try loading the model, catching the OSError if missing.
@@ -74,8 +74,8 @@ Try loading the model, catching the OSError if missing.
 #### required\_packages
 
 ```python
- | @classmethod
- | required_packages(cls) -> List[Text]
+@staticmethod
+def required_packages() -> List[Text]
 ```
 
 Lists required dependencies (see parent class for full docstring).
@@ -83,8 +83,10 @@ Lists required dependencies (see parent class for full docstring).
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> SpacyNLP
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> SpacyNLP
 ```
 
 Creates component (see parent class for full docstring).
@@ -92,8 +94,8 @@ Creates component (see parent class for full docstring).
 #### ensure\_proper\_language\_model
 
 ```python
- | @staticmethod
- | ensure_proper_language_model(nlp: Optional[Language]) -> None
+@staticmethod
+def ensure_proper_language_model(nlp: Optional[Language]) -> None
 ```
 
 Checks if the SpaCy language model is properly loaded.
@@ -103,7 +105,7 @@ Raises an exception if the model is invalid.
 #### provide
 
 ```python
- | provide() -> SpacyModel
+def provide() -> SpacyModel
 ```
 
 Provides the loaded SpaCy model.
@@ -111,7 +113,8 @@ Provides the loaded SpaCy model.
 #### process\_training\_data
 
 ```python
- | process_training_data(training_data: TrainingData, model: SpacyModel) -> TrainingData
+def process_training_data(training_data: TrainingData,
+                          model: SpacyModel) -> TrainingData
 ```
 
 Adds SpaCy tokens and features to training data messages.
@@ -119,7 +122,7 @@ Adds SpaCy tokens and features to training data messages.
 #### process
 
 ```python
- | process(messages: List[Message], model: SpacyModel) -> List[Message]
+def process(messages: List[Message], model: SpacyModel) -> List[Message]
 ```
 
 Adds SpaCy tokens and features to messages.

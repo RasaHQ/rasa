@@ -148,6 +148,25 @@ target "spacy-de" {
   ]
 }
 
+target "spacy-it" {
+  dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_it"
+  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-it"]
+
+  args = {
+    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
+    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
+  }
+
+  cache-to = ["type=inline"]
+
+  cache-from = [
+    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${IMAGE_NAME}:latest-spacy-it",
+  ]
+}
+
 target "spacy-en" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_en"
   tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-en"]

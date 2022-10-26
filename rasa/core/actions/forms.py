@@ -605,7 +605,7 @@ class FormAction(LoopAction):
 
         if not prefilled_slots:
             logger.debug("No pre-filled required slots to validate.")
-            return []
+            return [e for e in extraction_events if isinstance(e, SlotSet)]
 
         logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
 

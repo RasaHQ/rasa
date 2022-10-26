@@ -13,7 +13,7 @@ Exception that can be raised if story cannot be featurized.
 #### \_\_init\_\_
 
 ```python
- | __init__(message: Text) -> None
+def __init__(message: Text) -> None
 ```
 
 Creates an InvalidStory exception.
@@ -33,7 +33,7 @@ Base class for actual tracker featurizers.
 #### \_\_init\_\_
 
 ```python
- | __init__(state_featurizer: Optional[SingleStateFeaturizer] = None) -> None
+def __init__(state_featurizer: Optional[SingleStateFeaturizer] = None) -> None
 ```
 
 Initializes the tracker featurizer.
@@ -45,7 +45,12 @@ Initializes the tracker featurizer.
 #### training\_states\_and\_labels
 
 ```python
- | training_states_and_labels(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[List[List[State]], List[List[Text]]]
+def training_states_and_labels(
+    trackers: List[DialogueStateTracker],
+    domain: Domain,
+    omit_unset_slots: bool = False,
+    ignore_action_unlikely_intent: bool = False
+) -> Tuple[List[List[State]], List[List[Text]]]
 ```
 
 Transforms trackers to states and labels.
@@ -66,8 +71,13 @@ Transforms trackers to states and labels.
 #### training\_states\_labels\_and\_entities
 
 ```python
- | @abstractmethod
- | training_states_labels_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+@abstractmethod
+def training_states_labels_and_entities(
+    trackers: List[DialogueStateTracker],
+    domain: Domain,
+    omit_unset_slots: bool = False,
+    ignore_action_unlikely_intent: bool = False
+) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms trackers to states, labels, and entity data.
@@ -88,7 +98,8 @@ Transforms trackers to states, labels, and entity data.
 #### prepare\_for\_featurization
 
 ```python
- | prepare_for_featurization(domain: Domain, bilou_tagging: bool = False) -> None
+def prepare_for_featurization(domain: Domain,
+                              bilou_tagging: bool = False) -> None
 ```
 
 Ensures that the featurizer is ready to be called during training.
@@ -104,11 +115,14 @@ for it to be ready to be used during training.
 #### featurize\_trackers
 
 ```python
- | featurize_trackers(trackers: List[DialogueStateTracker], domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization], bilou_tagging: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[
- |         List[List[Dict[Text, List[Features]]]],
- |         np.ndarray,
- |         List[List[Dict[Text, List[Features]]]],
- |     ]
+def featurize_trackers(
+    trackers: List[DialogueStateTracker],
+    domain: Domain,
+    precomputations: Optional[MessageContainerForCoreFeaturization],
+    bilou_tagging: bool = False,
+    ignore_action_unlikely_intent: bool = False
+) -> Tuple[List[List[Dict[Text, List[Features]]]], np.ndarray, List[List[Dict[
+        Text, List[Features]]]], ]
 ```
 
 Featurizes the training trackers.
@@ -137,7 +151,13 @@ Featurizes the training trackers.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None, ignore_action_unlikely_intent: bool = False) -> List[List[State]]
+def prediction_states(
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_action_unlikely_intent: bool = False) -> List[List[State]]
 ```
 
 Transforms trackers to states for prediction.
@@ -163,7 +183,15 @@ Transforms trackers to states for prediction.
 #### create\_state\_features
 
 ```python
- | create_state_features(trackers: List[DialogueStateTracker], domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization], use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None, ignore_action_unlikely_intent: bool = False) -> List[List[Dict[Text, List[Features]]]]
+def create_state_features(
+    trackers: List[DialogueStateTracker],
+    domain: Domain,
+    precomputations: Optional[MessageContainerForCoreFeaturization],
+    use_text_for_last_user_input: bool = False,
+    ignore_rule_only_turns: bool = False,
+    rule_only_data: Optional[Dict[Text, Any]] = None,
+    ignore_action_unlikely_intent: bool = False
+) -> List[List[Dict[Text, List[Features]]]]
 ```
 
 Creates state features for prediction.
@@ -192,7 +220,7 @@ Creates state features for prediction.
 #### persist
 
 ```python
- | persist(path: Union[Text, Path]) -> None
+def persist(path: Union[Text, Path]) -> None
 ```
 
 Persists the tracker featurizer to the given path.
@@ -204,8 +232,8 @@ Persists the tracker featurizer to the given path.
 #### load
 
 ```python
- | @staticmethod
- | load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer]
+@staticmethod
+def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer]
 ```
 
 Loads the featurizer from file.
@@ -232,7 +260,12 @@ Creates training data that uses each time output for prediction.
 #### training\_states\_labels\_and\_entities
 
 ```python
- | training_states_labels_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+def training_states_labels_and_entities(
+    trackers: List[DialogueStateTracker],
+    domain: Domain,
+    omit_unset_slots: bool = False,
+    ignore_action_unlikely_intent: bool = False
+) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms trackers to states, action labels, and entity data.
@@ -253,7 +286,13 @@ Transforms trackers to states, action labels, and entity data.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None, ignore_action_unlikely_intent: bool = False) -> List[List[State]]
+def prediction_states(
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_action_unlikely_intent: bool = False) -> List[List[State]]
 ```
 
 Transforms trackers to states for prediction.
@@ -291,7 +330,9 @@ to not excede `max_history` states.
 #### \_\_init\_\_
 
 ```python
- | __init__(state_featurizer: Optional[SingleStateFeaturizer] = None, max_history: Optional[int] = None, remove_duplicates: bool = True) -> None
+def __init__(state_featurizer: Optional[SingleStateFeaturizer] = None,
+             max_history: Optional[int] = None,
+             remove_duplicates: bool = True) -> None
 ```
 
 Initializes the tracker featurizer.
@@ -305,8 +346,9 @@ Initializes the tracker featurizer.
 #### slice\_state\_history
 
 ```python
- | @staticmethod
- | slice_state_history(states: List[State], slice_length: Optional[int]) -> List[State]
+@staticmethod
+def slice_state_history(states: List[State],
+                        slice_length: Optional[int]) -> List[State]
 ```
 
 Slices states from the trackers history.
@@ -324,7 +366,12 @@ Slices states from the trackers history.
 #### training\_states\_labels\_and\_entities
 
 ```python
- | training_states_labels_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+def training_states_labels_and_entities(
+    trackers: List[DialogueStateTracker],
+    domain: Domain,
+    omit_unset_slots: bool = False,
+    ignore_action_unlikely_intent: bool = False
+) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms trackers to states, action labels, and entity data.
@@ -345,7 +392,13 @@ Transforms trackers to states, action labels, and entity data.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None, ignore_action_unlikely_intent: bool = False) -> List[List[State]]
+def prediction_states(
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_action_unlikely_intent: bool = False) -> List[List[State]]
 ```
 
 Transforms trackers to states for prediction.
@@ -383,7 +436,12 @@ to not excede `max_history` states.
 #### training\_states\_labels\_and\_entities
 
 ```python
- | training_states_labels_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+def training_states_labels_and_entities(
+    trackers: List[DialogueStateTracker],
+    domain: Domain,
+    omit_unset_slots: bool = False,
+    ignore_action_unlikely_intent: bool = False
+) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms trackers to states, intent labels, and entity data.
@@ -404,7 +462,13 @@ Transforms trackers to states, intent labels, and entity data.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None, ignore_action_unlikely_intent: bool = False) -> List[List[State]]
+def prediction_states(
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_action_unlikely_intent: bool = False) -> List[List[State]]
 ```
 
 Transforms trackers to states for prediction.

@@ -15,7 +15,11 @@ sklearn.metrics.classification_report should provide either accuracy or micro av
 #### test\_core\_models\_in\_directory
 
 ```python
-async test_core_models_in_directory(model_directory: Text, stories: Text, output: Text, use_conversation_test_files: bool = False) -> None
+async def test_core_models_in_directory(
+        model_directory: Text,
+        stories: Text,
+        output: Text,
+        use_conversation_test_files: bool = False) -> None
 ```
 
 Evaluates a directory with multiple Core models using test data.
@@ -31,7 +35,8 @@ Evaluates a directory with multiple Core models using test data.
 #### plot\_core\_results
 
 ```python
-plot_core_results(output_directory: Text, number_of_examples: List[int]) -> None
+def plot_core_results(output_directory: Text,
+                      number_of_examples: List[int]) -> None
 ```
 
 Plot core model comparison graph.
@@ -44,7 +49,10 @@ Plot core model comparison graph.
 #### test\_core\_models
 
 ```python
-async test_core_models(models: List[Text], stories: Text, output: Text, use_conversation_test_files: bool = False) -> None
+async def test_core_models(models: List[Text],
+                           stories: Text,
+                           output: Text,
+                           use_conversation_test_files: bool = False) -> None
 ```
 
 Compares multiple Core models based on test data.
@@ -60,7 +68,11 @@ Compares multiple Core models based on test data.
 #### test\_core
 
 ```python
-async test_core(model: Optional[Text] = None, stories: Optional[Text] = None, output: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None, use_conversation_test_files: bool = False) -> None
+async def test_core(model: Optional[Text] = None,
+                    stories: Optional[Text] = None,
+                    output: Text = DEFAULT_RESULTS_PATH,
+                    additional_arguments: Optional[Dict] = None,
+                    use_conversation_test_files: bool = False) -> None
 ```
 
 Tests a trained Core model against a set of test stories.
@@ -68,7 +80,11 @@ Tests a trained Core model against a set of test stories.
 #### test\_nlu
 
 ```python
-async test_nlu(model: Optional[Text], nlu_data: Optional[Text], output_directory: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None, domain_path: Optional[Text] = None) -> None
+async def test_nlu(model: Optional[Text],
+                   nlu_data: Optional[Text],
+                   output_directory: Text = DEFAULT_RESULTS_PATH,
+                   additional_arguments: Optional[Dict] = None,
+                   domain_path: Optional[Text] = None) -> None
 ```
 
 Tests the NLU Model.
@@ -76,7 +92,9 @@ Tests the NLU Model.
 #### compare\_nlu\_models
 
 ```python
-async compare_nlu_models(configs: List[Text], test_data: TrainingData, output: Text, runs: int, exclusion_percentages: List[int]) -> None
+async def compare_nlu_models(configs: List[Text], test_data: TrainingData,
+                             output: Text, runs: int,
+                             exclusion_percentages: List[int]) -> None
 ```
 
 Trains multiple models, compares them and saves the results.
@@ -84,7 +102,8 @@ Trains multiple models, compares them and saves the results.
 #### plot\_nlu\_results
 
 ```python
-plot_nlu_results(output_directory: Text, number_of_examples: List[int]) -> None
+def plot_nlu_results(output_directory: Text,
+                     number_of_examples: List[int]) -> None
 ```
 
 Plot NLU model comparison graph.
@@ -97,7 +116,9 @@ Plot NLU model comparison graph.
 #### perform\_nlu\_cross\_validation
 
 ```python
-async perform_nlu_cross_validation(config: Dict[Text, Any], data: TrainingData, output: Text, additional_arguments: Optional[Dict[Text, Any]]) -> None
+async def perform_nlu_cross_validation(
+        config: Dict[Text, Any], data: TrainingData, output: Text,
+        additional_arguments: Optional[Dict[Text, Any]]) -> None
 ```
 
 Runs cross-validation on test data.
@@ -113,7 +134,12 @@ Runs cross-validation on test data.
 #### get\_evaluation\_metrics
 
 ```python
-get_evaluation_metrics(targets: Iterable[Any], predictions: Iterable[Any], output_dict: bool = False, exclude_label: Optional[Text] = None) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]
+def get_evaluation_metrics(
+    targets: Iterable[Any],
+    predictions: Iterable[Any],
+    output_dict: bool = False,
+    exclude_label: Optional[Text] = None
+) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]
 ```
 
 Compute the f1, precision, accuracy and summary report from sklearn.
@@ -134,7 +160,7 @@ Compute the f1, precision, accuracy and summary report from sklearn.
 #### make\_classification\_report\_complete
 
 ```python
-make_classification_report_complete(report: dict, accuracy: float) -> dict
+def make_classification_report_complete(report: dict, accuracy: float) -> dict
 ```
 
 Completes the sklearn classification report with accuracy xor micro avg.
@@ -159,7 +185,7 @@ Completes the sklearn classification report with accuracy xor micro avg.
 #### clean\_labels
 
 ```python
-clean_labels(labels: Iterable[Text]) -> List[Text]
+def clean_labels(labels: Iterable[Text]) -> List[Text]
 ```
 
 Remove `None` labels. sklearn metrics do not support them.
@@ -176,7 +202,8 @@ Remove `None` labels. sklearn metrics do not support them.
 #### get\_unique\_labels
 
 ```python
-get_unique_labels(targets: Iterable[Text], exclude_label: Optional[Text]) -> List[Text]
+def get_unique_labels(targets: Iterable[Text],
+                      exclude_label: Optional[Text]) -> List[Text]
 ```
 
 Get unique labels. Exclude &#x27;exclude_label&#x27; if specified.

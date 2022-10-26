@@ -13,7 +13,7 @@ A dialogue comprises a list of Turn objects
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Text, events: List["Event"]) -> None
+def __init__(name: Text, events: List["Event"]) -> None
 ```
 
 This function initialises the dialogue with the dialogue name and the event
@@ -22,7 +22,7 @@ list.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 This function returns the dialogue and turns.
@@ -30,7 +30,7 @@ This function returns the dialogue and turns.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict
+def as_dict() -> Dict
 ```
 
 This function returns the dialogue as a dictionary to assist in
@@ -39,8 +39,8 @@ serialization.
 #### from\_parameters
 
 ```python
- | @classmethod
- | from_parameters(cls, parameters: Dict[Text, Any]) -> "Dialogue"
+@classmethod
+def from_parameters(cls, parameters: Dict[Text, Any]) -> "Dialogue"
 ```
 
 Create `Dialogue` from parameters.

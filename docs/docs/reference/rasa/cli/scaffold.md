@@ -5,7 +5,8 @@ title: rasa.cli.scaffold
 #### add\_subparser
 
 ```python
-add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction,
+                  parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all init parsers.
@@ -18,7 +19,7 @@ Add all init parsers.
 #### print\_train\_or\_instructions
 
 ```python
-print_train_or_instructions(args: argparse.Namespace) -> None
+def print_train_or_instructions(args: argparse.Namespace) -> None
 ```
 
 Train a model if the user wants to.
@@ -26,7 +27,7 @@ Train a model if the user wants to.
 #### init\_project
 
 ```python
-init_project(args: argparse.Namespace, path: Text) -> None
+def init_project(args: argparse.Namespace, path: Text) -> None
 ```
 
 Inits project.
@@ -34,7 +35,7 @@ Inits project.
 #### create\_initial\_project
 
 ```python
-create_initial_project(path: Text) -> None
+def create_initial_project(path: Text) -> None
 ```
 
 Creates directory structure and templates for initial project.

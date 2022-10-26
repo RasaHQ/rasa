@@ -5,7 +5,8 @@ title: rasa.cli.train
 #### add\_subparser
 
 ```python
-add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction,
+                  parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all training parsers.
@@ -18,7 +19,8 @@ Add all training parsers.
 #### run\_training
 
 ```python
-run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]
+def run_training(args: argparse.Namespace,
+                 can_exit: bool = False) -> Optional[Text]
 ```
 
 Trains a model.
@@ -37,7 +39,7 @@ Trains a model.
 #### run\_core\_training
 
 ```python
-run_core_training(args: argparse.Namespace) -> Optional[Text]
+def run_core_training(args: argparse.Namespace) -> Optional[Text]
 ```
 
 Trains a Rasa Core model only.
@@ -54,7 +56,7 @@ Trains a Rasa Core model only.
 #### run\_nlu\_training
 
 ```python
-run_nlu_training(args: argparse.Namespace) -> Optional[Text]
+def run_nlu_training(args: argparse.Namespace) -> Optional[Text]
 ```
 
 Trains an NLU model.

@@ -13,7 +13,8 @@ Implement a fbmessenger to parse incoming webhooks and send msgs.
 #### message
 
 ```python
- | async message(message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]) -> None
+async def message(message: Dict[Text, Any],
+                  metadata: Optional[Dict[Text, Any]]) -> None
 ```
 
 Handle an incoming event from the fb webhook.
@@ -21,7 +22,8 @@ Handle an incoming event from the fb webhook.
 #### postback
 
 ```python
- | async postback(message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]) -> None
+async def postback(message: Dict[Text, Any],
+                   metadata: Optional[Dict[Text, Any]]) -> None
 ```
 
 Handle a postback (e.g. quick reply button).
@@ -37,7 +39,7 @@ A bot that uses fb-messenger to communicate.
 #### send
 
 ```python
- | send(recipient_id: Text, element: Any) -> None
+def send(recipient_id: Text, element: Any) -> None
 ```
 
 Sends a message to the recipient using the messenger client.
@@ -45,7 +47,8 @@ Sends a message to the recipient using the messenger client.
 #### send\_text\_message
 
 ```python
- | async send_text_message(recipient_id: Text, text: Text, **kwargs: Any) -> None
+async def send_text_message(recipient_id: Text, text: Text,
+                            **kwargs: Any) -> None
 ```
 
 Send a message through this channel.
@@ -53,7 +56,8 @@ Send a message through this channel.
 #### send\_image\_url
 
 ```python
- | async send_image_url(recipient_id: Text, image: Text, **kwargs: Any) -> None
+async def send_image_url(recipient_id: Text, image: Text,
+                         **kwargs: Any) -> None
 ```
 
 Sends an image. Default will just post the url as a string.
@@ -61,7 +65,7 @@ Sends an image. Default will just post the url as a string.
 #### send\_action
 
 ```python
- | async send_action(recipient_id: Text, sender_action: Text) -> None
+async def send_action(recipient_id: Text, sender_action: Text) -> None
 ```
 
 Sends a sender action to facebook (e.g. &quot;typing_on&quot;).
@@ -74,7 +78,9 @@ Sends a sender action to facebook (e.g. &quot;typing_on&quot;).
 #### send\_text\_with\_buttons
 
 ```python
- | async send_text_with_buttons(recipient_id: Text, text: Text, buttons: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
+async def send_text_with_buttons(recipient_id: Text, text: Text,
+                                 buttons: List[Dict[Text, Any]],
+                                 **kwargs: Any) -> None
 ```
 
 Sends buttons to the output.
@@ -82,7 +88,9 @@ Sends buttons to the output.
 #### send\_quick\_replies
 
 ```python
- | async send_quick_replies(recipient_id: Text, text: Text, quick_replies: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
+async def send_quick_replies(recipient_id: Text, text: Text,
+                             quick_replies: List[Dict[Text, Any]],
+                             **kwargs: Any) -> None
 ```
 
 Sends quick replies to the output.
@@ -90,7 +98,9 @@ Sends quick replies to the output.
 #### send\_elements
 
 ```python
- | async send_elements(recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any) -> None
+async def send_elements(recipient_id: Text, elements: Iterable[Dict[Text,
+                                                                    Any]],
+                        **kwargs: Any) -> None
 ```
 
 Sends elements to the output.
@@ -98,7 +108,9 @@ Sends elements to the output.
 #### send\_custom\_json
 
 ```python
- | async send_custom_json(recipient_id: Text, json_message: Union[List, Dict[Text, Any]], **kwargs: Any, ,) -> None
+async def send_custom_json(recipient_id: Text,
+                           json_message: Union[List, Dict[Text, Any]],
+                           **kwargs: Any) -> None
 ```
 
 Sends custom json data to the output.
@@ -114,7 +126,7 @@ Facebook input channel implementation. Based on the HTTPInputChannel.
 #### \_\_init\_\_
 
 ```python
- | __init__(fb_verify: Text, fb_secret: Text, fb_access_token: Text) -> None
+def __init__(fb_verify: Text, fb_secret: Text, fb_access_token: Text) -> None
 ```
 
 Create a facebook input channel.
@@ -134,8 +146,9 @@ https://github.com/rehabstudio/fbmessenger#facebook-app-setup
 #### validate\_hub\_signature
 
 ```python
- | @staticmethod
- | validate_hub_signature(app_secret: Text, request_payload: bytes, hub_signature_header: Text) -> bool
+@staticmethod
+def validate_hub_signature(app_secret: Text, request_payload: bytes,
+                           hub_signature_header: Text) -> bool
 ```
 
 Make sure the incoming webhook requests are properly signed.

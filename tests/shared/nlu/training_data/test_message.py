@@ -408,3 +408,19 @@ def test_message_fingerprint_includes_data_and_features(
     assert fp3 != fp4
 
     assert len({fp1, fp2, fp3, fp4}) == 4
+
+
+def test_message_fingerprint_is_recalculated_after_setting_data():
+    message = Message(data={TEXT: "This is a test sentence."})
+    fp1 = message.fingerprint()
+    message.set(INTENT, "test")
+    fp2 = message.fingerprint()
+    assert fp1 != fp2
+
+
+def test_message_fingerprint_is_recalculated_after_adding_diagnostics_data():
+    message = Message(data={TEXT: "This is a test sentence."})
+    fp1 = message.fingerprint()
+    message.add_diagnostic_data("origin", "test")
+    fp2 = message.fingerprint()
+    assert fp1 != fp2

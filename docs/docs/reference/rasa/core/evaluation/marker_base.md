@@ -13,8 +13,8 @@ Keeps track of tags that can be used to configure markers.
 #### register\_builtin\_markers
 
 ```python
- | @classmethod
- | register_builtin_markers(cls) -> None
+@classmethod
+def register_builtin_markers(cls) -> None
 ```
 
 Must import all modules containing markers.
@@ -22,8 +22,8 @@ Must import all modules containing markers.
 #### configurable\_marker
 
 ```python
- | @classmethod
- | configurable_marker(cls, marker_class: Type[Marker]) -> Type[Marker]
+@classmethod
+def configurable_marker(cls, marker_class: Type[Marker]) -> Type[Marker]
 ```
 
 Decorator used to register a marker that can be used in config files.
@@ -39,8 +39,8 @@ Decorator used to register a marker that can be used in config files.
 #### get\_non\_negated\_tag
 
 ```python
- | @classmethod
- | get_non_negated_tag(cls, tag_or_negated_tag: Text) -> Tuple[Text, bool]
+@classmethod
+def get_non_negated_tag(cls, tag_or_negated_tag: Text) -> Tuple[Text, bool]
 ```
 
 Returns the non-negated marker tag, given a (possible) negated marker tag.
@@ -86,7 +86,7 @@ does not apply to the conversation so far.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Optional[Text] = None, negated: bool = False) -> None
+def __init__(name: Optional[Text] = None, negated: bool = False) -> None
 ```
 
 Instantiates a marker.
@@ -106,7 +106,7 @@ Instantiates a marker.
 #### get\_tag
 
 ```python
- | get_tag() -> Text
+def get_tag() -> Text
 ```
 
 Returns the tag describing this marker.
@@ -114,9 +114,9 @@ Returns the tag describing this marker.
 #### positive\_tag
 
 ```python
- | @staticmethod
- | @abstractmethod
- | positive_tag() -> Text
+@staticmethod
+@abstractmethod
+def positive_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -124,8 +124,8 @@ Returns the tag to be used in a config file.
 #### negated\_tag
 
 ```python
- | @staticmethod
- | negated_tag() -> Optional[Text]
+@staticmethod
+def negated_tag() -> Optional[Text]
 ```
 
 Returns the tag to be used in a config file for the negated version.
@@ -138,7 +138,7 @@ file then.
 #### track
 
 ```python
- | track(event: Event) -> None
+def track(event: Event) -> None
 ```
 
 Updates the marker according to the given event.
@@ -150,7 +150,7 @@ Updates the marker according to the given event.
 #### reset
 
 ```python
- | reset() -> None
+def reset() -> None
 ```
 
 Clears the history of the marker.
@@ -158,8 +158,8 @@ Clears the history of the marker.
 #### flatten
 
 ```python
- | @abstractmethod
- | flatten() -> Iterator[Marker]
+@abstractmethod
+def flatten() -> Iterator[Marker]
 ```
 
 Returns an iterator over all conditions and operators used in this marker.
@@ -171,8 +171,8 @@ Returns an iterator over all conditions and operators used in this marker.
 #### validate\_against\_domain
 
 ```python
- | @abstractmethod
- | validate_against_domain(domain: Domain) -> bool
+@abstractmethod
+def validate_against_domain(domain: Domain) -> bool
 ```
 
 Checks that this marker (and its children) refer to entries in the domain.
@@ -184,8 +184,8 @@ Checks that this marker (and its children) refer to entries in the domain.
 #### max\_depth
 
 ```python
- | @abstractmethod
- | max_depth() -> int
+@abstractmethod
+def max_depth() -> int
 ```
 
 Gets the maximum depth from this point in the marker tree.
@@ -193,7 +193,7 @@ Gets the maximum depth from this point in the marker tree.
 #### evaluate\_events
 
 ```python
- | evaluate_events(events: List[Event]) -> List[SessionEvaluation]
+def evaluate_events(events: List[Event]) -> List[SessionEvaluation]
 ```
 
 Resets the marker, tracks all events, and collects some information.
@@ -218,7 +218,7 @@ results will be collected for all (immediate) sub-markers.
 #### relevant\_events
 
 ```python
- | relevant_events() -> List[int]
+def relevant_events() -> List[int]
 ```
 
 Returns the indices of those tracked events that are relevant for evaluation.
@@ -234,8 +234,8 @@ evaluation (see `evaluate_events`).
 #### from\_path
 
 ```python
- | @classmethod
- | from_path(cls, path: Union[Path, Text]) -> "OrMarker"
+@classmethod
+def from_path(cls, path: Union[Path, Text]) -> "OrMarker"
 ```
 
 Loads markers from one config file or all config files in a directory tree.
@@ -268,8 +268,8 @@ at `Marker.from_config`.
 #### from\_config
 
 ```python
- | @staticmethod
- | from_config(config: Any, name: Optional[Text] = None) -> Marker
+@staticmethod
+def from_config(config: Any, name: Optional[Text] = None) -> Marker
 ```
 
 Creates a marker from the given config.
@@ -294,7 +294,11 @@ condition (see `ConditionMarker.from_tag_and_sub_config`).
 #### evaluate\_trackers
 
 ```python
- | async evaluate_trackers(trackers: AsyncIterator[Optional[DialogueStateTracker]], output_file: Path, session_stats_file: Optional[Path] = None, overall_stats_file: Optional[Path] = None) -> None
+async def evaluate_trackers(trackers: AsyncIterator[
+    Optional[DialogueStateTracker]],
+                            output_file: Path,
+                            session_stats_file: Optional[Path] = None,
+                            overall_stats_file: Optional[Path] = None) -> None
 ```
 
 Collect markers for each dialogue in each tracker loaded.
@@ -319,7 +323,7 @@ Collect markers for each dialogue in each tracker loaded.
 ## OperatorMarker Objects
 
 ```python
-class OperatorMarker(Marker,  ABC)
+class OperatorMarker(Marker, ABC)
 ```
 
 Combines several markers into one.
@@ -327,7 +331,9 @@ Combines several markers into one.
 #### \_\_init\_\_
 
 ```python
- | __init__(markers: List[Marker], negated: bool = False, name: Optional[Text] = None) -> None
+def __init__(markers: List[Marker],
+             negated: bool = False,
+             name: Optional[Text] = None) -> None
 ```
 
 Instantiates a marker.
@@ -348,8 +354,8 @@ Instantiates a marker.
 #### expected\_number\_of\_sub\_markers
 
 ```python
- | @staticmethod
- | expected_number_of_sub_markers() -> Optional[int]
+@staticmethod
+def expected_number_of_sub_markers() -> Optional[int]
 ```
 
 Returns the expected number of sub-markers (if there is any).
@@ -357,7 +363,7 @@ Returns the expected number of sub-markers (if there is any).
 #### track
 
 ```python
- | track(event: Event) -> None
+def track(event: Event) -> None
 ```
 
 Updates the marker according to the given event.
@@ -371,7 +377,7 @@ All sub-markers will be updated before the compound marker itself is updated.
 #### flatten
 
 ```python
- | flatten() -> Iterator[Marker]
+def flatten() -> Iterator[Marker]
 ```
 
 Returns an iterator over all included markers, plus this marker itself.
@@ -383,7 +389,7 @@ Returns an iterator over all included markers, plus this marker itself.
 #### reset
 
 ```python
- | reset() -> None
+def reset() -> None
 ```
 
 Resets the history of this marker and all its sub-markers.
@@ -391,7 +397,7 @@ Resets the history of this marker and all its sub-markers.
 #### validate\_against\_domain
 
 ```python
- | validate_against_domain(domain: Domain) -> bool
+def validate_against_domain(domain: Domain) -> bool
 ```
 
 Checks that this marker (and its children) refer to entries in the domain.
@@ -403,7 +409,7 @@ Checks that this marker (and its children) refer to entries in the domain.
 #### max\_depth
 
 ```python
- | max_depth() -> int
+def max_depth() -> int
 ```
 
 Gets the maximum depth from this point in the marker tree.
@@ -411,8 +417,10 @@ Gets the maximum depth from this point in the marker tree.
 #### from\_tag\_and\_sub\_config
 
 ```python
- | @staticmethod
- | from_tag_and_sub_config(tag: Text, sub_config: Any, name: Optional[Text] = None) -> OperatorMarker
+@staticmethod
+def from_tag_and_sub_config(tag: Text,
+                            sub_config: Any,
+                            name: Optional[Text] = None) -> OperatorMarker
 ```
 
 Creates an operator marker from the given config.
@@ -437,7 +445,7 @@ See `Marker.from_config` for more details.
 ## ConditionMarker Objects
 
 ```python
-class ConditionMarker(Marker,  ABC)
+class ConditionMarker(Marker, ABC)
 ```
 
 A marker that does not contain any sub-markers.
@@ -445,7 +453,9 @@ A marker that does not contain any sub-markers.
 #### \_\_init\_\_
 
 ```python
- | __init__(text: Text, negated: bool = False, name: Optional[Text] = None) -> None
+def __init__(text: Text,
+             negated: bool = False,
+             name: Optional[Text] = None) -> None
 ```
 
 Instantiates an atomic marker.
@@ -461,7 +471,7 @@ Instantiates an atomic marker.
 #### flatten
 
 ```python
- | flatten() -> Iterator[ConditionMarker]
+def flatten() -> Iterator[ConditionMarker]
 ```
 
 Returns an iterator that just returns this `AtomicMarker`.
@@ -473,7 +483,7 @@ Returns an iterator that just returns this `AtomicMarker`.
 #### max\_depth
 
 ```python
- | max_depth() -> int
+def max_depth() -> int
 ```
 
 Gets the maximum depth from this point in the marker tree.
@@ -481,8 +491,10 @@ Gets the maximum depth from this point in the marker tree.
 #### from\_tag\_and\_sub\_config
 
 ```python
- | @staticmethod
- | from_tag_and_sub_config(tag: Text, sub_config: Any, name: Optional[Text] = None) -> ConditionMarker
+@staticmethod
+def from_tag_and_sub_config(tag: Text,
+                            sub_config: Any,
+                            name: Optional[Text] = None) -> ConditionMarker
 ```
 
 Creates an atomic marker from the given config.

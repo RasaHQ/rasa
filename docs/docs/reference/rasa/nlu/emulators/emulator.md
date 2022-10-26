@@ -13,8 +13,8 @@ Emulator specifies how requests and responses are getting transformed.
 #### name
 
 ```python
- | @classmethod
- | name(cls) -> Text
+@classmethod
+def name(cls) -> Text
 ```
 
 Name that identifies the emulator.
@@ -22,7 +22,7 @@ Name that identifies the emulator.
 #### normalise\_request\_json
 
 ```python
- | normalise_request_json(data: Dict[Text, Any]) -> Dict[Text, Any]
+def normalise_request_json(data: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Transform request JSON to target format.
@@ -39,7 +39,7 @@ Transform request JSON to target format.
 #### normalise\_response\_json
 
 ```python
- | normalise_response_json(data: Dict[Text, Any]) -> Dict[Text, Any]
+def normalise_response_json(data: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Transform response JSON to target format.
@@ -56,7 +56,7 @@ Transform response JSON to target format.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Return the string representation of the emulator.

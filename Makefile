@@ -1,4 +1,4 @@
-.PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
+.PHONY: clean test lint init docs format formatter build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
 
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
@@ -78,6 +78,8 @@ install-docs:
 
 formatter:
 	poetry run black rasa tests
+
+format: formatter
 
 lint:
      # Ignore docstring errors when running on the entire project
@@ -288,6 +290,14 @@ build-docker-spacy-de:
 	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
 	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-de
+
+build-docker-spacy-it:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake -f docker/docker-bake.hcl spacy-it
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \

@@ -13,7 +13,8 @@ Helper class to read a story file.
 #### \_\_init\_\_
 
 ```python
- | __init__(domain: Optional[Domain] = None, source_name: Optional[Text] = None) -> None
+def __init__(domain: Optional[Domain] = None,
+             source_name: Optional[Text] = None) -> None
 ```
 
 Constructor for the StoryReader.
@@ -26,7 +27,8 @@ Constructor for the StoryReader.
 #### read\_from\_file
 
 ```python
- | read_from_file(filename: Text, skip_validation: bool = False) -> List[StoryStep]
+def read_from_file(filename: Text,
+                   skip_validation: bool = False) -> List[StoryStep]
 ```
 
 Reads stories or rules from file.
@@ -44,8 +46,8 @@ Reads stories or rules from file.
 #### is\_stories\_file
 
 ```python
- | @staticmethod
- | is_stories_file(filename: Union[Text, Path]) -> bool
+@staticmethod
+def is_stories_file(filename: Union[Text, Path]) -> bool
 ```
 
 Checks if the specified file is a story file.
@@ -62,7 +64,7 @@ Checks if the specified file is a story file.
 ## StoryParseError Objects
 
 ```python
-class StoryParseError(RasaCoreException,  ValueError)
+class StoryParseError(RasaCoreException, ValueError)
 ```
 
 Raised if there is an error while parsing a story file.

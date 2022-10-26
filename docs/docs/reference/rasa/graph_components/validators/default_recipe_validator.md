@@ -13,8 +13,10 @@ Validates a &quot;DefaultV1&quot; configuration against the training data and do
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DefaultV1RecipeValidator
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage,
+           resource: Resource,
+           execution_context: ExecutionContext) -> DefaultV1RecipeValidator
 ```
 
 Creates a new `ConfigValidator` (see parent class for full docstring).
@@ -22,7 +24,7 @@ Creates a new `ConfigValidator` (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
- | __init__(graph_schema: GraphSchema) -> None
+def __init__(graph_schema: GraphSchema) -> None
 ```
 
 Instantiates a new `ConfigValidator`.
@@ -34,7 +36,7 @@ Instantiates a new `ConfigValidator`.
 #### validate
 
 ```python
- | validate(importer: TrainingDataImporter) -> TrainingDataImporter
+def validate(importer: TrainingDataImporter) -> TrainingDataImporter
 ```
 
 Validates the current graph schema against the training data and domain.

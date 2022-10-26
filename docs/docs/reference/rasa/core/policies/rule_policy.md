@@ -24,8 +24,8 @@ Policy which handles all the rules.
 #### supported\_data
 
 ```python
- | @staticmethod
- | supported_data() -> SupportedData
+@staticmethod
+def supported_data() -> SupportedData
 ```
 
 The type of data supported by this policy.
@@ -37,8 +37,8 @@ The type of data supported by this policy.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 Returns the default config (see parent class for full docstring).
@@ -46,7 +46,12 @@ Returns the default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None, lookup: Optional[Dict] = None) -> None
+def __init__(config: Dict[Text, Any],
+             model_storage: ModelStorage,
+             resource: Resource,
+             execution_context: ExecutionContext,
+             featurizer: Optional[TrackerFeaturizer] = None,
+             lookup: Optional[Dict] = None) -> None
 ```
 
 Initializes the policy.
@@ -54,8 +59,9 @@ Initializes the policy.
 #### raise\_if\_incompatible\_with\_domain
 
 ```python
- | @classmethod
- | raise_if_incompatible_with_domain(cls, config: Dict[Text, Any], domain: Domain) -> None
+@classmethod
+def raise_if_incompatible_with_domain(cls, config: Dict[Text, Any],
+                                      domain: Domain) -> None
 ```
 
 Checks whether the domains action names match the configured fallback.
@@ -72,7 +78,8 @@ Checks whether the domains action names match the configured fallback.
 #### train
 
 ```python
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, **kwargs: Any, ,) -> Resource
+def train(training_trackers: List[TrackerWithCachedStates], domain: Domain,
+          **kwargs: Any) -> Resource
 ```
 
 Trains the policy on given training trackers.
@@ -90,7 +97,11 @@ Trains the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
+def predict_action_probabilities(tracker: DialogueStateTracker,
+                                 domain: Domain,
+                                 rule_only_data: Optional[Dict[Text,
+                                                               Any]] = None,
+                                 **kwargs: Any) -> PolicyPrediction
 ```
 
 Predicts the next action (see parent class for more information).
@@ -98,7 +109,7 @@ Predicts the next action (see parent class for more information).
 #### persist
 
 ```python
- | persist() -> None
+def persist() -> None
 ```
 
 Persists trained `RulePolicy`.

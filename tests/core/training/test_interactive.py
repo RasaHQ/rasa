@@ -504,7 +504,7 @@ async def test_write_stories_to_file(mock_endpoint: EndpointConfig, tmp_path):
         {"name": str(tmp_path / "domain.yml"), "validator": lambda path: True},
     ]
 
-    def info() -> Tuple[Text, Text, Text]:
+    async def info() -> Tuple[Text, Text, Text]:
         return target_files[0]["name"], target_files[1]["name"], target_files[2]["name"]
 
     with aioresponses() as mocked:
@@ -693,7 +693,7 @@ class QuestionaryConfirmMock:
     def __call__(self, text: Text) -> "QuestionaryConfirmMock":
         return self
 
-    def ask(self) -> bool:
+    async def ask_async(self) -> bool:
         self.tries -= 1
         if self.tries == 0:
             return False
@@ -701,11 +701,11 @@ class QuestionaryConfirmMock:
             return True
 
 
-def test_retry_on_error_success(monkeypatch: MonkeyPatch):
+async def test_retry_on_error_success(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
 
     m = Mock(return_value=None)
-    interactive._retry_on_error(m, "export_path", 1, a=2)
+    await interactive._retry_on_error(m, "export_path", 1, a=2)
     m.assert_called_once_with("export_path", 1, a=2)
 
 
@@ -787,12 +787,12 @@ async def test_correct_question_for_action_name_was_asked(
     assert args[2] == sent_action_name
 
 
-def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
+async def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
 
     m = Mock(side_effect=PermissionError())
     with pytest.raises(PermissionError):
-        interactive._retry_on_error(m, "export_path", 1, a=2)
+        await interactive._retry_on_error(m, "export_path", 1, a=2)
     c = unittest.mock.call("export_path", 1, a=2)
     m.assert_has_calls([c, c, c])
 

@@ -5,7 +5,8 @@ title: rasa.cli.run
 #### add\_subparser
 
 ```python
-add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction,
+                  parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all run parsers.
@@ -18,7 +19,7 @@ Add all run parsers.
 #### run
 
 ```python
-run(args: argparse.Namespace) -> None
+def run(args: argparse.Namespace) -> None
 ```
 
 Entrypoint for `rasa run`.

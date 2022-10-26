@@ -13,7 +13,7 @@ Recipe which converts the graph model config to train and predict graph.
 #### get\_targets
 
 ```python
- | get_targets(config: Dict, training_type: TrainingType) -> Tuple[Text, Any]
+def get_targets(config: Dict, training_type: TrainingType) -> Tuple[Text, Any]
 ```
 
 Return NLU and core targets from config dictionary.
@@ -27,7 +27,11 @@ and during execution (all recipes use targets during execution).
 #### graph\_config\_for\_recipe
 
 ```python
- | graph_config_for_recipe(config: Dict, cli_parameters: Dict[Text, Any], training_type: TrainingType = TrainingType.BOTH, is_finetuning: bool = False) -> GraphModelConfiguration
+def graph_config_for_recipe(
+        config: Dict,
+        cli_parameters: Dict[Text, Any],
+        training_type: TrainingType = TrainingType.BOTH,
+        is_finetuning: bool = False) -> GraphModelConfiguration
 ```
 
 Converts the default config to graphs (see interface for full docstring).

@@ -14,8 +14,8 @@ Checks that all sub-markers apply.
 #### positive\_tag
 
 ```python
- | @staticmethod
- | positive_tag() -> Text
+@staticmethod
+def positive_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -23,8 +23,8 @@ Returns the tag to be used in a config file.
 #### negated\_tag
 
 ```python
- | @staticmethod
- | negated_tag() -> Text
+@staticmethod
+def negated_tag() -> Text
 ```
 
 Returns the tag to be used in a config file for the negated version.
@@ -41,8 +41,8 @@ Checks that at least one sub-marker applies.
 #### positive\_tag
 
 ```python
- | @staticmethod
- | positive_tag() -> Text
+@staticmethod
+def positive_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -59,8 +59,8 @@ Checks that at least one sub-marker applies.
 #### positive\_tag
 
 ```python
- | @staticmethod
- | positive_tag() -> Text
+@staticmethod
+def positive_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -68,8 +68,8 @@ Returns the tag to be used in a config file.
 #### expected\_number\_of\_sub\_markers
 
 ```python
- | @staticmethod
- | expected_number_of_sub_markers() -> Optional[int]
+@staticmethod
+def expected_number_of_sub_markers() -> Optional[int]
 ```
 
 Returns the expected number of sub-markers (if there is any).
@@ -93,7 +93,9 @@ The sequence marker application follows two rules:
 #### \_\_init\_\_
 
 ```python
- | __init__(markers: List[Marker], negated: bool = False, name: Optional[Text] = None) -> None
+def __init__(markers: List[Marker],
+             negated: bool = False,
+             name: Optional[Text] = None) -> None
 ```
 
 Instantiate a new sequence marker.
@@ -109,8 +111,8 @@ Instantiate a new sequence marker.
 #### positive\_tag
 
 ```python
- | @staticmethod
- | positive_tag() -> Text
+@staticmethod
+def positive_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -130,8 +132,8 @@ applied at least once they will always evaluate to `True`.
 #### positive\_tag
 
 ```python
- | @staticmethod
- | positive_tag() -> Text
+@staticmethod
+def positive_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -139,8 +141,8 @@ Returns the tag to be used in a config file.
 #### negated\_tag
 
 ```python
- | @staticmethod
- | negated_tag() -> Optional[Text]
+@staticmethod
+def negated_tag() -> Optional[Text]
 ```
 
 Returns the tag to be used in a config file for the negated version.
@@ -148,8 +150,8 @@ Returns the tag to be used in a config file for the negated version.
 #### expected\_number\_of\_sub\_markers
 
 ```python
- | @staticmethod
- | expected_number_of_sub_markers() -> Optional[int]
+@staticmethod
+def expected_number_of_sub_markers() -> Optional[int]
 ```
 
 Returns the expected number of sub-markers (if there is any).
@@ -157,7 +159,7 @@ Returns the expected number of sub-markers (if there is any).
 #### relevant\_events
 
 ```python
- | relevant_events() -> List[int]
+def relevant_events() -> List[int]
 ```
 
 Only return index of first match (see parent class for full docstring).
@@ -174,8 +176,8 @@ Checks whether an action is executed at the current step.
 #### positive\_tag
 
 ```python
- | @staticmethod
- | positive_tag() -> Text
+@staticmethod
+def positive_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -183,8 +185,8 @@ Returns the tag to be used in a config file.
 #### negated\_tag
 
 ```python
- | @staticmethod
- | negated_tag() -> Optional[Text]
+@staticmethod
+def negated_tag() -> Optional[Text]
 ```
 
 Returns the tag to be used in a config file for the negated version.
@@ -192,7 +194,7 @@ Returns the tag to be used in a config file for the negated version.
 #### validate\_against\_domain
 
 ```python
- | validate_against_domain(domain: Domain) -> bool
+def validate_against_domain(domain: Domain) -> bool
 ```
 
 Checks that this marker (and its children) refer to entries in the domain.
@@ -217,8 +219,8 @@ the specified text.
 #### positive\_tag
 
 ```python
- | @staticmethod
- | positive_tag() -> Text
+@staticmethod
+def positive_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -226,8 +228,8 @@ Returns the tag to be used in a config file.
 #### negated\_tag
 
 ```python
- | @staticmethod
- | negated_tag() -> Optional[Text]
+@staticmethod
+def negated_tag() -> Optional[Text]
 ```
 
 Returns the tag to be used in a config file for the negated version.
@@ -235,7 +237,7 @@ Returns the tag to be used in a config file for the negated version.
 #### validate\_against\_domain
 
 ```python
- | validate_against_domain(domain: Domain) -> bool
+def validate_against_domain(domain: Domain) -> bool
 ```
 
 Checks that this marker (and its children) refer to entries in the domain.
@@ -258,8 +260,8 @@ The actual `SlotSet` event might have happened at an earlier step.
 #### positive\_tag
 
 ```python
- | @staticmethod
- | positive_tag() -> Text
+@staticmethod
+def positive_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -267,8 +269,8 @@ Returns the tag to be used in a config file.
 #### negated\_tag
 
 ```python
- | @staticmethod
- | negated_tag() -> Optional[Text]
+@staticmethod
+def negated_tag() -> Optional[Text]
 ```
 
 Returns the tag to be used in a config file for the negated version.
@@ -276,7 +278,7 @@ Returns the tag to be used in a config file for the negated version.
 #### validate\_against\_domain
 
 ```python
- | validate_against_domain(domain: Domain) -> bool
+def validate_against_domain(domain: Domain) -> bool
 ```
 
 Checks that this marker (and its children) refer to entries in the domain.

@@ -14,7 +14,7 @@ Stores metadata about a function parameter.
 #### validate
 
 ```python
-validate(model_configuration: GraphModelConfiguration) -> None
+def validate(model_configuration: GraphModelConfiguration) -> None
 ```
 
 Validates a graph schema.

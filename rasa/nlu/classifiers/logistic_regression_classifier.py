@@ -9,13 +9,13 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import TEXT, INTENT
-
+from rasa.utils.tensorflow.constants import RANKING_LENGTH
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             "solver": "lbfgs",
             "tol": 1e-4,
             "random_state": 42,
+            RANKING_LENGTH: LABEL_RANKING_LENGTH,
         }
 
     def __init__(
@@ -55,13 +56,13 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     ) -> None:
         """Construct a new classifier."""
         self.name = name
-        config = {**self.get_default_config(), **config}
+        self.config = {**self.get_default_config(), **config}
         self.clf = LogisticRegression(
-            solver=config["solver"],
-            max_iter=config["max_iter"],
+            solver=self.config["solver"],
+            max_iter=self.config["max_iter"],
             class_weight="balanced",
-            tol=config["tol"],
-            random_state=config["random_state"],
+            tol=self.config["tol"],
+            random_state=self.config["random_state"],
             # Added these parameters to ensure sklearn changes won't affect us.
             # Should a sklearn update the defaults, we won't be affected.
             dual=False,
@@ -134,27 +135,23 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> GraphComponent:
+    ) -> "LogisticRegressionClassifier":
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, execution_context.node_name, model_storage, resource)
 
     def process(self, messages: List[Message]) -> List[Message]:
         """Return the most likely intent and its probability for a message."""
         X = self._create_X(messages)
-        pred = self.clf.predict(X)
         probas = self.clf.predict_proba(X)
         for idx, message in enumerate(messages):
-            intent = {"name": pred[idx], "confidence": probas[idx].max()}
             intents = self.clf.classes_
-            intent_info = {
-                k: v
-                for i, (k, v) in enumerate(zip(intents, probas[idx]))
-                if i < LABEL_RANKING_LENGTH
-            }
             intent_ranking = [
-                {"name": k, "confidence": v} for k, v in intent_info.items()
+                {"name": k, "confidence": v} for k, v in zip(intents, probas[idx])
             ]
             sorted_ranking = sorted(intent_ranking, key=lambda e: -e["confidence"])
+            intent = sorted_ranking[0]
+            if self.config[RANKING_LENGTH] > 0:
+                sorted_ranking = sorted_ranking[: self.config[RANKING_LENGTH]]
             message.set("intent", intent, add_to_output=True)
             message.set("intent_ranking", sorted_ranking, add_to_output=True)
         return messages
@@ -174,7 +171,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> GraphComponent:
+    ) -> "LogisticRegressionClassifier":
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_dir:
@@ -189,7 +186,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-            return cls(config, model_storage, resource, execution_context)
+            return cls.create(config, model_storage, resource, execution_context)
 
     def process_training_data(self, training_data: TrainingData) -> TrainingData:
         """Process the training data."""

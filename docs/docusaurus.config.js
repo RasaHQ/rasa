@@ -104,22 +104,22 @@ module.exports = {
           items: [
             {
               target: '_self',
-              href: 'https://rasa.community/',
+              href: 'https://rasa.com/community/join/',
               label: 'Community Hub',
             },
             {
               target: '_self',
-              href: 'https://rasa.community/join/',
+              href: 'https://forum.rasa.com',
               label: 'Forum',
             },
             {
               target: '_self',
-              href: 'https://rasa.community/contribute/',
+              href: 'https://rasa.com/community/contribute/',
               label: 'How to Contribute',
             },
             {
               target: '_self',
-              href: 'https://rasa.community/showcase/',
+              href: 'https://rasa.com/showcase/',
               label: 'Community Showcase',
             },
           ],

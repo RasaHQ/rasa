@@ -21,7 +21,7 @@ WebexTeams input channel. Based on the HTTPInputChannel.
 #### \_\_init\_\_
 
 ```python
- | __init__(access_token: Text, room: Optional[Text] = None) -> None
+def __init__(access_token: Text, room: Optional[Text] = None) -> None
 ```
 
 Create a Cisco Webex Teams input channel.

@@ -1,6 +1,7 @@
 usage: rasa export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
                    [--minimum-timestamp MINIMUM_TIMESTAMP]
                    [--maximum-timestamp MAXIMUM_TIMESTAMP]
+                   [--offset-timestamps-by-seconds OFFSET_TIMESTAMPS_BY_SECONDS]
                    [--conversation-ids CONVERSATION_IDS]
 
 optional arguments:
@@ -16,6 +17,11 @@ optional arguments:
                         Maximum timestamp of events to be exported. The
                         constraint is applied in a 'less than' comparison.
                         (default: None)
+  --offset-timestamps-by-seconds OFFSET_TIMESTAMPS_BY_SECONDS
+                        Offset all event timestamps by the specified amount of
+                        seconds. This won't modify the stored events in the
+                        tracker store, but only change the timestamps in the
+                        events exported to the broker. (default: None)
   --conversation-ids CONVERSATION_IDS
                         Comma-separated list of conversation IDs to migrate.
                         If unset, all available conversation IDs will be
