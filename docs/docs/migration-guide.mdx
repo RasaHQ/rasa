@@ -1453,7 +1453,7 @@ If you have been dynamically filling slots not present in the form's `required_s
 file, note that this behaviour is no longer supported in 3.x. Any dynamic slots with custom mappings, which are set in
 the last user turn, will be filled **only if** they are returned by the `required_slots` method of the custom action
 inheriting from `FormValidationAction`. To maintain the 2.x behaviour, you must now override the `required_slots` method
-of this custom action as per the strong recommendation listed in the [dynamic form documentation](./forms.mdx#dynamic-form-behaviour).
+of this custom action as per the strong recommendation listed in the [dynamic form documentation](./forms.mdx#dynamic-form-behavior).
 
 :::note
 If you have custom validation actions extending `FormValidationAction` which override `required_slots` method, you should
