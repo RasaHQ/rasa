@@ -1455,6 +1455,9 @@ the last user turn, will be filled **only if** they are returned by the `require
 inheriting from `FormValidationAction`. To maintain the 2.x behaviour, you must now override the `required_slots` method
 of this custom action as per the strong recommendation listed in the [dynamic form documentation](./forms.mdx#dynamic-form-behavior).
 
+To extract custom slots that are not defined in any form's `required_slots`, you should now use a global [custom slot mapping](./domain.mdx#custom-slot-mappings)
+and extend the [ValidationAction class](./action-server/validation-action.mdx#validationaction-class).
+
 :::note
 If you have custom validation actions extending `FormValidationAction` which override `required_slots` method, you should
 double-check the dynamic form behavior of your migrated assistant. Slots set by the default action

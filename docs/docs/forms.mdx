@@ -301,7 +301,7 @@ If you're using the Rasa SDK we recommend you to extend the provided
 to extract customs slots:
 
 1. Define a method `extract_<slot_name>` for every slot that should be mapped in a custom way.
-   Each slot which has been defined in the `domain.yml file` with a custom mapping **must** have its own independent
+   Each slot which has been defined in the `domain.yml` file with a custom mapping **must** have its own independent
    implementation of an `extract_<slot_name>` method.
 2. In your domain file, for your form's `required_slots`, list all required slots, with both predefined and custom mappings.
 
