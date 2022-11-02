@@ -4,6 +4,8 @@ sidebar_label: "Deploy Rasa Plus"
 title: "Deploy Rasa Plus in Production"
 description: Deploy Rasa Plus
 ---
+<!-- this file is version specific, do not use `@site/...` syntax -->
+import variables from '../variables.json';
 import RasaProLabel from '@theme/RasaProLabel';
 import RasaProBanner from '@theme/RasaProBanner';
 
@@ -78,13 +80,13 @@ Step c: Remove the file on disk, for example:
 
 For the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa), update as follows:
 
-```yaml
-registry: europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
+<pre><code parentName="pre" className="language-yaml">
+{`registry: europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
 command:
   - rasa
 image:
   name: rasa-plus
-  tag: 0.1.1
+  tag: ${variables.release}
   pullSecrets:
     - name: rasa-plus-pull-secret
 extraEnv:
@@ -92,24 +94,22 @@ extraEnv:
     valueFrom:
       secretKeyRef:
         name: rasapro-license
-        key: licensekey
-```
+        key: licensekey`}</code></pre>
 
 For the [Rasa X/Enterprise Helm Chart](https://github.com/RasaHQ/rasa-x-helm), update as follows:
 
-```yaml
-images:
+<pre><code parentName="pre" className="language-yaml">
+{`images:
   imagePullSecrets:
     - name: rasa-plus-pull-secret
 rasa:
   command:
   - rasa
   name: europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
-  tag: 0.1.1
+  tag: ${variables.release}
   extraEnv:
     - name: RASA_PRO_LICENSE
       valueFrom:
         secretKeyRef:
           name: rasapro-license
-          key: licensekey
-```
+          key: licensekey`}</code></pre>
