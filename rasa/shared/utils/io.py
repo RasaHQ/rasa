@@ -202,11 +202,12 @@ def list_subdirectories(path: Text) -> List[Text]:
 def deep_container_fingerprint(
     obj: Union[List[Any], Dict[Any, Any], Any], encoding: Text = DEFAULT_ENCODING
 ) -> Text:
-    """Calculate a hash which is stable, independent of a containers key order.
+    """Calculate a hash which is stable.
 
     Works for lists and dictionaries. For keys and values, we recursively call
-    `hash(...)` on them. Keep in mind that a list with keys in a different order
-    will create the same hash!
+    `hash(...)` on them. In case of a dict, the hash is independent of the containers
+    key order. Keep in mind that a list with items in a different order
+    will not create the same hash!
 
     Args:
         obj: dictionary or list to be hashed.
