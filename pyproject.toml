@@ -112,7 +112,7 @@ psycopg2-binary = ">=2.8.2,<2.10.0"
 python-dateutil = "~2.8"
 protobuf = ">=3.9.2,< 3.20"
 tensorflow_hub = "~0.12.0"
-tensorflow-addons = "~0.17.0"
+tensorflow-addons = "~0.18.0"
 setuptools = ">=41.0.0"
 kafka-python = ">=1.4,<3.0"
 ujson = ">=1.35,<6.0"
@@ -193,11 +193,11 @@ metal = [ "tensorflow-metal",]
 rasa = "rasa.__main__:main"
 
 [tool.poetry.dependencies.tensorflow]
-version = "~2.8.2"
+version = "~2.10.0"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 
 [tool.poetry.dependencies.tensorflow-macos]
-version = "2.8.0"
+version = "2.10.0"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 
 [tool.poetry.dependencies.PyJWT]
@@ -214,7 +214,7 @@ markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
-version = "~2.8.0"
+version = "~2.10.0"
 markers = "sys_platform!='win32' and platform_machine!='arm64'"
 
 [tool.poetry.dependencies."github3.py"]
