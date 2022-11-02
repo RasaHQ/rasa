@@ -109,6 +109,8 @@ see [Example queries](./example-queries).
   - [Amazon Redshift](https://aws.amazon.com/redshift/)
 
   Virtually any other data lakes can be configured to sync with your deployment of PostgreSQL.
+  You can find additional instructions on how to connect your PostgreSQL deployment to either [BigQuery](#bigquery)
+  or [Snowflake](#snowflake) in the [Connect a data warehouse step](#2-connect-a-data-warehouse).
 
   We recommend managed deployments of your data lake to minimize maintenance
   efforts.
@@ -136,6 +138,11 @@ transformed conversational data to two different data warehouse types in AWS:
 
 Additionally, any data warehouse is supported if it is configured in sync with
 your deployment of PostgreSQL, [as recommended for Redshift](#streaming-from-postgresql-to-redshift).
+
+We have included brief instructions for syncing your PostgreSQL deployment with:
+
+- [BigQuery](#bigquery)
+- [Snowflake](#snowflake)
 
 ### PostgreSQL
 
@@ -212,6 +219,36 @@ choosing a direct connection to Redshift. Redshift is a great data lake for
 analytics but lacks the necessary write performance to directly stream data to it.
 
 :::
+
+### BigQuery
+
+To stream data from PostgreSQL to BigQuery, you can use [Datastream for BigQuery](https://cloud.google.com/datastream/docs).
+Datastream for BigQuery supports several [PostgreSQL deployment types](https://cloud.google.com/datastream/docs/configure-your-source-postgresql-database#overview),
+including [CloudSQL](https://cloud.google.com/sql/docs/postgres).
+
+Before you begin, make sure to check the Datastream [prerequisites](https://cloud.google.com/datastream/docs/before-you-begin), as well as
+additional Datastream networking connectivity [requirements](https://cloud.google.com/datastream/docs/quickstart-replication-to-bigquery#requirements).
+
+You can closely follow [this quickstart guide](https://cloud.google.com/datastream/docs/quickstart-replication-to-bigquery) on replicating data from PostgreSQL CloudSQL to BigQuery with Datastream.
+
+Alternatively, you can deep dive into the following Datastream set-up guides:
+
+- [Configure your source PostgreSQL database](https://cloud.google.com/datastream/docs/configure-your-source-postgresql-database)
+- Optional: use [customer-managed encryption keys](https://cloud.google.com/datastream/docs/use-cmek)
+- Create a [connection profile for PostgreSQL database](https://cloud.google.com/datastream/docs/create-connection-profiles#cp4postgresdb)
+- Create a [stream](https://cloud.google.com/datastream/docs/create-a-stream)
+
+### Snowflake
+
+You can sync your PostgreSQL deployment manually or via an automated [partner solution](https://docs.snowflake.com/en/user-guide/ecosystem-etl.html).
+
+The instructions for manual sync include the following steps:
+- Extract data from PostgreSQL to file using `COPY INTO` [command](https://docs.snowflake.com/en/sql-reference/sql/copy-into-location.html).
+  You should also explore the Snowflake [data loading best practices](https://docs.snowflake.com/en/user-guide/data-load-considerations.html) before extraction.
+- Stage the extracted data files to either internal or external locations such as AWS S3, Google Cloud Storage or Microsoft Azure.
+- Copy staged files to Snowflake tables using `COPY INTO` [command](https://docs.snowflake.com/en/sql-reference/sql/copy-into-table.html).
+  You can decide to use [bulk data loading](https://docs.snowflake.com/en/user-guide/data-load-bulk.html) into Snowflake or to load continuously using [Snowpipe](https://docs.snowflake.com/en/user-guide/data-load-snowpipe.html).
+ Alternatively you can also benefit from [this plugin](https://cdap.atlassian.net/wiki/spaces/DOCS/pages/694157985/Cloud+Storage+to+Snowflake+Action) to load data to an existing Snowflake table.
 
 ## 3. Ingest past conversations (optional)
 
