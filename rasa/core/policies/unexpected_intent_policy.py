@@ -841,8 +841,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             minimum_positive_score = min(positive_scores)
             # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if negative_scores:
-                quantile_values = np.quantile(  # type: ignore[no-untyped-call]
-                    negative_scores, quantile_indices, interpolation="lower"
+                quantile_values = \
+                    np.quantile(  # type: ignore[no-untyped-call, call-overload]
+                        negative_scores, quantile_indices, interpolation="lower"
                 )
                 label_quantiles[label_id] = [
                     min(minimum_positive_score, value) for value in quantile_values

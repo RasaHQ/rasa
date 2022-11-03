@@ -10,7 +10,7 @@ from typing import (
     Union,
     NamedTuple,
     ItemsView,
-    overload,
+    overload, cast,
 )
 from collections import defaultdict, OrderedDict
 
@@ -78,7 +78,7 @@ class FeatureArray(np.ndarray):
         super().__init__(**kwargs)
         self.number_of_dimensions = number_of_dimensions
 
-    def __array_finalize__(self, obj: Any) -> None:
+    def __array_finalize__(self, obj: Optional[np.ndarray]) -> None:
         """This method is called when the system allocates a new array from obj.
 
         Args:
@@ -350,7 +350,8 @@ class RasaModelData:
         for key, attribute_data in self.data.items():
             out_data[key] = {}
             for sub_key, features in attribute_data.items():
-                out_data[key][sub_key] = [feature[:1] for feature in features]
+                feature_slices = [feature[:1] for feature in features]
+                out_data[key][sub_key] = cast(List[FeatureArray], feature_slices)
         return out_data
 
     def does_feature_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
