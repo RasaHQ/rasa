@@ -192,8 +192,11 @@ def _extract_paired_histogram_specification(
     histograms = [
         # A list of counts - how often a value in `data` falls into a particular bin
         # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        list(np.histogram(data,  # type: ignore[no-untyped-call]
-                          bins=bins, density=density)[0])
+        list(
+            np.histogram(
+                data, bins=bins, density=density  # type: ignore[no-untyped-call]
+            )[0]
+        )
         for data in histogram_data
     ]
 

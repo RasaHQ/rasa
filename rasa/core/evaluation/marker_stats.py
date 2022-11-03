@@ -21,8 +21,9 @@ def compute_statistics(
         "count": len(values) if values else 0,
         "mean": np.mean(values) if values else np.nan,
         # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        "median":
-            np.median(values) if values else np.nan,  # type: ignore[no-untyped-call]
+        "median": np.median(values)
+        if values
+        else np.nan,  # type: ignore[no-untyped-call]
         "min": min(values) if values else np.nan,
         "max": max(values) if values else np.nan,
     }

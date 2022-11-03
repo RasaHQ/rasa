@@ -10,7 +10,8 @@ from typing import (
     Union,
     NamedTuple,
     ItemsView,
-    overload, cast,
+    overload,
+    cast,
 )
 from collections import defaultdict, OrderedDict
 
