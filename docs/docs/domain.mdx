@@ -425,7 +425,7 @@ it's been specified). You can do this by defining a custom slot class.
 
 The code below defines a custom slot class called `NumberOfPeopleSlot`. 
 The featurization defines how the value of this slot gets converted to a vector
-so Rasa Open Source machine learning model can deal with it.
+so Rasa machine learning model can deal with it.
 The `NumberOfPeopleSlot` has three possible “values”, which can be represented with
 a vector of length `2`.
 
@@ -485,7 +485,7 @@ slots:
     - type: custom
 ```
 
-Now that your custom slot class can be used by Rasa Open Source, add training stories that diverge based on the value of the `people` slot.
+Now that your custom slot class can be used by Rasa, add training stories that diverge based on the value of the `people` slot.
 You could write one story for the case where `people` has a value between 1 and 6, and one for a value greater than six. You can choose any value within these ranges to put in your stories, since they are all featurized the same way (see the featurization table above).
 
 
@@ -525,7 +525,7 @@ to update your assistant.
 
 :::
 
-Rasa Open Source comes with four predefined mappings to fill slots
+Rasa comes with four predefined mappings to fill slots
 based on the latest user message.
 
 In addition to the predefined mappings, you can define [custom slot mappings](./domain.mdx#custom-slot-mappings).

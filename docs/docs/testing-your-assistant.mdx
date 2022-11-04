@@ -2,7 +2,7 @@
 id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
-abstract: Rasa Open Source lets you validate and test dialogues end-to-end by running through
+abstract: Rasa lets you validate and test dialogues end-to-end by running through
   test stories. In addition, you can
   also test the dialogue management and the message processing (NLU)
   separately.
@@ -459,7 +459,7 @@ to conversations it hasn't seen before. Especially in the beginning
 of a project, when you don't have a lot of real conversations to train
 your bot on, you may not want to exclude some to use as a test set.
 
-Rasa Open Source has some scripts to help you choose and fine-tune your policy configuration.
+Rasa has some scripts to help you choose and fine-tune your policy configuration.
 Once you are happy with it, you can then train your final configuration on your
 full data set.
 
@@ -474,7 +474,7 @@ rasa train core -c config_1.yml config_2.yml \
 
 Similar to how the [NLU model was evaluated](./testing-your-assistant.mdx#comparing-nlu-pipelines), the above
 command trains the dialogue model on multiple configurations and different amounts of training data.
-For each config file provided, Rasa Open Source will train dialogue models
+For each config file provided, Rasa will train dialogue models
 with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
 data. This is repeated three times to ensure consistent results.
 

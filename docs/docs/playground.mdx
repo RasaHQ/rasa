@@ -1,13 +1,14 @@
 ---
 id: playground
-sidebar_label: 'Rasa Playground'
-title: 'Rasa Playground'
-abstract: Learn the basics of building an assistant with Rasa Open Source with this interactive guide. You will be able to customize the assistant, talk to it and download the project so you can continue to build.
+sidebar_label: "Rasa Playground"
+title: "Rasa Playground"
+abstract: Learn the basics of building an assistant with Rasa with this interactive guide. You will be able to customize the assistant, talk to it and download the project so you can continue to build.
 hide_table_of_contents: true
 ---
-import useBaseUrl from '@docusaurus/useBaseUrl';
-import Prototyper, { DownloadButton, TrainButton } from '@theme/Prototyper';
-import AssistantBuilder from '@theme/AssistantBuilder';
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import Prototyper, { DownloadButton, TrainButton } from "@theme/Prototyper";
+import AssistantBuilder from "@theme/AssistantBuilder";
 
 <Prototyper
   startPrototyperApi="https://trainer-service.prototyping.rasa.com/startPrototyping"
@@ -230,16 +231,16 @@ You can download this project and continue building to create a more advanced as
 
 <DownloadButton />
 
-[Install Rasa open source to keep building.](./installation.mdx)
+[Install Rasa to keep building.](./installation/installing-rasa-open-source.mdx)
 
-<br/>
+<br />
 
 When you train a model, you always want to check that your assistant still behaves as
 you expect. You can do that by talking to your assistant and seeing that it works.
 However, as your assistant becomes more complex, you will want to use test stories to
 ensure your model makes correct predictions.
 
-<br/>
+<br />
 
 Try running `rasa test` to make sure that your assistant passes your tests:
 

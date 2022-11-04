@@ -77,20 +77,25 @@ jobs:
         id: check_tag
         if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
         run: |
-          # Get latest tagged Rasa version
-          git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
-          # Fetch branch history
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          git fetch --prune --unshallow
-          python scripts/evaluate_release_tag.py $TAG_NAME
-          exit_status=$?
-
-          if [[ ${exit_status} -eq 0 || "${IS_MAIN_BRANCH}" == "true" ]]; then
-            echo "Setting buid docs to true."
+          if [[ "${IS_MAIN_BRANCH}" == "true" ]]; then
+            echo "Main branch: setting build_docs to true."
             echo "::set-output name=build_docs::true"
           else
-            echo "Setting buid docs to false."
-            echo "::set-output name=build_docs::false"
+            # Get latest tagged Rasa version
+            git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
+            # Fetch branch history
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            git fetch --prune --unshallow
+            python scripts/evaluate_release_tag.py $TAG_NAME
+            exit_status=$?
+
+            if [[ ${exit_status} -eq 0 ]]; then
+              echo "Setting build_docs to true."
+              echo "::set-output name=build_docs::true"
+            else
+              echo "Setting build_docs to false."
+              echo "::set-output name=build_docs::false"
+            fi
           fi
 
   prebuild_docs:
