@@ -22,6 +22,7 @@ from rasa.shared.constants import (
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
     CONFIG_SCHEMA_FILE,
     MODEL_CONFIG_SCHEMA_FILE,
+    ENV_NO_COLOR,
 )
 from rasa.shared.exceptions import (
     FileIOException,
@@ -47,7 +48,13 @@ class bcolors:
 
 
 def wrap_with_color(*args: Any, color: Text) -> Text:
-    return color + " ".join(str(s) for s in args) + bcolors.ENDC
+    """Convert args in a string and wrap it with a given color."""
+    message = " ".join(str(s) for s in args)
+
+    if should_print_colors():
+        return color + message + bcolors.ENDC
+
+    return message
 
 
 def raise_warning(
@@ -626,3 +633,8 @@ def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
 def random_string(length: int) -> Text:
     """Returns a random string of given length."""
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+def should_print_colors() -> bool:
+    """Checks if should print colors."""
+    return ENV_NO_COLOR not in os.environ
