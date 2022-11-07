@@ -78,7 +78,7 @@ jobs:
 
     steps:
       - name: Wait for doc tests
-        uses: fountainhead/action-wait-for-check@4699210ccc66e2a13260803fadbb77085421b891
+        uses: fountainhead/action-wait-for-check@297be350cf8393728ea4d4b39435c7d7ae167c93
         id: wait-for-doc-tests
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
