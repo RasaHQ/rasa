@@ -115,7 +115,7 @@ jobs:
           python-version: 3.9
 
       - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@v3.5.1
+        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
         with:
           node-version: "12.x"
 
@@ -207,7 +207,7 @@ jobs:
 
       - name: Set up Node 12.x 🦙
         if: needs.changes.outputs.docs == 'true'
-        uses: actions/setup-node@v3.5.1
+        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
         with:
           node-version: "12.x"
 
@@ -294,7 +294,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@v3.5.1
+        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
         with:
           node-version: "12.x"
 
