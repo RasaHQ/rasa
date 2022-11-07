@@ -1,7 +1,8 @@
-usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
-                 [--fail-on-prediction-errors] [--url URL]
-                 [--evaluate-model-directory] [-u NLU]
+usage: rasa test [-h] [-v] [-vv] [--quiet]
+                 [--logging-config-file LOGGING_CONFIG_FILE] [-m MODEL]
+                 [-s STORIES] [--max-stories MAX_STORIES]
+                 [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
+                 [--url URL] [--evaluate-model-directory] [-u NLU]
                  [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
                  [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  [--no-plot] [--successes] [--no-errors] [--no-warnings]
@@ -40,6 +41,9 @@ Python Logging Options:
                         to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default:
                         None)
+  --logging-config-file LOGGING_CONFIG_FILE
+                        If set, the name of the logging configuration file
+                        will be set to the given name. (default: None)
 
 Core Test Arguments:
   -s STORIES, --stories STORIES

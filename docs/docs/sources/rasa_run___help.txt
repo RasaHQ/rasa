@@ -1,6 +1,7 @@
-usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
-                [--use-syslog] [--syslog-address SYSLOG_ADDRESS]
-                [--syslog-port SYSLOG_PORT]
+usage: rasa run [-h] [-v] [-vv] [--quiet]
+                [--logging-config-file LOGGING_CONFIG_FILE] [-m MODEL]
+                [--log-file LOG_FILE] [--use-syslog]
+                [--syslog-address SYSLOG_ADDRESS] [--syslog-port SYSLOG_PORT]
                 [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
                 [-i INTERFACE] [-p PORT] [-t AUTH_TOKEN] [--cors [CORS ...]]
                 [--enable-api] [--response-timeout RESPONSE_TIMEOUT]
@@ -53,6 +54,9 @@ Python Logging Options:
                         to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default:
                         None)
+  --logging-config-file LOGGING_CONFIG_FILE
+                        If set, the name of the logging configuration file
+                        will be set to the given name. (default: None)
 
 Server Settings:
   -i INTERFACE, --interface INTERFACE
