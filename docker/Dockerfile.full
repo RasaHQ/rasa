@@ -33,7 +33,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 # spacy link
 RUN python -m spacy download en_core_web_md && \
     python -m spacy download de_core_news_sm && \
+    python -m spacy download it_core_news_md && \
     python -m spacy link en_core_web_md en && \
+    python -m spacy link it_core_news_md it && \
     python -m spacy link de_core_news_sm de
 
 # start a new build stage

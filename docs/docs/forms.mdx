@@ -8,7 +8,7 @@ abstract: One of the most common conversation patterns is to collect a few piece
 
 ## Usage
 
-To use forms with Rasa Open Source you need to make sure that the
+To use forms with Rasa you need to make sure that the
 [Rule Policy](./policies.mdx#rule-policy) is added to your policy configuration.
 For example:
 
@@ -224,7 +224,7 @@ Forms are fully customizable using [Custom Actions](./actions.mdx#custom-actions
 ### Validating Form Input
 
 After extracting a slot value from user input, you can validate the extracted slots.
-By default Rasa Open Source only validates if any slot was filled after requesting
+By default Rasa only validates if any slot was filled after requesting
 a slot.
 
 You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>`
@@ -294,14 +294,15 @@ has been replaced by the `domain_slots` argument, please update your custom acti
 If none of the predefined [Slot Mappings](./domain.mdx#slot-mappings) fit your use
 case, you can use the
 [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>` to write your own
-extraction code. Rasa Open Source will trigger this action when the form is run.
+extraction code. Rasa will trigger this action when the form is run.
 
 If you're using the Rasa SDK we recommend you to extend the provided
 `FormValidationAction`. When using the `FormValidationAction`, three steps are required
 to extract customs slots:
 
-1. Define a method `extract_<slot_name>` for every slot that should be mapped in a
-   custom way.
+1. Define a method `extract_<slot_name>` for every slot that should be mapped in a custom way.
+   Each slot which has been defined in the `domain.yml` file with a custom mapping **must** have its own independent
+   implementation of an `extract_<slot_name>` method.
 2. In your domain file, for your form's `required_slots`, list all required slots, with both predefined and custom mappings.
 
 In addition, you can override the `required_slots` method to add dynamically requested slots: you can read more in the
@@ -346,18 +347,18 @@ first slot specified in `required_slots` which is not filled.
 
 ### Dynamic Form Behavior
 
-By default Rasa Open Source will ask for the next empty slot from the slots
+By default, Rasa will ask for the next empty slot from the slots
 listed for your form in the domain file. If you use
 [custom slot mappings](forms.mdx#custom-slot-mappings) and the `FormValidationAction`,
 it will ask for the first empty slot returned by the `required_slots` method. If all
 slots in `required_slots` are filled the form will be deactivated.
 
-If needed, you can update the required slots of your form dynamically.
-This is, for example, useful when you need further details based on how
-a previous slot was filled or you want to change the order in which slots are requested.
+You can update the required slots of your form dynamically.
+This is, for example, useful when you need to fill additional slots based on how
+a previous slot was filled or when you want to change the order in which slots are requested.
 
-If you are using the Rasa SDK, we recommend you to use the `FormValidationAction` and
-override `required_slots` to fit your dynamic behavior. You should implement
+If you are using the Rasa SDK, we strongly recommend that you use the `FormValidationAction` and
+override `required_slots` to fit your dynamic behavior. You must implement
 a method `extract_<slot name>` for every slot which doesn't use a predefined mapping,
 as described in [Custom Slot Mappings](forms.mdx#custom-slot-mappings).
 The example below will ask the user if they want to sit in
