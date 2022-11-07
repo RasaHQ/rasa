@@ -150,7 +150,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
-        self.model = model_class_dict[self.model_name].from_pretrained(  # type: ignore[no-untyped-call] # noqa: E501
+        self.model = model_class_dict[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
 
@@ -541,9 +541,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         reshaped_sequence_embeddings = []
         for index, embedding in enumerate(sequence_embeddings):
             embedding_size = embedding.shape[-1]
-            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if actual_sequence_lengths[index] > self.max_model_sequence_length:
-                embedding = np.concatenate(  # type: ignore[no-untyped-call]
+                embedding = np.concatenate(
                     [
                         embedding,
                         np.zeros(

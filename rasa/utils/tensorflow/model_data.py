@@ -161,10 +161,7 @@ class FeatureArray(np.ndarray):
         self.number_of_dimensions = state[-3]
         self.is_sparse = state[-2]
         self.units = state[-1]
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        super(FeatureArray, self).__setstate__(
-            state[0:-3], **kwargs
-        )  # type: ignore[no-untyped-call]
+        super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
 
     # pytype: enable=attribute-error
 
@@ -608,11 +605,10 @@ class RasaModelData:
             label_ids = self._create_label_ids(
                 self.data[self.label_key][self.label_sub_key][0]
             )
-            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             label_counts: Dict[int, int] = dict(
                 zip(
                     *np.unique(
-                        label_ids,  # type: ignore[no-untyped-call]
+                        label_ids,
                         return_counts=True,
                         axis=0,
                     )
@@ -715,8 +711,7 @@ class RasaModelData:
 
         label_ids = self._create_label_ids(data[self.label_key][self.label_sub_key][0])
 
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        unique_label_ids, counts_label_ids = np.unique(  # type: ignore[no-untyped-call]
+        unique_label_ids, counts_label_ids = np.unique(
             label_ids, return_counts=True, axis=0
         )
         num_label_ids = len(unique_label_ids)
@@ -771,15 +766,12 @@ class RasaModelData:
                     break
 
         final_data: Data = defaultdict(lambda: defaultdict(list))
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
                     final_data[key][sub_key].append(
                         FeatureArray(
-                            np.concatenate(  # type: ignore[no-untyped-call]
-                                np.array(f)
-                            ),
+                            np.concatenate(np.array(f)),
                             number_of_dimensions=f[0].number_of_dimensions,
                         )
                     )
@@ -950,9 +942,8 @@ class RasaModelData:
             return FeatureArray(
                 scipy.sparse.vstack([feature_1, feature_2]), number_of_dimensions
             )
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         return FeatureArray(
-            np.concatenate([feature_1, feature_2]),  # type: ignore[no-untyped-call]
+            np.concatenate([feature_1, feature_2]),
             number_of_dimensions,
         )
 

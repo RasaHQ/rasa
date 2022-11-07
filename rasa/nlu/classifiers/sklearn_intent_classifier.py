@@ -163,10 +163,7 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
 
     def _num_cv_splits(self, y: np.ndarray) -> int:
         folds = self.component_config["max_cross_validation_folds"]
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        return max(
-            2, min(folds, np.min(np.bincount(y)) // 5)  # type: ignore[no-untyped-call]
-        )
+        return max(2, min(folds, np.min(np.bincount(y)) // 5))
 
     def _create_classifier(
         self, num_threads: int, y: np.ndarray
@@ -264,10 +261,7 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
         # sort the probabilities retrieving the indices of
         # the elements in sorted order
 
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        sorted_indices = np.fliplr(  # type: ignore[no-untyped-call]
-            np.argsort(pred_result, axis=1)
-        )
+        sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
         return sorted_indices, pred_result[:, sorted_indices]
 
     def persist(self) -> None:

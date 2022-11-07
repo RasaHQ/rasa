@@ -489,10 +489,7 @@ def _extract_features(
         # add additional dimension to attribute mask
         # to get a vector of shape (dialogue length x 1),
         # the batch dim will be added later
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        attribute_mask = np.expand_dims(
-            attribute_mask, -1
-        )  # type: ignore[no-untyped-call]
+        attribute_mask = np.expand_dims(attribute_mask, -1)
         attribute_masks.append(attribute_mask)
 
     return attribute_masks, dense_features, sparse_features
