@@ -156,3 +156,10 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
         dest="loglevel",
         const=logging.WARNING,
     )
+
+    logging_arguments.add_argument(
+        "--logging-config-file",
+        type=str,
+        help="If set, the name of the logging configuration file will be set "
+        "to the given name.",
+    )
