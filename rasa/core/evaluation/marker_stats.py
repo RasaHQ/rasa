@@ -1,8 +1,6 @@
 from __future__ import annotations
 from typing import Dict, Text, Union, List, Tuple
 
-from numpy import floating
-
 from rasa.utils.io import WriteRow
 from pathlib import Path
 import csv
@@ -15,7 +13,7 @@ from rasa.core.evaluation.marker_base import EventMetaData
 
 def compute_statistics(
     values: List[Union[float, int]]
-) -> Dict[Text, Union[int, float, floating]]:
+) -> Dict[Text, Union[int, float, np.floating]]:
     """Computes some statistics over the given numbers."""
     return {
         "count": len(values) if values else 0,
