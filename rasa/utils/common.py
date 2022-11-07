@@ -1,6 +1,7 @@
 import copy
 import inspect
 import logging
+import logging.config
 import logging.handlers
 import os
 import shutil
@@ -69,6 +70,9 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
 ]
 
 EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)
+PYTHON_LOGGING_SCHEMA_DOCS = (
+    "https://docs.python.org/3/library/logging.config.html#dictionary-schema-details"
+)
 
 
 class TempDirectoryPath(str, ContextManager):
@@ -106,8 +110,30 @@ def read_global_config(path: Text) -> Dict[Text, Any]:
         return {}
 
 
+def configure_logging_from_file(logging_config_file: Text) -> None:
+    """Parses YAML file content to configure logging.
+
+    Args:
+        logging_config_file: YAML file containing logging configuration to handle
+            custom formatting
+    """
+    logging_config_dict = rasa.shared.utils.io.read_yaml_file(logging_config_file)
+
+    try:
+        logging.config.dictConfig(logging_config_dict)
+    except (ValueError, TypeError, AttributeError, ImportError) as e:
+        logging.debug(
+            f"The logging config file {logging_config_file} could not "
+            f"be applied because it failed validation against "
+            f"the built-in Python logging schema. "
+            f"More info at {PYTHON_LOGGING_SCHEMA_DOCS}.",
+            exc_info=e,
+        )
+
+
 def configure_logging_and_warnings(
     log_level: Optional[int] = None,
+    logging_config_file: Optional[Text] = None,
     warn_only_once: bool = True,
     filter_repeated_logs: bool = True,
 ) -> None:
@@ -117,11 +143,16 @@ def configure_logging_and_warnings(
         log_level: The log level to be used for the 'Rasa' logger. Pass `None` to use
             either the environment variable 'LOG_LEVEL' if it is specified, or the
             default log level otherwise.
+        logging_config_file: YAML file containing logging configuration to handle
+            custom formatting
         warn_only_once: determines whether user warnings should be filtered by the
             `warnings` module to appear only "once"
         filter_repeated_logs: determines whether `RepeatedLogFilter`s are added to
             the handlers of the root logger
     """
+    if logging_config_file is not None:
+        configure_logging_from_file(logging_config_file)
+
     if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
         log_level_name = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
         # Change log level from str to int (note that log_level in function parameter
