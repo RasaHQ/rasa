@@ -99,8 +99,7 @@ class Features:
                 f"Cannot combine dense features as sequence dimensions do not "
                 f"match: {self.features.ndim} != {additional_features.features.ndim}."
             )
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        self.features = np.concatenate(  # type: ignore[no-untyped-call]
+        self.features = np.concatenate(
             (self.features, additional_features.features), axis=-1
         )
         self._cached_fingerprint = None
@@ -321,10 +320,7 @@ class Features:
         # Combine the features
         arbitrary_feature = features_list[0]
         if not arbitrary_feature.is_sparse():
-            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-            features = np.concatenate(  # type: ignore[no-untyped-call]
-                [f.features for f in features_list], axis=-1
-            )
+            features = np.concatenate([f.features for f in features_list], axis=-1)
         else:
             features = scipy.sparse.hstack([f.features for f in features_list])
         return Features(
