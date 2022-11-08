@@ -66,6 +66,9 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # is not available on PyPi, so we cannot pin the newer version.
     # cf. https://github.com/google/flatbuffers/issues/6957
     (DeprecationWarning, "the imp module is deprecated in favour of importlib.*"),
+    # Cannot fix this deprecation warning since we need to support two
+    # numpy versions as long as we keep python 37 around
+    (DeprecationWarning, "the `interpolation=` argument to quantile was renamed"),
 ]
 
 EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)
