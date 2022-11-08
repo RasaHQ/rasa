@@ -18,7 +18,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from sanic.request import Request
 
-from typing import Iterator, Callable
+from typing import Generator, Iterator, Callable
 
 from pathlib import Path
 from sanic import Sanic
@@ -195,6 +195,15 @@ def endpoints_path() -> Text:
 @pytest.fixture(scope="session")
 def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="session")
+def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
     yield loop
     loop.close()
 
