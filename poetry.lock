@@ -1,6 +1,6 @@
 [[package]]
 name = "absl-py"
-version = "1.2.0"
+version = "1.3.0"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
 category = "main"
 optional = false
@@ -342,14 +342,14 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.26.3"
+version = "1.26.4"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.29.3,<1.30.0"
+botocore = ">=1.29.4,<1.30.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -358,7 +358,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.29.3"
+version = "1.29.4"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -1004,7 +1004,7 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2,<1.0dev)"]
 
 [[package]]
 name = "google-auth"
-version = "2.14.0"
+version = "2.14.1"
 description = "Google Authentication Library"
 category = "main"
 optional = false
@@ -1019,7 +1019,7 @@ six = ">=1.9.0"
 [package.extras]
 aiohttp = ["requests (>=2.20.0,<3.0.0dev)", "aiohttp (>=3.6.2,<4.0.0dev)"]
 enterprise_cert = ["cryptography (==36.0.2)", "pyopenssl (==22.0.0)"]
-pyopenssl = ["pyopenssl (>=20.0.0)"]
+pyopenssl = ["pyopenssl (>=20.0.0)", "cryptography (>=38.0.3)"]
 reauth = ["pyu2f (>=0.1.5)"]
 
 [[package]]
@@ -1054,7 +1054,7 @@ grpc = ["grpcio (>=1.38.0,<2.0dev)"]
 
 [[package]]
 name = "google-cloud-storage"
-version = "2.5.0"
+version = "2.6.0"
 description = "Google Cloud Storage API client library"
 category = "dev"
 optional = false
@@ -1123,7 +1123,7 @@ grpc = ["grpcio (>=1.0.0,<2.0.0dev)"]
 
 [[package]]
 name = "greenlet"
-version = "2.0.0.post0"
+version = "2.0.1"
 description = "Lightweight in-process concurrent programming"
 category = "main"
 optional = false
@@ -1131,7 +1131,7 @@ python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*"
 
 [package.extras]
 docs = ["sphinx", "docutils (<0.18)"]
-test = ["objgraph", "faulthandler"]
+test = ["objgraph", "psutil", "faulthandler"]
 
 [[package]]
 name = "grpcio"
@@ -1937,7 +1937,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "psutil"
-version = "5.9.3"
+version = "5.9.4"
 description = "Cross-platform lib for process and system monitoring in Python."
 category = "dev"
 optional = false
@@ -2190,7 +2190,7 @@ testing = ["async-generator (>=1.3)", "coverage", "hypothesis (>=5.7.1)"]
 
 [[package]]
 name = "pytest-cov"
-version = "3.0.0"
+version = "4.0.0"
 description = "Pytest plugin for measuring coverage."
 category = "dev"
 optional = false
@@ -2483,7 +2483,7 @@ idna2008 = ["idna"]
 
 [[package]]
 name = "rocketchat-api"
-version = "1.26.0"
+version = "1.27.0"
 description = "Python API wrapper for Rocket.Chat"
 category = "main"
 optional = false
@@ -3289,18 +3289,18 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "towncrier"
-version = "21.9.0"
+version = "22.8.0"
 description = "Building newsfiles for your project."
 category = "dev"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 
 [package.dependencies]
 click = "*"
 click-default-group = "*"
 incremental = "*"
 jinja2 = "*"
-tomli = {version = "*", markers = "python_version >= \"3.6\""}
+tomli = "*"
 
 [package.extras]
 dev = ["packaging"]
@@ -3698,7 +3698,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "0d01b6848ff850ce06e976b7a800cca3ad4ed580f9c5e0b9510345e9637b6d0f"
+content-hash = "cb66e035d0d9e7ee7555e7a9e3ed677567392aa386fbb8b1c81b43b2065e9cb4"
 
 [metadata.files]
 absl-py = []
