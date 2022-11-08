@@ -167,21 +167,11 @@ def _extract_paired_histogram_specification(
     Raises:
         ValueError: If histogram_data does not contain values.
     """
-    # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-    if (
-        not histogram_data
-        or not np.concatenate(histogram_data).size  # type: ignore[no-untyped-call]
-    ):
+    if not histogram_data or not np.concatenate(histogram_data).size:
         rasa.shared.utils.io.raise_warning("No data to plot paired histogram.")
         raise ValueError("No data to plot paired histogram.")
-    # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-    min_data_value = np.min(
-        np.concatenate(histogram_data)  # type: ignore[no-untyped-call]
-    )
-    # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-    max_data_value = np.max(
-        np.concatenate(histogram_data)  # type: ignore[no-untyped-call]
-    )
+    min_data_value: float = np.min(np.concatenate(histogram_data))
+    max_data_value: float = np.max(np.concatenate(histogram_data))
     bin_width = (max_data_value - min_data_value) / num_bins
     bins = [
         min_data_value + i * bin_width
@@ -191,10 +181,7 @@ def _extract_paired_histogram_specification(
     ]
     histograms = [
         # A list of counts - how often a value in `data` falls into a particular bin
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        np.histogram(data, bins=bins, density=density)[  # type: ignore[no-untyped-call]
-            0
-        ]
+        list(np.histogram(data, bins=bins, density=density)[0])
         for data in histogram_data
     ]
 
@@ -212,9 +199,12 @@ def _extract_paired_histogram_specification(
         # by `x_pad_fraction` to get the maximum x-values displayed
         x_ranges = [(1.0 + x_pad_fraction) * max(histogram) for histogram in histograms]
 
-    bin_of_first_non_zero_tally = min(
-        [(histogram != 0).argmax(axis=0) for histogram in histograms]
-    )
+    try:
+        bin_of_first_non_zero_tally = min(
+            [[bool(v) for v in histogram].index(True) for histogram in histograms]
+        )
+    except ValueError:
+        bin_of_first_non_zero_tally = 0
 
     y_range = (
         # Start plotting where the data starts (ignore empty bins at the low end)
@@ -287,8 +277,7 @@ def plot_paired_histogram(
         axes[side].barh(
             bins[:-1],
             tallies[side],
-            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-            height=np.diff(bins),  # type: ignore[no-untyped-call]
+            height=np.diff(bins),
             align="center",
             color=colors[side],
             linewidth=1,

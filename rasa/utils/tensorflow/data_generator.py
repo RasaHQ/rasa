@@ -1,4 +1,4 @@
-from typing import List, Union, Text, Optional, Any, Tuple, Dict
+from typing import List, Union, Text, Optional, Any, Tuple, Dict, cast
 
 import logging
 import scipy.sparse
@@ -112,7 +112,7 @@ class RasaDataGenerator(Sequence):
                     else:
                         _data = v[:]
 
-                    if _data.is_sparse:
+                    if cast(FeatureArray, _data).is_sparse:
                         batch_data.extend(
                             RasaDataGenerator._scipy_matrix_to_values(_data)
                         )
