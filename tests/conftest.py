@@ -44,6 +44,7 @@ from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model_training import train, train_nlu
 from rasa.shared.exceptions import RasaException
 import rasa.utils.common
+import rasa.utils.io
 
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come

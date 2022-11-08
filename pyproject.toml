@@ -241,3 +241,6 @@ extras = [ "tls", "srv",]
 [tool.poetry.dev-dependencies.pytest-sanic]
 git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix_signal_issue"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
