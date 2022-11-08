@@ -6,7 +6,8 @@ title: rasa.core.evaluation.marker_stats
 
 ```python
 def compute_statistics(
-        values: List[Union[float, int]]) -> Dict[Text, Union[int, float]]
+    values: List[Union[float,
+                       int]]) -> Dict[Text, Union[int, float, np.floating]]
 ```
 
 Computes some statistics over the given numbers.

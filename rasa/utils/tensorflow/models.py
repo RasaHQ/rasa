@@ -351,9 +351,8 @@ class RasaModel(TmpKerasModel):
         if not all_outputs:
             return batch_output
         for key, val in batch_output.items():
-            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if isinstance(val, np.ndarray):
-                all_outputs[key] = np.concatenate(  # type: ignore[no-untyped-call]
+                all_outputs[key] = np.concatenate(
                     [all_outputs[key], batch_output[key]], axis=0
                 )
 
