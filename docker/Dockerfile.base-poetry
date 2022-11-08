@@ -8,4 +8,4 @@ ARG POETRY_VERSION
 # install poetry
 ENV POETRY_VERSION ${POETRY_VERSION}
 RUN curl -sSL https://install.python-poetry.org | python3 -
-ENV PATH "/root/.poetry/bin:${PATH}"
+ENV PATH "/root/.local/bin:${PATH}"
