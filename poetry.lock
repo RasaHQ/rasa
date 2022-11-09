@@ -612,6 +612,30 @@ distributed = ["distributed (==2022.02.0)"]
 test = ["pre-commit", "pytest", "pytest-rerunfailures", "pytest-xdist"]
 
 [[package]]
+name = "dask"
+version = "2022.4.0"
+description = "Parallel PyData with Task Scheduling"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[package.dependencies]
+cloudpickle = ">=1.1.1"
+fsspec = ">=0.6.0"
+packaging = ">=20.0"
+partd = ">=0.3.10"
+pyyaml = ">=5.3.1"
+toolz = ">=0.8.2"
+
+[package.extras]
+array = ["numpy (>=1.18)"]
+complete = ["bokeh (>=2.4.2)", "distributed (==2022.04.0)", "jinja2", "numpy (>=1.18)", "pandas (>=1.0)"]
+dataframe = ["numpy (>=1.18)", "pandas (>=1.0)"]
+diagnostics = ["bokeh (>=2.4.2)", "jinja2"]
+distributed = ["distributed (==2022.04.0)"]
+test = ["pre-commit", "pytest", "pytest-rerunfailures", "pytest-xdist"]
+
+[[package]]
 name = "databind"
 version = "1.5.3"
 description = "Databind is a library inspired by jackson-databind to de-/serialize Python dataclasses. The `databind` package will install the full suite of databind packages. Compatible with Python 3.7 and newer."
@@ -3690,7 +3714,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "000bc020673b9beadce6aaebd08d88a019c289f0126762547d6bb543cd3a4c07"
+content-hash = "b11fc9b3089d0dd1566c4e7327b5efd6c1f40fd31f16c7e2ff1f8d48a3005bd8"
 
 [metadata.files]
 absl-py = [
@@ -4183,6 +4207,8 @@ cymem = [
 dask = [
     {file = "dask-2022.2.0-py3-none-any.whl", hash = "sha256:feaf838faa23150faadaeb2483e8612cfb8fed51f62e635a1a6dd55d1d793ba4"},
     {file = "dask-2022.2.0.tar.gz", hash = "sha256:cefb5c63d1e26f6dfa650ddd1eb1a53e0cef623141b838820c6b34e6534ea409"},
+    {file = "dask-2022.4.0-py3-none-any.whl", hash = "sha256:b689cb0ab40c042c5445b886c2136f42966aa57bf6c86561916ab6449b5bad1a"},
+    {file = "dask-2022.4.0.tar.gz", hash = "sha256:e8d0f5840c9df56c60a48b1b3ca326a7a9597a19175b7cd55e12709ccf13ac78"},
 ]
 databind = [
     {file = "databind-1.5.3-py3-none-any.whl", hash = "sha256:43d76e3b931ed9d986b5e35df60e37ccb0bcb2b3b57d6f44cce085c48abe7016"},
