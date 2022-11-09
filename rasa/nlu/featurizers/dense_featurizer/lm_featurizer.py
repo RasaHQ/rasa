@@ -541,9 +541,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         reshaped_sequence_embeddings = []
         for index, embedding in enumerate(sequence_embeddings):
             embedding_size = embedding.shape[-1]
-            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if actual_sequence_lengths[index] > self.max_model_sequence_length:
-                embedding = np.concatenate(  # type: ignore[no-untyped-call]
+                embedding = np.concatenate(
                     [
                         embedding,
                         np.zeros(

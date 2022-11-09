@@ -370,13 +370,12 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE
         )
         label_ids = np.arange(len(domain.intents))
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
             [
                 FeatureArray(
-                    np.expand_dims(label_ids, -1),  # type: ignore[no-untyped-call]
+                    np.expand_dims(label_ids, -1),
                     number_of_dimensions=2,
                 )
             ],
@@ -784,10 +783,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         Returns:
             Both buckets of similarity scores grouped by each unique label id.
         """
-        # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-        unique_label_ids = np.unique(
-            label_ids
-        ).tolist()  # type: ignore[no-untyped-call]
+        unique_label_ids = np.unique(label_ids).tolist()
         if LABEL_PAD_ID in unique_label_ids:
             unique_label_ids.remove(LABEL_PAD_ID)
 
@@ -839,9 +835,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
                 prediction_scores[NEGATIVE_SCORES_KEY],
             )
             minimum_positive_score = min(positive_scores)
-            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
             if negative_scores:
-                quantile_values = np.quantile(  # type: ignore[no-untyped-call]
+                quantile_values = np.quantile(  # type: ignore[call-overload]
                     negative_scores, quantile_indices, interpolation="lower"
                 )
                 label_quantiles[label_id] = [
