@@ -48,7 +48,7 @@ to function FeatureArray.__init__ &#x27;
 #### \_\_array\_finalize\_\_
 
 ```python
-def __array_finalize__(obj: Any) -> None
+def __array_finalize__(obj: Optional[np.ndarray]) -> None
 ```
 
 This method is called when the system allocates a new array from obj.
