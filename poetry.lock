@@ -503,11 +503,11 @@ cron = ["capturer (>=2.4)"]
 
 [[package]]
 name = "colorhash"
-version = "1.1.0"
+version = "1.2.1"
 description = "Generate color based on any object"
 category = "main"
 optional = false
-python-versions = ">=3.6.2,<4.0"
+python-versions = ">=3.6,<4.0"
 
 [[package]]
 name = "confection"
@@ -3690,7 +3690,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "390f24695ca81e318019744e55e81098f13b2b056a6c379e1a3050465ef33b15"
+content-hash = "000bc020673b9beadce6aaebd08d88a019c289f0126762547d6bb543cd3a4c07"
 
 [metadata.files]
 absl-py = [
@@ -4055,8 +4055,8 @@ coloredlogs = [
     {file = "coloredlogs-15.0.1.tar.gz", hash = "sha256:7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0"},
 ]
 colorhash = [
-    {file = "colorhash-1.1.0-py3-none-any.whl", hash = "sha256:a74a1127669691486016c074caa7a3f43d181195df74c76f92b5bddde9640b79"},
-    {file = "colorhash-1.1.0.tar.gz", hash = "sha256:f95e3e064cab58a6d0a16aff01348afca6f149cb337147e446e2bbb23334e952"},
+    {file = "colorhash-1.2.1-py3-none-any.whl", hash = "sha256:644f307fd09464ad2512650a382a9ce5ea8b788c8eaba083b6c54e4699fdd5eb"},
+    {file = "colorhash-1.2.1.tar.gz", hash = "sha256:143d739adeeb4949d69d35274f9a973fdd5f3a77c8658be2e23f967688869c7b"},
 ]
 confection = [
     {file = "confection-0.0.3-py3-none-any.whl", hash = "sha256:51af839c1240430421da2b248541ebc95f9d0ee385bcafa768b8acdbd2b0111d"},

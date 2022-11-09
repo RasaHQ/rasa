@@ -59,6 +59,9 @@ def event_loop(request: Request) -> Generator[asyncio.AbstractEventLoop, None, N
     loop.close()
 
 
+# override loop fixture to prevent ScopeMismatch pytest error and
+# implement fix to RuntimeError Event loop is closed issue described
+# here: https://github.com/pytest-dev/pytest-asyncio/issues/371
 @pytest.fixture(scope="session")
 def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.new_event_loop()
