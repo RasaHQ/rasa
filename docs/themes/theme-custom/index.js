@@ -16,7 +16,7 @@ module.exports = function (context) {
 
     // FIXME: this needs to be fixed in the theme, see https://github.com/RasaHQ/docusaurus-tabula/issues/11
     getClientModules() {
-      return [require.resolve('./alerts.css')];
+      return [require.resolve('./custom.css')];
     },
 
     configureWebpack() {

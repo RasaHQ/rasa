@@ -73,8 +73,6 @@ async def test_events_schema(
 
     telemetry.track_shell_started("nlu")
 
-    telemetry.track_rasa_x_local()
-
     telemetry.track_visualization()
 
     telemetry.track_core_model_test(5, True, default_agent)
@@ -99,7 +97,7 @@ async def test_events_schema(
     pending = asyncio.all_tasks() - initial
     await asyncio.gather(*pending)
 
-    assert mock.call_count == 21
+    assert mock.call_count == 20
 
     for args, _ in mock.call_args_list:
         event = args[0]

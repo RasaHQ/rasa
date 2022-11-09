@@ -39,7 +39,7 @@ You need to set up a Facebook app and a page.
 6. Set up a **Webhook** and select at least the **messaging** and
    **messaging_postback** subscriptions. Insert your callback URL, which will
    look like `https://<host>:<port>/webhooks/facebook/webhook`, replacing
-   the host and port with the appropriate values from your running Rasa Open Source server.
+   the host and port with the appropriate values from your running Rasa server.
    
    Insert the **Verify Token** which has to match the `verify`
    entry in your `credentials.yml`.
@@ -65,7 +65,7 @@ facebook:
 ```
 
 
-Restart your Rasa Open Source server
+Restart your Rasa server
 to make the new channel endpoint available for Facebook Messenger to send messages to.
 
 

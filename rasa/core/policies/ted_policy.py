@@ -458,7 +458,12 @@ class TEDPolicy(Policy):
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            [
+                FeatureArray(
+                    np.expand_dims(label_ids, -1),
+                    number_of_dimensions=2,
+                )
+            ],
         )
         return label_data
 
@@ -827,11 +832,19 @@ class TEDPolicy(Policy):
             tracker, domain, precomputations, rule_only_data=rule_only_data
         )
         model_data = self._create_model_data(tracker_state_features)
-        outputs: Dict[Text, np.ndarray] = self.model.run_inference(model_data)
+        outputs = self.model.run_inference(model_data)
 
-        # take the last prediction in the sequence
-        similarities = outputs["similarities"][:, -1, :]
-        confidences = outputs["scores"][:, -1, :]
+        if isinstance(outputs["similarities"], np.ndarray):
+            # take the last prediction in the sequence
+            similarities = outputs["similarities"][:, -1, :]
+        else:
+            raise TypeError(
+                "model output for `similarities` " "should be a numpy array"
+            )
+        if isinstance(outputs["scores"], np.ndarray):
+            confidences = outputs["scores"][:, -1, :]
+        else:
+            raise TypeError("model output for `scores` should be a numpy array")
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
             confidences, similarities, domain

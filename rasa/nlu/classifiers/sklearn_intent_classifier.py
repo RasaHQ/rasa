@@ -91,8 +91,8 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Any extra python dependencies required for this component to run."""
         return ["sklearn"]
 
@@ -260,6 +260,7 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
         pred_result = self.predict_prob(X)
         # sort the probabilities retrieving the indices of
         # the elements in sorted order
+
         sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
         return sorted_indices, pred_result[:, sorted_indices]
 
