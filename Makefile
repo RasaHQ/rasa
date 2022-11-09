@@ -146,7 +146,7 @@ prepare-wget-macos:
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
 
-prepare-tests-ubuntu: prepare-tests-files
+prepare-tests-ubuntu: prepare-tests-files install-full
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
 prepare-wget-windows:
@@ -161,7 +161,7 @@ prepare-tests-windows: prepare-wget-windows prepare-tests-files
 prepare-wget-windows-gha:
 	powershell -command "Choco-Install wget"
 
-prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files
+prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files install-full
 	powershell -command "Choco-Install graphviz"
 
 test: clean

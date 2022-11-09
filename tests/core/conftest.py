@@ -52,20 +52,24 @@ class MockedMongoTrackerStore(MongoTrackerStore):
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
-@pytest.fixture(scope="session")
+@pytest.yield_fixture(scope="session")
 def event_loop(request: Request) -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
+    loop._close = loop.close
+    loop.close = lambda: None
     yield loop
-    loop.close()
+    loop._close()
 
 
-@pytest.fixture(scope="session")
+@pytest.yield_fixture(scope="session")
 def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    loop._close = loop.close
+    loop.close = lambda: None
     yield loop
-    loop.close()
+    loop._close()
 
 
 @pytest.fixture
