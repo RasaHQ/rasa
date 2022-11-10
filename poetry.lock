@@ -344,14 +344,14 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.26.5"
+version = "1.26.6"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.29.5,<1.30.0"
+botocore = ">=1.29.6,<1.30.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -360,7 +360,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.29.5"
+version = "1.29.6"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -899,7 +899,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "fsspec"
-version = "2022.10.0"
+version = "2022.11.0"
 description = "File-system specification"
 category = "main"
 optional = false
@@ -3653,7 +3653,7 @@ watchdog = ["watchdog"]
 
 [[package]]
 name = "wheel"
-version = "0.38.3"
+version = "0.38.4"
 description = "A built-package format for Python"
 category = "main"
 optional = false
@@ -3970,12 +3970,12 @@ blis = [
     {file = "blis-0.7.9.tar.gz", hash = "sha256:29ef4c25007785a90ffc2f0ab3d3bd3b75cd2d7856a9a482b7d0dac8d511a09d"},
 ]
 boto3 = [
-    {file = "boto3-1.26.5-py3-none-any.whl", hash = "sha256:7b6fb7b0346c239b53ad5e5fdf5eeef3c6452186d91239beeb66f106531cb2c3"},
-    {file = "boto3-1.26.5.tar.gz", hash = "sha256:cb4eca34b6e13e4ead46a68f66759feaae6bf5e97362b2c979b7b9f1d203715e"},
+    {file = "boto3-1.26.6-py3-none-any.whl", hash = "sha256:2bd7d3e8362f0e0d84fe4c3a06f1bd46fd2dbedbea76ac24e89f28439837a9e7"},
+    {file = "boto3-1.26.6.tar.gz", hash = "sha256:4943faf38979ac445627390b431b0c08a73ccd5ecd46983e1d29cee454d14aaa"},
 ]
 botocore = [
-    {file = "botocore-1.29.5-py3-none-any.whl", hash = "sha256:94e820994e731568d191373d622507fee6067c9e68b5a121aed46322fd6d3d45"},
-    {file = "botocore-1.29.5.tar.gz", hash = "sha256:8a1a074bce7567576947869d41026c45d507e00885f3890c1719180a9400ec40"},
+    {file = "botocore-1.29.6-py3-none-any.whl", hash = "sha256:bb595ed6a42ff85b4d5fb7a2e31b8584b87df46933a6f830fd98f91b1feea279"},
+    {file = "botocore-1.29.6.tar.gz", hash = "sha256:574a9dc8b7cf1d866e6255c57af25de1f0da1babc6ce9faf05f227fd28ca905e"},
 ]
 cachecontrol = [
     {file = "CacheControl-0.12.11-py2.py3-none-any.whl", hash = "sha256:2c75d6a8938cb1933c75c50184549ad42728a27e9f6b92fd677c3151aa72555b"},
@@ -4378,8 +4378,8 @@ frozenlist = [
     {file = "frozenlist-1.3.3.tar.gz", hash = "sha256:58bcc55721e8a90b88332d6cd441261ebb22342e238296bb330968952fbb3a6a"},
 ]
 fsspec = [
-    {file = "fsspec-2022.10.0-py3-none-any.whl", hash = "sha256:6b7c6ab3b476cdf17efcfeccde7fca28ef5a48f73a71010aaceec5fc15bf9ebf"},
-    {file = "fsspec-2022.10.0.tar.gz", hash = "sha256:cb6092474e90487a51de768170f3afa50ca8982c26150a59072b16433879ff1d"},
+    {file = "fsspec-2022.11.0-py3-none-any.whl", hash = "sha256:d6e462003e3dcdcb8c7aa84c73a228f8227e72453cd22570e2363e8844edfe7b"},
+    {file = "fsspec-2022.11.0.tar.gz", hash = "sha256:259d5fd5c8e756ff2ea72f42e7613c32667dc2049a4ac3d84364a7ca034acb8b"},
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
@@ -6773,8 +6773,8 @@ werkzeug = [
     {file = "Werkzeug-2.2.2.tar.gz", hash = "sha256:7ea2d48322cc7c0f8b3a215ed73eabd7b5d75d0b50e31ab006286ccff9e00b8f"},
 ]
 wheel = [
-    {file = "wheel-0.38.3-py3-none-any.whl", hash = "sha256:f3c99240da8d26989dca2d67a7a431015eb91fb301eecacc6e452133689d9d59"},
-    {file = "wheel-0.38.3.tar.gz", hash = "sha256:4066646ef77d0e56cc44004c100381ee1957955cfc3151345dda96886f9896a5"},
+    {file = "wheel-0.38.4-py3-none-any.whl", hash = "sha256:b60533f3f5d530e971d6737ca6d58681ee434818fab630c83a734bb10c083ce8"},
+    {file = "wheel-0.38.4.tar.gz", hash = "sha256:965f5259b566725405b05e7cf774052044b1ed30119b5d586b2703aafe8719ac"},
 ]
 wrapt = [
     {file = "wrapt-1.14.1-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:1b376b3f4896e7930f1f772ac4b064ac12598d1c38d04907e696cc4d794b43d3"},
