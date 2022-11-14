@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: rasahq/update-pr-branch@601ac3dadf708b14e7f0252d98230538235f99d9
+      - uses: rasahq/update-pr-branch@2c1851b449b09173288465f259bc9ec599b2e51f
         with:
           token: ${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}
           # required parameter by original action - 
