@@ -15,7 +15,7 @@ import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
-from slack import WebClient
+from slack_sdk.web.async_client import AsyncWebClient
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class SlackBot(OutputChannel):
         self.slack_channel = slack_channel
         self.thread_id = thread_id
         self.proxy = proxy
-        self.client = WebClient(token, run_async=True, proxy=proxy)
+        self.client = AsyncWebClient(token, proxy=proxy)
         super().__init__()
 
     async def _post_message(self, channel: Text, **kwargs: Any) -> None:
@@ -46,11 +46,11 @@ class SlackBot(OutputChannel):
         # above ensures chat_postMessage is await-able. mypy complains
         # because the type annotations are not precise enough in Slack
         if self.thread_id:
-            await self.client.chat_postMessage(  # type: ignore[misc]
+            await self.client.chat_postMessage(
                 channel=channel, **kwargs, thread_ts=self.thread_id
             )
         else:
-            await self.client.chat_postMessage(channel=channel, **kwargs)  # type: ignore[misc]  # noqa: E501
+            await self.client.chat_postMessage(channel=channel, **kwargs)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
