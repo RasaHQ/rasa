@@ -325,7 +325,7 @@ jobs:
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
         env:
-          # JOBS: 2
+          JOBS: 1
           PYTHONIOENCODING: "utf-8"
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
@@ -510,7 +510,7 @@ jobs:
       - name: Test Code with Services 🩺
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
+          JOBS: 1
           INTEGRATION_TEST_PYTEST_MARKERS: '"not sequential"'
           PYTHONIOENCODING: "utf-8"
         run: |
