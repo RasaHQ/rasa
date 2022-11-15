@@ -487,3 +487,26 @@ which trains a new model:
 
 ```python (docs/sources/data/test_classes/custom_graph_components/nlu_sparse.py)
 ```
+
+### NLU Meta Learners
+
+NLU Meta learners are intent classifiers or entity extractors that use the predictions
+of other trained intent classifiers or entity extractors and try to improve upon their
+results. A simple example would be a component that averages the output of two
+previous intent classifiers or a fallback classifier that sets it's threshold according
+to the confidence of the intent classifier on training examples.
+
+Conceptually, to built a trainable fallback classifier you first need to create that
+fallback classifier as a custom component:
+
+```python (docs/sources/data/test_classes/custom_graph_components/nlu_meta_fallback.py)
+```
+
+Next, you will need to create a custom intent classifier that is also a featurizer,
+as that components' output needs to be consumed by another component and define how
+the predictions of that intent classifier should be added to the message data specifying
+the `process_training_data` method. Make sure to not overwrite the true labels for
+the intents. Here's a template that shows how to subclass DIET for this purpose:
+
+```python(docs/sources/data/test_classes/custom_graph_components/nlu_meta_intent_featurizer.py)
+```
