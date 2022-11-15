@@ -12,7 +12,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 
 if TYPE_CHECKING:
-    from kafka import KafkaProducer
+    from confluent_kafka import KafkaError, SerializingProducer
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +68,11 @@ class KafkaEventBroker(EventBroker):
                 establish the certificate's authenticity.
             ssl_keyfile: Optional filename containing the client private key.
             ssl_check_hostname: Flag to configure whether ssl handshake
-                should verify that the certificate matches the brokers hostname.
+                should verify that the certificate matches the broker's hostname.
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
         """
-        import kafka
-
-        self.producer: Optional[kafka.KafkaConsumer] = None
+        self.producer: Optional[SerializingProducer] = None
         self.url = url
         self.topic = topic
         self.client_id = client_id
@@ -86,7 +84,7 @@ class KafkaEventBroker(EventBroker):
         self.ssl_cafile = ssl_cafile
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
-        self.ssl_check_hostname = ssl_check_hostname
+        self.ssl_check_hostname = "https" if ssl_check_hostname else None
 
     @classmethod
     async def from_endpoint_config(
@@ -107,12 +105,14 @@ class KafkaEventBroker(EventBroker):
         retry_delay_in_seconds: float = 5,
     ) -> None:
         """Publishes events."""
+        from confluent_kafka import KafkaException
+
         if self.producer is None:
             self.producer = self._create_producer()
-            connected = self.producer.bootstrap_connected()
-            if connected:
+            try:
+                self.producer.flush(timeout=1)
                 logger.debug("Connection to kafka successful.")
-            else:
+            except KafkaException:
                 logger.debug("Failed to connect kafka.")
                 return
         while retries:
@@ -124,53 +124,54 @@ class KafkaEventBroker(EventBroker):
                     f"Could not publish message to kafka url '{self.url}'. "
                     f"Failed with error: {e}"
                 )
-                connected = self.producer.bootstrap_connected()
-                if not connected:
-                    self._close()
+                try:
+                    self.producer.flush(timeout=1)
+                except KafkaException:
                     logger.debug("Connection to kafka lost, reconnecting...")
                     self.producer = self._create_producer()
-                    connected = self.producer.bootstrap_connected()
-                    if connected:
+                    try:
+                        self.producer.flush(timeout=1)
                         logger.debug("Reconnection to kafka successful")
                         self._publish(event)
+                    except KafkaException:
+                        pass
                 retries -= 1
                 time.sleep(retry_delay_in_seconds)
 
         logger.error("Failed to publish Kafka event.")
 
-    def _create_producer(self) -> "KafkaProducer":
-        import kafka
+    def _create_producer(self) -> "SerializingProducer":
+        import confluent_kafka
 
         if self.security_protocol == "PLAINTEXT":
-            authentication_params = dict(
-                security_protocol=self.security_protocol, ssl_check_hostname=False
-            )
+            authentication_params = {
+                "security.protocol": self.security_protocol.lower(),
+            }
         elif self.security_protocol == "SASL_PLAINTEXT":
-            authentication_params = dict(
-                sasl_plain_username=self.sasl_username,
-                sasl_plain_password=self.sasl_password,
-                sasl_mechanism=self.sasl_mechanism,
-                security_protocol=self.security_protocol,
-            )
+            authentication_params = {
+                "sasl.username": self.sasl_username,
+                "sasl.password": self.sasl_password,
+                "sasl.mechanism": self.sasl_mechanism,
+                "security.protocol": self.security_protocol.lower(),
+            }
         elif self.security_protocol == "SSL":
-            authentication_params = dict(
-                ssl_cafile=self.ssl_cafile,
-                ssl_certfile=self.ssl_certfile,
-                ssl_keyfile=self.ssl_keyfile,
-                ssl_check_hostname=False,
-                security_protocol=self.security_protocol,
-            )
+            authentication_params = {
+                "ssl.ca.location": self.ssl_cafile,
+                "ssl.certificate.location": self.ssl_certfile,
+                "ssl.key.location": self.ssl_keyfile,
+                "security.protocol": self.security_protocol.lower(),
+            }
         elif self.security_protocol == "SASL_SSL":
-            authentication_params = dict(
-                sasl_plain_username=self.sasl_username,
-                sasl_plain_password=self.sasl_password,
-                ssl_cafile=self.ssl_cafile,
-                ssl_certfile=self.ssl_certfile,
-                ssl_keyfile=self.ssl_keyfile,
-                ssl_check_hostname=self.ssl_check_hostname,
-                security_protocol=self.security_protocol,
-                sasl_mechanism=self.sasl_mechanism,
-            )
+            authentication_params = {
+                "sasl.username": self.sasl_username,
+                "sasl.password": self.sasl_password,
+                "ssl.ca.location": self.ssl_cafile,
+                "ssl.certificate.location": self.ssl_certfile,
+                "ssl.key.location": self.ssl_keyfile,
+                "ssl.endpoint.identification.algorithm": self.ssl_check_hostname,
+                "security.protocol": self.security_protocol.lower(),
+                "sasl.mechanism": self.sasl_mechanism,
+            }
         else:
             raise ValueError(
                 f"Cannot initialise `KafkaEventBroker`: "
@@ -178,13 +179,18 @@ class KafkaEventBroker(EventBroker):
             )
 
         try:
-            return kafka.KafkaProducer(
-                client_id=self.client_id,
-                bootstrap_servers=self.url,
-                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
-                **authentication_params,
+            return confluent_kafka.SerializingProducer(
+                {
+                    "client.id": self.client_id,
+                    "bootstrap.servers": self.url,
+                    "value.serializer": lambda v, ctx: json.dumps(v).encode(
+                        DEFAULT_ENCODING
+                    ),
+                    "error_cb": kafka_error_callback,
+                    **authentication_params,
+                }
             )
-        except AssertionError as e:
+        except confluent_kafka.KafkaException as e:
             raise KafkaProducerInitializationError(
                 f"Cannot initialise `KafkaEventBroker`: {e}"
             )
@@ -210,15 +216,22 @@ class KafkaEventBroker(EventBroker):
         )
 
         if self.producer is not None:
-            self.producer.send(
+            self.producer.produce(
                 self.topic, value=event, key=partition_key, headers=headers
             )
-
-    def _close(self) -> None:
-        if self.producer is not None:
-            self.producer.close()
 
     @rasa.shared.utils.common.lazy_property
     def rasa_environment(self) -> Optional[Text]:
         """Get value of the `RASA_ENVIRONMENT` environment variable."""
         return os.environ.get("RASA_ENVIRONMENT", "RASA_ENVIRONMENT_NOT_SET")
+
+
+def kafka_error_callback(err: "KafkaError") -> None:
+    """Callback for Kafka errors.
+
+    Any exception raised from this callback will be re-raised from the
+    triggering flush() call.
+    """
+    from confluent_kafka import KafkaException
+
+    raise KafkaException(err)
