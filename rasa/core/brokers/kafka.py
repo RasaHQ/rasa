@@ -144,7 +144,7 @@ class KafkaEventBroker(EventBroker):
         import confluent_kafka
 
         if self.security_protocol == "PLAINTEXT":
-            authentication_params = {
+            authentication_params: Dict[Text, Any] = {
                 "security.protocol": self.security_protocol.lower(),
             }
         elif self.security_protocol == "SASL_PLAINTEXT":

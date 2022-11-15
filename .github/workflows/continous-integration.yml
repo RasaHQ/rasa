@@ -448,6 +448,30 @@ jobs:
         ports:
           - 5672:5672
 
+#      zookeeper:
+#        image: confluentinc/cp-zookeeper:7.0.5
+#        ports:
+#          - 2181:2181
+#        healthcheck:
+#          test: nc -z localhost 2181 || exit -1
+#          start_period: 15s
+#          interval: 10s
+#          timeout: 10s
+#          retries: 10
+
+      kafka:
+        image: confluentinc/cp-kafka:7.0.5
+        depends_on:
+          - zookeeper
+        ports:
+          - 9092:9092
+        healthcheck:
+          test: nc -z localhost 9092 || exit -1
+          start_period: 15s
+          interval: 10s
+          timeout: 10s
+          retries: 10
+
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
