@@ -484,9 +484,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run Confluent Platform (Confluent Server)
-        uses: confluentinc/cp-all-in-one@v0.1
+        uses: ybyzek/cp-all-in-one-action@v0.2.1
         with:
           service: broker
+          github-branch-version: 7.1.0-post
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
