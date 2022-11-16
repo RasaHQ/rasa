@@ -477,7 +477,11 @@ jobs:
           KAFKA_ADVERTISED_LISTENERS: >
             SASL_PLAINTEXT://kafka:29092,
             SASL_PLAINTEXT_HOST://localhost:9092
-          KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
+          KAFKA_SASL_JAAS_CONFIG: >
+            org.apache.kafka.common.security.plain.PlainLoginModule required
+               username="admin"
+               password="password"
+               user_admin="password";
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
           KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
           KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -489,8 +493,6 @@ jobs:
           KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: >
             SASL_PLAINTEXT:SASL_PLAINTEXT,
             SASL_PLAINTEXT_HOST: SASL_PLAINTEXT
-        volumes:
-           - ./tests_deployment/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
 
     steps:
       - name: Checkout git repository 🕝
