@@ -486,6 +486,9 @@ jobs:
           KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
           KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
           KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: >
+            SASL_PLAINTEXT:SASL_PLAINTEXT,
+            SASL_PLAINTEXT_HOST: SASL_PLAINTEXT
         volumes:
           - /home/runner/work/RasaHQ/rasa/tests_deployment/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
 
