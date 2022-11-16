@@ -460,12 +460,7 @@ jobs:
           --health-retries 10
         env:
           ZOOKEEPER_CLIENT_PORT: 2181
-          KAFKA_OPTS: >
-             -Djava.security.auth.login.config=/etc/kafka/zookeeper_jaas.conf
-             -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
-             -Dzookeeper.requireClientAuthScheme=sasl
-        volumes:
-          - /home/runner/work/RasaHQ/rasa/tests_deployment/zookeeper_jaas.conf:/etc/kafka/zookeeper_jaas.conf
+          ZOOKEEPER_SASL_ENABLED: FALSE
 
       kafka:
         image: confluentinc/cp-kafka:7.0.5
