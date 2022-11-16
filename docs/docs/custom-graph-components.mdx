@@ -493,8 +493,8 @@ which trains a new model:
 
 NLU Meta learners are an advanced use case. The following section is only relevant
 if you have a component that learns parameters based on the output of previous
-classifiers. For components that have manually set parameters, like the original
-fall back classifier, the following is not necessary.
+classifiers. For components that have manually set parameters or logic, you can create
+a component with `is_trainable=False` and not worry about the preceding classifiers.
 
 :::
 
