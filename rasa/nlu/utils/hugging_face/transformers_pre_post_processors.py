@@ -116,7 +116,8 @@ def xlm_tokens_pre_processor(token_ids: List[int]) -> List[int]:
 
 def camembert_tokens_pre_processor(token_ids: List[int]) -> List[int]:
     """Add camembert style special tokens.
-        Args:
+
+    Args:
         token_ids: List of token ids without any special tokens.
 
     Returns:
