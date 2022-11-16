@@ -448,46 +448,46 @@ jobs:
         ports:
           - 5672:5672
 
-#      zookeeper:
-#        image: confluentinc/cp-zookeeper:7.0.5
-#        ports:
-#          - 2181:2181
-#        options: >-
-#          --health-cmd "nc -z localhost 2181 || exit -1"
-#          --health-start-period 15s
-#          --health-interval 10s
-#          --health-timeout 10s
-#          --health-retries 10
-#        env:
-#          ZOOKEEPER_CLIENT_PORT: 2181
-#
-#      kafka:
-#        image: confluentinc/cp-kafka:7.0.5
-#        ports:
-#          - 9092:9092
-#        options: >-
-#          --health-cmd "nc -z localhost 9092 || exit -1"
-#          --health-start-period 15s
-#          --health-interval 10s
-#          --health-timeout 10s
-#          --health-retries 10
-#        env:
-#          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-#          KAFKA_ADVERTISED_LISTENERS: SASL_PLAINTEXT://kafka:29092,SASL_PLAINTEXT_HOST://localhost:9092
-#          KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
-#        volumes:
-#          - /home/runner/work/RasaHQ/rasa/tests_deployment/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+      zookeeper:
+        image: confluentinc/cp-zookeeper:7.0.5
+        ports:
+          - 2181:2181
+        options: >-
+          --health-cmd "nc -z localhost 2181 || exit -1"
+          --health-start-period 15s
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+        env:
+          ZOOKEEPER_CLIENT_PORT: 2181
+          KAFKA_OPTS: >
+             -Djava.security.auth.login.config=/etc/kafka/zookeeper_jaas.conf
+             -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+             -Dzookeeper.requireClientAuthScheme=sasl
+        volumes:
+          - /home/runner/work/RasaHQ/rasa/tests_deployment/zookeeper_jaas.conf:/etc/kafka/zookeeper_jaas.conf
+
+      kafka:
+        image: confluentinc/cp-kafka:7.0.5
+        ports:
+          - 9092:9092
+        options: >-
+          --health-cmd "nc -z localhost 9092 || exit -1"
+          --health-start-period 15s
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+        env:
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: SASL_PLAINTEXT://kafka:29092,SASL_PLAINTEXT_HOST://localhost:9092
+          KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
+        volumes:
+          - /home/runner/work/RasaHQ/rasa/tests_deployment/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
 
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@v3
-
-      - name: Run Confluent Platform (Confluent Server)
-        uses: ybyzek/cp-all-in-one-action@v0.2.1
-        with:
-          service: broker
-          github-branch-version: 7.1.0-post
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
