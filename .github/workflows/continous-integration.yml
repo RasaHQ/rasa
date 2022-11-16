@@ -460,6 +460,7 @@ jobs:
           --health-retries 10
         env:
           ZOOKEEPER_CLIENT_PORT: 2181
+          ZOOKEEPER_SASL_ENABLED: false
 
       kafka:
         image: confluentinc/cp-kafka:7.0.5
