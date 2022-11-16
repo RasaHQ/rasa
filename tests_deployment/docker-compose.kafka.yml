@@ -41,7 +41,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TOOLS_LOG4J_LOGLEVEL: ERROR
     volumes:
-      - ${PWD}/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+      - ${PWD}/tests_deployment/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
     healthcheck:
       test: nc -z localhost 9092 || exit 1
       interval: 30s
