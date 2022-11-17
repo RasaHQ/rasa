@@ -18,7 +18,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from sanic.request import Request
 
-from typing import Iterator, Callable
+from typing import Generator, Iterator, Callable
 
 from pathlib import Path
 from sanic import Sanic
@@ -44,6 +44,7 @@ from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model_training import train, train_nlu
 from rasa.shared.exceptions import RasaException
 import rasa.utils.common
+import rasa.utils.io
 
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
@@ -197,6 +198,20 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+# override loop fixture to prevent ScopeMismatch pytest error and
+# implement fix to RuntimeError Event loop is closed issue described
+# here: https://github.com/pytest-dev/pytest-asyncio/issues/371
+@pytest.fixture(scope="session")
+def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    loop._close = loop.close
+    loop.close = lambda: None
+    yield loop
+    loop._close()
 
 
 @pytest.fixture(scope="session")
