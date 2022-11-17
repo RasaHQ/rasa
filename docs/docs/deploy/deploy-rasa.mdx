@@ -3,7 +3,7 @@ id: deploy-rasa
 sidebar_label: "Deploy Rasa"
 title: "Deploy Rasa"
 description: Deploy a Rasa assistant on Kubernetes/Openshift using Helm
-abstract: This page explains how to deploy Rasa using Helm.
+abstract: This page explains how to deploy Rasa Open Source and Rasa Plus using Helm.
 ---
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from './../variables.json';
@@ -164,13 +164,15 @@ You can find an example that shows how to download data files from a git reposit
 
 ### 4. Deploy Rasa Assistant
 
+
+Run the following commands:
+
   ```bash
   kubectl version --short --client
 
   # The output should be similar to this
   # Client Version: v1.19.11
   ```
-Run the following commands:
 
   ```bash
   # Add the repository which contains the Rasa Helm Chart
