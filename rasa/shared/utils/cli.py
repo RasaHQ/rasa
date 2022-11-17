@@ -1,7 +1,19 @@
+import fcntl
+import os
 import sys
 from typing import Any, Text, NoReturn
 
 import rasa.shared.utils.io
+
+
+def print_blocking(string) -> None:
+    """Saves fcntl settings and restores them after print."""
+    save = fcntl.fcntl(sys.stdout.fileno(), fcntl.F_GETFL)
+    new = save & ~os.O_NONBLOCK
+    fcntl.fcntl(sys.stdout.fileno(), fcntl.F_SETFL, new)
+    print(string)
+    fcntl.fcntl(sys.stdout.fileno(), fcntl.F_SETFL, save)
+    sys.stdout.flush()
 
 
 def print_color(*args: Any, color: Text) -> None:
@@ -14,7 +26,10 @@ def print_color(*args: Any, color: Text) -> None:
         stream = AnsiToWin32(sys.stdout).stream
         print(output, file=stream)
     except ImportError:
-        print(output)
+        try:
+            print(output)
+        except BlockingIOError:
+            print_blocking(output)
 
 
 def print_success(*args: Any) -> None:
