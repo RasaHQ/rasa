@@ -410,7 +410,18 @@ to specify the following details:
 
 - `is_trainable`: Specifies if the graph component is required to train itself before it can
    process training data for other dependent graph components or before it can make
-   predictions
+   predictions.
+
+- `uses_tracker_during_prediction`: If the component requires the tracker during processing
+   (e.g. to interpret a message in its context) this flag can be set. This flag is only
+   relevant if the graph component is used during prediction. Defaults to `false`. If set 
+   to `true`, the interface for the components `process` method changes to
+   ```python
+    def process(self, messages: List[Message],
+                tracker: DialogueStateTracker) -> List[Message]:
+        ...
+    ```
+
 
 - `model_from`: Specifies if a pretrained
    [language model](components.mdx#language-models) needs to be provided to the `train`,

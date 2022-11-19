@@ -326,3 +326,42 @@ def test_loading_from_previous_node(default_model_storage: ModelStorage):
     results = runner.run()
 
     assert results["load"] == test_value
+
+
+def test_missing_argument(default_model_storage: ModelStorage):
+    test_value_for_sub_directory = {"test": "test value sub dir"}
+    test_value = {"test dir": "test value dir"}
+
+    graph_schema = GraphSchema(
+        {
+            "train": SchemaNode(
+                needs={},
+                uses=PersistableTestComponent,
+                fn="train",
+                constructor_name="create",
+                config={
+                    "test_value": test_value,
+                    "test_value_for_sub_directory": test_value_for_sub_directory,
+                },
+            ),
+            "load": SchemaNode(
+                needs={"resource": "train", "another": "missing"},
+                uses=PersistableTestComponent,
+                fn="run_inference",
+                constructor_name="load",
+                config={},
+                is_target=True,
+            ),
+        }
+    )
+
+    runner = DaskGraphRunner(
+        graph_schema=graph_schema,
+        model_storage=default_model_storage,
+        execution_context=ExecutionContext(graph_schema=graph_schema, model_id="1"),
+    )
+
+    with pytest.raises(GraphRunError) as e:
+        runner.run()
+
+    assert "Expected input 'missing'" in str(e.value)

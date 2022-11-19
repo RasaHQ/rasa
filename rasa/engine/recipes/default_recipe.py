@@ -111,6 +111,7 @@ class DefaultV1Recipe(Recipe):
         clazz: Type[GraphComponent]
         types: Set[DefaultV1Recipe.ComponentType]
         is_trainable: bool
+        uses_tracker_during_prediction: bool
         model_from: Optional[Text]
 
     @classmethod
@@ -118,6 +119,7 @@ class DefaultV1Recipe(Recipe):
         cls,
         component_types: Union[ComponentType, List[ComponentType]],
         is_trainable: bool,
+        uses_tracker_during_prediction: bool = False,
         model_from: Optional[Text] = None,
     ) -> Callable[[Type[GraphComponent]], Type[GraphComponent]]:
         """This decorator can be used to register classes with the recipe.
@@ -126,6 +128,8 @@ class DefaultV1Recipe(Recipe):
             component_types: Describes the types of a component which are then used
                 to place the component in the graph.
             is_trainable: `True` if the component requires training.
+            uses_tracker_during_prediction: `True` if the component uses the tracker
+                during prediction.
             model_from: Can be used if this component requires a pre-loaded model
                 such as `SpacyNLP` or `MitieNLP`.
 
@@ -149,7 +153,11 @@ class DefaultV1Recipe(Recipe):
             cls._registered_components[
                 registered_class.__name__
             ] = cls.RegisteredComponent(
-                registered_class, unique_types, is_trainable, model_from
+                registered_class,
+                unique_types,
+                is_trainable,
+                uses_tracker_during_prediction,
+                model_from,
             )
             return registered_class
 
@@ -348,6 +356,20 @@ class DefaultV1Recipe(Recipe):
         config: Dict[Text, Any],
         cli_parameters: Dict[Text, Any],
     ) -> Text:
+        """Add a training node for the given component to the train graph schema.
+
+        Args:
+            train_nodes: The train graph schema.
+            component: The component class.
+            component_name: The name of the component.
+            last_run_node: The name of the node which provides the input data for the
+                training of the given component.
+            config: The component's configuration.
+            cli_parameters: The CLI parameters.
+
+        Returns:
+            The name of the node which provides the trained model of the given
+            component."""
         config_from_cli = self._extra_config_from_cli(cli_parameters, component, config)
         model_provider_needs = self._get_model_provider_needs(train_nodes, component)
 
@@ -652,6 +674,7 @@ class DefaultV1Recipe(Recipe):
                     last_run_node,
                     config,
                     from_resource=component.is_trainable,
+                    use_tracker_during_prediction=component.uses_tracker_during_prediction,
                 )
             elif component.types.intersection(
                 {
@@ -678,7 +701,11 @@ class DefaultV1Recipe(Recipe):
                     )
 
                     last_run_node = self._add_nlu_predict_node(
-                        predict_nodes, new_node, component_name, last_run_node
+                        predict_nodes,
+                        new_node,
+                        component_name,
+                        last_run_node,
+                        component.uses_tracker_during_prediction,
                     )
 
         return last_run_node
@@ -691,6 +718,7 @@ class DefaultV1Recipe(Recipe):
         last_run_node: Text,
         item_config: Dict[Text, Any],
         from_resource: bool = False,
+        use_tracker_during_prediction: bool = False,
     ) -> Text:
         train_node_name = f"run_{node_name}"
         resource = None
@@ -705,6 +733,7 @@ class DefaultV1Recipe(Recipe):
             ),
             node_name,
             last_run_node,
+            use_tracker_during_prediction,
         )
 
     def _add_nlu_predict_node(
@@ -713,14 +742,23 @@ class DefaultV1Recipe(Recipe):
         node: SchemaNode,
         component_name: Text,
         last_run_node: Text,
+        use_tracker_during_prediction: bool = False,
     ) -> Text:
         node_name = f"run_{component_name}"
 
         model_provider_needs = self._get_model_provider_needs(predict_nodes, node.uses)
 
+        tracker_needs = (
+            {"tracker": PLACEHOLDER_TRACKER} if use_tracker_during_prediction else {}
+        )
+
         predict_nodes[node_name] = dataclasses.replace(
             node,
-            needs={"messages": last_run_node, **model_provider_needs},
+            needs={
+                "messages": last_run_node,
+                **tracker_needs,
+                **model_provider_needs,
+            },
             fn="process",
             **DEFAULT_PREDICT_KWARGS,
         )
