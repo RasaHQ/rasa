@@ -3473,7 +3473,7 @@ types-urllib3 = "<1.27"
 
 [[package]]
 name = "types-setuptools"
-version = "65.5.0.2"
+version = "65.6.0.0"
 description = "Typing stubs for setuptools"
 category = "dev"
 optional = false
@@ -3707,7 +3707,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "3de2b41395bd1edd1073ce2616707ac421bae5711447f6d4e98ddd253e777c18"
+content-hash = "6536f49458ce3ef25e6df0acb85a5119a54a32a3d59c8d2f2a37ccb0e58a8cb3"
 
 [metadata.files]
 absl-py = [
@@ -6499,8 +6499,8 @@ types-requests = [
     {file = "types_requests-2.28.11.4-py3-none-any.whl", hash = "sha256:bdb1f9811e53d0642c8347b09137363eb25e1a516819e190da187c29595a1df3"},
 ]
 types-setuptools = [
-    {file = "types-setuptools-65.5.0.2.tar.gz", hash = "sha256:9847de6d7087fb1dd4a88c2a21543d1b86a6179c36744f081974303fe2f30f50"},
-    {file = "types_setuptools-65.5.0.2-py3-none-any.whl", hash = "sha256:2d33e4ef0d35cd2da48a143eb02184f58398381ddb1f772eff20ccc4126fec13"},
+    {file = "types-setuptools-65.6.0.0.tar.gz", hash = "sha256:3270beadb99bc6fa4b9a5cc35106e7144a5c33028ce48992b10e74adc8cc5c82"},
+    {file = "types_setuptools-65.6.0.0-py3-none-any.whl", hash = "sha256:9466c5c057dc8e5a0f0dc3b2b0b4b4284524d45bd1cd80ac62b96f19da1459b0"},
 ]
 types-urllib3 = [
     {file = "types-urllib3-1.26.25.3.tar.gz", hash = "sha256:1807b87b8ee1ae0226813ba2c52330eff20fb2bf6359b1de24df08eb3090e442"},
