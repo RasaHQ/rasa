@@ -213,6 +213,9 @@ def _train_graph(
     rasa.engine.validation.validate(model_configuration)
 
     with tempfile.TemporaryDirectory() as temp_model_dir:
+        if isinstance(temp_model_dir, bytes):
+            temp_model_dir = temp_model_dir.decode("UTF-8")
+
         model_storage = _create_model_storage(
             is_finetuning, model_to_finetune, Path(temp_model_dir)
         )

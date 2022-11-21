@@ -304,10 +304,14 @@ class LocalTrainingCache(TrainingCache):
     def _cache_output_to_disk(
         self, output: Cacheable, model_storage: ModelStorage
     ) -> Tuple[Optional[Text], Optional[Text]]:
+        tempdir_name = tempfile.mkdtemp()
+        if isinstance(tempdir_name, bytes):
+            tempdir_name = tempdir_name.decode("UTF-8")
+
         # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this
         # leads to errors on Windows when the context manager tries to delete an
         # already deleted temporary directory (e.g. https://bugs.python.org/issue29982)
-        with rasa.utils.common.TempDirectoryPath(tempfile.mkdtemp()) as temp_dir:
+        with rasa.utils.common.TempDirectoryPath(tempdir_name) as temp_dir:
             tmp_path = Path(temp_dir)
             try:
 
