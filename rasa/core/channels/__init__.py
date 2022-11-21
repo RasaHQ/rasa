@@ -1,5 +1,5 @@
 from typing import Text, Dict, List, Type
-
+from rasa.plugin import plugin_manager
 from rasa.core.channels.channel import (  # noqa: F401
     InputChannel,
     OutputChannel,
@@ -42,8 +42,11 @@ input_channel_classes: List[Type[InputChannel]] = [
     WebexTeamsInput,
     HangoutsInput,
 ]
+plugin_manager().hook.add_channels(input_channel_classes=input_channel_classes)
 
 # Mapping from an input channel name to its class to allow name based lookup.
 BUILTIN_CHANNELS: Dict[Text, Type[InputChannel]] = {
     c.name(): c for c in input_channel_classes
 }
+
+ 
