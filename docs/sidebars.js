@@ -197,7 +197,6 @@ module.exports = {
             }
           ],
           },
-          'action-server/deploy-action-server',
         ]},
       ]
     },
