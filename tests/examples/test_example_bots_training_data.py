@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Text
+from typing import Optional, Text
 
 import pytest
 
@@ -10,43 +10,50 @@ from tests.conftest import filter_expected_warnings
 
 
 @pytest.mark.parametrize(
-    "config_file, domain_file, data_folder, raise_slot_warning",
+    "config_file, domain_file, data_folder, raise_slot_warning, msg",
     [
         (
             "examples/concertbot/config.yml",
             "examples/concertbot/domain.yml",
             "examples/concertbot/data",
             True,
+            None,
         ),
         (
             "examples/formbot/config.yml",
             "examples/formbot/domain.yml",
             "examples/formbot/data",
             True,
+            None,
         ),
         (
             "examples/knowledgebasebot/config.yml",
             "examples/knowledgebasebot/domain.yml",
             "examples/knowledgebasebot/data",
             True,
+            "You are using an experiential feature: "
+            "Action 'action_query_knowledge_base'!",
         ),
         (
             "data/test_moodbot/config.yml",
             "data/test_moodbot/domain.yml",
             "data/test_moodbot/data",
             False,
+            None,
         ),
         (
             "examples/reminderbot/config.yml",
             "examples/reminderbot/domain.yml",
             "examples/reminderbot/data",
             True,
+            None,
         ),
         (
             "examples/rules/config.yml",
             "examples/rules/domain.yml",
             "examples/rules/data",
             True,
+            None,
         ),
     ],
 )
@@ -55,6 +62,7 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
     domain_file: Text,
     data_folder: Text,
     raise_slot_warning: bool,
+    msg: Optional[Text],
 ):
 
     importer = TrainingDataImporter.load_from_config(
@@ -64,6 +72,10 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
     if raise_slot_warning:
         with pytest.warns() as record:
             warnings.simplefilter(action="ignore", category=DeprecationWarning)
+
+            if msg is not None:
+                warnings.filterwarnings(action="ignore", message=msg)
+
             importer.get_nlu_data()
             importer.get_stories()
 
