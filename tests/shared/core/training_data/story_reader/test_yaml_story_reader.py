@@ -1,4 +1,6 @@
 import json
+import warnings
+
 import numpy as np
 import os
 import pytest
@@ -142,14 +144,15 @@ async def test_default_slot_value_if_no_domain():
     """
 
     reader = YAMLStoryReader()
-    with pytest.warns() as record:
+    with warnings.catch_warnings() as record:
         events = reader.read_from_string(story)[0].events
 
-    record = filter_expected_warnings(record)
+    if record is not None:
+        record = filter_expected_warnings(record)
+        assert len(record) == 0
 
     assert isinstance(events[-1], SlotSet)
     assert events[-1].value is None
-    assert len(record) == 0
 
 
 async def test_default_slot_value_if_unfeaturized_slot():
@@ -168,14 +171,16 @@ async def test_default_slot_value_if_unfeaturized_slot():
         }
     )
     reader = YAMLStoryReader(domain)
-    with pytest.warns() as warning:
+
+    with warnings.catch_warnings() as warning:
         events = reader.read_from_string(story)[0].events
 
-    warning = filter_expected_warnings(warning)
+    if warning is not None:
+        warning = filter_expected_warnings(warning)
+        assert len(warning) == 0
 
     assert isinstance(events[-1], SlotSet)
     assert events[-1].value is None
-    assert len(warning) == 0
 
 
 def test_can_read_test_story_with_entities(domain: Domain):
@@ -615,16 +620,17 @@ async def test_story_with_retrieval_intent_warns(
 ):
     reader = YAMLStoryReader()
 
-    with pytest.warns() as record:
+    with warnings.catch_warnings() as record:
         reader.read_from_file(file)
 
-    record = filter_expected_warnings(record)
+    if record is not None:
+        record = filter_expected_warnings(record)
 
-    if warning:
-        assert len(record) == 1
-        assert type(record[0].message) == warning
-    else:
-        assert len(record) == 0
+        if warning:
+            assert len(record) == 1
+            assert type(record[0].message) == warning
+        else:
+            assert len(record) == 0
 
 
 def test_or_statement_story_with_or_slot_was_set(domain: Domain):
