@@ -87,7 +87,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.10.8
+          python-version: '3.10'
 
       - name: Read Poetry Version 🔢
         if: needs.changes.outputs.backend == 'true'
