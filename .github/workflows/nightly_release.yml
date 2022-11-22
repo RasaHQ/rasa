@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984  # v3.0
         with:
           python-version: 3.9
 
