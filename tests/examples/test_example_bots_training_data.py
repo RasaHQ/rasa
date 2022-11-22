@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 from typing import Text
 
@@ -5,6 +6,7 @@ import pytest
 
 from rasa.cli import scaffold
 from rasa.shared.importers.importer import TrainingDataImporter
+from tests.conftest import filter_expected_warnings
 
 
 @pytest.mark.parametrize(
@@ -60,7 +62,8 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
     )
 
     if raise_slot_warning:
-        with pytest.warns(UserWarning) as record:
+        with pytest.warns() as record:
+            warnings.simplefilter(action="ignore", category=DeprecationWarning)
             importer.get_nlu_data()
             importer.get_stories()
 
@@ -73,11 +76,11 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
             ]
         )
     else:
-        with pytest.warns(None) as record:
+        with warnings.catch_warnings() as record:
             importer.get_nlu_data()
             importer.get_stories()
 
-        assert len(record) == 0
+        assert record is None
 
 
 def test_example_bot_training_on_initial_project(tmp_path: Path):
@@ -91,8 +94,9 @@ def test_example_bot_training_on_initial_project(tmp_path: Path):
         str(tmp_path / "data"),
     )
 
-    with pytest.warns(None) as record:
+    with pytest.warns() as record:
         importer.get_nlu_data()
         importer.get_stories()
 
-    assert len(record) == 0
+    records = filter_expected_warnings(record)
+    assert len(records) == 0
