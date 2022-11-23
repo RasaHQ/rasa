@@ -1,24 +1,25 @@
+import asyncio
 import os
 import json
 import logging
+import threading
 from asyncio import AbstractEventLoop
-from typing import Any, Text, List, Optional, Union, Dict, TYPE_CHECKING
+from typing import Any, AnyStr, Text, List, Optional, Union, Dict, TYPE_CHECKING
 import time
 
+from confluent_kafka.admin import AdminClient
+
 from rasa.core.brokers.broker import EventBroker
+from rasa.core.exceptions import KafkaProducerInitializationError
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.endpoints import EndpointConfig
-from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 
 if TYPE_CHECKING:
-    from confluent_kafka import KafkaError, SerializingProducer
+    from confluent_kafka import KafkaError, Producer
+    from asyncio.futures import Future
 
 logger = logging.getLogger(__name__)
-
-
-class KafkaProducerInitializationError(RasaException):
-    """Raised if the Kafka Producer cannot be properly initialized."""
 
 
 class KafkaEventBroker(EventBroker):
@@ -72,7 +73,7 @@ class KafkaEventBroker(EventBroker):
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
         """
-        self.producer: Optional[SerializingProducer] = None
+        self.producer: Optional[Producer] = None
         self.url = url
         self.topic = topic
         self.client_id = client_id
@@ -85,6 +86,11 @@ class KafkaEventBroker(EventBroker):
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = "https" if ssl_check_hostname else None
+
+        self._loop = asyncio.get_event_loop()
+        self._cancelled = False
+        self._poll_thread = threading.Thread(target=self._poll_loop)
+        self._poll_thread.start()
 
     @classmethod
     async def from_endpoint_config(
@@ -105,14 +111,12 @@ class KafkaEventBroker(EventBroker):
         retry_delay_in_seconds: float = 5,
     ) -> None:
         """Publishes events."""
-        from confluent_kafka import KafkaException
-
         if self.producer is None:
             self.producer = self._create_producer()
-            try:
-                self.producer.flush(timeout=1)
+            connected = self.check_broker_connection()
+            if connected:
                 logger.debug("Connection to kafka successful.")
-            except KafkaException:
+            else:
                 logger.debug("Failed to connect kafka.")
                 return
         while retries:
@@ -124,24 +128,40 @@ class KafkaEventBroker(EventBroker):
                     f"Could not publish message to kafka url '{self.url}'. "
                     f"Failed with error: {e}"
                 )
-                try:
-                    self.producer.flush(timeout=1)
-                except KafkaException:
+                connected = self.check_broker_connection()
+                if not connected:
+                    self._close()
                     logger.debug("Connection to kafka lost, reconnecting...")
                     self.producer = self._create_producer()
-                    try:
-                        self.producer.flush(timeout=1)
+                    connected = self.check_broker_connection()
+                    if connected:
                         logger.debug("Reconnection to kafka successful")
                         self._publish(event)
-                    except KafkaException:
-                        pass
                 retries -= 1
                 time.sleep(retry_delay_in_seconds)
 
         logger.error("Failed to publish Kafka event.")
 
-    def _create_producer(self) -> "SerializingProducer":
-        import confluent_kafka
+    def check_broker_connection(self, timeout_in_seconds: int = 5) -> bool:
+        """Verifies that the broker is connected.
+
+        Args:
+            timeout_in_seconds: The timeout in seconds to use for the connection.
+        """
+        admin_client = AdminClient(self._get_kafka_config())
+        topics = admin_client.list_topics(timeout=timeout_in_seconds).topics
+
+        if not topics:
+            return False
+
+        return True
+
+    def _get_kafka_config(self) -> Dict[Text, Any]:
+        config = {
+            "client.id": self.client_id,
+            "bootstrap.servers": self.url,
+            "error_cb": kafka_error_callback,
+        }
 
         if self.security_protocol == "PLAINTEXT":
             authentication_params: Dict[Text, Any] = {
@@ -178,18 +198,15 @@ class KafkaEventBroker(EventBroker):
                 f"Invalid `security_protocol` ('{self.security_protocol}')."
             )
 
+        return {**config, **authentication_params}
+
+    def _create_producer(self) -> "Producer":
+        import confluent_kafka
+
+        kafka_config = self._get_kafka_config()
+
         try:
-            return confluent_kafka.SerializingProducer(
-                {
-                    "client.id": self.client_id,
-                    "bootstrap.servers": self.url,
-                    "value.serializer": lambda v, ctx: json.dumps(v).encode(
-                        DEFAULT_ENCODING
-                    ),
-                    "error_cb": kafka_error_callback,
-                    **authentication_params,
-                }
-            )
+            return confluent_kafka.Producer(kafka_config)
         except confluent_kafka.KafkaException as e:
             raise KafkaProducerInitializationError(
                 f"Cannot initialise `KafkaEventBroker`: {e}"
@@ -215,15 +232,46 @@ class KafkaEventBroker(EventBroker):
             f" key={partition_key!s}, headers={headers})"
         )
 
+        serialized_event = json.dumps(event).encode(DEFAULT_ENCODING)
+
         if self.producer is not None:
-            self.producer.produce(
-                self.topic, value=event, key=partition_key, headers=headers
-            )
+            self.produce(self.topic, value=serialized_event, key=partition_key, headers=headers)
+
+    def _close(self) -> None:
+        if self.producer is not None:
+            self._cancelled = True
+            self._poll_thread.join()
 
     @rasa.shared.utils.common.lazy_property
     def rasa_environment(self) -> Optional[Text]:
         """Get value of the `RASA_ENVIRONMENT` environment variable."""
         return os.environ.get("RASA_ENVIRONMENT", "RASA_ENVIRONMENT_NOT_SET")
+
+    def _poll_loop(self) -> None:
+        while not self._cancelled and self.producer is not None:
+            self.producer.poll(0.1)
+
+    def produce(
+        self, topic: Text, value: AnyStr, key: Optional[bytes], headers: List[Any]
+    ) -> Optional["Future"]:
+        """An awaitable produce method."""
+        from confluent_kafka import KafkaException
+
+        if self.producer is None:
+            return None
+
+        result = self._loop.create_future()
+
+        def ack(err: Exception, msg: Any) -> None:
+            if err:
+                self._loop.call_soon_threadsafe(
+                    result.set_exception, KafkaException(err)
+                )
+            else:
+                self._loop.call_soon_threadsafe(result.set_result, msg)
+
+        self.producer.produce(topic, value, key, headers, on_delivery=ack)
+        return result
 
 
 def kafka_error_callback(err: "KafkaError") -> None:
@@ -232,6 +280,15 @@ def kafka_error_callback(err: "KafkaError") -> None:
     Any exception raised from this callback will be re-raised from the
     triggering flush() call.
     """
-    from confluent_kafka import KafkaException
+    from confluent_kafka import KafkaException, KafkaError
 
-    raise KafkaException(err)
+    # handle authentication / connection related issues, likely pointing
+    # to a configuration error
+    if (
+        err.code() == KafkaError._ALL_BROKERS_DOWN
+        or err.code() == KafkaError._AUTHENTICATION
+        or err.code() == KafkaError._MAX_POLL_EXCEEDED
+    ):
+        raise KafkaException(err)
+    else:
+        logger.error("A KafkaError has been raised.", exc_info=True)
