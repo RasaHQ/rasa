@@ -194,6 +194,11 @@
   from = "/docs/rasa/installation"
   to = "/docs/rasa/installation/environment-set-up/"
 
-  [[redirects]]
-  from = "/docs/rasa/deploy/deploy-rasa-plus/"
-  to = "/docs/rasa/deploy/deploy-rasa/"
+[[redirects]]
+from = "/docs/rasa/deploy/deploy-rasa-plus/"
+to = "/docs/rasa/deploy/deploy-rasa/"
+
+
+[[redirects]]
+from = "/docs/rasa/action-server/deploy-action-server"
+to = "/docs/rasa/deploy/deploy-action-server/"
