@@ -117,13 +117,16 @@ class YamlValidationException(YamlException, ValueError):
         return self._line_number_for_path(current, tail) or this_line
 
 
-def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
-    """
-    Validate yaml content.
+def validate_yaml_schema(
+    yaml_file_content: Text, schema_path: Text, package_name: Text = PACKAGE_NAME
+) -> None:
+    """Validate yaml content.
 
     Args:
         yaml_file_content: the content of the yaml file to be validated
         schema_path: the schema of the yaml file
+        package_name: the name of the package the schema is located in. defaults
+            to `rasa`.
     """
     from pykwalify.core import Core
     from pykwalify.errors import SchemaError
@@ -146,12 +149,12 @@ def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(underlying_yaml_exception=e)
 
-    schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
+    schema_file = pkg_resources.resource_filename(package_name, schema_path)
     schema_utils_file = pkg_resources.resource_filename(
-        PACKAGE_NAME, RESPONSES_SCHEMA_FILE
+        package_name, RESPONSES_SCHEMA_FILE
     )
     schema_extensions = pkg_resources.resource_filename(
-        PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE
+        package_name, SCHEMA_EXTENSIONS_FILE
     )
 
     # Load schema content using our YAML loader as `pykwalify` uses a global instance
