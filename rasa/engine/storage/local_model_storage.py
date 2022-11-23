@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 import shutil
-from tarsafe import TarSafe
+import sys
 import tempfile
 import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
+from tarsafe import TarSafe
 from typing import Text, Generator, Tuple, Union
 
 import rasa.utils.common
@@ -86,7 +87,15 @@ class LocalModelStorage(ModelStorage):
         model_archive_path: Union[Text, Path], temporary_directory: Path
     ) -> None:
         with TarSafe.open(model_archive_path, mode="r:gz") as tar:
-            tar.extractall(temporary_directory)
+            if sys.platform == "win32":
+                # on windows by default there is a restriction on long
+                # path names; using the prefix below allows to bypass
+                # this restriction in environment where it's not possible
+                # to override this behavior, mostly for internal policy reasons
+                # reference: https://stackoverflow.com/a/49102229
+                tar.extractall(f"\\\\?\\{temporary_directory}")
+            else:
+                tar.extractall(temporary_directory)
         LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
 
     @staticmethod
