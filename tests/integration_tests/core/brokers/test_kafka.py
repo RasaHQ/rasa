@@ -18,3 +18,4 @@ def test_kafka_event_broker_valid():
         assert broker.producer.poll() == 1
     finally:
         broker.producer.flush()
+        broker._close()

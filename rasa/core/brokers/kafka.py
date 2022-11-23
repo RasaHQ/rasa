@@ -235,7 +235,9 @@ class KafkaEventBroker(EventBroker):
         serialized_event = json.dumps(event).encode(DEFAULT_ENCODING)
 
         if self.producer is not None:
-            self.produce(self.topic, value=serialized_event, key=partition_key, headers=headers)
+            self.produce(
+                self.topic, value=serialized_event, key=partition_key, headers=headers
+            )
 
     def _close(self) -> None:
         if self.producer is not None:
