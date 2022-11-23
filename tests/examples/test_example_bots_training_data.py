@@ -31,7 +31,7 @@ from tests.conftest import filter_expected_warnings
             "examples/knowledgebasebot/domain.yml",
             "examples/knowledgebasebot/data",
             True,
-            "You are using an experiential feature: "
+            "You are using an experimental feature: "
             "Action 'action_query_knowledge_base'!",
         ),
         (
