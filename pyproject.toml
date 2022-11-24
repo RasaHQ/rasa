@@ -208,6 +208,14 @@ rasa = "rasa.__main__:main"
 version = "~2.11.0"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 
+[tool.poetry.dependencies.tensorflow-intel]
+version = "~2.11.0"
+markers = "sys_platform == 'windows'"
+
+[tool.poetry.dependencies.tensorflow-cpu-aws]
+version = "~2.11.0"
+markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
+
 #[tool.poetry.dependencies.tensorflow-macos]
 #version = "2.10.0"
 #markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
