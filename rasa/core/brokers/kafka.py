@@ -14,7 +14,7 @@ from rasa.utils.endpoints import EndpointConfig
 import rasa.shared.utils.common
 
 if TYPE_CHECKING:
-    from confluent_kafka import KafkaError, Producer
+    from confluent_kafka import KafkaError, Producer, Message
 
 logger = logging.getLogger(__name__)
 
@@ -153,21 +153,21 @@ class KafkaEventBroker(EventBroker):
 
         if self.security_protocol == "PLAINTEXT":
             authentication_params: Dict[Text, Any] = {
-                "security.protocol": self.security_protocol.lower(),
+                "security.protocol": self.security_protocol,
             }
         elif self.security_protocol == "SASL_PLAINTEXT":
             authentication_params = {
                 "sasl.username": self.sasl_username,
                 "sasl.password": self.sasl_password,
                 "sasl.mechanism": self.sasl_mechanism,
-                "security.protocol": self.security_protocol.lower(),
+                "security.protocol": self.security_protocol,
             }
         elif self.security_protocol == "SSL":
             authentication_params = {
                 "ssl.ca.location": self.ssl_cafile,
                 "ssl.certificate.location": self.ssl_certfile,
                 "ssl.key.location": self.ssl_keyfile,
-                "security.protocol": self.security_protocol.lower(),
+                "security.protocol": self.security_protocol,
             }
         elif self.security_protocol == "SASL_SSL":
             authentication_params = {
@@ -177,7 +177,7 @@ class KafkaEventBroker(EventBroker):
                 "ssl.certificate.location": self.ssl_certfile,
                 "ssl.key.location": self.ssl_keyfile,
                 "ssl.endpoint.identification.algorithm": self.ssl_check_hostname,
-                "security.protocol": self.security_protocol.lower(),
+                "security.protocol": self.security_protocol,
                 "sasl.mechanism": self.sasl_mechanism,
             }
         else:
@@ -223,7 +223,11 @@ class KafkaEventBroker(EventBroker):
         if self.producer is not None:
             self.producer.poll(0.0)
             self.producer.produce(
-                self.topic, value=serialized_event, key=partition_key, headers=headers
+                self.topic,
+                value=serialized_event,
+                key=partition_key,
+                headers=headers,
+                on_delivery=delivery_report,
             )
 
     def _close(self) -> None:
@@ -259,3 +263,20 @@ def kafka_error_callback(err: "KafkaError") -> None:
         raise KafkaException(err)
     else:
         logger.error("A KafkaError has been raised.", exc_info=True)
+
+
+def delivery_report(err: Exception, msg: "Message") -> None:
+    """Reports the failure or success of a message delivery.
+
+    Args:
+        err (KafkaError): The error that occurred on None on success.
+        msg (Message): The message that was produced or failed.
+    """
+    if err is not None:
+        logger.warning(f"Delivery failed for User record {msg.key()}: {err}")
+        return
+
+    logger.info(
+        f"User record {msg.key()} successfully produced to "
+        f"{msg.topic()} [{msg.partition()}] at offset {msg.offset()}."
+    )
