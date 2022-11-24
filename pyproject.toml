@@ -93,6 +93,7 @@ scikit-learn = [
     {version = ">=0.22,<1.1", python = "~=3.7.0"},
     {version = ">=0.22,<1.2", python = ">=3.8,<3.10"}
 ]
+pyyaml = ">=5.3.1,<6.0"
 twilio = ">=6.26,<7.15"
 webexteamssdk = ">=1.1.1,<1.7.0"
 mattermostwrapper = "~2.2"

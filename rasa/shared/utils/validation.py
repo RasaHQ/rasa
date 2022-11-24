@@ -151,10 +151,10 @@ def validate_yaml_schema(
 
     schema_file = pkg_resources.resource_filename(package_name, schema_path)
     schema_utils_file = pkg_resources.resource_filename(
-        package_name, RESPONSES_SCHEMA_FILE
+        PACKAGE_NAME, RESPONSES_SCHEMA_FILE
     )
     schema_extensions = pkg_resources.resource_filename(
-        package_name, SCHEMA_EXTENSIONS_FILE
+        PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE
     )
 
     # Load schema content using our YAML loader as `pykwalify` uses a global instance
