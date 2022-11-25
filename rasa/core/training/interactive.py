@@ -1724,7 +1724,7 @@ def calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int:
         if all(
             [
                 terminaltables.width_and_alignment.visible_width(line)
-                <= monospace_wrapping_width + 1
+                <= monospace_wrapping_width
                 for line in lines
             ]
         ):
