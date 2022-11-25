@@ -2355,26 +2355,19 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.2.1"
+version = "3.4.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7,<3.11"
-develop = false
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
-prompt-toolkit = "^3.0,<3.0.29"
+prompt-toolkit = ">=3.0,<3.0.29"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
-sanic = "^21.12.0"
-Sanic-Cors = "^2.0.0"
+sanic = ">=21.12.0,<22.0.0"
+Sanic-Cors = ">=2.0.0,<3.0.0"
 typing-extensions = ">=4.1.1,<5.0.0"
-
-[package.source]
-type = "git"
-url = "https://github.com/RasaHQ/rasa-sdk"
-reference = "ATO-478-implement-3.10-support"
-resolved_reference = "9e47d0abe8f9a7d6557db4d555068739b214e60c"
 
 [[package]]
 name = "redis"
@@ -3717,7 +3710,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "5d26cfb9e9c6134466cf116e50c5033c33c8ad0ea515437f5178b4c28f753169"
+content-hash = "33bbcb122f3df1e55e8af83be5c0dd574e46d44e40d1a4a3d68b055315299b22"
 
 [metadata.files]
 absl-py = [
@@ -5760,7 +5753,10 @@ questionary = [
 randomname = [
     {file = "randomname-0.1.5.tar.gz", hash = "sha256:e10d14ea10895ee5bc417bdcc6d955e0b586f3bc67094ab87afcf8dcac23ab92"},
 ]
-rasa-sdk = []
+rasa-sdk = [
+    {file = "rasa_sdk-3.4.0-py3-none-any.whl", hash = "sha256:62d38ee889994882c54c81f1830416ec018a796cee6ec69225aa4b18031d304b"},
+    {file = "rasa_sdk-3.4.0.tar.gz", hash = "sha256:1b35b8e59d0bdebca2d87d4532747f83127d96f7ef9afd3a714d7b4160485b7d"},
+]
 redis = [
     {file = "redis-4.3.4-py3-none-any.whl", hash = "sha256:a52d5694c9eb4292770084fa8c863f79367ca19884b329ab574d5cb2036b3e54"},
     {file = "redis-4.3.4.tar.gz", hash = "sha256:ddf27071df4adf3821c4f2ca59d67525c3a82e5f268bed97b813cb4fabf87880"},
