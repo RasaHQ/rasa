@@ -84,6 +84,8 @@ class KafkaEventBroker(EventBroker):
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = "https" if ssl_check_hostname else None
 
+        # Async producer implementation followed from confluent-kafka asyncio example:
+        # https://github.com/confluentinc/confluent-kafka-python/blob/master/examples/asyncio_example.py#L88  # noqa: W505, E501
         self._loop = asyncio.get_event_loop()
         self._cancelled = False
         self._poll_thread = threading.Thread(target=self._poll_loop)
@@ -113,7 +115,7 @@ class KafkaEventBroker(EventBroker):
         if self.producer is None:
             self.producer = self._create_producer()
             try:
-                self.producer.list_topics(timeout=5)
+                self._check_kafka_connection()
                 logger.debug("Connection to kafka successful.")
             except KafkaException:
                 logger.debug("Failed to connect kafka.")
@@ -128,12 +130,12 @@ class KafkaEventBroker(EventBroker):
                     f"Failed with error: {e}"
                 )
                 try:
-                    self.producer.list_topics(timeout=5)
+                    self._check_kafka_connection()
                 except KafkaException:
                     logger.debug("Connection to kafka lost, reconnecting...")
                     self.producer = self._create_producer()
                     try:
-                        self.producer.list_topics(timeout=5)
+                        self._check_kafka_connection()
                         logger.debug("Reconnection to kafka successful")
                         self._publish(event)
                         return
@@ -143,6 +145,15 @@ class KafkaEventBroker(EventBroker):
                 time.sleep(retry_delay_in_seconds)
 
         logger.error("Failed to publish Kafka event.")
+
+    def _check_kafka_connection(self) -> None:
+        """Verifies connection with Kafka.
+
+        Raises:
+            KafkaException: if Kafka is disconnected.
+        """
+        if self.producer is not None:
+            self.producer.list_topics(timeout=5)
 
     def _get_kafka_config(self) -> Dict[Text, Any]:
         config = {
@@ -221,7 +232,6 @@ class KafkaEventBroker(EventBroker):
         serialized_event = json.dumps(event).encode(DEFAULT_ENCODING)
 
         if self.producer is not None:
-            self.producer.poll(0.0)
             self.producer.produce(
                 self.topic,
                 value=serialized_event,
@@ -240,6 +250,10 @@ class KafkaEventBroker(EventBroker):
         return os.environ.get("RASA_ENVIRONMENT", "RASA_ENVIRONMENT_NOT_SET")
 
     def _poll_loop(self) -> None:
+        """Polls the producer for events.
+
+        Required to trigger the on_delivery callback passed to produce method.
+        """
         if self.producer is not None:
             while not self._cancelled:
                 self.producer.poll(0.1)
@@ -262,7 +276,7 @@ def kafka_error_callback(err: "KafkaError") -> None:
     ):
         raise KafkaException(err)
     else:
-        logger.error("A KafkaError has been raised.", exc_info=True)
+        logger.warning("A KafkaError has been raised.", exc_info=True)
 
 
 def delivery_report(err: Exception, msg: "Message") -> None:
@@ -273,7 +287,7 @@ def delivery_report(err: Exception, msg: "Message") -> None:
         msg (Message): The message that was produced or failed.
     """
     if err is not None:
-        logger.warning(f"Delivery failed for User record {msg.key()}: {err}")
+        logger.error(f"Delivery failed for User record {msg.key()}: {err}")
         return
 
     logger.info(
