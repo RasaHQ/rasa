@@ -1,42 +1,6 @@
 version: "3.8"
 
 services:
-  redis:
-    image: redis:6
-    # Set health checks to wait until redis has started
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-    ports:
-      - 6379:6379
-
-  postgres:
-    image: postgres:13
-    # Set health checks to wait until postgres has started
-    healthcheck:
-      test: ["CMD", "pg_isready"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    environment:
-      # postgres image requires password to be set
-      PGUSER: ${PGUSER}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - 5432:5432
-
-  rabbitmq:
-    image: healthcheck/rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    ports:
-      - 5672:5672
-
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.5
     hostname: zookeeper
@@ -46,11 +10,19 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: nc -z localhost 2181 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
 
   kafka:
     image: confluentinc/cp-kafka:7.0.5
+    restart: on-failure
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
     environment:
@@ -69,4 +41,10 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TOOLS_LOG4J_LOGLEVEL: ERROR
     volumes:
-      - ${PWD}/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+      - ${PWD}/tests_deployment/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+    healthcheck:
+      test: nc -z localhost 9092 || exit 1
+      interval: 30s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
