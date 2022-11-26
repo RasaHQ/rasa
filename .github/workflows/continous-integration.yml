@@ -507,6 +507,10 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
+      - name: Run kafka and zookeeper containers for integration testing
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
+
       - name: Test Code with Services 🩺
         if: needs.changes.outputs.backend == 'true'
         env:
@@ -526,6 +530,10 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: |
           make test-integration
+
+      - name: Stop kafka and zookeeper containers for integration testing
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml down
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
