@@ -1,4 +1,6 @@
 import json
+import warnings
+
 import numpy as np
 import os
 import pytest
@@ -52,6 +54,7 @@ from rasa.shared.nlu.constants import (
     TEXT,
     EXTRACTOR,
 )
+from tests.conftest import filter_expected_warnings
 
 
 @pytest.fixture()
@@ -141,12 +144,15 @@ async def test_default_slot_value_if_no_domain():
     """
 
     reader = YAMLStoryReader()
-    with pytest.warns(None) as warnings:
+    with warnings.catch_warnings() as record:
         events = reader.read_from_string(story)[0].events
+
+    if record is not None:
+        record = filter_expected_warnings(record)
+        assert len(record) == 0
 
     assert isinstance(events[-1], SlotSet)
     assert events[-1].value is None
-    assert not warnings
 
 
 async def test_default_slot_value_if_unfeaturized_slot():
@@ -165,12 +171,16 @@ async def test_default_slot_value_if_unfeaturized_slot():
         }
     )
     reader = YAMLStoryReader(domain)
-    with pytest.warns(None) as warnings:
+
+    with warnings.catch_warnings() as warning:
         events = reader.read_from_string(story)[0].events
+
+    if warning is not None:
+        warning = filter_expected_warnings(warning)
+        assert len(warning) == 0
 
     assert isinstance(events[-1], SlotSet)
     assert events[-1].value is None
-    assert not warnings
 
 
 def test_can_read_test_story_with_entities(domain: Domain):
@@ -248,7 +258,7 @@ async def test_is_yaml_file(file: Text):
 def test_yaml_intent_with_leading_slash_warning(domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/intent_with_leading_slash.yml"
 
-    with pytest.warns(UserWarning) as record:
+    with pytest.warns() as record:
         tracker = training.load_data(
             yaml_file,
             domain,
@@ -256,9 +266,10 @@ def test_yaml_intent_with_leading_slash_warning(domain: Domain):
             tracker_limit=1000,
             remove_duplicates=False,
         )
-
+    record = filter_expected_warnings(record)
     # one for leading slash
     assert len(record) == 1
+    assert type(record[0].message) == UserWarning
 
     assert tracker[0].latest_message == UserUttered(intent={"name": "simple"})
 
@@ -609,10 +620,17 @@ async def test_story_with_retrieval_intent_warns(
 ):
     reader = YAMLStoryReader()
 
-    with pytest.warns(warning) as record:
+    with warnings.catch_warnings() as record:
         reader.read_from_file(file)
 
-    assert len(record) == (1 if warning else 0)
+    if record is not None:
+        record = filter_expected_warnings(record)
+
+        if warning:
+            assert len(record) == 1
+            assert type(record[0].message) == warning
+        else:
+            assert len(record) == 0
 
 
 def test_or_statement_story_with_or_slot_was_set(domain: Domain):
@@ -678,8 +696,10 @@ def test_read_from_file_skip_validation(monkeypatch: MonkeyPatch):
 def test_raises_exception_missing_intent_in_rules(file: Text, domain: Domain):
     reader = YAMLStoryReader(domain)
 
-    with pytest.warns(UserWarning) as warning:
+    with pytest.warns() as warning:
         reader.read_from_file(file)
+
+    warning = filter_expected_warnings(warning)
 
     assert "Missing intent value" in warning[0].message.args[0]
 

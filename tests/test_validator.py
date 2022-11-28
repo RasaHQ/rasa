@@ -282,6 +282,7 @@ def test_early_exit_on_invalid_domain():
 
     importer = RasaFileImporter(domain_path=domain_path)
     with pytest.warns(UserWarning) as record:
+        warnings.simplefilter("ignore", DeprecationWarning)
         validator = Validator.from_importer(importer)
     validator.verify_domain_validity()
 

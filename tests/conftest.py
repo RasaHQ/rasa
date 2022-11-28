@@ -3,6 +3,7 @@ import contextlib
 import copy
 import os
 import random
+import re
 import textwrap
 
 import pytest
@@ -11,6 +12,7 @@ import uuid
 
 from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
 from spacy import Language
+from pytest import WarningsRecorder
 
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
@@ -789,3 +791,16 @@ def with_model_id(event: Event, model_id: Text) -> Event:
 @pytest.fixture(autouse=True)
 def sanic_test_mode(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(Sanic, "test_mode", True)
+
+
+def filter_expected_warnings(records: WarningsRecorder) -> WarningsRecorder:
+    records_copy = copy.deepcopy(records.list)
+
+    for warning_type, warning_message in rasa.utils.common.EXPECTED_WARNINGS:
+        for record in records_copy:
+            if type(record.message) == warning_type and re.search(
+                warning_message, str(record.message)
+            ):
+                records.pop(type(record.message))
+
+    return records
