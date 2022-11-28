@@ -363,11 +363,11 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -608,11 +608,11 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -756,10 +756,10 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Get reports
         uses: actions/download-artifact@v3
@@ -862,7 +862,7 @@ jobs:
           echo "::set-output name=to_ts::$TIME_UNIX_NOW"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@39c5b5dc7717447d0cba270cd115037d32d28443 # v2.2.0
+        uses: marocchino/sticky-pull-request-comment@adca94abcaf73c10466a71cc83ae561fd66d1a56 # v2.3.0
         if: ${{ always() }}
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

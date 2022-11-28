@@ -34,7 +34,7 @@ jobs:
         fetch-depth: '0'
     - name: Run Trivy vulnerability scanner
       id: trivy
-      uses: aquasecurity/trivy-action@d63413b0a4a4482237085319f7f4a1ce99a8f2ac
+      uses: aquasecurity/trivy-action@9ab158e8597f3b310480b9a69402b419bc03dbd5
       continue-on-error: true
       with:
         format: 'table'
@@ -83,11 +83,11 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         if: needs.changes.outputs.backend == 'true'
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Read Poetry Version 🔢
         if: needs.changes.outputs.backend == 'true'

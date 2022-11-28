@@ -146,7 +146,11 @@ prepare-wget-macos:
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
 
-prepare-tests-ubuntu: prepare-tests-files
+# runs install-full target again in CI job runs, because poetry introduced a change
+# in behaviour in versions >= 1.2 (whenever you install a specific extra only, e.g.
+# spacy, poetry will uninstall all other extras from the environment)
+# See discussion thread: https://rasa-hq.slack.com/archives/C01HHMR4X8S/p1667924056444669
+prepare-tests-ubuntu: prepare-tests-files install-full
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
 prepare-wget-windows:
@@ -161,7 +165,11 @@ prepare-tests-windows: prepare-wget-windows prepare-tests-files
 prepare-wget-windows-gha:
 	powershell -command "Choco-Install wget"
 
-prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files
+# runs install-full target again in CI job runs, because poetry introduced a change
+# in behaviour in versions >= 1.2 (whenever you install a specific extra only, e.g.
+# spacy, poetry will uninstall all other extras from the environment)
+# See discussion thread: https://rasa-hq.slack.com/archives/C01HHMR4X8S/p1667924056444669
+prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files install-full
 	powershell -command "Choco-Install graphviz"
 
 test: clean
@@ -290,6 +298,14 @@ build-docker-spacy-de:
 	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
 	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-de
+
+build-docker-spacy-it:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake -f docker/docker-bake.hcl spacy-it
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \

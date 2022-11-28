@@ -35,7 +35,7 @@ env:
 
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
-  DEFAULT_PYTHON_VERSION: "3.9"
+  DEFAULT_PYTHON_VERSION: "3.10"
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
@@ -78,7 +78,7 @@ jobs:
 
     steps:
       - name: Wait for doc tests
-        uses: fountainhead/action-wait-for-check@4699210ccc66e2a13260803fadbb77085421b891
+        uses: fountainhead/action-wait-for-check@297be350cf8393728ea4d4b39435c7d7ae167c93
         id: wait-for-doc-tests
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -226,7 +226,7 @@ jobs:
           - test-other-unit-tests
           - test-performance
         os: [ubuntu-latest, windows-2019]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, '3.10']
 
     steps:
       - name: Run DataDog Agent
@@ -358,10 +358,10 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
@@ -507,6 +507,11 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
+      - name: Run kafka and zookeeper containers for integration testing
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
+
       - name: Test Code with Services 🩺
         if: needs.changes.outputs.backend == 'true'
         env:
@@ -526,6 +531,11 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: |
           make test-integration
+
+      - name: Stop kafka and zookeeper containers for integration testing
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml down
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
@@ -558,7 +568,7 @@ jobs:
         shell: bash
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.6.0
+        uses: docker/setup-buildx-action@8c0edbc76e98fa90f69d9a2c020dcb50019dc325
         with:
           version: v0.5.1
           driver: docker
@@ -721,7 +731,7 @@ jobs:
 
     strategy:
       matrix:
-        image: [default, full, mitie-en, spacy-de, spacy-en]
+        image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
@@ -754,7 +764,7 @@ jobs:
         shell: bash
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v2
+        uses: docker/setup-buildx-action@8c0edbc76e98fa90f69d9a2c020dcb50019dc325
         id: buildx
         with:
           version: v0.5.1

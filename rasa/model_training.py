@@ -1,4 +1,3 @@
-import tempfile
 import time
 from pathlib import Path
 from typing import Text, NamedTuple, Optional, List, Union, Dict, Any
@@ -212,7 +211,12 @@ def _train_graph(
     )
     rasa.engine.validation.validate(model_configuration)
 
-    with tempfile.TemporaryDirectory() as temp_model_dir:
+    tempdir_name = rasa.utils.common.get_temp_dir_name()
+
+    # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this
+    # leads to errors on Windows when the context manager tries to delete an
+    # already deleted temporary directory (e.g. https://bugs.python.org/issue29982)
+    with rasa.utils.common.TempDirectoryPath(tempdir_name) as temp_model_dir:
         model_storage = _create_model_storage(
             is_finetuning, model_to_finetune, Path(temp_model_dir)
         )
