@@ -109,6 +109,7 @@ def create_train_load_and_process_diet(
             training_data=training_data,
             message_text=message_text,
             expect_intent=expect_intent,
+            diet_resource=resource,
         )
 
     return inner
@@ -128,6 +129,7 @@ def train_load_and_process_diet(
         training_data: str = nlu_data_path,
         message_text: Text = "Rasa is great!",
         expect_intent: bool = True,
+        diet_resource: Resource = Resource("DIET")
     ) -> Message:
 
         if not pipeline:
@@ -150,7 +152,8 @@ def train_load_and_process_diet(
         if expect_intent:
             assert classified_message.data["intent"]["name"]
 
-        loaded_diet = create_diet(diet.component_config, load=True)
+        loaded_diet = create_diet(diet.component_config, load=True,
+                                  resource=diet_resource)
 
         classified_message2 = loaded_diet.process([message2])[0]
 
