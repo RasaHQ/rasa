@@ -1,0 +1,187 @@
+---
+id: audiocodes-voiceai-connect
+sidebar_label: Audiocodes VoiceAI Connect
+title: Audiocodes VoiceAI Connect
+description: Build a Rasa Voice Bot on Audiocodes VoiceAI Connect
+---
+
+import RasaProLabel from '@theme/RasaProLabel';
+import RasaProBanner from '@theme/RasaProBanner';
+
+
+<RasaProLabel/>
+
+<RasaProBanner/>
+
+Use this channel to connect your Rasa assistant to [Audiocodes VoiceAI connect](https://www.audiocodes.com/solutions-products/voiceai/voiceai-connect).
+## Getting Credentials
+
+To get your credentials, create you need to create a bot on the [VoiceAI connect portal](https://voiceaiconnect.audiocodes.io/).
+
+1. Select **Bots** in the left side bar.
+2. Click on the **+** sign to create a new bot
+3. Select **Rasa** in the platforms.
+4. Then set the bot URL a choose a token value.
+
+## Setting credentials
+
+The token value chosen above will be used in the credentials.
+
+```yaml
+rasa_plus.channels.audiocodes.AudiocodesInput:
+    token: <token>
+```
+
+You can also specify optional parameters:
+
+| Parameter       | Default value    | Description                                                                                                                 |
+| --------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `token`         | No default value | The token to authenticate calls between your Rasa assistant and VoiceAI connect                                             |
+| `use_websocket` | `true`           | If `true`, Rasa will send messages through a web socket. If set to `false`, Rasa will send messages through http API calls. |
+| `keep_alive`    | 120              | For each ongoing conversation, VoiceAI will periodically verifies the conversation is still active on the Rasa side.        |
+
+Then restart your Rasa server to make the new channel endpoint available.
+
+## Usage
+
+### Receiving messages from a user
+
+When a user speaks on the phone, VoiceAI Connect will send a text message (after it is processed by the speech-to-text engine) to your assistant like any other channel.
+This message will be interpreted by the NLU and you can then drive the conversation with rules, stories and forms.
+
+### Sending messages to a user
+
+Your bot can reply with text messages like with any other channel. The text-to-speech engine will convert it and deliver it to the user.
+
+Here is an example:
+
+```yaml
+utter_greet:
+    - text: 'Hello! isn’t every life and every work beautiful?'
+```
+
+Note that only text messages are allowed. Images, attachments, and buttons cannot be used with a voice channel.
+
+### Handling conversation events
+
+Non-voice events can also be handled by the bot. Here are a few examples:
+
+| Event   | intent             | Description                                                                                                                                                                                                                                                                                                                                |
+| ------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `start` | `vaig_event_start` | VoiceAI will send this intent when it picks-up a phone call. In general, the response to that intent is a welcome or greeting message. [Call context](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/call-initiation.htm?TocPath=Bot%2520integration%257CBasic%2520behavior%257C_____1) will be provided through entities |
+| `end`   | `vaig_event_end`   | VoiceAI will send this intent when a call ends. You can use that to call an action that updates the call information.                                                                                                                                                                                                            |
+| `DTMF`  | `vaig_event_DTMF`  | VoiceAI will send this intent when receiving a DTMF tone (i.e user presses digit on the keyboard of the phone). The digit(s) sent will be passed in the `value` entity                                                                                                                                                                     |
+
+The general pattern is that for every `event` sent, the bot will receive the `vaig_event_<event>` intent, with context information in entities.
+
+Here is a simple rule to send a greeting message when a call to the bot is initiated:
+
+```yaml
+- rule: Initialization
+  steps:
+      - intent: vaig_event_start
+      - action: utter_greet
+```
+
+Check the [VoiceAI Connect documentation](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/voiceai_connect.htm?TocPath=VoiceAI%2520Connect%257C_____0) for an exhaustive list of events.
+
+### Configuring calls
+
+You can send events from Rasa to VoiceAI to make changes to the current call configuration.
+For example, you might want to receive a signal when the user stays silent for more than 5 seconds, or you might need to customize how DTMF digits are sent by VoiceAI Connect.
+
+Call configuration events are sent with custom messages and are specific to the current conversation (sometimes to a message).
+Which means they must be part of your stories or rules so the same behaviour is applied to all conversations.
+
+There is a lot of different events which are exhaustively documented in the [VoiceAI Connect documentation](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/voiceai_connect.htm?TocPath=VoiceAI%2520Connect%257C_____0).
+We will only look at an example so you understand how these work and how to use them.
+
+#### Example: changing a pin code
+
+In this example we create a flow to allow a user to change a pin code.
+
+```yaml
+- rule: Set pin code
+  steps:
+  - intent: set_pin_code # User says "I want to change my pin code"
+  - action: utter_config_no_user_input # Send the noUserInput configuration event
+  - action: utter_config_dtmf_pin_code # Send the DTMF format configuration event
+  - action: pin_code_form # A standard Rasa form to collect the pin code from the user
+  - ...
+```
+
+In the domain, we can add the `utter_config...` responses:
+
+[`noUserInput` event](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/inactivity-detection.htm?TocPath=Bot%2520integration%257CReceiving%2520notifications%257C_____3)
+```yaml
+  utter_config_no_user_input:
+  - custom:
+      type: event
+      name: config
+      sessionParams:
+        userNoInputTimeoutMS: 5000 # If user stays silent for 5 seconds or more, the notification will be sent
+        userNoInputRetries: 2 # If you want to allow for more than one notification during a call
+        userNoInputSendEvent: true # Enable the noUserInput notification
+```
+
+[`DTMF` event](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/receive-dtmf.htm?TocPath=Bot%2520integration%257CReceiving%2520notifications%257C_____2)
+```yaml
+   utter_config_dtmf_pin_code:
+  - custom:
+      type: event
+      name: config
+      sessionParams:
+        dtmfCollect: true # Enable grouped collection (i.e will send all digit at once instead of one payload per digit)
+        dtmfCollectInterDigitTimeoutMS: 5000 # If more than 5 secs have passed since a digit was pressed, the input is considered completed and will be sent to the bot
+        dtmfCollectMaxDigits: 6 # If 6 digits are collected, VoiceAI will send those 6 digits even if the user keeps pressing buttons
+        dtmfCollectSubmitDigit: "#" # If the user presses '#' the input is considered completed and will be sent to the bot
+```
+
+
+Now you can configure the `pin_code` slot in the `pin_code_form` to extract the pin code from the `value` entity with the `vaig_event_DTMF` intent.
+Here's an example of how to configure the `pin_code` slot in a form:
+
+```yaml
+  pin_code:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: value
+      intent: vaig_event_DTMF
+      not_intent: vaig_event_noUserInput
+      conditions:
+      - active_loop: pin_code_form
+        requested_slot: pin_code
+```
+
+Notice that `vaig_event_noUserInput` was declared in the `not_intent` field. 
+
+Since the `vaig_event_noUserInput` intent is sent by VoiceAI Connect when the user stays silent as per our configuration,
+we must deactivate the form so we can gracefully pick up the conversation from a rule or a story.
+
+In the following example, we simply cancel the current flow if we receive the `vaig_event_noUserInput` intent (i.e. user stays silent) while the `pin_code_form` loop is active.
+
+```yaml
+- rule: Set pin code - happy path
+  steps:
+  - intent: set_pin_code
+  - action: utter_config_no_user_input
+  - action: utter_config_dtmf_pin_code
+  - action: pin_code_form
+  - active_loop: pin_code_form
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+  - action: utter_pin_code_changed
+  - action: action_pin_code_cleanup
+
+- rule: Set pin code - no response - cancel.
+  condition:
+  - active_loop: pin_code_form
+  steps:
+  - intent: vaig_event_noUserInput
+  - action: utter_cancel_set_pin_code
+  - action: action_deactivate_loop
+  - active_loop: null
+```

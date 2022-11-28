@@ -144,6 +144,7 @@ module.exports = {
             'connectors/telegram',
             'connectors/twilio',
             'connectors/hangouts',
+            'connectors/audiocodes-voiceai-connect',
             'connectors/microsoft-bot-framework',
             'connectors/cisco-webex-teams',
             'connectors/rocketchat',
