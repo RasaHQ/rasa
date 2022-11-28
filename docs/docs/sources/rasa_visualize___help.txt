@@ -3,7 +3,7 @@ usage: rasa visualize [-h] [-v] [-vv] [--quiet]
                       [-s STORIES] [--out OUT] [--max-history MAX_HISTORY]
                       [-u NLU]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -d DOMAIN, --domain DOMAIN
                         Domain specification. This can be a single YAML file,

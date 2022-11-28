@@ -6,7 +6,7 @@ usage: rasa export [-h] [-v] [-vv] [--quiet]
                    [--offset-timestamps-by-seconds OFFSET_TIMESTAMPS_BY_SECONDS]
                    [--conversation-ids CONVERSATION_IDS]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --endpoints ENDPOINTS
                         Endpoint configuration file specifying the tracker

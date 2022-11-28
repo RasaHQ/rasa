@@ -22,7 +22,7 @@ positional arguments:
                         specified, it will use the latest model in this
                         directory. (default: None)
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is

@@ -9,7 +9,7 @@ positional arguments:
   {stories}
     stories             Checks for inconsistencies in the story files.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --max-history MAX_HISTORY
                         Number of turns taken into account for story structure

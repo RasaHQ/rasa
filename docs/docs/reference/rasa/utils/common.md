@@ -12,6 +12,14 @@ Represents a path to an temporary directory.
 
 When used as a context manager, it erases the contents of the directory on exit.
 
+#### get\_temp\_dir\_name
+
+```python
+def get_temp_dir_name() -> Text
+```
+
+Returns the path name of a newly created temporary directory.
+
 #### read\_global\_config
 
 ```python

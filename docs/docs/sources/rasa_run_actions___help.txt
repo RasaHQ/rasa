@@ -5,7 +5,7 @@ usage: rasa run actions [-h] [-v] [-vv] [--quiet]
                         [--ssl-certificate SSL_CERTIFICATE]
                         [--ssl-password SSL_PASSWORD] [--auto-reload]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -p PORT, --port PORT  port to run the server at (default: 5055)
   --cors [CORS ...]     enable CORS for the passed origin. Use * to whitelist

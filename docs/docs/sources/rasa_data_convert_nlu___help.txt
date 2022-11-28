@@ -3,7 +3,7 @@ usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet]
                              [-f {json,yaml}] [--data DATA [DATA ...]]
                              [--out OUT] [-l LANGUAGE]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -f {json,yaml}, --format {json,yaml}
                         Output format the training data should be converted

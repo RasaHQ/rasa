@@ -14,7 +14,7 @@ positional arguments:
     core                Tests Rasa Core models using your test stories.
     nlu                 Tests Rasa NLU models using your test NLU data.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is

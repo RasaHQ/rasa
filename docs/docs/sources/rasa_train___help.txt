@@ -13,7 +13,7 @@ positional arguments:
     core                Trains a Rasa Core model using your stories.
     nlu                 Trains a Rasa NLU model using your NLU data.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --data DATA [DATA ...]
                         Paths to the Core and NLU data files. (default:

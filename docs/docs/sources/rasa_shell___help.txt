@@ -25,11 +25,11 @@ positional arguments:
                         specified, it will use the latest model in this
                         directory. (default: None)
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        7a88b9a0763c48e2b00f0cdb8fb57ded)
+                        2a9d1409618e4c0384adc13030c3c9fc)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this

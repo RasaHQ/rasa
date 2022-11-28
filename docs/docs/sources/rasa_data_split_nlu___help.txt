@@ -3,7 +3,7 @@ usage: rasa data split nlu [-h] [-v] [-vv] [--quiet]
                            [-u NLU] [--training-fraction TRAINING_FRACTION]
                            [--random-seed RANDOM_SEED] [--out OUT]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
                         data)

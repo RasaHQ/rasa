@@ -35,7 +35,7 @@ env:
 
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
-  DEFAULT_PYTHON_VERSION: "3.9"
+  DEFAULT_PYTHON_VERSION: "3.10"
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
@@ -226,7 +226,7 @@ jobs:
           - test-other-unit-tests
           - test-performance
         os: [ubuntu-latest, windows-2019]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, '3.10']
 
     steps:
       - name: Run DataDog Agent
@@ -358,10 +358,10 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
