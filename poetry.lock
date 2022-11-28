@@ -524,6 +524,22 @@ srsly = ">=2.4.0,<3.0.0"
 typing-extensions = {version = ">=3.7.4.1,<4.2.0", markers = "python_version < \"3.8\""}
 
 [[package]]
+name = "confluent-kafka"
+version = "1.9.2"
+description = "Confluent's Python client for Apache Kafka"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+avro = ["avro (==1.10.0)", "fastavro (>=0.23.0,<1.0)", "fastavro (>=1.0)", "requests"]
+dev = ["avro (==1.10.0)", "fastavro (>=0.23.0,<1.0)", "fastavro (>=1.0)", "flake8", "pytest", "pytest (==4.6.4)", "pytest-timeout", "requests"]
+doc = ["avro (==1.10.0)", "fastavro (>=0.23.0,<1.0)", "fastavro (>=1.0)", "requests", "sphinx", "sphinx-rtd-theme"]
+json = ["jsonschema", "pyrsistent", "pyrsistent (==0.16.1)", "requests"]
+protobuf = ["protobuf", "requests"]
+schema-registry = ["requests"]
+
+[[package]]
 name = "coverage"
 version = "6.5.0"
 description = "Code coverage measurement for Python"
@@ -1435,17 +1451,6 @@ format = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-validat
 format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-validator", "rfc3986-validator (>0.1.0)", "uri-template", "webcolors (>=1.11)"]
 
 [[package]]
-name = "kafka-python"
-version = "2.0.2"
-description = "Pure Python client for Apache Kafka"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.extras]
-crc32c = ["crc32c"]
-
-[[package]]
 name = "keras"
 version = "2.8.0"
 description = "Deep learning for humans."
@@ -1697,11 +1702,11 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "mypy"
-version = "0.971"
+version = "0.981"
 description = "Optional static typing for Python"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 mypy-extensions = ">=0.4.3"
@@ -2367,18 +2372,19 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.3.0"
+version = "3.4.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
-python-versions = ">=3.7,<3.10"
+python-versions = ">=3.7,<3.11"
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
 prompt-toolkit = ">=3.0,<3.0.29"
+"ruamel.yaml" = ">=0.16.5,<0.18.0"
 sanic = ">=21.12.0,<22.0.0"
 Sanic-Cors = ">=2.0.0,<3.0.0"
-typing-extensions = ">=3.7.4,<5.0.0"
+typing-extensions = ">=4.1.1,<5.0.0"
 
 [[package]]
 name = "redis"
@@ -3731,8 +3737,8 @@ transformers = ["transformers", "sentencepiece"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = ">=3.7,<3.10"
-content-hash = "e1dbad5da66435a20b60fc1d83cb7a359d13eed79198b4d2f0fef089efc9d9d8"
+python-versions = ">=3.7,<3.11"
+content-hash = "f3c6eb6677b5b00371d8b14c651ac046e2e9f3713a87975be64db03bddea9223"
 
 [metadata.files]
 absl-py = [
@@ -4103,6 +4109,32 @@ colorhash = [
 confection = [
     {file = "confection-0.0.3-py3-none-any.whl", hash = "sha256:51af839c1240430421da2b248541ebc95f9d0ee385bcafa768b8acdbd2b0111d"},
     {file = "confection-0.0.3.tar.gz", hash = "sha256:4fec47190057c43c9acbecb8b1b87a9bf31c469caa0d6888a5b9384432fdba5a"},
+]
+confluent-kafka = [
+    {file = "confluent-kafka-1.9.2.tar.gz", hash = "sha256:2fb97bd25d436bd59fe079885aa77a3a2f23cface9c6359d4700053665849262"},
+    {file = "confluent_kafka-1.9.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:ff08b9f978f8b37f2961614a68f9fdb4fabd10cdd940234e80200806d93a1c30"},
+    {file = "confluent_kafka-1.9.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:4d6bfcc352cd608fcf325037b4425c0edaeae0c6a5439423a865110b59f897e9"},
+    {file = "confluent_kafka-1.9.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f970a2c6d22c934ea68d645abcc96056ecb107489f28a38b2171f65655b7e41f"},
+    {file = "confluent_kafka-1.9.2-cp310-cp310-win32.whl", hash = "sha256:e9107767cc9240cbf9b5c0fdded5eeead86a1690d1c15de6cbbdcc9d7e3b1962"},
+    {file = "confluent_kafka-1.9.2-cp310-cp310-win_amd64.whl", hash = "sha256:24872e3e427b16f77461ae7e6cf48f9c5c03c06884ac51bad179580a4dd29145"},
+    {file = "confluent_kafka-1.9.2-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:be7b37020f614017d8a047565b3fb61ceef9c30a9ee093f9373d06a4c32068ae"},
+    {file = "confluent_kafka-1.9.2-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7e6592533b3f8cfbc086ea2d472058f10e5f6a04a388edca01773285c63284b4"},
+    {file = "confluent_kafka-1.9.2-cp36-cp36m-win32.whl", hash = "sha256:344a7fec57d3348002392a7bd5cf66fb9dbe4a103e81636037cccd6fff944e28"},
+    {file = "confluent_kafka-1.9.2-cp36-cp36m-win_amd64.whl", hash = "sha256:5b24587b30a4d288a7b1c5cc756ee707fc1293fa28454f8db40267ed9d7e73c8"},
+    {file = "confluent_kafka-1.9.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:d0cbf8e7510497afd651e134bccb9d579aa90234e45734046fcb6b752d2ee312"},
+    {file = "confluent_kafka-1.9.2-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d036bf5e1d7cb3743125d7caf62b1a23b12e403de240144b6117ddbb8f815a33"},
+    {file = "confluent_kafka-1.9.2-cp37-cp37m-win32.whl", hash = "sha256:6ab745babc33a864e3ca3a2659c005ed52503e39936fff5812eeb21920009c8b"},
+    {file = "confluent_kafka-1.9.2-cp37-cp37m-win_amd64.whl", hash = "sha256:3207c76d1510571cbda85560c293dec5f8d6645103b3f471abab5c83e51a7ccd"},
+    {file = "confluent_kafka-1.9.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:bef263b6d78a3e63399e1b82cc07cbb30af762884df96a369cba0e1011405344"},
+    {file = "confluent_kafka-1.9.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:382739e499deaf488459c2307ebcc0e9b3653340801d6053c207c84ad710ee8d"},
+    {file = "confluent_kafka-1.9.2-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ff4d1557b7fb72e752c36205a344863b8f4f23b3a834780fc36eb7ebde614de7"},
+    {file = "confluent_kafka-1.9.2-cp38-cp38-win32.whl", hash = "sha256:c4b7c4d0b647952d2b506948131d6e7e1c42ccb16aac8e3e52369c16b94e7215"},
+    {file = "confluent_kafka-1.9.2-cp38-cp38-win_amd64.whl", hash = "sha256:d533ea0e527122f177943ee35eb356b8d9f7af35fe357e0cdc0514d95804aaea"},
+    {file = "confluent_kafka-1.9.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:4f27ddf7daf630a95e1d7dfddd0c8cf8a7755c9567dc9851bf2e74c22f34af42"},
+    {file = "confluent_kafka-1.9.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:e41b9313c44f54a3cd29b0e95fa32a8e685edaa9287b338f59530b21ebc0b453"},
+    {file = "confluent_kafka-1.9.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fe31b3b6930d67380df371f5088950f93da5fac580cde3bedb35f992b2498e1b"},
+    {file = "confluent_kafka-1.9.2-cp39-cp39-win32.whl", hash = "sha256:b9ad6ad9d58c2735129f94f044b2236d7de87d77a101c8c630363add12d62a4a"},
+    {file = "confluent_kafka-1.9.2-cp39-cp39-win_amd64.whl", hash = "sha256:f96033c335da26ea1716ab9adfce459c211b023ca09528f958fb28bf099fc0df"},
 ]
 coverage = [
     {file = "coverage-6.5.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:ef8674b0ee8cc11e2d574e3e2998aea5df5ab242e012286824ea3c6970580e53"},
@@ -4760,10 +4792,6 @@ jsonschema = [
     {file = "jsonschema-4.16.0-py3-none-any.whl", hash = "sha256:9e74b8f9738d6a946d70705dc692b74b5429cd0960d58e79ffecfc43b2221eb9"},
     {file = "jsonschema-4.16.0.tar.gz", hash = "sha256:165059f076eff6971bae5b742fc029a7b4ef3f9bcf04c14e4776a7605de14b23"},
 ]
-kafka-python = [
-    {file = "kafka-python-2.0.2.tar.gz", hash = "sha256:04dfe7fea2b63726cd6f3e79a2d86e709d608d74406638c5da33a01d45a9d7e3"},
-    {file = "kafka_python-2.0.2-py2.py3-none-any.whl", hash = "sha256:2d92418c7cb1c298fa6c7f0fb3519b520d0d7526ac6cb7ae2a4fc65a51a94b6e"},
-]
 keras = [
     {file = "keras-2.8.0-py2.py3-none-any.whl", hash = "sha256:744d39dc6577dcd80ff4a4d41549e92b77d6a17e0edd58a431d30656e29bc94e"},
 ]
@@ -5133,29 +5161,30 @@ murmurhash = [
     {file = "murmurhash-1.0.9.tar.gz", hash = "sha256:fe7a38cb0d3d87c14ec9dddc4932ffe2dbc77d75469ab80fd5014689b0e07b58"},
 ]
 mypy = [
-    {file = "mypy-0.971-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:f2899a3cbd394da157194f913a931edfd4be5f274a88041c9dc2d9cdcb1c315c"},
-    {file = "mypy-0.971-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:98e02d56ebe93981c41211c05adb630d1d26c14195d04d95e49cd97dbc046dc5"},
-    {file = "mypy-0.971-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:19830b7dba7d5356d3e26e2427a2ec91c994cd92d983142cbd025ebe81d69cf3"},
-    {file = "mypy-0.971-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:02ef476f6dcb86e6f502ae39a16b93285fef97e7f1ff22932b657d1ef1f28655"},
-    {file = "mypy-0.971-cp310-cp310-win_amd64.whl", hash = "sha256:25c5750ba5609a0c7550b73a33deb314ecfb559c350bb050b655505e8aed4103"},
-    {file = "mypy-0.971-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:d3348e7eb2eea2472db611486846742d5d52d1290576de99d59edeb7cd4a42ca"},
-    {file = "mypy-0.971-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:3fa7a477b9900be9b7dd4bab30a12759e5abe9586574ceb944bc29cddf8f0417"},
-    {file = "mypy-0.971-cp36-cp36m-win_amd64.whl", hash = "sha256:2ad53cf9c3adc43cf3bea0a7d01a2f2e86db9fe7596dfecb4496a5dda63cbb09"},
-    {file = "mypy-0.971-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:855048b6feb6dfe09d3353466004490b1872887150c5bb5caad7838b57328cc8"},
-    {file = "mypy-0.971-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:23488a14a83bca6e54402c2e6435467a4138785df93ec85aeff64c6170077fb0"},
-    {file = "mypy-0.971-cp37-cp37m-win_amd64.whl", hash = "sha256:4b21e5b1a70dfb972490035128f305c39bc4bc253f34e96a4adf9127cf943eb2"},
-    {file = "mypy-0.971-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:9796a2ba7b4b538649caa5cecd398d873f4022ed2333ffde58eaf604c4d2cb27"},
-    {file = "mypy-0.971-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:5a361d92635ad4ada1b1b2d3630fc2f53f2127d51cf2def9db83cba32e47c856"},
-    {file = "mypy-0.971-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:b793b899f7cf563b1e7044a5c97361196b938e92f0a4343a5d27966a53d2ec71"},
-    {file = "mypy-0.971-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:d1ea5d12c8e2d266b5fb8c7a5d2e9c0219fedfeb493b7ed60cd350322384ac27"},
-    {file = "mypy-0.971-cp38-cp38-win_amd64.whl", hash = "sha256:23c7ff43fff4b0df93a186581885c8512bc50fc4d4910e0f838e35d6bb6b5e58"},
-    {file = "mypy-0.971-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:1f7656b69974a6933e987ee8ffb951d836272d6c0f81d727f1d0e2696074d9e6"},
-    {file = "mypy-0.971-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:d2022bfadb7a5c2ef410d6a7c9763188afdb7f3533f22a0a32be10d571ee4bbe"},
-    {file = "mypy-0.971-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:ef943c72a786b0f8d90fd76e9b39ce81fb7171172daf84bf43eaf937e9f220a9"},
-    {file = "mypy-0.971-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:d744f72eb39f69312bc6c2abf8ff6656973120e2eb3f3ec4f758ed47e414a4bf"},
-    {file = "mypy-0.971-cp39-cp39-win_amd64.whl", hash = "sha256:77a514ea15d3007d33a9e2157b0ba9c267496acf12a7f2b9b9f8446337aac5b0"},
-    {file = "mypy-0.971-py3-none-any.whl", hash = "sha256:0d054ef16b071149917085f51f89555a576e2618d5d9dd70bd6eea6410af3ac9"},
-    {file = "mypy-0.971.tar.gz", hash = "sha256:40b0f21484238269ae6a57200c807d80debc6459d444c0489a102d7c6a75fa56"},
+    {file = "mypy-0.981-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:4bc460e43b7785f78862dab78674e62ec3cd523485baecfdf81a555ed29ecfa0"},
+    {file = "mypy-0.981-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:756fad8b263b3ba39e4e204ee53042671b660c36c9017412b43af210ddee7b08"},
+    {file = "mypy-0.981-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:a16a0145d6d7d00fbede2da3a3096dcc9ecea091adfa8da48fa6a7b75d35562d"},
+    {file = "mypy-0.981-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ce65f70b14a21fdac84c294cde75e6dbdabbcff22975335e20827b3b94bdbf49"},
+    {file = "mypy-0.981-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:6e35d764784b42c3e256848fb8ed1d4292c9fc0098413adb28d84974c095b279"},
+    {file = "mypy-0.981-cp310-cp310-win_amd64.whl", hash = "sha256:e53773073c864d5f5cec7f3fc72fbbcef65410cde8cc18d4f7242dea60dac52e"},
+    {file = "mypy-0.981-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:6ee196b1d10b8b215e835f438e06965d7a480f6fe016eddbc285f13955cca659"},
+    {file = "mypy-0.981-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8ad21d4c9d3673726cf986ea1d0c9fb66905258709550ddf7944c8f885f208be"},
+    {file = "mypy-0.981-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:d1debb09043e1f5ee845fa1e96d180e89115b30e47c5d3ce53bc967bab53f62d"},
+    {file = "mypy-0.981-cp37-cp37m-win_amd64.whl", hash = "sha256:9f362470a3480165c4c6151786b5379351b790d56952005be18bdbdd4c7ce0ae"},
+    {file = "mypy-0.981-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:c9e0efb95ed6ca1654951bd5ec2f3fa91b295d78bf6527e026529d4aaa1e0c30"},
+    {file = "mypy-0.981-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:e178eaffc3c5cd211a87965c8c0df6da91ed7d258b5fc72b8e047c3771317ddb"},
+    {file = "mypy-0.981-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:06e1eac8d99bd404ed8dd34ca29673c4346e76dd8e612ea507763dccd7e13c7a"},
+    {file = "mypy-0.981-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fa38f82f53e1e7beb45557ff167c177802ba7b387ad017eab1663d567017c8ee"},
+    {file = "mypy-0.981-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:64e1f6af81c003f85f0dfed52db632817dabb51b65c0318ffbf5ff51995bbb08"},
+    {file = "mypy-0.981-cp38-cp38-win_amd64.whl", hash = "sha256:e1acf62a8c4f7c092462c738aa2c2489e275ed386320c10b2e9bff31f6f7e8d6"},
+    {file = "mypy-0.981-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:b6ede64e52257931315826fdbfc6ea878d89a965580d1a65638ef77cb551f56d"},
+    {file = "mypy-0.981-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:eb3978b191b9fa0488524bb4ffedf2c573340e8c2b4206fc191d44c7093abfb7"},
+    {file = "mypy-0.981-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:77f8fcf7b4b3cc0c74fb33ae54a4cd00bb854d65645c48beccf65fa10b17882c"},
+    {file = "mypy-0.981-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f64d2ce043a209a297df322eb4054dfbaa9de9e8738291706eaafda81ab2b362"},
+    {file = "mypy-0.981-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:2ee3dbc53d4df7e6e3b1c68ac6a971d3a4fb2852bf10a05fda228721dd44fae1"},
+    {file = "mypy-0.981-cp39-cp39-win_amd64.whl", hash = "sha256:8e8e49aa9cc23aa4c926dc200ce32959d3501c4905147a66ce032f05cb5ecb92"},
+    {file = "mypy-0.981-py3-none-any.whl", hash = "sha256:794f385653e2b749387a42afb1e14c2135e18daeb027e0d97162e4b7031210f8"},
+    {file = "mypy-0.981.tar.gz", hash = "sha256:ad77c13037d3402fbeffda07d51e3f228ba078d1c7096a73759c9419ea031bf4"},
 ]
 mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},
@@ -5779,8 +5808,8 @@ randomname = [
     {file = "randomname-0.1.5.tar.gz", hash = "sha256:e10d14ea10895ee5bc417bdcc6d955e0b586f3bc67094ab87afcf8dcac23ab92"},
 ]
 rasa-sdk = [
-    {file = "rasa-sdk-3.3.0.tar.gz", hash = "sha256:db02159e5687a2d659408d08ed54f933137da7854c8642a71c62a3412b2a9112"},
-    {file = "rasa_sdk-3.3.0-py3-none-any.whl", hash = "sha256:8154379c7a9d71a3c8c33b347623b3c38cfca289e776592795f4df59047f9e06"},
+    {file = "rasa_sdk-3.4.0-py3-none-any.whl", hash = "sha256:62d38ee889994882c54c81f1830416ec018a796cee6ec69225aa4b18031d304b"},
+    {file = "rasa_sdk-3.4.0.tar.gz", hash = "sha256:1b35b8e59d0bdebca2d87d4532747f83127d96f7ef9afd3a714d7b4160485b7d"},
 ]
 redis = [
     {file = "redis-4.3.5-py3-none-any.whl", hash = "sha256:46652271dc7525cd5a9667e5b0ca983c848c75b2b8f7425403395bb8379dcf25"},

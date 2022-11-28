@@ -9,7 +9,7 @@ on:
   pull_request:
 
 env:
-  DEFAULT_PYTHON_VERSION: "3.9"
+  DEFAULT_PYTHON_VERSION: "3.10"
 
 jobs:
   test:

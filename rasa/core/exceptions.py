@@ -1,6 +1,6 @@
 from typing import Text
 
-from rasa.shared.exceptions import RasaCoreException
+from rasa.shared.exceptions import RasaCoreException, RasaException
 
 
 class AgentNotReady(RasaCoreException):
@@ -23,3 +23,7 @@ class ChannelConfigError(RasaCoreException):
 
 class InvalidTrackerFeaturizerUsageError(RasaCoreException):
     """Raised if a tracker featurizer is incorrectly used."""
+
+
+class KafkaProducerInitializationError(RasaException):
+    """Raised if the Kafka Producer cannot be properly initialized."""

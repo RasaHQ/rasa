@@ -32,7 +32,7 @@ def test_default_project_has_no_warnings(
 
     rasa.shared.utils.io.write_yaml(config, "config.yml")
 
-    with pytest.warns(None) as warning_recorder:
+    with pytest.warns() as warning_recorder:
         rasa.cli.data.validate_files(parser.parse_args(["data", "validate"]))
         rasa.cli.train.run_training(parser.parse_args(["train"]))
 
@@ -42,7 +42,7 @@ def test_default_project_has_no_warnings(
         for warning in warning_recorder.list
         if not any(
             type(warning.message) == warning_type
-            and re.match(warning_message, str(warning.message))
+            and re.search(warning_message, str(warning.message))
             for warning_type, warning_message in EXPECTED_WARNINGS
         )
     ]
