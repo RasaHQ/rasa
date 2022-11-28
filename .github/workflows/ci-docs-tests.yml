@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -111,7 +111,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5 # v3.0
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984 # v3.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
