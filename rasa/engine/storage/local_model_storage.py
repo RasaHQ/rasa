@@ -121,8 +121,10 @@ class LocalModelStorage(ModelStorage):
         logger.debug(f"Resource '{resource.name}' was requested for writing.")
         directory = self._directory_for_resource(resource)
 
-        if not directory.exists():
-            directory.mkdir()
+        if directory.exists():
+            shutil.rmtree(directory)
+
+        directory.mkdir()
 
         yield directory
 
