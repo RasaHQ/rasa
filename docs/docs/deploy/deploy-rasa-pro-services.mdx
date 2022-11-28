@@ -159,3 +159,18 @@ The environment variables need to be configured upon startup of the Rasa Pro
 docker container.
 
 Using Kafka `truststores` and `keystores` is currently not supported.
+
+
+### Upgrading Versions
+
+To upgrade to the latest version of Rasa Pro Services, you must follow these steps:
+
+1. Read the changelog documentation on breaking changes.
+2. Download a new docker container and run it.
+
+:::note Container Start-up
+Note that the container might take some time to start-up as it is running
+database schema migrations as part of its start-up.
+
+If the migrations have failed, the container will be shut down.
+:::
