@@ -16,16 +16,16 @@ import RasaProBanner from '@theme/RasaProBanner';
 Use this channel to connect your Rasa assistant to [Audiocodes VoiceAI connect](https://www.audiocodes.com/solutions-products/voiceai/voiceai-connect).
 ## Getting Credentials
 
-To get your credentials, create you need to create a bot on the [VoiceAI connect portal](https://voiceaiconnect.audiocodes.io/).
+To get credentials, create a bot on the [VoiceAI connect portal](https://voiceaiconnect.audiocodes.io/).
 
 1. Select **Bots** in the left side bar.
-2. Click on the **+** sign to create a new bot
+2. Click on the **+** sign to create a new bot.
 3. Select **Rasa** in the platforms.
 4. Then set the bot URL a choose a token value.
 
 ## Setting credentials
 
-The token value chosen above will be used in the credentials.
+The token value chosen above will be used in the credentials:
 
 ```yaml
 rasa_plus.channels.audiocodes.AudiocodesInput:
@@ -51,7 +51,7 @@ This message will be interpreted by the NLU and you can then drive the conversat
 
 ### Sending messages to a user
 
-Your bot can reply with text messages like with any other channel. The text-to-speech engine will convert it and deliver it to the user.
+Your bot can reply with text messages like with any other channel. The text-to-speech engine will convert it and deliver it as a voice message to the user.
 
 Here is an example:
 
@@ -77,7 +77,7 @@ The general pattern is that for every `event` sent, the bot will receive the `va
 Here is a simple rule to send a greeting message when a call to the bot is initiated:
 
 ```yaml
-- rule: Initialization
+- rule: New call
   steps:
       - intent: vaig_event_start
       - action: utter_greet
@@ -88,13 +88,13 @@ Check the [VoiceAI Connect documentation](https://techdocs.audiocodes.com/voice-
 ### Configuring calls
 
 You can send events from Rasa to VoiceAI to make changes to the current call configuration.
-For example, you might want to receive a signal when the user stays silent for more than 5 seconds, or you might need to customize how DTMF digits are sent by VoiceAI Connect.
+For example, you might want to receive a notification when the user stays silent for more than 5 seconds, or you might need to customize how DTMF digits are sent by VoiceAI Connect.
 
 Call configuration events are sent with custom messages and are specific to the current conversation (sometimes to a message).
 Which means they must be part of your stories or rules so the same behaviour is applied to all conversations.
 
 There is a lot of different events which are exhaustively documented in the [VoiceAI Connect documentation](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/voiceai_connect.htm?TocPath=VoiceAI%2520Connect%257C_____0).
-We will only look at an example so you understand how these work and how to use them.
+We will look at one example ehere so you understand how these work and how to use them.
 
 #### Example: changing a pin code
 
@@ -138,8 +138,7 @@ In the domain, we can add the `utter_config...` responses:
 ```
 
 
-Now you can configure the `pin_code` slot in the `pin_code_form` to extract the pin code from the `value` entity with the `vaig_event_DTMF` intent.
-Here's an example of how to configure the `pin_code` slot in a form:
+Now you can configure the `pin_code` slot in the `pin_code_form` to extract the pin code from the `value` entity with the `vaig_event_DTMF` intent:
 
 ```yaml
   pin_code:
@@ -155,10 +154,10 @@ Here's an example of how to configure the `pin_code` slot in a form:
         requested_slot: pin_code
 ```
 
-Notice that `vaig_event_noUserInput` was declared in the `not_intent` field. 
+Notice how `vaig_event_noUserInput` was declared in the `not_intent` field. 
 
 Since the `vaig_event_noUserInput` intent is sent by VoiceAI Connect when the user stays silent as per our configuration,
-we must deactivate the form so we can gracefully pick up the conversation from a rule or a story.
+we must deactivate the form so we can pick up the conversation from a rule or a story and gracefully handle the failure.
 
 In the following example, we simply cancel the current flow if we receive the `vaig_event_noUserInput` intent (i.e. user stays silent) while the `pin_code_form` loop is active.
 
