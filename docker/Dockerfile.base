@@ -13,6 +13,8 @@ RUN apt-get update -qq && \
   libpq-dev \
   # required for health check
   curl \
+  # required for some Python package builds with Ubuntu 22.04
+  rustc \
   && apt-get autoremove -y
 
 # Make sure that all security updates are installed
