@@ -158,7 +158,12 @@ class LocalModelStorage(ModelStorage):
         """Creates model package (see parent class for full docstring)."""
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        tempdir_name = rasa.utils.common.get_temp_dir_name()
+
+        # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this
+        # leads to errors on Windows when the context manager tries to delete an
+        # already deleted temporary directory (e.g. https://bugs.python.org/issue29982)
+        with rasa.utils.common.TempDirectoryPath(tempdir_name) as temp_dir:
             temporary_directory = Path(temp_dir)
 
             shutil.copytree(
