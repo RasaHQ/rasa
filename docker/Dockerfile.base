@@ -23,3 +23,6 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 100 \
 
 # Create rasa user and group
 RUN useradd -rm -d /app -s /sbin/nologin -g root -u 1001 rasa && groupadd -g 1001 rasa
+
+# Modify to change the hash of the Dockerfile and force a build
+RUN echo "7004461e393b91f57caba004780e15413b909a627c0002a483c7d9b1549e9129"
