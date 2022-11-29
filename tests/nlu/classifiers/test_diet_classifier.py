@@ -612,6 +612,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
     default_model_storage: ModelStorage,
     train_load_and_process_diet: Callable[..., Message],
 ):
+    diet_resource = get_diet_resource()
     with pytest.warns(UserWarning) as warning:
         classifier = create_diet(
             {
@@ -619,7 +620,8 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
                 CHECKPOINT_MODEL: True,
                 EVAL_NUM_EXAMPLES: 0,
                 EVAL_NUM_EPOCHS: 1,
-            }
+            },
+            resource=diet_resource,
         )
 
     warn_text = (
@@ -628,7 +630,6 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         f"will be saved."
     )
     assert len([w for w in warning if warn_text in str(w.message)]) == 1
-    diet_resource = get_diet_resource()
     train_load_and_process_diet(classifier, diet_resource=diet_resource)
 
     with default_model_storage.read_from(diet_resource) as model_dir:
