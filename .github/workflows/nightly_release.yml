@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984  # v3.0
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
           python-version: 3.9
 
@@ -93,12 +93,12 @@ jobs:
       # Authenticate and push to the release registry
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
-        uses: 'google-github-actions/auth@c4799db9111fba4461e9f9da8732e5057b394f72'
+        uses: 'google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d'
         with:
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
       - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v0'
+        uses: 'google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce'
 
       - name: Release via GCP Artifact Registry
         run: |
