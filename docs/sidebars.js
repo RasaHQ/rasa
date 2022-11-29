@@ -69,7 +69,6 @@ module.exports = {
         'deploy/introduction',
         'deploy/deploy-rasa',
         'deploy/deploy-action-server',
-        'deploy/deploy-rasa-plus',
         'deploy/deploy-rasa-pro-services',
       ],
     },
@@ -199,7 +198,6 @@ module.exports = {
             }
           ],
           },
-          'action-server/deploy-action-server',
         ]},
       ]
     },
