@@ -14,6 +14,7 @@ RUN apt-get update -qq && \
   # required for health check
   curl \
   # required for some Python package builds with Ubuntu 22.04
+  cargo \
   rustc \
   && apt-get autoremove -y
 
