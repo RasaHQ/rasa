@@ -508,6 +508,7 @@ jobs:
           make prepare-tests-ubuntu
 
       - name: Run kafka and zookeeper containers for integration testing
+        if: needs.changes.outputs.backend == 'true'
         run: |
           docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
 
@@ -532,6 +533,7 @@ jobs:
           make test-integration
 
       - name: Stop kafka and zookeeper containers for integration testing
+        if: needs.changes.outputs.backend == 'true'
         run: |
           docker-compose -f tests_deployment/docker-compose.kafka.yml down
 
