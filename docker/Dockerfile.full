@@ -18,6 +18,8 @@ COPY docker/configs/config_pretrained_embeddings_spacy_en_duckling.yml /build/co
 WORKDIR /build
 
 # install dependencies
+# The Rust compiler is required for Ubuntu 22.04+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U "pip==22.*"
