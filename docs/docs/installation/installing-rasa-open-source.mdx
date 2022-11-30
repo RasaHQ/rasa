@@ -84,6 +84,26 @@ to install all needed dependencies for every configuration.
 
 :::
 
+### Python 3.10 requirements
+
+*If you are using Linux*, installing `rasa[full]` could result in a failure while installing `tokenizers` and
+`cryptography`.
+
+In order to resolve it, you must follow these steps to install a Rust compiler:
+```bash
+apt install rustc && apt install cargo
+```
+
+After initializing the Rust compiler, you should restart the console and check its installation:
+```bash
+rustc --version
+```
+
+In case the PATH variable had not been automatically setup, run:
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
 *If you are using macOS*, note that installing `rasa[full]` (either via pip or from source) could result in a failure
 while installing `tokenizers` (issue described in depth [here](https://github.com/huggingface/tokenizers/issues/1050)).
 
