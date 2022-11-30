@@ -227,7 +227,7 @@ Create the pull secret by running the corresponding command for your cluster env
 # kubernetes
 kubectl --namespace <your namespace> \
     create secret docker-registry rasa-plus-pull-secret \
-    --docker-server=gcr.io \
+    --docker-server=https://europe-west3-docker.pkg.dev \
     --docker-email=company@rasa-platform.iam.gserviceaccount.com \ # this value needs to be updated with correct client email
     --docker-username=_json_key \
     --docker-password="$(cat <your-json-registry-creds-file>.json)"
@@ -237,7 +237,7 @@ kubectl --namespace <your namespace> \
 # openshift
 oc --namespace <your namespace> \
     create secret docker-registry rasa-plus-pull-secret \
-    --docker-server=gcr.io \
+    --docker-server=https://europe-west3-docker.pkg.dev \
     --docker-email=company@rasa-platform.iam.gserviceaccount.com \ # this value needs to be updated with correct client email
     --docker-username=_json_key \
     --docker-password="$(cat <your-json-registry-creds-file>.json)"
