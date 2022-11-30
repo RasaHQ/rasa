@@ -645,6 +645,7 @@ def create_app(
     auth_token: Optional[Text] = None,
     response_timeout: int = DEFAULT_RESPONSE_TIMEOUT,
     jwt_secret: Optional[Text] = None,
+    jwt_private_key: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
 ) -> Sanic:
@@ -653,7 +654,7 @@ def create_app(
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
 
-    # Setup the Sanic-JWT extension
+    # Set up the Sanic-JWT extension
     if jwt_secret and jwt_method:
         # `sanic-jwt` depends on having an available event loop when making the call to
         # `Initialize`. If there is none, the server startup will fail with
@@ -671,6 +672,7 @@ def create_app(
         Initialize(
             app,
             secret=jwt_secret,
+            private_key=jwt_private_key,
             authenticate=authenticate,
             algorithm=jwt_method,
             user_id="username",
