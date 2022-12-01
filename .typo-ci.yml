@@ -193,5 +193,7 @@ excluded_words:
   - Juste
   - Tanja
   - Vova
+  - thisismypublickey
+  - thisismyprivatekey
 
 spellcheck_filenames: false
