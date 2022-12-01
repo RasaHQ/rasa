@@ -13,6 +13,7 @@ from rasa.core.featurizers.precomputation import (
     CoreFeaturizationInputConverter,
     CoreFeaturizationCollector,
 )
+from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 
@@ -221,6 +222,7 @@ class DefaultV1Recipe(Recipe):
             predict_schema=GraphSchema(predict_nodes),
             training_type=training_type,
             language=config.get("language"),
+            spaces=config.get("spaces"),
             core_target=core_target,
             nlu_target=f"run_{RegexMessageHandler.__name__}",
         )
@@ -276,6 +278,10 @@ class DefaultV1Recipe(Recipe):
         train_nodes: Dict[Text, SchemaNode],
         cli_parameters: Dict[Text, Any],
     ) -> List[Text]:
+        plugin_manager().hook.modify_default_recipe_graph_train_nodes(
+            train_nodes=train_nodes
+        )
+
         persist_nlu_data = bool(cli_parameters.get("persist_nlu_training_data"))
         train_nodes["nlu_training_data_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
@@ -339,6 +345,56 @@ class DefaultV1Recipe(Recipe):
 
         return preprocessors
 
+    def _get_needs_from_args(
+        self, component: Type[GraphComponent], fn_name: str
+    ) -> str:
+        """Get the needed arguments from the method on the component.
+
+        Filters out arguments that are already provided by other graph
+        components. Does not check if the created providers are actually
+        part of the graph. If they aren't an error will be raised later on
+        when the graph is validated.
+
+        Args:
+            component: The component class.
+            fn_name: The name of the method to inspect.
+
+        Returns:
+            The name of the arguments which need to be provided.
+        """
+        from inspect import signature
+
+        if not hasattr(component, fn_name):
+            return {}
+
+        def resolver_name_from_parameter(parameter: str) -> str:
+            # we got a special case to handle for input not proided by a
+            # provider:
+            if parameter == "tracker":
+                return PLACEHOLDER_TRACKER
+            return f"{parameter}_provider"
+
+        sig = signature(getattr(component, fn_name))
+        parameters = {
+            name
+            for name, param in sig.parameters.items()
+            if param.kind == param.POSITIONAL_OR_KEYWORD
+        }
+
+        # filter out parameters which are already resolved in other ways
+        unprovided_parameters = parameters - {
+            "message",
+            "messages",
+            "training_data",
+            "self",
+            "model",
+        }
+
+        return {
+            parameter: resolver_name_from_parameter(parameter)
+            for parameter in unprovided_parameters
+        }
+
     def _add_nlu_train_node(
         self,
         train_nodes: Dict[Text, SchemaNode],
@@ -349,11 +405,13 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
     ) -> Text:
         config_from_cli = self._extra_config_from_cli(cli_parameters, component, config)
-        model_provider_needs = self._get_model_provider_needs(train_nodes, component)
+        needs = {"training_data": last_run_node}
+        needs.update(self._get_model_provider_needs(train_nodes, component))
+        needs.update(self._get_needs_from_args(component, "train"))
 
         train_node_name = f"train_{component_name}"
         train_nodes[train_node_name] = SchemaNode(
-            needs={"training_data": last_run_node, **model_provider_needs},
+            needs=needs,
             uses=component,
             constructor_name="load" if self._is_finetuning else "create",
             fn="train",
@@ -412,21 +470,19 @@ class DefaultV1Recipe(Recipe):
         component_config: Dict[Text, Any],
         from_resource: Optional[Text] = None,
     ) -> Text:
-        resource_needs = {}
-        if from_resource:
-            resource_needs = {"resource": from_resource}
+        needs = {"training_data": last_run_node}
+        needs.update(self._get_model_provider_needs(train_nodes, component_class))
 
-        model_provider_needs = self._get_model_provider_needs(
-            train_nodes, component_class
+        if from_resource:
+            needs["resource"] = from_resource
+
+        needs.update(
+            self._get_needs_from_args(component_class, "process_training_data")
         )
 
         node_name = f"run_{component_name}"
         train_nodes[node_name] = SchemaNode(
-            needs={
-                "training_data": last_run_node,
-                **resource_needs,
-                **model_provider_needs,
-            },
+            needs=needs,
             uses=component_class,
             constructor_name="load",
             fn="process_training_data",
@@ -463,6 +519,9 @@ class DefaultV1Recipe(Recipe):
         preprocessors: List[Text],
         cli_parameters: Dict[Text, Any],
     ) -> None:
+        plugin_manager().hook.modify_default_recipe_graph_train_nodes(
+            train_nodes=train_nodes
+        )
         train_nodes["domain_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
             uses=DomainProvider,
@@ -626,6 +685,9 @@ class DefaultV1Recipe(Recipe):
         predict_nodes: Dict[Text, SchemaNode],
         train_nodes: Dict[Text, SchemaNode],
     ) -> Text:
+        plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
+            predict_nodes=predict_nodes
+        )
         for idx, config in enumerate(predict_config["pipeline"]):
             component_name = config.pop("name")
             component = self._from_registry(component_name)
@@ -716,11 +778,13 @@ class DefaultV1Recipe(Recipe):
     ) -> Text:
         node_name = f"run_{component_name}"
 
-        model_provider_needs = self._get_model_provider_needs(predict_nodes, node.uses)
+        needs = {"messages": last_run_node}
+        needs.update(self._get_model_provider_needs(predict_nodes, node.uses))
+        needs.update(self._get_needs_from_args(node.uses, "process"))
 
         predict_nodes[node_name] = dataclasses.replace(
             node,
-            needs={"messages": last_run_node, **model_provider_needs},
+            needs=needs,
             fn="process",
             **DEFAULT_PREDICT_KWARGS,
         )
@@ -734,6 +798,9 @@ class DefaultV1Recipe(Recipe):
         train_nodes: Dict[Text, SchemaNode],
         preprocessors: List[Text],
     ) -> None:
+        plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
+            predict_nodes=predict_nodes
+        )
         predict_nodes["domain_provider"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
             needs={},

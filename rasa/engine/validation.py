@@ -430,8 +430,9 @@ def _validate_needs(
 
         if not _is_placeholder_input(parent_name) and parent_name not in graph.nodes:
             raise GraphSchemaValidationException(
+                f"Missing graph component '{parent_name}'."
                 f"Your model uses a component '{node.uses.__name__}' which expects "
-                f"input from a previous component but this component is not part of "
+                f"input from the missing component. The component is missing from  "
                 f"your model configuration. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."

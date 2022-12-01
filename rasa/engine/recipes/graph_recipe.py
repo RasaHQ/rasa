@@ -72,6 +72,7 @@ class GraphV1Recipe(Recipe):
             predict_schema=GraphSchema.from_dict(config.get("predict_schema")),
             training_type=training_type,
             language=config.get("language"),
+            spaces=config.get("spaces"),
             core_target=core_target,
             nlu_target=nlu_target,
         )

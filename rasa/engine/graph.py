@@ -4,9 +4,13 @@ import dataclasses
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import logging
-from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple
+from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple, Union
 
-from rasa.engine.exceptions import GraphComponentException, GraphSchemaException
+from rasa.engine.exceptions import (
+    GraphComponentException,
+    GraphRunError,
+    GraphSchemaException,
+)
 import rasa.shared.utils.common
 import rasa.utils.common
 from rasa.engine.storage.resource import Resource
@@ -425,7 +429,7 @@ class GraphNode:
         return Resource(self._node_name)
 
     def __call__(
-        self, *inputs_from_previous_nodes: Tuple[Text, Any]
+        self, *inputs_from_previous_nodes: Union[Tuple[Text, Any], Text]
     ) -> Tuple[Text, Any]:
         """Calls the `GraphComponent` run method when the node executes in the graph.
 
@@ -436,10 +440,25 @@ class GraphNode:
         Returns:
             The node name and its output.
         """
-        received_inputs: Dict[Text, Any] = dict(inputs_from_previous_nodes)
+        # filter out arguments that dask couldn't lookup
+        received_inputs: Dict[Text, Any] = {}
+        for i in inputs_from_previous_nodes:
+            if type(i) is tuple:
+                arg_name, arg_value = i
+                received_inputs[arg_name] = arg_value
+            else:
+                logger.warning(
+                    f"Received unresolved argument: '{i}'. "
+                    f"Another component should have provided this as an "
+                    f"output."
+                )
 
         kwargs = {}
         for input_name, input_node in self._inputs.items():
+            if input_node not in received_inputs:
+                raise GraphRunError(
+                    f"Missing input from parent node. Expected input '{input_node}'."
+                )
             kwargs[input_name] = received_inputs[input_node]
 
         input_hook_outputs = self._run_before_hooks(kwargs)
@@ -554,5 +573,6 @@ class GraphModelConfiguration:
     predict_schema: GraphSchema
     training_type: TrainingType
     language: Optional[Text]
+    spaces: Optional[Dict[Text, Text]]
     core_target: Optional[Text]
     nlu_target: Optional[Text]

@@ -1,11 +1,15 @@
 import argparse
 import functools
 import sys
-from typing import List, Optional, Text, Tuple
+from typing import Dict, List, Optional, Text, Tuple
+import typing
 
 import pluggy
 
 from rasa.cli import SubParsersAction
+
+if typing.TYPE_CHECKING:
+    from rasa.rasa.engine.graph import SchemaNode
 
 hookspec = pluggy.HookspecMarker("rasa")
 
@@ -37,6 +41,26 @@ def refine_cli(
     parent_parsers: List[argparse.ArgumentParser],
 ) -> None:
     """Customizable hook for adding CLI commands."""
+
+
+@hookspec  # type: ignore[misc]
+def modify_default_recipe_graph_train_nodes(
+    train_nodes: Dict[Text, "SchemaNode"]
+) -> None:
+    """Hook specification to modify the default recipe graph for training.
+
+    Modifications are made in-place.
+    """
+
+
+@hookspec  # type: ignore[misc]
+def modify_default_recipe_graph_predict_nodes(
+    predict_nodes: Dict[Text, "SchemaNode"]
+) -> None:
+    """Hook specification to modify the default recipe graph for prediction.
+
+    Modifications are made in-place.
+    """
 
 
 @hookspec  # type: ignore[misc]

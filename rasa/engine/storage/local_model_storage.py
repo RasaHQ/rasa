@@ -201,6 +201,7 @@ class LocalModelStorage(ModelStorage):
             predict_schema=model_configuration.predict_schema,
             training_type=model_configuration.training_type,
             project_fingerprint=rasa.model.project_fingerprint(),
+            spaces=model_configuration.spaces,
             language=model_configuration.language,
             core_target=model_configuration.core_target,
             nlu_target=model_configuration.nlu_target,
