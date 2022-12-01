@@ -498,7 +498,7 @@ wQGt7pgH10ZbERWpMTAbpjI9EoH74gDcmZ6Fy1VgQPbAwty3liw5Q5zqZLj7JhuX
 Sa0EqvZQP+Hnayab7QIDAQAB
 -----END PUBLIC KEY-----"""
 
-    test_private_key = "-----BEGIN RSA PRIVATE KEY-----"  # gitleaks:allow
+    test_private_key = "-----BEGIN RSA PRIVATE KEY-----"
     "MIICXQIBAAKBgQC34ht9inqGq79HecpyOAnu2CgvjvgcpFifpFLPmCNdiomAgE48"
     "tfUAXJRoOGlVtrqc8KgQWjTFLjqDjUh1sBFF69FlwQGt7pgH10ZbERWpMTAbpjI9"
     "EoH74gDcmZ6Fy1VgQPbAwty3liw5Q5zqZLj7JhuXSa0EqvZQP+Hnayab7QIDAQAB"

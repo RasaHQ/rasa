@@ -113,6 +113,9 @@ title = "gitleaks config"
 [allowlist]
     description = "Allowlisted files"
     commits = ["4d9aa0c47c03b076604229320e1d1599067a5813"]
+    paths = [
+        '''tests\/conftest\.py'''
+    ]
     files = ['''^\.?gitleaks.toml$''',
     '''(.*?)(jpg|gif|doc|pdf|bin)$''',
     '''(go.mod|go.sum)$''',
