@@ -167,7 +167,7 @@ class RestInput(InputChannel):
                 except CancelledError:
                     logger.error(
                         f"Message handling timed out for user message '{text}'.",
-                        exec_info=True,
+                        exc_info=True,
                     )
                 except Exception:
                     logger.exception(
