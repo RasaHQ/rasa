@@ -8,7 +8,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Generator, Optional, Text, Tuple, Union
+from typing import ContextManager, Generator, Optional, Text, Tuple, Union
 from tarsafe import TarSafe
 
 import rasa.utils.common
@@ -80,14 +80,16 @@ class LocalModelStorage(ModelStorage):
         with windows_safe_temporary_directory() as temporary_directory:
             temporary_directory_path = Path(temporary_directory)
 
-            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
-            logger.debug(f"Extracted model to '{temporary_directory}'.")
+            cls._extract_archive_to_directory(
+                model_archive_path, temporary_directory_path
+            )
+            logger.debug(f"Extracted model to '{temporary_directory_path}'.")
 
             cls._initialize_model_storage_from_model_archive(
-                temporary_directory, storage_path
+                temporary_directory_path, storage_path
             )
 
-            metadata = cls._load_metadata(temporary_directory)
+            metadata = cls._load_metadata(temporary_directory_path)
 
             return (cls(storage_path), metadata)
 
@@ -99,8 +101,11 @@ class LocalModelStorage(ModelStorage):
         with windows_safe_temporary_directory() as temporary_directory:
             temporary_directory_path = Path(temporary_directory)
 
-            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
-            metadata = cls._load_metadata(temporary_directory)
+            cls._extract_archive_to_directory(
+                model_archive_path,
+                temporary_directory_path,
+            )
+            metadata = cls._load_metadata(temporary_directory_path)
 
             return metadata
 
