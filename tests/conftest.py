@@ -512,7 +512,7 @@ Sa0EqvZQP+Hnayab7QIDAQAB
     xSK4d+tP0AwWvioUlxPX0OJ5MF51K7LJ1qf4K072d6O2r2fMyXU4vdBPVqAjjjFU
     K+0qlG8zMkV5kCV8pT/VAkA8bM5KRa73JY0bfGX4i8UZMFHzIq2KGjHlRES4vd+L
     h18+hpcBAAyUR/jDT8nnG5YaYFz8rf2DnOy+elmmaYVm
-    -----END RSA PRIVATE KEY-----"""
+    -----END RSA PRIVATE KEY-----"""  # gitleaks:allow
 
     app = server.create_app(
         agent=default_agent,
