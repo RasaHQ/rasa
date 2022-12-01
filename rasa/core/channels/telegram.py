@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from copy import deepcopy
@@ -288,7 +289,7 @@ class TelegramInput(InputChannel):
         channel = TelegramOutput(self.access_token)
 
         try:
-            channel.set_webhook(url=self.webhook_url)
+            asyncio.run(channel.set_webhook(url=self.webhook_url))
         except TelegramAPIError as error:
             raise RasaException(
                 "Failed to set channel webhook: " + str(error)
