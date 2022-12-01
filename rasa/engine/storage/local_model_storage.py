@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import logging
 import shutil
-from tarsafe import TarSafe
+import sys
 import tempfile
 import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Generator, Tuple, Union
+from tarsafe import TarSafe
+from typing import Generator, Optional, Text, Tuple, Union
 
 import rasa.utils.common
 import rasa.shared.utils.io
@@ -24,6 +25,32 @@ logger = logging.getLogger(__name__)
 # Paths within model archive
 MODEL_ARCHIVE_COMPONENTS_DIR = "components"
 MODEL_ARCHIVE_METADATA_FILE = "metadata.json"
+
+
+@contextmanager
+def windows_safe_temporary_directory(
+    suffix: Optional[Text] = None,
+    prefix: Optional[Text] = None,
+    dir: Optional[Text] = None,
+) -> Generator[Text, None, None]:
+    """Like `tempfile.TemporaryDirectory`, but works with Windows and long file names.
+
+    On Windows by default there is a restriction on long path names.
+    Using the prefix below allows to bypass this restriction in environments
+    where it's not possible to override this behavior, mostly for internal
+    policy reasons.
+
+    Reference: https://stackoverflow.com/a/49102229
+    """
+    if sys.platform == "win32":
+        directory = tempfile.mkdtemp(suffix, prefix, dir)
+        try:
+            yield directory
+        finally:
+            shutil.rmtree(f"\\\\?\\{directory}")
+    else:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            yield temporary_directory
 
 
 class LocalModelStorage(ModelStorage):
@@ -50,7 +77,7 @@ class LocalModelStorage(ModelStorage):
                 f"empty model storage."
             )
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
+        with windows_safe_temporary_directory() as temporary_directory:
             temporary_directory_path = Path(temporary_directory)
 
             cls._extract_archive_to_directory(
@@ -71,7 +98,7 @@ class LocalModelStorage(ModelStorage):
         cls, model_archive_path: Union[Text, Path]
     ) -> ModelMetadata:
         """Retrieves metadata from archive (see parent class for full docstring)."""
-        with tempfile.TemporaryDirectory() as temporary_directory:
+        with windows_safe_temporary_directory() as temporary_directory:
             temporary_directory_path = Path(temporary_directory)
 
             cls._extract_archive_to_directory(
@@ -86,7 +113,15 @@ class LocalModelStorage(ModelStorage):
         model_archive_path: Union[Text, Path], temporary_directory: Path
     ) -> None:
         with TarSafe.open(model_archive_path, mode="r:gz") as tar:
-            tar.extractall(temporary_directory)
+            if sys.platform == "win32":
+                # on Windows by default there is a restriction on long
+                # path names; using the prefix below allows to bypass
+                # this restriction in environments where it's not possible
+                # to override this behavior, mostly for internal policy reasons
+                # reference: https://stackoverflow.com/a/49102229
+                tar.extractall(f"\\\\?\\{temporary_directory}")
+            else:
+                tar.extractall(temporary_directory)
         LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
 
     @staticmethod
@@ -158,7 +193,7 @@ class LocalModelStorage(ModelStorage):
         """Creates model package (see parent class for full docstring)."""
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with windows_safe_temporary_directory() as temp_dir:
             temporary_directory = Path(temp_dir)
 
             shutil.copytree(
