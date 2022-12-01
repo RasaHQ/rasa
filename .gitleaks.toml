@@ -117,7 +117,7 @@ title = "gitleaks config"
     '''(go.mod|go.sum)$''',
     '''docusaurus.config.js$''',
     '''rasa/data/test_moodbot/credentials.yml$''',
-    '''rasa/tests/conftest.py$''']
+    '''tests/conftest.py$''']
     regexes = [
     # this regex is useful for documentation content: we can still show
     # that users need to configure a private key and include "..." in it
