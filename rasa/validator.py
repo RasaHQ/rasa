@@ -77,7 +77,7 @@ class Validator:
                     f"The intent '{intent}' is listed in the domain file, but "
                     f"is not found in the NLU training data."
                 )
-                everything_is_alright = ignore_warnings and everything_is_alright
+                everything_is_alright = ignore_warnings or everything_is_alright
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
@@ -87,7 +87,7 @@ class Validator:
                     f"should need to add that intent to your domain file!",
                     docs=DOCS_URL_DOMAINS,
                 )
-                everything_is_alright = False
+                everything_is_alright = ignore_warnings
 
         return everything_is_alright
 
@@ -106,7 +106,7 @@ class Validator:
         for text, intents in duplication_hash.items():
 
             if len(duplication_hash[text]) > 1:
-                everything_is_alright = ignore_warnings and everything_is_alright
+                everything_is_alright = ignore_warnings
                 intents_string = ", ".join(sorted(intents))
                 rasa.shared.utils.io.raise_warning(
                     f"The example '{text}' was found labeled with multiple "
@@ -122,7 +122,7 @@ class Validator:
         Verifies if the intents used in the stories are valid, and whether
         all valid intents are used in the stories."""
 
-        everything_is_alright = self.verify_intents(ignore_warnings)
+        everything_is_alright = self.verify_intents(ignore_warnings=ignore_warnings)
 
         stories_intents = {
             event.intent["name"]
@@ -139,14 +139,14 @@ class Validator:
                     f"domain file!",
                     docs=DOCS_URL_DOMAINS,
                 )
-                everything_is_alright = False
+                everything_is_alright = ignore_warnings
 
         for intent in self._non_default_intents():
             if intent not in stories_intents:
                 rasa.shared.utils.io.raise_warning(
                     f"The intent '{intent}' is not used in any story or rule."
                 )
-                everything_is_alright = ignore_warnings and everything_is_alright
+                everything_is_alright = ignore_warnings or everything_is_alright
 
         return everything_is_alright
 
@@ -203,7 +203,7 @@ class Validator:
                         f"template defined with its name.",
                         docs=DOCS_URL_ACTIONS + "#utterance-actions",
                     )
-                    everything_is_alright = False
+                    everything_is_alright = ignore_warnings
                 stories_utterances.add(event.action_name)
 
         for utterance in utterance_actions:
@@ -211,7 +211,7 @@ class Validator:
                 rasa.shared.utils.io.raise_warning(
                     f"The utterance '{utterance}' is not used in any story or rule."
                 )
-                everything_is_alright = ignore_warnings and everything_is_alright
+                everything_is_alright = ignore_warnings or everything_is_alright
 
         return everything_is_alright
 
