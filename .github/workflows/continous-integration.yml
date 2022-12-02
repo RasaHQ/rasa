@@ -35,7 +35,7 @@ env:
 
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
-  DEFAULT_PYTHON_VERSION: "3.9"
+  DEFAULT_PYTHON_VERSION: "3.10"
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
@@ -226,7 +226,7 @@ jobs:
           - test-other-unit-tests
           - test-performance
         os: [ubuntu-latest, windows-2019]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, '3.10']
 
     steps:
       - name: Run DataDog Agent
@@ -358,10 +358,10 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
@@ -507,6 +507,11 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
+      - name: Run kafka and zookeeper containers for integration testing
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
+
       - name: Test Code with Services 🩺
         if: needs.changes.outputs.backend == 'true'
         env:
@@ -526,6 +531,11 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: |
           make test-integration
+
+      - name: Stop kafka and zookeeper containers for integration testing
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml down
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
@@ -630,39 +640,39 @@ jobs:
           docker buildx bake -f docker/docker-bake.hcl base --push
 
       - name: Build Docker mitie base image 🛠
-        if: steps.check_image.outputs.base_mitie_exists == 'false'
+        if: steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-mitie
 
       - name: Push Docker mitie base image if it's not building from a fork ⬆
-        if: steps.check_image.outputs.base_mitie_exists == 'false' && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        if: (steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-mitie --push
 
       - name: Build Docker poetry base image 🛠
-        if: steps.check_image.outputs.base_poetry_exists == 'false'
+        if: steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-poetry
 
       - name: Push Docker poetry base image if it's not building from a fork ⬆
-        if: steps.check_image.outputs.base_poetry_exists == 'false' && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        if: (steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-poetry --push
 
       - name: Build Docker builder base image 🛠
-        if: steps.check_image.outputs.base_builder_exists == 'false'
+        if: steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-builder
 
       - name: Push Docker builder base image if it's not building from a fork ⬆
-        if: steps.check_image.outputs.base_builder_exists == 'false' && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        if: (steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
           docker buildx bake -f docker/docker-bake.hcl base-builder --push
