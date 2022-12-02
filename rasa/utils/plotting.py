@@ -59,7 +59,7 @@ def _needs_matplotlib_backend(func: FuncType) -> FuncType:
     """Decorator to fix matplotlib backend before calling a function."""
 
     @wraps(func)
-    def inner(*args: Any, **kwargs: Any) -> ReturnType:
+    def inner(*args: Any, **kwargs: Any) -> ReturnType:  # type: ignore
         """Replacement function that fixes matplotlib backend."""
         global _MATPLOTLIB_BACKEND_FIXED
         if not _MATPLOTLIB_BACKEND_FIXED:
