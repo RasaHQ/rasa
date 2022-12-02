@@ -4,6 +4,9 @@ import shutil
 import pytest
 from _pytest.capture import CaptureFixture
 from pathlib import Path
+from rasa.engine.constants import PLACEHOLDER_TRACKER
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 import rasa.shared.utils.io
 from rasa.shared.constants import CONFIG_AUTOCONFIGURABLE_KEYS
@@ -398,6 +401,36 @@ def test_register_component():
         "Herman",
     )
     assert MyClassGraphComponent()
+
+
+def test_register_component_using_tracker():
+    @DefaultV1Recipe.register(
+        DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+        is_trainable=True,
+        model_from="Herman",
+    )
+    class MyClassGraphComponent(GraphComponent):
+        def train(
+            self, training_data: TrainingData, tracker: DialogueStateTracker
+        ) -> Resource:
+            ...
+
+    config = rasa.shared.utils.io.read_yaml(
+        """
+        language: "xy"
+        version: '2.0'
+        policies:
+        - name: MyClassGraphComponent
+        """
+    )
+
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
+    model_config = recipe.graph_config_for_recipe(config, {})
+
+    node_in_graph = model_config.predict_schema.nodes.get("run_MyClassGraphComponent0")
+    assert node_in_graph is not None
+    # check that the node was configured to require the tracker as an input
+    assert node_in_graph.needs.get("tracker") == PLACEHOLDER_TRACKER
 
 
 def test_register_component_with_multiple_types():
