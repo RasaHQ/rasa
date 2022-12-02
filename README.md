@@ -55,7 +55,7 @@ There's a lot more background information in this
 
 - 🤓 [Read The Docs](https://rasa.com/docs/rasa/)
 
-- 😁 [Install Rasa](https://rasa.com/docs/rasa/user-guide/installation/)
+- 😁 [Install Rasa](https://rasa.com/docs/rasa/installation/environment-set-up)
 
 - 🚀 [Dive deeper in the learning center](https://learning.rasa.com/)
 
