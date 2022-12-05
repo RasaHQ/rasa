@@ -194,6 +194,10 @@ class LocalModelStorage(ModelStorage):
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
 
         with windows_safe_temporary_directory() as temp_dir:
+
+            if isinstance(temp_dir, bytes):
+                temp_dir = temp_dir.decode("UTF-8")
+
             temporary_directory = Path(temp_dir)
 
             shutil.copytree(
