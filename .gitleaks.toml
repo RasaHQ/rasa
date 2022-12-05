@@ -112,11 +112,16 @@ title = "gitleaks config"
     tags = ["key", "twilio"]
 [allowlist]
     description = "Allowlisted files"
+    commits = ["4d9aa0c47c03b076604229320e1d1599067a5813"]
+    paths = [
+        '''tests\/conftest\.py'''
+    ]
     files = ['''^\.?gitleaks.toml$''',
     '''(.*?)(jpg|gif|doc|pdf|bin)$''',
     '''(go.mod|go.sum)$''',
     '''docusaurus.config.js$''',
-    '''rasa/data/test_moodbot/credentials.yml$''']
+    '''rasa/data/test_moodbot/credentials.yml$''',
+    '''tests/conftest.py$''']
     regexes = [
     # this regex is useful for documentation content: we can still show
     # that users need to configure a private key and include "..." in it

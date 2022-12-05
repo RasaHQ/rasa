@@ -193,5 +193,6 @@ excluded_words:
   - Juste
   - Tanja
   - Vova
+  - conftest
 
 spellcheck_filenames: false
