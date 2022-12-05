@@ -14,7 +14,6 @@ from rasa.shared.core.constants import (
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
-    LOOP_INTERRUPTED,
 )
 from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.events import (
@@ -337,10 +336,7 @@ class FormAction(LoopAction):
         domain: Domain,
         slot_values: Dict[Text, Any],
     ) -> Dict[Text, Any]:
-        slot_mappings = self.get_mappings_for_slot(event.key, domain)
-
-        for mapping in slot_mappings:
-            slot_values[event.key] = event.value
+        slot_values[event.key] = event.value
 
         return slot_values
 
@@ -535,13 +531,10 @@ class FormAction(LoopAction):
            - the form is called after `action_listen`
            - form validation was not cancelled
         """
-        # No active_loop means there are no form filled slots to validate yet
-        if not tracker.active_loop:
-            return []
-
-        needs_validation = (
+        # no active_loop means that it is called during activation
+        needs_validation = not tracker.active_loop or (
             tracker.latest_action_name == ACTION_LISTEN_NAME
-            and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
+            and not tracker.is_active_loop_interrupted
         )
 
         if needs_validation:
@@ -612,7 +605,7 @@ class FormAction(LoopAction):
 
         if not prefilled_slots:
             logger.debug("No pre-filled required slots to validate.")
-            return []
+            return [e for e in extraction_events if isinstance(e, SlotSet)]
 
         logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
 
@@ -665,25 +658,22 @@ class FormAction(LoopAction):
         # We explicitly check only the last occurrences for each possible termination
         # event instead of doing `return event in events_so_far` to make it possible
         # to override termination events which were returned earlier.
-        return (
-            next(
-                (
-                    event
-                    for event in reversed(events_so_far)
-                    if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
-                ),
-                None,
-            )
-            == SlotSet(REQUESTED_SLOT, None)
-            or next(
-                (
-                    event
-                    for event in reversed(events_so_far)
-                    if isinstance(event, ActiveLoop)
-                ),
-                None,
-            )
-            == ActiveLoop(None)
+        return next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
+            ),
+            None,
+        ) == SlotSet(REQUESTED_SLOT, None) or next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, ActiveLoop)
+            ),
+            None,
+        ) == ActiveLoop(
+            None
         )
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:

@@ -7,7 +7,7 @@ import uuid
 import sys
 from argparse import Namespace
 from http import HTTPStatus
-from multiprocessing import Process, Manager
+from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
 from pathlib import Path
 from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
@@ -15,8 +15,6 @@ from unittest.mock import Mock, ANY
 
 from _pytest.tmpdir import TempPathFactory
 import pytest
-import requests
-from _pytest import pathlib
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from freezegun import freeze_time
@@ -209,143 +207,6 @@ async def test_status_not_ready_agent(rasa_app: SanicASGITestClient):
 @pytest.fixture
 def shared_statuses() -> DictProxy:
     return Manager().dict()
-
-
-@pytest.fixture
-def background_server(
-    shared_statuses: DictProxy, tmpdir: pathlib.Path, monkeypatch: MonkeyPatch
-) -> Generator[Process, None, None]:
-    # Create a fake model archive which the mocked train function can return
-
-    fake_model = Path(tmpdir) / "fake_model.tar.gz"
-    fake_model.touch()
-    fake_model_path = str(fake_model)
-
-    # Fake training function which blocks until we tell it to stop blocking
-    # If we can send a status request while this is blocking, we can be sure that the
-    # actual training is also not blocking
-    def mocked_training_function(*_, **__) -> TrainingResult:
-        # Tell the others that we are now blocking
-        shared_statuses["started_training"] = True
-        # Block until somebody tells us to not block anymore
-        while shared_statuses.get("stop_training") is not True:
-            time.sleep(1)
-
-        return TrainingResult(model=fake_model_path)
-
-    def run_server(monkeypatch: MonkeyPatch) -> NoReturn:
-        import sys
-
-        monkeypatch.setattr(
-            sys.modules["rasa.model_training"], "train", mocked_training_function
-        )
-
-        from rasa import __main__
-
-        sys.argv = ["rasa", "run", "--enable-api"]
-        __main__.main()
-
-    server = Process(target=run_server, args=(monkeypatch,))
-    yield server
-    server.terminate()
-
-
-@pytest.fixture()
-def training_request(
-    shared_statuses: DictProxy, tmp_path: Path
-) -> Generator[Process, None, None]:
-    def send_request() -> None:
-        payload = {}
-        project_path = Path("examples") / "formbot"
-
-        for file in [
-            "domain.yml",
-            "config.yml",
-            Path("data") / "rules.yml",
-            Path("data") / "stories.yml",
-            Path("data") / "nlu.yml",
-        ]:
-            full_path = project_path / file
-            # Read in as dictionaries to avoid that keys, which are specified in
-            # multiple files (such as 'version'), clash.
-            content = rasa.shared.utils.io.read_yaml_file(full_path)
-            payload.update(content)
-
-        concatenated_payload_file = tmp_path / "concatenated.yml"
-        rasa.shared.utils.io.write_yaml(payload, concatenated_payload_file)
-
-        payload_as_yaml = concatenated_payload_file.read_text()
-
-        response = requests.post(
-            "http://localhost:5005/model/train",
-            data=payload_as_yaml,
-            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
-            params={"force_training": True},
-        )
-        shared_statuses["training_result"] = response.status_code
-
-    train_request = Process(target=send_request)
-    yield train_request
-    train_request.terminate()
-
-
-# Due to unknown reasons this test can not be run in pycharm, it
-# results in segfaults...will skip in that case - test will still get run on CI.
-# It also doesn't run on Windows because of Process-related calls and an attempt
-# to start/terminate a process. We will investigate this case further later:
-# https://github.com/RasaHQ/rasa/issues/6302
-@pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
-@pytest.mark.skip_on_windows
-def test_train_status_is_not_blocked_by_training(
-    background_server: Process, shared_statuses: DictProxy, training_request: Process
-):
-    background_server.start()
-
-    def is_server_ready() -> bool:
-        try:
-            return (
-                requests.get("http://localhost:5005/status").status_code
-                == HTTPStatus.OK
-            )
-        except Exception:
-            return False
-
-    # wait until server is up before sending train request and status test loop
-    start = time.time()
-    while not is_server_ready() and time.time() - start < 60:
-        time.sleep(1)
-
-    assert is_server_ready()
-
-    training_request.start()
-
-    # Wait until the blocking training function was called
-    start = time.time()
-    while (
-        shared_statuses.get("started_training") is not True and time.time() - start < 60
-    ):
-        time.sleep(1)
-
-    # Check if the number of currently running trainings was incremented
-    response = requests.get("http://localhost:5005/status")
-    assert response.status_code == HTTPStatus.OK
-    assert response.json()["num_active_training_jobs"] == 1
-
-    # Tell the blocking training function to stop
-    shared_statuses["stop_training"] = True
-
-    start = time.time()
-    while shared_statuses.get("training_result") is None and time.time() - start < 60:
-        time.sleep(1)
-    assert shared_statuses.get("training_result")
-
-    # Check that the training worked correctly
-    assert shared_statuses["training_result"] == HTTPStatus.OK
-
-    # Check if the number of currently running trainings was decremented
-    response = requests.get("http://localhost:5005/status")
-    assert response.status_code == HTTPStatus.OK
-    assert response.json()["num_active_training_jobs"] == 0
 
 
 @pytest.mark.parametrize(
@@ -721,7 +582,28 @@ def test_training_payload_from_yaml_save_to_default_model_directory(
     assert payload.get("output") == expected
 
 
-async def xtest_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Text):
+@pytest.mark.parametrize(
+    "headers, expected",
+    [
+        ({}, rasa.shared.constants.DEFAULT_MODELS_PATH),
+        ({"save_to_default_model_directory": False}, ANY),
+        (
+            {"save_to_default_model_directory": True},
+            rasa.shared.constants.DEFAULT_MODELS_PATH,
+        ),
+    ],
+)
+def test_nlu_training_payload_from_json(headers: Dict, expected: Text, tmp_path: Path):
+    request = Mock()
+    request.json = {"rasa_nlu_data": {"common_examples": []}}
+    request.args = headers
+
+    payload = rasa.server._nlu_training_payload_from_json(request, tmp_path)
+    assert payload.get("output")
+    assert payload.get("output") == expected
+
+
+async def test_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Text):
     stories = rasa.shared.utils.io.read_file(stories_path)
 
     _, response = await rasa_app.post(
@@ -1958,7 +1840,7 @@ async def test_get_story(
     tracker_store = InMemoryTrackerStore(Domain.empty())
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
@@ -2022,7 +1904,7 @@ async def test_get_story_does_not_update_conversation_session(
 
     tracker_store = InMemoryTrackerStore(domain)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
@@ -2115,9 +1997,9 @@ async def test_update_conversation_with_events(
     model_id = agent.model_id
 
     if initial_tracker_events:
-        tracker = agent.processor.get_tracker(conversation_id)
+        tracker = await agent.processor.get_tracker(conversation_id)
         tracker.update_with_events(initial_tracker_events, domain)
-        tracker_store.save(tracker)
+        await tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append

@@ -189,7 +189,8 @@ class PersistableTestComponent(GraphComponent):
     def supported_languages(self) -> List[Text]:
         return []
 
-    def required_packages(self) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         return []
 
     def train(self) -> Resource:

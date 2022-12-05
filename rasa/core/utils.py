@@ -204,7 +204,7 @@ class AvailableEndpoints:
 
 
 def read_endpoints_from_path(
-    endpoints_path: Union[Path, Text, None] = None
+    endpoints_path: Optional[Union[Path, Text]] = None
 ) -> AvailableEndpoints:
     """Get `AvailableEndpoints` object from specified path.
 

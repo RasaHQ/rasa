@@ -51,16 +51,18 @@ class LocalModelStorage(ModelStorage):
             )
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            temporary_directory = Path(temporary_directory)
+            temporary_directory_path = Path(temporary_directory)
 
-            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
-            logger.debug(f"Extracted model to '{temporary_directory}'.")
+            cls._extract_archive_to_directory(
+                model_archive_path, temporary_directory_path
+            )
+            logger.debug(f"Extracted model to '{temporary_directory_path}'.")
 
             cls._initialize_model_storage_from_model_archive(
-                temporary_directory, storage_path
+                temporary_directory_path, storage_path
             )
 
-            metadata = cls._load_metadata(temporary_directory)
+            metadata = cls._load_metadata(temporary_directory_path)
 
             return (cls(storage_path), metadata)
 
@@ -70,10 +72,12 @@ class LocalModelStorage(ModelStorage):
     ) -> ModelMetadata:
         """Retrieves metadata from archive (see parent class for full docstring)."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-            temporary_directory = Path(temporary_directory)
+            temporary_directory_path = Path(temporary_directory)
 
-            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
-            metadata = cls._load_metadata(temporary_directory)
+            cls._extract_archive_to_directory(
+                model_archive_path, temporary_directory_path
+            )
+            metadata = cls._load_metadata(temporary_directory_path)
 
             return metadata
 
@@ -86,7 +90,7 @@ class LocalModelStorage(ModelStorage):
         LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
 
     @staticmethod
-    def _assert_not_rasa2_archive(temporary_directory: Path) -> None:
+    def _assert_not_rasa2_archive(temporary_directory: Union[Text, Path]) -> None:
         fingerprint_file = Path(temporary_directory) / "fingerprint.json"
         if fingerprint_file.is_file():
             serialized_fingerprint = rasa.shared.utils.io.read_json_file(
@@ -154,7 +158,12 @@ class LocalModelStorage(ModelStorage):
         """Creates model package (see parent class for full docstring)."""
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        tempdir_name = rasa.utils.common.get_temp_dir_name()
+
+        # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this
+        # leads to errors on Windows when the context manager tries to delete an
+        # already deleted temporary directory (e.g. https://bugs.python.org/issue29982)
+        with rasa.utils.common.TempDirectoryPath(tempdir_name) as temp_dir:
             temporary_directory = Path(temp_dir)
 
             shutil.copytree(

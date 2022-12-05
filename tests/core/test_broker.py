@@ -7,7 +7,7 @@ from typing import Union, Text, List, Optional, Type
 import aio_pika.exceptions
 import aiormq.exceptions
 import pamqp.exceptions
-import kafka
+import confluent_kafka
 import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
@@ -118,9 +118,9 @@ async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
         OSError,
         aiormq.exceptions.AMQPError,
         pamqp.exceptions.PAMQPException,
-        pamqp.specification.AMQPConnectionForced,
-        pamqp.specification.AMQPNotFound,
-        pamqp.specification.AMQPInternalError,
+        pamqp.exceptions.AMQPConnectionForced,
+        pamqp.exceptions.AMQPNotFound,
+        pamqp.exceptions.AMQPInternalError,
     ),
 )
 async def test_aio_pika_exceptions_caught(
@@ -275,17 +275,15 @@ async def test_kafka_broker_from_config():
 @pytest.mark.parametrize(
     "file,exception",
     [
-        # `_create_producer()` raises `kafka.errors.NoBrokersAvailable` exception
-        # which means that the configuration seems correct but a connection to
-        # the broker cannot be established
-        ("kafka_sasl_plaintext_endpoint.yml", kafka.errors.NoBrokersAvailable),
-        ("kafka_plaintext_endpoint.yml", kafka.errors.NoBrokersAvailable),
-        ("kafka_sasl_ssl_endpoint.yml", kafka.errors.NoBrokersAvailable),
-        ("kafka_ssl_endpoint.yml", kafka.errors.NoBrokersAvailable),
+        ("kafka_sasl_plaintext_endpoint.yml", confluent_kafka.KafkaException),
+        ("kafka_plaintext_endpoint.yml", confluent_kafka.KafkaException),
+        ("kafka_sasl_ssl_endpoint.yml", KafkaProducerInitializationError),
+        ("kafka_ssl_endpoint.yml", KafkaProducerInitializationError),
         # `ValueError` exception is raised when the `security_protocol` is incorrect
         ("kafka_invalid_security_protocol.yml", ValueError),
-        # `TypeError` exception is raised when there is no `url` specified
-        ("kafka_plaintext_endpoint_no_url.yml", TypeError),
+        # `confluent_kafka.KafkaException` exception is raised when there is no
+        # `url` specified
+        ("kafka_plaintext_endpoint_no_url.yml", confluent_kafka.KafkaException),
         # `KafkaProducerInitializationError` is raised when an invalid
         # `sasl_mechanism` is provided
         ("kafka_invalid_sasl_mechanism.yml", KafkaProducerInitializationError),
@@ -298,7 +296,12 @@ async def test_kafka_broker_security_protocols(file: Text, exception: Exception)
     actual = await KafkaEventBroker.from_endpoint_config(cfg)
     with pytest.raises(exception):
         # noinspection PyProtectedMember
-        actual._create_producer()
+        producer = actual._create_producer()
+
+        # required action to trigger expected exception because the configuration
+        # seems correct and the producer gets instantiated but a connection to the
+        # broker cannot be established
+        producer.list_topics("topic", timeout=1)
 
 
 async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
@@ -310,10 +313,14 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         with pytest.raises(Exception):
             await broker.connect()
 
+    caplog_records = [
+        record for record in caplog.records if record.name != "ddtrace.internal.writer"
+    ]
+
     # Only Rasa Open Source logs, but logs from the library itself.
     assert all(
         record.name in ["rasa.core.brokers.pika", "asyncio"]
-        for record in caplog.records
+        for record in caplog_records
     )
 
 

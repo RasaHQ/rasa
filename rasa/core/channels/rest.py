@@ -58,6 +58,21 @@ class RestInput(InputChannel):
     def _extract_input_channel(self, req: Request) -> Text:
         return req.json.get("input_channel") or self.name()
 
+    def get_metadata(self, request: Request) -> Optional[Dict[Text, Any]]:
+        """Extracts additional information from the incoming request.
+
+         Implementing this function is not required. However, it can be used to extract
+         metadata from the request. The return value is passed on to the
+         ``UserMessage`` object and stored in the conversation tracker.
+
+        Args:
+            request: incoming request with the message of the user
+
+        Returns:
+            Metadata which was extracted from the request.
+        """
+        return request.json.get("metadata", None)
+
     def stream_response(
         self,
         on_new_message: Callable[[UserMessage], Awaitable[None]],
@@ -66,6 +81,22 @@ class RestInput(InputChannel):
         input_channel: Text,
         metadata: Optional[Dict[Text, Any]],
     ) -> Callable[[Any], Awaitable[None]]:
+        """Streams response to the client.
+
+         If the stream option is enabled, this method will be called to
+         stream the response to the client
+
+        Args:
+            on_new_message: sanic event
+            text: message text
+            sender_id: message sender_id
+            input_channel: input channel name
+            metadata: optional metadata sent with the message
+
+        Returns:
+            Sanic stream
+        """
+
         async def stream(resp: Any) -> None:
             q: Queue = Queue()
             task = asyncio.ensure_future(
@@ -135,7 +166,8 @@ class RestInput(InputChannel):
                     )
                 except CancelledError:
                     logger.error(
-                        f"Message handling timed out for " f"user message '{text}'."
+                        f"Message handling timed out for user message '{text}'.",
+                        exc_info=True,
                     )
                 except Exception:
                     logger.exception(
@@ -152,7 +184,9 @@ class QueueOutputChannel(CollectingOutputChannel):
 
     (doesn't send them anywhere, just collects them)."""
 
-    messages: Queue
+    # FIXME: this is breaking Liskov substitution principle
+    # and would require some user-facing refactoring to address
+    messages: Queue  # type: ignore[assignment]
 
     @classmethod
     def name(cls) -> Text:

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union, TypeVar, Type
@@ -20,9 +21,9 @@ class EventBroker:
 
     @staticmethod
     async def create(
-        obj: Union["EventBroker", EndpointConfig, None],
+        obj: Union[EventBroker, EndpointConfig, None],
         loop: Optional[AbstractEventLoop] = None,
-    ) -> Optional["EventBroker"]:
+    ) -> Optional[EventBroker]:
         """Factory to create an event broker."""
         if isinstance(obj, EventBroker):
             return obj
@@ -79,10 +80,10 @@ class EventBroker:
 
 async def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig], event_loop: Optional[AbstractEventLoop]
-) -> Optional["EventBroker"]:
+) -> Optional[EventBroker]:
     """Instantiate an event broker based on its configuration."""
     if endpoint_config is None:
-        broker = None
+        broker: Optional[EventBroker] = None
     elif endpoint_config.type is None or endpoint_config.type.lower() == "pika":
         from rasa.core.brokers.pika import PikaEventBroker
 
@@ -110,7 +111,7 @@ async def _create_from_endpoint_config(
 
 async def _load_from_module_name_in_endpoint_config(
     broker_config: EndpointConfig,
-) -> Optional["EventBroker"]:
+) -> Optional[EventBroker]:
     """Instantiate an event broker based on its class name."""
     try:
         event_broker_class = rasa.shared.utils.common.class_from_module_path(

@@ -10,6 +10,7 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import (
@@ -328,6 +329,21 @@ async def test_train_persist_load_with_nested_dict_config(
     create_diet(config, load=True, finetune=True)
 
 
+@pytest.mark.timeout(240, func_only=True)
+async def test_train_persist_load_with_masked_lm_and_eval(
+    nlu_data_path: Text,
+    create_train_load_and_process_diet: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
+):
+    # need at least number of intents as eval num examples...
+    # reading the used data here so that the test doesn't break if data is changed
+    importer = RasaFileImporter(training_data_paths=[nlu_data_path])
+    training_data = importer.get_nlu_data()
+    config = {MASKED_LM: True, EVAL_NUM_EXAMPLES: len(training_data.intents)}
+    create_train_load_and_process_diet(config)
+    create_diet(config, load=True, finetune=True)
+
+
 @pytest.mark.timeout(210, func_only=True)
 async def test_train_persist_load_with_only_entity_recognition(
     create_train_load_and_process_diet: Callable[..., Message],
@@ -610,6 +626,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "classifier_params",
     [
@@ -823,6 +840,8 @@ async def test_adjusting_layers_incremental_training(
     test_data_signatures(new_predict_data_signature, old_predict_data_signature)
 
 
+# FIXME: these tests take too long to run in CI on Windows, disabling them for now
+@pytest.mark.skip_on_windows
 @pytest.mark.timeout(120)
 @pytest.mark.parametrize(
     "iter1_path, iter2_path, should_raise_exception",

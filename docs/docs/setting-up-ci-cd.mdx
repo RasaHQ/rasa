@@ -22,7 +22,7 @@ This guide will cover what should go in a CI/CD pipeline, specific to a
 Rasa project. How you implement that pipeline is up to you.
 There are many CI/CD tools out there, such as [GitHub Actions](https://github.com/features/actions),
 [GitLab CI/CD](https://docs.gitlab.com/ee/ci/), [Jenkins](https://www.jenkins.io/doc/), and
-[CircleCI](https://circleci.com/docs/2.0/). We recommend choosing a tool that integrates with
+[CircleCI](https://circleci.com/docs/). We recommend choosing a tool that integrates with
 whatever Git repository you use.
 
 ## Continuous Integration (CI)
@@ -110,13 +110,13 @@ succeeded.
 
 If you ran [test stories](./testing-your-assistant.mdx) in your CI pipeline,
 you'll already have a trained model. You can set up your CD pipeline to upload the trained model to your
-Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa Enterprise:
+Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa X/Enterprise:
 
 ```bash
 curl -k -F "model=@models/my_model.tar.gz" "https://example.rasa.com/api/projects/default/models?api_token={your_api_token}"
 ```
 
-If you are using Rasa Enterprise, you can also [tag the uploaded model](https://rasa.com/docs/rasa-enterprise/pages/http-api/#tag/Models/paths/~1projects~1{project_id}~1models~1{model}~1tags~1{tag}/put)
+If you are using Rasa X/Enterprise, you can also [tag the uploaded model](https://rasa.com/docs/rasa-enterprise/pages/http-api/#tag/Models/paths/~1projects~1{project_id}~1models~1{model}~1tags~1{tag}/put)
 as production (or whichever deployment you want to tag if using multiple [deployment environments](https://rasa.com/docs/rasa-enterprise/enterprise/deployment-environments/#)):
 
 ```bash

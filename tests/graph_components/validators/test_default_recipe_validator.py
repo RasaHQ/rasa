@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import rasa.shared.utils.io
@@ -57,6 +58,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.validation import YamlValidationException
 import rasa.utils.common
+from tests.conftest import filter_expected_warnings
 
 
 class DummyImporter(TrainingDataImporter):
@@ -81,6 +83,9 @@ class DummyImporter(TrainingDataImporter):
 
     def get_stories(self) -> StoryGraph:
         return StoryGraph([])
+
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        return "config.yml"
 
 
 def _test_validation_warnings_with_default_configs(
@@ -587,9 +592,12 @@ def test_nlu_warn_of_competition_with_regex_extractor(
         ):
             validator.validate(importer)
     else:
-        with pytest.warns(None) as records:
+        with warnings.catch_warnings() as records:
             validator.validate(importer)
-        assert len(records) == 0
+
+        if records is not None:
+            records = filter_expected_warnings(records)
+            assert len(records) == 0
 
 
 @pytest.mark.parametrize(
@@ -734,16 +742,10 @@ def test_core_warn_if_data_but_no_policy(
             validator.validate(importer)
         assert len(records) == 1
     else:
-        with pytest.warns(
-            UserWarning, match="Slot auto-fill has been removed in 3.0"
-        ) as records:
+        with pytest.warns() as records:
             validator.validate(importer)
-        assert all(
-            [
-                warn.message.args[0].startswith("Slot auto-fill has been removed")
-                for warn in records.list
-            ]
-        )
+        records = filter_expected_warnings(records)
+        assert len(records) == 0
 
 
 @pytest.mark.parametrize(
@@ -1026,9 +1028,12 @@ def test_no_warnings_with_default_project(tmp_path: Path):
     )
     validator = DefaultV1RecipeValidator(graph_config.train_schema)
 
-    with pytest.warns(None) as records:
+    with warnings.catch_warnings() as records:
         validator.validate(importer)
-    assert len(records) == 0
+
+    if records is not None:
+        records = filter_expected_warnings(records)
+        assert len(records) == 0
 
 
 def test_importer_with_invalid_model_config(tmp_path: Path):

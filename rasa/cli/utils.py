@@ -3,26 +3,49 @@ import logging
 import os
 import sys
 from types import FrameType
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union, overload
 
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from questionary import Question
+    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 
 FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
 
 
+@overload
 def get_validated_path(
-    current: Optional[Text],
+    current: Optional[Union["Path", Text]],
     parameter: Text,
-    default: Optional[Text] = None,
+    default: Optional[Union["Path", Text]] = ...,
+    none_is_valid: "Literal[False]" = ...,
+) -> Union["Path", Text]:
+    ...
+
+
+@overload
+def get_validated_path(
+    current: Optional[Union["Path", Text]],
+    parameter: Text,
+    default: Optional[Union["Path", Text]] = ...,
+    none_is_valid: "Literal[True]" = ...,
+) -> Optional[Union["Path", Text]]:
+    ...
+
+
+def get_validated_path(
+    current: Optional[Union["Path", Text]],
+    parameter: Text,
+    default: Optional[Union["Path", Text]] = None,
     none_is_valid: bool = False,
-) -> Optional[Text]:
-    """Check whether a file path or its default value is valid and returns it.
+) -> Optional[Union["Path", Text]]:
+    """Checks whether a file path or its default value is valid and returns it.
 
     Args:
         current: The parsed value.
@@ -56,7 +79,18 @@ def get_validated_path(
     return current
 
 
-def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List[Text]:
+def missing_config_keys(
+    path: Union["Path", Text], mandatory_keys: List[Text]
+) -> List[Text]:
+    """Checks whether the config file at `path` contains the `mandatory_keys`.
+
+    Args:
+        path: The path to the config file.
+        mandatory_keys: A list of mandatory config keys.
+
+    Returns:
+        The list of missing config keys.
+    """
     import rasa.utils.io
 
     if not os.path.exists(path):
@@ -68,7 +102,9 @@ def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List[Text]:
 
 
 def cancel_cause_not_found(
-    current: Optional[Text], parameter: Text, default: Optional[Text]
+    current: Optional[Union["Path", Text]],
+    parameter: Text,
+    default: Optional[Union["Path", Text]],
 ) -> None:
     """Exits with an error because the given path was not valid.
 
@@ -78,7 +114,6 @@ def cancel_cause_not_found(
         default: The default value of the parameter.
 
     """
-
     default_clause = ""
     if default:
         default_clause = f"use the default location ('{default}') or "
@@ -91,7 +126,6 @@ def cancel_cause_not_found(
 
 def parse_last_positional_argument_as_model_path() -> None:
     """Fixes the parsing of a potential positional model path argument."""
-
     if (
         len(sys.argv) >= 2
         # support relevant commands ...
@@ -156,9 +190,9 @@ def button_choices_from_message_data(
     return choices
 
 
-def payload_from_button_question(button_question: "Question") -> Text:
+async def payload_from_button_question(button_question: "Question") -> Text:
     """Prompt user with a button question and returns the nlu payload."""
-    response = button_question.ask()
+    response = await button_question.ask_async()
     if response != FREE_TEXT_INPUT_PROMPT:
         # Extract intent slash command if it's a button
         response = response[response.find("(") + 1 : response.find(")")]

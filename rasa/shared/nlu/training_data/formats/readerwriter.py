@@ -41,7 +41,7 @@ def _raise_on_same_start_and_different_end_positions(
             if entity["end"] != end:
                 raise ValueError(
                     f"Entities '{entity}' and "
-                    f"'{aggregated_entities[entity['start']][-1]}' have identical "
+                    f"'{entity_list[0]}' have identical "
                     f"start but different end positions"
                 )
 
@@ -55,7 +55,7 @@ class TrainingDataReader(abc.ABC):
 
     def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a file."""
-        self.filename = filename
+        self.filename = str(filename)
         return self.reads(rasa.shared.utils.io.read_file(filename), **kwargs)
 
     @abc.abstractmethod

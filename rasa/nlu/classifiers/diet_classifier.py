@@ -11,7 +11,7 @@ import numpy as np
 import scipy.sparse
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, TypeVar, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -115,6 +115,9 @@ LABEL_KEY = LABEL
 LABEL_SUB_KEY = IDS
 
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
+
+
+DIETClassifierT = TypeVar("DIETClassifierT", bound="DIETClassifier")
 
 
 @DefaultV1Recipe.register(
@@ -660,7 +663,12 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            [
+                FeatureArray(
+                    np.expand_dims(label_ids, -1),
+                    number_of_dimensions=2,
+                )
+            ],
         )
 
         label_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
@@ -671,7 +679,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         if self._label_data is None:
             return []
 
-        feature_arrays: List[FeatureArray] = self._label_data.get(LABEL, SENTENCE)
+        feature_arrays = self._label_data.get(LABEL, SENTENCE)
         all_label_features = feature_arrays[0]
         return [
             FeatureArray(
@@ -788,7 +796,12 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             model_data.add_features(
                 LABEL_KEY,
                 LABEL_SUB_KEY,
-                [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+                [
+                    FeatureArray(
+                        np.expand_dims(label_ids, -1),
+                        number_of_dimensions=2,
+                    )
+                ],
             )
 
         if (
@@ -1085,13 +1098,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     @classmethod
     def load(
-        cls,
+        cls: Type[DIETClassifierT],
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> DIETClassifier:
+    ) -> DIETClassifierT:
         """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
@@ -1107,13 +1120,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     @classmethod
     def _load(
-        cls,
+        cls: Type[DIETClassifierT],
         model_path: Path,
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "DIETClassifier":
+    ) -> DIETClassifierT:
         """Loads the trained model from the provided directory."""
         (
             index_label_id_mapping,
@@ -1566,7 +1579,7 @@ class DIET(TransformerRasaModel):
         )
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -1610,7 +1623,7 @@ class DIET(TransformerRasaModel):
             sequence_feature_lengths + sentence_feature_lengths
         )
 
-        if self.config[MASKED_LM]:
+        if self.config[MASKED_LM] and self._training:
             loss, acc = self._mask_loss(
                 text_transformed, text_in, text_seq_ids, mlm_mask_boolean_text, TEXT
             )
@@ -1730,7 +1743,7 @@ class DIET(TransformerRasaModel):
             _, self.all_labels_embed = self._create_all_labels()
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, tf.Tensor]:
         """Predicts the output of the given batch.
 

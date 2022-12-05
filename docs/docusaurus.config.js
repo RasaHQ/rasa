@@ -29,7 +29,7 @@ module.exports = {
     // either (A): create a more sophisticated solution to link the precise branch and doc to be edited, according to branch settings
     // or (B): create a README document (or a section in the main README) which explains how to contribute docs fixes, and link all edit links to this
     rootEditUrl: 'https://github.com/rasahq/rasa/',
-    productLogo: '/img/logo-rasa-oss.png',
+    productLogo: '/img/blocks.png',
     versionLabels,
     legacyVersions: [{
       label: 'Legacy 1.x',
@@ -50,8 +50,7 @@ module.exports = {
       }
     ]
   },
-  title: 'Rasa Open Source Documentation',
-  tagline: 'An open source machine learning framework for automated text and voice-based conversations',
+  title: 'Rasa & Rasa Pro Documentation',
   url: SITE_URL,
   baseUrl: BASE_URL,
   favicon: '/img/favicon.ico',
@@ -59,42 +58,33 @@ module.exports = {
   projectName: 'rasa',
   themeConfig: {
     announcementBar: {
-      id: 'pre_release_notice', // Any value that will identify this message.
-      content: 'These docs are for version 3.x of Rasa Open Source. <a href="https://rasa.com/docs/rasa/2.x/">Docs for the 2.x series can be found here.</a>',
+      id: 'rasa_sdk_change', // Any value that will identify this message.
+      content: '<strong>Rasa SDK<strong> documentation has been moved to a <a href="https://rasa.com/docs/rasa/action-server/">section</a> of <strong>Rasa Open Source</strong>.',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
     },
     algolia: {
-      // this is configured via DocSearch here:
-      // https://github.com/algolia/docsearch-configs/blob/master/configs/rasa.json
-      apiKey: '1f9e0efb89e98543f6613a60f847b176',
+      appId: '94J0KRFPTZ',
+      apiKey: '75ea5a8c8f4b16405c560a4ba786256b',
       indexName: 'rasa',
       inputSelector: '.search-bar',
-      searchParameters: {
-        'facetFilters': ["tags:rasa"]
-      }
+
     },
     navbar: {
       hideOnScroll: false,
-      title: 'Rasa Open Source',
+      title: 'Rasa',
       items: [
         {
-          label: 'Rasa Open Source',
+          label: 'Rasa',
           to: path.join('/', BASE_URL),
           position: 'left',
         },
         {
           target: '_self',
-          label: 'Rasa Enterprise',
+          label: 'Rasa X/Enterprise',
           position: 'left',
           href: `${SWAP_URL}/docs/rasa-enterprise/`,
-        },
-        {
-          target: '_self',
-          label: 'Rasa Action Server',
-          position: 'left',
-          href: 'https://rasa.com/docs/action-server',
         },
         {
           href: 'https://github.com/rasahq/rasa',

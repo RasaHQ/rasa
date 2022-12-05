@@ -1,5 +1,6 @@
+from abc import ABC, abstractmethod
 from functools import reduce
-from typing import Text, Optional, List, Dict, Set, Any, Tuple
+from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, Union, cast
 import logging
 
 import rasa.shared.constants
@@ -23,17 +24,30 @@ from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 logger = logging.getLogger(__name__)
 
 
-class TrainingDataImporter:
+class TrainingDataImporter(ABC):
     """Common interface for different mechanisms to load training data."""
 
+    @abstractmethod
+    def __init__(
+        self,
+        config_file: Optional[Text] = None,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[Union[List[Text], Text]] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialise the importer."""
+        ...
+
+    @abstractmethod
     def get_domain(self) -> Domain:
         """Retrieves the domain of the bot.
 
         Returns:
             Loaded `Domain`.
         """
-        raise NotImplementedError()
+        ...
 
+    @abstractmethod
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
@@ -43,7 +57,7 @@ class TrainingDataImporter:
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        raise NotImplementedError()
+        ...
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves end-to-end conversation stories for testing.
@@ -53,18 +67,21 @@ class TrainingDataImporter:
         """
         return self.get_stories()
 
+    @abstractmethod
     def get_config(self) -> Dict:
         """Retrieves the configuration that should be used for the training.
 
         Returns:
             The configuration as dictionary.
         """
-        raise NotImplementedError()
+        ...
 
+    @abstractmethod
     def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
-        raise NotImplementedError()
+        ...
 
+    @abstractmethod
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves the NLU training data that should be used for training.
 
@@ -74,7 +91,7 @@ class TrainingDataImporter:
         Returns:
             Loaded NLU `TrainingData`.
         """
-        raise NotImplementedError()
+        ...
 
     @staticmethod
     def load_from_config(
@@ -162,7 +179,7 @@ class TrainingDataImporter:
 
         module_path = importer_config.pop("name", None)
         if module_path == RasaFileImporter.__name__:
-            importer_class = RasaFileImporter
+            importer_class: Type[TrainingDataImporter] = RasaFileImporter
         elif module_path == MultiProjectImporter.__name__:
             importer_class = MultiProjectImporter
         else:
@@ -465,9 +482,7 @@ class E2EImporter(TrainingDataImporter):
                 }
             )
 
-        additional_e2e_action_names = list(additional_e2e_action_names)
-
-        return Domain.from_dict({KEY_E2E_ACTIONS: additional_e2e_action_names})
+        return Domain.from_dict({KEY_E2E_ACTIONS: list(additional_e2e_action_names)})
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves the stories that should be used for training.
@@ -546,7 +561,7 @@ def _unique_events_from_stories(
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
     # sub state correctly encodes intent vs text
-    data = event.as_sub_state()
+    data = cast(Dict[Text, Any], event.as_sub_state())
     # sub state stores entities differently
     if data.get(ENTITIES) and event.entities:
         data[ENTITIES] = event.entities

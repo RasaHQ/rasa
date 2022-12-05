@@ -1,4 +1,3 @@
-import tempfile
 import time
 from pathlib import Path
 from typing import Text, NamedTuple, Optional, List, Union, Dict, Any
@@ -177,7 +176,7 @@ def _train_graph(
     training_type: TrainingType,
     output_path: Text,
     fixed_model_name: Text,
-    model_to_finetune: Optional[Text] = None,
+    model_to_finetune: Optional[Union[Text, Path]] = None,
     force_full_training: bool = False,
     dry_run: bool = False,
     **kwargs: Any,
@@ -212,7 +211,12 @@ def _train_graph(
     )
     rasa.engine.validation.validate(model_configuration)
 
-    with tempfile.TemporaryDirectory() as temp_model_dir:
+    tempdir_name = rasa.utils.common.get_temp_dir_name()
+
+    # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this
+    # leads to errors on Windows when the context manager tries to delete an
+    # already deleted temporary directory (e.g. https://bugs.python.org/issue29982)
+    with rasa.utils.common.TempDirectoryPath(tempdir_name) as temp_model_dir:
         model_storage = _create_model_storage(
             is_finetuning, model_to_finetune, Path(temp_model_dir)
         )
@@ -307,7 +311,7 @@ def train_core(
     file_importer = TrainingDataImporter.load_core_importer_from_config(
         config, domain, [stories]
     )
-    stories = file_importer.get_stories()
+    stories_data = file_importer.get_stories()
     nlu_data = file_importer.get_nlu_data()
     domain = file_importer.get_domain()
 
@@ -326,7 +330,7 @@ def train_core(
         )
         return None
 
-    if not stories:
+    if not stories_data:
         rasa.shared.utils.cli.print_error(
             "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."

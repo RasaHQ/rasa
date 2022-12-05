@@ -42,7 +42,7 @@ def create_language_model_featurizer(
     return inner
 
 
-def skip_on_CI(model_name: Text, model_weights: Text) -> bool:
+def skip_on_CI_with_bert(model_name: Text, model_weights: Text) -> bool:
     """Checks whether to skip this configuration on CI.
 
     Only applies when skip_model_load=False
@@ -67,7 +67,7 @@ def create_pretrained_transformers_config(
         model_name: model name
         model_weights: model weights name
     """
-    if skip_on_CI(model_name, model_weights):
+    if skip_on_CI_with_bert(model_name, model_weights):
         pytest.skip(
             "Reason: this model is too large, loading it results in"
             "crashing of GH action workers."
@@ -354,7 +354,7 @@ class TestShapeValuesTrainAndProcess:
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
-        expected_shape: List[Tuple[int]],
+        expected_shape: List[Tuple[int, int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
         create_language_model_featurizer: Callable[
@@ -379,7 +379,7 @@ class TestShapeValuesTrainAndProcess:
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
-        expected_shape: List[Tuple[int]],
+        expected_shape: List[Tuple[int, int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
         create_language_model_featurizer: Callable[

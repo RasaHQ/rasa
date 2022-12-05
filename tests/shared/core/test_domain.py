@@ -1,11 +1,13 @@
 import copy
 import json
+import re
 import textwrap
 from pathlib import Path
 import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
+from pytest import WarningsRecorder
 
 from rasa.shared.exceptions import YamlSyntaxException, YamlException
 import rasa.shared.utils.io
@@ -45,6 +47,7 @@ from rasa.shared.core.domain import (
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.utils.validation import YamlValidationException
+from rasa.utils.common import EXPECTED_WARNINGS
 
 
 def test_slots_states_before_user_utterance(domain: Domain):
@@ -1834,13 +1837,12 @@ def test_domain_invalid_yml_in_folder():
         Domain.from_directory("data/test_domains/test_domain_from_directory/")
 
 
-def test_invalid_domain_dir_with_duplicates():
+def test_invalid_domain_dir_with_duplicates(recwarn: WarningsRecorder):
     """
     Raises InvalidDomain if a domain is loaded from a directory with duplicated slots,
     responses and intents in domain files.
     """
-    with pytest.warns(UserWarning) as warning:
-        Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
+    Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
 
     error_message = (
         "The following duplicated intents have been found across multiple domain files: greet \n"
@@ -1848,7 +1850,14 @@ def test_invalid_domain_dir_with_duplicates():
         "utter_did_that_help, utter_greet \n"
         "The following duplicated slots have been found across multiple domain files: mood"
     )
-    assert error_message == warning[2].message.args[0]
+    for warning in recwarn.list:
+        # filter expected warnings
+        if not any(
+            type(warning.message) == warning_type
+            and re.search(warning_message, str(warning.message))
+            for warning_type, warning_message in EXPECTED_WARNINGS
+        ):
+            assert error_message == warning.message.args[0]
 
 
 def test_domain_fingerprint_consistency_across_runs():
@@ -2046,3 +2055,15 @@ def test_domain_slots_for_entities_with_entity_mapping_to_multiple_slots():
         SlotSet("departure_city", "London"),
         SlotSet("arrival_city", "Berlin"),
     ]
+
+
+def test_merge_domain_with_separate_session_config():
+    domain_dir = "data/test_domains/test_domain_with_separate_session_config"
+    domain = Domain.load(domain_dir)
+
+    expected_session_expiration_time = 1
+
+    assert (
+        domain.session_config.session_expiration_time
+        == expected_session_expiration_time
+    )

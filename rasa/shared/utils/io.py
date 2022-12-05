@@ -69,14 +69,13 @@ def raise_warning(
         return True
 
     def formatwarning(
-        message: Text,
-        category: Optional[Type[Warning]],
+        message: Union[Warning, Text],
+        category: Type[Warning],
         filename: Text,
-        lineno: Optional[int],
+        lineno: int,
         line: Optional[Text] = None,
     ) -> Text:
         """Function to format a warning the standard way."""
-
         if not should_show_source_line():
             if docs:
                 line = f"More info at {docs}"
@@ -203,11 +202,12 @@ def list_subdirectories(path: Text) -> List[Text]:
 def deep_container_fingerprint(
     obj: Union[List[Any], Dict[Any, Any], Any], encoding: Text = DEFAULT_ENCODING
 ) -> Text:
-    """Calculate a hash which is stable, independent of a containers key order.
+    """Calculate a hash which is stable.
 
     Works for lists and dictionaries. For keys and values, we recursively call
-    `hash(...)` on them. Keep in mind that a list with keys in a different order
-    will create the same hash!
+    `hash(...)` on them. In case of a dict, the hash is independent of the containers
+    key order. Keep in mind that a list with items in a different order
+    will not create the same hash!
 
     Args:
         obj: dictionary or list to be hashed.
@@ -353,8 +353,8 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
         )
 
     yaml_parser = yaml.YAML(typ=reader_type)
-    yaml_parser.version = YAML_VERSION
-    yaml_parser.preserve_quotes = True
+    yaml_parser.version = YAML_VERSION  # type: ignore[assignment]
+    yaml_parser.preserve_quotes = True  # type: ignore[assignment]
 
     return yaml_parser.load(content) or {}
 
@@ -399,7 +399,7 @@ def write_yaml(
 
     dumper = yaml.YAML()
     # no wrap lines
-    dumper.width = YAML_LINE_MAX_WIDTH
+    dumper.width = YAML_LINE_MAX_WIDTH  # type: ignore[assignment]
 
     # use `null` to represent `None`
     dumper.representer.add_representer(

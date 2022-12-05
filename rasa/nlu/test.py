@@ -674,7 +674,7 @@ def _calculate_report(
     )
 
     if report_as_dict:
-        report = _add_confused_labels_to_report(
+        report = _add_confused_labels_to_report(  # type: ignore[assignment]
             report,
             confusion_matrix,
             labels,
@@ -1930,9 +1930,7 @@ def log_results(results: IntentMetrics, dataset_name: Text) -> None:
         dataset_name: string of which dataset the results are from, e.g. test/train
     """
     for k, v in results.items():
-        logger.info(
-            "{} {}: {:.3f} ({:.3f})".format(dataset_name, k, np.mean(v), np.std(v))
-        )
+        logger.info(f"{dataset_name} {k}: {np.mean(v):.3f} ({np.std(v):.3f})")
 
 
 def log_entity_results(results: EntityMetrics, dataset_name: Text) -> None:

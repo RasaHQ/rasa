@@ -1,4 +1,5 @@
 import textwrap
+import warnings
 from typing import Text
 
 import pytest
@@ -281,6 +282,7 @@ def test_early_exit_on_invalid_domain():
 
     importer = RasaFileImporter(domain_path=domain_path)
     with pytest.warns(UserWarning) as record:
+        warnings.simplefilter("ignore", DeprecationWarning)
         validator = Validator.from_importer(importer)
     validator.verify_domain_validity()
 
@@ -546,47 +548,6 @@ def test_verify_slot_mappings_mapping_active_loop_not_in_forms(tmp_path: Path):
         assert not validator.verify_slot_mappings()
 
 
-def test_verify_slot_mappings_from_trigger_intent_mapping_slot_not_in_forms(
-    tmp_path: Path,
-):
-    domain = tmp_path / "domain.yml"
-    slot_name = "started_booking_form"
-    domain.write_text(
-        f"""
-        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-        intents:
-        - activate_booking
-        entities:
-        - city
-        slots:
-          {slot_name}:
-            type: bool
-            influence_conversation: false
-            mappings:
-            - type: from_trigger_intent
-              intent: activate_booking
-              value: true
-          location:
-            type: text
-            mappings:
-            - type: from_entity
-              entity: city
-        forms:
-          booking_form:
-            required_slots:
-            - location
-            """
-    )
-    importer = RasaFileImporter(domain_path=domain)
-    validator = Validator.from_importer(importer)
-    with pytest.warns(
-        UserWarning,
-        match=f"Slot '{slot_name}' has a 'from_trigger_intent' mapping, "
-        f"but it's not listed in any form 'required_slots'.",
-    ):
-        assert not validator.verify_slot_mappings()
-
-
 def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
@@ -758,3 +719,41 @@ def test_default_action_as_active_loop_in_rules(
     )
     validator = Validator.from_importer(importer)
     assert validator.verify_forms_in_stories_rules()
+
+
+def test_verify_from_trigger_intent_slot_mapping_not_in_forms_does_not_warn(
+    tmp_path: Path,
+):
+    domain = tmp_path / "domain.yml"
+    slot_name = "started_booking_form"
+    domain.write_text(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - activate_booking
+        entities:
+        - city
+        slots:
+          {slot_name}:
+            type: bool
+            influence_conversation: false
+            mappings:
+            - type: from_trigger_intent
+              intent: activate_booking
+              value: true
+          location:
+            type: text
+            mappings:
+            - type: from_entity
+              entity: city
+        forms:
+          booking_form:
+            required_slots:
+            - location
+            """
+    )
+    importer = RasaFileImporter(domain_path=domain)
+    validator = Validator.from_importer(importer)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert validator.verify_slot_mappings()

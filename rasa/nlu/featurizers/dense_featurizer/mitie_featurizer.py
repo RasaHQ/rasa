@@ -159,10 +159,9 @@ class MitieFeaturizer(DenseFeaturizer, GraphComponent):
         feature_extractor: "mitie.total_word_feature_extractor",
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Calculates features."""
-        sequence_features = []
-        for token in tokens:
-            sequence_features.append(feature_extractor.get_feature_vector(token.text))
-        sequence_features = np.array(sequence_features)
+        sequence_features = np.array(
+            [feature_extractor.get_feature_vector(token.text) for token in tokens]
+        )
 
         sentence_fetaures = self.aggregate_sequence_features(
             sequence_features, self.pooling_operation

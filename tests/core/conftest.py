@@ -28,7 +28,9 @@ from tests.core.utilities import tracker_from_dialogue
 
 
 class CustomSlot(Slot):
-    def as_feature(self):
+    type_name = "custom"
+
+    def _as_feature(self):
         return [0.5]
 
 
@@ -57,13 +59,18 @@ def event_loop(request: Request) -> Generator[asyncio.AbstractEventLoop, None, N
     loop.close()
 
 
+# override loop fixture to prevent ScopeMismatch pytest error and
+# implement fix to RuntimeError Event loop is closed issue described
+# here: https://github.com/pytest-dev/pytest-asyncio/issues/371
 @pytest.fixture(scope="session")
 def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    loop._close = loop.close
+    loop.close = lambda: None
     yield loop
-    loop.close()
+    loop._close()
 
 
 @pytest.fixture
@@ -77,7 +84,7 @@ async def default_processor(default_agent: Agent) -> MessageProcessor:
 
 
 @pytest.fixture
-def tracker_with_six_scheduled_reminders(
+async def tracker_with_six_scheduled_reminders(
     default_processor: MessageProcessor,
 ) -> DialogueStateTracker:
     reminders = [
@@ -106,13 +113,13 @@ def tracker_with_six_scheduled_reminders(
         ),
     ]
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
     for reminder in reminders:
         tracker.update(UserUttered("test"))
         tracker.update(ActionExecuted("action_reminder_reminder"))
         tracker.update(reminder)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     return tracker
 

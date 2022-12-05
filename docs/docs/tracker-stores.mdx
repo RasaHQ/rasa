@@ -2,9 +2,9 @@
 id: tracker-stores
 sidebar_label: Tracker Stores
 title: Tracker Stores
-description: All conversations are stored within a tracker store. Read how Rasa Open Source provides implementations for different store types out of the box.
+description: All conversations are stored within a tracker store. Read how Rasa provides implementations for different store types out of the box.
 abstract: Your assistant's conversations are stored within a tracker store.
-  Rasa Open Source provides implementations for different store types out of the box,
+  Rasa provides implementations for different store types out of the box,
   or you can create your own custom one.
 ---
 
@@ -34,7 +34,7 @@ You can use an `SQLTrackerStore` to store your assistant's conversation history 
 
 ### Configuration
 
-To set up Rasa Open Source with SQL the following steps are required:
+To set up Rasa with SQL the following steps are required:
 
 1. Add required configuration to your `endpoints.yml`:
 
@@ -121,7 +121,7 @@ Create a sequence in the database with the following command, where username is 
 CREATE SEQUENCE username.events_seq;
 ```
 
-Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
+Next you have to extend the Rasa image to include the necessary drivers and clients.
 First download the [Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html),
 rename it to `oracle.rpm` and store it in the directory from where you'll be building the docker image.
 Copy the following into a file called `Dockerfile`:
@@ -168,7 +168,7 @@ Redis is a fast in-memory key-value store which can optionally also persist data
 
 ### Configuration
 
-To set up Rasa Open Source with Redis the following steps are required:
+To set up Rasa with Redis the following steps are required:
 
 1. Start your Redis instance
 
@@ -344,15 +344,25 @@ DynamoDB is a hosted NoSQL database offered by Amazon Web Services (AWS).
 ## Custom Tracker Store
 
 If you need a tracker store which is not available out of the box, you can implement your own.
-This is done by extending the base class `TrackerStore`.
+This is done by extending the base class `TrackerStore` and one of the provided mixin classes that implement the
+`serialise_tracker` method: `SerializedTrackerAsText` or `SerializedTrackerAsDict`.
 
 To write a custom tracker store, extend the `TrackerStore` base class. Your constructor has to
 provide a parameter `host`.
+The constructor also needs to make a `super` call to the base class `TrackerStore` using `domain` and `event_broker` arguments:
+
+```
+super().__init__(domain, event_broker, **kwargs)
+```
+
+Your custom tracker store class must also implement the following three methods:
+- `save`: saves the conversation to the tracker store. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L243).
+- `retrieve`: retrieves tracker for the latest conversation session. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L261).
+- `keys`: returns the set of values for the tracker store's primary key. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L319).
 
 ### Configuration
 
- In your `endpoints.yml` put in the module path to your custom tracker store
- and the parameters you require:
+Put the module path to your custom tracker store and the parameters you require in your `endpoints.yml`:
 
  ```yaml-rasa title="endpoints.yml"
  tracker_store:
@@ -362,7 +372,7 @@ provide a parameter `host`.
    another_parameter: another value
  ```
 
-If you are deploying in Docker Compose, you have two options to add this store to Rasa Open Source:
+If you are deploying in Docker Compose, you have two options to add this store to Rasa:
 extending the Rasa image to include the module, or mounting the module as volume.
 
  Make sure to add the corresponding service as well. For example, mounting it as a volume would look like so:

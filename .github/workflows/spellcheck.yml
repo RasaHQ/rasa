@@ -12,7 +12,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
     - name: TypoCheck
-      uses: typoci/spellcheck-action@master
+      uses: typoci/spellcheck-action@a63b1430c8f0ceed9fd0bd0f3ad8f7466e6c695d # v1.1.0
       # with:
         # A license can be purchased via:
         # https://gumroad.com/l/MvvBE
