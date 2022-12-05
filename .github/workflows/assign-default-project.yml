@@ -9,7 +9,7 @@ on:
 jobs:
   assign_default_project:
     name: Assign default project to issue
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Assign vulnerability scans or Sentry issues to Enable
