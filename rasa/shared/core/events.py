@@ -971,7 +971,7 @@ class SlotSet(Event):
         self.value = value
         super().__init__(timestamp, metadata)
 
-    def __str__(self) -> Text:
+    def __repr__(self) -> Text:
         """Returns text representation of event."""
         return f"SlotSet(key: {self.key}, value: {self.value})"
 

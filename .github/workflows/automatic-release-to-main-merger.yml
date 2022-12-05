@@ -22,7 +22,7 @@ env:
 
 jobs:
   update_merge_pr:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     # only run this workflow if a pull request has been merged
     if: github.event.pull_request.merged == true
