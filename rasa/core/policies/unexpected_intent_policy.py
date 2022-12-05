@@ -1,7 +1,7 @@
 import dataclasses
 import logging
 from pathlib import Path
-from typing import Any, List, Optional, Text, Dict, Type
+from typing import Any, List, Optional, Text, Dict, Type, Union
 
 import numpy as np
 import tensorflow as tf
@@ -373,7 +373,12 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            [
+                FeatureArray(
+                    np.expand_dims(label_ids, -1),
+                    number_of_dimensions=2,
+                )
+            ],
         )
         return label_data
 
@@ -487,7 +492,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         self.compute_label_quantiles_post_training(model_data, label_ids)
 
     def _collect_action_metadata(
-        self, domain: Domain, similarities: np.array, query_intent: Text
+        self, domain: Domain, similarities: np.ndarray, query_intent: Text
     ) -> UnexpecTEDIntentPolicyMetadata:
         """Collects metadata to be attached to the predicted action.
 
@@ -604,8 +609,12 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         output = self.model.run_inference(model_data)
 
         # take the last prediction in the sequence
-        all_similarities: np.ndarray = output["similarities"]
-        sequence_similarities = all_similarities[:, -1, :]
+        if isinstance(output["similarities"], np.ndarray):
+            sequence_similarities = output["similarities"][:, -1, :]
+        else:
+            raise TypeError(
+                "model output for `similarities` " "should be a numpy array"
+            )
 
         # Check for unlikely intent
         last_user_uttered_event = tracker.get_last_event_for(UserUttered)
@@ -697,7 +706,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         return True
 
     def _check_unlikely_intent(
-        self, domain: Domain, similarities: np.array, query_intent: Text
+        self, domain: Domain, similarities: np.ndarray, query_intent: Text
     ) -> bool:
         """Checks if the query intent is probable according to model's predictions.
 
@@ -827,7 +836,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             )
             minimum_positive_score = min(positive_scores)
             if negative_scores:
-                quantile_values = np.quantile(
+                quantile_values = np.quantile(  # type: ignore[call-overload]
                     negative_scores, quantile_indices, interpolation="lower"
                 )
                 label_quantiles[label_id] = [
@@ -981,7 +990,9 @@ class IntentTED(TED):
 
         return labels_embed
 
-    def run_bulk_inference(self, model_data: RasaModelData) -> Dict[Text, np.ndarray]:
+    def run_bulk_inference(
+        self, model_data: RasaModelData
+    ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
         """Computes model's predictions for input data.
 
         Args:

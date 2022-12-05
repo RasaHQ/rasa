@@ -68,9 +68,8 @@ def main(args: argparse.Namespace) -> None:
         raise SystemExit(f"Docs should not be built for tag {tag}.")
 
 
-
 if __name__ == "__main__":
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
     main(cmdline_args)
- 
+

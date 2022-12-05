@@ -2,9 +2,9 @@
 id: tracker-stores
 sidebar_label: Tracker Stores
 title: Tracker Stores
-description: All conversations are stored within a tracker store. Read how Rasa Open Source provides implementations for different store types out of the box.
+description: All conversations are stored within a tracker store. Read how Rasa provides implementations for different store types out of the box.
 abstract: Your assistant's conversations are stored within a tracker store.
-  Rasa Open Source provides implementations for different store types out of the box,
+  Rasa provides implementations for different store types out of the box,
   or you can create your own custom one.
 ---
 
@@ -34,7 +34,7 @@ You can use an `SQLTrackerStore` to store your assistant's conversation history 
 
 ### Configuration
 
-To set up Rasa Open Source with SQL the following steps are required:
+To set up Rasa with SQL the following steps are required:
 
 1. Add required configuration to your `endpoints.yml`:
 
@@ -121,7 +121,7 @@ Create a sequence in the database with the following command, where username is 
 CREATE SEQUENCE username.events_seq;
 ```
 
-Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
+Next you have to extend the Rasa image to include the necessary drivers and clients.
 First download the [Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html),
 rename it to `oracle.rpm` and store it in the directory from where you'll be building the docker image.
 Copy the following into a file called `Dockerfile`:
@@ -168,7 +168,7 @@ Redis is a fast in-memory key-value store which can optionally also persist data
 
 ### Configuration
 
-To set up Rasa Open Source with Redis the following steps are required:
+To set up Rasa with Redis the following steps are required:
 
 1. Start your Redis instance
 
@@ -372,7 +372,7 @@ Put the module path to your custom tracker store and the parameters you require 
    another_parameter: another value
  ```
 
-If you are deploying in Docker Compose, you have two options to add this store to Rasa Open Source:
+If you are deploying in Docker Compose, you have two options to add this store to Rasa:
 extending the Rasa image to include the module, or mounting the module as volume.
 
  Make sure to add the corresponding service as well. For example, mounting it as a volume would look like so:

@@ -428,11 +428,10 @@ def _extract_features(
     attribute: Text,
 ) -> Tuple[
     List[np.ndarray],
-    Dict[Text, List[List["Features"]]],
-    Dict[Text, List[List["Features"]]],
+    Dict[Text, List[List[np.ndarray]]],
+    Dict[Text, List[List[scipy.sparse.spmatrix]]],
 ]:
-    """Create masks for all attributes of the given features and split the features
-    into sparse and dense features.
+    """Create masks for feature attributes and split into dense and sparse features.
 
     Args:
         features: all features

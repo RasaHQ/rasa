@@ -285,7 +285,7 @@ class PikaEventBroker(EventBroker):
                 self._unpublished_events.append(event)
 
             if self.raise_on_failure:
-                self.close()
+                self.close()  # type: ignore[unused-coroutine]
                 raise e
 
     def _message(

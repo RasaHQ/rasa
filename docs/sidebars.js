@@ -2,12 +2,30 @@ module.exports = {
   default: [
     'introduction',
     'playground',
+
+    {
+      type: 'category',
+      label: 'Installation',
+      collapsed: true,
+      items: [
+        'installation/environment-set-up',
+        'installation/installing-rasa-open-source',
+        {
+          label: 'Installing Rasa Pro',
+          collapsed: true,
+          type: 'category',
+          items: [
+            'installation/rasa-pro/architecture-overview',
+            'installation/rasa-pro/installation',
+          ]
+        },
+      ],
+    },
     {
       type: 'category',
       label: 'Building Assistants',
       collapsed: false,
       items: [
-          'installation',
           'migrate-from',
           'command-line-interface',
         {
@@ -44,13 +62,32 @@ module.exports = {
       ],
     },
     {
-        type: 'category',
-        label: 'Deploying Assistants',
-        collapsed: true,
+      type: 'category',
+      label: 'Deploying Assistants',
+      collapsed: true,
       items: [
         'deploy/introduction',
         'deploy/deploy-rasa',
         'deploy/deploy-action-server',
+        'deploy/deploy-rasa-pro-services',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Monitoring and Analyzing Assistants',
+      collapsed: true,
+      items: [
+        {
+          type: 'category',
+          label: 'Analytics',
+          collapsed: true,
+          items: [
+            'monitoring/analytics/getting-started-with-analytics',
+            'monitoring/analytics/example-queries',
+            'monitoring/analytics/data-structure-reference',
+          ],
+        },
+        'monitoring/tracing',
       ],
     },
     {
@@ -160,7 +197,6 @@ module.exports = {
             }
           ],
           },
-          'action-server/deploy-action-server',
         ]},
       ]
     },
@@ -187,7 +223,7 @@ module.exports = {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: ['changelog', 'sdk_changelog','migration-guide', 
+      items: ['changelog', 'sdk_changelog', 'compatibility-matrix', 'migration-guide',
       {
         type: 'link',
         label: 'Actively Maintained Versions',

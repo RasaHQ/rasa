@@ -11,6 +11,7 @@ from typing import (
     NamedTuple,
     ItemsView,
     overload,
+    cast,
 )
 from collections import defaultdict, OrderedDict
 
@@ -78,7 +79,7 @@ class FeatureArray(np.ndarray):
         super().__init__(**kwargs)
         self.number_of_dimensions = number_of_dimensions
 
-    def __array_finalize__(self, obj: Any) -> None:
+    def __array_finalize__(self, obj: Optional[np.ndarray]) -> None:
         """This method is called when the system allocates a new array from obj.
 
         Args:
@@ -139,6 +140,8 @@ class FeatureArray(np.ndarray):
             A tuple.
         """
         pickled_state = super(FeatureArray, self).__reduce__()
+        if isinstance(pickled_state, str):
+            raise TypeError("np array __reduce__ returned string instead of tuple.")
         new_state = pickled_state[2] + (
             self.number_of_dimensions,
             self.is_sparse,
@@ -345,7 +348,8 @@ class RasaModelData:
         for key, attribute_data in self.data.items():
             out_data[key] = {}
             for sub_key, features in attribute_data.items():
-                out_data[key][sub_key] = [feature[:1] for feature in features]
+                feature_slices = [feature[:1] for feature in features]
+                out_data[key][sub_key] = cast(List[FeatureArray], feature_slices)
         return out_data
 
     def does_feature_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
@@ -601,7 +605,15 @@ class RasaModelData:
             label_ids = self._create_label_ids(
                 self.data[self.label_key][self.label_sub_key][0]
             )
-            label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
+            label_counts: Dict[int, int] = dict(
+                zip(
+                    *np.unique(
+                        label_ids,
+                        return_counts=True,
+                        axis=0,
+                    )
+                )
+            )
 
             self._check_train_test_sizes(number_of_test_examples, label_counts)
 
@@ -723,7 +735,7 @@ class RasaModelData:
             if shuffle:
                 indices_of_labels = np.random.permutation(num_label_ids)
             else:
-                indices_of_labels = range(num_label_ids)
+                indices_of_labels = np.asarray(range(num_label_ids))
 
             for index in indices_of_labels:
                 if num_data_cycles[index] > 0 and not skipped[index]:
@@ -930,9 +942,9 @@ class RasaModelData:
             return FeatureArray(
                 scipy.sparse.vstack([feature_1, feature_2]), number_of_dimensions
             )
-
         return FeatureArray(
-            np.concatenate([feature_1, feature_2]), number_of_dimensions
+            np.concatenate([feature_1, feature_2]),
+            number_of_dimensions,
         )
 
     @staticmethod
