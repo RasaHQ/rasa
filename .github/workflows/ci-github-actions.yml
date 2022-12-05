@@ -13,9 +13,10 @@ env:
 
 jobs:
   test:
-    name: Run Actions Tests
-    runs-on: ubuntu-20.04
-    strategy:
+    name: Run Tests
+    runs-on: ubuntu-22.04
+    #missing matrix
+    strategy: 
       fail-fast: false
 
     steps:
