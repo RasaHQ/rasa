@@ -32,7 +32,7 @@ jobs:
   test_documentation:
     name: Test Documentation
     runs-on: ubuntu-22.04
-    needs: [ changes ]
+    needs: [changes]
     if: needs.changes.outputs.docs == 'true'
 
     steps:
