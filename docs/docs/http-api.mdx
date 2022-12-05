@@ -86,14 +86,14 @@ rasa run \
 ```
 
 If you want to sign a JWT token with asymmetric algorithms, you can specify the JWT private key to the `--jwt-private-key`
-CLI argument. You must pass the public key to the `--jwt-secret` argument since this is an alias for the public key, and also
-specify the algorithm to the `--jwt-method` argument:
+CLI argument. You must pass the public key to the `--jwt-secret` argument, and also specify the algorithm to the
+`--jwt-method` argument:
 
 ```bash
 rasa run \
     --enable-api \
-    --jwt-secret thisismypublickey \
-    --jwt-private-key thisismyprivatekey \
+    --jwt-secret <public_key> \
+    --jwt-private-key <private_key> \
     --jwt-method RS512
 ```
 

@@ -1522,17 +1522,9 @@ async def test_get_tracker_with_jwt(rasa_secured_app: SanicASGITestClient):
 
 async def test_get_tracker_with_asymmetric_jwt(
     rasa_secured_app_asymmetric: SanicASGITestClient,
+    encoded_jwt: Text,
 ) -> None:
-    # {"user": {"username": "myuser", "role": "admin"}}
-    jwt_header = {
-        "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9."
-        "eyJ1c2VyIjp7InVzZXJuYW1lIjoibXl1c2VyIiwicm9s"
-        "ZSI6ImFkbWluIn19.N57xoUIQpg4mga-A7ayXO5igfKi"
-        "Jd3acc6wD22_f3gQcXZq0eomegm5R89yz-9FbbqCJCJN"
-        "u69mSsIntVNkEPHxwxSGf3CEsZ7lc9dJx63Jhn51do0V"
-        "ntXSNXEgmroYE-4S3oPNFJEkOrcHWp2GdZ07L7oHAels"
-        "y_oxgMpJbMFY"
-    }
+    jwt_header = {"Authorization": f"Bearer {encoded_jwt}"}
     _, response = await rasa_secured_app_asymmetric.get(
         "/conversations/myuser/tracker", headers=jwt_header
     )
