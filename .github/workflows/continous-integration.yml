@@ -27,6 +27,7 @@ concurrency:
 #                                 Key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
 # - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
 #                      created at https://sentry.io/settings/account/api/auth-tokens/
+# test
 
 env:
   # needed to fix issues with boto during testing:
