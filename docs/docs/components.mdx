@@ -574,6 +574,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   +----------------+--------------+-------------------------+
   | RoBERTa        | roberta      | roberta-base            |
   +----------------+--------------+-------------------------+
+  | camemBERT      | camembert    | camembert-base          |
+  +----------------+--------------+-------------------------+
   ```
 
   Apart from the default pretrained model weights, further models can be used from
@@ -2038,7 +2040,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   Configure which dimensions, i.e. entity types, the duckling component
   should extract. A full list of available dimensions can be found in
-  the [duckling repo](https://github.com/facebook/duckling).
+  the [duckling project readme](https://github.com/facebook/duckling).
   Leaving the dimensions option unspecified will extract all available dimensions.
 
   ```yaml-rasa

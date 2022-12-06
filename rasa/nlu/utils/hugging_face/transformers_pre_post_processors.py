@@ -114,6 +114,24 @@ def xlm_tokens_pre_processor(token_ids: List[int]) -> List[int]:
     return token_ids
 
 
+def camembert_tokens_pre_processor(token_ids: List[int]) -> List[int]:
+    """Add camembert style special tokens.
+
+    Args:
+        token_ids: List of token ids without any special tokens.
+
+    Returns:
+        List of token ids augmented with special tokens.
+    """
+    CAMEMBERT_BEG_ID = 5
+    CAMEMBERT_END_ID = 6
+
+    token_ids.insert(0, CAMEMBERT_BEG_ID)
+    token_ids.append(CAMEMBERT_END_ID)
+
+    return token_ids
+
+
 def bert_embeddings_post_processor(
     sequence_embeddings: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
