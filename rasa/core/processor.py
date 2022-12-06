@@ -624,7 +624,7 @@ class MessageProcessor:
     async def parse_message(
         self,
         message: UserMessage,
-        tracker: DialogueStateTracker,
+        tracker: Optional[DialogueStateTracker] = None,
         only_output_properties: bool = True,
     ) -> Dict[Text, Any]:
         """Interprets the passed message.
@@ -641,6 +641,8 @@ class MessageProcessor:
         if self.http_interpreter:
             parse_data = await self.http_interpreter.parse(message)
         else:
+            if tracker is None:
+                tracker = DialogueStateTracker.from_events(message.sender_id, [])
             parse_data = self._parse_message_with_graph(
                 message, tracker, only_output_properties
             )
