@@ -33,7 +33,7 @@ from tests.utilities import json_of_latest_request, latest_request
 logger = logging.getLogger(__name__)
 
 
-def noop(*args, **kwargs):
+async def noop(*args, **kwargs):
     """Just do nothing."""
     pass
 
