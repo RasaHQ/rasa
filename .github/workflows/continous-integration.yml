@@ -862,7 +862,7 @@ jobs:
         run: poetry build
 
       - name: Publish to PyPI 📦
-        uses: pypa/gh-action-pypi-publish@37f50c210e3d2f9450da2cd423303d6a14a6e29f
+        uses: pypa/gh-action-pypi-publish@5d1679fa6b895587c6eb10c3fe82205b440a580e
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
