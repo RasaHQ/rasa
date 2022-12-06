@@ -20,6 +20,14 @@ def get_temp_dir_name() -> Text
 
 Returns the path name of a newly created temporary directory.
 
+#### decode\_bytes
+
+```python
+def decode_bytes(name: Union[Text, bytes]) -> Text
+```
+
+Converts bytes object to string.
+
 #### read\_global\_config
 
 ```python

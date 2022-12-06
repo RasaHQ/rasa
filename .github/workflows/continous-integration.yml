@@ -318,6 +318,17 @@ jobs:
         # (tests will still run in other envs, they will just not create annotations)
         run: pip install pytest-github-actions-annotate-failures
 
+      - name: Disable "LongPathsEnabled" option on Windows
+        if: matrix.os == 'windows-2019'
+        # On Windows laptops, a default preset prevents path names from being longer than
+        # 260 characters. Some of our users can't enable this setting due to company policies.
+        # We implemented a fix for model storage. The Windows container in GitHub
+        # comes with the setting enabled, so we disable it here in order to ensure our tests
+        # are running in an environment where long path names are prevented.
+        run: |
+          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
+          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
+
       - name: Install ddtrace
         if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U ddtrace

@@ -2,6 +2,25 @@
 sidebar_label: rasa.engine.storage.local_model_storage
 title: rasa.engine.storage.local_model_storage
 ---
+#### windows\_safe\_temporary\_directory
+
+```python
+@contextmanager
+def windows_safe_temporary_directory(
+        suffix: Optional[Text] = None,
+        prefix: Optional[Text] = None,
+        dir: Optional[Text] = None) -> Generator[Text, None, None]
+```
+
+Like `tempfile.TemporaryDirectory`, but works with Windows and long file names.
+
+On Windows by default there is a restriction on long path names.
+Using the prefix below allows to bypass this restriction in environments
+where it&#x27;s not possible to override this behavior, mostly for internal
+policy reasons.
+
+Reference: https://stackoverflow.com/a/49102229
+
 ## LocalModelStorage Objects
 
 ```python
