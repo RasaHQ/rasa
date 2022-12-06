@@ -388,6 +388,8 @@ class DefaultV1Recipe(Recipe):
             "training_data",
             "self",
             "model",
+            "precomputations",
+            "training_trackers"
         }
 
         return {
