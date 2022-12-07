@@ -432,7 +432,7 @@ def _validate_needs(
             raise GraphSchemaValidationException(
                 f"Missing graph component '{parent_name}'."
                 f"Your model uses a component '{node.uses.__name__}' which expects "
-                f"input from the missing component. The component is missing from  "
+                f"input from the missing component. The component is missing from "
                 f"your model configuration. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."

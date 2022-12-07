@@ -573,6 +573,6 @@ class GraphModelConfiguration:
     predict_schema: GraphSchema
     training_type: TrainingType
     language: Optional[Text]
-    spaces: Optional[Dict[Text, Text]]
     core_target: Optional[Text]
     nlu_target: Optional[Text]
+    spaces: Optional[Dict[Text, Text]] = None

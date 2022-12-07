@@ -107,10 +107,16 @@ class TempDirectoryPath(str, ContextManager):
 def get_temp_dir_name() -> Text:
     """Returns the path name of a newly created temporary directory."""
     tempdir_name = tempfile.mkdtemp()
-    if isinstance(tempdir_name, bytes):
-        tempdir_name = tempdir_name.decode("UTF-8")
 
-    return tempdir_name
+    return decode_bytes(tempdir_name)
+
+
+def decode_bytes(name: Union[Text, bytes]) -> Text:
+    """Converts bytes object to string."""
+    if isinstance(name, bytes):
+        name = name.decode("UTF-8")
+
+    return name
 
 
 def read_global_config(path: Text) -> Dict[Text, Any]:

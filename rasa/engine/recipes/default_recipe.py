@@ -347,7 +347,7 @@ class DefaultV1Recipe(Recipe):
 
     def _get_needs_from_args(
         self, component: Type[GraphComponent], fn_name: str
-    ) -> str:
+    ) -> Dict[str, str]:
         """Get the needed arguments from the method on the component.
 
         Filters out arguments that are already provided by other graph
@@ -388,6 +388,8 @@ class DefaultV1Recipe(Recipe):
             "training_data",
             "self",
             "model",
+            "precomputations",
+            "training_trackers",
         }
 
         return {

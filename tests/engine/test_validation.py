@@ -576,7 +576,7 @@ def test_parent_is_missing():
     )
 
     with pytest.raises(
-        GraphSchemaValidationException, match="this component is not part"
+        GraphSchemaValidationException, match="The component is missing from"
     ):
         validation.validate(graph_config)
 
