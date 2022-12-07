@@ -1,3 +1,4 @@
+import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -10,7 +11,10 @@ from _pytest.tmpdir import TempPathFactory
 
 import rasa.shared.utils.io
 from rasa.engine.graph import SchemaNode, GraphSchema, GraphModelConfiguration
-from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.local_model_storage import (
+    LocalModelStorage,
+    MODEL_ARCHIVE_METADATA_FILE,
+)
 from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.storage.resource import Resource
 from rasa.exceptions import UnsupportedModelVersionError
@@ -81,6 +85,82 @@ def test_read_from_rasa2_resource(tmp_path_factory: TempPathFactory):
         )
     with pytest.raises(UnsupportedModelVersionError, match=f".*{version}.*"):
         storage.metadata_from_archive(model_archive_path=model_zips / resource_name)
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32",
+    reason="no need to run this test on other platform than Windows",
+)
+def test_read_long_resource_names_windows(
+    tmp_path_factory: TempPathFactory,
+    domain: Domain,
+):
+    model_dir = tmp_path_factory.mktemp("model_dir")
+    version = "3.3.0"
+
+    # full path length > 260 chars
+    # but each component of the path needs to be below 255 chars
+    # https://bugs.python.org/issue542314#msg10256
+    long_file_path = model_dir / f"{'custom_file' * 22}.json"
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        Path(f"\\\\?\\{long_file_path}"),
+        {"irrelevant-key": "bla"},
+    )
+    train_schema = GraphSchema(
+        {
+            "train": SchemaNode(
+                needs={},
+                uses=PersistableTestComponent,
+                fn="train",
+                constructor_name="create",
+                config={"some_config": 123455, "some more config": [{"nested": "hi"}]},
+            ),
+            "load": SchemaNode(
+                needs={"resource": "train"},
+                uses=PersistableTestComponent,
+                fn="run_inference",
+                constructor_name="load",
+                config={},
+                is_target=True,
+            ),
+        }
+    )
+    predict_schema = GraphSchema(
+        {
+            "run": SchemaNode(
+                needs={},
+                uses=PersistableTestComponent,
+                fn="run",
+                constructor_name="load",
+                config={"some_config": 123455, "some more config": [{"nested": "hi"}]},
+            )
+        }
+    )
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        model_dir / MODEL_ARCHIVE_METADATA_FILE,
+        ModelMetadata(
+            trained_at=datetime.utcnow(),
+            rasa_open_source_version=version,
+            model_id="xxxxxxx",
+            domain=domain,
+            train_schema=train_schema,
+            predict_schema=predict_schema,
+            project_fingerprint="xxxxxxx",
+            core_target="",
+            nlu_target="",
+            language="en",
+            training_type=TrainingType.BOTH,
+        ).as_dict(),
+    )
+
+    model_zips = tmp_path_factory.mktemp("model_zips")
+    resource_name = "model"
+    with TarSafe.open(model_zips / resource_name, "w:gz") as tar:
+        tar.add(Path(f"\\\\?\\{model_dir}"), arcname="")
+
+    storage_dir = tmp_path_factory.mktemp("storage_dir")
+    storage = LocalModelStorage(storage_path=storage_dir)
+    storage.metadata_from_archive(model_archive_path=model_zips / resource_name)
 
 
 def test_create_model_package(tmp_path_factory: TempPathFactory, domain: Domain):

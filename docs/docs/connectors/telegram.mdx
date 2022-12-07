@@ -42,6 +42,15 @@ telegram:
 Restart your Rasa server
 to make the new channel endpoint available for Telegram to send messages to.
 
+:::note Handling `/start` message
+
+At the beginning of a conversation, the user will press the 'Start' button in Telegram.
+This will trigger a message with the content */start* to be sent.
+Make sure your bot can handle this intro message by designing a specific intent in the nlu training data file.
+Then add this `start` intent to the domain alongside a story or rule to handle it.
+
+:::
+
 
 ## Supported Response Attachments
 
