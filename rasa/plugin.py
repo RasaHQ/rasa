@@ -7,6 +7,7 @@ import typing
 import pluggy
 
 from rasa.cli import SubParsersAction
+from rasa.engine.storage.storage import ModelMetadata
 
 if typing.TYPE_CHECKING:
     from rasa.rasa.engine.graph import SchemaNode
@@ -76,3 +77,8 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
 @hookspec  # type: ignore[misc]
 def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
+
+
+@hookspec  # type: ignore[misc]
+def mock_tracker_for_evaluation(model_metada: ModelMetadata) -> None:
+    """Generate a mocked tracker for NLU evaluation."""

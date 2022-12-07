@@ -26,6 +26,7 @@ from rasa import telemetry
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.processor import MessageProcessor
+from rasa.plugin import plugin_manager
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
@@ -1278,8 +1279,13 @@ async def get_eval_data(
     should_eval_entities = len(test_data.entity_examples) > 0
 
     for example in tqdm(test_data.nlu_examples):
+        tracker = plugin_manager().hook.mock_tracker_for_evaluation(
+            processor.model_metadata
+        )
         result = await processor.parse_message(
-            UserMessage(text=example.get(TEXT)), only_output_properties=False
+            UserMessage(text=example.get(TEXT)),
+            tracker=tracker,
+            only_output_properties=False,
         )
         _remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)
         if should_eval_intents:
