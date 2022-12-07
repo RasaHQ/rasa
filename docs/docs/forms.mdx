@@ -491,3 +491,11 @@ class AskForSlotAction(Action):
         dispatcher.utter_message(text="What cuisine?")
         return []
 ```
+
+If there is more than one asking option for the slot, Rasa prioritizes in the following order:
+
+1. `action_ask_<form_name>_<slot_name>`
+2. `utter_ask_<form_name>_<slot_name>`
+3. `action_ask_<slot_name>`
+4. `utter_ask_<slot_name>`
+
