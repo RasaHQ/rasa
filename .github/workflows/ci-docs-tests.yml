@@ -18,7 +18,7 @@ env:
 jobs:
   changes:
     name: Check for file changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       docs: ${{ steps.filter.outputs.docs }}
     steps:
@@ -31,7 +31,7 @@ jobs:
 
   test_documentation:
     name: Test Documentation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes]
     if: needs.changes.outputs.docs == 'true'
 
@@ -102,7 +102,7 @@ jobs:
 
   documentation_lint:
     name: Documentation Linting Checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes]
     if: needs.changes.outputs.docs == 'true'
 
@@ -111,7 +111,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5 # v3.0
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
