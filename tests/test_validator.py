@@ -64,7 +64,7 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
     # record warnings to make sure that the only raised warning
     # is about the duplicate example 'good afternoon'
     with pytest.warns(UserWarning) as record:
-        result = validator.verify_nlu(ignore_warnings=False)
+        validator.verify_nlu(ignore_warnings=False)
         assert len(record) == 1
         assert (
             "The example 'good afternoon' was found labeled with multiple different"
