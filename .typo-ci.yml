@@ -193,6 +193,9 @@ excluded_words:
   - Juste
   - Tanja
   - Vova
+  - rustup
+  - rustup-init
+  - rustc
   - conftest
 
 spellcheck_filenames: false

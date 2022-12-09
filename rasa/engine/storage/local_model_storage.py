@@ -44,12 +44,15 @@ def windows_safe_temporary_directory(
     """
     if sys.platform == "win32":
         directory = tempfile.mkdtemp(suffix, prefix, dir)
+        directory = rasa.utils.common.decode_bytes(directory)
+
         try:
             yield directory
         finally:
             shutil.rmtree(f"\\\\?\\{directory}")
     else:
         with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_directory = rasa.utils.common.decode_bytes(temporary_directory)
             yield temporary_directory
 
 
@@ -194,6 +197,7 @@ class LocalModelStorage(ModelStorage):
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
 
         with windows_safe_temporary_directory() as temp_dir:
+
             temporary_directory = Path(temp_dir)
 
             shutil.copytree(

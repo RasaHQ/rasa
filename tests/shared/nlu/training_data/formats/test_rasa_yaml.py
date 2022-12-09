@@ -1,4 +1,5 @@
 import textwrap
+import warnings
 from typing import Text
 
 import pytest
@@ -17,7 +18,7 @@ from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
 )
-
+from tests.conftest import filter_expected_warnings
 
 MULTILINE_INTENT_EXAMPLES = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
@@ -157,10 +158,12 @@ def test_wrong_schema_raises(example: Text):
 def test_multiline_intent_is_parsed(example: Text):
     parser = RasaYAMLReader()
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings() as record:
         training_data = parser.reads(example)
 
-    assert not len(record)
+    if record is not None:
+        record = filter_expected_warnings(record)
+        assert len(record) == 0
 
     assert len(training_data.training_examples) == 7
     assert training_data.training_examples[0].get(
@@ -172,10 +175,12 @@ def test_multiline_intent_is_parsed(example: Text):
 def test_intent_with_metadata_is_parsed():
     parser = RasaYAMLReader()
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings() as record:
         training_data = parser.reads(INTENT_EXAMPLES_WITH_METADATA)
 
-    assert not len(record)
+    if record is not None:
+        record = filter_expected_warnings(record)
+        assert len(record) == 0
 
     assert len(training_data.training_examples) == 7
     example_1, example_2, *other_examples = training_data.training_examples
@@ -253,8 +258,10 @@ responses:
 def test_multiline_intent_example_is_skipped_when_no_leading_symbol():
     parser = RasaYAMLReader()
 
-    with pytest.warns(None) as record:
+    with pytest.warns() as record:
         training_data = parser.reads(MULTILINE_INTENT_EXAMPLES_NO_LEADING_SYMBOL)
+
+    record = filter_expected_warnings(record)
 
     # warning for the missing leading symbol
     assert len(record) == 1
@@ -352,10 +359,12 @@ def test_regex_is_parsed():
 def test_minimal_valid_example():
     parser = RasaYAMLReader()
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings() as record:
         parser.reads(MINIMAL_VALID_EXAMPLE)
 
-    assert not len(record)
+    if record is not None:
+        record = filter_expected_warnings(record)
+        assert len(record) == 0
 
 
 def test_minimal_yaml_nlu_file(tmp_path: pathlib.Path):
@@ -465,9 +474,12 @@ def test_read_mixed_training_data_file():
 
     reader = RasaYAMLReader()
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings() as record:
         reader.read(training_data_file)
-        assert not len(record)
+
+    if record is not None:
+        record = filter_expected_warnings(record)
+        assert len(record) == 0
 
 
 def test_responses_text_multiline_is_preserved():

@@ -55,7 +55,7 @@ There's a lot more background information in this
 
 - 🤓 [Read The Docs](https://rasa.com/docs/rasa/)
 
-- 😁 [Install Rasa](https://rasa.com/docs/rasa/user-guide/installation/)
+- 😁 [Install Rasa](https://rasa.com/docs/rasa/installation/environment-set-up)
 
 - 🚀 [Dive deeper in the learning center](https://learning.rasa.com/)
 
@@ -151,7 +151,36 @@ make install
 ```
 
 *Note for macOS users*: under macOS Big Sur we've seen some compiler issues for 
-dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped. 
+dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped.
+
+
+#### Installing optional dependencies
+
+In order to install rasa's optional dependencies, you need to run:
+
+```bash
+make install-full
+```
+
+*Note for macOS users*: The command `make install-full` could result in a failure while installing `tokenizers` 
+(issue described in depth [here](https://github.com/huggingface/tokenizers/issues/1050)).
+
+In order to resolve it, you must follow these steps to install a Rust compiler:
+```bash
+brew install rustup
+rustup-init
+```
+
+After initialising the Rust compiler, you should restart the console and check its installation:
+```bash
+rustc --version
+```
+
+In case the PATH variable had not been automatically setup, run:
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
 
 ### Running and changing the documentation
 
