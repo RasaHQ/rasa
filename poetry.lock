@@ -3073,7 +3073,7 @@ wrapt = ">=1.11.0"
 
 [[package]]
 name = "tensorflow-addons"
-version = "0.17.1"
+version = "0.18.0"
 description = "TensorFlow Addons."
 category = "main"
 optional = false
@@ -3084,9 +3084,9 @@ packaging = "*"
 typeguard = ">=2.7"
 
 [package.extras]
-tensorflow = ["tensorflow (>=2.7.0,<2.10.0)"]
-tensorflow-cpu = ["tensorflow-cpu (>=2.7.0,<2.10.0)"]
-tensorflow-gpu = ["tensorflow-gpu (>=2.7.0,<2.10.0)"]
+tensorflow = ["tensorflow (>=2.8.0,<2.11.0)"]
+tensorflow-cpu = ["tensorflow-cpu (>=2.8.0,<2.11.0)"]
+tensorflow-gpu = ["tensorflow-gpu (>=2.8.0,<2.11.0)"]
 
 [[package]]
 name = "tensorflow-estimator"
@@ -3732,7 +3732,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "533c672e81e140b85ae3ae680222317abe8da25f72bda7c3c0d07533b9052edf"
+content-hash = "c8b62037fda3be77c559484d7057ebf4ec28e9d87163ae17b72263c552f169ce"
 
 [metadata.files]
 absl-py = [
@@ -5940,6 +5940,7 @@ ruamel-yaml-clib = [
     {file = "ruamel.yaml.clib-0.2.7-cp310-cp310-win_amd64.whl", hash = "sha256:d000f258cf42fec2b1bbf2863c61d7b8918d31ffee905da62dede869254d3b8a"},
     {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:045e0626baf1c52e5527bd5db361bc83180faaba2ff586e763d3d5982a876a9e"},
     {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-macosx_12_6_arm64.whl", hash = "sha256:721bc4ba4525f53f6a611ec0967bdcee61b31df5a56801281027a3a6d1c2daf5"},
+    {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl", hash = "sha256:41d0f1fa4c6830176eef5b276af04c89320ea616655d01327d5ce65e50575c94"},
     {file = "ruamel.yaml.clib-0.2.7-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:4b3a93bb9bc662fc1f99c5c3ea8e623d8b23ad22f861eb6fce9377ac07ad6072"},
     {file = "ruamel.yaml.clib-0.2.7-cp36-cp36m-macosx_12_0_arm64.whl", hash = "sha256:a234a20ae07e8469da311e182e70ef6b199d0fbeb6c6cc2901204dd87fb867e8"},
     {file = "ruamel.yaml.clib-0.2.7-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:15910ef4f3e537eea7fe45f8a5d19997479940d9196f357152a09031c5be59f3"},
@@ -6337,21 +6338,21 @@ tensorflow = [
     {file = "tensorflow-2.8.4-cp39-cp39-win_amd64.whl", hash = "sha256:f1f21b673b99a6bd08a97b1bf5557bfe179f5cea9d27adc797822aa97e236870"},
 ]
 tensorflow-addons = [
-    {file = "tensorflow_addons-0.17.1-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:51f4679fac03d668777634d4cd30a5fc5d72b2a58af94824a83cd37343ed90e7"},
-    {file = "tensorflow_addons-0.17.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:af8c1b0eade2c12c9007f24d30d75711f3313e500171a7d471c10a336e0dc68b"},
-    {file = "tensorflow_addons-0.17.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e9648b5fb937f19d015946fc6f607de525105ead78afbc7acfe9db3cf4a42ee4"},
-    {file = "tensorflow_addons-0.17.1-cp310-cp310-win_amd64.whl", hash = "sha256:2a652ff30e1bae50c5d740c340705a110ad82d4df2f729a48a7324d710e3a8ac"},
-    {file = "tensorflow_addons-0.17.1-cp37-cp37m-macosx_10_15_x86_64.whl", hash = "sha256:e526633dd5ecb64bc7f2b0b02d056723e7001a01d57f5017ec75baed838b0763"},
-    {file = "tensorflow_addons-0.17.1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:42aa05ddd2512395de50ba8c9f6f3694e1afc6f913d040161ad758123aaf9959"},
-    {file = "tensorflow_addons-0.17.1-cp37-cp37m-win_amd64.whl", hash = "sha256:be5dd587ee9a6db5739a6e87fef4cfc1e894987666c6688985f41d1016bb5c11"},
-    {file = "tensorflow_addons-0.17.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:4b05a73e1434c53027a5dc9f8448ec1361e3fc998783e86b0286f5acc5a1872d"},
-    {file = "tensorflow_addons-0.17.1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:17d8ed3ccf4ae47e2f2ac21a4159d2a50e065f374cb7eccd3469c8e4aa03d3c0"},
-    {file = "tensorflow_addons-0.17.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:de49693b488e4c616bf9c942c5af22f165837de85cf930f18fe8196525aa9e97"},
-    {file = "tensorflow_addons-0.17.1-cp38-cp38-win_amd64.whl", hash = "sha256:f884097d6fedb3e7d300d28dc633431303a1dbb7a6d91c442d7aef0b36a5c2c7"},
-    {file = "tensorflow_addons-0.17.1-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:7bb1ba28a94ed58da783e4752ffb7bd9b309bdd7d20c26a0bfaae25c7858e97a"},
-    {file = "tensorflow_addons-0.17.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:2265a0bf3728c8f729eef9c9524fa86d3091a6b3f85c0c23d2e26564b58d4dba"},
-    {file = "tensorflow_addons-0.17.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8049e8687e4ff4f1db3022e00b03c655f483e983cb42b3dcc68b2d89c8788302"},
-    {file = "tensorflow_addons-0.17.1-cp39-cp39-win_amd64.whl", hash = "sha256:de36d011e79ff86413265a3656cba23d75b741bd5f6817e43674c731d059e6b8"},
+    {file = "tensorflow_addons-0.18.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:c5efa7a6261679cb4f06d127933392293b2f29ad064db793e7a775c52286a186"},
+    {file = "tensorflow_addons-0.18.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:9284c6ab9b5f4caa25a536d7f3e8ffdea5464b5dab4925a2afc3c8a1f57492ea"},
+    {file = "tensorflow_addons-0.18.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9586dc70e4de67f234afc48a2bbae9a74dc6edf24d28f261bb320045b307f405"},
+    {file = "tensorflow_addons-0.18.0-cp310-cp310-win_amd64.whl", hash = "sha256:20c1b8e32f4fc93b095dfef8d86822ca25735bdaf55b9deea5f0723840879fae"},
+    {file = "tensorflow_addons-0.18.0-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:45a14fad25447b5f5e2dd0bad83b206212ecf9ca33636d8bc150de70e833d32e"},
+    {file = "tensorflow_addons-0.18.0-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:69b4bf55d05e62d818f717577c6e4e62dd7d591d4f72dbe08ce79b78a2195cda"},
+    {file = "tensorflow_addons-0.18.0-cp37-cp37m-win_amd64.whl", hash = "sha256:a2c833e0a0fb96b9851223a945b717dc431ce1af8cc44b2163d96d43afdd948a"},
+    {file = "tensorflow_addons-0.18.0-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:884988a682c317b7bb25742d65847b72fa8f684caded9726d948bd0618a2d42a"},
+    {file = "tensorflow_addons-0.18.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:27b0c7dba2d5d61f090ecb09144df8a2dd3d8984804fdcbfc6387c7af49ce8d6"},
+    {file = "tensorflow_addons-0.18.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ccc504b72342eb0e08c771644eed705e0a12937304141d6a8b19da5000f28a40"},
+    {file = "tensorflow_addons-0.18.0-cp38-cp38-win_amd64.whl", hash = "sha256:9ee3e5c81652f59502958396bc3c5fd34ee27d9a44ffbcc2dceb4fd61f4b4685"},
+    {file = "tensorflow_addons-0.18.0-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:0713a843a3cd5444bb1620cb7941566fb12f87cb2efb4150ca3eece7d80c75e7"},
+    {file = "tensorflow_addons-0.18.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:0cc32b51e6fc480fee82b9db51f2b990da31a91c9adb01e799c92f47faf99e89"},
+    {file = "tensorflow_addons-0.18.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4985b7e8cf8b80574a8fca4d712a769c8a39c944ac91883f327d2a4c607d2853"},
+    {file = "tensorflow_addons-0.18.0-cp39-cp39-win_amd64.whl", hash = "sha256:e74e2f47a7b8e2abb7fa0b48ea4837ea2636581c55f5559ecc804ec704d456bc"},
 ]
 tensorflow-estimator = [
     {file = "tensorflow_estimator-2.8.0-py2.py3-none-any.whl", hash = "sha256:bee8e0520c60ae7eaf6ca8cb46c5a9f4b45725531380db8fbe38fcb48478b6bb"},
