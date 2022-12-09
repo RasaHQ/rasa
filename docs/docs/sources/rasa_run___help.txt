@@ -11,7 +11,7 @@ usage: rasa run [-h] [-v] [-vv] [--quiet]
                 [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
                 [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
                 [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
-                [--jwt-method JWT_METHOD]
+                [--jwt-method JWT_METHOD] [--jwt-private-key JWT_PRIVATE_KEY]
                 {actions} ... [model-as-positional-argument]
 
 positional arguments:
@@ -111,3 +111,8 @@ JWT Authentication:
   --jwt-method JWT_METHOD
                         Method used for the signature of the JWT
                         authentication payload. (default: HS256)
+  --jwt-private-key JWT_PRIVATE_KEY
+                        A private key used for generating web tokens,
+                        dependent upon which hashing algorithm is used. It
+                        must be used together with --jwt-secret for providing
+                        the public key. (default: None)
