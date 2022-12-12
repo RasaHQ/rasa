@@ -6,14 +6,14 @@ name: CI - Model Regression
 on:
   push:
     branches:
-    - '[0-9]+.[0-9]+.x'
+      - "[0-9]+.[0-9]+.x"
     tags:
-    - '**'
+      - "**"
   pull_request:
     types: [opened, synchronize, labeled]
 
 concurrency:
-  group: ci-model-regression-${{ github.ref }}  # branch or tag name
+  group: ci-model-regression-${{ github.ref }} # branch or tag name
   cancel-in-progress: true
 
 env:
@@ -27,7 +27,7 @@ jobs:
   read_test_configuration:
     name: Reads tests configuration
     if: ${{ github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix_length: ${{ steps.set-matrix.outputs.matrix_length }}
@@ -35,68 +35,68 @@ jobs:
       dataset_branch: ${{ steps.set-dataset-branch.outputs.dataset_branch }}
 
     steps:
-    - name: Checkout main
-      uses: actions/checkout@v3
+      - name: Checkout main
+        uses: actions/checkout@v3
 
-    - name: Download gomplate
-      run: |-
-        sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
-        sudo chmod +x /usr/local/bin/gomplate
+      - name: Download gomplate
+        run: |-
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
 
-    - name: Find a comment with configuration
-      uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
-      id: fc_config
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        issue-number: ${{ github.event.number }}
-        body-includes: "^/modeltest"
+      - name: Find a comment with configuration
+        uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
+        id: fc_config
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.number }}
+          body-includes: "^/modeltest"
 
-    - run: echo ${{ steps.fc_config.outputs.comment-id }}
+      - run: echo ${{ steps.fc_config.outputs.comment-id }}
 
-    # This step has to happen before the other configuration details are read from
-    # the same PR comment, because we need to check out the correct branch to feed the
-    # dataset mapping and configs into the 'Read configuration from a PR comment' step
-    # which creates the experiments matrix
-    - name: Read dataset branch from a PR comment
-      if: steps.fc_config.outputs.comment-id != ''
-      id: set-dataset-branch
-      run: |-
-        source <(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_read_dataset_branch.tmpl)
-        echo "::set-output name=dataset_branch::${DATASET_BRANCH}"
+      # This step has to happen before the other configuration details are read from
+      # the same PR comment, because we need to check out the correct branch to feed the
+      # dataset mapping and configs into the 'Read configuration from a PR comment' step
+      # which creates the experiments matrix
+      - name: Read dataset branch from a PR comment
+        if: steps.fc_config.outputs.comment-id != ''
+        id: set-dataset-branch
+        run: |-
+          source <(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_read_dataset_branch.tmpl)
+          echo "::set-output name=dataset_branch::${DATASET_BRANCH}"
 
-    - name: Checkout dataset
-      uses: actions/checkout@v3
-      with:
-        repository: ${{ secrets.DATASET_REPOSITORY }}
-        token: ${{ secrets.ML_TEST_SA_PAT }}
-        path: 'dataset'
-        ref: ${{ steps.set-dataset-branch.outputs.dataset_branch }}
+      - name: Checkout dataset
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ secrets.DATASET_REPOSITORY }}
+          token: ${{ secrets.ML_TEST_SA_PAT }}
+          path: "dataset"
+          ref: ${{ steps.set-dataset-branch.outputs.dataset_branch }}
 
-    - name: Render help description from template
-      id: get_help_description
-      run: |
-        OUTPUT=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/model_regression_test_config_comment.tmpl)
-        OUTPUT="${OUTPUT//$'\n'/'%0A'}"
-        OUTPUT="${OUTPUT//$'\r'/'%0D'}"
-        echo "::set-output name=help_description::$OUTPUT"
+      - name: Render help description from template
+        id: get_help_description
+        run: |
+          OUTPUT=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/model_regression_test_config_comment.tmpl)
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=help_description::$OUTPUT"
 
-    - name: Create a comment with help description
-      uses: RasaHQ/create-comment@v1
-      with:
-        mode: 'delete-previous'
-        id: comment_help_description
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        body: |
-          ${{ steps.get_help_description.outputs.help_description }}
+      - name: Create a comment with help description
+        uses: RasaHQ/create-comment@v1
+        with:
+          mode: "delete-previous"
+          id: comment_help_description
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            ${{ steps.get_help_description.outputs.help_description }}
 
-    - if: steps.fc_config.outputs.comment-id == ''
-      run: echo "::error::Cannot find a comment with the configuration"
-      name: Log a warning message if a configuration cannot be found
+      - if: steps.fc_config.outputs.comment-id == ''
+        run: echo "::error::Cannot find a comment with the configuration"
+        name: Log a warning message if a configuration cannot be found
 
-    - name: Read configuration from a PR comment
-      if: steps.fc_config.outputs.comment-id != ''
-      id: set-matrix
-      run: |-
+      - name: Read configuration from a PR comment
+        if: steps.fc_config.outputs.comment-id != ''
+        id: set-matrix
+        run: |-
           matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
 
           if [ $? -ne 0 ]; then
@@ -108,57 +108,57 @@ jobs:
           echo "::set-output name=matrix_length::$matrix_length"
           echo "::set-output name=matrix::$matrix"
 
-    - name: Update the comment with the configuration
-      uses: peter-evans/create-or-update-comment@v2
-      if: steps.fc_config.outputs.comment-id != ''
-      with:
-        comment-id: ${{ steps.fc_config.outputs.comment-id }}
-        body: |
-          <!-- comment-id:comment_configuration -->
-        reactions: eyes
+      - name: Update the comment with the configuration
+        uses: peter-evans/create-or-update-comment@v2
+        if: steps.fc_config.outputs.comment-id != ''
+        with:
+          comment-id: ${{ steps.fc_config.outputs.comment-id }}
+          body: |
+            <!-- comment-id:comment_configuration -->
+          reactions: eyes
 
-    - name: Re-create the comment with the configuration
-      uses: RasaHQ/create-comment@v1
-      if: steps.fc_config.outputs.comment-id != '' && steps.fc_config.outputs.comment-body != ''
-      with:
-        mode: 'delete-previous'
-        id: comment_configuration
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        body: ${{ steps.fc_config.outputs.comment-body }}
+      - name: Re-create the comment with the configuration
+        uses: RasaHQ/create-comment@v1
+        if: steps.fc_config.outputs.comment-id != '' && steps.fc_config.outputs.comment-body != ''
+        with:
+          mode: "delete-previous"
+          id: comment_configuration
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          body: ${{ steps.fc_config.outputs.comment-body }}
 
-    - name: Find a comment with configuration - update
-      uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
-      id: fc_config_update
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        issue-number: ${{ github.event.number }}
-        body-includes: "^/modeltest"
+      - name: Find a comment with configuration - update
+        uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
+        id: fc_config_update
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.number }}
+          body-includes: "^/modeltest"
 
-    - name: Add reaction
-      uses: peter-evans/create-or-update-comment@v2
-      if: steps.fc_config_update.outputs.comment-id != ''
-      with:
-        edit-mode: 'replace'
-        comment-id: ${{ steps.fc_config_update.outputs.comment-id }}
-        reactions: heart, hooray, rocket
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v2
+        if: steps.fc_config_update.outputs.comment-id != ''
+        with:
+          edit-mode: "replace"
+          comment-id: ${{ steps.fc_config_update.outputs.comment-id }}
+          reactions: heart, hooray, rocket
 
-    - name: Add a comment that the tests are in progress
-      uses: RasaHQ/create-comment@v1
-      if: steps.fc_config_update.outputs.comment-id != ''
-      with:
-        mode: 'delete-previous'
-        id: comment_tests_in_progress
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        body: |
-          The model regression tests have started. It might take a while, please be patient.
-          As soon as results are ready you'll see a new comment with the results.
+      - name: Add a comment that the tests are in progress
+        uses: RasaHQ/create-comment@v1
+        if: steps.fc_config_update.outputs.comment-id != ''
+        with:
+          mode: "delete-previous"
+          id: comment_tests_in_progress
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            The model regression tests have started. It might take a while, please be patient.
+            As soon as results are ready you'll see a new comment with the results.
 
-          Used configuration can be found in [the comment.](https://github.com/${{ github.repository }}/pull/${{ github.event.number}}#issuecomment-${{ steps.fc_config_update.outputs.comment-id }})
+            Used configuration can be found in [the comment.](https://github.com/${{ github.repository }}/pull/${{ github.event.number}}#issuecomment-${{ steps.fc_config_update.outputs.comment-id }})
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
     needs: read_test_configuration
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != '' }}
 
     steps:
@@ -220,7 +220,7 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@37a9333538a8350a13fe9d8fa03e0d4742a1ad2e
+      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -260,7 +260,7 @@ jobs:
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
-          path: 'dataset'
+          path: "dataset"
           ref: ${{ needs.read_test_configuration.outputs.dataset_branch }}
 
       - name: Set env variables
@@ -336,7 +336,7 @@ jobs:
         with:
           repository: ${{ env.DATASET }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
-          path: 'dataset_external'
+          path: "dataset_external"
           ref: ${{ env.EXTERNAL_DATASET_REPOSITORY_BRANCH }}
 
       - name: Set dataset commit
@@ -363,11 +363,11 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+      - name: Set up Python 3.10 🐍
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -472,7 +472,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
@@ -489,7 +489,7 @@ jobs:
       - read_test_configuration
     env:
       ACCELERATOR_TYPE: "CPU"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       max-parallel: 3
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
@@ -505,7 +505,7 @@ jobs:
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
-          path: 'dataset'
+          path: "dataset"
           ref: ${{ needs.read_test_configuration.outputs.dataset_branch }}
 
       - name: Download gomplate
@@ -581,7 +581,7 @@ jobs:
         with:
           repository: ${{ env.DATASET }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
-          path: 'dataset_external'
+          path: "dataset_external"
           ref: ${{ env.EXTERNAL_DATASET_REPOSITORY_BRANCH }}
 
       - name: Set dataset commit
@@ -608,11 +608,11 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+      - name: Set up Python 3.10 🐍
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -717,7 +717,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
@@ -730,7 +730,7 @@ jobs:
 
   combine_reports:
     name: Combine reports
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
@@ -756,10 +756,10 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+      - name: Set up Python 3.10 🐍
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Get reports
         uses: actions/download-artifact@v3
@@ -780,14 +780,14 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the overall report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: report.json
           path: ./report.json
 
   set_job_success_status:
     name: Set job success status
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - combine_reports
     if: ${{ always() && needs.combine_reports.result == 'success' }}
@@ -804,7 +804,7 @@ jobs:
 
   add_comment_results:
     name: Add a comment with the results
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - combine_reports
     if: ${{ always() && needs.combine_reports.result == 'success' }}
@@ -862,7 +862,7 @@ jobs:
           echo "::set-output name=to_ts::$TIME_UNIX_NOW"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@39c5b5dc7717447d0cba270cd115037d32d28443 # v2.2.0
+        uses: marocchino/sticky-pull-request-comment@fcf6fe9e4a0409cd9316a5011435be0f3327f1e1 # v2.3.1
         if: ${{ always() }}
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -882,7 +882,7 @@ jobs:
         uses: buildsville/add-remove-label@6008d7bd99d3baeb7c04033584e68f8ec80b198b # v1.0
         with:
           token: ${{secrets.GITHUB_TOKEN}}
-          label: 'status:model-regression-tests'
+          label: "status:model-regression-tests"
           type: remove
 
       - name: Remove 'runner:gpu' label
@@ -890,7 +890,7 @@ jobs:
         uses: buildsville/add-remove-label@6008d7bd99d3baeb7c04033584e68f8ec80b198b # v1.0
         with:
           token: ${{secrets.GITHUB_TOKEN}}
-          label: 'runner:gpu'
+          label: "runner:gpu"
           type: remove
 
   remove_runner_gpu:
@@ -898,12 +898,12 @@ jobs:
     needs:
       - deploy_runner_gpu
       - model_regression_test_gpu
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ always() && needs.deploy_runner_gpu.result != 'skipped' && contains(github.event.pull_request.labels.*.name, 'runner:gpu') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') }}
 
     steps:
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@37a9333538a8350a13fe9d8fa03e0d4742a1ad2e
+      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}

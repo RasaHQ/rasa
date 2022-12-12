@@ -29,10 +29,10 @@ rest:
   # require any credentials
 ```
 
-Restart your Rasa Open Source server
+Restart your Rasa server
 to make the REST channel available to receive messages. You can then send messages to 
 `http://<host>:<port>/webhooks/rest/webhook`, replacing
-the host and port with the appropriate values from your running Rasa Open Source server.
+the host and port with the appropriate values from your running Rasa server.
 
 #### Request and Response Format
 
@@ -46,7 +46,7 @@ After making the `rest` input channel available, you can `POST` messages to
 }
 ```
 
-The response from Rasa Open Source will be a JSON body of bot responses, for example:
+The response from Rasa will be a JSON body of bot responses, for example:
 
 ```json
 [
@@ -69,10 +69,10 @@ callback:
   url: "http://localhost:5034/bot"
 ```
 
-Restart your Rasa Open Source server
+Restart your Rasa server
 to make the new channel endpoint available to receive messages. 
 You can then send messages to `http://<host>:<port>/webhooks/callback/webhook`, replacing
-the host and port with the appropriate values from your running Rasa Open Source server.
+the host and port with the appropriate values from your running Rasa server.
 
 #### Request and Response Format
 
@@ -86,7 +86,7 @@ After making the `callback` input available, you can `POST` messages to
 }
 ```
 
-If successful, the response will be `success`. Once Rasa Open Source is ready to send a
+If successful, the response will be `success`. Once Rasa is ready to send a
 message to the user, it will call the `url` specified in your `credentials.yml` with a `POST`
 request containing a JSON body of the bot's responses:
 
@@ -109,7 +109,7 @@ socketio:
   session_persistence: true/false
 ```
 
-The first two configuration values define the event names used by Rasa Open Source
+The first two configuration values define the event names used by Rasa
 when sending or receiving messages over socket.io.
 
 The socket client can pass an object named metadata to supply metadata to the channel. You can configure an alternative key using the metadata_key setting. For example, if your client wants to pass metadata on a key named customData, the setting would be:
@@ -119,10 +119,10 @@ socketio:
   metadata_key: customData
 ```
 
-Restart your Rasa Open Source server
+Restart your Rasa server
 to make the new channel endpoint available to receive messages. 
 You can then send messages to `http://<host>:<port>/socket.io`, replacing
-the host and port with the appropriate values from your running Rasa Open Source server. 
+the host and port with the appropriate values from your running Rasa server.
 
 :::note session persistence
 By default, the SocketIO channel uses the socket id as `sender_id`, which causes

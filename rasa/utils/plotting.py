@@ -59,7 +59,7 @@ def _needs_matplotlib_backend(func: FuncType) -> FuncType:
     """Decorator to fix matplotlib backend before calling a function."""
 
     @wraps(func)
-    def inner(*args: Any, **kwargs: Any) -> ReturnType:
+    def inner(*args: Any, **kwargs: Any) -> ReturnType:  # type: ignore
         """Replacement function that fixes matplotlib backend."""
         global _MATPLOTLIB_BACKEND_FIXED
         if not _MATPLOTLIB_BACKEND_FIXED:
@@ -170,8 +170,8 @@ def _extract_paired_histogram_specification(
     if not histogram_data or not np.concatenate(histogram_data).size:
         rasa.shared.utils.io.raise_warning("No data to plot paired histogram.")
         raise ValueError("No data to plot paired histogram.")
-    min_data_value = np.min(np.concatenate(histogram_data))
-    max_data_value = np.max(np.concatenate(histogram_data))
+    min_data_value: float = np.min(np.concatenate(histogram_data))
+    max_data_value: float = np.max(np.concatenate(histogram_data))
     bin_width = (max_data_value - min_data_value) / num_bins
     bins = [
         min_data_value + i * bin_width
@@ -181,7 +181,7 @@ def _extract_paired_histogram_specification(
     ]
     histograms = [
         # A list of counts - how often a value in `data` falls into a particular bin
-        np.histogram(data, bins=bins, density=density)[0]
+        list(np.histogram(data, bins=bins, density=density)[0])
         for data in histogram_data
     ]
 
@@ -199,9 +199,12 @@ def _extract_paired_histogram_specification(
         # by `x_pad_fraction` to get the maximum x-values displayed
         x_ranges = [(1.0 + x_pad_fraction) * max(histogram) for histogram in histograms]
 
-    bin_of_first_non_zero_tally = min(
-        [(histogram != 0).argmax(axis=0) for histogram in histograms]
-    )
+    try:
+        bin_of_first_non_zero_tally = min(
+            [[bool(v) for v in histogram].index(True) for histogram in histograms]
+        )
+    except ValueError:
+        bin_of_first_non_zero_tally = 0
 
     y_range = (
         # Start plotting where the data starts (ignore empty bins at the low end)

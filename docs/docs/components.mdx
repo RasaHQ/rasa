@@ -56,7 +56,7 @@ word vectors in your pipeline.
   ```
 
   For more information where to get that file from, head over to
-  [installing MITIE](./installation.mdx#dependencies-for-mitie).
+  [installing MITIE](./installation/installing-rasa-open-source.mdx#dependencies-for-mitie).
 
 
   You can also pre-train your own word vectors from a language corpus using MITIE. To do so:
@@ -124,7 +124,7 @@ word vectors in your pipeline.
   ```
 
   For more information on how to download the spaCy models, head over to
-  [installing SpaCy](./installation.mdx#dependencies-for-spacy).
+  [installing SpaCy](./installation/installing-rasa-open-source.mdx#dependencies-for-spacy).
 
   In addition to SpaCy's pretrained language models, you can also use this component to
   attach spaCy models that you've trained yourself.
@@ -493,8 +493,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   :::
 
   :::note
-  To use `ConveRTFeaturizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
+  To use `ConveRTFeaturizer`, install Rasa with `pip3 install rasa[convert]`.
 
+  Note that this component cannot currently run on MacOS using M1 / M2 architecture. 
+  More information on this limitation is available [here](./installation/environment-set-up.mdx#m1--m2-apple-silicon-limitations).
   :::
 
 
@@ -571,6 +573,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   | DistilBERT     | distilbert   | distilbert-base-uncased |
   +----------------+--------------+-------------------------+
   | RoBERTa        | roberta      | roberta-base            |
+  +----------------+--------------+-------------------------+
+  | camemBERT      | camembert    | camembert-base          |
   +----------------+--------------+-------------------------+
   ```
 
@@ -1116,6 +1120,7 @@ pipeline:
   solver: lbfgs
   tol: 0.0001
   random_state: 42
+  ranking_length: 10
 ```
 
 There configuration parameters are briefly explained below. 
@@ -1124,6 +1129,7 @@ There configuration parameters are briefly explained below.
 - `solver`: Solver to be used. For very small datasets you might consider `liblinear`.
 - `tol`: Tolerance for stopping criteria of the optimizer.
 - `random_state`: Used to shuffle the data before training.
+- `ranking_length`: Number of top intents to report. Set to 0 to report all intents
 
 More details on the parameters can be found on the [scikit-learn documentation page](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
 
@@ -2034,7 +2040,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   Configure which dimensions, i.e. entity types, the duckling component
   should extract. A full list of available dimensions can be found in
-  the [duckling documentation](https://duckling.wit.ai/).
+  the [duckling project readme](https://github.com/facebook/duckling).
   Leaving the dimensions option unspecified will extract all available dimensions.
 
   ```yaml-rasa
@@ -2873,7 +2879,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 ## Custom Components
 
 :::info New in 3.0
-Rasa Open Source 3.0 unified the implementation of NLU components and policies.
+Rasa 3.0 unified the implementation of NLU components and policies.
 This requires changes to custom components written for earlier versions of Rasa Open
 Source. Please see the
 [migration guide](migration-guide.mdx#custom-policies-and-custom-components) for a

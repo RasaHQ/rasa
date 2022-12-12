@@ -33,6 +33,7 @@ MAX_SEQUENCE_LENGTHS = {
     "xlnet": NO_LENGTH_RESTRICTION,
     "distilbert": 512,
     "roberta": 512,
+    "camembert": 512,
 }
 
 
@@ -358,8 +359,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             )
             attention_mask.append(padded_sequence)
 
-        attention_mask = np.array(attention_mask).astype(np.float32)
-        return attention_mask
+        return np.array(attention_mask).astype(np.float32)
 
     def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
@@ -654,9 +654,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         sequence_final_embeddings = []
         for embeddings, tokens in zip(sequence_embeddings, batch_tokens):
             sequence_final_embeddings.append(embeddings[: len(tokens)])
-        sequence_final_embeddings = np.array(sequence_final_embeddings)
 
-        return sentence_embeddings, sequence_final_embeddings
+        return sentence_embeddings, np.array(sequence_final_embeddings)
 
     def _get_docs_for_batch(
         self,

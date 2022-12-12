@@ -16,7 +16,61 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
-## [3.2.11] - 2022-12-05                          
+## [3.3.3] - 2022-12-01
+### Bugfixes
+- [#11792](https://github.com/rasahq/rasa/issues/11792): Bypass Windows path length restrictions upon saving and reading a model archive in `rasa.engine.storage.LocalModelStorage`.
+
+### Improvements
+- [#11819](https://github.com/rasahq/rasa/issues/11819): Updated tensorflow to 2.8.4.
+
+## [3.3.2] - 2022-11-30
+### Improvements
+- [#11762](https://github.com/rasahq/rasa/issues/11762): Added support for camembert french bert model
+
+### Bugfixes
+- [#11818](https://github.com/rasahq/rasa/issues/11818): Fixes `RuntimeWarning: coroutine 'Bot.set_webhook' was never awaited` issue encountered when starting the rasa server,
+  which caused the Telegram bot to be unresponsive.
+
+### Improved Documentation
+- [#11768](https://github.com/rasahq/rasa/issues/11768): The documentation was updated for Buttons using messages that start with '/'.
+  Previously, it wrongly stated that messages with '/' bypass NLU, which is not the case.
+- [#11799](https://github.com/rasahq/rasa/issues/11799): Add documentation for Rasa Pro Services upgrades.
+
+
+## [3.3.1] - 2022-11-09
+### Improved Documentation
+- [#11721](https://github.com/rasahq/rasa/issues/11721): Add docs on how to set up additional data lakes for Rasa Pro analytics pipeline.
+- [#11724](https://github.com/rasahq/rasa/issues/11724): Update migration guide and form docs with prescriptive recommendation on how to implement dynamic forms with custom slot mappings.
+
+### Improvements
+- [#11732](https://github.com/rasahq/rasa/issues/11732): Updated numpy and scikit learn version to fix vulnerabilities of those dependencies
+
+## [3.3.0] - 2022-10-24
+### Improvements
+- [#11561](https://github.com/rasahq/rasa/issues/11561): Added option `--offset-timestamps-by-seconds` to offset the timestamp of events when using `rasa export`
+- [#11578](https://github.com/rasahq/rasa/issues/11578): Rasa supports native installations on Apple Silicon (M1 / M2). Please
+  follow the installation instructions and take a look at the limitations.
+- [#11596](https://github.com/rasahq/rasa/issues/11596): Caching `Message` and `Features` fingerprints unless they are altered, saving up to 2/3 of fingerprinting time in our tests.
+- [#11598](https://github.com/rasahq/rasa/issues/11598): Added package versions of component  dependencies as an additional part of fingerprinting calculation. Upgrading an dependency will thus lead to a retraining of the component in the future. Also, by changing fingerprint calculation, the next training after this change will be a complete retraining.
+- [#11623](https://github.com/rasahq/rasa/issues/11623): Export events continuously rather than loading all events in memory first when
+  using `rasa export`. Events will be streamed right from the start rather
+  than loading all events first and pushing them to the broker afterwards.
+- [#11568](https://github.com/rasahq/rasa/issues/11568): Adds new dependency pluggy, with which it was possible to implement new plugin functionality.
+  This plugin manager enables the extension and/or enhancement of the Rasa command line interface with functionality made available in the rasa-plus package.
+
+### Bugfixes
+- [#11575](https://github.com/rasahq/rasa/issues/11575): Fix `BlockingIOError` when running `rasa interactive`, after the upgrade of `prompt-toolkit` dependency.
+- [#11395](https://github.com/rasahq/rasa/issues/11395): Fixes a bug that lead to initial slot values being incorporated into all rules by default, thus breaking most rules when the slot value changed from its initial value
+- [#11429](https://github.com/rasahq/rasa/issues/11429): Made logistic regression classifier output a proper intent ranking and made ranking length configurable
+
+### Deprecations and Removals
+- [#11190](https://github.com/rasahq/rasa/issues/11190): Remove code related to Rasa X local mode as it is deprecated and scheduled for removal.
+
+### Miscellaneous internal changes
+- [#11548](https://github.com/rasahq/rasa/issues/11548)
+
+
+## [3.2.11] - 2022-12-05
 ### Improvements
 - [#11596](https://github.com/rasahq/rasa/issues/11596): Caching `Message` and `Features` fingerprints unless they are altered, saving up to 2/3 of fingerprinting time in our tests.
 
@@ -25,13 +79,13 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   originally in the docs.
 
 
-## [3.2.10] - 2022-09-29                          
+## [3.2.10] - 2022-09-29
 ### Bugfixes
 - [#11588](https://github.com/rasahq/rasa/issues/11588): Fixes scenarios in which a slot with `from_trigger_intent` mapping that specifies an `active_loop` condition was being filled despite that `active_loop` not being activated.
   In addition, fixes scenario in which a slot with `from_trigger_intent` mapping without a specified `active_loop` mapping condition is only filled if the form gets activated.
   Removes unnecessary validation warning that a slot with `from_trigger_intent` and a mapping condition should be included in the form's required_slots.
-- [#ato-161](https://github.com/rasahq/rasa/issues/ato-161): Fixed a bug where `DIETClassier` crashed during training 
-  when both masked language modelling and evaluation 
+- [#ato-161](https://github.com/rasahq/rasa/issues/ato-161): Fixed a bug where `DIETClassier` crashed during training
+  when both masked language modelling and evaluation
   during training were used.
 
 ### Improved Documentation
@@ -39,21 +93,20 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#11552](https://github.com/rasahq/rasa/issues/11552)
-- 3.2.9 yanked
 
 
-## [3.2.9] - 2022-09-09                          
+## [3.2.9] - 2022-09-09
 
-No significant changes.
+Yanked.
 
 
-## [3.2.8] - 2022-09-08                         
+## [3.2.8] - 2022-09-08
 ### Bugfixes
 - [#11540](https://github.com/rasahq/rasa/issues/11540): Fix bug where `KeywordIntentClassifier` overrides preceding intent classifiers' predictions
   although the `KeyWordIntentClassifier` was not matching any keywords.
 
 
-## [3.2.7] - 2022-08-31                         
+## [3.2.7] - 2022-08-31
 ### Improvements
 - [#11448](https://github.com/rasahq/rasa/issues/11448): Improve `rasa data validate` command so that it uses custom importers when they are defined in config file.
 
@@ -61,7 +114,7 @@ No significant changes.
 - [#11311](https://github.com/rasahq/rasa/issues/11311): Re-instates the REST channel metadata feature.  Metadata can be provided on the `metadata` key.
 
 
-## [3.2.6] - 2022-08-12                         
+## [3.2.6] - 2022-08-12
 ### Bugfixes
 - [#11433](https://github.com/rasahq/rasa/issues/11433): This fix makes sure that when a Domain object is loaded from multiple files where one file specifies a custom session config and the rest do not, the default session configuration does not override the custom session config.
 
@@ -69,7 +122,7 @@ No significant changes.
 - [#11426](https://github.com/rasahq/rasa/issues/11426), [#11434](https://github.com/rasahq/rasa/issues/11434)
 
 
-## [3.2.5] - 2022-08-05                         
+## [3.2.5] - 2022-08-05
 ### Bugfixes
 - [#11294](https://github.com/rasahq/rasa/issues/11294): Fix `KeyError` which resulted when `action_two_stage_fallback` got executed in a project whose domain contained slot mappings.
 - [#11390](https://github.com/rasahq/rasa/issues/11390): Fixes regression in which slot mappings were prioritized according to reverse order as they were listed in the domain, instead of in order from first to last, as was implicitly expected in `2.x`.
@@ -77,14 +130,14 @@ No significant changes.
 - [#11394](https://github.com/rasahq/rasa/issues/11394): Enables the dispatching of bot messages returned as events by slot validation actions.
 
 
-## [3.2.4] - 2022-07-21                         
+## [3.2.4] - 2022-07-21
 ### Bugfixes
 - [#11061](https://github.com/rasahq/rasa/issues/11061): Added session_config key as valid domain key during domain loading from directory containing a separate domain file with session configuration.
 - [#11362](https://github.com/rasahq/rasa/issues/11362): Run default action `action_extract_slots` after a custom action returns a `UserUttered` event to fill any applicable slots.
 - [#11368](https://github.com/rasahq/rasa/issues/11368): Handle the case when an `EndpointConfig` object is given as parameter to the `AwaitableTrackerStore.create()` method.
 
 
-## [3.2.3] - 2022-07-18                         
+## [3.2.3] - 2022-07-18
 ### Bugfixes
 - [#11305](https://github.com/rasahq/rasa/issues/11305): - Fixed error in creating response when slack sends retry messages. Assigning `None` to `response.text` caused `TypeError: Bad body type. Expected str, got NoneType`.
   - Fixed Slack triggering timeout after 3 seconds if the action execution is too slow. Running `on_new_message` as an asyncio background task instead of a blocking await fixes this by immediately returning a response with code 200.
@@ -95,7 +148,7 @@ No significant changes.
   one. This caused the augmented memoization policy to lose these slot values when truncating the tracker.
 
 
-## [3.2.2] - 2022-07-05                         
+## [3.2.2] - 2022-07-05
 ### Improved Documentation
 - [#11207](https://github.com/rasahq/rasa/issues/11207): Update documentation for customizable classes such as tracker stores, event brokers and lock stores.
 
@@ -103,12 +156,12 @@ No significant changes.
 - [#11296](https://github.com/rasahq/rasa/issues/11296)
 
 
-## [3.2.1] - 2022-06-17                         
+## [3.2.1] - 2022-06-17
 ### Bugfixes
 - [#10430](https://github.com/rasahq/rasa/issues/10430): Fix failed check in `rasa data validate` that verifies forms in rules or stories are consistent with the domain when the rule or story contains a default action as `active_loop` step.
 
 
-## [3.2.0] - 2022-06-14                         
+## [3.2.0] - 2022-06-14
 ### Deprecations and Removals
 - [#10989](https://github.com/rasahq/rasa/issues/10989): [NLU training data](nlu-training-data.mdx) in JSON format is deprecated and will be
   removed in Rasa Open Source 4.0.
@@ -142,6 +195,34 @@ No significant changes.
 
 ### Miscellaneous internal changes
 - [#11088](https://github.com/rasahq/rasa/issues/11088), [#11123](https://github.com/rasahq/rasa/issues/11123), [#9093](https://github.com/rasahq/rasa/issues/9093), [#9099](https://github.com/rasahq/rasa/issues/9099)
+
+## [3.1.7] - 2022-08-30
+### Miscellaneous internal changes
+- [#11522](https://github.com/rasahq/rasa/issues/11522)
+
+
+## [3.1.6] - 2022-07-20
+### Bugfixes
+- [#11362](https://github.com/rasahq/rasa/issues/11362): Run default action `action_extract_slots` after a custom action returns a `UserUttered` event to fill any applicable slots.
+
+
+## [3.1.5] - 2022-07-15
+### Bugfixes
+- [#11333](https://github.com/rasahq/rasa/issues/11333): `SlotSet` events will be emitted when the value set by the current user turn is the same as the existing value.
+
+  Previously, `ActionExtractSlots` would not emit any `SlotSet` events if the new value was the same as the existing
+  one. This caused the augmented memoization policy to lose these slot values when truncating the tracker.
+
+
+## [3.1.4] - 2022-06-21                          No significant changes.
+Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, ujson).
+
+## [3.1.3] - 2022-06-17
+### Bugfixes
+- [#11129](https://github.com/rasahq/rasa/issues/11129): The azure botframework channel now validates the incoming JSON Web Tokens (including signature).
+
+  Previously, JWTs were not validated at all.
+- [#11197](https://github.com/rasahq/rasa/issues/11197): Backports fix for failed check in `rasa data validate` that verifies forms in rules or stories are consistent with the domain when the rule or story contains a default action as `active_loop` step.
 
 
 ## [3.1.2] - 2022-06-08                         
@@ -728,7 +809,7 @@ No significant changes.
 ### Improved Documentation
 - [#9780](https://github.com/rasahq/rasa/issues/9780): Removing the experimental feature warning for `conditional response variations` from the Rasa docs.
   The behaviour of the feature remains unchanged.
-- [#9782](https://github.com/rasahq/rasa/issues/9782): Updates [quick install documentation](installation.mdx#quick-installation) with optional venv step, better pip install instructions, & M1 warning
+- [#9782](https://github.com/rasahq/rasa/issues/9782): Updates [quick install documentation](./installation/installing-rasa-open-source.mdx) with optional venv step, better pip install instructions, & M1 warning
 
 
 ## [2.8.7] - 2021-09-20
@@ -1427,7 +1508,6 @@ No significant changes.
   from typing import Any, Text, Dict, List
   from rasa_sdk import Action, Tracker
   from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
-
 
   class ActionSessionStart(Action):
       def name(self) -> Text:

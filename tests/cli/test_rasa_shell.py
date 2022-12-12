@@ -2,6 +2,8 @@ import sys
 from typing import Callable
 from _pytest.pytester import RunResult
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_shell_help(run: Callable[..., RunResult]):
     output = run("shell", "--help")
@@ -11,14 +13,15 @@ def test_shell_help(run: Callable[..., RunResult]):
         # Python 3.9 and above. The difference is the changed formatting of help
         # output for CLI arguments with `nargs="*"
         version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN] [--cors [CORS ...]]
-                  [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""
+                  [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""  # noqa: E501
     else:
         version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
                   [--cors [CORS [CORS ...]]] [--enable-api]
                   [--response-timeout RESPONSE_TIMEOUT]"""
 
     help_text = (
-        """usage: rasa shell [-h] [-v] [-vv] [--quiet]
+        f"""usage: {RASA_EXE} shell [-h] [-v] [-vv] [--quiet]
+                  [--logging-config-file LOGGING_CONFIG_FILE]
                   [--conversation-id CONVERSATION_ID] [-m MODEL]
                   [--log-file LOG_FILE] [--use-syslog]
                   [--syslog-address SYSLOG_ADDRESS]
@@ -38,19 +41,20 @@ def test_shell_help(run: Callable[..., RunResult]):
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = {line.strip() for line in output.outlines}
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help
 
 
 def test_shell_nlu_help(run: Callable[..., RunResult]):
     output = run("shell", "nlu", "--help")
 
-    help_text = """usage: rasa shell nlu [-h] [-v] [-vv] [--quiet] [-m MODEL]
+    help_text = f"""usage: {RASA_EXE} shell nlu [-h] [-v] [-vv] [--quiet]
+                      [--logging-config-file LOGGING_CONFIG_FILE] [-m MODEL]
                       [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = {line.strip() for line in output.outlines}
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help

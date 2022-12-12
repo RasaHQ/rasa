@@ -282,6 +282,7 @@ def test_early_exit_on_invalid_domain():
 
     importer = RasaFileImporter(domain_path=domain_path)
     with pytest.warns(UserWarning) as record:
+        warnings.simplefilter("ignore", DeprecationWarning)
         validator = Validator.from_importer(importer)
     validator.verify_domain_validity()
 
@@ -637,9 +638,7 @@ def test_default_action_as_active_loop_in_rules(
         textwrap.dedent(
             """
             recipe: default.v1
-
             language: en
-
             pipeline:
                - name: WhitespaceTokenizer
                - name: RegexFeaturizer
@@ -657,7 +656,6 @@ def test_default_action_as_active_loop_in_rules(
                - name: FallbackClassifier
                  threshold: 0.3
                  ambiguity_threshold: 0.1
-
             policies:
                - name: MemoizationPolicy
                - name: TEDPolicy
@@ -684,27 +682,20 @@ def test_default_action_as_active_loop_in_rules(
               - mood_great
               - mood_unhappy
               - bot_challenge
-
             responses:
               utter_greet:
               - text: "Hey! How are you?"
-
               utter_cheer_up:
               - text: "Here is something to cheer you up:"
                 image: "https://i.imgur.com/nGF1K8f.jpg"
-
               utter_did_that_help:
               - text: "Did that help you?"
-
               utter_happy:
               - text: "Great, carry on!"
-
               utter_goodbye:
               - text: "Bye"
-
               utter_iamabot:
               - text: "I am a bot, powered by Rasa."
-
             session_config:
               session_expiration_time: 60
               carry_over_slots_to_new_session: true

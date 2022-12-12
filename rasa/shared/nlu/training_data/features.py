@@ -99,7 +99,6 @@ class Features:
                 f"Cannot combine dense features as sequence dimensions do not "
                 f"match: {self.features.ndim} != {additional_features.features.ndim}."
             )
-
         self.features = np.concatenate(
             (self.features, additional_features.features), axis=-1
         )
