@@ -115,7 +115,8 @@ def __init__(user_message_evt: Text = "user_uttered",
              session_persistence: bool = False,
              socketio_path: Optional[Text] = "/socket.io",
              jwt_key: Optional[Text] = None,
-             jwt_method: Optional[Text] = "HS256")
+             jwt_method: Optional[Text] = "HS256",
+             metadata_key: Optional[Text] = "metadata")
 ```
 
 Creates a ``SocketIOInput`` object.
