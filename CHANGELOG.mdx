@@ -16,6 +16,32 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.2.11] - 2022-12-05                          
+### Improvements
+- [#11596](https://github.com/rasahq/rasa/issues/11596): Caching `Message` and `Features` fingerprints unless they are altered, saving up to 2/3 of fingerprinting time in our tests.
+
+### Bugfixes
+- [#11829](https://github.com/rasahq/rasa/issues/11829): Implements a new CLI option `--jwt-private-key` required to have complete support for asymmetric algorithms as specified
+  originally in the docs.
+
+
+## [3.2.10] - 2022-09-29                          
+### Bugfixes
+- [#11588](https://github.com/rasahq/rasa/issues/11588): Fixes scenarios in which a slot with `from_trigger_intent` mapping that specifies an `active_loop` condition was being filled despite that `active_loop` not being activated.
+  In addition, fixes scenario in which a slot with `from_trigger_intent` mapping without a specified `active_loop` mapping condition is only filled if the form gets activated.
+  Removes unnecessary validation warning that a slot with `from_trigger_intent` and a mapping condition should be included in the form's required_slots.
+- [#ato-161](https://github.com/rasahq/rasa/issues/ato-161): Fixed a bug where `DIETClassier` crashed during training 
+  when both masked language modelling and evaluation 
+  during training were used.
+
+### Improved Documentation
+- [#11571](https://github.com/rasahq/rasa/issues/11571): Rasa SDK documentation lives now in Rasa Open Source documentation under the _Rasa SDK_ category.
+
+### Miscellaneous internal changes
+- [#11552](https://github.com/rasahq/rasa/issues/11552)
+- 3.2.9 yanked
+
+
 ## [3.2.9] - 2022-09-09                          
 
 No significant changes.
