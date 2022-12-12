@@ -379,6 +379,29 @@ def test_socketio_channel():
     assert routes_list["handle_request"].startswith("/socket.io")
 
 
+def test_socketio_channel_metadata():
+    from rasa.core.channels.socketio import SocketIOInput
+
+    input_channel = SocketIOInput(
+        # event name for messages sent from the user
+        user_message_evt="user_uttered",
+        # event name for messages sent from the bot
+        bot_message_evt="bot_uttered",
+        # optional metadata key name
+        metadata_key="customData",
+        # socket.io namespace to use for the messages
+        namespace=None,
+    )
+
+    s = rasa.core.run.configure_app([input_channel], port=5004)
+    # END DOC INCLUDE
+    # the above marker marks the end of the code snipped included
+    # in the docs
+    routes_list = utils.list_routes(s)
+    assert routes_list["socketio_webhook.health"].startswith("/webhooks/socketio")
+    assert routes_list["handle_request"].startswith("/socket.io")
+
+
 async def test_socketio_channel_jwt_authentication():
     from rasa.core.channels.socketio import SocketIOInput
 

@@ -112,6 +112,13 @@ socketio:
 The first two configuration values define the event names used by Rasa Open Source
 when sending or receiving messages over socket.io.
 
+The socket client can pass an object named metadata to supply metadata to the channel. You can configure an alternative key using the metadata_key setting. For example, if your client wants to pass metadata on a key named customData, the setting would be:
+
+```yaml-rasa
+socketio:
+  metadata_key: customData
+```
+
 Restart your Rasa Open Source server
 to make the new channel endpoint available to receive messages. 
 You can then send messages to `http://<host>:<port>/socket.io`, replacing
