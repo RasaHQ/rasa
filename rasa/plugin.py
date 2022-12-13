@@ -8,6 +8,7 @@ import pluggy
 
 from rasa.cli import SubParsersAction
 from rasa.engine.storage.storage import ModelMetadata
+from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
     from rasa.rasa.engine.graph import SchemaNode
@@ -80,5 +81,7 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None:
 
 
 @hookspec  # type: ignore[misc]
-def mock_tracker_for_evaluation(model_metada: ModelMetadata) -> None:
+def mock_tracker_for_evaluation(
+    example: Message, model_metadata: ModelMetadata
+) -> None:
     """Generate a mocked tracker for NLU evaluation."""
