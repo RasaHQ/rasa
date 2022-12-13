@@ -1280,7 +1280,7 @@ async def get_eval_data(
 
     for example in tqdm(test_data.nlu_examples):
         tracker = plugin_manager().hook.mock_tracker_for_evaluation(
-            example, processor.model_metadata
+            example=example, model_metadata=processor.model_metadata
         )
         # if the user overwrites the default implementation take the last tracker
         if isinstance(tracker, list):
