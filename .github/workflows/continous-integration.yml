@@ -194,9 +194,13 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
+      - name: Check for pre release branches
+        id: branch_name
+        run: echo "branch=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
+
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release')
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release') && steps.branch_name.outputs.branch == r"\d*\.\d*\."
         working-directory: changelog
         run: |
           # List all unexpected files in changelog/
