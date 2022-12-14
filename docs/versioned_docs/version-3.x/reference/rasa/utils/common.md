@@ -12,6 +12,22 @@ Represents a path to an temporary directory.
 
 When used as a context manager, it erases the contents of the directory on exit.
 
+#### get\_temp\_dir\_name
+
+```python
+def get_temp_dir_name() -> Text
+```
+
+Returns the path name of a newly created temporary directory.
+
+#### decode\_bytes
+
+```python
+def decode_bytes(name: Union[Text, bytes]) -> Text
+```
+
+Converts bytes object to string.
+
 #### read\_global\_config
 
 ```python
@@ -28,10 +44,24 @@ Read global Rasa configuration.
 
   The global configuration
 
+#### configure\_logging\_from\_file
+
+```python
+def configure_logging_from_file(logging_config_file: Text) -> None
+```
+
+Parses YAML file content to configure logging.
+
+**Arguments**:
+
+- `logging_config_file` - YAML file containing logging configuration to handle
+  custom formatting
+
 #### configure\_logging\_and\_warnings
 
 ```python
 def configure_logging_and_warnings(log_level: Optional[int] = None,
+                                   logging_config_file: Optional[Text] = None,
                                    warn_only_once: bool = True,
                                    filter_repeated_logs: bool = True) -> None
 ```
@@ -43,6 +73,8 @@ Sets log levels of various loggers and sets up filters for warnings and logs.
 - `log_level` - The log level to be used for the &#x27;Rasa&#x27; logger. Pass `None` to use
   either the environment variable &#x27;LOG_LEVEL&#x27; if it is specified, or the
   default log level otherwise.
+- `logging_config_file` - YAML file containing logging configuration to handle
+  custom formatting
 - `warn_only_once` - determines whether user warnings should be filtered by the
   `warnings` module to appear only &quot;once&quot;
 - `filter_repeated_logs` - determines whether `RepeatedLogFilter`s are added to

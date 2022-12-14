@@ -2,14 +2,6 @@
 sidebar_label: rasa.core.brokers.kafka
 title: rasa.core.brokers.kafka
 ---
-## KafkaProducerInitializationError Objects
-
-```python
-class KafkaProducerInitializationError(RasaException)
-```
-
-Raised if the Kafka Producer cannot be properly initialized.
-
 ## KafkaEventBroker Objects
 
 ```python
@@ -65,7 +57,7 @@ Kafka event broker.
   establish the certificate&#x27;s authenticity.
 - `ssl_keyfile` - Optional filename containing the client private key.
 - `ssl_check_hostname` - Flag to configure whether ssl handshake
-  should verify that the certificate matches the brokers hostname.
+  should verify that the certificate matches the broker&#x27;s hostname.
 - `security_protocol` - Protocol used to communicate with brokers.
   Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
 
@@ -100,4 +92,28 @@ def rasa_environment() -> Optional[Text]
 ```
 
 Get value of the `RASA_ENVIRONMENT` environment variable.
+
+#### kafka\_error\_callback
+
+```python
+def kafka_error_callback(err: "KafkaError") -> None
+```
+
+Callback for Kafka errors.
+
+Any exception raised from this callback will be re-raised from the
+triggering flush() call.
+
+#### delivery\_report
+
+```python
+def delivery_report(err: Exception, msg: "Message") -> None
+```
+
+Reports the failure or success of a message delivery.
+
+**Arguments**:
+
+- `err` _KafkaError_ - The error that occurred on None on success.
+- `msg` _Message_ - The message that was produced or failed.
 

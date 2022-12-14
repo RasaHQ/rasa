@@ -252,6 +252,7 @@ def create_app(agent: Optional["Agent"] = None,
                auth_token: Optional[Text] = None,
                response_timeout: int = DEFAULT_RESPONSE_TIMEOUT,
                jwt_secret: Optional[Text] = None,
+               jwt_private_key: Optional[Text] = None,
                jwt_method: Text = "HS256",
                endpoints: Optional[AvailableEndpoints] = None) -> Sanic
 ```

@@ -1,8 +1,9 @@
-usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,yaml}]
-                             [--data DATA [DATA ...]] [--out OUT]
-                             [-l LANGUAGE]
+usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet]
+                             [--logging-config-file LOGGING_CONFIG_FILE]
+                             [-f {json,yaml}] [--data DATA [DATA ...]]
+                             [--out OUT] [-l LANGUAGE]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -f {json,yaml}, --format {json,yaml}
                         Output format the training data should be converted
@@ -27,3 +28,6 @@ Python Logging Options:
                         to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default:
                         None)
+  --logging-config-file LOGGING_CONFIG_FILE
+                        If set, the name of the logging configuration file
+                        will be set to the given name. (default: None)

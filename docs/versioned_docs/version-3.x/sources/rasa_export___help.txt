@@ -1,10 +1,12 @@
-usage: rasa export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
+usage: rasa export [-h] [-v] [-vv] [--quiet]
+                   [--logging-config-file LOGGING_CONFIG_FILE]
+                   [--endpoints ENDPOINTS]
                    [--minimum-timestamp MINIMUM_TIMESTAMP]
                    [--maximum-timestamp MAXIMUM_TIMESTAMP]
                    [--offset-timestamps-by-seconds OFFSET_TIMESTAMPS_BY_SECONDS]
                    [--conversation-ids CONVERSATION_IDS]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --endpoints ENDPOINTS
                         Endpoint configuration file specifying the tracker
@@ -38,3 +40,6 @@ Python Logging Options:
                         to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default:
                         None)
+  --logging-config-file LOGGING_CONFIG_FILE
+                        If set, the name of the logging configuration file
+                        will be set to the given name. (default: None)

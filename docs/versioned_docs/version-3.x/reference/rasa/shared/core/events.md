@@ -597,10 +597,10 @@ Creates event to set slot.
 - `timestamp` - When the event was created.
 - `metadata` - Additional event metadata.
 
-#### \_\_str\_\_
+#### \_\_repr\_\_
 
 ```python
-def __str__() -> Text
+def __repr__() -> Text
 ```
 
 Returns text representation of event.

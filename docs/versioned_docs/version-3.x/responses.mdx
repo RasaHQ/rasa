@@ -311,13 +311,13 @@ Passing multiple entities is also possible with:
 '/intent_name{{"entity_type_1":"entity_value_1", "entity_type_2": "entity_value_2"}}'
 ```
 
-:::note bypass nlu with buttons
-You can use buttons to bypass NLU prediction and trigger a specific intent and entities.
+:::note overwrite nlu with buttons
+You can use buttons to overwrite the NLU prediction and trigger a specific intent and entities.
 
-Messages starting with `/` are sent straight to the
+Messages starting with `/` are sent handled by the
 `RegexInterpreter`, which expects NLU input in a shortened `/intent{entities}` format.
 In the example above, if the user clicks a button, the user input
-will be directly classified as either the `mood_great` or `mood_sad` intent.
+will be classified as either the `mood_great` or `mood_sad` intent.
 
 You can include entities with the intent to be passed to the `RegexInterpreter` using the following format:
 

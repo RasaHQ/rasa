@@ -1,4 +1,5 @@
 usage: rasa shell [-h] [-v] [-vv] [--quiet]
+                  [--logging-config-file LOGGING_CONFIG_FILE]
                   [--conversation-id CONVERSATION_ID] [-m MODEL]
                   [--log-file LOG_FILE] [--use-syslog]
                   [--syslog-address SYSLOG_ADDRESS]
@@ -13,6 +14,7 @@ usage: rasa shell [-h] [-v] [-vv] [--quiet]
                   [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
                   [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
                   [--jwt-method JWT_METHOD]
+                  [--jwt-private-key JWT_PRIVATE_KEY]
                   {nlu} ... [model-as-positional-argument]
 
 positional arguments:
@@ -24,11 +26,11 @@ positional arguments:
                         specified, it will use the latest model in this
                         directory. (default: None)
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        acf79546682e43c78d12f8e7ff98c8d7)
+                        194d15179f934051b70bf4b5ed13331b)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -59,6 +61,9 @@ Python Logging Options:
                         to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default:
                         None)
+  --logging-config-file LOGGING_CONFIG_FILE
+                        If set, the name of the logging configuration file
+                        will be set to the given name. (default: None)
 
 Server Settings:
   -i INTERFACE, --interface INTERFACE
@@ -113,3 +118,8 @@ JWT Authentication:
   --jwt-method JWT_METHOD
                         Method used for the signature of the JWT
                         authentication payload. (default: HS256)
+  --jwt-private-key JWT_PRIVATE_KEY
+                        A private key used for generating web tokens,
+                        dependent upon which hashing algorithm is used. It
+                        must be used together with --jwt-secret for providing
+                        the public key. (default: None)

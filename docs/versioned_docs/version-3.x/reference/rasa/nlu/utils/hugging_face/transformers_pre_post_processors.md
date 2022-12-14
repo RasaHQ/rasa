@@ -107,6 +107,23 @@ Add XLM style special tokens.
 
   List of token ids augmented with special tokens.
 
+#### camembert\_tokens\_pre\_processor
+
+```python
+def camembert_tokens_pre_processor(token_ids: List[int]) -> List[int]
+```
+
+Add camembert style special tokens.
+
+**Arguments**:
+
+- `token_ids` - List of token ids without any special tokens.
+  
+
+**Returns**:
+
+  List of token ids augmented with special tokens.
+
 #### bert\_embeddings\_post\_processor
 
 ```python

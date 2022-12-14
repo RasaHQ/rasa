@@ -1,10 +1,11 @@
-usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+usage: rasa run actions [-h] [-v] [-vv] [--quiet]
+                        [--logging-config-file LOGGING_CONFIG_FILE] [-p PORT]
                         [--cors [CORS ...]] [--actions ACTIONS]
                         [--ssl-keyfile SSL_KEYFILE]
                         [--ssl-certificate SSL_CERTIFICATE]
                         [--ssl-password SSL_PASSWORD] [--auto-reload]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -p PORT, --port PORT  port to run the server at (default: 5055)
   --cors [CORS ...]     enable CORS for the passed origin. Use * to whitelist
@@ -33,3 +34,6 @@ Python Logging Options:
                         to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default:
                         None)
+  --logging-config-file LOGGING_CONFIG_FILE
+                        If set, the name of the logging configuration file
+                        will be set to the given name. (default: None)

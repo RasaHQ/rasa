@@ -10,7 +10,7 @@ class RasaException(Exception)
 
 Base exception class for all errors raised by Rasa Open Source.
 
-These exceptions results from invalid use cases and will be reported
+These exceptions result from invalid use cases and will be reported
 to the users, but will be ignored in telemetry.
 
 ## RasaCoreException Objects

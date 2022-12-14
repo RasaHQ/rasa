@@ -38,3 +38,11 @@ class InvalidTrackerFeaturizerUsageError(RasaCoreException)
 
 Raised if a tracker featurizer is incorrectly used.
 
+## KafkaProducerInitializationError Objects
+
+```python
+class KafkaProducerInitializationError(RasaException)
+```
+
+Raised if the Kafka Producer cannot be properly initialized.
+
