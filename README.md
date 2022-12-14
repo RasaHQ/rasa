@@ -16,11 +16,11 @@
 
 <hr />
 
-💡 **Rasa Open Source 3.0 is here!** 💡
+💡 **We're migrating issues to Jira** 💡
 
-[2.8](https://github.com/RasaHQ/rasa/milestone/39) is the last minor in the 2.x series.
-You can still contribute new features and improvements which we plan to release alongside
-updates to 3.0. Read more about [our contributor guidelines](#how-to-contribute).
+Starting January 2023, issues for Rasa Open Source are located in
+[this Jira board](https://rasa-open-source.atlassian.net/browse/OSS). You can browse issues without being logged in;
+if you want to create issues, you'll need to create a Jira account.
 
 <hr />
 
@@ -150,7 +150,7 @@ To install dependencies and `rasa` itself in editable mode execute
 make install
 ```
 
-*Note for macOS users*: under macOS Big Sur we've seen some compiler issues for 
+*Note for macOS users*: under macOS Big Sur we've seen some compiler issues for
 dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped.
 
 
@@ -162,7 +162,7 @@ In order to install rasa's optional dependencies, you need to run:
 make install-full
 ```
 
-*Note for macOS users*: The command `make install-full` could result in a failure while installing `tokenizers` 
+*Note for macOS users*: The command `make install-full` could result in a failure while installing `tokenizers`
 (issue described in depth [here](https://github.com/huggingface/tokenizers/issues/1050)).
 
 In order to resolve it, you must follow these steps to install a Rust compiler:
@@ -311,7 +311,7 @@ We host the site on netlify. On `main` branch builds (see `.github/workflows/doc
 the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
 
 ## Releases
-Rasa has implemented robust policies governing version naming, as well as release pace for major, minor, and patch releases. 
+Rasa has implemented robust policies governing version naming, as well as release pace for major, minor, and patch releases.
 
 The values for a given version number (MAJOR.MINOR.PATCH) are incremented as follows:
 - MAJOR version for incompatible API changes or other breaking changes.
@@ -329,7 +329,7 @@ The following table describes the version types and their expected *release cade
 While this table represents our target release frequency, we reserve the right to modify it based on changing market conditions and technical requirements.
 
 ### Maintenance Policy
-Our End of Life policy defines how long a given release is considered supported, as well as how long a release is 
+Our End of Life policy defines how long a given release is considered supported, as well as how long a release is
 considered to be still in active development or maintenance.
 
 The maintentance duration and end of life for every release are shown on our website as part of the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
@@ -359,7 +359,7 @@ communicating any issues which might be release relevant. Postponing the release
 
 1. **At the start of the day, post a small message on slack announcing release day!** Communicate you'll be handling
 the release, and the time you're aiming to start releasing (again, no later than 4pm, as issues may arise and
-cause delays). This message should be posted early in the morning and before moving forward with any of the steps of the release, 
+cause delays). This message should be posted early in the morning and before moving forward with any of the steps of the release,
    in order to give enough time to people to check their PRs and issues. That way they can plan any remaining work. A template of the slack message can be found [here](https://rasa-hq.slack.com/archives/C36SS4N8M/p1613032208137500?thread_ts=1612876410.068400&cid=C36SS4N8M).
    The release time should be communicated transparently so that others can plan potentially necessary steps accordingly. If there are bigger changes this should be communicated.
 2. Make sure the milestone is empty (everything has been either merged or moved to the next milestone)
@@ -379,7 +379,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
     - For Rasa SDK, except in the case of a patch release, that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
-2. In case of a minor release, create a new branch that corresponds to the new release, e.g. 
+2. In case of a minor release, create a new branch that corresponds to the new release, e.g.
    ```bash
     git checkout -b 1.2.x
     git push origin 1.2.x
@@ -405,7 +405,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - If the problem persists, check also the log files and try to find the root cause of the issue
     - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
 10.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
-    
+
 ### Cutting a Patch release
 
 Patch releases are simpler to cut, since they are meant to contain only bugfixes.
