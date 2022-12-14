@@ -1284,7 +1284,10 @@ async def get_eval_data(
         )
         # if the user overwrites the default implementation take the last tracker
         if isinstance(tracker, list):
-            tracker = tracker[-1]
+            if len(tracker) > 0:
+                tracker = tracker[-1]
+            else:
+                tracker = None
         result = await processor.parse_message(
             UserMessage(text=example.get(TEXT)),
             tracker=tracker,
