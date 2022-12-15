@@ -38,7 +38,7 @@ You can also specify optional parameters:
 | --------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `token`         | No default value | The token to authenticate calls between your Rasa assistant and VoiceAI connect                                             |
 | `use_websocket` | `true`           | If `true`, Rasa will send messages through a web socket. If set to `false`, Rasa will send messages through http API calls. |
-| `keep_alive`    | 120              | For each ongoing conversation, VoiceAI will periodically verifies the conversation is still active on the Rasa side.        |
+| `keep_alive`    | 120              | For each ongoing conversation, VoiceAI Connect will periodically verify the conversation is still active on the Rasa side.        |
 
 Then restart your Rasa server to make the new channel endpoint available.
 
