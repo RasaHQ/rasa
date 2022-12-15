@@ -166,3 +166,10 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         default="HS256",
         help="Method used for the signature of the JWT authentication payload.",
     )
+    jwt_auth.add_argument(
+        "--jwt-private-key",
+        type=str,
+        help="A private key used for generating web tokens, dependent upon "
+        "which hashing algorithm is used. It must be used together with "
+        "--jwt-secret for providing the public key.",
+    )

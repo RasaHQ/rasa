@@ -196,5 +196,6 @@ excluded_words:
   - rustup
   - rustup-init
   - rustc
+  - conftest
 
 spellcheck_filenames: false

@@ -16,6 +16,27 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.3.3] - 2022-12-01
+### Bugfixes
+- [#11792](https://github.com/rasahq/rasa/issues/11792): Bypass Windows path length restrictions upon saving and reading a model archive in `rasa.engine.storage.LocalModelStorage`.
+
+### Improvements
+- [#11819](https://github.com/rasahq/rasa/issues/11819): Updated tensorflow to 2.8.4.
+
+## [3.3.2] - 2022-11-30
+### Improvements
+- [#11762](https://github.com/rasahq/rasa/issues/11762): Added support for camembert french bert model
+
+### Bugfixes
+- [#11818](https://github.com/rasahq/rasa/issues/11818): Fixes `RuntimeWarning: coroutine 'Bot.set_webhook' was never awaited` issue encountered when starting the rasa server,
+  which caused the Telegram bot to be unresponsive.
+
+### Improved Documentation
+- [#11768](https://github.com/rasahq/rasa/issues/11768): The documentation was updated for Buttons using messages that start with '/'.
+  Previously, it wrongly stated that messages with '/' bypass NLU, which is not the case.
+- [#11799](https://github.com/rasahq/rasa/issues/11799): Add documentation for Rasa Pro Services upgrades.
+
+
 ## [3.3.1] - 2022-11-09
 ### Improved Documentation
 - [#11721](https://github.com/rasahq/rasa/issues/11721): Add docs on how to set up additional data lakes for Rasa Pro analytics pipeline.
@@ -47,6 +68,15 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#11548](https://github.com/rasahq/rasa/issues/11548)
+
+
+## [3.2.11] - 2022-12-05
+### Improvements
+- [#11596](https://github.com/rasahq/rasa/issues/11596): Caching `Message` and `Features` fingerprints unless they are altered, saving up to 2/3 of fingerprinting time in our tests.
+
+### Bugfixes
+- [#11829](https://github.com/rasahq/rasa/issues/11829): Implements a new CLI option `--jwt-private-key` required to have complete support for asymmetric algorithms as specified
+  originally in the docs.
 
 
 ## [3.2.10] - 2022-09-29
