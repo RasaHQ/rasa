@@ -234,7 +234,7 @@ The method `required_slots` will return the `domain_slots` which is a list of al
 ##### FormValidationAction.next_requested_slot
 
 The method `next_requested_slot` will set the value of `REQUESTED_SLOT` to the next unset slot only if the
-`required_slots` method was overriden by the custom action subclassing `FormValidationAction`.
+`required_slots` method was overridden by the custom action subclassing `FormValidationAction`.
 
 If users didn't override `required_slots` then we'll let the `FormAction` within Rasa Open
 Source request the next slot, and the method will return `None`.
