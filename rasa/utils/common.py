@@ -5,6 +5,7 @@ import logging.config
 import logging.handlers
 import os
 import shutil
+import tempfile
 import warnings
 from pathlib import Path
 from types import TracebackType
@@ -70,6 +71,12 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # Cannot fix this deprecation warning since we need to support two
     # numpy versions as long as we keep python 37 around
     (DeprecationWarning, "the `interpolation=` argument to quantile was renamed"),
+    # the next two warnings are triggered by adding 3.10 support,
+    # for more info: https://docs.python.org/3.10/whatsnew/3.10.html#deprecated
+    (DeprecationWarning, "the load_module*"),
+    (ImportWarning, "_SixMetaPathImporter.find_spec*"),
+    # 3.10 specific warning: https://github.com/pytest-dev/pytest-asyncio/issues/212
+    (DeprecationWarning, "There is no current event loop"),
 ]
 
 EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)
@@ -95,6 +102,21 @@ class TempDirectoryPath(str, ContextManager):
     ) -> None:
         if os.path.exists(self):
             shutil.rmtree(self)
+
+
+def get_temp_dir_name() -> Text:
+    """Returns the path name of a newly created temporary directory."""
+    tempdir_name = tempfile.mkdtemp()
+
+    return decode_bytes(tempdir_name)
+
+
+def decode_bytes(name: Union[Text, bytes]) -> Text:
+    """Converts bytes object to string."""
+    if isinstance(name, bytes):
+        name = name.decode("UTF-8")
+
+    return name
 
 
 def read_global_config(path: Text) -> Dict[Text, Any]:

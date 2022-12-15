@@ -40,7 +40,8 @@ If you're running a Rasa server on `localhost`,
 most external channels won't be able to find your server URL, since `localhost` is not open to the internet. 
 
 To make a port on your local machine publicly available on the internet, 
-you can use [ngrok](https://ngrok.com/).
+you can use [ngrok](https://ngrok.com/). Alternatively, see this [list](https://github.com/anderspitman/awesome-tunneling)
+tracking and comparing other tunneling solutions.
 
 After installing ngrok, run:
 
@@ -60,12 +61,12 @@ As of writing this, it is set to 40 connections / minute.
 
 :::
 
-Alternatively you can make your assistent listen on a specific address using the `-i` command line
+Alternatively you can make your assistant listen on a specific address using the `-i` command line
 option:
 
 ```bash
 rasa run -p 5005 -i 192.168.69.150
 ```
 
-This is particulary useful when your internet facing machines connect to backend servers using a VPN 
+This is particularly useful when your internet facing machines connect to backend servers using a VPN 
 interface.
