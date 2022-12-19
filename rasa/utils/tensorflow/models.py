@@ -1,5 +1,3 @@
-import weakref
-
 import tensorflow as tf
 import numpy as np
 import logging
@@ -95,7 +93,7 @@ class RasaModel(Model):
         self._tf_predict_step: Optional["GenericFunction"] = None
         self.prepared_for_prediction = False
 
-        self._checkpoint = tf.train.Checkpoint(model=weakref.ref(self))
+        self._checkpoint = tf.train.Checkpoint(model=self)
 
     def _set_random_seed(self) -> None:
         random.seed(self.random_seed)
