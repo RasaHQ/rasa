@@ -6,6 +6,7 @@ import random
 import re
 import textwrap
 
+import jwt
 import pytest
 import sys
 import uuid
@@ -504,6 +505,73 @@ def rasa_server_secured(default_agent: Agent) -> Sanic:
     app = server.create_app(agent=default_agent, auth_token="rasa", jwt_secret="core")
     channel.register([RestInput()], app, "/webhooks/")
     return app
+
+
+@pytest.fixture
+def test_public_key() -> Text:
+    test_public_key = """-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC34ht9inqGq79HecpyOAnu2Cgv
+jvgcpFifpFLPmCNdiomAgE48tfUAXJRoOGlVtrqc8KgQWjTFLjqDjUh1sBFF69Fl
+wQGt7pgH10ZbERWpMTAbpjI9EoH74gDcmZ6Fy1VgQPbAwty3liw5Q5zqZLj7JhuX
+Sa0EqvZQP+Hnayab7QIDAQAB
+-----END PUBLIC KEY-----"""
+
+    return test_public_key
+
+
+@pytest.fixture
+def test_private_key() -> Text:
+    test_private_key = """-----BEGIN RSA PRIVATE KEY-----
+MIICXQIBAAKBgQC34ht9inqGq79HecpyOAnu2CgvjvgcpFifpFLPmCNdiomAgE48
+tfUAXJRoOGlVtrqc8KgQWjTFLjqDjUh1sBFF69FlwQGt7pgH10ZbERWpMTAbpjI9
+EoH74gDcmZ6Fy1VgQPbAwty3liw5Q5zqZLj7JhuXSa0EqvZQP+Hnayab7QIDAQAB
+AoGBAIfUE25mjh9QWljX0/0O+/db4ENRHmE53OT/otQJk4YTQYKURDaASdvchxt9
+IAHamno3Ik4B9Bz7CuoFwNJ+HiMBf32KwJ75n/NZL17lBKst71z3r0gYCz6jcJxv
+brbNs8qsLFyRMQz6NvS4d4GnXpGhc54IoJqtr/vR+Q87UwtZAkEA3AG78E7Fd5zT
+sU/BO9E0VisQOysGcwPd9+rQPSyF8ncvaiMJ7STNvVsgrtJuw4DJq2RsMSJ77QgS
+Ku6BJxB58wJBANX3dOEiNEZLJR+4LdNYRoR4gx2LcJW5PthwLi8ZOHBZeh9q3f2i
+r5X5iPJ5kBRqajtYm634f/j8P4fxSdWzKp8CQQCNimQR92udR3z+HxRvWml0YmIf
+3s9YYY2FeUEdii5mznznqMEzGzFt+Fmvf1yZVJrqNEJS3h+iYEXn7ueSbUw3AkBm
+xSK4d+tP0AwWvioUlxPX0OJ5MF51K7LJ1qf4K072d6O2r2fMyXU4vdBPVqAjjjFU
+K+0qlG8zMkV5kCV8pT/VAkA8bM5KRa73JY0bfGX4i8UZMFHzIq2KGjHlRES4vd+L
+h18+hpcBAAyUR/jDT8nnG5YaYFz8rf2DnOy+elmmaYVm
+-----END RSA PRIVATE KEY-----"""
+
+    return test_private_key
+
+
+@pytest.fixture
+def asymmetric_jwt_method() -> Text:
+    return "RS256"
+
+
+@pytest.fixture
+def rasa_server_secured_asymmetric(
+    default_agent: Agent,
+    test_public_key: Text,
+    test_private_key: Text,
+    asymmetric_jwt_method: Text,
+) -> Sanic:
+    app = server.create_app(
+        agent=default_agent,
+        auth_token="rasa",
+        jwt_secret=test_public_key,
+        jwt_private_key=test_private_key,
+        jwt_method=asymmetric_jwt_method,
+    )
+    channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
+def encoded_jwt(test_private_key: Text, asymmetric_jwt_method: Text) -> Text:
+    payload = {"user": {"username": "myuser", "role": "admin"}}
+    encoded_jwt = jwt.encode(
+        payload=payload,
+        key=test_private_key,
+        algorithm=asymmetric_jwt_method,
+    )
+    return encoded_jwt
 
 
 @pytest.fixture
