@@ -57,20 +57,19 @@ from rasa.shared.nlu.training_data.loading import load_data
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
 
 
-def get_diet_resource(suffix="1") -> Resource:
-    return Resource(f"DIET-{suffix}")
+@pytest.fixture()
+def default_diet_resource() -> Resource:
+    return Resource("DIET")
 
 
 @pytest.fixture()
 def create_diet(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
+    default_diet_resource: Resource,
 ) -> Callable[..., DIETClassifier]:
     def inner(
-        config: Dict[Text, Any],
-        load: bool = False,
-        finetune: bool = False,
-        resource: Resource = Resource("DIET"),
+        config: Dict[Text, Any], load: bool = False, finetune: bool = False
     ) -> DIETClassifier:
         if load:
             constructor = DIETClassifier.load
@@ -84,7 +83,7 @@ def create_diet(
             ),
             model_storage=default_model_storage,
             execution_context=default_execution_context,
-            resource=resource,
+            resource=default_diet_resource,
         )
 
     return inner
@@ -102,16 +101,14 @@ def create_train_load_and_process_diet(
         training_data: str = nlu_data_path,
         message_text: Text = "Rasa is great!",
         expect_intent: bool = True,
-        resource: Resource = Resource("DIET"),
     ) -> Message:
-        diet = create_diet(diet_config, resource=resource)
+        diet = create_diet(diet_config)
         return train_load_and_process_diet(
             diet=diet,
             pipeline=pipeline,
             training_data=training_data,
             message_text=message_text,
             expect_intent=expect_intent,
-            diet_resource=resource,
         )
 
     return inner
@@ -131,7 +128,6 @@ def train_load_and_process_diet(
         training_data: str = nlu_data_path,
         message_text: Text = "Rasa is great!",
         expect_intent: bool = True,
-        diet_resource: Resource = Resource("DIET"),
     ) -> Message:
 
         if not pipeline:
@@ -154,9 +150,7 @@ def train_load_and_process_diet(
         if expect_intent:
             assert classified_message.data["intent"]["name"]
 
-        loaded_diet = create_diet(
-            diet.component_config, load=True, resource=diet_resource
-        )
+        loaded_diet = create_diet(diet.component_config, load=True)
 
         classified_message2 = loaded_diet.process([message2])[0]
 
@@ -483,14 +477,12 @@ async def test_set_random_seed(
     )
 
     _, parsed_message2 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
-        resource=get_diet_resource("2"),
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
     )
 
     # Different random seed
     _, parsed_message3 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1},
-        resource=get_diet_resource("3"),
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1}
     )
 
     assert (
@@ -546,14 +538,13 @@ async def test_train_tensorboard_logging(
 
 async def test_train_model_checkpointing(
     default_model_storage: ModelStorage,
+    default_diet_resource: Resource,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    diet_resource = get_diet_resource()
     create_train_load_and_process_diet(
-        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True},
-        resource=diet_resource,
+        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True}
     )
-    with default_model_storage.read_from(diet_resource) as model_dir:
+    with default_model_storage.read_from(default_diet_resource) as model_dir:
         all_files = list(model_dir.rglob("*.*"))
         assert any(["from_checkpoint" in str(filename) for filename in all_files])
 
@@ -574,14 +565,12 @@ async def test_process_unfeaturized_input(
 
 async def test_train_model_not_checkpointing(
     default_model_storage: ModelStorage,
+    default_diet_resource: Resource,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    diet_resource = get_diet_resource()
-    create_train_load_and_process_diet(
-        {EPOCHS: 1, CHECKPOINT_MODEL: False}, resource=diet_resource
-    )
+    create_train_load_and_process_diet({EPOCHS: 1, CHECKPOINT_MODEL: False})
 
-    with default_model_storage.read_from(diet_resource) as model_dir:
+    with default_model_storage.read_from(default_diet_resource) as model_dir:
         all_files = list(model_dir.rglob("*.*"))
         assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
@@ -610,9 +599,9 @@ async def test_train_fails_with_zero_eval_num_epochs(
 async def test_doesnt_checkpoint_with_zero_eval_num_examples(
     create_diet: Callable[..., DIETClassifier],
     default_model_storage: ModelStorage,
+    default_diet_resource: Resource,
     train_load_and_process_diet: Callable[..., Message],
 ):
-    diet_resource = get_diet_resource()
     with pytest.warns(UserWarning) as warning:
         classifier = create_diet(
             {
@@ -620,8 +609,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
                 CHECKPOINT_MODEL: True,
                 EVAL_NUM_EXAMPLES: 0,
                 EVAL_NUM_EPOCHS: 1,
-            },
-            resource=diet_resource,
+            }
         )
 
     warn_text = (
@@ -630,9 +618,10 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         f"will be saved."
     )
     assert len([w for w in warning if warn_text in str(w.message)]) == 1
-    train_load_and_process_diet(classifier, diet_resource=diet_resource)
 
-    with default_model_storage.read_from(diet_resource) as model_dir:
+    train_load_and_process_diet(classifier)
+
+    with default_model_storage.read_from(default_diet_resource) as model_dir:
         all_files = list(model_dir.rglob("*.*"))
         assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
