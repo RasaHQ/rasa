@@ -206,7 +206,7 @@ datadog = "^0.44.0"
 types-redis = "^4.3.20"
 # httpx introduced a breaking change in 0.23.1 which
 # sanic-testing has not yet adapted for
-httpx = "0.23.0, <0.23.1"
+httpx = "0.23.1"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
