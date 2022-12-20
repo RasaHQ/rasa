@@ -133,10 +133,16 @@ In the domain, we can add the `utter_config...` responses:
       type: event
       name: config
       sessionParams:
-        dtmfCollect: true # Enable grouped collection (i.e will send all digit at once instead of one payload per digit)
-        dtmfCollectInterDigitTimeoutMS: 5000 # If more than 5 secs have passed since a digit was pressed, the input is considered completed and will be sent to the bot
-        dtmfCollectMaxDigits: 6 # If 6 digits are collected, VoiceAI will send those 6 digits even if the user keeps pressing buttons
-        dtmfCollectSubmitDigit: "#" # If the user presses '#' the input is considered completed and will be sent to the bot
+        # Enable grouped collection (i.e will send all digits in a single payload)
+        dtmfCollect: true
+        # If more than 5 secs have passed since a digit was pressed, 
+        # the input is considered completed and will be sent to the bot
+        dtmfCollectInterDigitTimeoutMS: 5000
+        # If 6 digits are collected, VoiceAI will send those 6 digits
+        # even if the user keeps pressing buttons
+        dtmfCollectMaxDigits: 6
+        # If the user presses '#' the input is considered complete
+        dtmfCollectSubmitDigit: "#"
 ```
 
 
