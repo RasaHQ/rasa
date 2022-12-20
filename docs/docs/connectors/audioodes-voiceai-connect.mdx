@@ -121,9 +121,12 @@ In the domain, we can add the `utter_config...` responses:
       type: event
       name: config
       sessionParams:
-        userNoInputTimeoutMS: 5000 # If user stays silent for 5 seconds or more, the notification will be sent
-        userNoInputRetries: 2 # If you want to allow for more than one notification during a call
-        userNoInputSendEvent: true # Enable the noUserInput notification
+        # If user stays silent for 5 seconds or more, the notification will be sent
+        userNoInputTimeoutMS: 5000
+        # If you want to allow for more than one notification during a call
+        userNoInputRetries: 2
+        # Enable the noUserInput notification
+        userNoInputSendEvent: true
 ```
 
 [`DTMF` event](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/receive-dtmf.htm?TocPath=Bot%2520integration%257CReceiving%2520notifications%257C_____2)
