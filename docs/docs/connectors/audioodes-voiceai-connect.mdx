@@ -95,6 +95,8 @@ For example, you might want to receive a notification when the user stays silent
 Call configuration events are sent with custom messages and are specific to the current conversation (sometimes to a message).
 Which means they must be part of your stories or rules so the same behaviour is applied to all conversations.
 
+Those Rasa responses don't utter anything, they just configure the voice gateway. It is a good practice naming them differently, for example prefixing them with `utter_config_<what_it_does>`
+
 All the supported events are exhaustively documented in the [VoiceAI Connect documentation](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/voiceai_connect.htm?TocPath=VoiceAI%2520Connect%257C_____0).
 We will look at one example here to illustrate the use of custom messages and events.
 
@@ -105,14 +107,18 @@ In this example we create a flow to allow a user to change a pin code.
 ```yaml
 - rule: Set pin code
   steps:
-  - intent: set_pin_code # User says "I want to change my pin code"
-  - action: utter_config_no_user_input # Send the noUserInput configuration event
-  - action: utter_config_dtmf_pin_code # Send the DTMF format configuration event
-  - action: pin_code_form # A standard Rasa form to collect the pin code from the user
+  # User says "I want to change my pin code"
+  - intent: set_pin_code
+  # Send the noUserInput configuration event
+  - action: utter_config_no_user_input
+  # Send the DTMF format configuration event
+  - action: utter_config_dtmf_pin_code 
+  # A standard Rasa form to collect the pin code from the user
+  - action: pin_code_form 
   - ...
 ```
 
-In the domain, we can add the `utter_config...` responses:
+In the domain, we can add the `utter_config_<config_event>` responses:
 
 [`noUserInput` event](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/inactivity-detection.htm?TocPath=Bot%2520integration%257CReceiving%2520notifications%257C_____3)
 ```yaml
