@@ -21,11 +21,11 @@ To get credentials, create a bot on the [VoiceAI connect portal](https://voiceai
 1. Select **Bots** in the left side bar.
 2. Click on the **+** sign to create a new bot.
 3. Select **Rasa** as the Bot Framework
-4. Then set the bot URL a choose a token value.
+4. Set the bot URL and choose a token value.
 
 ## Setting credentials
 
-The token value chosen above will be used in the credentials:
+The token value chosen above will be used in the `credentials.yml`:
 
 ```yaml
 rasa_plus.channels.audiocodes.AudiocodesInput:
@@ -51,7 +51,7 @@ This message will be interpreted by the NLU and you can then drive the conversat
 
 ### Sending messages to a user
 
-Your bot can reply with text messages like with any other channel. The text-to-speech engine will convert it and deliver it as a voice message to the user.
+Your bot will respond with text messages like with any other channel. The text-to-speech engine will convert the text and deliver it as a voice message to the user.
 
 Here is an example:
 
@@ -60,7 +60,9 @@ utter_greet:
     - text: 'Hello! isn’t every life and every work beautiful?'
 ```
 
-Note that only text messages are allowed. Images, attachments, and buttons cannot be used with a voice channel.
+:::note 
+Only text messages are allowed. Images, attachments, and buttons cannot be used with a voice channel. 
+:::
 
 ### Handling conversation events
 
@@ -119,9 +121,12 @@ In the domain, we can add the `utter_config...` responses:
       type: event
       name: config
       sessionParams:
-        userNoInputTimeoutMS: 5000 # If user stays silent for 5 seconds or more, the notification will be sent
-        userNoInputRetries: 2 # If you want to allow for more than one notification during a call
-        userNoInputSendEvent: true # Enable the noUserInput notification
+        # If user stays silent for 5 seconds or more, the notification will be sent
+        userNoInputTimeoutMS: 5000
+        # If you want to allow for more than one notification during a call
+        userNoInputRetries: 2
+        # Enable the noUserInput notification
+        userNoInputSendEvent: true
 ```
 
 [`DTMF` event](https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/receive-dtmf.htm?TocPath=Bot%2520integration%257CReceiving%2520notifications%257C_____2)
@@ -131,10 +136,16 @@ In the domain, we can add the `utter_config...` responses:
       type: event
       name: config
       sessionParams:
-        dtmfCollect: true # Enable grouped collection (i.e will send all digit at once instead of one payload per digit)
-        dtmfCollectInterDigitTimeoutMS: 5000 # If more than 5 secs have passed since a digit was pressed, the input is considered completed and will be sent to the bot
-        dtmfCollectMaxDigits: 6 # If 6 digits are collected, VoiceAI will send those 6 digits even if the user keeps pressing buttons
-        dtmfCollectSubmitDigit: "#" # If the user presses '#' the input is considered completed and will be sent to the bot
+        # Enable grouped collection (i.e will send all digits in a single payload)
+        dtmfCollect: true
+        # If more than 5 secs have passed since a digit was pressed, 
+        # the input is considered completed and will be sent to the bot
+        dtmfCollectInterDigitTimeoutMS: 5000
+        # If 6 digits are collected, VoiceAI will send those 6 digits
+        # even if the user keeps pressing buttons
+        dtmfCollectMaxDigits: 6
+        # If the user presses '#' the input is considered complete
+        dtmfCollectSubmitDigit: "#"
 ```
 
 
