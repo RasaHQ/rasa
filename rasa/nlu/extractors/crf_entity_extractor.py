@@ -221,6 +221,14 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
         """Any extra python dependencies required for this component to run."""
         return ["sklearn_crfsuite", "sklearn"]
 
+    @property
+    def has_configured_dense_features(self) -> bool:
+        """Return True if the `TEXT_DENSE_FEATURES` option is configured."""
+        return any(
+            CRFEntityExtractorOptions.TEXT_DENSE_FEATURES in features
+            for features in self.component_config.get(self.CONFIG_FEATURES, [])
+        )
+
     def train(self, training_data: TrainingData) -> Resource:
         """Trains the extractor on a data set."""
         # checks whether there is at least one
@@ -245,7 +253,8 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
         entity_examples = [
             message
             for message in entity_examples
-            if message.features_present(
+            if not self.has_configured_dense_features
+            or message.features_present(
                 attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
             )
         ]
@@ -284,8 +293,11 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Extract entities from the given message using the trained model(s)."""
-        if self.entity_taggers is None or not message.features_present(
-            attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
+        if self.entity_taggers is None or (
+            self.has_configured_dense_features
+            and not message.features_present(
+                attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
+            )
         ):
             return []
 
