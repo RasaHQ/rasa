@@ -162,7 +162,7 @@ async def test_remote_actions_are_compressed(
         r = latest_request(mocked, "post", "https://example.com/webhooks/actions")
 
         assert r
-        assert r[-1].kwargs["compressed"]
+        assert r[-1].kwargs["compress"]
 
 
 async def test_remote_action_runs(
