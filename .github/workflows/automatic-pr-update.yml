@@ -7,7 +7,7 @@ jobs:
   # thats's all. single step is needed - if PR is mergeable according to
   # branch protection rules it will be merged automatically
   mergepal:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - uses: rasahq/update-pr-branch@601ac3dadf708b14e7f0252d98230538235f99d9

@@ -8,7 +8,7 @@ jobs:
   cancel-runs:
     # Prevent forks from running this to be nice
     if: github.repository == 'RasaHQ/rasa'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: n1hility/cancel-previous-runs@v2
       with:

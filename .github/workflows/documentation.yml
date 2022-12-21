@@ -22,7 +22,7 @@ env:
 jobs:
   evaluate_release_tag:
     name: Evaluate release tag
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: github.repository == 'RasaHQ/rasa'  # don't run this for main branches of forks, would fail anyways
     outputs:
       build_docs: ${{ steps.check_tag.outputs.build_docs }}
@@ -91,7 +91,7 @@ jobs:
 
   docs:
     name: Build Docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [ evaluate_release_tag ]
     if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.build_docs == 'true'  # don't run this for main branches of forks, would fail anyways
 
