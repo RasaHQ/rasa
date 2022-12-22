@@ -54,7 +54,7 @@ Creates and returns a configured aiohttp client session.
 #### request
 
 ```python
- | async request(method: Text = "post", subpath: Optional[Text] = None, content_type: Optional[Text] = "application/json", **kwargs: Any, ,) -> Optional[Any]
+ | async request(method: Text = "post", subpath: Optional[Text] = None, content_type: Optional[Text] = "application/json", compress: bool = False, **kwargs: Any, ,) -> Optional[Any]
 ```
 
 Send a HTTP request to the endpoint. Return json response, if available.
