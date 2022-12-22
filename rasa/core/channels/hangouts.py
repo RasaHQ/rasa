@@ -208,7 +208,7 @@ class HangoutsInput(InputChannel):
         self.project_id = project_id
         self.hangouts_user_added_intent_name = hangouts_user_added_intent_name
         self.hangouts_room_added_intent_name = hangouts_room_added_intent_name
-        self.hangouts_user_added_intent_name = hangouts_removed_intent_name
+        self.hangouts_removed_intent_name = hangouts_removed_intent_name
 
         # Google's Request obj (this is used to make HTTP requests) uses cached
         # session to fetch Google's service certs. Certs don't change frequently,
