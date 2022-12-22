@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+import logging
 
 import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
@@ -6,7 +7,7 @@ from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted, Event
+from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted, Event
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
@@ -31,6 +32,8 @@ END_NODE_ID = -1
 TMP_NODE_ID = -2
 
 VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
+
+logger = logging.getLogger(__name__)
 
 
 class UserMessageGenerator:
@@ -395,19 +398,33 @@ def _add_message_edge(
 ) -> None:
     """Create an edge based on the user message."""
 
-    if message:
-        message_key = message.get("intent", {}).get("name", None)
+    if message and message.get("intent", {}).get("name", None):
+        # get the entities as \n separated values
+        ent_list_of_dicts = message.get("entities")
+        if ent_names := [
+            v for e in ent_list_of_dicts for k, v in e.items() if k == "entity"
+        ]:
+            newline = ",\n"
+            ent_str = f"{newline}({newline.join(ent_names)})"
+        else:
+            ent_str = ""
+
+        message_key = message.get("intent", {}).get("name", None) + ent_str
+        message_label = message_key  # message.get("text", None)
+    elif message and message.get("text"):
+
         message_label = message.get("text", None)
+        message_key = message.label
     else:
         message_key = None
         message_label = None
 
     _add_edge(
-        graph,
-        current_node,
-        next_node_idx,
-        message_key,
-        message_label,
+        graph=graph,
+        u=current_node,
+        v=next_node_idx,
+        key=message_key,
+        label=message_label,
         **{"class": "active" if is_current else ""},
     )
 
@@ -422,6 +439,7 @@ async def visualize_neighborhood(
     should_merge_nodes: bool = True,
     max_distance: int = 1,
     fontsize: int = 12,
+    domain: Optional[Domain] = None,
 ) -> "networkx.MultiDiGraph":
     """Given a set of event lists, visualizing the flows."""
     graph = _create_graph(fontsize)
@@ -430,6 +448,11 @@ async def visualize_neighborhood(
     next_node_idx = START_NODE_ID
     special_node_idx = -3
     path_ellipsis_ends = set()
+
+    if domain:
+        slot_defs = domain.as_dict()["slots"]
+    else:
+        slot_defs = {}
 
     for events in event_sequences:
         if current and max_distance:
@@ -447,17 +470,48 @@ async def visualize_neighborhood(
                 idx -= 1
                 break
             if isinstance(el, UserUttered):
+                if message is not None:
+                    logger.error("multiple messages or slots in a row!!")
                 if not el.intent:
                     message = await interpreter.parse(el.text)
+                    # logger.debug(f"message parsed {message}")
                 else:
                     message = el.parse_data
+                    # logger.debug(f"message existed {message}")
+            elif isinstance(el, SlotSet):
+                slot = el.as_dict()
+
+                slot_def = slot_defs.get(slot["name"], {})
+                slot_ic = slot_def.get("influence_conversation", True)
+                if slot_ic:
+                    # ignore non conversation relevant slots
+                    label = f'Slot: { slot["name"]}'
+                    if slot["value"] is not None and slot["value"] != "":
+                        label += "==" + str(slot["value"])
+
+                    next_node_idx += 1
+                    graph.add_node(
+                        next_node_idx,
+                        label=label,
+                        fontsize=fontsize,
+                        style="filled",
+                        **{"class": "slot"},
+                    )
+
+                    _add_message_edge(
+                        graph, message, current_node, next_node_idx, is_current
+                    )
+                    current_node = next_node_idx
+
+                    message = None
+                    prefix -= 1
             elif (
                 isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
                 next_node_idx += 1
                 graph.add_node(
                     next_node_idx,
-                    label=el.action_name,
+                    label=el.action_name or "Oops. Missing Action here",
                     fontsize=fontsize,
                     **{"class": "active" if is_current else ""},
                 )
@@ -509,7 +563,7 @@ async def visualize_neighborhood(
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
     await _replace_edge_labels_with_nodes(
-        graph, next_node_idx, interpreter, nlu_training_data
+        graph, next_node_idx, interpreter, None  # nlu_training_data
     )
 
     _remove_auxiliary_nodes(graph, special_node_idx)
@@ -598,5 +652,6 @@ async def visualize_stories(
         should_merge_nodes,
         max_distance=1,
         fontsize=fontsize,
+        domain=domain,
     )
     return graph
