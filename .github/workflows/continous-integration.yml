@@ -41,7 +41,7 @@ env:
 jobs:
   changes:
     name: Check for file changes
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       # Both of the outputs below are strings but only one exists at any given time
       backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
@@ -71,7 +71,7 @@ jobs:
     # Looks for doc test workflows and waits for it to complete successfully
     # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
     name: Wait for docs tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [ changes ]
 
     steps:
@@ -94,7 +94,7 @@ jobs:
 
   quality:
     name: Code Quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes]
 
     steps:
@@ -171,7 +171,7 @@ jobs:
 
   changelog:
     name: Check for changelog
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout git repository 🕝
@@ -208,7 +208,7 @@ jobs:
         - test-full-model-training
         - test-other-unit-tests
         - test-performance
-        os: [ ubuntu-latest, windows-latest ]
+        os: [ ubuntu-22.04, windows-2019 ]
         python-version: [ 3.7, 3.8 ]
 
     steps:
@@ -263,15 +263,14 @@ jobs:
       run: poetry config virtualenvs.in-project true
 
     - name: Install Dependencies (Linux) 📦
-      if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
       run: |
         sudo apt-get -y install libpq-dev
-        make install-full | tee .output
+        make prepare-tests-ubuntu | tee .output
         if grep 'The lock file is not up to date' .output; then exit 1; fi
-        make prepare-tests-ubuntu
 
     - name: Install Dependencies (Windows) 📦
-      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
       # Restoring cache doesn't work properly on Windows due to symlinks.
       # We create symlinks for spacy models, that's why we need to clean them up
       # before caching the dependencies directory.
@@ -283,11 +282,10 @@ jobs:
           Remove-Item -Force -Recurse $spacy_data_dir
           New-Item -Path $spacy_data_dir -Type Directory
         }
-        make install-full
         make prepare-tests-windows-gha
 
     - name: Add github workflow problem matchers
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
       # only annotate based on test runs on ubuntu: otherwise
       # all errors will be duplicated for each python / os combination
       # therefore, we only enable for the one where most tests are run
@@ -300,7 +298,7 @@ jobs:
       # see https://github.com/RasaHQ/rasa/issues/9734 for more information.
       # Once the memory issues have been addressed, all configurations should be run on
       # multiple threads
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest') && (matrix.os == 'windows-latest' && matrix.test == 'test-nlu-predictors')
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-2019') && (matrix.os == 'windows-2019' && matrix.test == 'test-nlu-predictors')
       env:
         JOBS: 1
         PYTHONIOENCODING: "utf-8"
@@ -308,7 +306,7 @@ jobs:
         make ${{ matrix.test }}
 
     - name: Test Code 🔍 (multithread)
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest') && !(matrix.os == 'windows-latest' && matrix.test == 'test-nlu-predictors')
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-2019') && !(matrix.os == 'windows-2019' && matrix.test == 'test-nlu-predictors')
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
@@ -316,7 +314,7 @@ jobs:
         make ${{ matrix.test }}
 
     - name: Send Coverage Report 📊
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os != 'windows-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os != 'windows-2019'
       continue-on-error: true
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -340,7 +338,7 @@ jobs:
 
   integration_test:
     name: Run Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes]
     env:
       REDIS_HOST: localhost
@@ -445,9 +443,8 @@ jobs:
       if: needs.changes.outputs.backend == 'true'
       run: |
         sudo apt-get -y install libpq-dev
-        make install-full | tee .output
+        make prepare-tests-ubuntu | tee .output
         if grep 'The lock file is not up to date' .output; then exit 1; fi
-        make prepare-tests-ubuntu
 
     - name: Test Code with Services 🩺
       if: needs.changes.outputs.backend == 'true'
@@ -471,7 +468,7 @@ jobs:
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
       base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
@@ -628,7 +625,7 @@ jobs:
 
   docker:
     name: Build Docker
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [changes, build_docker_base_images_and_set_env]
     env:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
@@ -721,7 +718,7 @@ jobs:
 
   deploy:
     name: Deploy to PyPI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     # deploy will only be run when there is a tag available
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'

@@ -15,7 +15,7 @@ env:
 jobs:
   read_test_configuration:
     name: Reads tests configuration
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -46,7 +46,7 @@ jobs:
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
     needs: read_test_configuration
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
@@ -414,7 +414,7 @@ jobs:
 
   analyse_performance:
     name: Analyse Performance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: always()
     needs:
     - deploy_runner_gpu
@@ -559,7 +559,7 @@ jobs:
     needs:
     - deploy_runner_gpu
     - model_regression_test_gpu
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       # Setup gcloud CLI
