@@ -153,6 +153,28 @@ def test_domain_action_instantiation():
     assert instantiated_actions[14].name() == "utter_test"
     assert instantiated_actions[15].name() == "utter_chitchat"
 
+async def test_remote_actions_are_compressed(
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload={"events": [], "responses": []},
+        )
+
+        await remote_action.run(default_channel, default_nlg, default_tracker, domain)
+
+        r = latest_request(mocked, "post", "https://example.com/webhooks/actions")
+
+        assert r
+        assert r[-1].kwargs["compress"]
+
 
 async def test_remote_action_runs(
     default_channel: OutputChannel,
