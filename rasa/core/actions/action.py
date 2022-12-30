@@ -739,7 +739,10 @@ class RemoteAction(Action):
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
             response: Any = await self.action_endpoint.request(
-                json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
+                json=json_body,
+                method="post",
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+                compress=True,
             )
 
             self._validate_action_result(response)
