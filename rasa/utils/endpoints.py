@@ -132,6 +132,7 @@ class EndpointConfig:
         method: Text = "post",
         subpath: Optional[Text] = None,
         content_type: Optional[Text] = "application/json",
+        compress: bool = False,
         **kwargs: Any,
     ) -> Optional[Any]:
         """Send a HTTP request to the endpoint. Return json response, if available.
@@ -166,6 +167,7 @@ class EndpointConfig:
                 url,
                 headers=headers,
                 params=self.combine_parameters(kwargs),
+                compress=compress,
                 ssl=sslcontext,
                 **kwargs,
             ) as response:
