@@ -127,12 +127,12 @@ pyenv local 3.7.9  # Activate Python 3.7.9 for the current project
 *Note*: If you have trouble installing a specific version of python on your system
 it might be worth trying other supported versions.
 
-By default, Poetry will try to use the currently activated Python version to create the virtual environment
+By default, Poetry will try to use the currently activated Python3 version to create the virtual environment
 for the current project automatically. You can also create and activate a virtual environment manually — in this
 case, Poetry should pick it up and use it to install the dependencies. For example:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
