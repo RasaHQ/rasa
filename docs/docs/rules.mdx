@@ -174,9 +174,9 @@ class ActionCheckTermination(Action):
     def run(self, dispatcher, tracker, domain):
 
         # your business logic here
-        termination = True
+        should_terminate = check_for_termination(<params>)
 
-        if termination:
+        if should_terminate:
             return [FollowupAction("action_listen")]
 
         return [];
