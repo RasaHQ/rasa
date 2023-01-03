@@ -220,7 +220,7 @@ def run(args: argparse.Namespace) -> None:
         # Can't use `if not path` either, as `None` will be handled differently (abort)
         if path == "":
             path = "."
-        if path[0] == "~":
+        if path != None and path[0] == "~":
             homePath = os.path.expanduser('~')
             path = homePath + path[1:]
 
