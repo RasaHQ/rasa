@@ -135,7 +135,7 @@ jobs:
         uses: google-github-actions/get-gke-credentials@v1
         with:
           cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
-          location: $GKE_ZONE
+          location: ${{ env.GKE_ZONE }}
           project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}
 
       - name: Deploy Github Runner
@@ -719,7 +719,7 @@ jobs:
         uses: google-github-actions/get-gke-credentials@v1
         with:
           cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
-          location: $GKE_ZONE
+          location: ${{ env.GKE_ZONE }}
           project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}
 
       - name: Remove Github Runner
