@@ -220,14 +220,14 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud auth
-      - uses: google-github-actions/auth@v1
+      - uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d
         with:
           service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
           credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
 
       # Get the GKE credentials for the cluster
       - name: Get GKE Cluster Credentials
-        uses: google-github-actions/get-gke-credentials@v1
+        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
         with:
           cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
           location: ${{ env.GKE_ZONE }}
@@ -906,14 +906,14 @@ jobs:
 
     steps:
       # Setup gcloud auth
-      - uses: google-github-actions/auth@v1
+      - uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d
         with:
           service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
           credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
 
       # Get the GKE credentials for the cluster
       - name: Get GKE Cluster Credentials
-        uses: google-github-actions/get-gke-credentials@v1
+        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
         with:
           cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
           location: ${{ env.GKE_ZONE }}
