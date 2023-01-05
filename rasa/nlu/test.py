@@ -878,7 +878,7 @@ def evaluate_entities(
             merged_predictions, NO_ENTITY_TAG, NO_ENTITY
         )
 
-        cleaned_targets = plugin_manager().clean_entity_targets_for_evaluation(
+        cleaned_targets = plugin_manager().hook.clean_entity_targets_for_evaluation(
             merged_targets=merged_targets, extractor=extractor
         )
         if len(cleaned_targets) > 0:

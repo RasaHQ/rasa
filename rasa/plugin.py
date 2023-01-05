@@ -88,7 +88,7 @@ def mock_tracker_for_evaluation(
     """Generate a mocked tracker for NLU evaluation."""
 
 
-@hookspec
+@hookspec  # type: ignore[misc]
 def clean_entity_targets_for_evaluation(
     merged_targets: List[str], extractor: str
 ) -> List[str]:
