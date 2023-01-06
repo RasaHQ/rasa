@@ -3,14 +3,6 @@ Improved support for Microsoft Visual C++ compilers.
 
 Known supported compilers:
 --------------------------
-Microsoft Visual C++ 9.0:
-    Microsoft Visual C++ Compiler for Python 2.7 (x86, amd64)
-    Microsoft Windows SDK 6.1 (x86, x64, ia64)
-    Microsoft Windows SDK 7.0 (x86, x64, ia64)
-
-Microsoft Visual C++ 10.0:
-    Microsoft Windows SDK 7.1 (x86, x64, ia64)
-
 Microsoft Visual C++ 14.X:
     Microsoft Visual C++ Build Tools 2015 (x86, x64, arm)
     Microsoft Visual Studio Build Tools 2017 (x86, x64, arm, arm64)
@@ -47,100 +39,6 @@ else:
         HKEY_CLASSES_ROOT = None
 
     environ = dict()
-
-_msvc9_suppress_errors = (
-    # msvc9compiler isn't available on some platforms
-    ImportError,
-
-    # msvc9compiler raises DistutilsPlatformError in some
-    # environments. See #1118.
-    distutils.errors.DistutilsPlatformError,
-)
-
-try:
-    from distutils.msvc9compiler import Reg
-except _msvc9_suppress_errors:
-    pass
-
-
-def msvc9_find_vcvarsall(version):
-    """
-    Patched "distutils.msvc9compiler.find_vcvarsall" to use the standalone
-    compiler build for Python
-    (VCForPython / Microsoft Visual C++ Compiler for Python 2.7).
-
-    Fall back to original behavior when the standalone compiler is not
-    available.
-
-    Redirect the path of "vcvarsall.bat".
-
-    Parameters
-    ----------
-    version: float
-        Required Microsoft Visual C++ version.
-
-    Return
-    ------
-    str
-        vcvarsall.bat path
-    """
-    vc_base = r'Software\%sMicrosoft\DevDiv\VCForPython\%0.1f'
-    key = vc_base % ('', version)
-    try:
-        # Per-user installs register the compiler path here
-        productdir = Reg.get_value(key, "installdir")
-    except KeyError:
-        try:
-            # All-user installs on a 64-bit system register here
-            key = vc_base % ('Wow6432Node\\', version)
-            productdir = Reg.get_value(key, "installdir")
-        except KeyError:
-            productdir = None
-
-    if productdir:
-        vcvarsall = join(productdir, "vcvarsall.bat")
-        if isfile(vcvarsall):
-            return vcvarsall
-
-    return get_unpatched(msvc9_find_vcvarsall)(version)
-
-
-def msvc9_query_vcvarsall(ver, arch='x86', *args, **kwargs):
-    """
-    Patched "distutils.msvc9compiler.query_vcvarsall" for support extra
-    Microsoft Visual C++ 9.0 and 10.0 compilers.
-
-    Set environment without use of "vcvarsall.bat".
-
-    Parameters
-    ----------
-    ver: float
-        Required Microsoft Visual C++ version.
-    arch: str
-        Target architecture.
-
-    Return
-    ------
-    dict
-        environment
-    """
-    # Try to get environment from vcvarsall.bat (Classical way)
-    try:
-        orig = get_unpatched(msvc9_query_vcvarsall)
-        return orig(ver, arch, *args, **kwargs)
-    except distutils.errors.DistutilsPlatformError:
-        # Pass error if Vcvarsall.bat is missing
-        pass
-    except ValueError:
-        # Pass error if environment not set after executing vcvarsall.bat
-        pass
-
-    # If error, try to set environment directly
-    try:
-        return EnvironmentInfo(arch, ver).return_env()
-    except distutils.errors.DistutilsPlatformError as exc:
-        _augment_exception(exc, ver, arch)
-        raise
 
 
 def _msvc14_find_vc2015():

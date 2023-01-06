@@ -4,10 +4,12 @@ import os
 import sys
 import io
 import contextlib
+from itertools import chain
 
 from .py36compat import sdist_add_defaults
 
 from .._importlib import metadata
+from .build import _ORIGINAL_SUBCOMMANDS
 
 _default_revctrl = list
 
@@ -100,6 +102,10 @@ class sdist(sdist_add_defaults, orig.sdist):
             if orig_val is not NoValue:
                 setattr(os, 'link', orig_val)
 
+    def add_defaults(self):
+        super().add_defaults()
+        self._add_defaults_build_sub_commands()
+
     def _add_defaults_optional(self):
         super()._add_defaults_optional()
         if os.path.isfile('pyproject.toml'):
@@ -111,6 +117,14 @@ class sdist(sdist_add_defaults, orig.sdist):
             build_py = self.get_finalized_command('build_py')
             self.filelist.extend(build_py.get_source_files())
             self._add_data_files(self._safe_data_files(build_py))
+
+    def _add_defaults_build_sub_commands(self):
+        build = self.get_finalized_command("build")
+        missing_cmds = set(build.get_sub_commands()) - _ORIGINAL_SUBCOMMANDS
+        # ^-- the original built-in sub-commands are already handled by default.
+        cmds = (self.get_finalized_command(c) for c in missing_cmds)
+        files = (c.get_source_files() for c in cmds if hasattr(c, "get_source_files"))
+        self.filelist.extend(chain.from_iterable(files))
 
     def _safe_data_files(self, build_py):
         """

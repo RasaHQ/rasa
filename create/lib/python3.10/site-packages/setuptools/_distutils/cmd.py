@@ -4,7 +4,9 @@ Provides the Command class, the base class for the command classes
 in the distutils.command package.
 """
 
-import sys, os, re
+import sys
+import os
+import re
 from distutils.errors import DistutilsOptionError
 from distutils import util, dir_util, file_util, archive_util, dep_util
 from distutils import log
@@ -161,7 +163,7 @@ class Command:
             if option[-1] == "=":
                 option = option[:-1]
             value = getattr(self, option)
-            self.announce(indent + "%s = %s" % (option, value), level=log.INFO)
+            self.announce(indent + "{} = {}".format(option, value), level=log.INFO)
 
     def run(self):
         """A command's raison d'etre: carry out the action it exists to
@@ -213,7 +215,7 @@ class Command:
             return default
         elif not isinstance(val, str):
             raise DistutilsOptionError(
-                "'%s' must be a %s (got `%s`)" % (option, what, val)
+                "'{}' must be a {} (got `{}`)".format(option, what, val)
             )
         return val
 
@@ -241,7 +243,7 @@ class Command:
                 ok = False
             if not ok:
                 raise DistutilsOptionError(
-                    "'%s' must be a list of strings (got %r)" % (option, val)
+                    "'{}' must be a list of strings (got {!r})".format(option, val)
                 )
 
     def _ensure_tested_string(self, option, tester, what, error_fmt, default=None):
@@ -422,7 +424,7 @@ class Command:
             raise TypeError("'infiles' must be a string, or a list or tuple of strings")
 
         if exec_msg is None:
-            exec_msg = "generating %s from %s" % (outfile, ', '.join(infiles))
+            exec_msg = "generating {} from {}".format(outfile, ', '.join(infiles))
 
         # If 'outfile' must be regenerated (either because it doesn't
         # exist, is out-of-date, or the 'force' flag is true) then

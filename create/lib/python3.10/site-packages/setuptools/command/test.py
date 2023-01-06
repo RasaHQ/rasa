@@ -118,7 +118,7 @@ class test(Command):
         return list(self._test_args())
 
     def _test_args(self):
-        if not self.test_suite and sys.version_info >= (2, 7):
+        if not self.test_suite:
             yield 'discover'
         if self.verbose:
             yield '--verbose'

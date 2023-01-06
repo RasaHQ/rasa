@@ -9,7 +9,14 @@ import os
 import re
 import sys
 from distutils.core import Command
-from distutils.errors import *
+from distutils.errors import (
+    DistutilsOptionError,
+    DistutilsSetupError,
+    CCompilerError,
+    DistutilsError,
+    CompileError,
+    DistutilsPlatformError,
+)
 from distutils.sysconfig import customize_compiler, get_python_version
 from distutils.sysconfig import get_config_h_filename
 from distutils.dep_util import newer_group
@@ -124,7 +131,7 @@ class build_ext(Command):
         self.user = None
         self.parallel = None
 
-    def finalize_options(self):
+    def finalize_options(self):  # noqa: C901
         from distutils import sysconfig
 
         self.set_undefined_options(
@@ -272,7 +279,7 @@ class build_ext(Command):
             except ValueError:
                 raise DistutilsOptionError("parallel should be an integer")
 
-    def run(self):
+    def run(self):  # noqa: C901
         from distutils.ccompiler import new_compiler
 
         # 'self.extensions', as supplied by setup.py, is a list of
@@ -338,7 +345,7 @@ class build_ext(Command):
         # Now actually compile and link everything.
         self.build_extensions()
 
-    def check_extensions_list(self, extensions):
+    def check_extensions_list(self, extensions):  # noqa: C901
         """Ensure that the list of extensions (presumably provided as a
         command option 'extensions') is valid, i.e. it is a list of
         Extension objects.  We also support the old-style list of 2-tuples,
@@ -491,7 +498,7 @@ class build_ext(Command):
         except (CCompilerError, DistutilsError, CompileError) as e:
             if not ext.optional:
                 raise
-            self.warn('building extension "%s" failed: %s' % (ext.name, e))
+            self.warn('building extension "{}" failed: {}'.format(ext.name, e))
 
     def build_extension(self, ext):
         sources = ext.sources
@@ -724,7 +731,7 @@ class build_ext(Command):
             ext.export_symbols.append(initfunc_name)
         return ext.export_symbols
 
-    def get_libraries(self, ext):
+    def get_libraries(self, ext):  # noqa: C901
         """Return the list of libraries to link against when building a
         shared extension.  On most platforms, this is just 'ext.libraries';
         on Windows, we add the Python library (eg. python20.dll).

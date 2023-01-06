@@ -9,7 +9,8 @@ configure-like tasks: "try to compile this C code", or "figure out where
 this header file lives".
 """
 
-import os, re
+import os
+import re
 
 from distutils.core import Command
 from distutils.errors import DistutilsExecError

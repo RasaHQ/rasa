@@ -105,7 +105,7 @@ class FileList:
 
         return (action, patterns, dir, dir_pattern)
 
-    def process_template_line(self, line):
+    def process_template_line(self, line):  # noqa: C901
         # Parse the line: split it up, make sure the right number of words
         # is there, and return the relevant words.  'action' is always
         # defined: it's the first word of the line.  Which of the other
@@ -159,7 +159,7 @@ class FileList:
                     )
 
         elif action == 'recursive-include':
-            self.debug_print("recursive-include %s %s" % (dir, ' '.join(patterns)))
+            self.debug_print("recursive-include {} {}".format(dir, ' '.join(patterns)))
             for pattern in patterns:
                 if not self.include_pattern(pattern, prefix=dir):
                     msg = (
@@ -168,7 +168,7 @@ class FileList:
                     log.warn(msg, pattern, dir)
 
         elif action == 'recursive-exclude':
-            self.debug_print("recursive-exclude %s %s" % (dir, ' '.join(patterns)))
+            self.debug_print("recursive-exclude {} {}".format(dir, ' '.join(patterns)))
             for pattern in patterns:
                 if not self.exclude_pattern(pattern, prefix=dir):
                     log.warn(
@@ -363,9 +363,9 @@ def translate_pattern(pattern, anchor=1, prefix=None, is_regex=0):
         if os.sep == '\\':
             sep = r'\\'
         pattern_re = pattern_re[len(start) : len(pattern_re) - len(end)]
-        pattern_re = r'%s\A%s%s.*%s%s' % (start, prefix_re, sep, pattern_re, end)
+        pattern_re = r'{}\A{}{}.*{}{}'.format(start, prefix_re, sep, pattern_re, end)
     else:  # no prefix -- respect anchor flag
         if anchor:
-            pattern_re = r'%s\A%s' % (start, pattern_re[len(start) :])
+            pattern_re = r'{}\A{}'.format(start, pattern_re[len(start) :])
 
     return re.compile(pattern_re)

@@ -4,17 +4,15 @@ Utility functions for manipulating directories and directory trees."""
 
 import os
 import errno
-from distutils.errors import DistutilsFileError, DistutilsInternalError
+from distutils.errors import DistutilsInternalError, DistutilsFileError
 from distutils import log
 
 # cache for by mkpath() -- in addition to cheapening redundant calls,
 # eliminates redundant "creating /foo/bar/baz" messages in dry-run mode
 _path_created = {}
 
-# I don't use os.makedirs because a) it's new to Python 1.5.2, and
-# b) it blows up if the directory already exists (I want to silently
-# succeed in that case).
-def mkpath(name, mode=0o777, verbose=1, dry_run=0):
+
+def mkpath(name, mode=0o777, verbose=1, dry_run=0):  # noqa: C901
     """Create a directory and any missing ancestor directories.
 
     If the directory already exists (or if 'name' is the empty string, which
@@ -23,6 +21,12 @@ def mkpath(name, mode=0o777, verbose=1, dry_run=0):
     (eg. some sub-path exists, but is a file rather than a directory).
     If 'verbose' is true, print a one-line summary of each mkdir to stdout.
     Return the list of directories actually created.
+
+    os.makedirs is not used because:
+
+    a) It's new to Python 1.5.2, and
+    b) it blows up if the directory already exists (in which case it should
+       silently succeed).
     """
 
     global _path_created
@@ -30,7 +34,7 @@ def mkpath(name, mode=0o777, verbose=1, dry_run=0):
     # Detect a common bug -- name is None
     if not isinstance(name, str):
         raise DistutilsInternalError(
-            "mkpath: 'name' must be a string (got %r)" % (name,)
+            "mkpath: 'name' must be a string (got {!r})".format(name)
         )
 
     # XXX what's the better way to handle verbosity? print as we create
@@ -72,7 +76,7 @@ def mkpath(name, mode=0o777, verbose=1, dry_run=0):
             except OSError as exc:
                 if not (exc.errno == errno.EEXIST and os.path.isdir(head)):
                     raise DistutilsFileError(
-                        "could not create '%s': %s" % (head, exc.args[-1])
+                        "could not create '{}': {}".format(head, exc.args[-1])
                     )
             created_dirs.append(head)
 
@@ -100,7 +104,7 @@ def create_tree(base_dir, files, mode=0o777, verbose=1, dry_run=0):
         mkpath(dir, mode, verbose=verbose, dry_run=dry_run)
 
 
-def copy_tree(
+def copy_tree(  # noqa: C901
     src,
     dst,
     preserve_mode=1,
@@ -140,7 +144,7 @@ def copy_tree(
             names = []
         else:
             raise DistutilsFileError(
-                "error listing files in '%s': %s" % (src, e.strerror)
+                "error listing files in '{}': {}".format(src, e.strerror)
             )
 
     if not dry_run:

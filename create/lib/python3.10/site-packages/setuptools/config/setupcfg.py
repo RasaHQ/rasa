@@ -5,8 +5,9 @@ Load setuptools configuration from ``setup.cfg`` files.
 """
 import os
 
-import warnings
+import contextlib
 import functools
+import warnings
 from collections import defaultdict
 from functools import partial
 from functools import wraps
@@ -14,6 +15,7 @@ from typing import (TYPE_CHECKING, Callable, Any, Dict, Generic, Iterable, List,
                     Optional, Tuple, TypeVar, Union)
 
 from distutils.errors import DistutilsOptionError, DistutilsFileError
+from setuptools.extern.packaging.requirements import Requirement, InvalidRequirement
 from setuptools.extern.packaging.version import Version, InvalidVersion
 from setuptools.extern.packaging.specifiers import SpecifierSet
 from setuptools._deprecation_warning import SetuptoolsDeprecationWarning
@@ -172,6 +174,39 @@ def parse_configuration(
         meta.parse()
 
     return meta, options
+
+
+def _warn_accidental_env_marker_misconfig(label: str, orig_value: str, parsed: list):
+    """Because users sometimes misinterpret this configuration:
+
+    [options.extras_require]
+    foo = bar;python_version<"4"
+
+    It looks like one requirement with an environment marker
+    but because there is no newline, it's parsed as two requirements
+    with a semicolon as separator.
+
+    Therefore, if:
+        * input string does not contain a newline AND
+        * parsed result contains two requirements AND
+        * parsing of the two parts from the result ("<first>;<second>")
+        leads in a valid Requirement with a valid marker
+    a UserWarning is shown to inform the user about the possible problem.
+    """
+    if "\n" in orig_value or len(parsed) != 2:
+        return
+
+    with contextlib.suppress(InvalidRequirement):
+        original_requirements_str = ";".join(parsed)
+        req = Requirement(original_requirements_str)
+        if req.marker is not None:
+            msg = (
+                f"One of the parsed requirements in `{label}` "
+                f"looks like a valid environment marker: '{parsed[1]}'\n"
+                "Make sure that the config is correct and check "
+                "https://setuptools.pypa.io/en/latest/userguide/declarative_config.html#opt-2"  # noqa: E501
+            )
+            warnings.warn(msg, UserWarning)
 
 
 class ConfigHandler(Generic[Target]):
@@ -397,20 +432,32 @@ class ConfigHandler(Generic[Target]):
         return parse
 
     @classmethod
-    def _parse_section_to_dict(cls, section_options, values_parser=None):
+    def _parse_section_to_dict_with_key(cls, section_options, values_parser):
         """Parses section options into a dictionary.
 
-        Optionally applies a given parser to values.
+        Applies a given parser to each option in a section.
 
         :param dict section_options:
-        :param callable values_parser:
+        :param callable values_parser: function with 2 args corresponding to key, value
         :rtype: dict
         """
         value = {}
-        values_parser = values_parser or (lambda val: val)
         for key, (_, val) in section_options.items():
-            value[key] = values_parser(val)
+            value[key] = values_parser(key, val)
         return value
+
+    @classmethod
+    def _parse_section_to_dict(cls, section_options, values_parser=None):
+        """Parses section options into a dictionary.
+
+        Optionally applies a given parser to each value.
+
+        :param dict section_options:
+        :param callable values_parser: function with 1 arg corresponding to option value
+        :rtype: dict
+        """
+        parser = (lambda _, v: values_parser(v)) if values_parser else (lambda _, v: v)
+        return cls._parse_section_to_dict_with_key(section_options, parser)
 
     def parse_section(self, section_options):
         """Parses configuration file section.
@@ -418,11 +465,9 @@ class ConfigHandler(Generic[Target]):
         :param dict section_options:
         """
         for (name, (_, value)) in section_options.items():
-            try:
+            with contextlib.suppress(KeyError):
+                # Keep silent for a new option may appear anytime.
                 self[name] = value
-
-            except KeyError:
-                pass  # Keep silent for a new option may appear anytime.
 
     def parse(self):
         """Parses configuration file items from one
@@ -579,9 +624,10 @@ class ConfigOptionsHandler(ConfigHandler["Distribution"]):
     def _parse_file_in_root(self, value):
         return self._parse_file(value, root_dir=self.root_dir)
 
-    def _parse_requirements_list(self, value):
+    def _parse_requirements_list(self, label: str, value: str):
         # Parse a requirements list, either by reading in a `file:`, or a list.
         parsed = self._parse_list_semicolon(self._parse_file_in_root(value))
+        _warn_accidental_env_marker_misconfig(label, value, parsed)
         # Filter it to only include lines that are not comments. `parse_list`
         # will have stripped each line and filtered out empties.
         return [line for line in parsed if not line.startswith("#")]
@@ -607,7 +653,9 @@ class ConfigOptionsHandler(ConfigHandler["Distribution"]):
                 "consider using implicit namespaces instead (PEP 420).",
                 SetuptoolsDeprecationWarning,
             ),
-            'install_requires': self._parse_requirements_list,
+            'install_requires': partial(
+                self._parse_requirements_list, "install_requires"
+            ),
             'setup_requires': self._parse_list_semicolon,
             'tests_require': self._parse_list_semicolon,
             'packages': self._parse_packages,
@@ -698,10 +746,11 @@ class ConfigOptionsHandler(ConfigHandler["Distribution"]):
 
         :param dict section_options:
         """
-        parsed = self._parse_section_to_dict(
+        parsed = self._parse_section_to_dict_with_key(
             section_options,
-            self._parse_requirements_list,
+            lambda k, v: self._parse_requirements_list(f"extras_require[{k}]", v)
         )
+
         self['extras_require'] = parsed
 
     def parse_section_data_files(self, section_options):

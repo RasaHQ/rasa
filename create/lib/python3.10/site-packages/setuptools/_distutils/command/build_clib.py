@@ -16,7 +16,7 @@ module."""
 
 import os
 from distutils.core import Command
-from distutils.errors import *
+from distutils.errors import DistutilsSetupError
 from distutils.sysconfig import customize_compiler
 from distutils import log
 

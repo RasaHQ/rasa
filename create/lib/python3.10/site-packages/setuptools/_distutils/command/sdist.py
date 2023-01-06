@@ -15,7 +15,7 @@ from distutils.text_file import TextFile
 from distutils.filelist import FileList
 from distutils import log
 from distutils.util import convert_path
-from distutils.errors import DistutilsTemplateError, DistutilsOptionError
+from distutils.errors import DistutilsOptionError, DistutilsTemplateError
 
 
 def show_formats():
@@ -402,7 +402,7 @@ class sdist(Command):
             seps = '/'
 
         vcs_dirs = ['RCS', 'CVS', r'\.svn', r'\.hg', r'\.git', r'\.bzr', '_darcs']
-        vcs_ptrn = r'(^|%s)(%s)(%s).*' % (seps, '|'.join(vcs_dirs), seps)
+        vcs_ptrn = r'(^|{})({})({}).*'.format(seps, '|'.join(vcs_dirs), seps)
         self.filelist.exclude_pattern(vcs_ptrn, is_regex=1)
 
     def write_manifest(self):

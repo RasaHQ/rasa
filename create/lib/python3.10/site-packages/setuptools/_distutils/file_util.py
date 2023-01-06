@@ -11,7 +11,7 @@ from distutils import log
 _copy_action = {None: 'copying', 'hard': 'hard linking', 'sym': 'symbolically linking'}
 
 
-def _copy_file_contents(src, dst, buffer_size=16 * 1024):
+def _copy_file_contents(src, dst, buffer_size=16 * 1024):  # noqa: C901
     """Copy the file 'src' to 'dst'; both must be filenames.  Any error
     opening either file, reading from 'src', or writing to 'dst', raises
     DistutilsFileError.  Data is read/written in chunks of 'buffer_size'
@@ -26,27 +26,29 @@ def _copy_file_contents(src, dst, buffer_size=16 * 1024):
         try:
             fsrc = open(src, 'rb')
         except OSError as e:
-            raise DistutilsFileError("could not open '%s': %s" % (src, e.strerror))
+            raise DistutilsFileError("could not open '{}': {}".format(src, e.strerror))
 
         if os.path.exists(dst):
             try:
                 os.unlink(dst)
             except OSError as e:
                 raise DistutilsFileError(
-                    "could not delete '%s': %s" % (dst, e.strerror)
+                    "could not delete '{}': {}".format(dst, e.strerror)
                 )
 
         try:
             fdst = open(dst, 'wb')
         except OSError as e:
-            raise DistutilsFileError("could not create '%s': %s" % (dst, e.strerror))
+            raise DistutilsFileError(
+                "could not create '{}': {}".format(dst, e.strerror)
+            )
 
         while True:
             try:
                 buf = fsrc.read(buffer_size)
             except OSError as e:
                 raise DistutilsFileError(
-                    "could not read from '%s': %s" % (src, e.strerror)
+                    "could not read from '{}': {}".format(src, e.strerror)
                 )
 
             if not buf:
@@ -56,7 +58,7 @@ def _copy_file_contents(src, dst, buffer_size=16 * 1024):
                 fdst.write(buf)
             except OSError as e:
                 raise DistutilsFileError(
-                    "could not write to '%s': %s" % (dst, e.strerror)
+                    "could not write to '{}': {}".format(dst, e.strerror)
                 )
     finally:
         if fdst:
@@ -65,7 +67,7 @@ def _copy_file_contents(src, dst, buffer_size=16 * 1024):
             fsrc.close()
 
 
-def copy_file(
+def copy_file(  # noqa: C901
     src,
     dst,
     preserve_mode=1,
@@ -173,7 +175,7 @@ def copy_file(
 
 
 # XXX I suspect this is Unix-specific -- need porting help!
-def move_file(src, dst, verbose=1, dry_run=0):
+def move_file(src, dst, verbose=1, dry_run=0):  # noqa: C901
 
     """Move a file 'src' to 'dst'.  If 'dst' is a directory, the file will
     be moved into it with the same name; otherwise, 'src' is just renamed
@@ -198,12 +200,12 @@ def move_file(src, dst, verbose=1, dry_run=0):
         dst = os.path.join(dst, basename(src))
     elif exists(dst):
         raise DistutilsFileError(
-            "can't move '%s': destination '%s' already exists" % (src, dst)
+            "can't move '{}': destination '{}' already exists".format(src, dst)
         )
 
     if not isdir(dirname(dst)):
         raise DistutilsFileError(
-            "can't move '%s': destination '%s' not a valid path" % (src, dst)
+            "can't move '{}': destination '{}' not a valid path".format(src, dst)
         )
 
     copy_it = False
@@ -214,7 +216,9 @@ def move_file(src, dst, verbose=1, dry_run=0):
         if num == errno.EXDEV:
             copy_it = True
         else:
-            raise DistutilsFileError("couldn't move '%s' to '%s': %s" % (src, dst, msg))
+            raise DistutilsFileError(
+                "couldn't move '{}' to '{}': {}".format(src, dst, msg)
+            )
 
     if copy_it:
         copy_file(src, dst, verbose=verbose)

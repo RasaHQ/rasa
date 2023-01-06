@@ -44,7 +44,7 @@ class PyPIRCCommand(Command):
         with os.fdopen(os.open(rc, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
             f.write(DEFAULT_PYPIRC % (username, password))
 
-    def _read_pypirc(self):
+    def _read_pypirc(self):  # noqa: C901
         """Reads the .pypirc file."""
         rc = self._get_rc_file()
         if os.path.exists(rc):

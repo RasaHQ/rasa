@@ -8,7 +8,9 @@ for the Microsoft Visual Studio.
 # hacked by Robin Becker and Thomas Heller to do a better job of
 #   finding DevStudio (through the registry)
 
-import sys, os
+import sys
+import os
+import warnings
 from distutils.errors import (
     DistutilsExecError,
     DistutilsPlatformError,
@@ -59,6 +61,14 @@ if _can_read_reg:
         hkey_mod.HKEY_LOCAL_MACHINE,
         hkey_mod.HKEY_CLASSES_ROOT,
     )
+
+
+warnings.warn(
+    "msvccompiler is deprecated and slated to be removed "
+    "in the future. Please discontinue use or file an issue "
+    "with pypa/distutils describing your use case.",
+    DeprecationWarning,
+)
 
 
 def read_keys(base, key):
@@ -134,7 +144,7 @@ class MacroExpander:
                 self.set_macro("FrameworkSDKDir", net, "sdkinstallrootv1.1")
             else:
                 self.set_macro("FrameworkSDKDir", net, "sdkinstallroot")
-        except KeyError as exc:  #
+        except KeyError:
             raise DistutilsPlatformError(
                 """Python was built with Visual Studio 2003;
 extensions must be built with a compiler than can generate compatible binaries.
@@ -149,7 +159,7 @@ you can try compiling with MingW32, by passing "-c mingw32" to setup.py."""
             except RegError:
                 continue
             key = RegEnumKey(h, 0)
-            d = read_values(base, r"%s\%s" % (p, key))
+            d = read_values(base, r"{}\{}".format(p, key))
             self.macros["$(FrameworkVersion)"] = d["version"]
 
     def sub(self, s):
@@ -368,7 +378,7 @@ class MSVCCompiler(CCompiler):
                 obj_names.append(os.path.join(output_dir, base + self.obj_extension))
         return obj_names
 
-    def compile(
+    def compile(  # noqa: C901
         self,
         sources,
         output_dir=None,
@@ -445,7 +455,9 @@ class MSVCCompiler(CCompiler):
                 continue
             else:
                 # how to handle this file?
-                raise CompileError("Don't know how to compile %s to %s" % (src, obj))
+                raise CompileError(
+                    "Don't know how to compile {} to {}".format(src, obj)
+                )
 
             output_opt = "/Fo" + obj
             try:
@@ -481,7 +493,7 @@ class MSVCCompiler(CCompiler):
         else:
             log.debug("skipping %s (up-to-date)", output_filename)
 
-    def link(
+    def link(  # noqa: C901
         self,
         target_desc,
         objects,
@@ -628,7 +640,7 @@ class MSVCCompiler(CCompiler):
 
         path = path + " dirs"
         if self.__version >= 7:
-            key = r"%s\%0.1f\VC\VC_OBJECTS_PLATFORM_INFO\Win32\Directories" % (
+            key = r"{}\{:0.1f}\VC\VC_OBJECTS_PLATFORM_INFO\Win32\Directories".format(
                 self.__root,
                 self.__version,
             )
@@ -680,4 +692,4 @@ if get_build_version() >= 8.0:
     from distutils.msvc9compiler import MSVCCompiler
 
     # get_build_architecture not really relevant now we support cross-compile
-    from distutils.msvc9compiler import MacroExpander
+    from distutils.msvc9compiler import MacroExpander  # noqa: F811

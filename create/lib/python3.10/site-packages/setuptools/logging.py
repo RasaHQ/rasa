@@ -22,13 +22,13 @@ def configure():
     handlers = err_handler, out_handler
     logging.basicConfig(
         format="{message}", style='{', handlers=handlers, level=logging.DEBUG)
-    monkey.patch_func(set_threshold, distutils.log, 'set_threshold')
-
-    # For some reason `distutils.log` module is getting cached in `distutils.dist`
-    # and then loaded again when patched,
-    # implying: id(distutils.log) != id(distutils.dist.log).
-    # Make sure the same module object is used everywhere:
-    distutils.dist.log = distutils.log
+    if hasattr(distutils.log, 'Log'):
+        monkey.patch_func(set_threshold, distutils.log, 'set_threshold')
+        # For some reason `distutils.log` module is getting cached in `distutils.dist`
+        # and then loaded again when patched,
+        # implying: id(distutils.log) != id(distutils.dist.log).
+        # Make sure the same module object is used everywhere:
+        distutils.dist.log = distutils.log
 
 
 def set_threshold(level):

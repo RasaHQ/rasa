@@ -2,14 +2,16 @@ import os
 import sys
 import itertools
 from importlib.machinery import EXTENSION_SUFFIXES
+from importlib.util import cache_from_source as _compiled_file_name
+from typing import Dict, Iterator, List, Tuple
+
 from distutils.command.build_ext import build_ext as _du_build_ext
-from distutils.file_util import copy_file
 from distutils.ccompiler import new_compiler
 from distutils.sysconfig import customize_compiler, get_config_var
-from distutils.errors import DistutilsError
 from distutils import log
 
-from setuptools.extension import Library
+from setuptools.errors import BaseError
+from setuptools.extension import Extension, Library
 
 try:
     # Attempt to use Cython for building extensions, if available
@@ -73,6 +75,9 @@ def get_abi3_suffix():
 
 
 class build_ext(_build_ext):
+    editable_mode: bool = False
+    inplace: bool = False
+
     def run(self):
         """Build extensions in build directory, then copy if --inplace"""
         old_inplace, self.inplace = self.inplace, 0
@@ -81,27 +86,62 @@ class build_ext(_build_ext):
         if old_inplace:
             self.copy_extensions_to_source()
 
+    def _get_inplace_equivalent(self, build_py, ext: Extension) -> Tuple[str, str]:
+        fullname = self.get_ext_fullname(ext.name)
+        filename = self.get_ext_filename(fullname)
+        modpath = fullname.split('.')
+        package = '.'.join(modpath[:-1])
+        package_dir = build_py.get_package_dir(package)
+        inplace_file = os.path.join(package_dir, os.path.basename(filename))
+        regular_file = os.path.join(self.build_lib, filename)
+        return (inplace_file, regular_file)
+
     def copy_extensions_to_source(self):
         build_py = self.get_finalized_command('build_py')
         for ext in self.extensions:
-            fullname = self.get_ext_fullname(ext.name)
-            filename = self.get_ext_filename(fullname)
-            modpath = fullname.split('.')
-            package = '.'.join(modpath[:-1])
-            package_dir = build_py.get_package_dir(package)
-            dest_filename = os.path.join(package_dir,
-                                         os.path.basename(filename))
-            src_filename = os.path.join(self.build_lib, filename)
+            inplace_file, regular_file = self._get_inplace_equivalent(build_py, ext)
 
             # Always copy, even if source is older than destination, to ensure
             # that the right extensions for the current Python/platform are
             # used.
-            copy_file(
-                src_filename, dest_filename, verbose=self.verbose,
-                dry_run=self.dry_run
-            )
+            if os.path.exists(regular_file) or not ext.optional:
+                self.copy_file(regular_file, inplace_file, level=self.verbose)
+
             if ext._needs_stub:
-                self.write_stub(package_dir or os.curdir, ext, True)
+                inplace_stub = self._get_equivalent_stub(ext, inplace_file)
+                self._write_stub_file(inplace_stub, ext, compile=True)
+                # Always compile stub and remove the original (leave the cache behind)
+                # (this behaviour was observed in previous iterations of the code)
+
+    def _get_equivalent_stub(self, ext: Extension, output_file: str) -> str:
+        dir_ = os.path.dirname(output_file)
+        _, _, name = ext.name.rpartition(".")
+        return f"{os.path.join(dir_, name)}.py"
+
+    def _get_output_mapping(self) -> Iterator[Tuple[str, str]]:
+        if not self.inplace:
+            return
+
+        build_py = self.get_finalized_command('build_py')
+        opt = self.get_finalized_command('install_lib').optimize or ""
+
+        for ext in self.extensions:
+            inplace_file, regular_file = self._get_inplace_equivalent(build_py, ext)
+            yield (regular_file, inplace_file)
+
+            if ext._needs_stub:
+                # This version of `build_ext` always builds artifacts in another dir,
+                # when "inplace=True" is given it just copies them back.
+                # This is done in the `copy_extensions_to_source` function, which
+                # always compile stub files via `_compile_and_remove_stub`.
+                # At the end of the process, a `.pyc` stub file is created without the
+                # corresponding `.py`.
+
+                inplace_stub = self._get_equivalent_stub(ext, inplace_file)
+                regular_stub = self._get_equivalent_stub(ext, regular_file)
+                inplace_cache = _compiled_file_name(inplace_stub, optimization=opt)
+                output_cache = _compiled_file_name(regular_stub, optimization=opt)
+                yield (output_cache, inplace_cache)
 
     def get_ext_filename(self, fullname):
         so_ext = os.getenv('SETUPTOOLS_EXT_SUFFIX')
@@ -131,6 +171,7 @@ class build_ext(_build_ext):
         self.shlib_compiler = None
         self.shlibs = []
         self.ext_map = {}
+        self.editable_mode = False
 
     def finalize_options(self):
         _build_ext.finalize_options(self)
@@ -160,6 +201,9 @@ class build_ext(_build_ext):
                 ext.library_dirs.append(libdir)
             if ltd and use_stubs and os.curdir not in ext.runtime_library_dirs:
                 ext.runtime_library_dirs.append(os.curdir)
+
+        if self.editable_mode:
+            self.inplace = True
 
     def setup_shlib_compiler(self):
         compiler = self.shlib_compiler = new_compiler(
@@ -201,8 +245,8 @@ class build_ext(_build_ext):
                 self.compiler = self.shlib_compiler
             _build_ext.build_extension(self, ext)
             if ext._needs_stub:
-                cmd = self.get_finalized_command('build_py').build_lib
-                self.write_stub(cmd, ext)
+                build_lib = self.get_finalized_command('build_py').build_lib
+                self.write_stub(build_lib, ext)
         finally:
             self.compiler = _compiler
 
@@ -215,8 +259,15 @@ class build_ext(_build_ext):
         pkg = '.'.join(ext._full_name.split('.')[:-1] + [''])
         return any(pkg + libname in libnames for libname in ext.libraries)
 
-    def get_outputs(self):
-        return _build_ext.get_outputs(self) + self.__get_stubs_outputs()
+    def get_outputs(self) -> List[str]:
+        if self.inplace:
+            return list(self.get_output_mapping().keys())
+        return sorted(_build_ext.get_outputs(self) + self.__get_stubs_outputs())
+
+    def get_output_mapping(self) -> Dict[str, str]:
+        """See :class:`setuptools.commands.build.SubCommand`"""
+        mapping = self._get_output_mapping()
+        return dict(sorted(mapping, key=lambda x: x[0]))
 
     def __get_stubs_outputs(self):
         # assemble the base name for each extension that needs a stub
@@ -236,12 +287,13 @@ class build_ext(_build_ext):
             yield '.pyo'
 
     def write_stub(self, output_dir, ext, compile=False):
-        log.info("writing stub loader for %s to %s", ext._full_name,
-                 output_dir)
-        stub_file = (os.path.join(output_dir, *ext._full_name.split('.')) +
-                     '.py')
+        stub_file = os.path.join(output_dir, *ext._full_name.split('.')) + '.py'
+        self._write_stub_file(stub_file, ext, compile)
+
+    def _write_stub_file(self, stub_file: str, ext: Extension, compile=False):
+        log.info("writing stub loader for %s to %s", ext._full_name, stub_file)
         if compile and os.path.exists(stub_file):
-            raise DistutilsError(stub_file + " already exists! Please delete.")
+            raise BaseError(stub_file + " already exists! Please delete.")
         if not self.dry_run:
             f = open(stub_file, 'w')
             f.write(
@@ -274,16 +326,19 @@ class build_ext(_build_ext):
             )
             f.close()
         if compile:
-            from distutils.util import byte_compile
+            self._compile_and_remove_stub(stub_file)
 
-            byte_compile([stub_file], optimize=0,
+    def _compile_and_remove_stub(self, stub_file: str):
+        from distutils.util import byte_compile
+
+        byte_compile([stub_file], optimize=0,
+                     force=True, dry_run=self.dry_run)
+        optimize = self.get_finalized_command('install_lib').optimize
+        if optimize > 0:
+            byte_compile([stub_file], optimize=optimize,
                          force=True, dry_run=self.dry_run)
-            optimize = self.get_finalized_command('install_lib').optimize
-            if optimize > 0:
-                byte_compile([stub_file], optimize=optimize,
-                             force=True, dry_run=self.dry_run)
-            if os.path.exists(stub_file) and not self.dry_run:
-                os.unlink(stub_file)
+        if os.path.exists(stub_file) and not self.dry_run:
+            os.unlink(stub_file)
 
 
 if use_stubs or os.name == 'nt':

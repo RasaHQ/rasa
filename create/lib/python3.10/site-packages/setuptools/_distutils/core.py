@@ -11,13 +11,21 @@ import sys
 import tokenize
 
 from distutils.debug import DEBUG
-from distutils.errors import *
+from distutils.errors import (
+    DistutilsSetupError,
+    DistutilsError,
+    CCompilerError,
+    DistutilsArgError,
+)
 
 # Mainly import these so setup scripts can "from distutils.core import" them.
 from distutils.dist import Distribution
 from distutils.cmd import Command
 from distutils.config import PyPIRCCommand
 from distutils.extension import Extension
+
+
+__all__ = ['Distribution', 'Command', 'PyPIRCCommand', 'Extension', 'setup']
 
 # This is a barebones help message generated displayed when the user
 # runs the setup script with no arguments at all.  More useful help
@@ -33,7 +41,7 @@ usage: %(script)s [global_opts] cmd1 [cmd1_opts] [cmd2 [cmd2_opts] ...]
 
 def gen_usage(script_name):
     script = os.path.basename(script_name)
-    return USAGE % vars()
+    return USAGE % locals()
 
 
 # Some mild magic to control the behaviour of 'setup()' from 'run_setup()'.
@@ -85,7 +93,7 @@ extension_keywords = (
 )
 
 
-def setup(**attrs):
+def setup(**attrs):  # noqa: C901
     """The gateway to the Distutils: do everything your setup script needs
     to do, in a highly flexible and user-driven way.  Briefly: create a
     Distribution instance; find and parse config files; parse the command
@@ -141,7 +149,7 @@ def setup(**attrs):
         if 'name' not in attrs:
             raise SystemExit("error in setup command: %s" % msg)
         else:
-            raise SystemExit("error in %s setup command: %s" % (attrs['name'], msg))
+            raise SystemExit("error in {} setup command: {}".format(attrs['name'], msg))
 
     if _setup_stop_after == "init":
         return dist
@@ -195,10 +203,10 @@ def run_commands(dist):
         raise SystemExit("interrupted")
     except OSError as exc:
         if DEBUG:
-            sys.stderr.write("error: %s\n" % (exc,))
+            sys.stderr.write("error: {}\n".format(exc))
             raise
         else:
-            raise SystemExit("error: %s" % (exc,))
+            raise SystemExit("error: {}".format(exc))
 
     except (DistutilsError, CCompilerError) as msg:
         if DEBUG:
@@ -241,7 +249,7 @@ def run_setup(script_name, script_args=None, stop_after="run"):
     used to drive the Distutils.
     """
     if stop_after not in ('init', 'config', 'commandline', 'run'):
-        raise ValueError("invalid value for 'stop_after': %r" % (stop_after,))
+        raise ValueError("invalid value for 'stop_after': {!r}".format(stop_after))
 
     global _setup_stop_after, _setup_distribution
     _setup_stop_after = stop_after

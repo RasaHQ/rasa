@@ -16,6 +16,7 @@ import os
 import subprocess
 import sys
 import re
+import warnings
 
 from distutils.errors import (
     DistutilsExecError,
@@ -29,6 +30,13 @@ from distutils import log
 from distutils.util import get_platform
 
 import winreg
+
+warnings.warn(
+    "msvc9compiler is deprecated and slated to be removed "
+    "in the future. Please discontinue use or file an issue "
+    "with pypa/distutils describing your use case.",
+    DeprecationWarning,
+)
 
 RegOpenKeyEx = winreg.OpenKeyEx
 RegEnumKey = winreg.EnumKey
@@ -167,7 +175,7 @@ you can try compiling with MingW32, by passing "-c mingw32" to setup.py."""
                 except RegError:
                     continue
                 key = RegEnumKey(h, 0)
-                d = Reg.get_value(base, r"%s\%s" % (p, key))
+                d = Reg.get_value(base, r"{}\{}".format(p, key))
                 self.macros["$(FrameworkVersion)"] = d["version"]
 
     def sub(self, s):
@@ -273,7 +281,7 @@ def query_vcvarsall(version, arch="x86"):
         raise DistutilsPlatformError("Unable to find vcvarsall.bat")
     log.debug("Calling 'vcvarsall.bat %s' (version=%s)", arch, version)
     popen = subprocess.Popen(
-        '"%s" %s & set' % (vcvarsall, arch),
+        '"{}" {} & set'.format(vcvarsall, arch),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
@@ -350,7 +358,7 @@ class MSVCCompiler(CCompiler):
         self.__arch = None  # deprecated name
         self.initialized = False
 
-    def initialize(self, plat_name=None):
+    def initialize(self, plat_name=None):  # noqa: C901
         # multi-init means we would need to check platform same each time...
         assert not self.initialized, "don't init multiple times"
         if self.__version < 8.0:
@@ -362,7 +370,9 @@ class MSVCCompiler(CCompiler):
         # sanity check for platforms to prevent obscure errors later.
         ok_plats = 'win32', 'win-amd64'
         if plat_name not in ok_plats:
-            raise DistutilsPlatformError("--plat-name must be one of %s" % (ok_plats,))
+            raise DistutilsPlatformError(
+                "--plat-name must be one of {}".format(ok_plats)
+            )
 
         if (
             "DISTUTILS_USE_SDK" in os.environ
@@ -478,7 +488,7 @@ class MSVCCompiler(CCompiler):
                 obj_names.append(os.path.join(output_dir, base + self.obj_extension))
         return obj_names
 
-    def compile(
+    def compile(  # noqa: C901
         self,
         sources,
         output_dir=None,
@@ -555,7 +565,9 @@ class MSVCCompiler(CCompiler):
                 continue
             else:
                 # how to handle this file?
-                raise CompileError("Don't know how to compile %s to %s" % (src, obj))
+                raise CompileError(
+                    "Don't know how to compile {} to {}".format(src, obj)
+                )
 
             output_opt = "/Fo" + obj
             try:
@@ -591,7 +603,7 @@ class MSVCCompiler(CCompiler):
         else:
             log.debug("skipping %s (up-to-date)", output_filename)
 
-    def link(
+    def link(  # noqa: C901
         self,
         target_desc,
         objects,
@@ -678,7 +690,7 @@ class MSVCCompiler(CCompiler):
             mfinfo = self.manifest_get_embed_info(target_desc, ld_args)
             if mfinfo is not None:
                 mffilename, mfid = mfinfo
-                out_arg = '-outputresource:%s;%s' % (output_filename, mfid)
+                out_arg = '-outputresource:{};{}'.format(output_filename, mfid)
                 try:
                     self.spawn(['mt.exe', '-nologo', '-manifest', mffilename, out_arg])
                 except DistutilsExecError as msg:

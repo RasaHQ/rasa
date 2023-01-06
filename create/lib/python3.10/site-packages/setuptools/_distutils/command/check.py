@@ -2,19 +2,18 @@
 
 Implements the Distutils 'check' command.
 """
-from email.utils import getaddresses
+import contextlib
 
 from distutils.core import Command
 from distutils.errors import DistutilsSetupError
 
-try:
-    # docutils is installed
-    from docutils.utils import Reporter
-    from docutils.parsers.rst import Parser
-    from docutils import frontend
-    from docutils import nodes
+with contextlib.suppress(ImportError):
+    import docutils.utils
+    import docutils.parsers.rst
+    import docutils.frontend
+    import docutils.nodes
 
-    class SilentReporter(Reporter):
+    class SilentReporter(docutils.utils.Reporter):
         def __init__(
             self,
             source,
@@ -32,15 +31,9 @@ try:
 
         def system_message(self, level, message, *children, **kwargs):
             self.messages.append((level, message, children, kwargs))
-            return nodes.system_message(
+            return docutils.nodes.system_message(
                 message, level=level, type=self.levels[level], *children, **kwargs
             )
-
-    HAS_DOCUTILS = True
-except Exception:
-    # Catch all exceptions because exceptions besides ImportError probably
-    # indicate that docutils is not ported to Py3k.
-    HAS_DOCUTILS = False
 
 
 class check(Command):
@@ -83,8 +76,11 @@ class check(Command):
         if self.metadata:
             self.check_metadata()
         if self.restructuredtext:
-            if HAS_DOCUTILS:
-                self.check_restructuredtext()
+            if 'docutils' in globals():
+                try:
+                    self.check_restructuredtext()
+                except TypeError as exc:
+                    raise DistutilsSetupError(str(exc))
             elif self.strict:
                 raise DistutilsSetupError('The docutils package is needed.')
 
@@ -119,15 +115,17 @@ class check(Command):
             if line is None:
                 warning = warning[1]
             else:
-                warning = '%s (line %s)' % (warning[1], line)
+                warning = '{} (line {})'.format(warning[1], line)
             self.warn(warning)
 
     def _check_rst_data(self, data):
         """Returns warnings when the provided data doesn't compile."""
         # the include and csv_table directives need this to be a path
         source_path = self.distribution.script_name or 'setup.py'
-        parser = Parser()
-        settings = frontend.OptionParser(components=(Parser,)).get_default_values()
+        parser = docutils.parsers.rst.Parser()
+        settings = docutils.frontend.OptionParser(
+            components=(docutils.parsers.rst.Parser,)
+        ).get_default_values()
         settings.tab_width = 4
         settings.pep_references = None
         settings.rfc_references = None
@@ -141,7 +139,7 @@ class check(Command):
             error_handler=settings.error_encoding_error_handler,
         )
 
-        document = nodes.document(settings, reporter, source=source_path)
+        document = docutils.nodes.document(settings, reporter, source=source_path)
         document.note_source(source_path, -1)
         try:
             parser.parse(data, document)

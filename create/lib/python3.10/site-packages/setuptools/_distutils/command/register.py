@@ -7,11 +7,11 @@ Implements the Distutils 'register' command (register with the repository).
 
 import getpass
 import io
-import urllib.parse, urllib.request
+import urllib.parse
+import urllib.request
 from warnings import warn
 
 from distutils.core import PyPIRCCommand
-from distutils.errors import *
 from distutils import log
 
 
@@ -66,9 +66,9 @@ class register(PyPIRCCommand):
     def check_metadata(self):
         """Deprecated API."""
         warn(
-            "distutils.command.register.check_metadata is deprecated, \
-              use the check command instead",
-            PendingDeprecationWarning,
+            "distutils.command.register.check_metadata is deprecated; "
+            "use the check command instead",
+            DeprecationWarning,
         )
         check = self.distribution.get_command_obj('check')
         check.ensure_finalized()
@@ -104,7 +104,7 @@ class register(PyPIRCCommand):
         (code, result) = self.post_to_server(self.build_post_data('verify'))
         log.info('Server response (%s): %s', code, result)
 
-    def send_metadata(self):
+    def send_metadata(self):  # noqa: C901
         '''Send the metadata to the package index server.
 
         Well, do the following:
@@ -174,7 +174,7 @@ Your selection [default 1]: ''',
             auth.add_password(self.realm, host, username, password)
             # send the info to the server and report the result
             code, result = self.post_to_server(self.build_post_data('submit'), auth)
-            self.announce('Server response (%s): %s' % (code, result), log.INFO)
+            self.announce('Server response ({}): {}'.format(code, result), log.INFO)
 
             # possibly save the login
             if code == 200:
@@ -224,7 +224,7 @@ Your selection [default 1]: ''',
                 log.info('Server response (%s): %s', code, result)
             else:
                 log.info('You will receive an email shortly.')
-                log.info(('Follow the instructions in it to ' 'complete registration.'))
+                log.info('Follow the instructions in it to ' 'complete registration.')
         elif choice == '3':
             data = {':action': 'password_reset'}
             data['email'] = ''
@@ -261,11 +261,11 @@ Your selection [default 1]: ''',
             data['metadata_version'] = '1.1'
         return data
 
-    def post_to_server(self, data, auth=None):
+    def post_to_server(self, data, auth=None):  # noqa: C901
         '''Post a query to the server, and return a string response.'''
         if 'name' in data:
             self.announce(
-                'Registering %s to %s' % (data['name'], self.repository), log.INFO
+                'Registering {} to {}'.format(data['name'], self.repository), log.INFO
             )
         # Build up the MIME payload for the urllib2 POST data
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'

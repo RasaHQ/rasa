@@ -71,7 +71,7 @@ class upload(PyPIRCCommand):
         for command, pyversion, filename in self.distribution.dist_files:
             self.upload_file(command, pyversion, filename)
 
-    def upload_file(self, command, pyversion, filename):
+    def upload_file(self, command, pyversion, filename):  # noqa: C901
         # Makes sure the repository URL is compliant
         schema, netloc, url, params, query, fragments = urlparse(self.repository)
         if params or query or fragments:
@@ -170,7 +170,7 @@ class upload(PyPIRCCommand):
         body.write(end_boundary)
         body = body.getvalue()
 
-        msg = "Submitting %s to %s" % (filename, self.repository)
+        msg = "Submitting {} to {}".format(filename, self.repository)
         self.announce(msg, log.INFO)
 
         # build the Request
@@ -194,12 +194,12 @@ class upload(PyPIRCCommand):
             raise
 
         if status == 200:
-            self.announce('Server response (%s): %s' % (status, reason), log.INFO)
+            self.announce('Server response ({}): {}'.format(status, reason), log.INFO)
             if self.show_response:
                 text = self._read_pypi_response(result)
                 msg = '\n'.join(('-' * 75, text, '-' * 75))
                 self.announce(msg, log.INFO)
         else:
-            msg = 'Upload failed (%s): %s' % (status, reason)
+            msg = 'Upload failed ({}): {}'.format(status, reason)
             self.announce(msg, log.ERROR)
             raise DistutilsError(msg)

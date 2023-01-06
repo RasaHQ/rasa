@@ -12,11 +12,10 @@ from distutils import log
 from distutils.core import Command
 from distutils.debug import DEBUG
 from distutils.sysconfig import get_config_vars
-from distutils.errors import DistutilsPlatformError
 from distutils.file_util import write_file
 from distutils.util import convert_path, subst_vars, change_root
 from distutils.util import get_platform
-from distutils.errors import DistutilsOptionError
+from distutils.errors import DistutilsOptionError, DistutilsPlatformError
 from . import _framework_compat as fw
 from .. import _collections
 
@@ -36,8 +35,10 @@ WINDOWS_SCHEME = {
 INSTALL_SCHEMES = {
     'posix_prefix': {
         'purelib': '{base}/lib/{implementation_lower}{py_version_short}/site-packages',
-        'platlib': '{platbase}/{platlibdir}/{implementation_lower}{py_version_short}/site-packages',
-        'headers': '{base}/include/{implementation_lower}{py_version_short}{abiflags}/{dist_name}',
+        'platlib': '{platbase}/{platlibdir}/{implementation_lower}'
+        '{py_version_short}/site-packages',
+        'headers': '{base}/include/{implementation_lower}'
+        '{py_version_short}{abiflags}/{dist_name}',
         'scripts': '{base}/bin',
         'data': '{base}',
     },
@@ -70,7 +71,8 @@ if HAS_USER_SITE:
     INSTALL_SCHEMES['nt_user'] = {
         'purelib': '{usersite}',
         'platlib': '{usersite}',
-        'headers': '{userbase}/{implementation}{py_version_nodot_plat}/Include/{dist_name}',
+        'headers': '{userbase}/{implementation}{py_version_nodot_plat}'
+        '/Include/{dist_name}',
         'scripts': '{userbase}/{implementation}{py_version_nodot_plat}/Scripts',
         'data': '{userbase}',
     }
@@ -78,7 +80,8 @@ if HAS_USER_SITE:
     INSTALL_SCHEMES['posix_user'] = {
         'purelib': '{usersite}',
         'platlib': '{usersite}',
-        'headers': '{userbase}/include/{implementation_lower}{py_version_short}{abiflags}/{dist_name}',
+        'headers': '{userbase}/include/{implementation_lower}'
+        '{py_version_short}{abiflags}/{dist_name}',
         'scripts': '{userbase}/bin',
         'data': '{userbase}',
     }
@@ -327,7 +330,7 @@ class install(Command):
     # party Python modules on various platforms given a wide
     # array of user input is decided.  Yes, it's quite complex!)
 
-    def finalize_options(self):
+    def finalize_options(self):  # noqa: C901
         """Finalizes options."""
         # This method (and its helpers, like 'finalize_unix()',
         # 'finalize_other()', and 'select_scheme()') is where the default

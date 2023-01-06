@@ -5,12 +5,12 @@ JSON Schema library).
 
 from typing import Mapping, TypeVar
 
-from .fastjsonschema_exceptions import JsonSchemaValueException
+from .error_reporting import ValidationError
 
 T = TypeVar("T", bound=Mapping)
 
 
-class RedefiningStaticFieldAsDynamic(JsonSchemaValueException):
+class RedefiningStaticFieldAsDynamic(ValidationError):
     """According to PEP 621:
 
     Build back-ends MUST raise an error if the metadata specifies a field

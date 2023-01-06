@@ -182,6 +182,7 @@ class egg_info(InfoCommon, Command):
         self.egg_info = None
         self.egg_version = None
         self.broken_egg_info = False
+        self.ignore_egg_info_in_manifest = False
 
     ####################################
     # allow the 'tag_svn_revision' to be detected and
@@ -310,6 +311,7 @@ class egg_info(InfoCommon, Command):
         """Generate SOURCES.txt manifest file"""
         manifest_filename = os.path.join(self.egg_info, "SOURCES.txt")
         mm = manifest_maker(self.distribution)
+        mm.ignore_egg_info_dir = self.ignore_egg_info_in_manifest
         mm.manifest = manifest_filename
         mm.run()
         self.filelist = mm.filelist
@@ -332,6 +334,10 @@ class egg_info(InfoCommon, Command):
 
 class FileList(_FileList):
     # Implementations of the various MANIFEST.in commands
+
+    def __init__(self, warn=None, debug_print=None, ignore_egg_info_dir=False):
+        super().__init__(warn, debug_print)
+        self.ignore_egg_info_dir = ignore_egg_info_dir
 
     def process_template_line(self, line):
         # Parse the line: split it up, make sure the right number of words
@@ -522,6 +528,10 @@ class FileList(_FileList):
             return False
 
         try:
+            # ignore egg-info paths
+            is_egg_info = ".egg-info" in u_path or b".egg-info" in utf8_path
+            if self.ignore_egg_info_dir and is_egg_info:
+                return False
             # accept is either way checks out
             if os.path.exists(u_path) or os.path.exists(utf8_path):
                 return True
@@ -538,12 +548,13 @@ class manifest_maker(sdist):
         self.prune = 1
         self.manifest_only = 1
         self.force_manifest = 1
+        self.ignore_egg_info_dir = False
 
     def finalize_options(self):
         pass
 
     def run(self):
-        self.filelist = FileList()
+        self.filelist = FileList(ignore_egg_info_dir=self.ignore_egg_info_dir)
         if not os.path.exists(self.manifest):
             self.write_manifest()  # it must exist so it'll get in the list
         self.add_defaults()

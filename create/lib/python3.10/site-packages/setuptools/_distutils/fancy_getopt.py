@@ -8,9 +8,11 @@ additional features:
   * options set attributes of a passed-in object
 """
 
-import sys, string, re
+import sys
+import string
+import re
 import getopt
-from distutils.errors import *
+from distutils.errors import DistutilsGetoptError, DistutilsArgError
 
 # Much like command_re in distutils.core, this is close to but not quite
 # the same as a Python NAME -- except, in the spirit of most GNU
@@ -20,7 +22,7 @@ longopt_pat = r'[a-zA-Z](?:[a-zA-Z0-9-]*)'
 longopt_re = re.compile(r'^%s$' % longopt_pat)
 
 # For recognizing "negative alias" options, eg. "quiet=!verbose"
-neg_alias_re = re.compile("^(%s)=!(%s)$" % (longopt_pat, longopt_pat))
+neg_alias_re = re.compile("^({})=!({})$".format(longopt_pat, longopt_pat))
 
 # This is used to translate long options to legitimate Python identifiers
 # (for use as attributes of some object).
@@ -136,7 +138,7 @@ class FancyGetopt:
         self._check_alias_dict(negative_alias, "negative alias")
         self.negative_alias = negative_alias
 
-    def _grok_option_table(self):
+    def _grok_option_table(self):  # noqa: C901
         """Populate the various data structures that keep tabs on the
         option table.  Called by 'getopt()' before it can do anything
         worthwhile.
@@ -155,7 +157,7 @@ class FancyGetopt:
             else:
                 # the option table is part of the code, so simply
                 # assert that it is correct
-                raise ValueError("invalid option tuple: %r" % (option,))
+                raise ValueError("invalid option tuple: {!r}".format(option))
 
             # Type- and value-check the option names
             if not isinstance(long, str) or len(long) < 2:
@@ -218,7 +220,7 @@ class FancyGetopt:
                 self.short_opts.append(short)
                 self.short2long[short[0]] = long
 
-    def getopt(self, args=None, object=None):
+    def getopt(self, args=None, object=None):  # noqa: C901
         """Parse command-line options in args. Store as attributes on object.
 
         If 'args' is None or not supplied, uses 'sys.argv[1:]'.  If
@@ -289,7 +291,7 @@ class FancyGetopt:
         else:
             return self.option_order
 
-    def generate_help(self, header=None):
+    def generate_help(self, header=None):  # noqa: C901
         """Generate help text (a list of strings, one per suggested line of
         output) from the option table for this FancyGetopt object.
         """
@@ -301,13 +303,13 @@ class FancyGetopt:
         for option in self.option_table:
             long = option[0]
             short = option[1]
-            l = len(long)
+            ell = len(long)
             if long[-1] == '=':
-                l = l - 1
+                ell = ell - 1
             if short is not None:
-                l = l + 5  # " (-x)" where short == 'x'
-            if l > max_opt:
-                max_opt = l
+                ell = ell + 5  # " (-x)" where short == 'x'
+            if ell > max_opt:
+                max_opt = ell
 
         opt_width = max_opt + 2 + 2 + 2  # room for indent + dashes + gutter
 
@@ -357,14 +359,14 @@ class FancyGetopt:
             # Case 2: we have a short option, so we have to include it
             # just after the long option
             else:
-                opt_names = "%s (-%s)" % (long, short)
+                opt_names = "{} (-{})".format(long, short)
                 if text:
                     lines.append("  --%-*s  %s" % (max_opt, opt_names, text[0]))
                 else:
                     lines.append("  --%-*s" % opt_names)
 
-            for l in text[1:]:
-                lines.append(big_indent + l)
+            for ell in text[1:]:
+                lines.append(big_indent + ell)
         return lines
 
     def print_help(self, header=None, file=None):
@@ -405,11 +407,11 @@ def wrap_text(text, width):
         cur_len = 0  # length of current line
 
         while chunks:
-            l = len(chunks[0])
-            if cur_len + l <= width:  # can squeeze (at least) this chunk in
+            ell = len(chunks[0])
+            if cur_len + ell <= width:  # can squeeze (at least) this chunk in
                 cur_line.append(chunks[0])
                 del chunks[0]
-                cur_len = cur_len + l
+                cur_len = cur_len + ell
             else:  # this line is full
                 # drop last chunk if all space
                 if cur_line and cur_line[-1][0] == ' ':

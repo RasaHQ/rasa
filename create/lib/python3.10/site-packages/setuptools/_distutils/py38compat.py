@@ -5,4 +5,4 @@ def aix_platform(osname, version, release):
         return _aix_support.aix_platform()
     except ImportError:
         pass
-    return "%s-%s.%s" % (osname, version, release)
+    return "{}-{}.{}".format(osname, version, release)

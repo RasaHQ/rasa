@@ -75,7 +75,7 @@ class build_scripts(Command):
 
         return outfiles, updated_files
 
-    def _copy_script(self, script, outfiles, updated_files):
+    def _copy_script(self, script, outfiles, updated_files):  # noqa: C901
         shebang_match = None
         script = convert_path(script)
         outfile = os.path.join(self.build_dir, os.path.basename(script))

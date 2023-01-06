@@ -11,6 +11,8 @@ import itertools
 import stat
 import warnings
 from pathlib import Path
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
+
 from setuptools._deprecation_warning import SetuptoolsDeprecationWarning
 from setuptools.extern.more_itertools import unique_everseen
 
@@ -28,6 +30,8 @@ class build_py(orig.build_py):
     Also, this version of the 'build_py' command allows you to specify both
     'py_modules' and 'packages' in the same setup operation.
     """
+    editable_mode: bool = False
+    existing_egg_info_dir: Optional[str] = None  #: Private API, internal use only.
 
     def finalize_options(self):
         orig.build_py.finalize_options(self)
@@ -37,9 +41,18 @@ class build_py(orig.build_py):
             del self.__dict__['data_files']
         self.__updated_files = []
 
+    def copy_file(self, infile, outfile, preserve_mode=1, preserve_times=1,
+                  link=None, level=1):
+        # Overwrite base class to allow using links
+        if link:
+            infile = str(Path(infile).resolve())
+            outfile = str(Path(outfile).resolve())
+        return super().copy_file(infile, outfile, preserve_mode, preserve_times,
+                                 link, level)
+
     def run(self):
         """Build modules, packages, and copy data files to build directory"""
-        if not self.py_modules and not self.packages:
+        if not (self.py_modules or self.packages) or self.editable_mode:
             return
 
         if self.py_modules:
@@ -112,16 +125,41 @@ class build_py(orig.build_py):
         )
         return self.exclude_data_files(package, src_dir, files)
 
-    def build_package_data(self):
-        """Copy data files into build directory"""
+    def get_outputs(self, include_bytecode=1) -> List[str]:
+        """See :class:`setuptools.commands.build.SubCommand`"""
+        if self.editable_mode:
+            return list(self.get_output_mapping().keys())
+        return super().get_outputs(include_bytecode)
+
+    def get_output_mapping(self) -> Dict[str, str]:
+        """See :class:`setuptools.commands.build.SubCommand`"""
+        mapping = itertools.chain(
+            self._get_package_data_output_mapping(),
+            self._get_module_mapping(),
+        )
+        return dict(sorted(mapping, key=lambda x: x[0]))
+
+    def _get_module_mapping(self) -> Iterator[Tuple[str, str]]:
+        """Iterate over all modules producing (dest, src) pairs."""
+        for (package, module, module_file) in self.find_all_modules():
+            package = package.split('.')
+            filename = self.get_module_outfile(self.build_lib, package, module)
+            yield (filename, module_file)
+
+    def _get_package_data_output_mapping(self) -> Iterator[Tuple[str, str]]:
+        """Iterate over package data producing (dest, src) pairs."""
         for package, src_dir, build_dir, filenames in self.data_files:
             for filename in filenames:
                 target = os.path.join(build_dir, filename)
-                self.mkpath(os.path.dirname(target))
                 srcfile = os.path.join(src_dir, filename)
-                outf, copied = self.copy_file(srcfile, target)
-                make_writable(target)
-                srcfile = os.path.abspath(srcfile)
+                yield (target, srcfile)
+
+    def build_package_data(self):
+        """Copy data files into build directory"""
+        for target, srcfile in self._get_package_data_output_mapping():
+            self.mkpath(os.path.dirname(target))
+            _outf, _copied = self.copy_file(srcfile, target)
+            make_writable(target)
 
     def analyze_manifest(self):
         self.manifest_files = mf = {}
@@ -132,10 +170,21 @@ class build_py(orig.build_py):
             # Locate package source directory
             src_dirs[assert_relative(self.get_package_dir(package))] = package
 
-        self.run_command('egg_info')
+        if (
+            getattr(self, 'existing_egg_info_dir', None)
+            and Path(self.existing_egg_info_dir, "SOURCES.txt").exists()
+        ):
+            egg_info_dir = self.existing_egg_info_dir
+            manifest = Path(egg_info_dir, "SOURCES.txt")
+            files = manifest.read_text(encoding="utf-8").splitlines()
+        else:
+            self.run_command('egg_info')
+            ei_cmd = self.get_finalized_command('egg_info')
+            egg_info_dir = ei_cmd.egg_info
+            files = ei_cmd.filelist.files
+
         check = _IncludePackageDataAbuse()
-        ei_cmd = self.get_finalized_command('egg_info')
-        for path in ei_cmd.filelist.files:
+        for path in self._filter_build_files(files, egg_info_dir):
             d, f = os.path.split(assert_relative(path))
             prev = None
             oldf = f
@@ -152,6 +201,25 @@ class build_py(orig.build_py):
                     if importable:
                         check.warn(importable)
                 mf.setdefault(src_dirs[d], []).append(path)
+
+    def _filter_build_files(self, files: Iterable[str], egg_info: str) -> Iterator[str]:
+        """
+        ``build_meta`` may try to create egg_info outside of the project directory,
+        and this can be problematic for certain plugins (reported in issue #3500).
+
+        Extensions might also include between their sources files created on the
+        ``build_lib`` and ``build_temp`` directories.
+
+        This function should filter this case of invalid files out.
+        """
+        build = self.get_finalized_command("build")
+        build_dirs = (egg_info, self.build_lib, build.build_temp, build.build_base)
+        norm_dirs = [os.path.normpath(p) for p in build_dirs if p]
+
+        for file in files:
+            norm_path = os.path.normpath(file)
+            if not os.path.isabs(file) or all(d not in norm_path for d in norm_dirs):
+                yield file
 
     def get_data_files(self):
         pass  # Lazily compute data files in _get_data_files() function.
@@ -189,6 +257,8 @@ class build_py(orig.build_py):
     def initialize_options(self):
         self.packages_checked = {}
         orig.build_py.initialize_options(self)
+        self.editable_mode = False
+        self.existing_egg_info_dir = None
 
     def get_package_dir(self, package):
         res = orig.build_py.get_package_dir(self, package)

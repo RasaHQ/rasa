@@ -60,7 +60,7 @@ class Version:
         )
 
     def __repr__(self):
-        return "%s ('%s')" % (self.__class__.__name__, str(self))
+        return "{} ('{}')".format(self.__class__.__name__, str(self))
 
     def __eq__(self, other):
         c = self._cmp(other)
@@ -180,7 +180,7 @@ class StrictVersion(Version):
 
         return vstring
 
-    def _cmp(self, other):
+    def _cmp(self, other):  # noqa: C901
         if isinstance(other, str):
             with suppress_known_deprecation():
                 other = StrictVersion(other)

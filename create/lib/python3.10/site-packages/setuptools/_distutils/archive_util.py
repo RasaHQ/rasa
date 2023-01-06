@@ -121,7 +121,7 @@ def make_tarball(
 
     # compression using `compress`
     if compress == 'compress':
-        warn("'compress' will be deprecated.", PendingDeprecationWarning)
+        warn("'compress' is deprecated.", DeprecationWarning)
         # the option varies depending on the platform
         compressed_name = archive_name + compress_ext[compress]
         if sys.platform == 'win32':
@@ -134,7 +134,7 @@ def make_tarball(
     return archive_name
 
 
-def make_zipfile(base_name, base_dir, verbose=0, dry_run=0):
+def make_zipfile(base_name, base_dir, verbose=0, dry_run=0):  # noqa: C901
     """Create a zip file from all the files under 'base_dir'.
 
     The output zip file will be named 'base_name' + ".zip".  Uses either the

@@ -4,7 +4,7 @@ provides the TextFile class, which gives an interface to text files
 that (optionally) takes care of stripping comments, ignoring blank
 lines, and joining lines with backslashes."""
 
-import sys, io
+import sys
 
 
 class TextFile:
@@ -115,7 +115,7 @@ class TextFile:
         """Open a new file named 'filename'.  This overrides both the
         'filename' and 'file' arguments to the constructor."""
         self.filename = filename
-        self.file = io.open(self.filename, 'r', errors=self.errors)
+        self.file = open(self.filename, errors=self.errors)
         self.current_line = 0
 
     def close(self):
@@ -152,7 +152,7 @@ class TextFile:
         line."""
         sys.stderr.write("warning: " + self.gen_error(msg, line) + "\n")
 
-    def readline(self):
+    def readline(self):  # noqa: C901
         """Read and return a single logical line from the current file (or
         from an internal buffer if lines have previously been "unread"
         with 'unreadline()').  If the 'join_lines' option is true, this

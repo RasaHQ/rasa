@@ -42,8 +42,18 @@ import os
 from fnmatch import fnmatchcase
 from glob import glob
 from pathlib import Path
-from typing import TYPE_CHECKING
-from typing import Callable, Dict, Iterator, Iterable, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Union
+)
 
 import _distutils_hack.override  # noqa: F401
 
@@ -435,6 +445,7 @@ class ConfigDiscovery:
     def _ensure_no_accidental_inclusion(self, detected: List[str], kind: str):
         if len(detected) > 1:
             from inspect import cleandoc
+
             from setuptools.errors import PackageDiscoveryError
 
             msg = f"""Multiple top-level {kind} discovered in a flat-layout: {detected}.
@@ -470,7 +481,6 @@ class ConfigDiscovery:
         )
         if name:
             self.dist.metadata.name = name
-            self.dist.name = name
 
     def _find_name_single_package_or_module(self) -> Optional[str]:
         """Exactly one module or package"""
@@ -527,7 +537,7 @@ def remove_stubs(packages: List[str]) -> List[str]:
 
 
 def find_parent_package(
-    packages: List[str], package_dir: Dict[str, str], root_dir: _Path
+    packages: List[str], package_dir: Mapping[str, str], root_dir: _Path
 ) -> Optional[str]:
     """Find the parent package that is not a namespace."""
     packages = sorted(packages, key=len)
@@ -550,7 +560,9 @@ def find_parent_package(
     return None
 
 
-def find_package_path(name: str, package_dir: Dict[str, str], root_dir: _Path) -> str:
+def find_package_path(
+    name: str, package_dir: Mapping[str, str], root_dir: _Path
+) -> str:
     """Given a package name, return the path where it should be found on
     disk, considering the ``package_dir`` option.
 

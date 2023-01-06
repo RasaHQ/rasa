@@ -8,7 +8,7 @@ import os
 from distutils.core import Command
 from distutils.util import get_platform
 from distutils.dir_util import remove_tree, ensure_relative
-from distutils.errors import *
+from distutils.errors import DistutilsPlatformError
 from distutils.sysconfig import get_python_version
 from distutils import log
 
@@ -105,7 +105,9 @@ class bdist_dumb(Command):
 
         # And make an archive relative to the root of the
         # pseudo-installation tree.
-        archive_basename = "%s.%s" % (self.distribution.get_fullname(), self.plat_name)
+        archive_basename = "{}.{}".format(
+            self.distribution.get_fullname(), self.plat_name
+        )
 
         pseudoinstall_root = os.path.join(self.dist_dir, archive_basename)
         if not self.relative:

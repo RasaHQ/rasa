@@ -2,7 +2,8 @@
 
 Implements the Distutils 'build' command."""
 
-import sys, os
+import sys
+import os
 from distutils.core import Command
 from distutils.errors import DistutilsOptionError
 from distutils.util import get_platform
@@ -65,7 +66,7 @@ class build(Command):
         self.executable = None
         self.parallel = None
 
-    def finalize_options(self):
+    def finalize_options(self):  # noqa: C901
         if self.plat_name is None:
             self.plat_name = get_platform()
         else:
@@ -78,7 +79,7 @@ class build(Command):
                     "using './configure --help' on your platform)"
                 )
 
-        plat_specifier = ".%s-%s" % (self.plat_name, sys.implementation.cache_tag)
+        plat_specifier = ".{}-{}".format(self.plat_name, sys.implementation.cache_tag)
 
         # Make it so Python 2.x and Python 2.x with --with-pydebug don't
         # share the same build directories. Doing so confuses the build

@@ -134,7 +134,7 @@ class Extension:
             warnings.warn(msg)
 
     def __repr__(self):
-        return '<%s.%s(%r) at %#x>' % (
+        return '<{}.{}({!r}) at {:#x}>'.format(
             self.__class__.__module__,
             self.__class__.__qualname__,
             self.name,
@@ -142,7 +142,7 @@ class Extension:
         )
 
 
-def read_setup_file(filename):
+def read_setup_file(filename):  # noqa: C901
     """Reads a Setup file and returns Extension instances."""
     from distutils.sysconfig import parse_makefile, expand_makefile_vars, _variable_rx
 

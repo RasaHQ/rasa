@@ -3,11 +3,19 @@
 Implements the Distutils 'bdist_rpm' command (create RPM source and binary
 distributions)."""
 
-import subprocess, sys, os
+import subprocess
+import sys
+import os
+
 from distutils.core import Command
 from distutils.debug import DEBUG
 from distutils.file_util import write_file
-from distutils.errors import *
+from distutils.errors import (
+    DistutilsOptionError,
+    DistutilsPlatformError,
+    DistutilsFileError,
+    DistutilsExecError,
+)
 from distutils.sysconfig import get_python_version
 from distutils import log
 
@@ -268,7 +276,7 @@ class bdist_rpm(Command):
 
         self.ensure_string('force_arch')
 
-    def run(self):
+    def run(self):  # noqa: C901
         if DEBUG:
             print("before _get_package_data():")
             print("vendor =", self.vendor)
@@ -345,7 +353,7 @@ class bdist_rpm(Command):
         nvr_string = "%{name}-%{version}-%{release}"
         src_rpm = nvr_string + ".src.rpm"
         non_src_rpm = "%{arch}/" + nvr_string + ".%{arch}.rpm"
-        q_cmd = r"rpm -q --qf '%s %s\n' --specfile '%s'" % (
+        q_cmd = r"rpm -q --qf '{} {}\n' --specfile '{}'".format(
             src_rpm,
             non_src_rpm,
             spec_path,
@@ -359,12 +367,12 @@ class bdist_rpm(Command):
                 line = out.readline()
                 if not line:
                     break
-                l = line.strip().split()
-                assert len(l) == 2
-                binary_rpms.append(l[1])
+                ell = line.strip().split()
+                assert len(ell) == 2
+                binary_rpms.append(ell[1])
                 # The source rpm is named after the first entry in the spec file
                 if source_rpm is None:
-                    source_rpm = l[0]
+                    source_rpm = ell[0]
 
             status = out.close()
             if status:
@@ -401,7 +409,7 @@ class bdist_rpm(Command):
     def _dist_path(self, path):
         return os.path.join(self.dist_dir, os.path.basename(path))
 
-    def _make_spec_file(self):
+    def _make_spec_file(self):  # noqa: C901
         """Generate the text of an RPM spec file and return it as a
         list of strings (one per line).
         """
@@ -480,9 +488,9 @@ class bdist_rpm(Command):
         ):
             val = getattr(self, field.lower())
             if isinstance(val, list):
-                spec_file.append('%s: %s' % (field, ' '.join(val)))
+                spec_file.append('{}: {}'.format(field, ' '.join(val)))
             elif val is not None:
-                spec_file.append('%s: %s' % (field, val))
+                spec_file.append('{}: {}'.format(field, val))
 
         if self.distribution.get_url():
             spec_file.append('Url: ' + self.distribution.get_url())
@@ -519,7 +527,7 @@ class bdist_rpm(Command):
 
         # rpm scripts
         # figure out default build script
-        def_setup_call = "%s %s" % (self.python, os.path.basename(sys.argv[0]))
+        def_setup_call = "{} {}".format(self.python, os.path.basename(sys.argv[0]))
         def_build = "%s build" % def_setup_call
         if self.use_rpm_opt_flags:
             def_build = 'env CFLAGS="$RPM_OPT_FLAGS" ' + def_build
