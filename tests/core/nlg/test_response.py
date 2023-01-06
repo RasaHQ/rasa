@@ -80,25 +80,29 @@ async def test_nlg_when_multiple_conditions_satisfied():
     assert resp.get("text") in ["example A", "example B"]
 
 
-async def test_nlg_slot_case_sensitivity():
+@pytest.mark.parametrize(("response_text"), ("example a",))
+async def test_nlg_slot_case_sensitivity(response_text: Text):
     responses = {
         "utter_action": [
             {
-                "text": "example a",
+                "text": response_text,
                 "condition": [{"type": "slot", "name": "test", "value": "Cold"}],
             }
         ]
     }
 
     t = TemplatedNaturalLanguageGenerator(responses=responses)
-    slot_a = TextSlot(
-        name="test", mappings=[{}], initial_value="cold", influence_conversation=False
+    slot_a = CategoricalSlot(
+        name="test",
+        mappings=[{"type": "from_text", "value": ["cold", "hot"]}],
+        influence_conversation=False,
     )
+    slot_a.value = "cold"
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=[slot_a])
     resp = await t.generate(
         utter_action="utter_action", tracker=tracker, output_channel=""
     )
-    assert resp.get("text") == "example a"
+    assert resp.get("text") == response_text
 
 
 @pytest.mark.parametrize(
