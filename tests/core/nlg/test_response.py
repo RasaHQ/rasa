@@ -86,7 +86,7 @@ async def test_nlg_slot_case_sensitivity(response_text: Text):
         "utter_action": [
             {
                 "text": response_text,
-                "condition": [{"type": "slot", "name": "test", "value": "Cold"}],
+                "condition": [{"type": "slot", "name": "test", "value": "cold"}],
             }
         ]
     }
@@ -95,9 +95,9 @@ async def test_nlg_slot_case_sensitivity(response_text: Text):
     slot_a = CategoricalSlot(
         name="test",
         mappings=[{"type": "from_text", "value": ["cold", "hot"]}],
+        initial_value="Cold",
         influence_conversation=False,
     )
-    slot_a.value = "cold"
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=[slot_a])
     resp = await t.generate(
         utter_action="utter_action", tracker=tracker, output_channel=""
