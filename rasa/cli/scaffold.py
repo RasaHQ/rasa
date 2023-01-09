@@ -208,7 +208,7 @@ def run(args: argparse.Namespace) -> None:
         path = (
             questionary.text(
                 "Please enter a path where the project will be "
-                "created [default: current directory]"
+                "created [default: current directoryx]"
             )
             .skip_if(args.no_prompt, default="")
             .ask()
@@ -220,9 +220,9 @@ def run(args: argparse.Namespace) -> None:
         # Can't use `if not path` either, as `None` will be handled differently (abort)
         if path == "":
             path = "."
-        if path != None and path[0] == "~":
-            homePath = os.path.expanduser('~')
-            path = homePath + path[1:]
+        if path is not None and path[0] == "~":
+            home_path = os.path.expanduser('~')
+            path = home_path + path[1:]
 
     if args.no_prompt and not os.path.isdir(path):
         print_error_and_exit(f"Project init path '{path}' not found.")
