@@ -471,7 +471,15 @@ def test_graph_trainer_train_logging_with_cached_components(
     with caplog.at_level(logging.INFO, logger="rasa.engine.training.hooks"):
         train_with_schema(train_schema, temp_cache)
 
-        assert set(caplog.messages) == {
+        caplog_info_records = list(
+            filter(
+                lambda x: "failed to send traces to Datadog Agent" not in x[2],
+                caplog.record_tuples,
+            )
+        )
+        caplog_messages_set = set([record[2] for record in caplog_info_records])
+
+        assert caplog_messages_set == {
             "Starting to train component 'SubtractByX'.",
             "Finished training component 'SubtractByX'.",
             "Restored component 'CacheableComponent' from cache.",
