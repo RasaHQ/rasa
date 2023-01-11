@@ -186,37 +186,41 @@ else
 	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
 endif
 
-test-cli: PYTEST_MARKER=category_cli
+test-cli: PYTEST_MARKER=category_cli and (not flaky)
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker
 
-test-core-featurizers: PYTEST_MARKER=category_core_featurizers
+test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky)
 test-core-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-core-featurizers: test-marker
 
-test-policies: PYTEST_MARKER=category_policies
+test-policies: PYTEST_MARKER=category_policies and (not flaky)
 test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker
 
-test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers
+test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky)
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: test-marker
 
-test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors
+test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky)
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: test-marker
 
-test-full-model-training: PYTEST_MARKER=category_full_model_training
+test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
 test-full-model-training: test-marker
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: test-marker
 
-test-performance: PYTEST_MARKER=category_performance
+test-performance: PYTEST_MARKER=category_performance and (not flaky)
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker
+
+test-flaky: PYTEST_MARKER=flaky
+test-flaky: DD_ARGS := $(or $(DD_ARGS),)
+test-flaky: test-marker
 
 test-gh-actions:
 	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest .github/tests --cov .github/scripts

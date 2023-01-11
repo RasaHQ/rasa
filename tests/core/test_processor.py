@@ -1526,6 +1526,7 @@ async def test_loads_correct_model_from_path(
     assert nlu_processor.model_filename == trained_nlu_model_name
 
 
+@pytest.mark.flaky
 @pytest.mark.timeout(120, func_only=True)
 async def test_custom_action_triggers_action_extract_slots(
     trained_async: Callable,
@@ -1665,6 +1666,7 @@ async def test_processor_executes_bot_uttered_returned_by_action_extract_slots(
         assert tracker.get_slot(slot_name) is None
 
 
+@pytest.mark.flaky
 @pytest.mark.timeout(120, func_only=True)
 @pytest.mark.parametrize(
     "sender_id, message_text, message_intent",
@@ -1721,6 +1723,7 @@ async def test_from_trigger_intent_with_mapping_conditions_when_form_not_activat
     assert tracker.get_slot(slot_name) is None
 
 
+@pytest.mark.flaky
 @pytest.mark.timeout(120, func_only=True)
 async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
     trained_async: Callable,
