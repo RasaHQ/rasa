@@ -92,6 +92,7 @@ from rasa.utils.tensorflow.constants import (
     MAX_RELATIVE_POSITION,
     AUTO,
     BALANCED,
+    BALANCE_ONCE,
     CROSS_ENTROPY,
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
@@ -180,6 +181,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # Strategy used when creating batches.
             # Can be either 'sequence' or 'balanced'.
             BATCH_STRATEGY: BALANCED,
+            # Balance only once instead of each epoch
+            BALANCE_ONCE: False,
             # Number of epochs to train
             EPOCHS: 300,
             # Set random seed to any 'int' to get reproducible results
@@ -922,6 +925,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             self.component_config[BATCH_STRATEGY],
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[RANDOM_SEED],
+            balance_once = self.component_config[BALANCE_ONCE]
         )
         callbacks = train_utils.create_common_callbacks(
             self.component_config[EPOCHS],

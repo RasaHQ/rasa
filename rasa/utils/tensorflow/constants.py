@@ -18,6 +18,7 @@ MAX_RELATIVE_POSITION = "max_relative_position"
 
 BATCH_SIZES = "batch_size"
 BATCH_STRATEGY = "batch_strategy"
+BALANCE_ONCE = "balance_once"
 EPOCHS = "epochs"
 RANDOM_SEED = "random_seed"
 LEARNING_RATE = "learning_rate"

@@ -684,7 +684,7 @@ class RasaModelData:
         ids = np.random.permutation(self.num_examples)
         return self._data_for_ids(data, ids)
 
-    def balanced_data(self, data: Data, batch_size: int, shuffle: bool) -> Data:
+    def balanced_data(self, data: Data, batch_size: int, shuffle: bool, balance_once: bool = False) -> Data:
         """Mix model data to account for class imbalance.
 
         This batching strategy puts rare classes approximately in every other batch,
@@ -709,6 +709,13 @@ class RasaModelData:
         ):
             return data
 
+        if balance_once:
+            if hasattr(self, "initial_batch_size"):
+                # Overwrite batch size with the initial value
+                batch_size = self.initial_batch_size
+            else:
+                self.initial_batch_size = batch_size
+
         label_ids = self._create_label_ids(data[self.label_key][self.label_sub_key][0])
 
         unique_label_ids, counts_label_ids = np.unique(
@@ -726,6 +733,9 @@ class RasaModelData:
         num_data_cycles = [0] * num_label_ids
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
+        # actual total samples taken from each class
+        if balance_once:
+            samples_per_class = [0] * num_label_ids
 
         new_data: DefaultDict[
             Text, DefaultDict[Text, List[List[FeatureArray]]]
@@ -738,11 +748,12 @@ class RasaModelData:
                 indices_of_labels = np.asarray(range(num_label_ids))
 
             for index in indices_of_labels:
-                if num_data_cycles[index] > 0 and not skipped[index]:
-                    skipped[index] = True
-                    continue
+                if not balance_once:
+                    if num_data_cycles[index] > 0 and not skipped[index]:
+                        skipped[index] = True
+                        continue
 
-                skipped[index] = False
+                    skipped[index] = False
 
                 index_batch_size = (
                     int(counts_label_ids[index] / self.num_examples * batch_size) + 1
@@ -753,14 +764,27 @@ class RasaModelData:
                         for i, f in enumerate(features):
                             if len(new_data[key][sub_key]) < i + 1:
                                 new_data[key][sub_key].append([])
-                            new_data[key][sub_key][i].append(
-                                f[data_idx[index] : data_idx[index] + index_batch_size]
-                            )
 
-                data_idx[index] += index_batch_size
-                if data_idx[index] >= counts_label_ids[index]:
-                    num_data_cycles[index] += 1
-                    data_idx[index] = 0
+                            if balance_once:
+                                over_samples_idx = \
+                                    [k % counts_label_ids[index]
+                                        for k in range(data_idx[index], data_idx[index] + index_batch_size)]
+                                new_data[key][sub_key][i].append(f[over_samples_idx])
+                            else:
+                                new_data[key][sub_key][i].append(
+                                    f[data_idx[index] : data_idx[index] + index_batch_size]
+                                )
+
+                if balance_once:
+                    samples_per_class[index] += index_batch_size
+                    data_idx[index] += index_batch_size
+                    data_idx[index] %= counts_label_ids[index]
+                    num_data_cycles[index] = samples_per_class[index] // counts_label_ids[index]
+                else:
+                    data_idx[index] += index_batch_size
+                    if data_idx[index] >= counts_label_ids[index]:
+                        num_data_cycles[index] += 1
+                        data_idx[index] = 0
 
                 if min(num_data_cycles) > 0:
                     break

@@ -70,6 +70,7 @@ from rasa.utils.tensorflow.constants import (
     NUM_HEADS,
     BATCH_SIZES,
     BATCH_STRATEGY,
+    BALANCE_ONCE,
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
@@ -235,6 +236,8 @@ class TEDPolicy(Policy):
             # Strategy used whenc creating batches.
             # Can be either 'sequence' or 'balanced'.
             BATCH_STRATEGY: BALANCED,
+            # Balance only once instead of each epoch
+            BALANCE_ONCE: False,
             # Number of epochs to train
             EPOCHS: 1,
             # Set random seed to any 'int' to get reproducible results
@@ -673,6 +676,7 @@ class TEDPolicy(Policy):
             self.config[BATCH_STRATEGY],
             self.config[EVAL_NUM_EXAMPLES],
             self.config[RANDOM_SEED],
+            balance_once = self.config[BALANCE_ONCE],
         )
         callbacks = rasa.utils.train_utils.create_common_callbacks(
             self.config[EPOCHS],

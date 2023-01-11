@@ -20,6 +20,7 @@ class RasaDataGenerator(Sequence):
         batch_size: Union[int, List[int]],
         batch_strategy: Text = SEQUENCE,
         shuffle: bool = True,
+        balance_once: bool = False
     ):
         """Initializes the data generator.
 
@@ -33,6 +34,7 @@ class RasaDataGenerator(Sequence):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.batch_strategy = batch_strategy
+        self.balance_once = balance_once
 
     def __len__(self) -> int:
         """Number of batches in the Sequence.
@@ -64,7 +66,7 @@ class RasaDataGenerator(Sequence):
             data = self.model_data.shuffled_data(data)
 
         if self.batch_strategy == BALANCED:
-            data = self.model_data.balanced_data(data, batch_size, self.shuffle)
+            data = self.model_data.balanced_data(data, batch_size, self.shuffle, self.balance_once)
 
         # do not override self.model_data.data, because we need original data for
         # balancing on the next epoch
@@ -343,6 +345,7 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         epochs: int = 1,
         batch_strategy: Text = SEQUENCE,
         shuffle: bool = True,
+        balance_once: bool = False
     ):
         """Initializes the increasing batch size data generator.
 
@@ -353,7 +356,7 @@ class RasaBatchDataGenerator(RasaDataGenerator):
             batch_strategy: The batch strategy.
             shuffle: If 'True', data will be shuffled.
         """
-        super().__init__(model_data, batch_size, batch_strategy, shuffle)
+        super().__init__(model_data, batch_size, batch_strategy, shuffle, balance_once)
 
         if isinstance(batch_size, list):
             logger.debug(

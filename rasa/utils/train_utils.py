@@ -305,6 +305,7 @@ def create_data_generators(
     eval_num_examples: int = 0,
     random_seed: Optional[int] = None,
     shuffle: bool = True,
+    balance_once: bool = False
 ) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]:
     """Create data generators for train and optional validation data.
 
@@ -339,6 +340,7 @@ def create_data_generators(
         epochs=epochs,
         batch_strategy=batch_strategy,
         shuffle=shuffle,
+        balance_once=balance_once
     )
 
     return data_generator, validation_data_generator
