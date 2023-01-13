@@ -51,7 +51,7 @@ the stories in your training data, but include the user message as well.
 
 Here are some examples:
 
-<Tabs values={[{"label": "Basics", "value": "basics"}, {"label": "Custom Actions", "value": "customactions"}, {"label": "Forms Happy Path", "value": "formshappypath"}, {"label": "Forms Unhappy Path", "value": "formsunhappypath"}]} defaultValue="basics">
+<Tabs values={[{"label": "Basics", "value": "basics"}, {"label": "Button Payload", "value": "buttons"}, {"label": "Custom Actions", "value": "customactions"}, {"label": "Forms Happy Path", "value": "formshappypath"}, {"label": "Forms Unhappy Path", "value": "formsunhappypath"}]} defaultValue="basics">
   <TabItem value="basics">
 
   ```yaml-rasa title="tests/test_stories.yml" {5,9,13}
@@ -71,6 +71,26 @@ Here are some examples:
       intent: inform
     - action: utter_ask_price
   ```
+
+  </TabItem>
+  <TabItem value="buttons">
+
+  ```yaml-rasa title="tests/test_stories.yml" {8,11}
+  stories:
+  - story: A test where a user clicks on a button with payload
+    steps:
+    - user: |
+        hello
+      intent: greet
+    - action: utter_ask_howcanhelp
+    - user: /inform{{"cuisine":"chinese"}}
+      intent: inform
+    - action: utter_ask_location
+    - user: /inform{{"location":"Paris"}}
+      intent: inform
+    - action: utter_ask_price
+  ```
+
 
   </TabItem>
   <TabItem value="customactions">
@@ -155,7 +175,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml" {5,9,13}
   stories:
-  - story: A basic test story with mutliple entities for a single token
+  - story: A basic test story with multiple entities for a single token
     steps:
     - user: |
         hello
@@ -369,7 +389,7 @@ you can use a list notation in the test files, such as
 
 ```yaml
 stories:
-- story: A basic test story with mutliple entities for a single token
+- story: A basic test story with multiple entities for a single token
   steps:
     - user: |
         I like [ice cream][{\"entity\": \"food\"}, {\"entity\": \"desert\"}]

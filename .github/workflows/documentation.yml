@@ -30,7 +30,7 @@ env:
 jobs:
   changes:
     name: Check for file changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     # don't run this for pull requests of forks
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'RasaHQ/rasa'
     outputs:
@@ -59,7 +59,7 @@ jobs:
 
   evaluate_release_tag:
     name: Evaluate release tag
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     # don't run this for main branches of forks and on documentation branch
     if: github.repository == 'RasaHQ/rasa' && github.ref != 'refs/heads/documentation' && github.event_name != 'pull_request'
     outputs:
@@ -100,7 +100,7 @@ jobs:
 
   prebuild_docs:
     name: Prebuild Docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [evaluate_release_tag]
     # don't run this for main branches of forks, would fail anyways
     if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.build_docs == 'true' && github.ref != 'refs/heads/documentation' && github.event_name != 'pull_request'
@@ -109,10 +109,10 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Set up Node 12.x 🦙
         uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
@@ -189,7 +189,7 @@ jobs:
 
   preview_docs:
     name: Preview Docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes]
     # don't run this for pull requests from forks
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'RasaHQ/rasa'
@@ -199,11 +199,11 @@ jobs:
         if: needs.changes.outputs.docs == 'true'
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         if: needs.changes.outputs.docs == 'true'
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Set up Node 12.x 🦙
         if: needs.changes.outputs.docs == 'true'
@@ -285,7 +285,7 @@ jobs:
 
   publish_docs:
     name: Publish Docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     # don't run this for main branches of forks; only run on documentation branch
     if: github.repository == 'RasaHQ/rasa' && github.ref == 'refs/heads/documentation'
 

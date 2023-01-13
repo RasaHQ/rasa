@@ -33,6 +33,7 @@ MAX_SEQUENCE_LENGTHS = {
     "xlnet": NO_LENGTH_RESTRICTION,
     "distilbert": 512,
     "roberta": 512,
+    "camembert": 512,
 }
 
 

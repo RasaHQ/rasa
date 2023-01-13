@@ -4,7 +4,6 @@ import abc
 import logging
 import os
 import shutil
-import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Text, Any, Optional, Tuple, List
@@ -304,10 +303,12 @@ class LocalTrainingCache(TrainingCache):
     def _cache_output_to_disk(
         self, output: Cacheable, model_storage: ModelStorage
     ) -> Tuple[Optional[Text], Optional[Text]]:
+        tempdir_name = rasa.utils.common.get_temp_dir_name()
+
         # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this
         # leads to errors on Windows when the context manager tries to delete an
         # already deleted temporary directory (e.g. https://bugs.python.org/issue29982)
-        with rasa.utils.common.TempDirectoryPath(tempfile.mkdtemp()) as temp_dir:
+        with rasa.utils.common.TempDirectoryPath(tempdir_name) as temp_dir:
             tmp_path = Path(temp_dir)
             try:
 
