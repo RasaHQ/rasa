@@ -17,7 +17,7 @@ env:
 jobs:
   read_test_configuration:
     name: Reads tests configuration
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix_length: ${{ steps.set-matrix.outputs.matrix_length }}
@@ -53,11 +53,22 @@ jobs:
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
     needs: read_test_configuration
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
+        with:
+          python-version: '3.8' 
+
+      - name: Export CLOUDSDK_PYTHON env variable
+        run: |
+          echo "CLOUDSDK_PYTHON=${{ steps.python.outputs.python-path }}" >> $GITHUB_OUTPUT
+          export CLOUDSDK_PYTHON=${{ steps.python.outputs.python-path }}
 
       - name: Download gomplate
         run: |-
@@ -111,16 +122,19 @@ jobs:
           export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
+      # Setup gcloud auth
+      - uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d
         with:
-          version: "${{ env.GCLOUD_VERSION }}"
-          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
 
-      # Get the GKE credentials so we can deploy to the cluster
-      - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}"
+      # Get the GKE credentials for the cluster
+      - name: Get GKE Cluster Credentials
+        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
+        with:
+          cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}
 
       - name: Deploy Github Runner
         run: |-
@@ -264,11 +278,11 @@ jobs:
         run: |
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -489,7 +503,7 @@ jobs:
 
   combine_reports:
     name: Combine reports
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - model_regression_test_gpu
     if: always() && needs.model_regression_test_gpu.result == 'success'
@@ -497,10 +511,10 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Get reports
         uses: actions/download-artifact@v3
@@ -528,7 +542,7 @@ jobs:
 
   analyse_performance:
     name: Analyse Performance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: always() && github.event_name == 'schedule'
     needs:
       - model_regression_test_gpu
@@ -677,19 +691,34 @@ jobs:
     needs:
       - deploy_runner_gpu
       - model_regression_test_gpu
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
-        with:
-          version: "${{ env.GCLOUD_VERSION }}"
-          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
 
-      # Get the GKE credentials so we can deploy to the cluster
-      - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}"
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
+        with:
+          python-version: '3.8' 
+
+      - name: Export CLOUDSDK_PYTHON env variable
+        run: |
+          echo "CLOUDSDK_PYTHON=${{ steps.python.outputs.python-path }}" >> $GITHUB_OUTPUT
+          export CLOUDSDK_PYTHON=${{ steps.python.outputs.python-path }}
+
+      # Setup gcloud auth
+      - uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d
+        with:
+          service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
+
+      # Get the GKE credentials for the cluster
+      - name: Get GKE Cluster Credentials
+        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
+        with:
+          cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}
 
       - name: Remove Github Runner
         run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30

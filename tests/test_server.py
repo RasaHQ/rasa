@@ -133,6 +133,13 @@ def rasa_secured_app(rasa_server_secured: Sanic) -> SanicASGITestClient:
 
 
 @pytest.fixture
+def rasa_secured_app_asymmetric(
+    rasa_server_secured_asymmetric: Sanic,
+) -> SanicASGITestClient:
+    return rasa_server_secured_asymmetric.asgi_client
+
+
+@pytest.fixture
 def rasa_non_trained_secured_app(
     rasa_non_trained_server_secured: Sanic,
 ) -> SanicASGITestClient:
@@ -1369,6 +1376,22 @@ async def test_get_tracker_with_jwt(rasa_secured_app: SanicASGITestClient):
     assert response.status == HTTPStatus.FORBIDDEN
 
     _, response = await rasa_secured_app.get(
+        "/conversations/testuser/tracker", headers=jwt_header
+    )
+    assert response.status == HTTPStatus.OK
+
+
+async def test_get_tracker_with_asymmetric_jwt(
+    rasa_secured_app_asymmetric: SanicASGITestClient,
+    encoded_jwt: Text,
+) -> None:
+    jwt_header = {"Authorization": f"Bearer {encoded_jwt}"}
+    _, response = await rasa_secured_app_asymmetric.get(
+        "/conversations/myuser/tracker", headers=jwt_header
+    )
+    assert response.status == HTTPStatus.OK
+
+    _, response = await rasa_secured_app_asymmetric.get(
         "/conversations/testuser/tracker", headers=jwt_header
     )
     assert response.status == HTTPStatus.OK

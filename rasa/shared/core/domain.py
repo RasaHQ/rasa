@@ -979,7 +979,7 @@ class Domain:
             in self.action_names_or_texts
         ):
             logger.warning(
-                "You are using an experiential feature: Action '{}'!".format(
+                "You are using an experimental feature: Action '{}'!".format(
                     rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
                 )
             )

@@ -47,7 +47,7 @@ def test_run_help(
                 [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
                 [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
                 [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
-                [--jwt-method JWT_METHOD]
+                [--jwt-method JWT_METHOD] [--jwt-private-key JWT_PRIVATE_KEY]
                 {actions} ... [model-as-positional-argument]"""
     )
 
