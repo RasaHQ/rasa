@@ -43,6 +43,7 @@ def add_subparser(
     )
 
     arguments.set_shell_arguments(chat_parser)
+    chat_parser.set_defaults(enable_api=True)
 
 
 async def open_chat_in_browser(server_url: Text) -> None:

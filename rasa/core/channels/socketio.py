@@ -17,6 +17,8 @@ CHAT_TEMPLATE_PATH = "/chat.html"
 
 
 class SocketBlueprint(Blueprint):
+    """Blueprint for socketio connections."""
+
     def __init__(
         self, sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any
     ) -> None:
@@ -189,6 +191,7 @@ class SocketIOInput(InputChannel):
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
     def chat_html_path(self) -> Text:
+        """Returns the path to the chat.html file."""
         import pkg_resources
 
         return pkg_resources.resource_filename(__name__, CHAT_TEMPLATE_PATH)

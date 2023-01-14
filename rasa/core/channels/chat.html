@@ -13,6 +13,9 @@
 make sure to replace <code>https://example.com/</code> with the URL of your server
 running your bot! You can find more documentation on how to use the chat widget
       on your own page in the <a href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget">rasa documentation</a>
+
+<div>Current Story:</div>
+<div><pre><code id="json-data">No story yet</code></pre></div></div>
 <div
         id="rasa-chat-widget"
         data-websocket-url=""
@@ -22,6 +25,20 @@ running your bot! You can find more documentation on how to use the chat widget
   let chatDiv = document.getElementById("rasa-chat-widget");
   let websocketUrl = window.location.origin.replace("http", "ws")
   chatDiv.setAttribute("data-websocket-url", websocketUrl);
+</script>
+
+<script>
+  function fetchStory() {
+    let conversationId = window.rasaChatSessionId || "";
+    fetch("/conversations/"+conversationId+"/story")
+      .catch(error => console.error(error))
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById("json-data").textContent = data;
+      });
+  }
+
+  setInterval(fetchStory, 1000); // fetch the JSON every second
 </script>
 
 <script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
