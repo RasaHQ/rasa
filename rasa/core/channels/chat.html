@@ -1,21 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+  <style>
+    .code {
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-left: 2em;
+    }
+    .content {
+      max-width: 30em;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 25% 75%;
+    }
+    tr {
+      text-align: left;
+    }
+    table {
+      padding-top: 1em;
+    }
+    .bold {
+      font-weight: bold;
+    }
+  </style>
+</head>
 <body data-new-gr-c-s-check-loaded="14.1014.0" data-gr-ext-installed=""
       data-new-gr-c-s-loaded="14.1014.0">
 <div class="logged-in-box auth0-box logged-in">
     <h2>Happy chatting!</h2>
-    <div>You can include the chat on your own website using</div>
-    <div><code><pre>
-    &lt;div id="rasa-chat-widget" data-websocket-url="https://example.com/"&gt;&lt;/div&gt;
-&nbsp;&nbsp;&nbsp;&nbsp;&lt;script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"&gt;&lt;/script&gt;
+    <div>You can include the chat on your own website using the following code:</div>
+    <div class="code"><code><pre>
+&lt;div id="rasa-chat-widget" data-websocket-url="https://example.com/"&gt;&lt;/div&gt;
+&lt;script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"&gt;&lt;/script&gt;
     </pre></code></div>
 </div>
-make sure to replace <code>https://example.com/</code> with the URL of your server
+<p class="content">Make sure to replace <code>https://example.com/</code> with the URL of your server
 running your bot! You can find more documentation on how to use the chat widget
-      on your own page in the <a href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget">rasa documentation</a>
-
-<div>Current Story:</div>
-<div><pre><code id="json-data">No story yet</code></pre></div></div>
+on your own page in the 
+<a href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget">rasa documentation</a>
+</p>
+<div class="container">
+<div>
+<table>
+  <thead>
+    <tr>
+      <th>Slot</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody id="slots">
+  </tbody>
+</table>
+</div>
+<div>
+<p class="content bold">Current Story:</p>
+<div><pre class="code"><code id="json-data">No story yet</code></pre></div></div>
+</div>
+</div>
 <div
         id="rasa-chat-widget"
         data-websocket-url=""
@@ -32,13 +74,39 @@ running your bot! You can find more documentation on how to use the chat widget
     let conversationId = window.rasaChatSessionId || "";
     fetch("/conversations/"+conversationId+"/story")
       .catch(error => console.error(error))
-      .then(response => response.text())
+      .then(response => {
+        if (!response.ok) {
+          console.error("Error: Story not found");
+          return "No story yet";
+        }
+        return response.text();
+      })
       .then(data => {
         document.getElementById("json-data").textContent = data;
       });
   }
+  function fetchSlots() {
+    let conversationId = window.rasaChatSessionId || "";
+    fetch("/conversations/"+conversationId+"/tracker")
+      .catch(error => console.error(error))
+      .then(response => {
+        if (!response.ok) {
+          console.error("Error: Story not found");
+          return [];
+        }
+        return response.json()
+      })
+      .then(data => {
+        let slots = data.slots;
+        var root = document.getElementById('slots');
+        root.innerHTML = '';
+        var sortedSlotNames = Object.keys(slots).sort()
+        sortedSlotNames.forEach(name => root.insertAdjacentHTML('afterbegin', `<tr><td>${name}</td><td>${slots[name]}</td></tr>`));
+      });
+    }
 
-  setInterval(fetchStory, 1000); // fetch the JSON every second
+  setInterval(fetchStory, 1000); // fetch the Story every second
+  setInterval(fetchSlots, 1000); // fetch the Tracker every second
 </script>
 
 <script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
