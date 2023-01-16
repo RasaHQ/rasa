@@ -25,6 +25,10 @@ license = "Apache-2.0"
 name = "internal repository mirroring psycopg binary for macos"
 url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest-rerunfailures = "^11.0"
+
 [tool.towncrier]
 package = "rasa"
 package_dir = "rasa"
