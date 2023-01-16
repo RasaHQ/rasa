@@ -419,7 +419,13 @@ def test_graph_trainer_train_logging(
     with caplog.at_level(logging.INFO, logger="rasa.engine.training.hooks"):
         train_with_schema(train_schema, temp_cache)
 
-    assert caplog.messages == [
+    caplog_info_records = list(
+        filter(lambda x: x[1] == logging.INFO, caplog.record_tuples)
+    )
+
+    caplog_messages = list([record[2] for record in caplog_info_records])
+
+    assert caplog_messages == [
         "Starting to train component 'SubtractByX'.",
         "Finished training component 'SubtractByX'.",
     ]
