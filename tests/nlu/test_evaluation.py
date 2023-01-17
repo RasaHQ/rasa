@@ -4,7 +4,7 @@ import sys
 import textwrap
 
 from pathlib import Path
-from typing import Text, List, Dict, Any, Set
+from typing import Text, List, Dict, Any, Set, Optional
 
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
@@ -16,6 +16,7 @@ from unittest.mock import Mock
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa.shared.core.trackers import DialogueStateTracker
 from tests.conftest import AsyncMock
 
 import rasa.nlu.test
@@ -1228,7 +1229,10 @@ class ConstantProcessor:
         self.model_metadata = None
 
     async def parse_message(
-        self, message: UserMessage, only_output_properties: bool = True
+        self,
+        message: UserMessage,
+        tracker: Optional[DialogueStateTracker] = None,
+        only_output_properties: bool = True,
     ) -> Dict[Text, Any]:
         return self.prediction
 
