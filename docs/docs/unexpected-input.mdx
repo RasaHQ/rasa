@@ -100,6 +100,17 @@ stories:
   - action: restaurant_form
 ```
 
+### UnexpecTED Intent Policy
+
+`UNexpecTEDIntentPolicy` helps you review conversations and also allows your bot to react to unlikely user inputs.
+It is an auxiliary policy that should only be used with at least one other policy, as the only that it can trigger is the special
+`action_unlikely_intent` action.
+
+`UNexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
+
+The difference is at a task level. Instead of predicting the next probable action, this policy
+predicts whether the last predicted intent is a likely intent according to the training stories
+and conversation context.
 
 ## Summary
 
