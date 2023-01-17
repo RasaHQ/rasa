@@ -1225,6 +1225,7 @@ def test_collect_entity_predictions(
 class ConstantProcessor:
     def __init__(self, prediction_to_return: Dict[Text, Any]) -> None:
         self.prediction = prediction_to_return
+        self.model_metadata = None
 
     async def parse_message(
         self, message: UserMessage, only_output_properties: bool = True
