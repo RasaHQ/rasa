@@ -551,78 +551,6 @@ class FormAction(LoopAction):
         """Check whether form action should request given slot."""
         return tracker.get_slot(slot_name) is None
 
-    async def activate(
-        self,
-        output_channel: "OutputChannel",
-        nlg: "NaturalLanguageGenerator",
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> List[Event]:
-        """Activate form if the form is called for the first time.
-
-        If activating, run action_extract_slots to fill slots with
-        mapping conditions from trigger intents.
-        Validate any required slots that can be filled, and return any `SlotSet`
-        events from the extraction and validation of these pre-filled slots.
-
-        Args:
-            output_channel: The output channel which can be used to send messages
-                to the user.
-            nlg: `NaturalLanguageGenerator` to use for response generation.
-            tracker: Current conversation tracker of the user.
-            domain: Current model domain.
-
-        Returns:
-            Events from the activation.
-        """
-        logger.debug(f"Activated the form '{self.name()}'.")
-        # collect values of required slots filled before activation
-        prefilled_slots = {}
-
-        action_extract_slots = action.action_for_name_or_text(
-            ACTION_EXTRACT_SLOTS, domain, self.action_endpoint
-        )
-
-        logger.debug(
-            f"Executing default action '{ACTION_EXTRACT_SLOTS}' at form activation."
-        )
-
-        extraction_events = await action_extract_slots.run(
-            output_channel, nlg, tracker, domain
-        )
-
-        events_as_str = "\n".join(str(e) for e in extraction_events)
-        logger.debug(
-            f"The execution of '{ACTION_EXTRACT_SLOTS}' resulted in "
-            f"these events: {events_as_str}."
-        )
-
-        tracker.update_with_events(extraction_events, domain)
-
-        for slot_name in self.required_slots(domain):
-            if not self._should_request_slot(tracker, slot_name):
-                prefilled_slots[slot_name] = tracker.get_slot(slot_name)
-
-        if not prefilled_slots:
-            logger.debug("No pre-filled required slots to validate.")
-            return [e for e in extraction_events if isinstance(e, SlotSet)]
-
-        logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
-
-        validated_events = await self.validate_slots(
-            prefilled_slots, tracker, domain, output_channel, nlg
-        )
-
-        validated_slot_names = [
-            event.key for event in validated_events if isinstance(event, SlotSet)
-        ]
-
-        return validated_events + [
-            event
-            for event in extraction_events
-            if isinstance(event, SlotSet) and event.key not in validated_slot_names
-        ]
-
     async def do(
         self,
         output_channel: "OutputChannel",
@@ -688,10 +616,6 @@ class FormAction(LoopAction):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        events = self._default_activation_events()
-
-        temp_tracker = tracker.copy()
-        temp_tracker.update_with_events(events, domain)
-        events += await self.activate(output_channel, nlg, temp_tracker, domain)
-
-        return events
+        """Activates the form loop."""
+        logger.debug(f"Activated the form '{self.name()}'.")
+        return self._default_activation_events()
