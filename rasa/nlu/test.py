@@ -878,11 +878,19 @@ def evaluate_entities(
             merged_predictions, NO_ENTITY_TAG, NO_ENTITY
         )
 
+        cleaned_targets = plugin_manager().hook.clean_entity_targets_for_evaluation(
+            merged_targets=merged_targets, extractor=extractor
+        )
+        if len(cleaned_targets) > 0:
+            cleaned_targets = cleaned_targets[0]
+        else:
+            cleaned_targets = merged_targets
+
         logger.info(f"Evaluation for entity extractor: {extractor} ")
 
         report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
             output_directory,
-            merged_targets,
+            cleaned_targets,
             merged_predictions,
             report_as_dict,
             exclude_label=NO_ENTITY,
@@ -897,11 +905,11 @@ def evaluate_entities(
                 successes_filename = os.path.join(output_directory, successes_filename)
             # save classified samples to file for debugging
             write_successful_entity_predictions(
-                entity_results, merged_targets, merged_predictions, successes_filename
+                entity_results, cleaned_targets, merged_predictions, successes_filename
             )
 
         entity_errors = collect_incorrect_entity_predictions(
-            entity_results, merged_predictions, merged_targets
+            entity_results, merged_predictions, cleaned_targets
         )
         if errors and output_directory:
             errors_filename = os.path.join(output_directory, f"{extractor}_errors.json")
@@ -929,7 +937,7 @@ def evaluate_entities(
                         output_directory, histogram_filename
                     )
                 plot_entity_confidences(
-                    merged_targets,
+                    cleaned_targets,
                     merged_predictions,
                     merged_confidences,
                     title="Entity Prediction Confidence Distribution",
@@ -1280,8 +1288,14 @@ async def get_eval_data(
 
     for example in tqdm(test_data.nlu_examples):
         tracker = plugin_manager().hook.mock_tracker_for_evaluation(
-            processor.model_metadata
+            example=example, model_metadata=processor.model_metadata
         )
+        # if the user overwrites the default implementation take the last tracker
+        if isinstance(tracker, list):
+            if len(tracker) > 0:
+                tracker = tracker[-1]
+            else:
+                tracker = None
         result = await processor.parse_message(
             UserMessage(text=example.get(TEXT)),
             tracker=tracker,

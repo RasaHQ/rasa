@@ -8,6 +8,8 @@ import pluggy
 
 from rasa.cli import SubParsersAction
 from rasa.engine.storage.storage import ModelMetadata
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
     from rasa.rasa.engine.graph import SchemaNode
@@ -80,5 +82,14 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None:
 
 
 @hookspec  # type: ignore[misc]
-def mock_tracker_for_evaluation(model_metada: ModelMetadata) -> None:
+def mock_tracker_for_evaluation(
+    example: Message, model_metadata: Optional[ModelMetadata]
+) -> Optional[DialogueStateTracker]:
     """Generate a mocked tracker for NLU evaluation."""
+
+
+@hookspec  # type: ignore[misc]
+def clean_entity_targets_for_evaluation(
+    merged_targets: List[str], extractor: str
+) -> List[str]:
+    """Remove entity targets for space-based entity extractors."""
