@@ -2015,7 +2015,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "pydantic"
-version = "1.10.3"
+version = "1.10.2"
 description = "Data validation and settings management using python type hints"
 category = "main"
 optional = true
@@ -3731,7 +3731,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "533c672e81e140b85ae3ae680222317abe8da25f72bda7c3c0d07533b9052edf"
+content-hash = "94e22b9af28697a91b1d860396f752b1e34f53bd8057668fda6fbf368a5c0227"
 
 [metadata.files]
 absl-py = []
