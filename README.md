@@ -379,6 +379,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
     - For Rasa SDK, except in the case of a patch release, that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
+2.If this is a minor / major release: Make sure all fixes from currently supported minor versions have been merged from their respective release branches (e.g. 3.3.x) back into main.
 2. In case of a minor release, create a new branch that corresponds to the new release, e.g.
    ```bash
     git checkout -b 1.2.x
