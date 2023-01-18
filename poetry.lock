@@ -1755,14 +1755,6 @@ python-versions = ">=3.7,<3.11"
 
 [[package]]
 name = "numpy"
-version = "1.22.4"
-description = "NumPy is the fundamental package for array computing with Python."
-category = "main"
-optional = false
-python-versions = ">=3.8"
-
-[[package]]
-name = "numpy"
 version = "1.23.5"
 description = "NumPy is the fundamental package for array computing with Python."
 category = "main"
@@ -2674,6 +2666,17 @@ tests = ["matplotlib (>=3.1.2)", "scikit-image (>=0.16.2)", "pandas (>=1.0.5)", 
 
 [[package]]
 name = "scipy"
+version = "1.6.1"
+description = "SciPy: Scientific Library for Python"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+numpy = ">=1.16.5"
+
+[[package]]
+name = "scipy"
 version = "1.7.3"
 description = "SciPy: Scientific Library for Python"
 category = "main"
@@ -3165,6 +3168,7 @@ python-versions = "*"
 [package.dependencies]
 tensorflow = {version = ">=2.8.0,<2.9", markers = "platform_machine != \"arm64\" or platform_system != \"Darwin\""}
 tensorflow-hub = ">=0.8.0"
+tensorflow-macos = {version = ">=2.8.0,<2.9", markers = "platform_machine == \"arm64\" and platform_system == \"Darwin\""}
 
 [package.extras]
 tensorflow_cpu = ["tensorflow-cpu (>=2.8.0,<2.9)"]
