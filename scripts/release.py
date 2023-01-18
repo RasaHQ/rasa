@@ -177,7 +177,10 @@ def get_rasa_sdk_version() -> Text:
     toml_data = toml.load(project_root() / dependencies_filename)
     try:
         sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
-        return sdk_version[1:].strip()
+        if isinstance(sdk_version, str):
+            return sdk_version[1:].strip()
+        else:
+            return sdk_version["version"][1:].strip()
     except AttributeError:
         raise Exception(f"Failed to find Rasa SDK version in {dependencies_filename}")
 
