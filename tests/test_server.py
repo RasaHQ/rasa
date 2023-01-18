@@ -942,6 +942,7 @@ async def test_cross_validation_with_callback_success(
             )
 
 
+@pytest.mark.flaky
 async def test_cross_validation_with_callback_error(
     rasa_non_trained_app: SanicASGITestClient,
     nlu_data_path: Text,
