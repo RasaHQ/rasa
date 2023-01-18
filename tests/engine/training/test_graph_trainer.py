@@ -478,10 +478,7 @@ def test_graph_trainer_train_logging_with_cached_components(
         train_with_schema(train_schema, temp_cache)
 
         caplog_info_records = list(
-            filter(
-                lambda x: "failed to send traces to Datadog Agent" not in x[2],
-                caplog.record_tuples,
-            )
+            filter(lambda x: x[1] == logging.INFO, caplog.record_tuples)
         )
         caplog_messages_set = set([record[2] for record in caplog_info_records])
 
