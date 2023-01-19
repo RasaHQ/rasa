@@ -632,7 +632,11 @@ class FormAction(LoopAction):
         events_so_far: List[Event],
     ) -> List[Event]:
         """Executes form loop after activation."""
-        events = await self._validate_if_required(tracker, domain, output_channel, nlg)
+        events: List[Event] = []
+        if not events_so_far:
+            events = await self._validate_if_required(
+                tracker, domain, output_channel, nlg
+            )
 
         if not self._user_rejected_manually(events):
             events += await self.request_next_slot(

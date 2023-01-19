@@ -1,8 +1,10 @@
+import logging
 import textwrap
 from typing import Dict, Text, List, Any, Union
 from unittest.mock import Mock
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
@@ -1879,3 +1881,45 @@ async def test_extract_slots_with_mapping_conditions_during_form_activation():
     )
 
     assert form_events == expected_events
+
+
+async def test_check_if_slot_validation_happens_twice(caplog: LogCaptureFixture):
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
+    form_name = "my form"
+    action = FormAction(form_name, None)
+    slot_name = "num_people"
+    domain = textwrap.dedent(
+        f"""
+    slots:
+      {slot_name}:
+        type: float
+        mappings:
+        - type: from_entity
+          entity: number
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+        - {slot_name}
+    responses:
+      utter_ask_num_people:
+      - text: "How many people?"
+      """
+    )
+    domain = Domain.from_yaml(domain)
+    with caplog.at_level(logging.DEBUG):
+        _ = await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert (
+            sum(
+                [
+                    1
+                    for message in caplog.messages
+                    if "Validating extracted slots" in message
+                ]
+            )
+            == 1
+        )
