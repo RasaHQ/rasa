@@ -379,18 +379,19 @@ Releasing a new version is quite simple, as the packages are build and distribut
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
     - For Rasa SDK, except in the case of a patch release, that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
-2. In case of a minor release, create a new branch that corresponds to the new release, e.g.
+2. If this is a minor / major release: Make sure all fixes from currently supported minor versions have been merged from their respective release branches (e.g. 3.3.x) back into main.
+3. In case of a minor release, create a new branch that corresponds to the new release, e.g.
    ```bash
     git checkout -b 1.2.x
     git push origin 1.2.x
     ```
-3. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and patches)
+4. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and patches)
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
-4. If this is a major release, update the list of actively maintained versions [in the README](#actively-maintained-versions) and in [the docs](./docs/docs/actively-maintained-versions.mdx).
-5. Run `make release`
-6. Create a PR against the release branch (e.g. `1.2.x`)
-7. Once your PR is merged, tag a new release (this SHOULD always happen on the release branch), e.g. using
+5. If this is a major release, update the list of actively maintained versions [in the README](#actively-maintained-versions) and in [the docs](./docs/docs/actively-maintained-versions.mdx).
+6. Run `make release`
+7. Create a PR against the release branch (e.g. `1.2.x`)
+8. Once your PR is merged, tag a new release (this SHOULD always happen on the release branch), e.g. using
     ```bash
     git checkout 1.2.x
     git pull origin 1.2.x
@@ -398,13 +399,13 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git push origin 1.2.0 --tags
     ```
     GitHub will build this tag and publish the build artifacts.
-8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-9. If no message appears in the channel then you can do the following checks:
+9. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
+10. If no message appears in the channel then you can do the following checks:
     - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
     - If the workflow is not completed, then try to re run the workflow in case that solves the problem
     - If the problem persists, check also the log files and try to find the root cause of the issue
     - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
-10.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
+11.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
 
 ### Cutting a Patch release
 
