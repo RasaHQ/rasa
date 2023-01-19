@@ -169,6 +169,8 @@ markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 optional = true
 
 [[tool.poetry.dependencies.pydantic]]
+# FIXME: https://github.com/explosion/spaCy/issues/12034
+# remove constraint only after issue is fixed
 version = "<1.10.3"
 optional = true
 
