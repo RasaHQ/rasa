@@ -57,6 +57,8 @@ def chat(args: argparse.Namespace) -> None:
 
     args.connector = "socketio"
 
+    logging.getLogger("rasa.core.tracker_store").setLevel(logging.INFO)
+
     async def after_start_hook_open_chat(_: Sanic, __: AbstractEventLoop) -> None:
         """Hook to open the browser on server start."""
         server_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)

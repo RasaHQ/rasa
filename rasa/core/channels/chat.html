@@ -87,7 +87,7 @@ on your own page in the
   }
   function fetchSlots() {
     let conversationId = window.rasaChatSessionId || "";
-    fetch("/conversations/"+conversationId+"/tracker")
+    fetch("/conversations/"+conversationId+"/tracker?start_session=false")
       .catch(error => console.error(error))
       .then(response => {
         if (!response.ok) {
