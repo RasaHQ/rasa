@@ -302,44 +302,54 @@
           "label": "Channel Connectors",
           "items": [
             {
-              "type": "doc",
-              "id": "version-3.x/connectors/your-own-website"
-            },
+              "type": "category",
+              "label": "Text & Chat",
+              "items": [
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/your-own-website"
+              },
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/facebook-messenger"
+              },
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/slack"
+              },
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/telegram"
+              },
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/twilio"
+              },
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/hangouts"
+              },
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/microsoft-bot-framework"
+              },
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/cisco-webex-teams"
+              },
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/rocketchat"
+              },
+              {
+                "type": "doc",
+                "id": "version-3.x/connectors/mattermost"
+              }
+            ]},
             {
-              "type": "doc",
-              "id": "version-3.x/connectors/facebook-messenger"
-            },
-            {
-              "type": "doc",
-              "id": "version-3.x/connectors/slack"
-            },
-            {
-              "type": "doc",
-              "id": "version-3.x/connectors/telegram"
-            },
-            {
-              "type": "doc",
-              "id": "version-3.x/connectors/twilio"
-            },
-            {
-              "type": "doc",
-              "id": "version-3.x/connectors/hangouts"
-            },
-            {
-              "type": "doc",
-              "id": "version-3.x/connectors/microsoft-bot-framework"
-            },
-            {
-              "type": "doc",
-              "id": "version-3.x/connectors/cisco-webex-teams"
-            },
-            {
-              "type": "doc",
-              "id": "version-3.x/connectors/rocketchat"
-            },
-            {
-              "type": "doc",
-              "id": "version-3.x/connectors/mattermost"
+              "type": "category",
+              "label": "Voice",
+              "items": ["connectors/audiocodes-voiceai-connect"]
             },
             {
               "type": "doc",
