@@ -349,7 +349,7 @@
             {
               "type": "category",
               "label": "Voice",
-              "items": ["connectors/audiocodes-voiceai-connect"]
+              "items": ["version-3.x/connectors/audiocodes-voiceai-connect"]
             },
             {
               "type": "doc",
