@@ -136,7 +136,11 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-Note: If you have a Python3 version installed, you should try the command ```python3 -m venv .venv``` and then ```souce .venv/bin/activate```
+Note: If you have a Python3 version installed, you should try the command 
+```
+python3 -m venv .venv
+``` 
+and then ``` souce .venv/bin/activate ```
 
 You can make sure that the environment is picked up by executing
 
