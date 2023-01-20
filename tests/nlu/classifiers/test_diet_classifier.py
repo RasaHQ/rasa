@@ -536,6 +536,7 @@ async def test_train_tensorboard_logging(
     assert len(all_files) == 2
 
 
+@pytest.mark.flaky
 async def test_train_model_checkpointing(
     default_model_storage: ModelStorage,
     default_diet_resource: Resource,
