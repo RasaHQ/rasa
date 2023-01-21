@@ -37,6 +37,7 @@ from rasa.utils.tensorflow.constants import (
     NUM_HEADS,
     BATCH_SIZES,
     BATCH_STRATEGY,
+    BALANCE_ONCE,
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
@@ -170,6 +171,8 @@ class ResponseSelector(DIETClassifier):
             # Strategy used when creating batches.
             # Can be either 'sequence' or 'balanced'.
             BATCH_STRATEGY: BALANCED,
+            # Balance only once instead of each epoch
+            BALANCE_ONCE: False,
             # Number of epochs to train
             EPOCHS: 300,
             # Set random seed to any 'int' to get reproducible results
