@@ -5,7 +5,7 @@ title: rasa.utils.tensorflow.models
 ## RasaModel Objects
 
 ```python
-class RasaModel(TmpKerasModel)
+class RasaModel(Model)
 ```
 
 Abstract custom Keras model.

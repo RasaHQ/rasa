@@ -471,7 +471,6 @@
             "reference/rasa/utils/tensorflow/model_data_utils",
             "reference/rasa/utils/tensorflow/models",
             "reference/rasa/utils/tensorflow/rasa_layers",
-            "reference/rasa/utils/tensorflow/temp_keras_modules",
             "reference/rasa/utils/tensorflow/transformer"
           ],
           "label": "rasa.utils.tensorflow",

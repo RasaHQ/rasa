@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Any, TYPE_CHECKING
 
 from keras.utils import tf_utils
+from keras import Model
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
@@ -38,7 +39,6 @@ from rasa.utils.tensorflow.model_data import (
 import rasa.utils.train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow import rasa_layers
-from rasa.utils.tensorflow.temp_keras_modules import TmpKerasModel
 from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
@@ -58,7 +58,7 @@ LABEL_SUB_KEY = IDS
 
 
 # noinspection PyMethodOverriding
-class RasaModel(TmpKerasModel):
+class RasaModel(Model):
     """Abstract custom Keras model.
 
      This model overwrites the following methods:
@@ -92,6 +92,8 @@ class RasaModel(TmpKerasModel):
 
         self._tf_predict_step: Optional["GenericFunction"] = None
         self.prepared_for_prediction = False
+
+        self._checkpoint = tf.train.Checkpoint(model=self)
 
     def _set_random_seed(self) -> None:
         random.seed(self.random_seed)
