@@ -127,10 +127,6 @@ async def test_activate_with_custom_slot_mapping():
         )
     assert events[:-1] == [
         ActiveLoop(form_name),
-        SlotSet(
-            slot_set_by_remote_custom_extraction_method,
-            slot_value_set_by_remote_custom_extraction_method,
-        ),
         SlotSet(REQUESTED_SLOT, domain_required_slot_name),
     ]
     assert isinstance(events[-1], BotUttered)
