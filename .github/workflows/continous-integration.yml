@@ -240,122 +240,9 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@v3
 
-<<<<<<< HEAD
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
-=======
-    - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.backend == 'true'
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
-
-    - name: Install poetry 🦄
-      if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
-
-    - name: Load Poetry Cached Libraries ⬇
-      id: cache-poetry
-      if: needs.changes.outputs.backend == 'true'
-      uses: actions/cache@v2
-      with:
-        path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
-
-    - name: Clear Poetry cache
-      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-      run: rm -r .venv
-
-      # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
-      # The virtualenv simply doesn't work on Windows with our setup,
-      # that's why we use venv to create virtual environment
-    - name: Create virtual environment
-      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
-      run: python -m venv create .venv
-
-    - name: Set up virtual environment
-      if: needs.changes.outputs.backend == 'true'
-      # Poetry on Windows cannot pick up the virtual environments directory properly,
-      # and it creates a new one every time the pipeline runs.
-      # This step solves this problem — it tells poetry to always use `.venv` directory inside
-      # the project itself, which also makes it easier for us to determine the correct directory
-      # that needs to be cached.
-      run: poetry config virtualenvs.in-project true
-
-    - name: Install Dependencies (Linux) 📦
-      if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
-      run: |
-        sudo apt-get -y install libpq-dev
-        make prepare-tests-ubuntu | tee .output
-        if grep 'The lock file is not up to date' .output; then exit 1; fi
-
-    - name: Install Dependencies (Windows) 📦
-      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-      # Restoring cache doesn't work properly on Windows due to symlinks.
-      # We create symlinks for spacy models, that's why we need to clean them up
-      # before caching the dependencies directory.
-      # More information: https://github.com/actions/cache/issues/120
-      run: |
-        $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
-        if (Test-Path $spacy_data_dir) {
-          Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-          Remove-Item -Force -Recurse $spacy_data_dir
-          New-Item -Path $spacy_data_dir -Type Directory
-        }
-        make prepare-tests-windows-gha
-
-    - name: Add github workflow problem matchers
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
-      # only annotate based on test runs on ubuntu: otherwise
-      # all errors will be duplicated for each python / os combination
-      # therefore, we only enable for the one where most tests are run
-      # (tests will still run in other envs, they will just not create annotations)
-      run: pip install pytest-github-actions-annotate-failures
-
-    - name: Test Code 🔍 (monothread)
-      # This is a temporary workaround for OOM on Windows caused by increased memory
-      # consumption associated with the upgrade of our tensorflow dependency
-      # see https://github.com/RasaHQ/rasa/issues/9734 for more information.
-      # Once the memory issues have been addressed, all configurations should be run on
-      # multiple threads
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-2019') && (matrix.os == 'windows-2019' && matrix.test == 'test-nlu-predictors')
-      env:
-        JOBS: 1
-        PYTHONIOENCODING: "utf-8"
-      run: |
-        make ${{ matrix.test }}
-
-    - name: Test Code 🔍 (multithread)
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-2019') && !(matrix.os == 'windows-2019' && matrix.test == 'test-nlu-predictors')
-      env:
-        JOBS: 2
-        PYTHONIOENCODING: "utf-8"
-      run: |
-        make ${{ matrix.test }}
-
-    - name: Send Coverage Report 📊
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os != 'windows-2019'
-      continue-on-error: true
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_SERVICE_NAME: github
-        COVERALLS_PARALLEL: true
-      run: poetry run coveralls
-
-  complete_coverage:
-    name: Complete coverage
-    runs-on: ubuntu-20.04
-    needs: [ test, changes ]
-    if: needs.changes.outputs.backend == 'true'
-
-    steps:
-      - name: Tell coveralls we're finished reporting
-        uses: coverallsapp/github-action@master
-        continue-on-error: true
->>>>>>> 6d246999185 (Install full dependencies after preparing test files)
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -394,7 +281,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         # Poetry on Windows cannot pick up the virtual environments directory properly,
         # and it creates a new one every time the pipeline runs.
-        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
         # the project itself, which also makes it easier for us to determine the correct directory
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
@@ -532,7 +419,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         # Poetry on Windows cannot pick up the virtual environments directory properly,
         # and it creates a new one every time the pipeline runs.
-        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
         # the project itself, which also makes it easier for us to determine the correct directory
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
@@ -756,7 +643,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         # Poetry on Windows cannot pick up the virtual environments directory properly,
         # and it creates a new one every time the pipeline runs.
-        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
         # the project itself, which also makes it easier for us to determine the correct directory
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
@@ -765,8 +652,9 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: |
           sudo apt-get -y install libpq-dev
-          make prepare-tests-ubuntu | tee .output
+          make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
 
       - name: Run kafka and zookeeper containers for integration testing
         if: needs.changes.outputs.backend == 'true'
