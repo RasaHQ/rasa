@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import os
 from typing import (
     List,
     Text,
@@ -28,6 +29,7 @@ from rasa.shared.constants import (
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
     UTTER_PREFIX,
 )
+from rasa.constants import ENV_ACTION_OMIT_DOMAIN
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
@@ -77,12 +79,15 @@ from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
+
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
     from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
+
+OMIT_DOMAIN = int(os.environ.get(ENV_ACTION_OMIT_DOMAIN, 0))
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
@@ -643,11 +648,16 @@ class RemoteAction(Action):
 
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 
+        if OMIT_DOMAIN:
+            dom = {}
+        else:
+            dom = domain.as_dict()
+
         return {
             "next_action": self._name,
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
-            "domain": domain.as_dict(),
+            "domain": dom,
             "version": rasa.__version__,
         }
 
