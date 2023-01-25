@@ -89,6 +89,8 @@ logger = logging.getLogger(__name__)
 
 OMIT_DOMAIN = int(os.environ.get(ENV_ACTION_OMIT_DOMAIN, 0))
 
+logger.debug(f"{OMIT_DOMAIN=}")
+
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
@@ -650,9 +652,10 @@ class RemoteAction(Action):
 
         if OMIT_DOMAIN:
             dom = {}
+            logger.debug("Omitting Domain Info")
         else:
             dom = domain.as_dict()
-
+            logger.debug("INCLUDING Domain Info !!!")
         return {
             "next_action": self._name,
             "sender_id": tracker.sender_id,
