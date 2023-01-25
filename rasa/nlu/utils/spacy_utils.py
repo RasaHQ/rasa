@@ -89,6 +89,20 @@ class SpacyNLP(GraphComponent):
             )
 
         try:
+
+            spacy_runtime_version = spacy.about.__version__
+            spacy_model_version_req = spacy.info(spacy_model_name).get("spacy_version")
+            logger.debug(spacy_runtime_version)
+            logger.debug(spacy_model_version_req)
+            if not spacy.util.is_compatible_version(
+                spacy_runtime_version, spacy_model_version_req
+            ):
+                print("HERE")
+                raise InvalidModelError(
+                    f"The specified model - {spacy_model_name} requires a spaCy runtime "
+                    f"version {spacy_model_version_req} and is not compatible with the "
+                    f"current spaCy runtime version {spacy_runtime_version}"
+                )
             language = spacy.load(spacy_model_name, disable=["parser"])
             return SpacyModel(model=language, model_name=spacy_model_name)
         except OSError:
