@@ -1917,26 +1917,25 @@ async def test_check_if_slot_validation_happens_twice(caplog: LogCaptureFixture)
             "value": 5,
         }
     ]
-    with aioresponses() as mocked:
+    with aioresponses() as mocked, caplog.at_level(logging.DEBUG):
         mocked.post(
             ACTION_SERVER_URL,
             payload={"events": form_validation_events},
         )
-        with caplog.at_level(logging.DEBUG):
-            _ = await action.run(
-                CollectingOutputChannel(),
-                TemplatedNaturalLanguageGenerator(domain.responses),
-                tracker,
-                domain,
+        _ = await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert (
+            sum(
+                [
+                    1
+                    for message in caplog.messages
+                    if f"Calling action endpoint to run action 'validate_{form_name}'."
+                    in message
+                ]
             )
-            assert (
-                sum(
-                    [
-                        1
-                        for message in caplog.messages
-                        if f"Calling action endpoint to run action 'validate_{form_name}'."
-                        in message
-                    ]
-                )
-                == 1
-            )
+            == 1
+        )
