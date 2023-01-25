@@ -1,65 +1,45 @@
-import shutil
-from pathlib import Path
-
 import pytest
+from pytest import MonkeyPatch
+from unittest.mock import MagicMock
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.utils.spacy_utils import MitieNLP
-import mitie
-
-from rasa.shared.exceptions import RasaException
-
-
-def test_provide(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-):
-    component = MitieNLP.create(
-        MitieNLP.get_default_config(),
-        default_model_storage,
-        Resource("mitie"),
-        default_execution_context,
-    )
-
-    model = component.provide()
-
-    expected_path = Path("data", "total_word_feature_extractor.dat")
-    assert model.model_path == expected_path
-    assert isinstance(model.word_feature_extractor, mitie.total_word_feature_extractor)
-
-    assert model.fingerprint() == str(expected_path)
+from rasa.nlu.model import InvalidModelError
+from rasa.nlu.utils.spacy_utils import SpacyNLP
+import spacy
 
 
-def test_provide_different_path(
+def test_spacy_runtime_model_version_compatibility(
+    monkeypatch: MonkeyPatch,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
-    tmp_path: Path,
 ):
-    new_path = shutil.copy(Path("data", "total_word_feature_extractor.dat"), tmp_path)
+    def mock_info_return(mock_model_name):
+        return {"spacy_version": ">=3.4.0,<3.5.0", "dummy_keys": "dummy_values"}
 
-    component = MitieNLP.create(
-        {"model": new_path},
-        default_model_storage,
-        Resource("mitie"),
-        default_execution_context,
-    )
+    def mock_spacy_obj_return(*args, **kwargs):
+        return MagicMock()
 
-    model = component.provide()
+    monkeypatch.setattr(spacy, "info", mock_info_return)
+    monkeypatch.setattr(spacy, "load", mock_spacy_obj_return)
 
-    assert model.model_path == Path(new_path)
-    assert isinstance(model.word_feature_extractor, mitie.total_word_feature_extractor)
-
-    assert model.fingerprint() == str(new_path)
-
-
-def test_invalid_path(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-):
-    with pytest.raises(RasaException):
-        MitieNLP.create(
-            {"model": "some-path"},
+    # Test case that runs model on incompatible spacy runtime.
+    spacy.about.__version__ = "3.10"
+    with pytest.raises(InvalidModelError):
+        _ = SpacyNLP.create(
+            {"model": "some_model"},
             default_model_storage,
-            Resource("mitie"),
+            Resource("spacy"),
             default_execution_context,
         )
+
+    # Test case that runs model on compatible spacy runtime
+    spacy.about.__version__ = "3.4.1"
+    component = SpacyNLP.create(
+        {"model": "some_model"},
+        default_model_storage,
+        Resource("spacy"),
+        default_execution_context,
+    )
+    assert isinstance(component, SpacyNLP)
