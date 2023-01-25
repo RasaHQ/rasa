@@ -12,7 +12,7 @@ from jsonschema import ValidationError
 from rasa.constants import ENV_ACTION_OMIT_DOMAIN
 import rasa.core
 
-with patch.dict(os.environ, {ENV_ACTION_OMIT_DOMAIN: 1}):
+with patch.dict(os.environ, {ENV_ACTION_OMIT_DOMAIN: "1"}):
     from rasa.core.actions import action
     from rasa.core.actions.action import (
         ActionBack,

@@ -87,7 +87,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-OMIT_DOMAIN = int(os.environ.get(ENV_ACTION_OMIT_DOMAIN, 0))
+try:
+    OMIT_DOMAIN = int(os.environ.get(ENV_ACTION_OMIT_DOMAIN, "0"))
+except ValueError:
+    # if it is not "0" or empty, assume there is a value that is true-ish
+    OMIT_DOMAIN = 1
 
 logger.debug(f"OMIT_DOMAIN={OMIT_DOMAIN}")
 
