@@ -89,7 +89,7 @@ logger = logging.getLogger(__name__)
 
 OMIT_DOMAIN = int(os.environ.get(ENV_ACTION_OMIT_DOMAIN, 0))
 
-logger.debug(f"{OMIT_DOMAIN=}")
+logger.debug(f"OMIT_DOMAIN={OMIT_DOMAIN}")
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
