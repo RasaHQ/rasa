@@ -127,6 +127,10 @@ async def test_activate_with_custom_slot_mapping():
         )
     assert events[:-1] == [
         ActiveLoop(form_name),
+        SlotSet(
+            slot_set_by_remote_custom_extraction_method,
+            slot_value_set_by_remote_custom_extraction_method,
+        ),
         SlotSet(REQUESTED_SLOT, domain_required_slot_name),
     ]
     assert isinstance(events[-1], BotUttered)
@@ -1881,8 +1885,9 @@ async def test_extract_slots_with_mapping_conditions_during_form_activation():
 
 async def test_check_if_slot_validation_happens_twice(caplog: LogCaptureFixture):
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
-    form_name = "my form"
-    action = FormAction(form_name, None)
+    form_name = "my_form"
+    action_server = EndpointConfig(ACTION_SERVER_URL)
+    action = FormAction(form_name, action_server)
     slot_name = "num_people"
     domain = textwrap.dedent(
         f"""
@@ -1899,23 +1904,39 @@ async def test_check_if_slot_validation_happens_twice(caplog: LogCaptureFixture)
     responses:
       utter_ask_num_people:
       - text: "How many people?"
-      """
+    actions:
+      - validate_{form_name}
+    """
     )
     domain = Domain.from_yaml(domain)
-    with caplog.at_level(logging.DEBUG):
-        _ = await action.run(
-            CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.responses),
-            tracker,
-            domain,
+    form_validation_events = [
+        {
+            "event": "slot",
+            "timestamp": None,
+            "name": "num_people",
+            "value": 5,
+        }
+    ]
+    with aioresponses() as mocked:
+        mocked.post(
+            ACTION_SERVER_URL,
+            payload={"events": form_validation_events},
         )
-        assert (
-            sum(
-                [
-                    1
-                    for message in caplog.messages
-                    if "Validating extracted slots" in message
-                ]
+        with caplog.at_level(logging.DEBUG):
+            _ = await action.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
             )
-            == 1
-        )
+            assert (
+                sum(
+                    [
+                        1
+                        for message in caplog.messages
+                        if f"Calling action endpoint to run action 'validate_{form_name}'."
+                        in message
+                    ]
+                )
+                == 1
+            )

@@ -633,7 +633,10 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         """Executes form loop after activation."""
         events: List[Event] = []
-        if not events_so_far:
+        filtered_events = [
+            event for event in events_so_far if not isinstance(event, ActiveLoop)
+        ]
+        if not filtered_events:
             events = await self._validate_if_required(
                 tracker, domain, output_channel, nlg
             )
