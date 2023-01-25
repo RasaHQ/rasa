@@ -53,6 +53,7 @@ from rasa.shared.nlu.training_data.features import Features
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.utils import train_utils
+from rasa.utils.wandb_utils import Wandb
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.model_data import (
@@ -100,6 +101,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    WANDB_PROJECT_NAME,
     CHECKPOINT_MODEL,
     ENCODING_DIMENSION,
     UNIDIRECTIONAL_ENCODER,
@@ -314,6 +316,8 @@ class TEDPolicy(Policy):
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'batch'
             TENSORBOARD_LOG_LEVEL: "epoch",
+            # Weights and Biases project name to trace training experiments
+            WANDB_PROJECT_NAME: None,
             # Perform model checkpointing
             CHECKPOINT_MODEL: False,
             # Only pick e2e prediction if the policy is confident enough
@@ -674,25 +678,28 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[RANDOM_SEED],
         )
-        callbacks = rasa.utils.train_utils.create_common_callbacks(
-            self.config[EPOCHS],
-            self.config[TENSORBOARD_LOG_DIR],
-            self.config[TENSORBOARD_LOG_LEVEL],
-            self.tmp_checkpoint_dir,
-        )
 
         if self.model is None:
             raise ModelNotFound("No model was detected prior to training.")
 
-        self.model.fit(
-            data_generator,
-            epochs=self.config[EPOCHS],
-            validation_data=validation_data_generator,
-            validation_freq=self.config[EVAL_NUM_EPOCHS],
-            callbacks=callbacks,
-            verbose=False,
-            shuffle=False,  # we use custom shuffle inside data generator
-        )
+        with Wandb(self.config[WANDB_PROJECT_NAME]):
+            callbacks = rasa.utils.train_utils.create_common_callbacks(
+                self.config[EPOCHS],
+                self.config[TENSORBOARD_LOG_DIR],
+                self.config[TENSORBOARD_LOG_LEVEL],
+                self.config[WANDB_PROJECT_NAME],
+                self.tmp_checkpoint_dir,
+            )
+
+            self.model.fit(
+                data_generator,
+                epochs=self.config[EPOCHS],
+                validation_data=validation_data_generator,
+                validation_freq=self.config[EVAL_NUM_EPOCHS],
+                callbacks=callbacks,
+                verbose=False,
+                shuffle=False,  # we use custom shuffle inside data generator
+            )
 
     def train(
         self,

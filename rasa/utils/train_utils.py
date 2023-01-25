@@ -348,6 +348,7 @@ def create_common_callbacks(
     epochs: int,
     tensorboard_log_dir: Optional[Text] = None,
     tensorboard_log_level: Optional[Text] = None,
+    wandb_project_name: Optional[Text] = None,
     checkpoint_dir: Optional[Path] = None,
 ) -> List["Callback"]:
     """Create common callbacks.
@@ -355,6 +356,7 @@ def create_common_callbacks(
     The following callbacks are created:
     - RasaTrainingLogger callback
     - Optional TensorBoard callback
+    - Optional Wand callback
     - Optional RasaModelCheckpoint callback
 
     Args:
@@ -362,6 +364,7 @@ def create_common_callbacks(
         tensorboard_log_dir: optional directory that should be used for tensorboard
         tensorboard_log_level: defines when training metrics for tensorboard should be
                                logged. Valid values: 'epoch' and 'batch'.
+        wandb_project_name: optional WAND project name 
         checkpoint_dir: optional directory that should be used for model checkpointing
 
     Returns:
@@ -382,6 +385,11 @@ def create_common_callbacks(
             )
         )
 
+    if wandb_project_name:
+        import wandb
+        callbacks.append(
+            wandb.keras.WandbCallback()
+        )
     if checkpoint_dir:
         callbacks.append(RasaModelCheckpoint(checkpoint_dir))
 

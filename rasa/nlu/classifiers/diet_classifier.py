@@ -26,6 +26,7 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
+from rasa.utils.wandb_utils import Wandb
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import (
@@ -72,6 +73,7 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     ENTITY_RECOGNITION,
     TENSORBOARD_LOG_DIR,
+    WANDB_PROJECT_NAME,
     INTENT_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
@@ -261,6 +263,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'batch'
             TENSORBOARD_LOG_LEVEL: "epoch",
+            # WAND project name to trace training experiments
+            WANDB_PROJECT_NAME: None,
             # Perform model checkpointing
             CHECKPOINT_MODEL: False,
             # Specify what features to use as sequence and sentence features
@@ -923,22 +927,25 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[RANDOM_SEED],
         )
-        callbacks = train_utils.create_common_callbacks(
-            self.component_config[EPOCHS],
-            self.component_config[TENSORBOARD_LOG_DIR],
-            self.component_config[TENSORBOARD_LOG_LEVEL],
-            self.tmp_checkpoint_dir,
-        )
 
-        self.model.fit(
-            data_generator,
-            epochs=self.component_config[EPOCHS],
-            validation_data=validation_data_generator,
-            validation_freq=self.component_config[EVAL_NUM_EPOCHS],
-            callbacks=callbacks,
-            verbose=False,
-            shuffle=False,  # we use custom shuffle inside data generator
-        )
+        with Wandb(self.component_config[WANDB_PROJECT_NAME]):
+            callbacks = train_utils.create_common_callbacks(
+                self.component_config[EPOCHS],
+                self.component_config[TENSORBOARD_LOG_DIR],
+                self.component_config[TENSORBOARD_LOG_LEVEL],
+                self.component_config[WANDB_PROJECT_NAME],
+                self.tmp_checkpoint_dir,
+            )
+
+            self.model.fit(
+                data_generator,
+                epochs=self.component_config[EPOCHS],
+                validation_data=validation_data_generator,
+                validation_freq=self.component_config[EVAL_NUM_EPOCHS],
+                callbacks=callbacks,
+                verbose=False,
+                shuffle=False,  # we use custom shuffle inside data generator
+            )
 
         self.persist()
 

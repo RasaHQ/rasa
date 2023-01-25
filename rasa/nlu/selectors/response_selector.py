@@ -74,6 +74,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    WANDB_PROJECT_NAME,
     CONCAT_DIMENSION,
     FEATURIZERS,
     CHECKPOINT_MODEL,
@@ -251,6 +252,8 @@ class ResponseSelector(DIETClassifier):
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'batch'
             TENSORBOARD_LOG_LEVEL: "epoch",
+            # Weights and Biases project name to trace training experiments
+            WANDB_PROJECT_NAME: None,
             # Specify what features to use as sequence and sentence features
             # By default all features in the pipeline are used.
             FEATURIZERS: [],

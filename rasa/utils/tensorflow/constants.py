@@ -85,6 +85,8 @@ MEAN_POOLING = "mean"
 TENSORBOARD_LOG_DIR = "tensorboard_log_directory"
 TENSORBOARD_LOG_LEVEL = "tensorboard_log_level"
 
+WANDB_PROJECT_NAME = "wandb_project_name"
+
 SEQUENCE_FEATURES = "sequence_features"
 SENTENCE_FEATURES = "sentence_features"
 
