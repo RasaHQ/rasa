@@ -475,6 +475,7 @@ responses:
 
 recipe: default.v1
 language: en
+assistant_project_id: placeholder_default
 
 policies:
 - name: RulePolicy
