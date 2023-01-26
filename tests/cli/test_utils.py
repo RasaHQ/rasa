@@ -86,7 +86,11 @@ def test_validate_with_none_if_default_is_valid(
             tmp_path
         )
 
-    assert caplog.records == []
+        caplog_records = [
+            record for record in caplog.records if "ddtrace.internal" not in record.name
+        ]
+
+        assert caplog_records == []
 
 
 def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.Path):
