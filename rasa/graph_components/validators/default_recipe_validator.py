@@ -411,7 +411,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         contains_rule_policy = any(
             schema_node
             for schema_node in self._graph_schema.nodes.values()
-            if issubclass(schema_node.uses, RulePolicy)
+            if schema_node.uses == RulePolicy
         )
 
         if domain.form_names and not contains_rule_policy:
