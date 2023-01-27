@@ -504,12 +504,12 @@ def test_train_core_help(run: Callable[..., RunResult]):
     [
         {
             "config_data": {
-                "assistant_project_id": "placeholder_default",
+                "assistant_id": "placeholder_default",
                 "language": "en",
                 "pipeline": "supervised",
             },
             "default_config": {
-                "assistant_project_id": "placeholder_default",
+                "assistant_id": "placeholder_default",
                 "language": "en",
                 "pipeline": "supervised",
                 "policies": ["TEDPolicy", "FallbackPolicy"],
@@ -519,13 +519,13 @@ def test_train_core_help(run: Callable[..., RunResult]):
         },
         {
             "config_data": {
-                "assistant_project_id": "placeholder_default",
+                "assistant_id": "placeholder_default",
                 "language": "en",
                 "pipeline": "supervised",
                 "policies": None,
             },
             "default_config": {
-                "assistant_project_id": "placeholder_default",
+                "assistant_id": "placeholder_default",
                 "language": "en",
                 "pipeline": "supervised",
                 "policies": ["TEDPolicy", "FallbackPolicy"],
@@ -536,7 +536,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
         {
             "config_data": {},
             "default_config": {
-                "assistant_project_id": "placeholder_default",
+                "assistant_id": "placeholder_default",
                 "language": "en",
                 "pipeline": "supervised",
                 "policies": ["TEDPolicy", "FallbackPolicy"],
@@ -550,7 +550,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
                 "imports": "other-folder",
             },
             "default_config": {
-                "assistant_project_id": "placeholder_default",
+                "assistant_id": "placeholder_default",
                 "language": "en",
                 "pipeline": "supervised",
                 "policies": ["TEDPolicy", "FallbackPolicy"],
@@ -561,7 +561,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
         {
             "config_data": None,
             "default_config": {
-                "assistant_project_id": "placeholder_default",
+                "assistant_id": "placeholder_default",
                 "pipeline": "supervised",
                 "policies": ["TEDPolicy", "FallbackPolicy"],
             },
@@ -571,7 +571,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
         {
             "config_data": None,
             "default_config": {
-                "assistant_project_id": "placeholder_default",
+                "assistant_id": "placeholder_default",
                 "language": "en",
                 "pipeline": "supervised",
                 "policies": ["TEDPolicy", "FallbackPolicy"],
@@ -582,7 +582,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
         {
             "config_data": None,
             "default_config": {
-                "assistant_project_id": "placeholder_default",
+                "assistant_id": "placeholder_default",
                 "language": "en",
                 "pipeline": "supervised",
             },

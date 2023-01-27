@@ -166,7 +166,7 @@ def test_test_nlu_cross_validation_with_autoconfig(
     shutil.copy(str(moodbot_nlu_data_path), nlu_path)
     write_yaml(
         {
-            "assistant_project_id": "placeholder_default",
+            "assistant_id": "placeholder_default",
             "language": "en",
             "pipeline": None,
             "policies": None,

@@ -1,5 +1,5 @@
 recipe: default.v1
-assistant_project_id: e2e_bot
+assistant_id: e2e_bot
 language: en
 pipeline:
   - name: WhitespaceTokenizer

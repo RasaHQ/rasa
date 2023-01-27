@@ -206,7 +206,7 @@ async def _train_rule_based_agent(
         config = textwrap.dedent(
             f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-        assistant_project_id: placeholder_default
+        assistant_id: placeholder_default
         pipeline: []
         policies:
         - name: RulePolicy

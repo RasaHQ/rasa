@@ -429,7 +429,7 @@ async def test_run_cv_evaluation():
     )
 
     nlu_config = {
-        "assistant_project_id": "placeholder_default",
+        "assistant_id": "placeholder_default",
         "language": "en",
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
@@ -476,7 +476,7 @@ async def test_run_cv_evaluation_no_entities():
     )
 
     nlu_config = {
-        "assistant_project_id": "placeholder_default",
+        "assistant_id": "placeholder_default",
         "language": "en",
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
@@ -529,7 +529,7 @@ async def test_run_cv_evaluation_with_response_selector():
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
 
     nlu_config = {
-        "assistant_project_id": "placeholder_default",
+        "assistant_id": "placeholder_default",
         "language": "en",
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
@@ -607,7 +607,7 @@ async def test_run_cv_evaluation_lookup_tables():
     )
 
     nlu_config = {
-        "assistant_project_id": "placeholder_default",
+        "assistant_id": "placeholder_default",
         "language": "en",
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
@@ -1013,7 +1013,7 @@ async def test_nlu_comparison(
     tmp_path: Path, monkeypatch: MonkeyPatch, nlu_as_json_path: Text
 ):
     config = {
-        "assistant_project_id": "placeholder_default",
+        "assistant_id": "placeholder_default",
         "language": "en",
         "pipeline": [
             {"name": "WhitespaceTokenizer"},

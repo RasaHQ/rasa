@@ -1,5 +1,5 @@
 recipe: default.v1
-assistant_project_id: mood_bot
+assistant_id: mood_bot
 language: en
 
 pipeline:

@@ -1,4 +1,4 @@
-assistant_project_id: example_supervised_bot
+assistant_id: example_supervised_bot
 language: "en"
 
 pipeline:

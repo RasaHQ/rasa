@@ -1,5 +1,5 @@
 language: "en"
-assistant_project_id: placeholder_default
+assistant_id: placeholder_default
 policies:
   - name: TEDPolicy
     epochs: 1

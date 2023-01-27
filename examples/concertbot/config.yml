@@ -1,5 +1,5 @@
 recipe: default.v1
-assistant_project_id: concert_bot
+assistant_id: concert_bot
 language: en
 
 pipeline:

@@ -36,7 +36,7 @@ async def test_random_seed(
     tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
     policies_config = {
-        "assistant_project_id": "placeholder_default",
+        "assistant_id": "placeholder_default",
         "policies": [{"name": "TEDPolicy", "random_seed": 42}, {"name": "RulePolicy"}],
     }
     config_file = tmp_path / "config.yml"

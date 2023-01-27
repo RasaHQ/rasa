@@ -162,7 +162,7 @@ def simple_config_path(tmp_path_factory: TempPathFactory) -> Text:
     config = textwrap.dedent(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-        assistant_project_id: placeholder_default
+        assistant_id: placeholder_default
         pipeline:
         - name: WhitespaceTokenizer
         - name: KeywordIntentClassifier

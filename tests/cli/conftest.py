@@ -42,7 +42,7 @@ def create_simple_project(path: Path):
     # fast to train
     write_yaml(
         {
-            "assistant_project_id": "placeholder_default",
+            "assistant_id": "placeholder_default",
             "language": "en",
             "pipeline": [{"name": "KeywordIntentClassifier"}],
             "policies": [

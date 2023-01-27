@@ -1,4 +1,4 @@
-assistant_project_id: example_featurizers_bot
+assistant_id: example_featurizers_bot
 language: "en"
 
 pipeline:

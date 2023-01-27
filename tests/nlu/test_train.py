@@ -170,7 +170,7 @@ async def test_train_persist_load_parse(
         {
             "pipeline": pipeline,
             "language": language,
-            "assistant_project_id": "placeholder_default",
+            "assistant_id": "placeholder_default",
         },
     )
 
@@ -198,7 +198,7 @@ def test_train_persist_load_parse_non_windows(
 def test_train_model_empty_pipeline(nlu_as_json_path: Text, tmp_path: Path):
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        config_file, {"pipeline": [], "assistant_project_id": "placeholder_default"}
+        config_file, {"pipeline": [], "assistant_id": "placeholder_default"}
     )
 
     with pytest.raises(ValueError):
@@ -236,7 +236,7 @@ def test_train_model_training_data_persisted(
         {
             "pipeline": [{"name": "KeywordIntentClassifier"}],
             "language": "en",
-            "assistant_project_id": "placeholder_default",
+            "assistant_id": "placeholder_default",
         },
     )
 
@@ -268,7 +268,7 @@ def test_train_model_no_training_data_persisted(
         {
             "pipeline": [{"name": "KeywordIntentClassifier"}],
             "language": "en",
-            "assistant_project_id": "placeholder_default",
+            "assistant_id": "placeholder_default",
         },
     )
 

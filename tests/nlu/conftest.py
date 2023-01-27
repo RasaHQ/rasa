@@ -18,7 +18,7 @@ from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
 @pytest.fixture()
 def pretrained_embeddings_spacy_config() -> Dict:
     return {
-        "assistant_project_id": "placeholder_default",
+        "assistant_id": "placeholder_default",
         "language": "en",
         "pipeline": [
             {"name": "SpacyNLP", "model": "en_core_web_md"},

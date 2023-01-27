@@ -1,5 +1,5 @@
 recipe: default.v1
-assistant_project_id: form_bot
+assistant_id: form_bot
 language: en
 
 pipeline:

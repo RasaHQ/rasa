@@ -1,4 +1,4 @@
 language: fr
-assistant_project_id: placeholder_default
+assistant_id: placeholder_default
 pipeline:
 policies:

@@ -1,4 +1,4 @@
-assistant_project_id: default_config_bot
+assistant_id: default_config_bot
 language: "fr"  # your two-letter language code
 
 pipeline:

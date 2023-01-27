@@ -1,4 +1,4 @@
-assistant_project_id: default_en_bot
+assistant_id: default_en_bot
 language: "en"
 
 pipeline:

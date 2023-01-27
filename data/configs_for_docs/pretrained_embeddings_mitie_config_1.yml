@@ -1,4 +1,4 @@
-assistant_project_id: example_mitie_bot
+assistant_id: example_mitie_bot
 language: "en"
 
 pipeline:
