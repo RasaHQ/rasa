@@ -1883,7 +1883,11 @@ async def test_extract_slots_with_mapping_conditions_during_form_activation():
     assert form_events == expected_events
 
 
-async def test_check_if_slot_validation_happens_twice(caplog: LogCaptureFixture):
+async def test_form_validation_happens_once(caplog: LogCaptureFixture):
+    """
+    Tests if form validation happens once instead of twice.
+    Solves the bug presented in https://rasahq.atlassian.net/browse/ENG-117
+    """
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
     form_name = "my_form"
     action_server = EndpointConfig(ACTION_SERVER_URL)

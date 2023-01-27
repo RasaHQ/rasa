@@ -633,6 +633,16 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         """Executes form loop after activation."""
         events: List[Event] = []
+        """
+        Call to validation is not requried when the slots are already validated
+        at the time of form activation.
+        events_so_far:
+            - empty when slots have not been validated.
+            - has SlotSet objects when already validated.
+            - ActiveLoop object when events have not been validated.
+        Hence the events are filtered to remove ActiveLoop object that was added
+        at the time of form activation.
+        """
         filtered_events = [
             event for event in events_so_far if not isinstance(event, ActiveLoop)
         ]
