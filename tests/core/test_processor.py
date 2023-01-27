@@ -1300,6 +1300,7 @@ async def test_predict_next_action_with_hidden_rules(
     config = textwrap.dedent(
         f"""
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    assistant_id: placeholder_default
     policies:
     - name: RulePolicy
     - name: MemoizationPolicy
