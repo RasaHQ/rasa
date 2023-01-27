@@ -738,7 +738,7 @@ class RemoteAction(Action):
             logger.debug(
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
-            response = await self.action_endpoint.request(
+            response: Any = await self.action_endpoint.request(
                 json=json_body,
                 method="post",
                 timeout=DEFAULT_REQUEST_TIMEOUT,
