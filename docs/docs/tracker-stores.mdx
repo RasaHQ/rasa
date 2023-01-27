@@ -398,7 +398,7 @@ extending the Rasa image to include the module, or mounting the module as volume
 ## Fallback Tracker Store
 
 In case the primary tracker store configured in `endpoints.yml` becomes unavailable, the rasa agent will issue an
-error warning and fall back on the `InMemoryTrackerStore` implementation. A new dialogue session will be started for
+error message and fall back on the `InMemoryTrackerStore` implementation. A new dialogue session will be started for
 each turn, which will be saved separately in the `InMemoryTrackerStore` fallback.
 
 As soon as the primary tracker store comes back up, it will replace the fallback tracker store and save the
