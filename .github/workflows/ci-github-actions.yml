@@ -39,7 +39,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
