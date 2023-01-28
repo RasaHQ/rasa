@@ -207,7 +207,7 @@ jobs:
         if: env.GH_RUNNER_IMAGE_TAG == 'latest'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
+        uses: voxmedia/github-action-slack-notify-build@3665186a8c1a022b28a1dbe0954e73aa9081ea9e
         with:
           channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
           status: WARNING
