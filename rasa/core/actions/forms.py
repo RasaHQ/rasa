@@ -634,7 +634,7 @@ class FormAction(LoopAction):
         """Executes form loop after activation."""
         events: List[Event] = []
         """
-        Call to validation is not requried when the slots are already validated
+        Call to validation is not required when the slots are already validated
         at the time of form activation.
         events_so_far:
             - empty when slots have not been validated.
