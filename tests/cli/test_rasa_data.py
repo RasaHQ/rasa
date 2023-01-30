@@ -385,3 +385,27 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+def test_validate_files_config_default_assistant_id():
+    args = {
+        "domain": "data/test_moodbot/domain.yml",
+        "data": None,
+        "max_history": None,
+        "config": "data/test_config/config_defaults.yml",
+        "fail_on_warnings": False,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+def test_validate_files_config_missing_assistant_id():
+    args = {
+        "domain": "data/test_moodbot/domain.yml",
+        "data": None,
+        "max_history": None,
+        "config": "data/test_config/config_no_assistant_id.yml",
+        "fail_on_warnings": False,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
