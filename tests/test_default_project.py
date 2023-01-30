@@ -13,6 +13,7 @@ import rasa.cli.scaffold
 import rasa.cli.train
 import rasa.cli.shell
 import rasa.shared.utils.io
+from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.utils.common import EXPECTED_WARNINGS
 
 
@@ -24,6 +25,8 @@ def test_default_project_has_no_warnings(
     rasa.cli.scaffold.create_initial_project(".")
 
     config = copy.deepcopy(default_config)
+    # change default assistant id value to prevent config validation errors
+    config[ASSISTANT_ID_KEY] = "some_unique_assistant_name"
     for _, items in config.items():
         for item in items:
             if "epochs" in item:
