@@ -1,14 +1,19 @@
 import contextlib
+import copy
 import logging
 import os
 import pathlib
 import sys
 import tempfile
+from typing import Text
+
 import pytest
 from _pytest.logging import LogCaptureFixture
 
 import rasa.cli.utils
 from rasa.shared.constants import (
+    ASSISTANT_ID_DEFAULT_VALUE,
+    ASSISTANT_ID_KEY,
     CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
@@ -249,3 +254,30 @@ def test_get_valid_config(parameters):
 def test_validate_config_path_with_non_existing_file():
     with pytest.raises(SystemExit):
         rasa.cli.utils.validate_config_path("non-existing-file.yml")
+
+
+@pytest.mark.parametrize(
+    "config_file",
+    [
+        "data/test_config/config_no_assistant_id.yml",
+        "data/test_config/config_default_assistant_id_value.yml",
+    ],
+)
+def test_validate_assistant_id_in_config(config_file: Text) -> None:
+    copy_config_data = copy.deepcopy(rasa.shared.utils.io.read_yaml_file(config_file))
+
+    warning_message = (
+        f"The config file '{str(config_file)}' is missing a "
+        f"unique value for the '{ASSISTANT_ID_KEY}' mandatory key."
+    )
+    with pytest.warns(UserWarning, match=warning_message):
+        rasa.cli.utils.validate_assistant_id_in_config(config_file)
+
+    config_data = rasa.shared.utils.io.read_yaml_file(config_file)
+    assistant_name = config_data.get(ASSISTANT_ID_KEY)
+
+    assert assistant_name is not None
+    assert assistant_name != ASSISTANT_ID_DEFAULT_VALUE
+
+    # reset input files to original state
+    rasa.shared.utils.io.write_yaml(copy_config_data, config_file, True)

@@ -132,8 +132,9 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
             ASSISTANT_ID_KEY
         ] = f"{time.strftime(time_format)}-{randomname.get_name()}"
 
-        with open(config_file, "w") as config:
-            config.write(json.dumps(config_data))
+        rasa.shared.utils.io.write_yaml(
+            data=config_data, target=config_file, should_preserve_key_order=True
+        )
 
     return
 
