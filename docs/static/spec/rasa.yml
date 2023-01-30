@@ -1196,7 +1196,7 @@ components:
           $ref: '#/components/schemas/ParseResult'
       required: ["text", "sender"]
 
-    Entity:
+   Entity:
       type: object
       description: Entities within a message
       properties:
@@ -1212,9 +1212,13 @@ components:
         entity:
           type: string
           description: Type of the entity
-        confidence:
+        Duckling confidence:
           type: number
-      required: ["start", "end", "value", "entity"]
+	      additional_info:
+	        type: object
+	      text:
+	        type: string
+        required: ["start", "end", "value", "entity"]
 
     Intent:
       type: object
