@@ -5,8 +5,6 @@ import copy
 
 import re
 
-from pytest import Testdir
-
 from rasa.__main__ import create_argument_parser
 import rasa.cli.data
 import rasa.cli.scaffold
@@ -17,9 +15,7 @@ from rasa.utils.common import EXPECTED_WARNINGS
 
 
 @pytest.mark.timeout(300, func_only=True)
-def test_default_project_has_no_warnings(
-    testdir: Testdir, default_config: Dict[Text, Any]
-):
+def test_default_project_has_no_warnings(default_config: Dict[Text, Any]):
     parser = create_argument_parser()
     rasa.cli.scaffold.create_initial_project(".")
 
@@ -38,7 +34,7 @@ def test_default_project_has_no_warnings(
 
     # pytest.warns would override any warning filters that we could set
     assert not [
-        warning
+        warning.message
         for warning in warning_recorder.list
         if not any(
             type(warning.message) == warning_type
