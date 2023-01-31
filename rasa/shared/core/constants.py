@@ -108,7 +108,7 @@ class SlotMappingType(Enum):
     def __str__(self) -> str:
         return self.value
 
-    """Returns True if the mapping type is predefined.
+    """Returns True iff the mapping type is predefined.
        is_predefined_type function serves to evaluate if the custom mapping action is needed.
     """
     def is_predefined_type(self) -> bool: 
