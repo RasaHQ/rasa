@@ -10,8 +10,11 @@ from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from jsonschema import ValidationError
 
+# mock patching is no fun with on-import code execution.
+from rasa.constants import ENV_ACTION_OMIT_DOMAIN
+
 with patch.dict(os.environ, {ENV_ACTION_OMIT_DOMAIN: "1"}):
-    from rasa.constants import ENV_ACTION_OMIT_DOMAIN
+
     import rasa.core
     from rasa.core.actions import action
     from rasa.core.actions.action import (
