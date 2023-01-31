@@ -103,16 +103,15 @@ class SlotMappingType(Enum):
     FROM_TRIGGER_INTENT = "from_trigger_intent"
     FROM_TEXT = "from_text"
     CUSTOM = "custom"
-
+    
+    """Returns the string representation that should be used in config files."""
     def __str__(self) -> str:
-        """Returns the string representation that should be used in config files."""
         return self.value
 
-    def is_predefined_type(self) -> bool:
-        """Returns True iff the mapping type is predefined.
-
-        That is, to evaluate the mapping no custom action execution is needed.
-        """
+    """Returns True if the mapping type is predefined.
+       is_predefined_type function serves to evaluate if the custom mapping action is needed.
+    """
+    def is_predefined_type(self) -> bool: 
         return self != SlotMappingType.CUSTOM
 
 
