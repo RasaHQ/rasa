@@ -1212,7 +1212,7 @@ components:
         entity:
           type: string
           description: Type of the entity
-        Duckling confidence:
+        confidence:
           type: number
 	      additional_info:
 	        type: object
