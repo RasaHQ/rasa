@@ -9,10 +9,10 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from jsonschema import ValidationError
-from rasa.constants import ENV_ACTION_OMIT_DOMAIN
-import rasa.core
 
 with patch.dict(os.environ, {ENV_ACTION_OMIT_DOMAIN: "1"}):
+    from rasa.constants import ENV_ACTION_OMIT_DOMAIN
+    import rasa.core
     from rasa.core.actions import action
     from rasa.core.actions.action import (
         ActionBack,
@@ -28,71 +28,71 @@ with patch.dict(os.environ, {ENV_ACTION_OMIT_DOMAIN: "1"}):
         ActionEndToEndResponse,
         ActionExtractSlots,
     )
-from rasa.core.actions.forms import FormAction
-from rasa.core.channels import CollectingOutputChannel, OutputChannel
-from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.shared.constants import (
-    LATEST_TRAINING_DATA_FORMAT_VERSION,
-    UTTER_PREFIX,
-    REQUIRED_SLOTS_KEY,
-)
-from rasa.shared.core.domain import (
-    ActionNotFoundException,
-    SessionConfig,
-    Domain,
-    KEY_E2E_ACTIONS,
-)
-from rasa.shared.core.events import (
-    Restarted,
-    SlotSet,
-    UserUtteranceReverted,
-    BotUttered,
-    ActiveLoop,
-    SessionStarted,
-    ActionExecuted,
-    Event,
-    UserUttered,
-    EntitiesAdded,
-    DefinePrevUserUtteredFeaturization,
-    AllSlotsReset,
-    ReminderScheduled,
-    ReminderCancelled,
-    ActionReverted,
-    StoryExported,
-    FollowupAction,
-    ConversationPaused,
-    ConversationResumed,
-    AgentUttered,
-    LoopInterrupted,
-    ActionExecutionRejected,
-    LegacyFormValidation,
-    LegacyForm,
-)
-import rasa.shared.utils.common
-from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
-from rasa.shared.core.constants import (
-    USER_INTENT_SESSION_START,
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_SESSION_START_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEACTIVATE_LOOP_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_BACK_NAME,
-    ACTION_TWO_STAGE_FALLBACK_NAME,
-    ACTION_UNLIKELY_INTENT_NAME,
-    RULE_SNIPPET_ACTION_NAME,
-    ACTIVE_LOOP,
-    FOLLOWUP_ACTION,
-    REQUESTED_SLOT,
-    SESSION_START_METADATA_SLOT,
-    ACTION_EXTRACT_SLOTS,
-)
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import ClientResponseError, EndpointConfig
+    from rasa.core.actions.forms import FormAction
+    from rasa.core.channels import CollectingOutputChannel, OutputChannel
+    from rasa.core.nlg import NaturalLanguageGenerator
+    from rasa.shared.constants import (
+        LATEST_TRAINING_DATA_FORMAT_VERSION,
+        UTTER_PREFIX,
+        REQUIRED_SLOTS_KEY,
+    )
+    from rasa.shared.core.domain import (
+        ActionNotFoundException,
+        SessionConfig,
+        Domain,
+        KEY_E2E_ACTIONS,
+    )
+    from rasa.shared.core.events import (
+        Restarted,
+        SlotSet,
+        UserUtteranceReverted,
+        BotUttered,
+        ActiveLoop,
+        SessionStarted,
+        ActionExecuted,
+        Event,
+        UserUttered,
+        EntitiesAdded,
+        DefinePrevUserUtteredFeaturization,
+        AllSlotsReset,
+        ReminderScheduled,
+        ReminderCancelled,
+        ActionReverted,
+        StoryExported,
+        FollowupAction,
+        ConversationPaused,
+        ConversationResumed,
+        AgentUttered,
+        LoopInterrupted,
+        ActionExecutionRejected,
+        LegacyFormValidation,
+        LegacyForm,
+    )
+    import rasa.shared.utils.common
+    from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
+    from rasa.shared.core.constants import (
+        USER_INTENT_SESSION_START,
+        ACTION_LISTEN_NAME,
+        ACTION_RESTART_NAME,
+        ACTION_SESSION_START_NAME,
+        ACTION_DEFAULT_FALLBACK_NAME,
+        ACTION_DEACTIVATE_LOOP_NAME,
+        ACTION_REVERT_FALLBACK_EVENTS_NAME,
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+        ACTION_DEFAULT_ASK_REPHRASE_NAME,
+        ACTION_BACK_NAME,
+        ACTION_TWO_STAGE_FALLBACK_NAME,
+        ACTION_UNLIKELY_INTENT_NAME,
+        RULE_SNIPPET_ACTION_NAME,
+        ACTIVE_LOOP,
+        FOLLOWUP_ACTION,
+        REQUESTED_SLOT,
+        SESSION_START_METADATA_SLOT,
+        ACTION_EXTRACT_SLOTS,
+    )
+    from rasa.shared.core.trackers import DialogueStateTracker
+    from rasa.shared.exceptions import RasaException
+    from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
 
