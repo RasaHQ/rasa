@@ -565,3 +565,14 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 def module_path_from_class(clazz: Type) -> Text:
     """Return the module path of an instance's class."""
     return clazz.__module__ + "." + clazz.__name__
+
+
+def get_bool_env_variable(variable_name: str, default_variable_value: bool) -> bool:
+    true_value = "true"
+    false_value = "false"
+    value = os.getenv(variable_name, None)
+    if value is None:
+        value = str(default_variable_value)
+    if value.lower() != true_value and value.lower() != false_value:
+        raise ValueError(f"Invalid value `{value}` for variable `{variable_name}`")
+    return value.lower() == true_value
