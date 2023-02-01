@@ -1,11 +1,16 @@
 import logging
 import os
-from typing import Text
+import collections
+from typing import Text, List, Tuple, DefaultDict
+import json
 
+import rasa.shared.core.events
 from rasa import telemetry
 from rasa.shared.core.training_data import loading
 from rasa.shared.utils.cli import print_error
 from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.core.training_data.structures import StoryStep
+from rasa.shared.core.events import UserUttered, ActionExecuted
 
 logger = logging.getLogger(__name__)
 
@@ -68,3 +73,73 @@ def visualize(
     import webbrowser
 
     webbrowser.open(full_output_path)
+
+
+def story_steps_to_paths(story_steps: List[StoryStep]) -> List[List[Text]]:
+    """
+    Traverse story graph into all paths.
+    :param story_steps: list of story steps
+    :return: list of all paths (including intents and actions)
+    """
+    # convert all story steps into (start, end, paths) chunks
+    path_chunks = []
+    # map start checkpoint name to end checkpoint name + chunk index
+    start_idx: DefaultDict[Text, Tuple[Optional[Text], int]] = collections.defaultdict(list)
+
+    for step in story_steps:
+        chunk = []
+        for event in step.events:
+            if isinstance(event, UserUttered):
+                if event.intent_name is not None:
+                    chunk.append(event.intent_name)
+            elif isinstance(event, ActionExecuted):
+                chunk.append(event.action_name)
+        if not chunk:
+            continue
+
+        chunk_idx = len(path_chunks)
+        path_chunks.append(chunk)
+
+        end_names = [chpt.name for chpt in step.end_checkpoints]
+        # end of story is empty list of checkpoints
+        if not end_names:
+            end_names.append(None)
+        for start_name in map(lambda chpt: chpt.name, step.start_checkpoints):
+            for end_name in end_names:
+                start_idx[start_name].append((end_name, chunk_idx))
+
+    deque = collections.deque([('STORY_START', [])])
+    result = []
+    while deque:
+        end_name, chunk = deque.pop()
+        for cont_name, chunk_idx in start_idx[end_name]:
+            new_chunk = list(chunk)
+            new_chunk.extend(path_chunks[chunk_idx])
+            if cont_name is None:
+                # end of chunk, append to the result
+                result.append(new_chunk)
+            else:
+                # multi-step checkpoint, push to the queue
+                deque.append((cont_name, new_chunk))
+    return result
+
+
+def dump_graph(domain_path: Text, stories_path: Text, nlu_data_path: Text, output_path: Text):
+    logger.info("Loading domain and stories data...")
+    try:
+        domain = Domain.load(domain_path)
+    except InvalidDomain as e:
+        print_error(f"Could not load domain due to: '{e}'")
+        return
+    story_steps = loading.load_data_from_resource(stories_path, domain)
+    logger.info("Data loaded, generating graph...")
+    stories_paths = story_steps_to_paths(story_steps)
+
+    data = {
+        'intents': domain.intents,
+        'actions': domain.action_names_or_texts,
+        'stories_paths': stories_paths,
+    }
+
+    with open(output_path, "wt", encoding='utf-8') as fd:
+        json.dump(data, fd, indent=4)
