@@ -236,9 +236,9 @@ markers = "sys_platform == 'win32'"
 version = "~2.11.0"
 markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
 
-#[tool.poetry.dependencies.tensorflow-macos]
-#version = "2.10.0"
-#markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
+[tool.poetry.dependencies.tensorflow-macos]
+version = "2.11.0"
+markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 
 [tool.poetry.dependencies.PyJWT]
 version = "^2.0.0"
