@@ -1,18 +1,21 @@
 import os
 import logging
 from pathlib import Path
+from pytest import MonkeyPatch
 from typing import Any, Text, Type
 from unittest import mock
 
 import pytest
 
 from rasa.core.agent import Agent
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.utils.common
 from rasa.utils.common import (
     RepeatedLogFilter,
     find_unavailable_packages,
     configure_logging_and_warnings,
+    get_bool_env_variable,
 )
 import tests.conftest
 
@@ -194,3 +197,58 @@ def test_cli_missing_log_level_env_var_used():
     rasa_logger.level == logging.WARNING
     matplotlib_logger = logging.getLogger("matplotlib")
     matplotlib_logger.level == logging.INFO
+
+
+@pytest.mark.parametrize(
+    "env_name, env_value, default_value, expected",
+    [
+        ("SOME_VAR", "False", False, False),
+        ("SOME_VAR", "false", False, False),
+        ("SOME_VAR", "False", True, False),
+        ("SOME_VAR", "false", True, False),
+        ("SOME_VAR", "True", False, True),
+        ("SOME_VAR", "true", False, True),
+        ("SOME_VAR", "true", True, True),
+        ("SOME_VAR", "True", True, True),
+    ],
+)
+def test_get_bool_env_variable(
+    env_name, env_value, default_value, expected, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setenv(env_name, env_value)
+    result = get_bool_env_variable(env_name, default_value)
+
+    assert result is expected
+
+
+@pytest.mark.parametrize(
+    "env_name, default_value, expected",
+    [
+        ("SOME_VAR", True, True),
+        ("SOME_VAR", False, False),
+    ],
+)
+def test_get_bool_env_variable_not_set(
+    env_name, default_value, expected, monkeypatch: MonkeyPatch
+):
+    result = get_bool_env_variable(env_name, default_value)
+
+    assert result is expected
+
+
+@pytest.mark.parametrize(
+    "env_name, env_value, default_value",
+    [
+        ("SOME_VAR", "ffalse", False),
+        ("SOME_VAR", "ffalse", True),
+        ("SOME_VAR", "ttrue", False),
+        ("SOME_VAR", "ttrue", True),
+    ],
+)
+def test_get_bool_env_variable_with_invalid_value(
+    env_name, env_value, default_value, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setenv(env_name, env_value)
+
+    with pytest.raises(ValueError):
+        get_bool_env_variable(env_name, default_value)
