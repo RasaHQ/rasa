@@ -1417,7 +1417,7 @@ name = "filelock"
 version = "3.9.0"
 description = "A platform independent file lock."
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "filelock-3.9.0-py3-none-any.whl", hash = "sha256:f58d535af89bb9ad5cd4df046f741f8553a418c01a7856bf0d173bbc9f6bd16d"},
@@ -2245,7 +2245,7 @@ name = "huggingface-hub"
 version = "0.12.0"
 description = "Client library to download and publish models, datasets and other repos on the huggingface.co hub"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7.0"
 files = [
     {file = "huggingface_hub-0.12.0-py3-none-any.whl", hash = "sha256:93809eabbfb2058a808bddf8b2a70f645de3f9df73ce87ddf5163d4c74b71c0c"},
@@ -5977,7 +5977,7 @@ name = "tokenizers"
 version = "0.13.2"
 description = "Fast and Customizable Tokenizers"
 category = "main"
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "tokenizers-0.13.2-cp310-cp310-macosx_10_11_x86_64.whl", hash = "sha256:a6f36b1b499233bb4443b5e57e20630c5e02fba61109632f5e00dab970440157"},
@@ -6124,7 +6124,7 @@ name = "transformers"
 version = "4.25.1"
 description = "State-of-the-art Machine Learning for JAX, PyTorch and TensorFlow"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7.0"
 files = [
     {file = "transformers-4.25.1-py3-none-any.whl", hash = "sha256:60f1be15e17e4a54373c787c713ec149dabcc63464131ac45611618fe7c2016e"},
@@ -7003,14 +7003,14 @@ docs = ["furo", "jaraco.packaging (>=9)", "jaraco.tidelift (>=1.4)", "rst.linker
 testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=1.3)", "pytest-flake8", "pytest-mypy (>=0.9.1)"]
 
 [extras]
-full = ["spacy", "spacy", "sentencepiece", "jieba"]
+full = ["spacy", "spacy", "transformers", "sentencepiece", "jieba"]
 gh-release-notes = ["github3.py"]
 jieba = ["jieba"]
 metal = ["tensorflow-metal"]
 spacy = ["spacy", "spacy"]
-transformers = ["sentencepiece"]
+transformers = ["transformers", "sentencepiece"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<3.11"
-content-hash = "e5f5e62961661030cef8027a1186cc771f45489f5ca2b592965b1689645a64f5"
+content-hash = "b23f841141135633e98c1041c78d53550c0f584b06ad715fb9310802c3e859e7"
