@@ -180,7 +180,7 @@ def validate_mandatory_config_keys(
 
     Returns: The path to the config file if the config is valid.
     """
-    missing_keys = rasa.cli.utils.missing_config_keys(config, mandatory_keys)
+    missing_keys = set(rasa.cli.utils.missing_config_keys(config, mandatory_keys))
     if missing_keys:
         print_error(
             "The config file '{}' is missing mandatory parameters: "
