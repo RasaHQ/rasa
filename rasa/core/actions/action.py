@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import os
 from typing import (
     List,
     Text,
@@ -15,7 +16,11 @@ from typing import (
 
 import aiohttp
 import rasa.core
-from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.constants import (
+    COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
+    DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
+    DEFAULT_REQUEST_TIMEOUT,
+)
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -75,6 +80,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 import rasa.shared.utils.io
+from rasa.utils.common import get_bool_env_variable
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 if TYPE_CHECKING:
@@ -738,11 +744,16 @@ class RemoteAction(Action):
             logger.debug(
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
+
+            should_compress = get_bool_env_variable(
+                COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
+                DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
+            )
             response: Any = await self.action_endpoint.request(
                 json=json_body,
                 method="post",
                 timeout=DEFAULT_REQUEST_TIMEOUT,
-                compress=True,
+                compress=should_compress,
             )
 
             self._validate_action_result(response)
