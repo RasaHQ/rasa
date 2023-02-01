@@ -3137,7 +3137,7 @@ wrapt = ">=1.11.0"
 
 [[package]]
 name = "tensorflow-addons"
-version = "0.18.0"
+version = "0.19.0"
 description = "TensorFlow Addons."
 category = "main"
 optional = false
@@ -3148,9 +3148,9 @@ packaging = "*"
 typeguard = ">=2.7"
 
 [package.extras]
-tensorflow = ["tensorflow (>=2.8.0,<2.11.0)"]
-tensorflow-cpu = ["tensorflow-cpu (>=2.8.0,<2.11.0)"]
-tensorflow-gpu = ["tensorflow-gpu (>=2.8.0,<2.11.0)"]
+tensorflow = ["tensorflow (>=2.9.0,<2.12.0)"]
+tensorflow-cpu = ["tensorflow-cpu (>=2.9.0,<2.12.0)"]
+tensorflow-gpu = ["tensorflow-gpu (>=2.9.0,<2.12.0)"]
 
 [[package]]
 name = "tensorflow-cpu-aws"
@@ -3866,7 +3866,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "ea4963385a5392b467701158a24e16961c846c00184b4dcd4b786910df82693a"
+content-hash = "c48afbc38f874d09f98bc8d11ef272a8f7116a61e1c76f4f3b0d777a721bf6db"
 
 [metadata.files]
 absl-py = [
@@ -6520,21 +6520,21 @@ tensorflow = [
     {file = "tensorflow-2.11.0-cp39-cp39-win_amd64.whl", hash = "sha256:cc3444fe1d58c65a195a69656bf56015bf19dc2916da607d784b0a1e215ec008"},
 ]
 tensorflow-addons = [
-    {file = "tensorflow_addons-0.18.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:c5efa7a6261679cb4f06d127933392293b2f29ad064db793e7a775c52286a186"},
-    {file = "tensorflow_addons-0.18.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:9284c6ab9b5f4caa25a536d7f3e8ffdea5464b5dab4925a2afc3c8a1f57492ea"},
-    {file = "tensorflow_addons-0.18.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9586dc70e4de67f234afc48a2bbae9a74dc6edf24d28f261bb320045b307f405"},
-    {file = "tensorflow_addons-0.18.0-cp310-cp310-win_amd64.whl", hash = "sha256:20c1b8e32f4fc93b095dfef8d86822ca25735bdaf55b9deea5f0723840879fae"},
-    {file = "tensorflow_addons-0.18.0-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:45a14fad25447b5f5e2dd0bad83b206212ecf9ca33636d8bc150de70e833d32e"},
-    {file = "tensorflow_addons-0.18.0-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:69b4bf55d05e62d818f717577c6e4e62dd7d591d4f72dbe08ce79b78a2195cda"},
-    {file = "tensorflow_addons-0.18.0-cp37-cp37m-win_amd64.whl", hash = "sha256:a2c833e0a0fb96b9851223a945b717dc431ce1af8cc44b2163d96d43afdd948a"},
-    {file = "tensorflow_addons-0.18.0-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:884988a682c317b7bb25742d65847b72fa8f684caded9726d948bd0618a2d42a"},
-    {file = "tensorflow_addons-0.18.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:27b0c7dba2d5d61f090ecb09144df8a2dd3d8984804fdcbfc6387c7af49ce8d6"},
-    {file = "tensorflow_addons-0.18.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ccc504b72342eb0e08c771644eed705e0a12937304141d6a8b19da5000f28a40"},
-    {file = "tensorflow_addons-0.18.0-cp38-cp38-win_amd64.whl", hash = "sha256:9ee3e5c81652f59502958396bc3c5fd34ee27d9a44ffbcc2dceb4fd61f4b4685"},
-    {file = "tensorflow_addons-0.18.0-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:0713a843a3cd5444bb1620cb7941566fb12f87cb2efb4150ca3eece7d80c75e7"},
-    {file = "tensorflow_addons-0.18.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:0cc32b51e6fc480fee82b9db51f2b990da31a91c9adb01e799c92f47faf99e89"},
-    {file = "tensorflow_addons-0.18.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4985b7e8cf8b80574a8fca4d712a769c8a39c944ac91883f327d2a4c607d2853"},
-    {file = "tensorflow_addons-0.18.0-cp39-cp39-win_amd64.whl", hash = "sha256:e74e2f47a7b8e2abb7fa0b48ea4837ea2636581c55f5559ecc804ec704d456bc"},
+    {file = "tensorflow_addons-0.19.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:ca3764beba54c4ee4bb01a4294f8c2fef5c3814fd0f521dbe8beb4522545cb2d"},
+    {file = "tensorflow_addons-0.19.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:8f74646fe83fd6f0d84ae5e0186c85cae3dd7e6c2329c8a5db4574c144706f39"},
+    {file = "tensorflow_addons-0.19.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a46016fe9a1705043e39b7dacee3b089303ecdedbf1b12eb607aa35b7d2471e3"},
+    {file = "tensorflow_addons-0.19.0-cp310-cp310-win_amd64.whl", hash = "sha256:eefbdb4e0450b93fba6b393870784dad4c91189e5551e01b268aeb5fe5b04da6"},
+    {file = "tensorflow_addons-0.19.0-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:a297db1af6e682277f593411d4d28b939646c2b67b8351ef0d31a30b9531fb93"},
+    {file = "tensorflow_addons-0.19.0-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:06b673fe22c4113edabdc0dc1ef919ba0f1fb024ca39a5718ec146285c400e8f"},
+    {file = "tensorflow_addons-0.19.0-cp37-cp37m-win_amd64.whl", hash = "sha256:eefb6bf6d7a31d60649d6f6e99aee172ed4f5e693a079acfb264297997de21d0"},
+    {file = "tensorflow_addons-0.19.0-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:d447a3f7852810b7985c890852dbcb6454f3899100d439d5eba370a78d8bd281"},
+    {file = "tensorflow_addons-0.19.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:51fefd5f496ada5dafb13c446853fa1ddeb5482a0b9074af14efe0b99903816e"},
+    {file = "tensorflow_addons-0.19.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:101c3142149f16e81362cc1d0959686543cb69df79f38a3ea3c5205fbf57b28e"},
+    {file = "tensorflow_addons-0.19.0-cp38-cp38-win_amd64.whl", hash = "sha256:c93602cf3b8a7bbe1fbf973b7b9f986892be34ba8b943923f09ae6cd79f0a241"},
+    {file = "tensorflow_addons-0.19.0-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:fc058876dce711009227c47559b05295a5fb480748d6ec5c49386b1dc2c00167"},
+    {file = "tensorflow_addons-0.19.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:9334910bb6b599dd627e632a59f35ae9256bda2312b06929066a437076bf4789"},
+    {file = "tensorflow_addons-0.19.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f25b029a917b635162b1f14df0263b2f79deadcd71daecd3161f69ccb1fbcea4"},
+    {file = "tensorflow_addons-0.19.0-cp39-cp39-win_amd64.whl", hash = "sha256:b8f4c3a88b381bd28bba3189a0216749f9e799ae3dc4959651728e01ae20d738"},
 ]
 tensorflow-cpu-aws = [
     {file = "tensorflow_cpu_aws-2.11.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6cf9a55a1afa5f7bfc67caffb3b992d9cd1929382a961a1d056e8f32bf5dd924"},
