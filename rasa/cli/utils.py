@@ -122,8 +122,8 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
     if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
         rasa.shared.utils.io.raise_warning(
             f"The config file '{str(config_file)}' is missing a unique value for the "
-            f"'{ASSISTANT_ID_KEY}' mandatory key. Proceeding with generating a "
-            f"random value and overwriting the config file."
+            f"'{ASSISTANT_ID_KEY}' mandatory key. Proceeding with generating a random "
+            f"value and overwriting the '{ASSISTANT_ID_KEY}' in the config file."
         )
 
         # add random value for assistant id, overwrite config file
@@ -166,7 +166,7 @@ def validate_config_path(
     return str(config)
 
 
-def get_valid_config(
+def validate_mandatory_config_keys(
     config: Union[Text, "Path"],
     mandatory_keys: List[Text],
 ) -> Text:
@@ -190,6 +190,20 @@ def get_valid_config(
         sys.exit(1)
 
     return str(config)
+
+
+def get_validated_config(
+    config: Optional[Union[Text, "Path"]],
+    mandatory_keys: List[Text],
+    default_config: Text = DEFAULT_CONFIG_PATH,
+) -> Text:
+    """Validates config and returns path to validated config file."""
+    config = validate_config_path(config, default_config)
+    validate_assistant_id_in_config(config)
+
+    config = validate_mandatory_config_keys(config, mandatory_keys)
+
+    return config
 
 
 def cancel_cause_not_found(

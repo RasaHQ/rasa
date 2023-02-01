@@ -5,7 +5,7 @@ import os
 import pathlib
 import sys
 import tempfile
-from typing import Text
+from typing import Any, Dict, Text
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -131,7 +131,6 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
                 "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": False,
         },
         {
             "config_data": {
@@ -147,10 +146,30 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
                 "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": False,
         },
+    ],
+)
+def test_get_validated_config_with_valid_input(parameters: Dict[Text, Any]) -> None:
+    config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
+    rasa.shared.utils.io.write_yaml(parameters["config_data"], config_path)
+
+    default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
+    rasa.shared.utils.io.write_yaml(parameters["default_config"], default_config_path)
+
+    config_path = rasa.cli.utils.get_validated_config(
+        config_path, parameters["mandatory_keys"], default_config_path
+    )
+
+    config_data = rasa.shared.utils.io.read_yaml_file(config_path)
+
+    for k in parameters["mandatory_keys"]:
+        assert k in config_data
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [
         {
-            "config_data": {},
             "default_config": {
                 "assistant_id": "placeholder_default",
                 "language": "en",
@@ -158,10 +177,51 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
                 "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
-            "error": True,
+        },
+        {
+            "default_config": {
+                "assistant_id": "placeholder_default",
+                "language": "en",
+                "pipeline": "supervised",
+            },
+            "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
+        },
+    ],
+)
+def test_get_validated_config_with_default_config(parameters: Dict[Text, Any]) -> None:
+    config_path = None
+
+    default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
+    rasa.shared.utils.io.write_yaml(parameters["default_config"], default_config_path)
+
+    config_path = rasa.cli.utils.get_validated_config(
+        config_path, parameters["mandatory_keys"], default_config_path
+    )
+
+    config_data = rasa.shared.utils.io.read_yaml_file(config_path)
+
+    for k in parameters["mandatory_keys"]:
+        assert k in config_data
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {
+            "config_data": {
+                "assistant_id": "placeholder_default",
+            },
+            "default_config": {
+                "assistant_id": "placeholder_default",
+                "language": "en",
+                "pipeline": "supervised",
+                "policies": ["TEDPolicy", "FallbackPolicy"],
+            },
+            "mandatory_keys": CONFIG_MANDATORY_KEYS,
         },
         {
             "config_data": {
+                "assistant_id": "placeholder_default",
                 "policies": ["TEDPolicy", "FallbackPolicy"],
                 "imports": "other-folder",
             },
@@ -172,7 +232,6 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
                 "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
-            "error": True,
         },
         {
             "config_data": None,
@@ -182,73 +241,33 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
                 "policies": ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
-            "error": True,
-        },
-        {
-            "config_data": None,
-            "default_config": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
-            },
-            "mandatory_keys": CONFIG_MANDATORY_KEYS,
-            "error": False,
-        },
-        {
-            "config_data": None,
-            "default_config": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
-            },
-            "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": False,
         },
         {
             "config_data": None,
             "default_config": None,
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
-            "error": True,
         },
     ],
 )
-def test_get_valid_config(parameters):
+def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) -> None:
     config_path = None
 
     if parameters["config_data"] is not None:
         config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
         rasa.shared.utils.io.write_yaml(parameters["config_data"], config_path)
 
-    default_config_path = os.path.join(tempfile.mkdtemp(), DEFAULT_CONFIG_PATH)
-
     if parameters["default_config"] is not None:
         default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
         rasa.shared.utils.io.write_yaml(
             parameters["default_config"], default_config_path
         )
-
-    if parameters["error"]:
-        with pytest.raises(SystemExit):
-            config_path = rasa.cli.utils.validate_config_path(
-                config_path, default_config_path
-            )
-            rasa.cli.utils.get_valid_config(config_path, parameters["mandatory_keys"])
-
     else:
-        config_path = rasa.cli.utils.validate_config_path(
-            config_path, default_config_path
+        default_config_path = os.path.join(tempfile.mkdtemp(), DEFAULT_CONFIG_PATH)
+
+    with pytest.raises(SystemExit):
+        rasa.cli.utils.get_validated_config(
+            config_path, parameters["mandatory_keys"], default_config_path
         )
-
-        config_path = rasa.cli.utils.get_valid_config(
-            config_path,
-            parameters["mandatory_keys"],
-        )
-
-        config_data = rasa.shared.utils.io.read_yaml_file(config_path)
-
-        for k in parameters["mandatory_keys"]:
-            assert k in config_data
 
 
 def test_validate_config_path_with_non_existing_file():

@@ -75,10 +75,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
-    config = rasa.cli.utils.validate_config_path(args.config)
-    rasa.cli.utils.validate_assistant_id_in_config(config)
-
-    config = rasa.cli.utils.get_valid_config(config, CONFIG_MANDATORY_KEYS)
+    config = rasa.cli.utils.get_validated_config(args.config, CONFIG_MANDATORY_KEYS)
 
     training_files = [
         rasa.cli.utils.get_validated_path(
@@ -142,10 +139,9 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        config = rasa.cli.utils.validate_config_path(args.config)
-        rasa.cli.utils.validate_assistant_id_in_config(config)
-
-        config = rasa.cli.utils.get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
+        config = rasa.cli.utils.get_validated_config(
+            args.config, CONFIG_MANDATORY_KEYS_CORE
+        )
 
         return train_core(
             domain=args.domain,
@@ -173,10 +169,7 @@ def run_nlu_training(args: argparse.Namespace) -> Optional[Text]:
     """
     from rasa.model_training import train_nlu
 
-    config = rasa.cli.utils.validate_config_path(args.config)
-    rasa.cli.utils.validate_assistant_id_in_config(config)
-
-    config = rasa.cli.utils.get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
+    config = rasa.cli.utils.get_validated_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
     nlu_data = rasa.cli.utils.get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
