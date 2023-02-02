@@ -1,7 +1,8 @@
 import logging
 import os
 import collections
-from typing import Text, List, Tuple, DefaultDict
+import pathlib
+from typing import Text, List, Tuple, DefaultDict, Generator
 import json
 
 import rasa.shared.core.events
@@ -75,6 +76,15 @@ def visualize(
     webbrowser.open(full_output_path)
 
 
+def iterate_step_intents_and_actions(step: StoryStep) -> Generator[Text, None, None]:
+    for event in step.events:
+        if isinstance(event, UserUttered):
+            if event.intent_name is not None:
+                yield event.intent_name
+        elif isinstance(event, ActionExecuted):
+            yield event.action_name
+
+
 def story_steps_to_paths(story_steps: List[StoryStep]) -> List[List[Text]]:
     """
     Traverse story graph into all paths.
@@ -87,13 +97,7 @@ def story_steps_to_paths(story_steps: List[StoryStep]) -> List[List[Text]]:
     start_idx: DefaultDict[Text, Tuple[Optional[Text], int]] = collections.defaultdict(list)
 
     for step in story_steps:
-        chunk = []
-        for event in step.events:
-            if isinstance(event, UserUttered):
-                if event.intent_name is not None:
-                    chunk.append(event.intent_name)
-            elif isinstance(event, ActionExecuted):
-                chunk.append(event.action_name)
+        chunk = list(iterate_step_intents_and_actions(step))
         if not chunk:
             continue
 
@@ -124,6 +128,36 @@ def story_steps_to_paths(story_steps: List[StoryStep]) -> List[List[Text]]:
     return result
 
 
+def story_steps_to_file_groups(story_steps: List[StoryStep]) -> DefaultDict[Text, List[Text]]:
+    """
+    Group intents and actions by file names they were loaded from.
+    :param story_steps: list of story steps to process
+    :return: dict, mapping filename to list of intents and actions
+    """
+    res = collections.defaultdict(list)
+    for step in story_steps:
+        file_name = pathlib.Path(step.source_name).name
+        l = res[file_name]
+        l.extend(iterate_step_intents_and_actions(step))
+        res[file_name] = list(set(l))
+    return res
+
+
+def file_groups_normalize_names(file_groups: DefaultDict[Text, List[Text]]) -> DefaultDict[Text, List[Text]]:
+    res = collections.defaultdict(list)
+    name_indices = collections.Counter()
+    for file_name, group in file_groups.items():
+        _, fname = file_name.split('_', maxsplit=1)
+        idx = name_indices[fname]
+        if idx == 0:
+            res_name = fname
+        else:
+            res_name = f"{fname}-{idx}"
+        name_indices[fname] += 1
+        res[res_name] = group
+    return res
+
+
 def dump_graph(domain_path: Text, stories_path: Text, nlu_data_path: Text, output_path: Text):
     logger.info("Loading domain and stories data...")
     try:
@@ -134,11 +168,29 @@ def dump_graph(domain_path: Text, stories_path: Text, nlu_data_path: Text, outpu
     story_steps = loading.load_data_from_resource(stories_path, domain)
     logger.info("Data loaded, generating graph...")
     stories_paths = story_steps_to_paths(story_steps)
+    file_groups = story_steps_to_file_groups(story_steps)
+    file_groups = file_groups_normalize_names(file_groups)
+
+    # add fallback actions from intents
+    for intent, intent_prop in domain.intent_properties.items():
+        action = intent_prop.get('fallback_action')
+        if not action:
+            continue
+        stories_paths.append([intent, action])
+
+    # add buttons in resposnes
+    for resp, resp_props in domain.responses.items():
+        for prop in resp_props:
+            for button in prop.get('buttons', []):
+                action = button.get('payload', "").lstrip('/')
+                if action:
+                    stories_paths.append([resp, action])
 
     data = {
         'intents': domain.intents,
         'actions': domain.action_names_or_texts,
         'stories_paths': stories_paths,
+        'file_groups': file_groups,
     }
 
     with open(output_path, "wt", encoding='utf-8') as fd:
