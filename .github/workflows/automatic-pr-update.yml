@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: rasahq/update-pr-branch@601ac3dadf708b14e7f0252d98230538235f99d9
+      - uses: rasahq/update-pr-branch@2c1851b449b09173288465f259bc9ec599b2e51f
         with:
           token: ${{ secrets.UPDATE_BRANCH_PAT }}
-          # required parameter by original action - 
+          # required parameter by original action -
           # check is already done through protected branches so not needed for us
           required_approval_count: 0
           # update branch despite failing check runs
