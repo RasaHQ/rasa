@@ -86,6 +86,7 @@ from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
 
