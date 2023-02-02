@@ -196,12 +196,12 @@ jobs:
 
       - name: Check for pre release branches
         id: branch_name
-        run: echo "branch=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
+        run: echo "BRANCH=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
         # check changelog folder only when the branch name does not have a pre-release version e.g.3.4.0a1
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release') && steps.branch_name.outputs.branch != r"\d*\.\d*\.\w*\"
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release') && env.BRANCH != r"\d*\.\d*\.\w*\"
         working-directory: changelog
         run: |
           # List all unexpected files in changelog/
