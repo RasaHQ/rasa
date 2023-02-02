@@ -206,10 +206,14 @@ def test_cli_missing_log_level_env_var_used():
         ("SOME_VAR", "false", False, False),
         ("SOME_VAR", "False", True, False),
         ("SOME_VAR", "false", True, False),
+        ("SOME_VAR", "0", False, False),
+        ("SOME_VAR", "0", True, False),
         ("SOME_VAR", "True", False, True),
         ("SOME_VAR", "true", False, True),
         ("SOME_VAR", "true", True, True),
         ("SOME_VAR", "True", True, True),
+        ("SOME_VAR", "1", False, True),
+        ("SOME_VAR", "1", True, True),
     ],
 )
 def test_get_bool_env_variable(
@@ -243,6 +247,9 @@ def test_get_bool_env_variable_not_set(
         ("SOME_VAR", "ffalse", True),
         ("SOME_VAR", "ttrue", False),
         ("SOME_VAR", "ttrue", True),
+        ("SOME_VAR", "11", True),
+        ("SOME_VAR", "00", True),
+        ("SOME_VAR", "01", True),
     ],
 )
 def test_get_bool_env_variable_with_invalid_value(

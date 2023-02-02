@@ -515,11 +515,13 @@ def module_path_from_class(clazz: Type) -> Text:
 
 
 def get_bool_env_variable(variable_name: str, default_variable_value: bool) -> bool:
-    true_value = "true"
-    false_value = "false"
+    true_values = ("true", "1")
+    false_values = ("false", "0")
     value = os.getenv(variable_name, None)
     if value is None:
         value = str(default_variable_value)
-    if value.lower() != true_value and value.lower() != false_value:
+    if value.lower() not in true_values + false_values:
         raise ValueError(f"Invalid value `{value}` for variable `{variable_name}`")
-    return value.lower() == true_value
+    return value.lower() in true_values
+
+
