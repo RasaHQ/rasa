@@ -36,6 +36,17 @@ def test_validate_yaml_schema(file, schema):
 @pytest.mark.parametrize(
     "file, schema",
     [
+        ("data/test_domains/actions.yml", DOMAIN_SCHEMA_FILE),
+    ],
+)
+def test_validate_yaml_schema_actions(file: Text, schema: Text):
+    # should raise no exception
+    validation_utils.validate_yaml_schema(rasa.shared.utils.io.read_file(file), schema)
+
+
+@pytest.mark.parametrize(
+    "file, schema",
+    [
         ("data/test_domains/invalid_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_domains/wrong_response_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_domains/wrong_custom_response_format.yml", DOMAIN_SCHEMA_FILE),

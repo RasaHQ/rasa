@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import os
 from typing import (
     List,
     Text,
@@ -629,6 +630,17 @@ class ActionDeactivateLoop(Action):
         return [ActiveLoop(None), SlotSet(REQUESTED_SLOT, None)]
 
 
+def get_bool_env_variable(variable_name: str, default_variable_value: bool) -> bool:
+    true_values = ("true", "1")
+    false_values = ("false", "0")
+    value = os.getenv(variable_name, None)
+    if value is None:
+        value = str(default_variable_value)
+    if value.lower() not in true_values + false_values:
+        raise ValueError(f"Invalid value `{value}` for variable `{variable_name}`")
+    return value.lower() in true_values
+
+
 class RemoteAction(Action):
     def __init__(self, name: Text, action_endpoint: Optional[EndpointConfig]) -> None:
 
@@ -636,20 +648,31 @@ class RemoteAction(Action):
         self.action_endpoint = action_endpoint
 
     def _action_call_format(
-        self, tracker: "DialogueStateTracker", domain: "Domain"
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
     ) -> Dict[Text, Any]:
         """Create the request json send to the action server."""
         from rasa.shared.core.trackers import EventVerbosity
 
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 
-        return {
+        result = {
             "next_action": self._name,
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
-            "domain": domain.as_dict(),
             "version": rasa.__version__,
         }
+
+        is_selective_domain_enabled = get_bool_env_variable(
+            "ENABLE_SELECTIVE_DOMAIN_FOR_CUSTOM_ACTIONS", False
+        )
+
+        if not is_selective_domain_enabled or domain.action_needs_domain(self.name()):
+            result["domain"] = domain.as_dict()
+
+        print(result)
+        return result
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
