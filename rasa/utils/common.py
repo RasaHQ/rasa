@@ -35,6 +35,7 @@ from rasa.constants import (
     ENV_LOG_LEVEL_KAFKA,
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -568,11 +569,11 @@ def module_path_from_class(clazz: Type) -> Text:
 
 
 def get_bool_env_variable(variable_name: str, default_variable_value: bool) -> bool:
-    true_values = ("true", "1")
-    false_values = ("false", "0")
+    true_values = (str(True).lower(), str(1).lower())
+    false_values = (str(False).lower(), str(0).lower())
     value = os.getenv(variable_name, None)
     if value is None:
         value = str(default_variable_value)
     if value.lower() not in true_values + false_values:
-        raise ValueError(f"Invalid value `{value}` for variable `{variable_name}`")
+        raise RasaException(f"Invalid value `{value}` for variable `{variable_name}`")
     return value.lower() in true_values
