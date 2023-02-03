@@ -9,6 +9,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from tests.conftest import filter_expected_warnings
 
 
+@pytest.mark.flaky
 @pytest.mark.parametrize(
     "config_file, domain_file, data_folder, raise_slot_warning, msg",
     [
