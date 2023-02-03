@@ -32,10 +32,17 @@ mapping:
         allowempty: True
       - type: "str"
   actions:
-    type: "seq"
-    sequence:
-    - type: "str"
-      required: True
+    type: seq
+    matching: "any"
+    seq:
+      - type: str
+      - type: map
+        mapping:
+          regex;([A-Za-z]+):
+            type: map
+            mapping:
+              send_domain:
+                type: "bool"
   responses:
     # see utils/schemas/responses.yml
     include: responses
