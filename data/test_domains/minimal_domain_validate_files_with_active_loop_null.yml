@@ -1,0 +1,35 @@
+version: "3.1"
+
+intents:
+ - request_restaurant
+
+entities:
+- number
+- cuisine
+
+slots:
+  cuisine:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: cuisine
+  people:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: number
+        conditions:
+          - active_loop: restaurant_form
+            requested_slot: people
+
+actions:
+  - action_search_restaurants
+
+
+forms:
+  restaurant_form:
+   required_slots:
+    - cuisine
+    - people
