@@ -522,7 +522,10 @@ def get_bool_env_variable(variable_name: str, default_variable_value: bool) -> b
     if value is None:
         value = str(default_variable_value)
     if value.lower() not in true_values + false_values:
-        raise RasaException(f"Invalid value `{value}` for variable `{variable_name}`")
+        raise RasaException(
+            f"Invalid value `{value}` for variable `{variable_name}`. "
+            f"Available values are `{true_values + false_values}`"
+        )
     return value.lower() in true_values
 
 
