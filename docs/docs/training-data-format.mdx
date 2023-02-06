@@ -312,7 +312,7 @@ nlu:
     - \d{10,12}
 ```
 
-Here `account_number` is the name of the regular expression. When used as as features for the `RegexFeaturizer` the name of the regular expression does not matter. When using the `RegexEntityExtractor`, the name of the regular expression should match the name of the entity you want to extract.
+Here `account_number` is the name of the regular expression. When used as features for the `RegexFeaturizer` the name of the regular expression does not matter. When using the `RegexEntityExtractor`, the name of the regular expression should match the name of the entity you want to extract.
 
 
 Read more about when and how to use regular expressions with each component on the [NLU Training Data page](./nlu-training-data.mdx#regular-expressions).
@@ -491,7 +491,7 @@ stories:
 The `action` step activates the form and begins looping over the required slots. The `active_loop: restaurant_form`
 step indicates that there is a currently active form. Much like a `slot_was_set` step,
 a `form` step doesn't **set** a form to active but indicates that it should already be activated.
-In the same way, the  `active_loop: null` step indicates that no form should be active before the subsequent
+In the same way, the `active_loop: null` step indicates that no form should be active before the subsequent
 steps are taken.
 
 A form can be interrupted and remain active; in this case the interruption should come after the
