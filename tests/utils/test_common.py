@@ -8,10 +8,7 @@ from unittest import mock
 import pytest
 
 from rasa.core.agent import Agent
-from rasa.core.constants import (
-    COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
-    DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
-)
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.utils.common
 from rasa.utils.common import (
