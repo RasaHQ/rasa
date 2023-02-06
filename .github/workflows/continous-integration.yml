@@ -189,6 +189,8 @@ jobs:
   changelog:
     name: Check for changelog
     runs-on: ubuntu-22.04
+    outputs:
+      not_alpha: ${{ steps.branch_name.outputs.not_alpha }}
 
     steps:
       - name: Checkout git repository 🕝
@@ -196,12 +198,17 @@ jobs:
 
       - name: Check for pre release branches
         id: branch_name
-        run: echo "BRANCH=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release')
+        run: |
+          BRANCH="$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\\*+.$\#\-\/]/-/g')"
+          if [ ${BRANCH} == "r\d*\.\d*\.\d*" ]; then
+            echo "::set-output name=not_alpha::true"
+          fi
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
         # check changelog folder only when the branch name does not have a pre-release version e.g.3.4.0a1
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release') && env.BRANCH != r"\d*\.\d*\.\w*\"
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release') && needs.changelog.outputs.not_alpha == 'true'
         working-directory: changelog
         run: |
           # List all unexpected files in changelog/
