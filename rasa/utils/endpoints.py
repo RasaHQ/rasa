@@ -140,7 +140,6 @@ class EndpointConfig:
         All additional arguments will get passed through
         to aiohttp's `session.request`.
         """
-
         # create the appropriate headers
         headers = {}
         if content_type:
