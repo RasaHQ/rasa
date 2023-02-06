@@ -16,6 +16,55 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.4.2] - 2023-01-27
+                       
+Rasa 3.4.2 (2023-01-27)                        
+### Bugfixes
+- [#11926](https://github.com/rasahq/rasa/issues/11926): Decision to publish docs should not consider next major and minor alpha release versions.
+- [#11968](https://github.com/rasahq/rasa/issues/11968): Exit training/running Rasa model when SpaCy runtime version is not compatible with the specified SpaCy model version.
+- [#11971](https://github.com/rasahq/rasa/issues/11971): The new custom logging feature was not working due to small syntax issue in the argparse level.
+
+  Previously, the file name passed using the argument --logging-config-file was never retrieved so it never creates the new custom config file with the desired formatting.
+
+### Miscellaneous internal changes
+- [#11924](https://github.com/rasahq/rasa/issues/11924)
+
+
+## [3.4.1] - 2023-01-19
+                       
+Rasa 3.4.1 (2023-01-19)                        
+### Bugfixes
+- [#11923](https://github.com/rasahq/rasa/issues/11923): Changed categorical slot comparison to be case insensitive.
+- [#11929](https://github.com/rasahq/rasa/issues/11929): Exit training when transformer_size is not divisible by the number_of_attention_heads parameter and update the transformer documentations.
+
+### Improved Documentation
+- [#11899](https://github.com/rasahq/rasa/issues/11899): Update compatibility matrix between Rasa-plus and Rasa Pro services.
+
+
+## [3.4.0] - 2022-12-14
+                       
+Rasa 3.4.0 (2022-12-14)                        
+### Features
+- [#11087](https://github.com/rasahq/rasa/issues/11087): Add metadata to Websocket channel. Messages can now include a `metadata` object which will be included as metadata to Rasa.  The metadata can be supplied on a user configurable key with the `metadata_key` setting in the `socketio` section of the `credentials.yml`.
+
+### Improvements
+- [#11517](https://github.com/rasahq/rasa/issues/11517): Added `./docker/Dockerfile_pretrained_embeddings_spacy_it` to include Spacy's Italian pre-trained model `it_core_news_md`.
+- [#11765](https://github.com/rasahq/rasa/issues/11765): Replace `kafka-python` dependency with `confluent-kafka` async Producer API.
+- [#11773](https://github.com/rasahq/rasa/issues/11773): Add support for Python 3.10 version.
+- [#2546](https://github.com/rasahq/rasa/issues/2546): Added CLI option `--logging-config-file` to enable configuration of custom logs formatting.
+
+### Bugfixes
+- [#11869](https://github.com/rasahq/rasa/issues/11869): Implements a new CLI option `--jwt-private-key` required to have complete support for asymmetric algorithms as specified
+  originally in the docs.
+
+### Improved Documentation
+- [#11766](https://github.com/rasahq/rasa/issues/11766): Clarify in the documentation how to write testing stories if a user presses a button with payload.
+- [#11801](https://github.com/rasahq/rasa/issues/11801): Clarify prioritisation of used slot asking option in forms in documentation.
+
+### Miscellaneous internal changes
+- [#11742](https://github.com/rasahq/rasa/issues/11742), [#11800](https://github.com/rasahq/rasa/issues/11800), [#11817](https://github.com/rasahq/rasa/issues/11817), [#11877](https://github.com/rasahq/rasa/issues/11877)
+
+
 ## [3.3.3] - 2022-12-01
 ### Bugfixes
 - [#11792](https://github.com/rasahq/rasa/issues/11792): Bypass Windows path length restrictions upon saving and reading a model archive in `rasa.engine.storage.LocalModelStorage`.
