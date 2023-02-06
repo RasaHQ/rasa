@@ -138,8 +138,8 @@ class EndpointConfig:
         """Send a HTTP request to the endpoint. Return json response, if available.
 
         All additional arguments will get passed through
-        to aiohttp's `session.request`."""
-
+        to aiohttp's `session.request`.
+        """
         # create the appropriate headers
         headers = {}
         if content_type:
