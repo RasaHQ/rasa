@@ -12,6 +12,7 @@ from pytest import LogCaptureFixture, MonkeyPatch
 
 from rasa.core.agent import Agent
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.shared.exceptions import RasaException
 import rasa.utils.common
 from rasa.utils.common import (
     RepeatedLogFilter,
@@ -357,5 +358,5 @@ def test_get_bool_env_variable_with_invalid_value(
 ):
     monkeypatch.setenv(env_name, env_value)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(RasaException):
         get_bool_env_variable(env_name, default_value)
