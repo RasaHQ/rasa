@@ -3,6 +3,7 @@
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
 INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
+PLATFORM ?= "linux/amd64"
 
 help:
 	@echo "make"
@@ -268,10 +269,10 @@ release:
 build-docker:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
-	docker buildx bake -f docker/docker-bake.hcl base && \
-	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
-	docker buildx bake -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake -f docker/docker-bake.hcl default
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl default
 
 build-docker-full:
 	export IMAGE_NAME=rasa && \
