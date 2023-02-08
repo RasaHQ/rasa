@@ -5,6 +5,7 @@ import textwrap
 from pathlib import Path
 import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
+import unittest
 
 import pytest
 from pytest import WarningsRecorder
@@ -2067,3 +2068,26 @@ def test_merge_domain_with_separate_session_config():
         domain.session_config.session_expiration_time
         == expected_session_expiration_time
     )
+
+
+@pytest.mark.parametrize(
+    "actions, expected_result",
+    [
+        (
+            [
+                {"action_hello_world": {"send_domain": False}},
+                {"action_say_something": {"send_domain": True}},
+                {"action_calculate": {"send_domain": True}},
+                "action_no_domain",
+            ],
+            ["action_say_something", "action_calculate"],
+        )
+    ],
+)
+def test_collect_actions_which_explicitly_need_domain(
+    actions: List[Union[Dict[Text, Any], str]], expected_result: List[str]
+):
+    result = Domain._collect_actions_which_explicitly_need_domain(actions)
+
+    # assert that two unordered lists have same elements
+    assert sorted(result) == sorted(expected_result)
