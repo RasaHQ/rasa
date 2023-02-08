@@ -190,7 +190,7 @@ WITH "sessions" AS (
                 WHEN "public"."rasa_bot_message"."template_name" = 'utter_ask_name'
                 THEN 1 ELSE 0
             END
-        ) AS "is_abandonned"
+        ) AS "is_abandoned"
     FROM "public"."rasa_event"
     INNER JOIN "public"."rasa_bot_message"
       ON "public"."rasa_event"."id" = "public"."rasa_bot_message"."event_id"
@@ -199,7 +199,7 @@ WITH "sessions" AS (
 )
 SELECT
   date_trunc('month', "timestamp") AS "timestamp",
-  SUM("is_abandonned")::float / count(*) AS "abandonment_rate"
+  SUM("is_abandoned")::float / count(*) AS "abandonment_rate"
 FROM "sessions"
 GROUP BY 1
 ORDER BY 1 ASC
