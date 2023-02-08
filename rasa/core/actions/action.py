@@ -654,9 +654,9 @@ class RemoteAction(Action):
             "version": rasa.__version__,
         }
 
-        is_selective_domain_enabled = self._is_selective_domain_enabled()
-
-        if not is_selective_domain_enabled or domain.action_needs_domain(self.name()):
+        if not self._is_selective_domain_enabled() or domain.action_needs_domain(
+            self.name()
+        ):
             result["domain"] = domain.as_dict()
 
         return result
