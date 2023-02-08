@@ -5,7 +5,6 @@ import textwrap
 from pathlib import Path
 import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
-import unittest
 
 import pytest
 from pytest import WarningsRecorder
