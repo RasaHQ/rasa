@@ -2119,3 +2119,61 @@ def test_collect_actions(
 
     # assert that two unordered lists have same elements
     assert sorted(result) == sorted(expected_result)
+
+
+@pytest.mark.parametrize(
+    "content, expected_user_actions, expected_actions_which_explicitly_need_domain",
+    [
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - action_hello: {send_domain: True}
+          - action_bye: {send_domain: True}
+          - action_no_domain
+          """,
+            ["action_hello", "action_bye", "action_no_domain"],
+            ["action_hello", "action_bye"],
+        ),
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - action_hello
+          - action_bye
+          - action_no_domain
+          """,
+            ["action_hello", "action_bye", "action_no_domain"],
+            [],
+        ),
+    ],
+)
+def test_domain_loads_actions_which_explicitly_need_domain(
+    content: str,
+    expected_user_actions: List[str],
+    expected_actions_which_explicitly_need_domain: List[str],
+):
+    domain = Domain.from_yaml(content)
+    assert domain._custom_actions == expected_user_actions
+    assert (
+        domain._actions_which_explicitly_need_domain
+        == expected_actions_which_explicitly_need_domain
+    )
