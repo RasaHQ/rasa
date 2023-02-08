@@ -240,8 +240,10 @@ class Domain:
             rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots)
         slots = cls.collect_slots(domain_slots)
         domain_actions = data.get(KEY_ACTIONS, [])
-        actions = cls.__collect_actions(domain_actions)
-        actions_with_domain = cls.__collect_actions_with_domain(domain_actions)
+        actions = cls._collect_actions(domain_actions)
+        actions_which_explicitly_need_domain = (
+            cls._collect_actions_which_explicitly_need_domain(domain_actions)
+        )
 
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -260,7 +262,7 @@ class Domain:
             data=Domain._cleaned_data(data),
             action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
-            actions_with_domain=actions_with_domain,
+            actions_which_explicitly_need_domain=actions_which_explicitly_need_domain,
             **additional_arguments,
         )
 
@@ -727,7 +729,7 @@ class Domain:
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
-        actions_with_domain: Optional[List[Text]] = None,
+        actions_which_explicitly_need_domain: Optional[List[Text]] = None,
     ) -> None:
         """Creates a `Domain`.
 
@@ -773,7 +775,9 @@ class Domain:
         self.session_config = session_config
 
         self._custom_actions = action_names
-        self._actions_with_domains = actions_with_domain
+        self._actions_which_explicitly_need_domain = (
+            actions_which_explicitly_need_domain
+        )
 
         # only includes custom actions and utterance actions
         self.user_actions = self._combine_with_responses(action_names, responses)
@@ -1855,8 +1859,8 @@ class Domain:
 
         return (total_mappings, custom_mappings, conditional_mappings)
 
-    def action_needs_domain(self, action_name: Text) -> bool:
-        return action_name in self._actions_with_domains
+    def action_which_explicitly_need_domain(self, action_name: Text) -> bool:
+        return action_name in self._actions_which_explicitly_need_domain
 
     def __repr__(self) -> Text:
         """Returns text representation of object."""
@@ -1868,10 +1872,10 @@ class Domain:
         )
 
     @staticmethod
-    def __collect_actions(action_dict: Dict[Text, Any]) -> List[Text]:
+    def _collect_actions(actions: List[Any]) -> List[Text]:
         result: List[Text] = []
 
-        for action in action_dict:
+        for action in actions:
             if isinstance(action, dict):
                 for action_name in action:
                     result += [action_name]
@@ -1880,11 +1884,11 @@ class Domain:
 
         return result
 
-    @classmethod
-    def __collect_actions_with_domain(cls, action_dict: Dict[Text, Any]) -> List[Text]:
+    @staticmethod
+    def _collect_actions_which_explicitly_need_domain(actions: List[Any]) -> List[Text]:
         result: List[Text] = []
 
-        for action in action_dict:
+        for action in actions:
             if isinstance(action, dict):
                 for action_name in action:
                     action_config = action.get(action_name)
@@ -1892,8 +1896,6 @@ class Domain:
                         should_send_domain = action_config.get("send_domain")
                         if should_send_domain:
                             result += [action_name]
-            elif isinstance(action, str):
-                result += [action]
 
         return result
 
