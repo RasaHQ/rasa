@@ -16,6 +16,7 @@ from typing import (
 
 import aiohttp
 import rasa.core
+from rasa.core.actions.constants import DEFAULT_SELECTIVE_DOMAIN, SELECTIVE_DOMAIN
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
@@ -664,15 +665,19 @@ class RemoteAction(Action):
             "version": rasa.__version__,
         }
 
-        is_selective_domain_enabled = get_bool_env_variable(
-            "ENABLE_SELECTIVE_DOMAIN_FOR_CUSTOM_ACTIONS", False
-        )
+        is_selective_domain_enabled = self._is_selective_domain_enabled()
 
         if not is_selective_domain_enabled or domain.action_needs_domain(self.name()):
             result["domain"] = domain.as_dict()
 
-        print(result)
         return result
+
+    def _is_selective_domain_enabled(self) -> bool:
+        is_selective_domain_enabled = bool(
+            self.action_endpoint.kwargs.get(SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN)
+        )
+
+        return is_selective_domain_enabled
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
