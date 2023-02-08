@@ -31,4 +31,6 @@ responses:
 actions:
   - utter_default: {send_domain: True}
   - action_send_mail: {send_domain: False}
+  - action_send_mail: {send_domain: true}
+  - action_send_mail: {send_domain: false}
   - action_hello
