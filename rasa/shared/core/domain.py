@@ -37,7 +37,6 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
     RESPONSE_CONDITION,
 )
-from rasa.shared.core.actions import Action
 import rasa.shared.core.constants
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE, MAPPING_CONDITIONS
 from rasa.shared.exceptions import (
