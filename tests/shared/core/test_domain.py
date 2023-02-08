@@ -2091,3 +2091,31 @@ def test_collect_actions_which_explicitly_need_domain(
 
     # assert that two unordered lists have same elements
     assert sorted(result) == sorted(expected_result)
+
+
+@pytest.mark.parametrize(
+    "actions, expected_result",
+    [
+        (
+            [
+                {"action_hello_world": {"send_domain": False}},
+                {"action_say_something": {"send_domain": True}},
+                {"action_calculate": {"send_domain": True}},
+                "action_no_domain",
+            ],
+            [
+                "action_hello_world",
+                "action_say_something",
+                "action_calculate",
+                "action_no_domain",
+            ],
+        )
+    ],
+)
+def test_collect_actions(
+    actions: List[Union[Dict[Text, Any], str]], expected_result: List[str]
+):
+    result = Domain._collect_actions(actions)
+
+    # assert that two unordered lists have same elements
+    assert sorted(result) == sorted(expected_result)
