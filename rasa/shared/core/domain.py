@@ -1859,7 +1859,16 @@ class Domain:
 
         return (total_mappings, custom_mappings, conditional_mappings)
 
-    def action_which_explicitly_need_domain(self, action_name: Text) -> bool:
+    def does_action_explicitly_need_domain(self, action_name: Text) -> bool:
+        """Assert if action has explicitly stated that it needs domain.
+
+        Args:
+            action_name: Name of the action to be checked
+
+        Returns:
+            True if action has explicitly stated that it needs domain.
+            Otherwise, it returns false.
+        """
         return action_name in self._actions_which_explicitly_need_domain
 
     def __repr__(self) -> Text:
