@@ -656,7 +656,7 @@ class RemoteAction(Action):
 
         if (
             not self._is_selective_domain_enabled()
-            or domain.action_which_explicitly_need_domain(self.name())
+            or domain.does_action_explicitly_need_domain(self.name())
         ):
             result["domain"] = domain.as_dict()
 
