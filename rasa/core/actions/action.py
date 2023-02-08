@@ -631,17 +631,6 @@ class ActionDeactivateLoop(Action):
         return [ActiveLoop(None), SlotSet(REQUESTED_SLOT, None)]
 
 
-def get_bool_env_variable(variable_name: str, default_variable_value: bool) -> bool:
-    true_values = ("true", "1")
-    false_values = ("false", "0")
-    value = os.getenv(variable_name, None)
-    if value is None:
-        value = str(default_variable_value)
-    if value.lower() not in true_values + false_values:
-        raise ValueError(f"Invalid value `{value}` for variable `{variable_name}`")
-    return value.lower() in true_values
-
-
 class RemoteAction(Action):
     def __init__(self, name: Text, action_endpoint: Optional[EndpointConfig]) -> None:
 
