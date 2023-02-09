@@ -31,6 +31,8 @@ from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.graph_components.converters.nlu_message_converter import NLUMessageConverter
 from rasa.graph_components.providers.domain_provider import DomainProvider
+from rasa.graph_components.providers.forms_provider import FormsProvider
+from rasa.graph_components.providers.responses_provider import ResponsesProvider
 from rasa.graph_components.providers.domain_for_core_training_provider import (
     DomainForCoreTrainingProvider,
 )
@@ -536,6 +538,22 @@ class DefaultV1Recipe(Recipe):
         train_nodes["domain_for_core_training_provider"] = SchemaNode(
             needs={"domain": "domain_provider"},
             uses=DomainForCoreTrainingProvider,
+            constructor_name="create",
+            fn="provide",
+            config={},
+            is_input=True,
+        )
+        train_nodes["forms_provider"] = SchemaNode(
+            needs={"domain": "domain_provider"},
+            uses=FormsProvider,
+            constructor_name="create",
+            fn="provide",
+            config={},
+            is_input=True,
+        )
+        train_nodes["responses_provider"] = SchemaNode(
+            needs={"domain": "domain_provider"},
+            uses=ResponsesProvider,
             constructor_name="create",
             fn="provide",
             config={},
