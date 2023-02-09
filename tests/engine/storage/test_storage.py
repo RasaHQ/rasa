@@ -47,10 +47,12 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
     trained_at = datetime.utcnow()
     rasa_version = rasa.__version__
     model_id = "some unique model id"
+    assistant_id = "test_assistant"
     metadata = ModelMetadata(
         trained_at,
         rasa_version,
         model_id,
+        assistant_id,
         domain,
         train_schema,
         predict_schema,
@@ -96,6 +98,7 @@ def test_metadata_version_check():
             trained_at,
             old_version,
             "some id",
+            "test_assistant",
             Domain.empty(),
             GraphSchema(nodes={}),
             GraphSchema(nodes={}),

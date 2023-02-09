@@ -220,6 +220,7 @@ class DefaultV1Recipe(Recipe):
             train_schema=GraphSchema(train_nodes),
             predict_schema=GraphSchema(predict_nodes),
             training_type=training_type,
+            assistant_id=config.get("assistant_id"),
             language=config.get("language"),
             core_target=core_target,
             nlu_target=f"run_{RegexMessageHandler.__name__}",

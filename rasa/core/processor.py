@@ -349,6 +349,8 @@ class MessageProcessor:
             conversation_id, append_action_listen=False
         )
         tracker.model_id = self.model_metadata.model_id
+        if tracker.assistant_id is None:
+            tracker.assistant_id = self.model_metadata.assistant_id
         return tracker
 
     async def get_trackers_for_all_conversation_sessions(
