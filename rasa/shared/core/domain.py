@@ -1871,7 +1871,10 @@ class Domain:
             True if action has explicitly stated that it needs domain.
             Otherwise, it returns false.
         """
-        return action_name in self._actions_which_explicitly_need_domain
+        return (
+            self._actions_which_explicitly_need_domain is not None
+            and action_name in self._actions_which_explicitly_need_domain
+        )
 
     def __repr__(self) -> Text:
         """Returns text representation of object."""
