@@ -40,6 +40,7 @@ env:
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
   WAIT_INTERVAL_SECS: 60
+  THIS_IS: "test"
 
 jobs:
   changes:
