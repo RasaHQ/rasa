@@ -731,7 +731,7 @@ class Domain:
         session_config: SessionConfig = SessionConfig.default(),
         actions_which_explicitly_need_domain: Optional[List[Text]] = None,
     ) -> None:
-        """Creates a `Domain`.
+        """Create a `Domain`.
 
         Args:
             intents: Intent labels.
@@ -747,6 +747,8 @@ class Domain:
                 events for entities if there are slots with the same name as the entity.
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
+            actions_which_explicitly_need_domain: List of actions
+                which explicitly stated that they need domain
         """
         self.entity_properties = self.collect_entity_properties(entities)
         self.intent_properties = self.collect_intent_properties(
