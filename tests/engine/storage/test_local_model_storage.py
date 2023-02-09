@@ -142,6 +142,7 @@ def test_read_long_resource_names_windows(
             trained_at=datetime.utcnow(),
             rasa_open_source_version=version,
             model_id="xxxxxxx",
+            assistant_id="test_assistant",
             domain=domain,
             train_schema=train_schema,
             predict_schema=predict_schema,
