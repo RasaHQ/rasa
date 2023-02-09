@@ -662,9 +662,13 @@ class RemoteAction(Action):
         return result
 
     def _is_selective_domain_enabled(self) -> bool:
-        is_selective_domain_enabled = bool(
-            self.action_endpoint.kwargs.get(SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN)
-        )
+        is_selective_domain_enabled = False
+        if self.action_endpoint is not None:
+            is_selective_domain_enabled = bool(
+                self.action_endpoint.kwargs.get(
+                    SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN
+                )
+            )
 
         return is_selective_domain_enabled
 
