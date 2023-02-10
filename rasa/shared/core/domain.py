@@ -1886,7 +1886,9 @@ class Domain:
         )
 
     @staticmethod
-    def _collect_action_names(actions: List[Any]) -> List[Text]:
+    def _collect_action_names(
+        actions: List[Union[Text, Dict[Text, Any]]]
+    ) -> List[Text]:
         result: List[Text] = []
 
         for action in actions:
@@ -1898,7 +1900,9 @@ class Domain:
         return result
 
     @staticmethod
-    def _collect_actions_which_explicitly_need_domain(actions: List[Any]) -> List[Text]:
+    def _collect_actions_which_explicitly_need_domain(
+        actions: List[Union[Text, Dict[Text, Any]]]
+    ) -> List[Text]:
         result: List[Text] = []
 
         for action in actions:
