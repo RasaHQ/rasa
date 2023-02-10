@@ -794,6 +794,7 @@ For example, an action could:
 All [custom actions](./custom-actions.mdx) should be listed in your domain, except responses which need not be listed
 under `actions:` as they are already listed under `responses:`.
 
+:::info New in 3.4.3
 ### Select which actions should receive domain
 You can control if an action should receive a domain or not.
 To do this you must first enable selective domain in you endpoint configuration for
@@ -814,6 +815,8 @@ actions:
   - action_hello_world: {send_domain: True} # will receive domain
   - action_calculate_mass_of_sun # will not receive domain
 ```
+
+:::
 
 ## Session configuration
 
