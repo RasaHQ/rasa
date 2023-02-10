@@ -2080,7 +2080,28 @@ def test_merge_domain_with_separate_session_config():
                 "action_no_domain",
             ],
             ["action_say_something", "action_calculate"],
-        )
+        ),
+        (
+            [
+                {"action_hello_world": {"send_domain": False}},
+                {"action_say_something": {"send_domain": False}},
+                {"action_calculate": {"send_domain": False}},
+            ],
+            [],
+        ),
+        (
+            [
+                {"action_hello_world": {"send_domain": True}},
+                {"action_say_something": {"send_domain": True}},
+                {"action_calculate": {"send_domain": True}},
+            ],
+            ["action_hello_world", "action_say_something", "action_calculate"],
+        ),
+        ([], []),
+        (
+            ["action_say_something", "action_calculate"],
+            [],
+        ),
     ],
 )
 def test_collect_actions_which_explicitly_need_domain(
