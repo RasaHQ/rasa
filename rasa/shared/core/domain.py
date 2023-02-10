@@ -244,7 +244,7 @@ class Domain:
 
         additional_arguments = {
             "config": data.get("config", {}),
-            "actions_which_explicitly_need_domain": cls._collect_actions_which_explicitly_need_domain(
+            "actions_which_explicitly_need_domain": cls._collect_actions_which_explicitly_need_domain(  # noqa: E501
                 domain_actions
             ),
         }
