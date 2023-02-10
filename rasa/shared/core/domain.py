@@ -1891,8 +1891,7 @@ class Domain:
 
         for action in actions:
             if isinstance(action, dict):
-                for action_name in action:
-                    result += [action_name]
+                result.extend(list(action.keys()))
             elif isinstance(action, str):
                 result += [action]
 
