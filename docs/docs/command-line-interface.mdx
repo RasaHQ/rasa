@@ -214,6 +214,13 @@ at http://localhost:5005/visualization.html
 as soon as the session has started. This diagram can take some time to generate.
 To skip the visualization, run `rasa interactive --skip-visualization`.
 
+:::info Add the `assistant_id` key introduced in 3.5
+
+Running interactive learning with a pre-trained model whose metadata does not include the `assistant_id`
+will exit with an error. If this happens, add the required key with a unique identifier value and re-run training.
+
+:::
+
 
 The following arguments can be used to configure the interactive learning session:
 
@@ -469,6 +476,13 @@ identical training examples.
 The validator also checks if you have any stories where different assistant actions follow from the same
 dialogue history. Conflicts between stories will prevent a model from learning the correct
 pattern for a dialogue.
+
+:::info Searching for the `assistant_id` key introduced in 3.5
+
+The validator will check whether the `assistant_id` key is present in the config file and will exit with an error if this
+key is missing.
+
+:::
 
 If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the
 smallest of those values in the validator command using the `--max-history <max_history>` flag.
