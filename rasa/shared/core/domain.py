@@ -726,10 +726,10 @@ class Domain:
         action_names: List[Text],
         forms: Union[Dict[Text, Any], List[Text]],
         data: Dict,
+        actions_which_explicitly_need_domain: List[Text],
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
-        actions_which_explicitly_need_domain: Optional[List[Text]] = None,
     ) -> None:
         """Create a `Domain`.
 
@@ -742,13 +742,13 @@ class Domain:
             action_names: Names of custom actions.
             forms: Form names and their slot mappings.
             data: original domain dict representation.
+            actions_which_explicitly_need_domain: List of actions
+                which explicitly stated that they need domain
             action_texts: End-to-End bot utterances from end-to-end stories.
             store_entities_as_slots: If `True` Rasa will automatically create `SlotSet`
                 events for entities if there are slots with the same name as the entity.
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
-            actions_which_explicitly_need_domain: List of actions
-                which explicitly stated that they need domain
         """
         self.entity_properties = self.collect_entity_properties(entities)
         self.intent_properties = self.collect_intent_properties(
@@ -1861,7 +1861,7 @@ class Domain:
 
         return (total_mappings, custom_mappings, conditional_mappings)
 
-    def does_action_explicitly_need_domain(self, action_name: Text) -> bool:
+    def does_custom_action_explicitly_need_domain(self, action_name: Text) -> bool:
         """Assert if action has explicitly stated that it needs domain.
 
         Args:
@@ -1871,10 +1871,7 @@ class Domain:
             True if action has explicitly stated that it needs domain.
             Otherwise, it returns false.
         """
-        return (
-            self._actions_which_explicitly_need_domain is not None
-            and action_name in self._actions_which_explicitly_need_domain
-        )
+        return action_name in self._actions_which_explicitly_need_domain
 
     def __repr__(self) -> Text:
         """Returns text representation of object."""
