@@ -1889,32 +1889,30 @@ class Domain:
     def _collect_action_names(
         actions: List[Union[Text, Dict[Text, Any]]]
     ) -> List[Text]:
-        result: List[Text] = []
+        action_names: List[Text] = []
 
         for action in actions:
             if isinstance(action, dict):
-                result.extend(list(action.keys()))
+                action_names.extend(list(action.keys()))
             elif isinstance(action, str):
-                result += [action]
+                action_names += [action]
 
-        return result
+        return action_names
 
     @staticmethod
     def _collect_actions_which_explicitly_need_domain(
         actions: List[Union[Text, Dict[Text, Any]]]
     ) -> List[Text]:
-        result: List[Text] = []
+        action_names: List[Text] = []
 
         for action in actions:
             if isinstance(action, dict):
-                for action_name in action:
-                    action_config = action.get(action_name)
-                    if isinstance(action_config, dict):
-                        should_send_domain = action_config.get("send_domain")
-                        if should_send_domain:
-                            result += [action_name]
+                for action_name, action_config in action.items():
+                    should_send_domain = action_config.get("send_domain", False)
+                    if should_send_domain:
+                        action_names += [action_name]
 
-        return result
+        return action_names
 
 
 def warn_about_duplicates_found_during_domain_merging(
