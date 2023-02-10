@@ -241,11 +241,13 @@ class Domain:
         slots = cls.collect_slots(domain_slots)
         domain_actions = data.get(KEY_ACTIONS, [])
         actions = cls._collect_action_names(domain_actions)
-        actions_which_explicitly_need_domain = (
-            cls._collect_actions_which_explicitly_need_domain(domain_actions)
-        )
 
-        additional_arguments = data.get("config", {})
+        additional_arguments = {
+            "config": data.get("config", {}),
+            "actions_which_explicitly_need_domain": cls._collect_actions_which_explicitly_need_domain(
+                domain_actions
+            ),
+        }
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
 
@@ -262,7 +264,6 @@ class Domain:
             data=Domain._cleaned_data(data),
             action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
-            actions_which_explicitly_need_domain=actions_which_explicitly_need_domain,
             **additional_arguments,
         )
 
@@ -726,10 +727,10 @@ class Domain:
         action_names: List[Text],
         forms: Union[Dict[Text, Any], List[Text]],
         data: Dict,
-        actions_which_explicitly_need_domain: List[Text],
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
+        **kwargs: Any,
     ) -> None:
         """Create a `Domain`.
 
@@ -742,8 +743,6 @@ class Domain:
             action_names: Names of custom actions.
             forms: Form names and their slot mappings.
             data: original domain dict representation.
-            actions_which_explicitly_need_domain: List of actions
-                which explicitly stated that they need domain
             action_texts: End-to-End bot utterances from end-to-end stories.
             store_entities_as_slots: If `True` Rasa will automatically create `SlotSet`
                 events for entities if there are slots with the same name as the entity.
@@ -778,7 +777,7 @@ class Domain:
 
         self._custom_actions = action_names
         self._actions_which_explicitly_need_domain = (
-            actions_which_explicitly_need_domain
+            kwargs.get("actions_which_explicitly_need_domain") or []
         )
 
         # only includes custom actions and utterance actions
