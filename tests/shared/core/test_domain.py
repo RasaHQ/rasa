@@ -2145,7 +2145,8 @@ def test_collect_actions(
     "content, expected_user_actions, expected_actions_which_explicitly_need_domain",
     [
         (
-            """
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
             - greet
 
@@ -2157,8 +2158,8 @@ def test_collect_actions(
                 - text: hey there!
 
         actions:
-          - action_hello: {send_domain: True}
-          - action_bye: {send_domain: True}
+          - action_hello: {{send_domain: True}}
+          - action_bye: {{send_domain: True}}
           - action_no_domain
           """,
             ["action_hello", "action_bye", "action_no_domain"],
