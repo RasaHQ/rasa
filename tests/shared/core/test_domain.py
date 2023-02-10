@@ -2114,7 +2114,7 @@ def test_collect_actions_which_explicitly_need_domain(
 def test_collect_actions(
     actions: List[Union[Dict[Text, Any], str]], expected_result: List[str]
 ):
-    result = Domain._collect_actions(actions)
+    result = Domain._collect_action_names(actions)
 
     # assert that two unordered lists have same elements
     assert sorted(result) == sorted(expected_result)

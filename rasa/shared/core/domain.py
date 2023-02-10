@@ -240,7 +240,7 @@ class Domain:
             rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots)
         slots = cls.collect_slots(domain_slots)
         domain_actions = data.get(KEY_ACTIONS, [])
-        actions = cls._collect_actions(domain_actions)
+        actions = cls._collect_action_names(domain_actions)
         actions_which_explicitly_need_domain = (
             cls._collect_actions_which_explicitly_need_domain(domain_actions)
         )
@@ -1886,7 +1886,7 @@ class Domain:
         )
 
     @staticmethod
-    def _collect_actions(actions: List[Any]) -> List[Text]:
+    def _collect_action_names(actions: List[Any]) -> List[Text]:
         result: List[Text] = []
 
         for action in actions:
