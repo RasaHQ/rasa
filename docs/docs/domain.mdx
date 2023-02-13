@@ -794,9 +794,11 @@ For example, an action could:
 All [custom actions](./custom-actions.mdx) should be listed in your domain, except responses which need not be listed
 under `actions:` as they are already listed under `responses:`.
 
-:::info New in 3.4.3
 ### Select which actions should receive domain
+:::info New in 3.4.3
 You can control if an action should receive a domain or not.
+:::
+
 To do this you must first enable selective domain in you endpoint configuration for
 `action_endpoint` in `endpoints.yml`.
 ```YAML
@@ -816,7 +818,6 @@ actions:
   - action_calculate_mass_of_sun # will not receive domain
 ```
 
-:::
 
 ## Session configuration
 
