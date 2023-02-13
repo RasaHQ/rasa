@@ -53,9 +53,9 @@ jobs:
         id: run-all
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
         run: |
-          echo "::set-output name=backend::true"
-          echo "::set-output name=docker::true"
-          echo "::set-output name=docs::true"
+          echo "backend=true" >> $GITHUB_OUTPUT
+          echo "docker=true" >> $GITHUB_OUTPUT
+          echo "docs=true" >> $GITHUB_OUTPUT
 
   evaluate_release_tag:
     name: Evaluate release tag
@@ -79,7 +79,7 @@ jobs:
         run: |
           if [[ "${IS_MAIN_BRANCH}" == "true" ]]; then
             echo "Main branch: setting build_docs to true."
-            echo "::set-output name=build_docs::true"
+            echo "build_docs=true" >> $GITHUB_OUTPUT
           else
             # Get latest tagged Rasa version
             git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
@@ -91,10 +91,10 @@ jobs:
 
             if [[ ${exit_status} -eq 0 ]]; then
               echo "Setting build_docs to true."
-              echo "::set-output name=build_docs::true"
+              echo "build_docs=true" >> $GITHUB_OUTPUT
             else
               echo "Setting build_docs to false."
-              echo "::set-output name=build_docs::false"
+              echo "build_docs=false" >> $GITHUB_OUTPUT
             fi
           fi
 
@@ -271,7 +271,7 @@ jobs:
         run: |
           make preview-docs
           DEPLOY_URL="https://$PULL_REQUEST_NUMBER--rasahq-docs-rasa-v2.netlify.app${DOCS_SITE_BASE_URL}"
-          echo "::set-output name=preview_url::$DEPLOY_URL"
+          echo "preview_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
 
       - name: Create a comment with help description
         if: needs.changes.outputs.docs == 'true'
