@@ -663,7 +663,6 @@ class RemoteAction(Action):
 
     def _is_selective_domain_enabled(self) -> bool:
         if self.action_endpoint is None:
-            # add a logger.debug to warn of this issue
             return False
         return bool(
             self.action_endpoint.kwargs.get(SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN)
