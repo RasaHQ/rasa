@@ -2166,7 +2166,8 @@ def test_collect_actions(
             ["action_hello", "action_bye"],
         ),
         (
-            """
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
             - greet
 
