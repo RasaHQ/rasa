@@ -1,4 +1,4 @@
-from typing import Text, Any
+from typing import Dict, List, Text, Any
 
 import logging
 import pytest
@@ -80,28 +80,8 @@ async def test_nlg_when_multiple_conditions_satisfied():
     assert resp.get("text") in ["example A", "example B"]
 
 
-@pytest.mark.parametrize(("response_text"), ("example a",))
-async def test_nlg_slot_case_sensitivity(response_text: Text):
-    responses = {
-        "utter_action": [
-            {
-                "text": response_text,
-                "condition": [{"type": "slot", "name": "test", "value": "cold"}],
-            }
-        ],
-        "utter_action_multiple_conditions": [
-            {
-                "text": response_text,
-                "condition": [
-                    {"type": "slot", "name": "test", "value": "cold"},
-                    {"type": "slot", "name": "test2", "value": False},
-                    {"type": "slot", "name": "test3", "value": "hot"},
-                ],
-            }
-        ],
-    }
-
-    t = TemplatedNaturalLanguageGenerator(responses=responses)
+@pytest.fixture(scope="session")
+def test_slots() -> List[object]:
     slot_a = CategoricalSlot(
         name="test",
         mappings=[{"type": "from_text", "value": ["cold", "hot"]}],
@@ -120,62 +100,102 @@ async def test_nlg_slot_case_sensitivity(response_text: Text):
         initial_value="hot",
         influence_conversation=False,
     )
+    return [slot_a, slot_b, slot_c]
 
-    # Test for condition with single categorical slot - postive match
-    tracker = DialogueStateTracker(sender_id="test_nlg", slots=[slot_a])
+
+@pytest.fixture(scope="session")
+def test_responses() -> List[Dict[Text, List[Dict[Text, Any]]]]:
+    return [
+        {
+            "utter_action": [
+                {
+                    "text": "example a",
+                    "condition": [{"type": "slot", "name": "test", "value": "cold"}],
+                }
+            ]
+        },
+        {
+            "utter_action_multiple_conditions": [
+                {
+                    "text": "example a",
+                    "condition": [
+                        {"type": "slot", "name": "test", "value": "cold"},
+                        {"type": "slot", "name": "test2", "value": False},
+                        {"type": "slot", "name": "test3", "value": "hot"},
+                    ],
+                }
+            ]
+        },
+    ]
+
+
+@pytest.mark.parametrize(("response_text"), ("example a",))
+async def test_nlg_slot_case_sensitivity(
+    response_text: Text,
+    test_slots: List[object],
+    test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
+):
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[0])
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=[test_slots[0]])
     resp = await t.generate(
         utter_action="utter_action", tracker=tracker, output_channel=""
     )
     assert resp.get("text") == response_text
 
-    # Test for multiple conditions with multiple slot types - positive match
-    tracker2 = DialogueStateTracker(
-        sender_id="test_nlg", slots=[slot_a, slot_b, slot_c]
-    )
+
+@pytest.mark.parametrize(("response_text"), ("example a",))
+async def test_matches_filled_slots_multiple_conditions(
+    response_text: Text,
+    test_slots: List[object],
+    test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
+):
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
     resp = await t.generate(
         utter_action="utter_action_multiple_conditions",
-        tracker=tracker2,
+        tracker=tracker,
         output_channel="",
     )
     assert resp.get("text") == response_text
 
-    # Test for multiple conditions with multiple slot types
-    # negative match in boolean slot
-    slot_b.initial_value = True
-    tracker3 = DialogueStateTracker(
-        sender_id="test_nlg", slots=[slot_a, slot_b, slot_c]
-    )
+
+async def test_matches_filled_slots_multiple_conditions_neg_match_boolean_slot(
+    test_slots: List[object], test_responses: List[Dict[Text, List[Dict[Text, Any]]]]
+):
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
+    test_slots[1].initial_value = True
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
     resp = await t.generate(
         utter_action="utter_action_multiple_conditions",
-        tracker=tracker3,
+        tracker=tracker,
         output_channel="",
     )
     assert resp is None
 
-    # Test for multiple conditions with multiple slot types
-    # negative match in first categorical slot.
-    slot_a.initial_value = "junk"
-    tracker4 = DialogueStateTracker(
-        sender_id="test_nlg", slots=[slot_a, slot_b, slot_c]
-    )
+
+async def test_matches_filled_slots_multiple_conditions_neg_match_in_first_slot(
+    test_slots: List[object], test_responses: List[Dict[Text, List[Dict[Text, Any]]]]
+):
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
+    test_slots[0].initial_value = "junk"
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
     resp = await t.generate(
         utter_action="utter_action_multiple_conditions",
-        tracker=tracker4,
+        tracker=tracker,
         output_channel="",
     )
     assert resp is None
 
-    # Test for multiple conditions with multiple slot types
-    # negative match in last categorical slot.
-    slot_a.initial_value = "Cold"
-    slot_b.initial_value = False
-    slot_c.initial_value = "junk"
-    tracker5 = DialogueStateTracker(
-        sender_id="test_nlg", slots=[slot_a, slot_b, slot_c]
-    )
+
+async def test_matches_filled_slots_multiple_conditions_neg_match_in_last_slot(
+    test_slots: List[object], test_responses: List[Dict[Text, List[Dict[Text, Any]]]]
+):
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
+    test_slots[2].initial_value = "junk"
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
     resp = await t.generate(
         utter_action="utter_action_multiple_conditions",
-        tracker=tracker5,
+        tracker=tracker,
         output_channel="",
     )
     assert resp is None
