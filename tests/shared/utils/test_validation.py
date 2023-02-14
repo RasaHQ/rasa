@@ -118,7 +118,6 @@ def test_validate_yaml_schema_actions(file: Text, schema: Text):
     ],
 )
 def test_invalid_send_domain_value_in_actions(content: Text, schema: Text):
-    # should raise no exception
     with pytest.raises(validation_utils.YamlValidationException):
         validation_utils.validate_yaml_schema(content, schema)
 
