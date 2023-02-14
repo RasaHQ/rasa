@@ -44,6 +44,7 @@ from rasa.graph_components.providers.training_tracker_provider import (
 )
 import rasa.shared.constants
 from rasa.shared.exceptions import RasaException, InvalidConfigException
+from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.shared.data import TrainingType
 
 from rasa.utils.tensorflow.constants import EPOCHS
@@ -220,6 +221,7 @@ class DefaultV1Recipe(Recipe):
             train_schema=GraphSchema(train_nodes),
             predict_schema=GraphSchema(predict_nodes),
             training_type=training_type,
+            assistant_id=config.get(ASSISTANT_ID_KEY),
             language=config.get("language"),
             core_target=core_target,
             nlu_target=f"run_{RegexMessageHandler.__name__}",
