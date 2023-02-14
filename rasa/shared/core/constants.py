@@ -53,6 +53,8 @@ DEFAULT_ACTION_NAMES = [
     ACTION_EXTRACT_SLOTS,
 ]
 
+ACTION_SHOULD_SEND_DOMAIN = "send_domain"
+
 # rules allow setting a value of slots or active_loops to None;
 # generator substitutes `None`s with this constant to notify rule policy that
 # a value should not be set during prediction to activate a rule
