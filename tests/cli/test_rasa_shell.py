@@ -2,6 +2,8 @@ import os
 import sys
 from pathlib import Path
 from typing import Callable
+
+import pytest
 from _pytest.pytester import RunResult
 
 from rasa.shared.constants import ASSISTANT_ID_KEY
@@ -63,6 +65,7 @@ def test_shell_nlu_help(run: Callable[..., RunResult]):
         assert line.strip() in printed_help
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_shell_without_assistant_id_issues_warning(
     tmp_path: Path, trained_async: Callable, run: Callable[..., RunResult]
 ):
