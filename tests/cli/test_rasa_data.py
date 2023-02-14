@@ -11,7 +11,7 @@ from _pytest.fixtures import FixtureRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.common import EXPECTED_WARNINGS
@@ -411,7 +411,12 @@ def test_validate_files_config_default_assistant_id():
         "config": "data/test_config/config_defaults.yml",
         "fail_on_warnings": False,
     }
-    with pytest.raises(SystemExit):
+    msg = (
+        f"The config file is missing a unique value for the "
+        f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
+        f"placeholder value with a unique identifier."
+    )
+    with pytest.warns(UserWarning, match=msg):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
 
@@ -423,5 +428,6 @@ def test_validate_files_config_missing_assistant_id():
         "config": "data/test_config/config_no_assistant_id.yml",
         "fail_on_warnings": False,
     }
-    with pytest.raises(SystemExit):
+    msg = f"The config file is missing the '{ASSISTANT_ID_KEY}' mandatory key."
+    with pytest.warns(UserWarning, match=msg):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))

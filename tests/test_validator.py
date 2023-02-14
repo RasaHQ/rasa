@@ -780,4 +780,4 @@ def test_verify_config_mandatory_keys_invalid_paths(
     validator = Validator.from_importer(importer)
 
     with pytest.warns(UserWarning, match=message):
-        assert validator.verify_config_mandatory_keys() is False
+        validator.verify_config_mandatory_keys()

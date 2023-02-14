@@ -233,6 +233,24 @@ def test_get_validated_config_with_default_config(parameters: Dict[Text, Any]) -
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
         },
+    ],
+)
+def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) -> None:
+    config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
+    rasa.shared.utils.io.write_yaml(parameters["config_data"], config_path)
+
+    default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
+    rasa.shared.utils.io.write_yaml(parameters["default_config"], default_config_path)
+
+    with pytest.raises(SystemExit):
+        rasa.cli.utils.get_validated_config(
+            config_path, parameters["mandatory_keys"], default_config_path
+        )
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [
         {
             "config_data": None,
             "default_config": {
@@ -242,31 +260,36 @@ def test_get_validated_config_with_default_config(parameters: Dict[Text, Any]) -
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
         },
-        {
-            "config_data": None,
-            "default_config": None,
-            "mandatory_keys": CONFIG_MANDATORY_KEYS,
-        },
     ],
 )
-def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) -> None:
+def test_get_validated_config_with_default_and_no_config(
+    parameters: Dict[Text, Any]
+) -> None:
     config_path = None
+    default_config_content = {
+        "assistant_id": "placeholder_default",
+        "pipeline": "supervised",
+        "policies": ["TEDPolicy", "FallbackPolicy"],
+    }
+    mandatory_keys = CONFIG_MANDATORY_KEYS_NLU
 
-    if parameters["config_data"] is not None:
-        config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
-        rasa.shared.utils.io.write_yaml(parameters["config_data"], config_path)
-
-    if parameters["default_config"] is not None:
-        default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
-        rasa.shared.utils.io.write_yaml(
-            parameters["default_config"], default_config_path
-        )
-    else:
-        default_config_path = os.path.join(tempfile.mkdtemp(), DEFAULT_CONFIG_PATH)
+    default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
+    rasa.shared.utils.io.write_yaml(default_config_content, default_config_path)
 
     with pytest.raises(SystemExit):
         rasa.cli.utils.get_validated_config(
-            config_path, parameters["mandatory_keys"], default_config_path
+            config_path, mandatory_keys, default_config_path
+        )
+
+
+def test_get_validated_config_with_no_content() -> None:
+    config_path = None
+    default_config_path = os.path.join(tempfile.mkdtemp(), DEFAULT_CONFIG_PATH)
+    mandatory_keys = CONFIG_MANDATORY_KEYS
+
+    with pytest.raises(SystemExit):
+        rasa.cli.utils.get_validated_config(
+            config_path, mandatory_keys, default_config_path
         )
 
 
