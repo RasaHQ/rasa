@@ -235,21 +235,20 @@ Get intent properties for a domain from what is provided by a domain file.
 #### \_\_init\_\_
 
 ```python
-def __init__(
-    intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
-    entities: List[Union[Text, Dict[Text, Any]]],
-    slots: List[Slot],
-    responses: Dict[Text, List[Dict[Text, Any]]],
-    action_names: List[Text],
-    forms: Union[Dict[Text, Any], List[Text]],
-    data: Dict,
-    action_texts: Optional[List[Text]] = None,
-    store_entities_as_slots: bool = True,
-    session_config: SessionConfig = SessionConfig.default()
-) -> None
+def __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
+             entities: List[Union[Text, Dict[Text, Any]]],
+             slots: List[Slot],
+             responses: Dict[Text, List[Dict[Text, Any]]],
+             action_names: List[Text],
+             forms: Union[Dict[Text, Any], List[Text]],
+             data: Dict,
+             action_texts: Optional[List[Text]] = None,
+             store_entities_as_slots: bool = True,
+             session_config: SessionConfig = SessionConfig.default(),
+             **kwargs: Any) -> None
 ```
 
-Creates a `Domain`.
+Create a `Domain`.
 
 **Arguments**:
 
@@ -718,6 +717,24 @@ Counts the total number of slot mappings and custom slot mappings.
   A triple of integers where the first entry is the total number of mappings,
   the second entry is the total number of custom mappings, and the third entry
   is the total number of mappings which have conditions attached.
+
+#### does\_custom\_action\_explicitly\_need\_domain
+
+```python
+def does_custom_action_explicitly_need_domain(action_name: Text) -> bool
+```
+
+Assert if action has explicitly stated that it needs domain.
+
+**Arguments**:
+
+- `action_name` - Name of the action to be checked
+  
+
+**Returns**:
+
+  True if action has explicitly stated that it needs domain.
+  Otherwise, it returns false.
 
 #### \_\_repr\_\_
 
