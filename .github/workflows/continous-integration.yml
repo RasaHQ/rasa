@@ -65,9 +65,9 @@ jobs:
         id: run-all
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
         run: |
-          echo "::set-output name=backend::true"
-          echo "::set-output name=docker::true"
-          echo "::set-output name=docs::true"
+          echo "backend=true" >> $GITHUB_OUTPUT
+          echo "docker=true" >> $GITHUB_OUTPUT
+          echo "docs=true" >> $GITHUB_OUTPUT
 
   wait_for_docs_tests:
     # Looks for doc test workflows and waits for it to complete successfully
@@ -740,9 +740,9 @@ jobs:
             | sort -V -C && echo true || echo false) || true)
           # Avoid that the script gets released for alphas or release candidates
           if [[ "${IS_NEWEST_VERSION}" == "true" && "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
-            echo "::set-output name=is_newest_version::true"
+            echo "is_newest_version=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=is_newest_version::false"
+            echo "is_newest_version=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Check if a base image exists
@@ -752,29 +752,29 @@ jobs:
         run: |
           # Base image
           BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
-          echo "::set-output name=base_image_hash::${BASE_IMAGE_HASH}"
+          echo "base_image_hash=${BASE_IMAGE_HASH}" >> $GITHUB_OUTPUT
 
           BASE_IMAGE_EXISTS=$((docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
-          echo "::set-output name=base_exists::${BASE_IMAGE_EXISTS}"
+          echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base MITIE image
           BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
           MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-          echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}"
+          echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}" >> $GITHUB_OUTPUT
 
           BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
-          echo "::set-output name=base_mitie_exists::${BASE_IMAGE_MITIE_EXISTS}"
+          echo "base_mitie_exists=${BASE_IMAGE_MITIE_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base poetry image
           BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect rasa/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
-          echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
+          echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base builder image
           BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
-          echo "::set-output name=base_builder_image_hash::${BASE_IMAGE_BUILDER_HASH}"
+          echo "base_builder_image_hash=${BASE_IMAGE_BUILDER_HASH}" >> $GITHUB_OUTPUT
 
           BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
-          echo "::set-output name=base_builder_exists::${BASE_IMAGE_BUILDER_EXISTS}"
+          echo "base_builder_exists=${BASE_IMAGE_BUILDER_EXISTS}" >> $GITHUB_OUTPUT
 
       - name: Build Docker base image 🛠
         if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
@@ -866,7 +866,7 @@ jobs:
       - name: Set output
         id: set_output
         run: |
-          echo "::set-output name=image_tag::${{ env.IMAGE_TAG }}"
+          echo "image_tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
 
   docker:
     name: Build Docker
