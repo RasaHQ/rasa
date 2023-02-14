@@ -38,7 +38,12 @@ from rasa.shared.constants import (
     RESPONSE_CONDITION,
 )
 import rasa.shared.core.constants
-from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE, MAPPING_CONDITIONS
+from rasa.shared.core.constants import (
+    ACTION_SHOULD_SEND_DOMAIN,
+    SlotMappingType,
+    MAPPING_TYPE,
+    MAPPING_CONDITIONS,
+)
 from rasa.shared.exceptions import (
     RasaException,
     YamlException,
@@ -1904,7 +1909,9 @@ class Domain:
         for action in actions:
             if isinstance(action, dict):
                 for action_name, action_config in action.items():
-                    should_send_domain = action_config.get("send_domain", False)
+                    should_send_domain = action_config.get(
+                        ACTION_SHOULD_SEND_DOMAIN, False
+                    )
                     if should_send_domain:
                         action_names += [action_name]
 
