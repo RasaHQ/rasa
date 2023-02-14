@@ -65,7 +65,8 @@ def test_shell_nlu_help(run: Callable[..., RunResult]):
         assert line.strip() in printed_help
 
 
-@pytest.mark.timeout(300, func_only=True)
+# FIXME: this test passes locally but fails in the CI with timeout > 300s
+@pytest.mark.skip_on_ci
 async def test_shell_without_assistant_id_issues_warning(
     tmp_path: Path, trained_async: Callable, run: Callable[..., RunResult]
 ):
