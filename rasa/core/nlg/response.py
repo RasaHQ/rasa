@@ -38,7 +38,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             if isinstance(filled_slots_value, str) and isinstance(value, str):
                 if filled_slots_value.casefold() != value.casefold():
                     return False
-            elif filled_slots.get(name) != value:
+            elif filled_slots_value != value:
                 return False
 
         return True

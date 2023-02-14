@@ -117,7 +117,7 @@ def test_responses() -> List[Dict[Text, List[Dict[Text, Any]]]]:
         {
             "utter_action_multiple_conditions": [
                 {
-                    "text": "example a",
+                    "text": "example b",
                     "condition": [
                         {"type": "slot", "name": "test", "value": "cold"},
                         {"type": "slot", "name": "test2", "value": False},
@@ -129,34 +129,32 @@ def test_responses() -> List[Dict[Text, List[Dict[Text, Any]]]]:
     ]
 
 
-@pytest.mark.parametrize(("response_text"), ("example a",))
 async def test_nlg_slot_case_sensitivity(
-    response_text: Text,
     test_slots: List[object],
     test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
 ):
+    utter_action = "utter_action"
     t = TemplatedNaturalLanguageGenerator(responses=test_responses[0])
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=[test_slots[0]])
     resp = await t.generate(
-        utter_action="utter_action", tracker=tracker, output_channel=""
+        utter_action=utter_action, tracker=tracker, output_channel=""
     )
-    assert resp.get("text") == response_text
+    assert resp.get("text") == test_responses[0][utter_action][0]["text"]
 
 
-@pytest.mark.parametrize(("response_text"), ("example a",))
 async def test_matches_filled_slots_multiple_conditions(
-    response_text: Text,
     test_slots: List[object],
     test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
 ):
+    utter_action = "utter_action_multiple_conditions"
     t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
     resp = await t.generate(
-        utter_action="utter_action_multiple_conditions",
+        utter_action=utter_action,
         tracker=tracker,
         output_channel="",
     )
-    assert resp.get("text") == response_text
+    assert resp.get("text") == test_responses[1][utter_action][0]["text"]
 
 
 async def test_matches_filled_slots_multiple_conditions_neg_match_boolean_slot(
