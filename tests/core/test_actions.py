@@ -5,6 +5,7 @@ from typing import List, Text, Any, Dict, Optional
 from unittest.mock import Mock
 
 import pytest
+from pytest import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from jsonschema import ValidationError
@@ -27,6 +28,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
+from rasa.core.constants import COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
@@ -152,6 +154,40 @@ def test_domain_action_instantiation():
     assert instantiated_actions[13].name() == "my_module.ActionTest"
     assert instantiated_actions[14].name() == "utter_test"
     assert instantiated_actions[15].name() == "utter_chitchat"
+
+
+@pytest.mark.parametrize(
+    "is_compression_enabled, expected_compress_argument",
+    [
+        ("True", True),
+        ("False", False),
+    ],
+)
+async def test_remote_actions_are_compressed(
+    is_compression_enabled: str,
+    expected_compress_argument: bool,
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+    monkeypatch.setenv(COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME, is_compression_enabled)
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload={"events": [], "responses": []},
+        )
+
+        await remote_action.run(default_channel, default_nlg, default_tracker, domain)
+
+        r = latest_request(mocked, "post", "https://example.com/webhooks/actions")
+
+        assert r
+        assert r[-1].kwargs["compress"] is expected_compress_argument
 
 
 async def test_remote_action_runs(

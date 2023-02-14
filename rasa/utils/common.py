@@ -33,6 +33,7 @@ from rasa.constants import (
     ENV_LOG_LEVEL_KAFKA,
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -512,3 +513,29 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 def module_path_from_class(clazz: Type) -> Text:
     """Return the module path of an instance's class."""
     return clazz.__module__ + "." + clazz.__name__
+
+
+def get_bool_env_variable(variable_name: str, default_variable_value: bool) -> bool:
+    """Fetch bool value stored in environment variable.
+
+    If environment variable is set but value is
+    not of boolean nature, an exception will be raised.
+
+    Args: variable_name:
+        Name of the environment variable.
+        default_variable_value: Value to be returned if environment variable is not set.
+
+    Returns:
+        A boolean value stored in the environment variable
+        or default value if environment variable is not set.
+    """
+    true_values = (str(True).lower(), str(1).lower())
+    false_values = (str(False).lower(), str(0).lower())
+    value = os.getenv(variable_name, default=str(default_variable_value))
+
+    if value.lower() not in true_values + false_values:
+        raise RasaException(
+            f"Invalid value `{value}` for variable `{variable_name}`. "
+            f"Available values are `{true_values + false_values}`"
+        )
+    return value.lower() in true_values
