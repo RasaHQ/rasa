@@ -1051,7 +1051,7 @@ class DefaultV1Recipe(Recipe):
                     continue
                 remove_comments_until_next_uncommented_line = False
 
-            # add an explanatory comment to auto configured sections
+            # add an explanatory comment to autoconfigured sections
             for key in auto_configured_keys:
                 if line.startswith(f"{key}:"):  # start of next auto-section
                     line = line + COMMENTS_FOR_KEYS[key]
@@ -1063,7 +1063,7 @@ class DefaultV1Recipe(Recipe):
             if not insert_section:
                 continue
 
-            # add the auto configuration (commented out)
+            # add the autoconfiguration (commented out)
             lines_with_autoconfig += autoconfig_lines[insert_section]
 
         return lines_with_autoconfig

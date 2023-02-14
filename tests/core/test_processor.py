@@ -1813,3 +1813,27 @@ async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
     assert ActiveLoop("test_form") in tracker.events
     assert SlotSet(slot_name, slot_value) in tracker.events
     assert tracker.get_slot(slot_name) == slot_value
+
+
+async def test_message_processor_raises_warning_if_no_assistant_id(
+    trained_async: Callable,
+):
+    parent_folder = "data/test_moodbot"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = "data/test_config/test_moodbot_config_no_assistant_id.yml"
+    stories_path = f"{parent_folder}/data/stories.yml"
+    nlu_path = f"{parent_folder}/data/nlu.yml"
+
+    model_path = await trained_async(
+        domain=domain_path, config=config_path, training_files=[stories_path, nlu_path]
+    )
+    warning_message = (
+        f"The model metadata does not contain a value for the '{ASSISTANT_ID_KEY}' "
+        f"attribute. Check that 'config.yml' file contains a value for "
+        f"the '{ASSISTANT_ID_KEY}' key and re-train the model. "
+        f"Failure to do so will result in streaming events without a "
+        f"unique assistant identifier."
+    )
+
+    with pytest.warns(UserWarning, match=warning_message):
+        Agent.load(model_path)

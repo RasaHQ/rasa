@@ -130,7 +130,7 @@ class ModelMetadata:
     trained_at: datetime
     rasa_open_source_version: Text
     model_id: Text
-    assistant_id: Text
+    assistant_id: Optional[Text]
     domain: Domain
     train_schema: GraphSchema
     predict_schema: GraphSchema
