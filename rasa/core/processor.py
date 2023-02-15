@@ -47,6 +47,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
 )
 from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
     DOCS_URL_DOMAINS,
     DEFAULT_SENDER_ID,
     DOCS_URL_POLICIES,
@@ -96,6 +97,17 @@ class MessageProcessor:
         self.model_filename, self.model_metadata, self.graph_runner = self._load_model(
             model_path
         )
+
+        if self.model_metadata.assistant_id is None:
+            rasa.shared.utils.io.raise_warning(
+                f"The model metadata does not contain a value for the "
+                f"'{ASSISTANT_ID_KEY}' attribute. Check that 'config.yml' "
+                f"file contains a value for the '{ASSISTANT_ID_KEY}' key "
+                f"and re-train the model. Failure to do so will result in "
+                f"streaming events without a unique assistant identifier.",
+                UserWarning,
+            )
+
         self.model_path = Path(model_path)
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter

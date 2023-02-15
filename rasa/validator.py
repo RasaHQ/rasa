@@ -415,20 +415,17 @@ class Validator:
 
         return True
 
-    def verify_config_mandatory_keys(self) -> bool:
-        """Verifies that all mandatory keys are present in the config.
+    def warn_if_config_mandatory_keys_are_not_set(self) -> None:
+        """Raises a warning if mandatory keys are not present in the config.
 
-        Additionally, checks if the assistant_id key is filled with the
+        Additionally, raises a UserWarning if the assistant_id key is filled with the
         default placeholder value.
         """
-        everything_is_alright = True
-
         for key in set(CONFIG_MANDATORY_KEYS):
             if key not in self.config:
                 rasa.shared.utils.io.raise_warning(
                     f"The config file is missing the '{key}' mandatory key."
                 )
-                everything_is_alright = False
 
         assistant_id = self.config.get(ASSISTANT_ID_KEY)
 
@@ -438,6 +435,3 @@ class Validator:
                 f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
                 f"placeholder value with a unique identifier."
             )
-            everything_is_alright = False
-
-        return everything_is_alright

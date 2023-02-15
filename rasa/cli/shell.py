@@ -9,6 +9,7 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.model import get_local_model
+from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.shared.data import TrainingType
 from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
@@ -80,6 +81,14 @@ def shell_nlu(args: argparse.Namespace) -> None:
         return
 
     metadata = LocalModelStorage.metadata_from_archive(model)
+
+    if metadata.assistant_id is None:
+        print_error(
+            f"The model metadata does not contain a value for the '{ASSISTANT_ID_KEY}' "
+            f"attribute. Check that 'config.yml' file contains a value for "
+            f"the '{ASSISTANT_ID_KEY}' key and re-train the model.",
+        )
+
     if metadata.training_type == TrainingType.CORE:
         print_error(
             "No NLU model found. Train a model before running the "
@@ -110,6 +119,13 @@ def shell(args: argparse.Namespace) -> None:
         return
 
     metadata = LocalModelStorage.metadata_from_archive(model)
+
+    if metadata.assistant_id is None:
+        print_error(
+            f"The model metadata does not contain a value for the '{ASSISTANT_ID_KEY}' "
+            f"attribute. Check that 'config.yml' file contains a value for "
+            f"the '{ASSISTANT_ID_KEY}' key and re-train the model.",
+        )
 
     if metadata.training_type == TrainingType.NLU:
         import rasa.nlu.run
