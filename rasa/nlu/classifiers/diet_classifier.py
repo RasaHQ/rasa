@@ -829,7 +829,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
-        if self.component_config[BILOU_FLAG]:
+        if (
+            self.component_config[BILOU_FLAG]
+            and self.component_config[ENTITY_RECOGNITION]
+        ):
             bilou_utils.apply_bilou_schema(training_data)
 
         label_id_index_mapping = self._label_id_index_mapping(
