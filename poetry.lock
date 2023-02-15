@@ -6615,14 +6615,14 @@ types-urllib3 = "<1.27"
 
 [[package]]
 name = "types-setuptools"
-version = "65.7.0.4"
+version = "67.3.0.0"
 description = "Typing stubs for setuptools"
 category = "dev"
 optional = false
 python-versions = "*"
 files = [
-    {file = "types-setuptools-65.7.0.4.tar.gz", hash = "sha256:147809433301fe7e0f4ef5c0782f9a0453788960575e1efb6da5fe8cb2493c9f"},
-    {file = "types_setuptools-65.7.0.4-py3-none-any.whl", hash = "sha256:522067dfd8e1771f8d7e047e451de2740dc4e0c9f48a22302a6cc96e6c964a13"},
+    {file = "types-setuptools-67.3.0.0.tar.gz", hash = "sha256:7658ada917e062fd852a754940170b19191cfb19a5360cf476ff6be68a43d69b"},
+    {file = "types_setuptools-67.3.0.0-py3-none-any.whl", hash = "sha256:54cd5f1e090b5ede69411034ecd18008fa55798c01bb5234caa07587496aebde"},
 ]
 
 [package.dependencies]
@@ -7297,4 +7297,4 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<3.11"
-content-hash = "4118afad95e538e05243eb543bef5592a1437ec7a55c8d7f9ecb3f1875bd0406"
+content-hash = "8e628012defbcd7dd5711abab0317e26b1cbc8477cc474731671d7c4001e9030"
