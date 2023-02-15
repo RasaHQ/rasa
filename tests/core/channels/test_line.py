@@ -77,7 +77,6 @@ def test_line_channel():
     ],
 )
 async def test_send_line_custom_json(test_input, expected):
-
     class TestableLineClient(LineBotApi):
         def __init__(self, page_access_token, **kwargs):
             self.recipient_id = ""
@@ -96,7 +95,5 @@ async def test_send_line_custom_json(test_input, expected):
 
     line_client = TestableLineClient(page_access_token="test_token")
     line_bot = LineConnectorOutput(line_client)
-    await line_bot.send_custom_json(
-        recipient_id="test_id", json_message=test_input
-    )
+    await line_bot.send_custom_json(recipient_id="test_id", json_message=test_input)
     assert line_bot.line_client.recipient_id == expected
