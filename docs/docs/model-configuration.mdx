@@ -9,6 +9,17 @@ abstract: The configuration file defines the components and policies that your m
 The recipe key allows for different types of config and model architecture.
 Currently, "default.v1" and the experimental "graph.v1" recipes are supported.
 
+:::info New in 3.5
+
+The config file now includes a new mandatory key `assistant_id` which represents the unique assistant identifier.
+
+:::
+
+The `assistant_id` key must specify a unique value to distinguish multiple assistants in deployment.
+The assistant identifier will be propagated to each event's metadata, alongside the model id.
+Note that if the config file does not include this required key or the placeholder default value is not replaced, a random
+assistant name will be generated and added to the configuration everytime when running `rasa train`.
+
 The language and pipeline keys specify the [components](./components.mdx) used by the  model to make NLU predictions.
 The policies key defines the [policies](./policies.mdx) used by the model to predict the next action.
 
