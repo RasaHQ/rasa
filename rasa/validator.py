@@ -415,7 +415,7 @@ class Validator:
 
         return True
 
-    def verify_config_mandatory_keys(self) -> bool:
+    def warn_if_config_mandatory_keys_are_not_set(self) -> None:
         """Raises a warning if mandatory keys are not present in the config.
 
         Additionally, raises a UserWarning if the assistant_id key is filled with the
@@ -435,5 +435,3 @@ class Validator:
                 f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
                 f"placeholder value with a unique identifier."
             )
-
-        return True

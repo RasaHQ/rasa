@@ -176,8 +176,9 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
             _validate_domain(validator)
             and _validate_nlu(validator, args)
             and _validate_story_structure(validator, args)
-            and _validate_config(validator)
         )
+
+    validator.warn_if_config_mandatory_keys_are_not_set()
 
     telemetry.track_validate_files(all_good)
     if not all_good:
@@ -220,10 +221,6 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
     return validator.verify_story_structure(
         not args.fail_on_warnings, max_history=args.max_history
     )
-
-
-def _validate_config(validator: "Validator") -> bool:
-    return validator.verify_config_mandatory_keys()
 
 
 def _convert_nlu_data(args: argparse.Namespace) -> None:

@@ -773,11 +773,11 @@ def test_verify_from_trigger_intent_slot_mapping_not_in_forms_does_not_warn(
         ),
     ],
 )
-def test_verify_config_mandatory_keys_invalid_paths(
+def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
     config_file: Text, message: Text
 ) -> None:
     importer = RasaFileImporter(config_file=config_file)
     validator = Validator.from_importer(importer)
 
     with pytest.warns(UserWarning, match=message):
-        validator.verify_config_mandatory_keys()
+        validator.warn_if_config_mandatory_keys_are_not_set()
