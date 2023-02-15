@@ -21,15 +21,15 @@ The message returned will differ according to the channel they are using.
 
 
 :::info Compressed body in HTTP requests
-Rasa has capability to send compressed body in HTTP requests for custom actions.
+Rasa has the capability to compress the HTTP request body for custom actions.
 By default, this option is off to keep backward compatibility with older versions of
-custom action servers which did not receive compressed body in HTTP request for custom actions.
-To enable this option set environment variable COMPRESS_ACTION_SERVER_REQUEST to True.
+custom action servers which did not receive the compressed body in the HTTP request for custom actions.
+To enable this option, set environment variable COMPRESS_ACTION_SERVER_REQUEST to `True`.
 
-Rasa SDK 3.2.2, 3.3.1, 3.4.1 and onwards,
-support both compressed and non-compressed body in HTTP request for
+Rasa SDK versions `3.2.2`, `3.3.1`, `3.4.1` and upwards,
+support both compressed and non-compressed body in the HTTP request for
 running custom action server. There is no additional setup required.
-
+:::
 
 ## Custom Action Input
 
