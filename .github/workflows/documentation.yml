@@ -53,9 +53,9 @@ jobs:
         id: run-all
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
         run: |
-          echo "::set-output name=backend::true"
-          echo "::set-output name=docker::true"
-          echo "::set-output name=docs::true"
+          echo "backend=true" >> $GITHUB_OUTPUT
+          echo "docker=true" >> $GITHUB_OUTPUT
+          echo "docs=true" >> $GITHUB_OUTPUT
 
   evaluate_release_tag:
     name: Evaluate release tag
@@ -79,7 +79,7 @@ jobs:
         run: |
           if [[ "${IS_MAIN_BRANCH}" == "true" ]]; then
             echo "Main branch: setting build_docs to true."
-            echo "::set-output name=build_docs::true"
+            echo "build_docs=true" >> $GITHUB_OUTPUT
           else
             # Get latest tagged Rasa version
             git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
@@ -91,10 +91,10 @@ jobs:
 
             if [[ ${exit_status} -eq 0 ]]; then
               echo "Setting build_docs to true."
-              echo "::set-output name=build_docs::true"
+              echo "build_docs=true" >> $GITHUB_OUTPUT
             else
               echo "Setting build_docs to false."
-              echo "::set-output name=build_docs::false"
+              echo "build_docs=false" >> $GITHUB_OUTPUT
             fi
           fi
 
@@ -110,12 +110,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: '3.10'
 
       - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
         with:
           node-version: "12.x"
 
@@ -125,7 +125,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -181,7 +181,7 @@ jobs:
         if: failure()
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985 # v1.5.0
+        uses: voxmedia/github-action-slack-notify-build@3665186a8c1a022b28a1dbe0954e73aa9081ea9e # v1.6.0
         with:
           channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
           status: FAILED
@@ -201,13 +201,13 @@ jobs:
 
       - name: Set up Python 3.10 🐍
         if: needs.changes.outputs.docs == 'true'
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: '3.10'
 
       - name: Set up Node 12.x 🦙
         if: needs.changes.outputs.docs == 'true'
-        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
         with:
           node-version: "12.x"
 
@@ -219,7 +219,7 @@ jobs:
 
       - name: Install poetry 🦄
         if: needs.changes.outputs.docs == 'true'
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -271,7 +271,7 @@ jobs:
         run: |
           make preview-docs
           DEPLOY_URL="https://$PULL_REQUEST_NUMBER--rasahq-docs-rasa-v2.netlify.app${DOCS_SITE_BASE_URL}"
-          echo "::set-output name=preview_url::$DEPLOY_URL"
+          echo "preview_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
 
       - name: Create a comment with help description
         if: needs.changes.outputs.docs == 'true'
@@ -294,7 +294,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
         with:
           node-version: "12.x"
 
@@ -318,7 +318,7 @@ jobs:
         if: failure()
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985 # v1.5.0
+        uses: voxmedia/github-action-slack-notify-build@3665186a8c1a022b28a1dbe0954e73aa9081ea9e # v1.6.0
         with:
           channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
           status: FAILED

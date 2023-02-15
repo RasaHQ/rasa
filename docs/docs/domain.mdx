@@ -794,6 +794,31 @@ For example, an action could:
 All [custom actions](./custom-actions.mdx) should be listed in your domain, except responses which need not be listed
 under `actions:` as they are already listed under `responses:`.
 
+### Select which actions should receive domain
+:::info New in 3.4.3
+You can control if an action should receive a domain or not.
+:::
+
+To do this you must first enable selective domain in you endpoint configuration for
+`action_endpoint` in `endpoints.yml`.
+```YAML
+# endpoints.yml
+action_endpoint:
+ url: "http://localhost:5055/webhook" # URL to your action server
+ enable_selective_domain: true
+```
+**After selective domain for custom actions is enabled, domain will be sent only to
+those custom actions which have specifically stated that they need it.**
+To specify if an action needs the domain add `{send_domain: true}` to custom action in the list
+of actions in `domain.yml`:
+```YAML
+# domain.yml
+actions:
+  - action_hello_world: {send_domain: True} # will receive domain
+  - action_calculate_mass_of_sun # will not receive domain
+```
+
+
 ## Session configuration
 
 A conversation session represents the dialogue between the assistant and the user.
