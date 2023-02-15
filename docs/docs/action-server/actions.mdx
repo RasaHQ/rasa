@@ -158,6 +158,7 @@ Your action server receives the following payload from the Rasa server:
 }
 ```
 
+
 ### `next_action`
 
 The `next_action` field tells your action server what action to run. 
@@ -201,6 +202,9 @@ The `domain` is a json representation of your `domain.yaml` file.
 It is unlikely that a custom action
 will refer to its contents, as they are static and do not indicate the state
 of the conversation. 
+
+You can control if an action should receive a domain or not.
+Visit [selective-domain](../domain.mdx#select-which-actions-should-receive-domain)
 
 ### `version`
 

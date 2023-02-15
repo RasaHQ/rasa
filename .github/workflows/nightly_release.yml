@@ -37,7 +37,7 @@ jobs:
           echo "Composing nightly build tag name..."
           GH_TAG=${LATEST_NIGHTLY_VERSION}.dev${DATE}
           echo "New nightly release version: ${GH_TAG}"
-          echo "::set-output name=tag_name::${GH_TAG}"
+          echo "tag_name=${GH_TAG}" >> $GITHUB_OUTPUT
 
       - name: Tag latest main commit as nightly
         run: |
