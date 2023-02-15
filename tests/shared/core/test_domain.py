@@ -2202,35 +2202,15 @@ def test_domain_loads_actions_which_explicitly_need_domain(
 
 
 def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
-    test_yaml_1 = """config:
-        store_entities_as_slots: true
-        entities: []
-        intents: []
-        slots: {{}}
-        responses:
-          utter_greet:
-          - text: hey there!
+    test_yaml_1 = textwrap.dedent(f"""
         actions:
           - action_hello
           - action_bye
-          - action_send_domain: {{send_domain: True}}"""
+          - action_send_domain: {{send_domain: True}}""")
 
-    test_yaml_2 = """config:
-        store_entities_as_slots: false
-        session_config:
-            session_expiration_time: 20
-            carry_over_slots: true
-        entities:
-        - cuisine
-        intents:
-        - greet
-        slots:
-          cuisine:
-            type: text
-            mappings:
-            - type: from_text
+    test_yaml_2 = textwrap.dedent(f"""
         actions:
-        - action_find_restaurants: {{send_domain: True}}"""
+          - action_find_restaurants: {{send_domain: True}}""")
 
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
