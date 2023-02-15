@@ -2199,3 +2199,47 @@ def test_domain_loads_actions_which_explicitly_need_domain(
         domain._actions_which_explicitly_need_domain
         == expected_actions_which_explicitly_need_domain
     )
+
+def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
+    test_yaml_1 = f"""config:
+  store_entities_as_slots: true
+entities: []
+intents: []
+slots: {{}}
+responses:
+  utter_greet:
+  - text: hey there!
+actions:
+  - action_hello
+  - action_bye
+  - action_send_domain: {{send_domain: True}}"""
+
+    test_yaml_2 = f"""config:
+  store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+    mappings:
+    - type: from_text
+actions:
+- action_find_restaurants: {{send_domain: True}}"""
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+
+    domain = domain_1.merge(domain_2)
+    
+    # single attribute should be taken from domain_1
+    assert domain.store_entities_as_slots
+    expected_actions = ["action_hello", "action_bye", "action_send_domain", "action_find_restaurants"]
+    expected_actions_that_need_domain = ["action_send_domain", "action_find_restaurants"]
+    assert sorted(domain._custom_actions) == sorted(expected_actions)
+    assert sorted(domain._actions_which_explicitly_need_domain) == sorted(expected_actions_that_need_domain)
+    
