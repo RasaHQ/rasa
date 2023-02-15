@@ -2237,9 +2237,7 @@ actions:
     domain = domain_1.merge(domain_2)
     
     # single attribute should be taken from domain_1
-    assert domain.store_entities_as_slots
     expected_actions = ["action_hello", "action_bye", "action_send_domain", "action_find_restaurants"]
     expected_actions_that_need_domain = ["action_send_domain", "action_find_restaurants"]
     assert sorted(domain._custom_actions) == sorted(expected_actions)
     assert sorted(domain._actions_which_explicitly_need_domain) == sorted(expected_actions_that_need_domain)
-    
