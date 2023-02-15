@@ -1,4 +1,4 @@
-from typing import Text, Any
+from typing import Dict, List, Text, Any
 
 import logging
 import pytest
@@ -80,29 +80,123 @@ async def test_nlg_when_multiple_conditions_satisfied():
     assert resp.get("text") in ["example A", "example B"]
 
 
-@pytest.mark.parametrize(("response_text"), ("example a",))
-async def test_nlg_slot_case_sensitivity(response_text: Text):
-    responses = {
-        "utter_action": [
-            {
-                "text": response_text,
-                "condition": [{"type": "slot", "name": "test", "value": "cold"}],
-            }
-        ]
-    }
-
-    t = TemplatedNaturalLanguageGenerator(responses=responses)
+@pytest.fixture(scope="session")
+def test_slots() -> List[object]:
     slot_a = CategoricalSlot(
         name="test",
         mappings=[{"type": "from_text", "value": ["cold", "hot"]}],
         initial_value="Cold",
         influence_conversation=False,
     )
-    tracker = DialogueStateTracker(sender_id="test_nlg", slots=[slot_a])
-    resp = await t.generate(
-        utter_action="utter_action", tracker=tracker, output_channel=""
+    slot_b = BooleanSlot(
+        name="test2",
+        mappings=[{}],
+        initial_value=False,
+        influence_conversation=False,
     )
-    assert resp.get("text") == response_text
+    slot_c = CategoricalSlot(
+        name="test3",
+        mappings=[{"type": "from_text", "value": ["cold", "hot"]}],
+        initial_value="hot",
+        influence_conversation=False,
+    )
+    return [slot_a, slot_b, slot_c]
+
+
+@pytest.fixture(scope="session")
+def test_responses() -> List[Dict[Text, List[Dict[Text, Any]]]]:
+    return [
+        {
+            "utter_action": [
+                {
+                    "text": "example a",
+                    "condition": [{"type": "slot", "name": "test", "value": "cold"}],
+                }
+            ]
+        },
+        {
+            "utter_action_multiple_conditions": [
+                {
+                    "text": "example b",
+                    "condition": [
+                        {"type": "slot", "name": "test", "value": "cold"},
+                        {"type": "slot", "name": "test2", "value": False},
+                        {"type": "slot", "name": "test3", "value": "hot"},
+                    ],
+                }
+            ]
+        },
+    ]
+
+
+async def test_nlg_slot_case_sensitivity(
+    test_slots: List[object],
+    test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
+):
+    utter_action = "utter_action"
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[0])
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=[test_slots[0]])
+    resp = await t.generate(
+        utter_action=utter_action, tracker=tracker, output_channel=""
+    )
+    assert resp.get("text") == test_responses[0][utter_action][0]["text"]
+
+
+async def test_matches_filled_slots_multiple_conditions(
+    test_slots: List[object],
+    test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
+):
+    utter_action = "utter_action_multiple_conditions"
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
+    resp = await t.generate(
+        utter_action=utter_action,
+        tracker=tracker,
+        output_channel="",
+    )
+    assert resp.get("text") == test_responses[1][utter_action][0]["text"]
+
+
+async def test_matches_filled_slots_multiple_conditions_neg_match_boolean_slot(
+    test_slots: List[object], test_responses: List[Dict[Text, List[Dict[Text, Any]]]]
+):
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
+    test_slots[1].initial_value = True
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
+    resp = await t.generate(
+        utter_action="utter_action_multiple_conditions",
+        tracker=tracker,
+        output_channel="",
+    )
+    assert resp is None
+
+
+async def test_matches_filled_slots_multiple_conditions_neg_match_in_first_slot(
+    test_slots: List[object], test_responses: List[Dict[Text, List[Dict[Text, Any]]]]
+):
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
+    test_slots[0].initial_value = "junk"
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
+    resp = await t.generate(
+        utter_action="utter_action_multiple_conditions",
+        tracker=tracker,
+        output_channel="",
+    )
+    assert resp is None
+
+
+async def test_matches_filled_slots_multiple_conditions_neg_match_in_last_slot(
+    test_slots: List[object], test_responses: List[Dict[Text, List[Dict[Text, Any]]]]
+):
+    t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
+    test_slots[2].initial_value = "junk"
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
+    resp = await t.generate(
+        utter_action="utter_action_multiple_conditions",
+        tracker=tracker,
+        output_channel="",
+    )
+    assert resp is None
 
 
 @pytest.mark.parametrize(
