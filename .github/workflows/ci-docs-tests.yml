@@ -22,7 +22,7 @@ jobs:
     outputs:
       docs: ${{ steps.filter.outputs.docs }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         id: filter
         with:
@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
@@ -61,7 +61,7 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -80,7 +80,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Load Yarn Cached Packages ⬇
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: docs/node_modules
           key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
@@ -108,7 +108,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
@@ -132,7 +132,7 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -151,7 +151,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Load Yarn Cached Packages ⬇
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: docs/node_modules
           key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
