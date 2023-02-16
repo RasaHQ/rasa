@@ -2202,15 +2202,20 @@ def test_domain_loads_actions_which_explicitly_need_domain(
 
 
 def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
-    test_yaml_1 = textwrap.dedent(f"""
+    test_yaml_1 = textwrap.dedent(
+        """
         actions:
           - action_hello
           - action_bye
-          - action_send_domain: {{send_domain: True}}""")
+          - action_send_domain: {send_domain: True}"""
+    )
 
-    test_yaml_2 = textwrap.dedent(f"""
+    test_yaml_2 = textwrap.dedent(
+        """
         actions:
-          - action_find_restaurants: {{send_domain: True}}""")
+          - action_find_restaurants:
+                send_domain: True"""
+    )
 
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
