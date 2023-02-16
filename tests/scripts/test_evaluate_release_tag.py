@@ -39,14 +39,14 @@ def test_filter_non_alpha_releases(releases: List[Version], expected: List[Versi
             True,
         ),
         (
-            [Version("1.1.0"), Version("1.2.0a1"), Version("2.3.0")],
-            Version("1.1.2"),
+            [Version("3.2.5"), Version("3.3.4a1"), Version("3.3.3"), Version("3.4.3"), Version("2.2.3")],
+            Version("3.2.6"),
             True,
         ),
         (
             [Version("1.1.0"), Version("2.2.0"), Version("2.3.0")],
             Version("2.2.1"),
-            False,
+            True,
         ),
         (
             [Version("1.1.0"), Version("2.2.0"), Version("2.3.0")],

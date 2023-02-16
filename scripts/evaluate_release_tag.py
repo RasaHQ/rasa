@@ -63,6 +63,9 @@ def should_build_docs(tag: Version) -> bool:
     elif tag >= latest_version:
         print(f"Tag {tag} is the latest version. Docs should be built.")
         need_to_build_docs = True
+    elif tag < latest_version:
+        print(f"Tag {tag} is an old minor. Docs should be built.")
+        need_to_build_docs = True
     elif tag.major == previous_major and tag > previous_major_latest_version:
         print(f"Tag {tag} is higher than the latest version for the previous major. Docs should be built.")
         need_to_build_docs = True
