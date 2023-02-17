@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout main
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Download gomplate
         run: |-
@@ -65,7 +65,7 @@ jobs:
           echo "dataset_branch=${DATASET_BRANCH}" >> $GITHUB_OUTPUT
 
       - name: Checkout dataset
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
@@ -81,7 +81,7 @@ jobs:
           echo "help_description=$OUTPUT" >> $GITHUB_OUTPUT
 
       - name: Create a comment with help description
-        uses: RasaHQ/create-comment@v1
+        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
         with:
           mode: "delete-previous"
           id: comment_help_description
@@ -109,7 +109,7 @@ jobs:
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
       - name: Update the comment with the configuration
-        uses: peter-evans/create-or-update-comment@v2
+        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d
         if: steps.fc_config.outputs.comment-id != ''
         with:
           comment-id: ${{ steps.fc_config.outputs.comment-id }}
@@ -118,7 +118,7 @@ jobs:
           reactions: eyes
 
       - name: Re-create the comment with the configuration
-        uses: RasaHQ/create-comment@v1
+        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
         if: steps.fc_config.outputs.comment-id != '' && steps.fc_config.outputs.comment-body != ''
         with:
           mode: "delete-previous"
@@ -135,7 +135,7 @@ jobs:
           body-includes: "^/modeltest"
 
       - name: Add reaction
-        uses: peter-evans/create-or-update-comment@v2
+        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d
         if: steps.fc_config_update.outputs.comment-id != ''
         with:
           edit-mode: "replace"
@@ -143,7 +143,7 @@ jobs:
           reactions: heart, hooray, rocket
 
       - name: Add a comment that the tests are in progress
-        uses: RasaHQ/create-comment@v1
+        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
         if: steps.fc_config_update.outputs.comment-id != ''
         with:
           mode: "delete-previous"
@@ -163,7 +163,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Download gomplate
         run: |-
@@ -253,10 +253,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Checkout dataset
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
@@ -331,7 +331,7 @@ jobs:
           echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
 
       - name: Checkout dataset - external
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'
         with:
           repository: ${{ env.DATASET }}
@@ -382,7 +382,7 @@ jobs:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
@@ -472,7 +472,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
@@ -498,10 +498,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Checkout dataset
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
@@ -576,7 +576,7 @@ jobs:
           echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
 
       - name: Checkout dataset - external
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'
         with:
           repository: ${{ env.DATASET }}
@@ -627,7 +627,7 @@ jobs:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
@@ -717,7 +717,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
@@ -754,7 +754,7 @@ jobs:
           echo "success_status=$success_status" >> $GITHUB_OUTPUT
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.10 🐍
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
@@ -762,7 +762,7 @@ jobs:
           python-version: '3.10'
 
       - name: Get reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
           path: reports/
 
@@ -780,7 +780,7 @@ jobs:
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the overall report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: report.json
           path: ./report.json
@@ -811,7 +811,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Download report from last on-schedule regression test
         run: |
@@ -833,7 +833,7 @@ jobs:
           unzip report.json.zip && mv report.json report_main.json
 
       - name: Download the report
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
           name: report.json
 
