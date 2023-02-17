@@ -73,6 +73,7 @@ Creates and returns a configured aiohttp client session.
 async def request(method: Text = "post",
                   subpath: Optional[Text] = None,
                   content_type: Optional[Text] = "application/json",
+                  compress: bool = False,
                   **kwargs: Any) -> Optional[Any]
 ```
 

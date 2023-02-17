@@ -334,3 +334,24 @@ def module_path_from_class(clazz: Type) -> Text
 
 Return the module path of an instance&#x27;s class.
 
+#### get\_bool\_env\_variable
+
+```python
+def get_bool_env_variable(variable_name: str,
+                          default_variable_value: bool) -> bool
+```
+
+Fetch bool value stored in environment variable.
+
+If environment variable is set but value is
+not of boolean nature, an exception will be raised.
+
+Args: variable_name:
+Name of the environment variable.
+default_variable_value: Value to be returned if environment variable is not set.
+
+**Returns**:
+
+  A boolean value stored in the environment variable
+  or default value if environment variable is not set.
+
