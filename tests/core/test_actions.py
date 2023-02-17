@@ -5,11 +5,13 @@ from typing import List, Text, Any, Dict, Optional
 from unittest.mock import Mock
 
 import pytest
+from pytest import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from jsonschema import ValidationError
 
 import rasa.core
+from rasa.core.constants import COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME
 from rasa.core.actions import action
 from rasa.core.actions.action import (
     ActionBack,
@@ -152,6 +154,40 @@ def test_domain_action_instantiation():
     assert instantiated_actions[13].name() == "my_module.ActionTest"
     assert instantiated_actions[14].name() == "utter_test"
     assert instantiated_actions[15].name() == "utter_chitchat"
+
+
+@pytest.mark.parametrize(
+    "is_compression_enabled, expected_compress_argument",
+    [
+        ("True", True),
+        ("False", False),
+    ],
+)
+async def test_remote_actions_are_compressed(
+    is_compression_enabled: str,
+    expected_compress_argument: bool,
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+    monkeypatch.setenv(COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME, is_compression_enabled)
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload={"events": [], "responses": []},
+        )
+
+        await remote_action.run(default_channel, default_nlg, default_tracker, domain)
+
+        r = latest_request(mocked, "post", "https://example.com/webhooks/actions")
+
+        assert r
+        assert r[-1].kwargs["compress"] is expected_compress_argument
 
 
 async def test_remote_action_runs(
@@ -2212,11 +2248,15 @@ async def test_action_extract_slots_disallowed_events(caplog: LogCaptureFixture)
                 domain,
             )
 
+        caplog_info_records = list(
+            filter(lambda x: x[1] == logging.INFO, caplog.record_tuples)
+        )
+
         assert all(
             [
                 "Running custom action 'action_test' has resulted "
-                "in an event of type 'reset_slots'." in message
-                for message in caplog.messages
+                "in an event of type 'reset_slots'." in record[2]
+                for record in caplog_info_records
             ]
         )
         assert slot_events == [SlotSet("custom_slot_one", 1)]
@@ -2581,7 +2621,10 @@ async def test_action_extract_slots_does_not_raise_disallowed_warning_for_slot_e
                 domain,
             )
 
-        assert len(caplog.messages) == 0
+        caplog_info_records = list(
+            filter(lambda x: x[1] == logging.INFO, caplog.record_tuples)
+        )
+        assert len(caplog_info_records) == 0
 
         assert events == [
             SlotSet("custom_slot_b", "test_B"),

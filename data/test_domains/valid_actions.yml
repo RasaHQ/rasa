@@ -1,0 +1,36 @@
+intents:
+ - greet
+ - default
+ - goodbye
+
+slots:
+  cuisine:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: cuisine
+  location:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: location
+
+entities:
+ - name
+ - cuisine
+ - location
+
+responses:
+  utter_greet:
+    - text: hey there!
+  utter_goodbye:
+    - text: goodbye :(
+  utter_default:
+    - text: default message
+
+actions:
+  - utter_default: {send_domain: True}
+  - action_send_mail: {send_domain: False}
+  - action_send_mail2: {send_domain: true}
+  - action_send_mail3: {send_domain: false}
+  - action_hello
