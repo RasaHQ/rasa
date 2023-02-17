@@ -28,9 +28,6 @@ import rasa.model
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 class TrainingResult(NamedTuple):
