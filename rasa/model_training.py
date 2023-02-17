@@ -12,11 +12,12 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.core.events import SlotSet
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import telemetry
 from rasa.shared.core.domain import Domain
-import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.shared.utils.common
 import rasa.shared.utils.cli
@@ -27,6 +28,9 @@ import rasa.model
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TrainingResult(NamedTuple):
@@ -73,6 +77,22 @@ def _dry_run_result(
         "(the responses might still need updating!)."
     )
     return TrainingResult(dry_run_results=fingerprint_results)
+
+
+def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
+    unresolved_slots = set(
+        evnt.key
+        for step in stories.story_steps
+        for evnt in step.events
+        if isinstance(evnt, SlotSet)
+    ) - set(slot.name for slot in domain.slots)
+    if unresolved_slots:
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"Unresolved slots found in stories/rules🚨 \n"
+            f"Tried to set non existent slots - {', '.join(unresolved_slots)}.\n"
+            f"Make sure you added all your slots to your domain file."
+        )
+    return None
 
 
 def train(
@@ -154,6 +174,8 @@ def train(
             "No NLU data present. Just a Rasa Core model will be trained."
         )
         training_type = TrainingType.CORE
+
+    _check_unresolved_slots(domain_object, stories)
 
     with telemetry.track_model_training(file_importer, model_type="rasa"):
         return _train_graph(
@@ -336,6 +358,8 @@ def train_core(
             "train a Rasa Core model using the '--stories' argument."
         )
         return None
+
+    _check_unresolved_slots(domain, stories_data)
 
     return _train_graph(
         file_importer,
