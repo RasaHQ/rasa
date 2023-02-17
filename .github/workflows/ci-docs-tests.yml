@@ -40,12 +40,12 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
         with:
           node-version: "12.x"
 
@@ -55,7 +55,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -111,12 +111,12 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
         with:
           node-version: "12.x"
 
@@ -126,7 +126,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
