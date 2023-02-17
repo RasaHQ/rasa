@@ -140,6 +140,50 @@ rules:
 This indicates that the assistant should execute another action
 before waiting for more user input.
 
+### Abort a Rule
+
+Rules are designed to handle multiple output steps of a chatbot.
+They are terminated as soon as user interaction is required.
+This happens automatically via [launching a form](#rules-and-forms), since it starts with the user input of the first slot.
+Therefore all steps after launch are ignored.
+
+Termination, however, can also be achieved manually.
+This can be useful to implement conditional termination criteria.
+Here is an example:
+
+```yaml-rasa
+rules:
+
+- rule: Rule which will be conditionaly terminated
+  steps:
+  - intent: greet
+  - action: action_check_termination
+  - action: utter_greet
+  wait_for_user_input: true
+```
+
+```python
+from rasa_sdk import Action
+from rasa_sdk.events import FollowupAction
+
+class ActionCheckTermination(Action):
+
+    def name(self):
+        return "action_check_termination"
+
+    def run(self, dispatcher, tracker, domain):
+
+        # your business logic here
+        should_terminate = check_for_termination(<params>)
+
+        if should_terminate:
+            return [FollowupAction("action_listen")]
+
+        return [];
+```
+
+utter_greet is never executed when termination is done, even after user input, because it causes a new intent prediction.
+
 ### Rules and Forms
 
 When a [Form](./forms.mdx) is active, the bot will make predictions based on

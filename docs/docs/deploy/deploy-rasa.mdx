@@ -200,6 +200,10 @@ To use the Rasa Plus image in a Helm deployment, you will need to substitute `ra
 the image name. You will also need to pass your license in an env var
 and [specify a pull secret for the image](#step-1-image-pull-secret).
 
+#### Security Patch Releases
+Beginning with Rasa Plus 3.4.0, we release a new Docker image for supported versions each day at 0800 UTC. These images have OS security patches applied and include the date of generation in their tag in the format `YYYYMMDD`. 
+For example, to use the 3.4.2 image generated on the 1st of February 2023, use the tag `3.4.2-20230201`. These images can optionally be used as a drop-in replacement for the same version of Rasa Plus, but with all OS security updates up to that date applied.
+
 #### Step 1: image pull secret
 
 You will need to create a pull secret to access the `rasa-plus` image. You should have
