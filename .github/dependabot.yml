@@ -4,7 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-      time: '13:00'
+      time: "13:00"
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 10
@@ -19,26 +19,12 @@ updates:
         versions:
           - "> 0.10.0"
 
-  - package-ecosystem: npm
-    directory: "/docs"
-    schedule:
-      interval: monthly
-      time: '13:00'
-    pull-request-branch-name:
-      separator: "-"
-    # currently disabled because we cannot update the docs theme and its dependencies
-    open-pull-requests-limit: 0
-    reviewers:
-      - "m-vdb"
-    labels:
-      - type:dependencies
-
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
       day: monday
-      time: '12:00'
+      time: "12:00"
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 10
