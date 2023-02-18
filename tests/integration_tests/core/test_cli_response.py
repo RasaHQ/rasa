@@ -76,6 +76,7 @@ def test_rasa_validate_debug_with_errors(
         str(domain_file),
         "-c",
         str(config_file),
+        "--fail-on-warnings",
         "--debug",
     )
     assert result.ret == 1
