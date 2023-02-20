@@ -378,6 +378,8 @@ class DefaultV1Recipe(Recipe):
                 return "training_tracker_provider"
             elif "tracker" == parameter:
                 return PLACEHOLDER_TRACKER
+            elif "training_data" == parameter:
+                return "nlu_training_data_provider"
             return f"{parameter}_provider"
 
         sig = signature(getattr(component, fn_name))
@@ -391,7 +393,6 @@ class DefaultV1Recipe(Recipe):
         unprovided_parameters = parameters - {
             "message",
             "messages",
-            "training_data",
             "self",
             "model",
             "precomputations",
@@ -412,9 +413,9 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
     ) -> Text:
         config_from_cli = self._extra_config_from_cli(cli_parameters, component, config)
-        needs = {"training_data": last_run_node}
+        needs = self._get_needs_from_args(component, "train")
         needs.update(self._get_model_provider_needs(train_nodes, component))
-        needs.update(self._get_needs_from_args(component, "train"))
+        needs["training_data"] = last_run_node
 
         train_node_name = f"train_{component_name}"
         train_nodes[train_node_name] = SchemaNode(
@@ -477,15 +478,13 @@ class DefaultV1Recipe(Recipe):
         component_config: Dict[Text, Any],
         from_resource: Optional[Text] = None,
     ) -> Text:
-        needs = {"training_data": last_run_node}
+        needs = self._get_needs_from_args(component_class, "process_training_data")
         needs.update(self._get_model_provider_needs(train_nodes, component_class))
 
         if from_resource:
             needs["resource"] = from_resource
 
-        needs.update(
-            self._get_needs_from_args(component_class, "process_training_data")
-        )
+        needs["training_data"] = last_run_node
 
         node_name = f"run_{component_name}"
         train_nodes[node_name] = SchemaNode(
@@ -598,10 +597,9 @@ class DefaultV1Recipe(Recipe):
                 policy_with_end_to_end_support_used or requires_end_to_end_data
             )
 
-            needs = {}
+            needs = self._get_needs_from_args(component.clazz, "train")
             if requires_end_to_end_data:
                 needs["precomputations"] = "end_to_end_features_provider"
-            needs.update(self._get_needs_from_args(component.clazz, "train"))
             # during core training we use a stripped down version of the domain
             needs["domain"] = "domain_for_core_training_provider"
             train_nodes[f"train_{component_name}{idx}"] = SchemaNode(
@@ -793,9 +791,9 @@ class DefaultV1Recipe(Recipe):
     ) -> Text:
         node_name = f"run_{component_name}"
 
-        needs = {"messages": last_run_node}
+        needs = self._get_needs_from_args(node.uses, "process")
         needs.update(self._get_model_provider_needs(predict_nodes, node.uses))
-        needs.update(self._get_needs_from_args(node.uses, "process"))
+        needs["messages"] = last_run_node
         predict_nodes[node_name] = dataclasses.replace(
             node,
             needs=needs,
@@ -843,17 +841,14 @@ class DefaultV1Recipe(Recipe):
             if issubclass(component.clazz, RulePolicy) and not rule_policy_resource:
                 rule_policy_resource = train_node_name
 
-            needs = {}
+            needs = self._get_needs_from_args(
+                train_nodes[train_node_name].uses, "predict_action_probabilities"
+            )
             if (
                 self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT in component.types
                 and node_with_e2e_features
             ):
                 needs["precomputations"] = node_with_e2e_features
-            needs.update(
-                self._get_needs_from_args(
-                    train_nodes[train_node_name].uses, "predict_action_probabilities"
-                )
-            )
 
             predict_nodes[node_name] = dataclasses.replace(
                 train_nodes[train_node_name],
