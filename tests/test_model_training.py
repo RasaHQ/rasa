@@ -1064,7 +1064,7 @@ def test_check_unresolved_slots(capsys: CaptureFixture):
     domain_path = "data/test_domains/default_with_mapping.yml"
     domain = Domain.load(domain_path)
     with pytest.raises(SystemExit):
-        rasa.model_training.check_unresolved_slots(domain, stories)
+        rasa.model_training._check_unresolved_slots(domain, stories)
 
     error_output = capsys.readouterr().out
     assert (
@@ -1085,4 +1085,4 @@ def test_check_unresolved_slots(capsys: CaptureFixture):
             )
         ]
     )
-    assert rasa.model_training.check_unresolved_slots(domain, stories) is None
+    assert rasa.model_training._check_unresolved_slots(domain, stories) is None

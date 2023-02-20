@@ -76,7 +76,7 @@ def _dry_run_result(
     return TrainingResult(dry_run_results=fingerprint_results)
 
 
-def _get_unresolved_slots(domain: Domain, stories: StoryGraph) -> List[Text]:
+def get_unresolved_slots(domain: Domain, stories: StoryGraph) -> List[Text]:
     """Returns a list of unresolved slots.
 
     Args:
@@ -97,7 +97,7 @@ def _get_unresolved_slots(domain: Domain, stories: StoryGraph) -> List[Text]:
     )
 
 
-def check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
+def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
     """Checks if there are any unresolved slots.
 
     Args:
@@ -110,7 +110,7 @@ def check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
     Returns:
         `None` if there are no unresolved slots.
     """
-    unresolved_slots = _get_unresolved_slots(domain, stories)
+    unresolved_slots = get_unresolved_slots(domain, stories)
     if unresolved_slots:
         rasa.shared.utils.cli.print_error_and_exit(
             f"Unresolved slots found in stories/rules🚨 \n"
@@ -201,7 +201,7 @@ def train(
         )
         training_type = TrainingType.CORE
 
-    check_unresolved_slots(domain_object, stories)
+    _check_unresolved_slots(domain_object, stories)
 
     with telemetry.track_model_training(file_importer, model_type="rasa"):
         return _train_graph(
@@ -385,7 +385,7 @@ def train_core(
         )
         return None
 
-    check_unresolved_slots(domain, stories_data)
+    _check_unresolved_slots(domain, stories_data)
 
     return _train_graph(
         file_importer,
