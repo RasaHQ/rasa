@@ -31,6 +31,8 @@ from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.graph_components.converters.nlu_message_converter import NLUMessageConverter
 from rasa.graph_components.providers.domain_provider import DomainProvider
+from rasa.graph_components.providers.forms_provider import FormsProvider
+from rasa.graph_components.providers.responses_provider import ResponsesProvider
 from rasa.graph_components.providers.domain_for_core_training_provider import (
     DomainForCoreTrainingProvider,
 )
@@ -298,6 +300,14 @@ class DefaultV1Recipe(Recipe):
             component = self._from_registry(component_name)
             component_name = f"{component_name}{idx}"
 
+            if (
+                self.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT in component.types
+                or self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT in component.types
+            ):
+                raise InvalidConfigException(
+                    f"Found policy '{component_name}' in NLU pipeline. Policies should "
+                    f"be defined in the 'policies' section of your configuration."
+                )
             if self.ComponentType.MODEL_LOADER in component.types:
                 node_name = f"provide_{component_name}"
                 train_nodes[node_name] = SchemaNode(
@@ -339,6 +349,60 @@ class DefaultV1Recipe(Recipe):
 
         return preprocessors
 
+    def _get_needs_from_args(
+        self, component: Type[GraphComponent], fn_name: str
+    ) -> Dict[str, str]:
+        """Get the needed arguments from the method on the component.
+
+        Filters out arguments that are already provided by other graph
+        components. Does not check if the created providers are actually
+        part of the graph. If they aren't an error will be raised later on
+        when the graph is validated.
+
+        Args:
+            component: The component class.
+            fn_name: The name of the method to inspect.
+
+        Returns:
+            The name of the arguments which need to be provided.
+        """
+        from inspect import signature
+
+        if not hasattr(component, fn_name):
+            return {}
+
+        def resolver_name_from_parameter(parameter: str) -> str:
+            # we got a couple special cases to handle wher the parameter name
+            # doesn't match the provider name
+            if "training_trackers" == parameter:
+                return "training_tracker_provider"
+            elif "tracker" == parameter:
+                return PLACEHOLDER_TRACKER
+            elif "training_data" == parameter:
+                return "nlu_training_data_provider"
+            return f"{parameter}_provider"
+
+        sig = signature(getattr(component, fn_name))
+        parameters = {
+            name
+            for name, param in sig.parameters.items()
+            if param.kind == param.POSITIONAL_OR_KEYWORD
+        }
+
+        # filter out parameters which are already resolved in other ways
+        unprovided_parameters = parameters - {
+            "message",
+            "messages",
+            "self",
+            "model",
+            "precomputations",
+        }
+
+        return {
+            parameter: resolver_name_from_parameter(parameter)
+            for parameter in unprovided_parameters
+        }
+
     def _add_nlu_train_node(
         self,
         train_nodes: Dict[Text, SchemaNode],
@@ -349,11 +413,13 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
     ) -> Text:
         config_from_cli = self._extra_config_from_cli(cli_parameters, component, config)
-        model_provider_needs = self._get_model_provider_needs(train_nodes, component)
+        needs = self._get_needs_from_args(component, "train")
+        needs.update(self._get_model_provider_needs(train_nodes, component))
+        needs["training_data"] = last_run_node
 
         train_node_name = f"train_{component_name}"
         train_nodes[train_node_name] = SchemaNode(
-            needs={"training_data": last_run_node, **model_provider_needs},
+            needs=needs,
             uses=component,
             constructor_name="load" if self._is_finetuning else "create",
             fn="train",
@@ -412,21 +478,17 @@ class DefaultV1Recipe(Recipe):
         component_config: Dict[Text, Any],
         from_resource: Optional[Text] = None,
     ) -> Text:
-        resource_needs = {}
-        if from_resource:
-            resource_needs = {"resource": from_resource}
+        needs = self._get_needs_from_args(component_class, "process_training_data")
+        needs.update(self._get_model_provider_needs(train_nodes, component_class))
 
-        model_provider_needs = self._get_model_provider_needs(
-            train_nodes, component_class
-        )
+        if from_resource:
+            needs["resource"] = from_resource
+
+        needs["training_data"] = last_run_node
 
         node_name = f"run_{component_name}"
         train_nodes[node_name] = SchemaNode(
-            needs={
-                "training_data": last_run_node,
-                **resource_needs,
-                **model_provider_needs,
-            },
+            needs=needs,
             uses=component_class,
             constructor_name="load",
             fn="process_training_data",
@@ -480,6 +542,22 @@ class DefaultV1Recipe(Recipe):
             config={},
             is_input=True,
         )
+        train_nodes["forms_provider"] = SchemaNode(
+            needs={"domain": "domain_provider"},
+            uses=FormsProvider,
+            constructor_name="create",
+            fn="provide",
+            config={},
+            is_input=True,
+        )
+        train_nodes["responses_provider"] = SchemaNode(
+            needs={"domain": "domain_provider"},
+            uses=ResponsesProvider,
+            constructor_name="create",
+            fn="provide",
+            config={},
+            is_input=True,
+        )
         train_nodes["story_graph_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
             uses=StoryGraphProvider,
@@ -519,16 +597,13 @@ class DefaultV1Recipe(Recipe):
                 policy_with_end_to_end_support_used or requires_end_to_end_data
             )
 
+            needs = self._get_needs_from_args(component.clazz, "train")
+            if requires_end_to_end_data:
+                needs["precomputations"] = "end_to_end_features_provider"
+            # during core training we use a stripped down version of the domain
+            needs["domain"] = "domain_for_core_training_provider"
             train_nodes[f"train_{component_name}{idx}"] = SchemaNode(
-                needs={
-                    "training_trackers": "training_tracker_provider",
-                    "domain": "domain_for_core_training_provider",
-                    **(
-                        {"precomputations": "end_to_end_features_provider"}
-                        if requires_end_to_end_data
-                        else {}
-                    ),
-                },
+                needs=needs,
                 uses=component.clazz,
                 constructor_name="load" if self._is_finetuning else "create",
                 fn="train",
@@ -716,11 +791,12 @@ class DefaultV1Recipe(Recipe):
     ) -> Text:
         node_name = f"run_{component_name}"
 
-        model_provider_needs = self._get_model_provider_needs(predict_nodes, node.uses)
-
+        needs = self._get_needs_from_args(node.uses, "process")
+        needs.update(self._get_model_provider_needs(predict_nodes, node.uses))
+        needs["messages"] = last_run_node
         predict_nodes[node_name] = dataclasses.replace(
             node,
-            needs={"messages": last_run_node, **model_provider_needs},
+            needs=needs,
             fn="process",
             **DEFAULT_PREDICT_KWARGS,
         )
@@ -750,7 +826,6 @@ class DefaultV1Recipe(Recipe):
                 predict_nodes, preprocessors
             )
 
-        rule_only_data_provider_name = "rule_only_data_provider"
         rule_policy_resource = None
         policies: List[Text] = []
 
@@ -766,21 +841,19 @@ class DefaultV1Recipe(Recipe):
             if issubclass(component.clazz, RulePolicy) and not rule_policy_resource:
                 rule_policy_resource = train_node_name
 
+            needs = self._get_needs_from_args(
+                train_nodes[train_node_name].uses, "predict_action_probabilities"
+            )
+            if (
+                self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT in component.types
+                and node_with_e2e_features
+            ):
+                needs["precomputations"] = node_with_e2e_features
+
             predict_nodes[node_name] = dataclasses.replace(
                 train_nodes[train_node_name],
                 **DEFAULT_PREDICT_KWARGS,
-                needs={
-                    "domain": "domain_provider",
-                    **(
-                        {"precomputations": node_with_e2e_features}
-                        if self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT
-                        in component.types
-                        and node_with_e2e_features
-                        else {}
-                    ),
-                    "tracker": PLACEHOLDER_TRACKER,
-                    "rule_only_data": rule_only_data_provider_name,
-                },
+                needs=needs,
                 fn="predict_action_probabilities",
                 resource=Resource(train_node_name),
             )

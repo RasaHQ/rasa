@@ -26,6 +26,7 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.data import TrainingType
 import rasa.engine.validation
 from rasa.shared.importers.rasa import RasaFileImporter
+from rasa.engine.constants import PLACEHOLDER_TRACKER
 
 
 CONFIG_FOLDER = Path("data/test_config")
@@ -683,3 +684,32 @@ def test_comment_causing_invalid_autoconfig(tmp_path: Path):
     dumped = rasa.shared.utils.io.read_yaml_file(config_file)
 
     assert dumped
+
+
+def test_needs_from_args():
+    @DefaultV1Recipe.register(
+        DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER,
+        is_trainable=True,
+        model_from="Herman",
+    )
+    class MyClassGraphComponent(GraphComponent):
+        @classmethod
+        def run(
+            cls,
+            bar: Any,
+            resource: Resource,
+            foo: Any,
+            training_trackers: Any,
+            training_data: Any,
+            tracker: Any,
+        ) -> int:
+            return 42
+
+    assert DefaultV1Recipe()._get_needs_from_args(MyClassGraphComponent, "run") == {
+        "bar": "bar_provider",
+        "foo": "foo_provider",
+        "resource": "resource_provider",
+        "training_trackers": "training_tracker_provider",
+        "training_data": "nlu_training_data_provider",
+        "tracker": PLACEHOLDER_TRACKER,
+    }
