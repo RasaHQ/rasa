@@ -178,9 +178,11 @@ def action_for_name_or_text(
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
 
     extra_defaults = plugin_manager().hook.extra_default_actions(domain=domain)
-    defaults = reduce(lambda acc, actions: {**acc, **{a.name(): a for a in actions}},
-                      extra_defaults,
-                      defaults)
+    defaults = reduce(
+        lambda acc, actions: {**acc, **{a.name(): a for a in actions}},
+        extra_defaults,
+        defaults,
+    )
 
     if (
         action_name_or_text in defaults
