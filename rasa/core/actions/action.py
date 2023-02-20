@@ -177,18 +177,19 @@ def action_for_name_or_text(
 
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
 
-    extra_defaults = plugin_manager().hook.extra_default_actions(domain=domain)
-    defaults = reduce(
-        lambda acc, actions: {**acc, **{a.name(): a for a in actions}},
-        extra_defaults,
-        defaults,
-    )
-
     if (
         action_name_or_text in defaults
         and action_name_or_text not in domain.user_actions_and_forms
     ):
         return defaults[action_name_or_text]
+
+    extra_defaults = reduce(
+        lambda acc, actions: {**acc, **{a.name(): a for a in actions}},
+        plugin_manager().hook.extra_default_actions(domain=domain),
+        {},
+    )
+    if action_name_or_text in extra_defaults:
+        return extra_defaults[action_name_or_text]
 
     if action_name_or_text.startswith(UTTER_PREFIX) and is_retrieval_action(
         action_name_or_text, domain.retrieval_intents
@@ -1267,7 +1268,6 @@ class ActionExtractSlots(Action):
         validated_events = await self._execute_validation_action(
             slot_events, output_channel, nlg, tracker, domain
         )
-
         return validated_events
 
 
