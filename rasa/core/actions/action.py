@@ -183,7 +183,7 @@ def action_for_name_or_text(
     ):
         return defaults[action_name_or_text]
 
-    extra_defaults = reduce(
+    extra_defaults: Dict[str, "Action"] = reduce(
         lambda acc, actions: {**acc, **{a.name(): a for a in actions}},
         plugin_manager().hook.extra_default_actions(domain=domain),
         {},
