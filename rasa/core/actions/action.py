@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+from functools import reduce
 from typing import (
     List,
     Text,
@@ -15,6 +16,7 @@ from typing import (
 
 import aiohttp
 import rasa.core
+
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
@@ -23,6 +25,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
@@ -173,6 +176,11 @@ def action_for_name_or_text(
         domain.raise_action_not_found_exception(action_name_or_text)
 
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
+
+    extra_defaults = plugin_manager().hook.extra_default_actions(domain=domain)
+    defaults = reduce(lambda acc, actions: {**acc, **{a.name(): a for a in actions}},
+                      extra_defaults,
+                      defaults)
 
     if (
         action_name_or_text in defaults
