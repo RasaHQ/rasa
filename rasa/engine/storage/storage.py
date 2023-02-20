@@ -185,7 +185,7 @@ class ModelMetadata:
             trained_at=datetime.fromisoformat(serialized["trained_at"]),
             rasa_open_source_version=serialized["rasa_open_source_version"],
             model_id=serialized["model_id"],
-            assistant_id=serialized["assistant_id"],
+            assistant_id=serialized.get("assistant_id"),
             domain=Domain.from_dict(serialized["domain"]),
             train_schema=GraphSchema.from_dict(serialized["train_schema"]),
             predict_schema=GraphSchema.from_dict(serialized["predict_schema"]),
