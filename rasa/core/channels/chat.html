@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <style>
+    .content {
+      max-width: 30em;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 35% 65%;
+    }
+
+    tr {
+      text-align: left;
+    }
+
+    table {
+      padding-top: 1em;
+    }
+
+    .bold {
+      font-weight: bold;
+    }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/styles/default.min.css">
+  <script src="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/highlight.min.js"></script>
+</head>
+
+<body data-new-gr-c-s-check-loaded="14.1014.0" data-gr-ext-installed="" data-new-gr-c-s-loaded="14.1014.0">
+  <div class="logged-in-box auth0-box logged-in">
+    <h2>Happy chatting!</h2>
+    <div>You can include the chat on your own website using the following code:</div>
+    <div class="code"><code><pre>
+&lt;div id="rasa-chat-widget" data-websocket-url="https://example.com/"&gt;&lt;/div&gt;
+&lt;script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"&gt;&lt;/script&gt;
+    </pre></code></div>
+  </div>
+  <p class="content">Make sure to replace <code>https://example.com/</code> with the URL of your server
+    running your bot! You can find more documentation on how to use the chat widget
+    on your own page in the
+    <a href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget">rasa documentation</a>
+  </p>
+  <div class="container">
+    <div>
+      <table>
+        <thead>
+          <tr>
+            <th>Slot</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody id="slots">
+        </tbody>
+      </table>
+      <div>
+        <p class="content bold">Latest Tracker Changes:</p>
+        <div>
+          <pre class="code language-yml"><code id="tracker-update"></code></pre>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="content bold">Current Story:</p>
+      <div>
+        <pre class="code language-json"><code id="json-data">No story yet</code></pre>
+      </div>
+    </div>
+  </div>
+  <div id="rasa-chat-widget" data-websocket-url="" data-default-open=true></div>
+
+  <script>
+    let chatDiv = document.getElementById("rasa-chat-widget");
+    let websocketUrl = window.location.origin.replace("http", "ws")
+    chatDiv.setAttribute("data-websocket-url", websocketUrl);
+  </script>
+
+  <script>
+    function fetchStory() {
+      let conversationId = window.rasaChatSessionId || "";
+      fetch("/conversations/" + conversationId + "/story")
+        .catch(error => console.error(error))
+        .then(response => {
+          if (!response.ok) {
+            console.error("Error: Story not found");
+            return "No story yet";
+          }
+          return response.text();
+        })
+        .then(data => {
+          let storyBlock = document.getElementById("json-data");
+          storyBlock.textContent = data;
+          if (window.hljs) {
+            hljs.highlightElement(storyBlock);
+          }
+        });
+    }
+    function fetchSlots() {
+      let conversationId = window.rasaChatSessionId || "";
+      fetch("/conversations/" + conversationId + "/tracker?start_session=false")
+        .catch(error => console.error(error))
+        .then(response => {
+          if (!response.ok) {
+            console.error("Error: Story not found");
+            return [];
+          }
+          return response.json()
+        })
+        .then(data => {
+          let slots = data.slots;
+          var root = document.getElementById('slots');
+          root.innerHTML = '';
+          var sortedSlotNames = Object.keys(slots).sort()
+          sortedSlotNames.forEach(name => root.insertAdjacentHTML('afterbegin', `<tr><td>${name}</td><td>${slots[name]}</td></tr>`));
+
+          //loop through events and display all events that happend after the
+          // event that has type user message
+          let trackerUpdates = [];
+
+          // extract all events that happend after the latest user message
+          for (let i = data.events.length - 1; i >= 0; i--) {
+            trackerUpdates.unshift(data.events[i])
+            if (data.events[i].event === "user") {
+              break;
+            }
+          }
+          let trackerUpdate = JSON.stringify(trackerUpdates, null, 2);
+          let updateBlock = document.getElementById("tracker-update");
+          updateBlock.textContent = trackerUpdate;
+          if (window.hljs) {
+            hljs.highlightElement(updateBlock);
+          }
+        });
+    }
+
+    setInterval(fetchStory, 1000); // fetch the Story every second
+
+    setInterval(fetchStory, 1000); // fetch the Story every second
+    setInterval(fetchSlots, 1000); // fetch the Tracker every second
+  </script>
+
+  <script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
+</body>
+
+</html>

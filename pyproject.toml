@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.4.3"
+version = "3.5.0a2.dev1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -18,7 +18,7 @@ repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
 classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Topic :: Software Development :: Libraries",]
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
-include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
+include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys", "rasa/core/channels/chat.html",]
 readme = "README.md"
 license = "Apache-2.0"
 [[tool.poetry.source]]
@@ -89,7 +89,7 @@ colorhash = ">=1.0.2,<1.3.0"
 jsonschema = ">=3.2,<4.18"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2023.0"
-rasa-sdk = "~3.4.0"
+rasa-sdk = "~3.5.0a2.dev1"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = "~21.12"
