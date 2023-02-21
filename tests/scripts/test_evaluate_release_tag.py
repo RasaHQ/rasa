@@ -1,8 +1,10 @@
-from scripts.evaluate_release_tag import filter_non_alpha_releases, should_build_docs
-import pytest
-from pep440_version_utils import Version
 from typing import List
 from unittest.mock import patch
+
+import pytest
+from pep440_version_utils import Version
+
+from scripts.evaluate_release_tag import filter_non_alpha_releases, should_build_docs
 
 
 @pytest.mark.parametrize(
@@ -39,7 +41,13 @@ def test_filter_non_alpha_releases(releases: List[Version], expected: List[Versi
             True,
         ),
         (
-            [Version("3.2.5"), Version("3.3.4a1"), Version("3.3.3"), Version("3.4.3"), Version("2.2.3")],
+            [
+                Version("3.2.5"),
+                Version("3.3.4a1"),
+                Version("3.3.3"),
+                Version("3.4.3"),
+                Version("2.2.3"),
+            ],
             Version("3.2.6"),
             True,
         ),
