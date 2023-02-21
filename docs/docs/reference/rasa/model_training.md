@@ -10,6 +10,24 @@ class TrainingResult(NamedTuple)
 
 Holds information about the results of training.
 
+#### get\_unresolved\_slots
+
+```python
+def get_unresolved_slots(domain: Domain, stories: StoryGraph) -> List[Text]
+```
+
+Returns a list of unresolved slots.
+
+**Arguments**:
+
+- `domain` - The domain.
+- `stories` - The story graph.
+  
+
+**Returns**:
+
+  A list of unresolved slots.
+
 #### train
 
 ```python

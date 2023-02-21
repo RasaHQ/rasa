@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
