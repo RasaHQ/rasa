@@ -367,7 +367,7 @@ class Domain:
         merge_func_mappings: Dict[Text, Callable[..., Any]] = {
             KEY_INTENTS: rasa.shared.utils.common.merge_lists_of_dicts,
             KEY_ENTITIES: rasa.shared.utils.common.merge_lists_of_dicts,
-            KEY_ACTIONS: rasa.shared.utils.common.merge_lists,
+            KEY_ACTIONS: rasa.shared.utils.common.merge_lists_of_dicts,
             KEY_E2E_ACTIONS: rasa.shared.utils.common.merge_lists,
             KEY_FORMS: rasa.shared.utils.common.merge_dicts,
             KEY_RESPONSES: rasa.shared.utils.common.merge_dicts,
