@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Download gomplate
         run: |-
@@ -39,13 +39,13 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}

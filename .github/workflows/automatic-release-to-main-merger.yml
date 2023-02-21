@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Fetch git tags 🎨
         # see https://github.com/actions/checkout/issues/206#issuecomment-617937725

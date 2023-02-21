@@ -11,7 +11,6 @@ from aioresponses import aioresponses
 from jsonschema import ValidationError
 
 import rasa.core
-from rasa.core.constants import COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME
 from rasa.core.actions import action
 from rasa.core.actions.action import (
     ActionBack,
@@ -29,6 +28,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
+from rasa.core.constants import COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
