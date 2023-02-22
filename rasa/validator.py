@@ -5,6 +5,9 @@ from typing import Set, Text, Optional, Dict, Any, List
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
+    ASSISTANT_ID_DEFAULT_VALUE,
+    ASSISTANT_ID_KEY,
+    CONFIG_MANDATORY_KEYS,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
     UTTER_PREFIX,
@@ -47,6 +50,7 @@ class Validator:
         self.domain = domain
         self.intents = intents
         self.story_graph = story_graph
+        self.config = config or {}
 
     @classmethod
     def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
@@ -410,3 +414,24 @@ class Validator:
                 return False
 
         return True
+
+    def warn_if_config_mandatory_keys_are_not_set(self) -> None:
+        """Raises a warning if mandatory keys are not present in the config.
+
+        Additionally, raises a UserWarning if the assistant_id key is filled with the
+        default placeholder value.
+        """
+        for key in set(CONFIG_MANDATORY_KEYS):
+            if key not in self.config:
+                rasa.shared.utils.io.raise_warning(
+                    f"The config file is missing the '{key}' mandatory key."
+                )
+
+        assistant_id = self.config.get(ASSISTANT_ID_KEY)
+
+        if assistant_id is not None and assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
+            rasa.shared.utils.io.raise_warning(
+                f"The config file is missing a unique value for the "
+                f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
+                f"placeholder value with a unique identifier."
+            )

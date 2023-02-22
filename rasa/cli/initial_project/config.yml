@@ -2,6 +2,10 @@
 # https://rasa.com/docs/rasa/model-configuration/
 recipe: default.v1
 
+# The assistant project unique identifier
+# This default value must be replaced with a unique assistant name within your deployment
+assistant_id: placeholder_default
+
 # Configuration for Rasa NLU.
 # https://rasa.com/docs/rasa/nlu/components/
 language: en

@@ -832,3 +832,27 @@ def test_verify_utterances_does_not_error_when_no_utterance_template_provided(
     assert not validator.verify_utterances_in_stories(ignore_warnings=False)
     # test whether ignoring warnings actually works
     assert validator.verify_utterances_in_stories(ignore_warnings=True)
+
+
+@pytest.mark.parametrize(
+    "config_file, message",
+    [
+        (
+            "data/test_config/config_defaults.yml",
+            "The config file is missing a unique value for "
+            "the 'assistant_id' mandatory key.",
+        ),
+        (
+            "data/test_config/config_no_assistant_id.yml",
+            "The config file is missing the 'assistant_id' mandatory key.",
+        ),
+    ],
+)
+def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
+    config_file: Text, message: Text
+) -> None:
+    importer = RasaFileImporter(config_file=config_file)
+    validator = Validator.from_importer(importer)
+
+    with pytest.warns(UserWarning, match=message):
+        validator.warn_if_config_mandatory_keys_are_not_set()

@@ -46,6 +46,7 @@ from rasa.graph_components.providers.training_tracker_provider import (
 )
 import rasa.shared.constants
 from rasa.shared.exceptions import RasaException, InvalidConfigException
+from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.shared.data import TrainingType
 
 from rasa.utils.tensorflow.constants import EPOCHS
@@ -222,6 +223,7 @@ class DefaultV1Recipe(Recipe):
             train_schema=GraphSchema(train_nodes),
             predict_schema=GraphSchema(predict_nodes),
             training_type=training_type,
+            assistant_id=config.get(ASSISTANT_ID_KEY),
             language=config.get("language"),
             core_target=core_target,
             nlu_target=f"run_{RegexMessageHandler.__name__}",
@@ -1122,7 +1124,7 @@ class DefaultV1Recipe(Recipe):
                     continue
                 remove_comments_until_next_uncommented_line = False
 
-            # add an explanatory comment to auto configured sections
+            # add an explanatory comment to autoconfigured sections
             for key in auto_configured_keys:
                 if line.startswith(f"{key}:"):  # start of next auto-section
                     line = line + COMMENTS_FOR_KEYS[key]
@@ -1134,7 +1136,7 @@ class DefaultV1Recipe(Recipe):
             if not insert_section:
                 continue
 
-            # add the auto configuration (commented out)
+            # add the autoconfiguration (commented out)
             lines_with_autoconfig += autoconfig_lines[insert_section]
 
         return lines_with_autoconfig

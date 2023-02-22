@@ -1,5 +1,6 @@
 recipe: default.v1
 assistant_id: placeholder_default
 language: en
-pipeline:
-policies:
+pipeline: []
+data: null
+policies: null
