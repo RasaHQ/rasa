@@ -164,7 +164,15 @@ def test_test_nlu_cross_validation_with_autoconfig(
     config_path = str(testdir.tmpdir / "config.yml")
     nlu_path = str(testdir.tmpdir / "nlu.yml")
     shutil.copy(str(moodbot_nlu_data_path), nlu_path)
-    write_yaml({"language": "en", "pipeline": None, "policies": None}, config_path)
+    write_yaml(
+        {
+            "assistant_id": "placeholder_default",
+            "language": "en",
+            "pipeline": None,
+            "policies": None,
+        },
+        config_path,
+    )
     args = [
         shutil.which(RASA_EXE),
         "test",

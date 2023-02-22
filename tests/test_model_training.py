@@ -966,6 +966,7 @@ def test_invalid_graph_schema(
         """
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
+    assistant_id: placeholder_default
 
     pipeline:
     - name: WhitespaceTokenizer
@@ -1007,6 +1008,7 @@ def test_fingerprint_changes_if_module_changes(
         f"""
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
+    assistant_id: placeholder_default
 
     policies:
     - name: RulePolicy

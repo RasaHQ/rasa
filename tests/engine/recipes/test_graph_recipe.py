@@ -8,6 +8,7 @@ from rasa.engine.exceptions import GraphSchemaException
 from rasa.engine.graph import GraphSchema
 from rasa.engine.recipes.graph_recipe import GraphV1Recipe
 from rasa.engine.recipes.recipe import Recipe
+from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.shared.data import TrainingType
 import rasa.engine.validation
 
@@ -160,3 +161,16 @@ def test_is_finetuning_warns():
             training_type=TrainingType.BOTH,
             is_finetuning=True,
         )
+
+
+@pytest.mark.parametrize("assistant_id", ["unique_assistant", "placeholder_default"])
+def test_graph_config_for_recipe_with_assistant_id(assistant_id):
+    config = rasa.shared.utils.io.read_model_configuration(
+        "data/test_config/graph_config_short.yml"
+    )
+    config[ASSISTANT_ID_KEY] = assistant_id
+
+    recipe = Recipe.recipe_for_name(GraphV1Recipe.name)
+    model_config = recipe.graph_config_for_recipe(config, {})
+
+    assert model_config.assistant_id == assistant_id

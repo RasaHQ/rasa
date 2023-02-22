@@ -1,4 +1,5 @@
 language: fr
+assistant_id: placeholder_default
 pipeline:
 # # No configuration for the NLU pipeline was provided. The following default pipeline was used to train your model.
 # # If you'd like to customize it, uncomment and adjust the pipeline.

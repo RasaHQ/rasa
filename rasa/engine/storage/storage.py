@@ -132,6 +132,7 @@ class ModelMetadata:
     trained_at: datetime
     rasa_open_source_version: Text
     model_id: Text
+    assistant_id: Optional[Text]
     domain: Domain
     train_schema: GraphSchema
     predict_schema: GraphSchema
@@ -142,7 +143,7 @@ class ModelMetadata:
     training_type: TrainingType = TrainingType.BOTH
 
     def __post_init__(self) -> None:
-        """Raises an exception when the meta data indicates an unsupported version.
+        """Raises an exception when the metadata indicates an unsupported version.
 
         Raises:
             `UnsupportedModelException` if the `rasa_open_source_version` is lower
@@ -159,6 +160,7 @@ class ModelMetadata:
             "domain": self.domain.as_dict(),
             "trained_at": self.trained_at.isoformat(),
             "model_id": self.model_id,
+            "assistant_id": self.assistant_id,
             "rasa_open_source_version": self.rasa_open_source_version,
             "train_schema": self.train_schema.as_dict(),
             "predict_schema": self.predict_schema.as_dict(),
@@ -185,6 +187,7 @@ class ModelMetadata:
             trained_at=datetime.fromisoformat(serialized["trained_at"]),
             rasa_open_source_version=serialized["rasa_open_source_version"],
             model_id=serialized["model_id"],
+            assistant_id=serialized.get("assistant_id"),
             domain=Domain.from_dict(serialized["domain"]),
             train_schema=GraphSchema.from_dict(serialized["train_schema"]),
             predict_schema=GraphSchema.from_dict(serialized["predict_schema"]),
