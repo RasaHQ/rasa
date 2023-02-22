@@ -111,7 +111,7 @@ requests = ">=2.7,<3.0"
 six = ">=1.5"
 
 [package.extras]
-test = ["flake8 (==3.7.9)", "pylint (==1.9.3)", "mock (==2.0.0)"]
+test = ["mock (==2.0.0)", "pylint (==1.9.3)", "flake8 (==3.7.9)"]
 
 [[package]]
 name = "anyio"
@@ -837,8 +837,8 @@ requests = ">=2.18"
 uritemplate = ">=3.0.0"
 
 [package.extras]
-test = ["mock", "unittest2 (==0.5.1)", "betamax-matchers (>=0.1.0)", "pytest (>2.3.5)", "betamax (>=0.8.0)"]
-sni = ["pyasn1", "ndg-httpsclient", "pyopenssl"]
+sni = ["pyopenssl", "ndg-httpsclient", "pyasn1"]
+test = ["betamax (>=0.8.0)", "pytest (>2.3.5)", "betamax-matchers (>=0.1.0)", "unittest2 (==0.5.1)", "mock"]
 
 [[package]]
 name = "gitpython"
@@ -1097,13 +1097,13 @@ tqdm = "*"
 typing-extensions = ">=3.7.4.3"
 
 [package.extras]
+all = ["pytest", "pytest-cov", "datasets", "soundfile", "black (==22.3)", "isort (>=5.5.4)", "flake8 (>=3.8.3)", "flake8-bugbear"]
+dev = ["pytest", "pytest-cov", "datasets", "soundfile", "black (==22.3)", "isort (>=5.5.4)", "flake8 (>=3.8.3)", "flake8-bugbear"]
+fastai = ["toml", "fastai (>=2.4)", "fastcore (>=1.3.27)"]
+quality = ["black (==22.3)", "isort (>=5.5.4)", "flake8 (>=3.8.3)", "flake8-bugbear"]
+tensorflow = ["tensorflow", "pydot", "graphviz"]
+testing = ["pytest", "pytest-cov", "datasets", "soundfile"]
 torch = ["torch"]
-testing = ["soundfile", "datasets", "pytest-cov", "pytest"]
-tensorflow = ["graphviz", "pydot", "tensorflow"]
-quality = ["flake8-bugbear", "flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (==22.3)"]
-fastai = ["fastcore (>=1.3.27)", "fastai (>=2.4)", "toml"]
-dev = ["flake8-bugbear", "flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (==22.3)", "soundfile", "datasets", "pytest-cov", "pytest"]
-all = ["flake8-bugbear", "flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (==22.3)", "soundfile", "datasets", "pytest-cov", "pytest"]
 
 [[package]]
 name = "humanfriendly"
@@ -1245,9 +1245,9 @@ python-versions = ">=2.7"
 importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 
 [package.extras]
-testing = ["jsonlib", "enum34", "sqlalchemy", "sklearn", "pymongo", "pandas", "numpy", "feedparser", "ecdsa", "pytest-cov", "pytest-black-multipy", "pytest-flake8", "pytest-checkdocs (>=1.2.3)", "pytest (>=3.5,!=3.7.3)", "coverage (<5)"]
-"testing.libs" = ["yajl", "ujson", "simplejson", "demjson"]
-docs = ["rst.linker (>=1.9)", "jaraco.packaging (>=3.2)", "sphinx"]
+docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
+testing = ["coverage (<5)", "pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-black-multipy", "pytest-cov", "ecdsa", "feedparser", "numpy", "pandas", "pymongo", "sklearn", "sqlalchemy", "enum34", "jsonlib"]
+"testing.libs" = ["demjson", "simplejson", "ujson", "yajl"]
 
 [[package]]
 name = "jsonschema"
@@ -1312,9 +1312,9 @@ numpy = ">=1.9.1"
 six = ">=1.9.0"
 
 [package.extras]
-tests = ["pytest-cov", "pytest-xdist", "pytest", "keras", "tensorflow", "pillow", "pandas"]
+image = ["scipy (>=0.14)", "Pillow (>=5.2.0)"]
 pep8 = ["flake8"]
-image = ["Pillow (>=5.2.0)", "scipy (>=0.14)"]
+tests = ["pandas", "pillow", "tensorflow", "keras", "pytest", "pytest-xdist", "pytest-cov"]
 
 [[package]]
 name = "kiwisolver"
@@ -1757,7 +1757,7 @@ locket = "*"
 toolz = "*"
 
 [package.extras]
-complete = ["blosc", "pyzmq", "pandas (>=0.19.0)", "numpy (>=1.9.0)"]
+complete = ["numpy (>=1.9.0)", "pandas (>=0.19.0)", "pyzmq", "blosc"]
 
 [[package]]
 name = "pathspec"
@@ -1840,8 +1840,8 @@ python-versions = ">=3.6"
 importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
 
 [package.extras]
-testing = ["pytest-benchmark", "pytest"]
-dev = ["tox", "pre-commit"]
+dev = ["pre-commit", "tox"]
+testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "preshed"
@@ -2296,7 +2296,7 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.2.1"
+version = "3.2.3"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
@@ -2959,8 +2959,8 @@ numpy = ">=1.12.0"
 protobuf = ">=3.8.0"
 
 [package.extras]
-make_nearest_neighbour_index = ["annoy", "apache-beam"]
 make_image_classifier = ["keras-preprocessing"]
+make_nearest_neighbour_index = ["apache-beam", "annoy"]
 
 [[package]]
 name = "tensorflow-io-gcs-filesystem"
@@ -3231,10 +3231,10 @@ python-versions = ">=3.6"
 click = ">=7.1.1,<9.0.0"
 
 [package.extras]
-test = ["isort (>=5.0.6,<6.0.0)", "black (>=22.3.0,<23.0.0)", "mypy (==0.910)", "pytest-sugar (>=0.9.4,<0.10.0)", "pytest-xdist (>=1.32.0,<2.0.0)", "coverage (>=5.2,<6.0)", "pytest-cov (>=2.10.0,<3.0.0)", "pytest (>=4.4.0,<5.4.0)", "shellingham (>=1.3.0,<2.0.0)"]
-doc = ["mdx-include (>=1.4.1,<2.0.0)", "mkdocs-material (>=8.1.4,<9.0.0)", "mkdocs (>=1.1.2,<2.0.0)"]
-dev = ["pre-commit (>=2.17.0,<3.0.0)", "flake8 (>=3.8.3,<4.0.0)", "autoflake (>=1.3.1,<2.0.0)"]
-all = ["shellingham (>=1.3.0,<2.0.0)", "colorama (>=0.4.3,<0.5.0)"]
+all = ["colorama (>=0.4.3,<0.5.0)", "shellingham (>=1.3.0,<2.0.0)"]
+dev = ["autoflake (>=1.3.1,<2.0.0)", "flake8 (>=3.8.3,<4.0.0)", "pre-commit (>=2.17.0,<3.0.0)"]
+doc = ["mkdocs (>=1.1.2,<2.0.0)", "mkdocs-material (>=8.1.4,<9.0.0)", "mdx-include (>=1.4.1,<2.0.0)"]
+test = ["shellingham (>=1.3.0,<2.0.0)", "pytest (>=4.4.0,<5.4.0)", "pytest-cov (>=2.10.0,<3.0.0)", "coverage (>=5.2,<6.0)", "pytest-xdist (>=1.32.0,<2.0.0)", "pytest-sugar (>=0.9.4,<0.10.0)", "mypy (==0.910)", "black (>=22.3.0,<23.0.0)", "isort (>=5.0.6,<6.0.0)"]
 
 [[package]]
 name = "types-pkg-resources"
@@ -3384,7 +3384,7 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
-watchmedo = ["argh (>=0.24.1)", "PyYAML (>=3.10)"]
+watchmedo = ["PyYAML (>=3.10)", "argh (>=0.24.1)"]
 
 [[package]]
 name = "wcwidth"
