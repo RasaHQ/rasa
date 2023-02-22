@@ -144,3 +144,14 @@ Checks whether the domain returned by the importer is empty.
 
 An empty domain or one that uses deprecated Mapping Policy is invalid.
 
+#### warn\_if\_config\_mandatory\_keys\_are\_not\_set
+
+```python
+def warn_if_config_mandatory_keys_are_not_set() -> None
+```
+
+Raises a warning if mandatory keys are not present in the config.
+
+Additionally, raises a UserWarning if the assistant_id key is filled with the
+default placeholder value.
+

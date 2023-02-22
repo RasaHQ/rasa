@@ -160,7 +160,7 @@ Describes a trained model.
 def __post_init__() -> None
 ```
 
-Raises an exception when the meta data indicates an unsupported version.
+Raises an exception when the metadata indicates an unsupported version.
 
 **Raises**:
 

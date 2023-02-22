@@ -1,6 +1,6 @@
 recipe: default.v1
-assistant_id: test_e2e_bot
 language: en
+
 pipeline:
   - name: WhitespaceTokenizer
     intent_tokenization_flag: True
@@ -11,10 +11,13 @@ pipeline:
     analyzer: char_wb
     min_ngram: 1
     max_ngram: 4
-  - name: DIETClassifier
+  - name: "DIETClassifier"
+    entity_recognition: False
     epochs: 1
+
 policies:
-- name: TEDPolicy
-  random_seed: 42
-  epochs: 5
-- name: RulePolicy
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 1
+  - name: MemoizationPolicy
+  - name: RulePolicy
