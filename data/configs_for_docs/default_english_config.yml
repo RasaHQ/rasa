@@ -1,3 +1,4 @@
+assistant_id: default_en_bot
 language: "en"
 
 pipeline:
