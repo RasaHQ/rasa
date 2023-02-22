@@ -696,11 +696,12 @@ def test_needs_from_args():
         @classmethod
         def run(
             cls,
-            bar: Text,
+            bar: Any,
             resource: Resource,
-            foo: Text,
-            training_trackers: Text,
-            tracker: Text,
+            foo: Any,
+            training_trackers: Any,
+            training_data: Any,
+            tracker: Any,
         ) -> int:
             return 42
 
@@ -709,5 +710,6 @@ def test_needs_from_args():
         "foo": "foo_provider",
         "resource": "resource_provider",
         "training_trackers": "training_tracker_provider",
+        "training_data": "nlu_training_data_provider",
         "tracker": PLACEHOLDER_TRACKER,
     }
