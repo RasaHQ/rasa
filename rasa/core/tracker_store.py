@@ -30,6 +30,7 @@ import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.plugin import plugin_manager
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.constants import (
@@ -161,6 +162,10 @@ class TrackerStore:
         import pymongo.errors
         import sqlalchemy.exc
 
+        if isinstance(obj, EndpointConfig):
+            result = plugin_manager().hook.update_endpoint_config(obj)
+            obj = result[0] if result else obj
+
         try:
             tracker_store = _create_from_endpoint_config(obj, domain, event_broker)
             if not check_if_tracker_store_async(tracker_store):
@@ -173,6 +178,10 @@ class TrackerStore:
                     f"{_get_async_tracker_store_methods()}"
                 )
                 tracker_store = AwaitableTrackerStore(tracker_store)
+
+            result = plugin_manager().hook.get_auth_retry_wrapper(tracker_store)
+            tracker_store = result[0] if result else tracker_store
+
             return tracker_store
         except (
             BotoCoreError,

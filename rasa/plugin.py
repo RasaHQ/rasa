@@ -6,6 +6,8 @@ from typing import List, Optional, Text, Tuple
 import pluggy
 
 from rasa.cli import SubParsersAction
+from rasa.core.tracker_store import TrackerStore
+from rasa.utils.endpoints import EndpointConfig
 
 hookspec = pluggy.HookspecMarker("rasa")
 
@@ -52,3 +54,13 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
 @hookspec  # type: ignore[misc]
 def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
+
+
+@hookspec  # type: ignore[misc]
+def update_endpoint_config(endpoint_config: EndpointConfig) -> EndpointConfig:
+    """Hook specification for updating endpoint config."""
+
+
+@hookspec  # type: ignore[misc]
+def get_auth_retry_wrapper(tracker_store: TrackerStore) -> TrackerStore:
+    """Hook specification for wrapping with AuthRetryTrackerStore."""
