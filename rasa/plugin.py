@@ -1,13 +1,16 @@
 import argparse
 import functools
 import sys
-from typing import List, Optional, Text, Tuple
+from typing import List, Optional, TYPE_CHECKING, Text, Tuple
 
 import pluggy
 
 from rasa.cli import SubParsersAction
-from rasa.core.tracker_store import TrackerStore
-from rasa.utils.endpoints import EndpointConfig
+
+if TYPE_CHECKING:
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.utils.endpoints import EndpointConfig
+
 
 hookspec = pluggy.HookspecMarker("rasa")
 
