@@ -1,4 +1,5 @@
 import logging
+import warnings
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -270,7 +271,8 @@ def test_tracker_store_with_host_argument_from_string(domain: Domain):
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.HostExampleTrackerStore"
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("error")
         tracker_store = TrackerStore.create(store_config, domain)
 
     assert len(record) == 0
