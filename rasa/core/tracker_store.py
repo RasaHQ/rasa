@@ -167,17 +167,7 @@ class TrackerStore:
             obj = result[0] if result else obj
 
         try:
-            tracker_store = _create_from_endpoint_config(obj, domain, event_broker)
-            if not check_if_tracker_store_async(tracker_store):
-                rasa.shared.utils.io.raise_deprecation_warning(
-                    f"Tracker store implementation "
-                    f"{tracker_store.__class__.__name__} "
-                    f"is not asynchronous. Non-asynchronous tracker stores "
-                    f"are currently deprecated and will be removed in 4.0. "
-                    f"Please make the following methods async: "
-                    f"{_get_async_tracker_store_methods()}"
-                )
-                tracker_store = AwaitableTrackerStore(tracker_store)
+            tracker_store = create_tracker_store(obj, domain, event_broker)
 
             result = plugin_manager().hook.get_auth_retry_wrapper(
                 tracker_store=tracker_store
@@ -1372,6 +1362,28 @@ def _load_from_module_name_in_endpoint_config(
             f"Using `InMemoryTrackerStore` instead."
         )
         return InMemoryTrackerStore(domain)
+
+
+def create_tracker_store(
+    endpoint_config: Optional[EndpointConfig],
+    domain: Optional[Domain] = None,
+    event_broker: Optional[EventBroker] = None,
+) -> TrackerStore:
+    """Creates a tracker store based on the current configuration."""
+    tracker_store = _create_from_endpoint_config(endpoint_config, domain, event_broker)
+
+    if not check_if_tracker_store_async(tracker_store):
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"Tracker store implementation "
+            f"{tracker_store.__class__.__name__} "
+            f"is not asynchronous. Non-asynchronous tracker stores "
+            f"are currently deprecated and will be removed in 4.0. "
+            f"Please make the following methods async: "
+            f"{_get_async_tracker_store_methods()}"
+        )
+        tracker_store = AwaitableTrackerStore(tracker_store)
+
+    return tracker_store
 
 
 class AwaitableTrackerStore(TrackerStore):
