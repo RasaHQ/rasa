@@ -17,6 +17,12 @@ def print_blocking(string) -> None:
 
 
 def print_color(*args: Any, color: Text) -> None:
+    """Print the given arguments in the specified color.
+
+    Args:
+        *args: Any type of arguments to be printed.
+        color: Text representation of the color.
+    """
     output = rasa.shared.utils.io.wrap_with_color(*args, color=color)
     try:
         # colorama is used to fix a regression where colors can not be printed on
