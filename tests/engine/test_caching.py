@@ -205,7 +205,13 @@ def test_caching_cacheable_fails(
             fingerprint_key, output, output_fingerprint, default_model_storage
         )
 
-    assert len(caplog.records) == 1
+    caplog_error_records = list(
+        filter(
+            lambda x: "failed to send traces to Datadog Agent" not in x[2],
+            caplog.record_tuples,
+        )
+    )
+    assert len(caplog_error_records) == 1
 
     assert (
         temp_cache.get_cached_output_fingerprint(fingerprint_key) == output_fingerprint

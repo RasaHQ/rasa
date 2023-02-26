@@ -24,14 +24,13 @@ import rasa.model_training
 import rasa.core
 import rasa.core.train
 import rasa.nlu
-from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.data import TrainingType
-
-
+from rasa.shared.core.events import ActionExecuted, SlotSet
+from rasa.shared.core.training_data.structures import RuleStep, StoryGraph, StoryStep
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.utils.io
@@ -967,6 +966,7 @@ def test_invalid_graph_schema(
         """
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
+    assistant_id: placeholder_default
 
     pipeline:
     - name: WhitespaceTokenizer
@@ -979,13 +979,14 @@ def test_invalid_graph_schema(
         rasa.shared.utils.io.read_yaml(config), new_config_path
     )
 
-    with pytest.raises(GraphSchemaValidationException):
+    with pytest.raises(InvalidConfigException) as captured_exception:
         rasa.train(
             domain_path,
             str(new_config_path),
             [stories_path, nlu_data_path],
             output=str(tmp_path),
         )
+    assert "Found policy 'TEDPolicy1' in NLU pipeline." in str(captured_exception)
 
 
 def test_fingerprint_changes_if_module_changes(
@@ -1007,6 +1008,7 @@ def test_fingerprint_changes_if_module_changes(
         f"""
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
+    assistant_id: placeholder_default
 
     policies:
     - name: RulePolicy
@@ -1049,3 +1051,40 @@ def test_fingerprint_changes_if_module_changes(
 
     assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
     assert not result.dry_run_results[f"train_{module_name}.{new_class_name}1"].is_hit
+
+
+def test_check_unresolved_slots(capsys: CaptureFixture):
+    stories = StoryGraph(
+        [
+            StoryStep(
+                "greet",
+                events=[SlotSet("temp1"), ActionExecuted("temp3"), SlotSet("cuisine")],
+            ),
+            RuleStep("bye", events=[SlotSet("temp4")]),
+        ]
+    )
+    domain_path = "data/test_domains/default_with_mapping.yml"
+    domain = Domain.load(domain_path)
+    with pytest.raises(SystemExit):
+        rasa.model_training._check_unresolved_slots(domain, stories)
+
+    error_output = capsys.readouterr().out
+    assert (
+        "temp1" in error_output
+        and "temp4" in error_output
+        and "cuisine" not in error_output
+    )
+
+    stories = StoryGraph(
+        [
+            StoryStep(
+                "greet",
+                events=[
+                    SlotSet("location"),
+                    ActionExecuted("temp"),
+                    SlotSet("cuisine"),
+                ],
+            )
+        ]
+    )
+    assert rasa.model_training._check_unresolved_slots(domain, stories) is None

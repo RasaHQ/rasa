@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Fetch git tags 🎨
         # see https://github.com/actions/checkout/issues/206#issuecomment-617937725
@@ -39,8 +39,8 @@ jobs:
         id: get-branch-name
         run: |
           GITHUB_BRANCH=${GITHUB_REF/refs\/heads\//}
-          echo "::set-output name=release_branch::${GITHUB_BRANCH}"
-          echo "::set-output name=new_branch::merge-${GITHUB_BRANCH}-main-${GITHUB_SHA:0:7}"
+          echo "release_branch=${GITHUB_BRANCH}" >> $GITHUB_OUTPUT
+          echo "new_branch=merge-${GITHUB_BRANCH}-main-${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
 
       - name: Get GitHub labels 🏷
         id: get-github-labels
@@ -53,9 +53,9 @@ jobs:
 
           if [[ ${LATEST_RASA_MINOR} == ${CURRENT_RASA_MINOR} ]]
           then
-            echo "::set-output name=labels::${LABEL_TYPE},${LABEL_STATUS}"
+            echo "labels=${LABEL_TYPE},${LABEL_STATUS}" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=labels::${LABEL_TYPE}"
+            echo "labels=${LABEL_TYPE}" >> $GITHUB_OUTPUT
           fi
 
       - name: Close outdated release-merge PRs 🧹
@@ -85,7 +85,7 @@ jobs:
 
       - name: Create new branch 🐣
         if: always()
-        uses: peterjgrainger/action-create-branch@c2800a3a9edbba2218da6861fa46496cf8f3195a
+        uses: peterjgrainger/action-create-branch@08259812c8ebdbf1973747f9297e332fa078d3c1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
