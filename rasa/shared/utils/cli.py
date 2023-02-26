@@ -7,7 +7,7 @@ import rasa.shared.utils.io
 
 
 def print_blocking(string) -> None:
-    """Saves fcntl settings and restores them after print."""
+    """Save fcntl settings and restore them after print()."""
     save = fcntl.fcntl(sys.stdout.fileno(), fcntl.F_GETFL)
     new = save & ~os.O_NONBLOCK
     fcntl.fcntl(sys.stdout.fileno(), fcntl.F_SETFL, new)
