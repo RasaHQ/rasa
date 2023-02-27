@@ -57,6 +57,7 @@ Unpacks a model archive and initializes a `ModelStorage`.
 
 ```python
 @classmethod
+@abc.abstractmethod
 def metadata_from_archive(
         cls, model_archive_path: Union[Text, Path]) -> ModelMetadata
 ```
@@ -127,6 +128,7 @@ Provides the data of a persisted `Resource`.
 #### create\_model\_package
 
 ```python
+@abc.abstractmethod
 def create_model_package(model_archive_path: Union[Text, Path],
                          model_configuration: GraphModelConfiguration,
                          domain: Domain) -> ModelMetadata
