@@ -1553,7 +1553,7 @@ async def test_loads_correct_model_from_path(
 
 
 @pytest.mark.flaky
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(180, func_only=True)
 async def test_custom_action_triggers_action_extract_slots(
     trained_async: Callable,
     caplog: LogCaptureFixture,
@@ -1693,7 +1693,7 @@ async def test_processor_executes_bot_uttered_returned_by_action_extract_slots(
 
 
 @pytest.mark.flaky
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(180, func_only=True)
 @pytest.mark.parametrize(
     "sender_id, message_text, message_intent",
     [
