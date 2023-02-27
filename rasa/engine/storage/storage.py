@@ -55,6 +55,7 @@ class ModelStorage(abc.ABC):
         ...
 
     @classmethod
+    @abc.abstractmethod
     def metadata_from_archive(
         cls, model_archive_path: Union[Text, Path]
     ) -> ModelMetadata:
@@ -104,6 +105,7 @@ class ModelStorage(abc.ABC):
         """
         ...
 
+    @abc.abstractmethod
     def create_model_package(
         self,
         model_archive_path: Union[Text, Path],
