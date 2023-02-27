@@ -297,7 +297,7 @@ jobs:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
-        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
