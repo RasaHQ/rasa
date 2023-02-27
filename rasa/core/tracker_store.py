@@ -1326,7 +1326,7 @@ def _create_from_endpoint_config(
             domain=domain,
             host=endpoint_config.url,
             event_broker=event_broker,
-            table_name=endpoint_config.kwargs.get('table',None),
+            table_name=endpoint_config.kwargs.get('table_name',None),
             **endpoint_config.kwargs,
         )
     elif endpoint_config.type.lower() == "dynamo":
