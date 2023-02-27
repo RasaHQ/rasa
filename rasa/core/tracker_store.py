@@ -873,22 +873,27 @@ def validate_port(port: Any) -> Optional[int]:
 class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
     """Store which can save and retrieve trackers from an SQL database."""
 
-    Base: DeclarativeMeta = declarative_base()
+    def set_sql_event(self):
 
-    class SQLEvent(Base):
-        """Represents an event in the SQL Tracker Store."""
+        class SQLEvent(self.Base):
+            """Represents an event in the SQL Tracker Store."""
 
-        __tablename__ = "events"
+            #__tablename__ = "events"
+            __tablename__ = self.table_name if self.table_name else "events"
 
-        # `create_sequence` is needed to create a sequence for databases that
-        # don't autoincrement Integer primary keys (e.g. Oracle)
-        id = sa.Column(sa.Integer, _create_sequence(__tablename__), primary_key=True)
-        sender_id = sa.Column(sa.String(255), nullable=False, index=True)
-        type_name = sa.Column(sa.String(255), nullable=False)
-        timestamp = sa.Column(sa.Float)
-        intent_name = sa.Column(sa.String(255))
-        action_name = sa.Column(sa.String(255))
-        data = sa.Column(sa.Text)
+            # `create_sequence` is needed to create a sequence for databases that
+            # don't autoincrement Integer primary keys (e.g. Oracle)
+            id = sa.Column(sa.Integer, _create_sequence(__tablename__), primary_key=True)
+            sender_id = sa.Column(sa.String(255), nullable=False, index=True)
+            type_name = sa.Column(sa.String(255), nullable=False)
+            timestamp = sa.Column(sa.Float)
+            intent_name = sa.Column(sa.String(255))
+            action_name = sa.Column(sa.String(255))
+            data = sa.Column(sa.Text)
+            if self.bot_id:
+                bot_id = sa.Column(sa.String(255),default=self.bot_id)
+
+        return SQLEvent
 
     def __init__(
         self,
@@ -901,13 +906,18 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         password: Text = None,
         event_broker: Optional[EventBroker] = None,
         login_db: Optional[Text] = None,
+        table_name: Optional[Text] = None,
+        bot_id: Optional[Text] = None,
         query: Optional[Dict] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
         import sqlalchemy.exc
 
         port = validate_port(port)
-
+        self.table_name = table_name
+        self.bot_id = bot_id
+        self.Base: DeclarativeMeta = declarative_base()
+        self.SQLEvent = self.set_sql_event()
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
         )
@@ -1316,6 +1326,7 @@ def _create_from_endpoint_config(
             domain=domain,
             host=endpoint_config.url,
             event_broker=event_broker,
+            table_name=endpoint_config.kwargs.get('table',None),
             **endpoint_config.kwargs,
         )
     elif endpoint_config.type.lower() == "dynamo":
