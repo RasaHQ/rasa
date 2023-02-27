@@ -183,13 +183,13 @@ def action_for_name_or_text(
     ):
         return defaults[action_name_or_text]
 
-    extra_defaults: Dict[str, "Action"] = reduce(
+    space_activation_actions: Dict[str, "Action"] = reduce(
         lambda acc, actions: {**acc, **{a.name(): a for a in actions}},
-        plugin_manager().hook.extra_default_actions(domain=domain),
+        plugin_manager().hook.generate_space_activation_actions(domain=domain),
         {},
     )
-    if action_name_or_text in extra_defaults:
-        return extra_defaults[action_name_or_text]
+    if action_name_or_text in space_activation_actions:
+        return space_activation_actions[action_name_or_text]
 
     if action_name_or_text.startswith(UTTER_PREFIX) and is_retrieval_action(
         action_name_or_text, domain.retrieval_intents

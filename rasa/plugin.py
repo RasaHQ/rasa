@@ -98,5 +98,5 @@ def clean_entity_targets_for_evaluation(
 
 
 @hookspec  # type: ignore[misc]
-def extra_default_actions(domain: "Domain") -> List["Action"]:
-    """Hook specification for getting a plugin's list of default actions."""
+def generate_space_activation_actions(domain: "Domain") -> List["Action"]:
+    """Hook specification for getting a plugin's list of space activation actions."""
