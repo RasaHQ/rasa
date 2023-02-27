@@ -1,7 +1,7 @@
 import argparse
 import functools
 import sys
-from typing import List, Optional, TYPE_CHECKING, Text, Tuple
+from typing import Any, List, Optional, TYPE_CHECKING, Text, Tuple
 
 import pluggy
 
@@ -60,7 +60,19 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None:
 
 
 @hookspec  # type: ignore[misc]
-def update_endpoint_config(endpoint_config: "EndpointConfig") -> "EndpointConfig":
+def read_endpoints_and_set_env_vars(endpoints_file: Optional[Text]) -> None:
+    """Hook specification for reading endpoints and setting env vars."""
+
+
+@hookspec  # type: ignore[misc]
+def load_manager() -> Optional[Any]:
+    """Hook specification for loading endpoint manager."""
+
+
+@hookspec  # type: ignore[misc]
+def update_endpoint_config(
+    endpoint_config: "EndpointConfig", manager: Optional[Any]
+) -> "EndpointConfig":
     """Hook specification for updating endpoint config."""
 
 

@@ -163,7 +163,12 @@ class TrackerStore:
         import sqlalchemy.exc
 
         if isinstance(obj, EndpointConfig):
-            result = plugin_manager().hook.update_endpoint_config(endpoint_config=obj)
+            manager = plugin_manager().hook.load_manager()
+            manager = manager[0] if manager else None
+
+            result = plugin_manager().hook.update_endpoint_config(
+                endpoint_config=obj, manager=manager
+            )
             obj = result[0] if result else obj
 
         try:
