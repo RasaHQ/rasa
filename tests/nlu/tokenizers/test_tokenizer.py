@@ -314,6 +314,16 @@ def test_token_fingerprints_are_unique():
             ["prefix", "faq", "ask", "language"],
         ),
         ("prefix_forecast_for_LUNCH", INTENT, ["prefix_forecast_for_LUNCH"]),
+        (
+            "main+other!Forecast+for+LUNCH",
+            INTENT,
+            ["main", "other", "Forecast", "for", "LUNCH"],
+        ),
+        (
+            "main+other!faq/ask+language",
+            INTENT_RESPONSE_KEY,
+            ["main", "other", "faq", "ask", "language"],
+        ),
     ],
 )
 def test_split_intent_with_prefix(text: Text, attribute, expected_tokens: List[Text]):

@@ -185,7 +185,7 @@ class Tokenizer(GraphComponent, abc.ABC):
             words = self._tokenize_on_split_symbol(text)
 
         if prefix is not None:
-            words = [prefix] + words
+            words = self._tokenize_on_split_symbol(prefix) + words
 
         return self._convert_words_to_tokens(words, orig_text)
 
