@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+from functools import reduce
 from typing import (
     List,
     Text,
@@ -15,6 +16,7 @@ from typing import (
 
 import aiohttp
 import rasa.core
+
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
@@ -23,6 +25,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
@@ -179,6 +182,14 @@ def action_for_name_or_text(
         and action_name_or_text not in domain.user_actions_and_forms
     ):
         return defaults[action_name_or_text]
+
+    space_activation_actions: Dict[str, "Action"] = reduce(
+        lambda acc, actions: {**acc, **{a.name(): a for a in actions}},
+        plugin_manager().hook.generate_space_activation_actions(domain=domain),
+        {},
+    )
+    if action_name_or_text in space_activation_actions:
+        return space_activation_actions[action_name_or_text]
 
     if action_name_or_text.startswith(UTTER_PREFIX) and is_retrieval_action(
         action_name_or_text, domain.retrieval_intents
@@ -1257,7 +1268,6 @@ class ActionExtractSlots(Action):
         validated_events = await self._execute_validation_action(
             slot_events, output_channel, nlg, tracker, domain
         )
-
         return validated_events
 
 
