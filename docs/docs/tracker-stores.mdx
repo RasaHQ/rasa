@@ -101,6 +101,10 @@ To set up Rasa with SQL the following steps are required:
 
 * `query` (default: `None`): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect
 
+* `table` (default: `None`): Alternative table name for storing events
+
+* `bot_id` (default: `None`): Alternative table field for storing additional information about chatbot. Allows using the same table for storing events from multiple chatbots.
+
 
 
 #### Compatible Databases
