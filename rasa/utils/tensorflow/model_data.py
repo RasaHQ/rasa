@@ -543,7 +543,7 @@ class RasaModelData:
 
             if features.number_of_dimensions == 4:
                 lengths = FeatureArray(
-                    np.array(
+                    ragged_array_to_ndarray(
                         [
                             # add one more dim so that dialogue dim
                             # would be a sequence
