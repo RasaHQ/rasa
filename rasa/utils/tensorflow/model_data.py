@@ -3,6 +3,7 @@ from typing import (
     Optional,
     DefaultDict,
     Dict,
+    Iterable,
     Text,
     List,
     Tuple,
@@ -19,8 +20,20 @@ import numpy as np
 import scipy.sparse
 from sklearn.model_selection import train_test_split
 
-
 logger = logging.getLogger(__name__)
+
+
+def ragged_array_to_ndarray(ragged_array: Iterable[np.ndarray]) -> np.ndarray:
+    """Converts list (iterable) of numpy arrays to numpy array.
+
+    Try to convert as is (preserves type), if fails becuase not all numpy arrays has
+    the same shape, then creates numpy array of objects.
+    """
+    try:
+        x = np.array(ragged_array)
+    except ValueError:
+        x = np.array(ragged_array, dtype=object)
+    return x
 
 
 class FeatureArray(np.ndarray):
