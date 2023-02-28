@@ -397,7 +397,7 @@ def _feature_arrays_for_attribute(
             dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
         else:
             dense_features[key] = FeatureArray(
-                np.array([v[0] for v in values]), number_of_dimensions=3
+                np.array([v[0] for v in values], dtype=object), number_of_dimensions=3
             )
     try:
         attribute_masks = np.array(attribute_masks)
