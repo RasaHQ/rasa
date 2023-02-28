@@ -21,7 +21,8 @@ async def model_data() -> RasaModelData:
                                 np.random.rand(3, 14),
                                 np.random.rand(1, 14),
                                 np.random.rand(3, 14),
-                            ]
+                            ],
+                            dtype=object,
                         ),
                         number_of_dimensions=3,
                     ),
@@ -43,7 +44,8 @@ async def model_data() -> RasaModelData:
                                 scipy.sparse.csr_matrix(
                                     np.random.randint(5, size=(3, 10))
                                 ),
-                            ]
+                            ],
+                            dtype=object,
                         ),
                         number_of_dimensions=3,
                     ),
@@ -106,7 +108,8 @@ async def model_data() -> RasaModelData:
                                         np.random.randint(5, size=(7, 10))
                                     ),
                                 ],
-                            ]
+                            ],
+                            dtype=object,
                         ),
                         number_of_dimensions=4,
                     ),
@@ -132,7 +135,8 @@ async def model_data() -> RasaModelData:
                                     np.random.rand(1, 14),
                                     np.random.rand(7, 14),
                                 ],
-                            ]
+                            ],
+                            dtype=object,
                         ),
                         number_of_dimensions=4,
                     ),
@@ -148,7 +152,8 @@ async def model_data() -> RasaModelData:
                                 np.random.randint(2, size=(3, 10)),
                                 np.random.randint(2, size=(1, 10)),
                                 np.random.randint(2, size=(3, 10)),
-                            ]
+                            ],
+                            dtype=object,
                         ),
                         number_of_dimensions=3,
                     )
@@ -167,7 +172,8 @@ async def model_data() -> RasaModelData:
                                 np.array([[0], [1], [1]]),
                                 np.array([[0], [1]]),
                                 np.array([[0], [0], [0]]),
-                            ]
+                            ],
+                            dtype=object,
                         ),
                         number_of_dimensions=3,
                     )

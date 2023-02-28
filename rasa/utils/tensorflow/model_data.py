@@ -771,7 +771,7 @@ class RasaModelData:
                 for f in features:
                     final_data[key][sub_key].append(
                         FeatureArray(
-                            np.concatenate(np.array(f)),
+                            np.concatenate(np.array(f, dtype=object)),
                             number_of_dimensions=f[0].number_of_dimensions,
                         )
                     )
