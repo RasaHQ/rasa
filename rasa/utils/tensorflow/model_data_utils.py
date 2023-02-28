@@ -399,9 +399,7 @@ def _feature_arrays_for_attribute(
             )
         else:
             dense_features[key] = FeatureArray(
-
                 ragged_array_to_ndarray([v[0] for v in values]), number_of_dimensions=3
-
             )
     attribute_to_feature_arrays = {
         MASK: [
