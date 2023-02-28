@@ -636,7 +636,7 @@ class RasaModelData:
             # this operation can be performed only for labels
             # that contain several data points
             multi_values = [
-                f[counts > 1]
+                f[counts > 1].view(FeatureArray)
                 for attribute_data in self.data.values()
                 for features in attribute_data.values()
                 for f in features
