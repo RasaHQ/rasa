@@ -395,15 +395,18 @@ def _feature_arrays_for_attribute(
     for key, values in _dense_features.items():
         if consider_dialogue_dimension:
             dense_features[key] = FeatureArray(
-                np.array(values, dtype=object), number_of_dimensions=4
+                np.array(values), number_of_dimensions=4
             )
         else:
             dense_features[key] = FeatureArray(
-                np.array([v[0] for v in values], dtype=object), number_of_dimensions=3
+                np.array([v[0] for v in values]), number_of_dimensions=3
             )
-
+    try:
+        attribute_masks = np.array(attribute_masks)
+    except ValueError:
+        attribute_masks = np.array(attribute_masks, dtype=object)
     attribute_to_feature_arrays = {
-        MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=3)]
+        MASK: [FeatureArray(attribute_masks, number_of_dimensions=3)]
     }
 
     feature_types = set()

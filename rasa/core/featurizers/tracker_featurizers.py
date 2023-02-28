@@ -148,7 +148,7 @@ class TrackerFeaturizer:
                     [domain.index_for_action(action) for action in tracker_actions]
                 )
                 for tracker_actions in trackers_as_actions
-            ]
+            ], dtype=object
         )
 
     def _create_entity_tags(
