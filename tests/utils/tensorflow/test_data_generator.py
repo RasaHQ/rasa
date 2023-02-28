@@ -73,7 +73,8 @@ def test_data_generator_with_fixed_batch_size(model_data: RasaModelData):
                         np.random.rand(3, 10),
                         np.random.rand(7, 10),
                         np.random.rand(1, 10),
-                    ], dtype=object
+                    ],
+                    dtype=object,
                 ),
                 number_of_dimensions=3,
             ),
@@ -88,7 +89,8 @@ def test_data_generator_with_fixed_batch_size(model_data: RasaModelData):
                                 np.random.rand(1, 10),
                                 np.random.rand(5, 10),
                                 np.random.rand(7, 10),
-                            ], dtype=object
+                            ],
+                            dtype=object,
                         ),
                         np.array(
                             [
@@ -96,10 +98,12 @@ def test_data_generator_with_fixed_batch_size(model_data: RasaModelData):
                                 np.random.rand(3, 10),
                                 np.random.rand(3, 10),
                                 np.random.rand(7, 10),
-                            ], dtype=object
+                            ],
+                            dtype=object,
                         ),
                         np.array([np.random.rand(2, 10)], dtype=object),
-                    ], dtype=object
+                    ],
+                    dtype=object,
                 ),
                 number_of_dimensions=4,
             ),
@@ -138,7 +142,8 @@ def test_pad_dense_data(incoming_data: FeatureArray, expected_shape: np.ndarray)
                         scipy.sparse.csr_matrix(np.random.randint(10, size=(3, 10))),
                         scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
                         scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
-                    ], dtype=object
+                    ],
+                    dtype=object,
                 ),
                 number_of_dimensions=3,
             ),
@@ -159,7 +164,8 @@ def test_pad_dense_data(incoming_data: FeatureArray, expected_shape: np.ndarray)
                                 scipy.sparse.csr_matrix(
                                     np.random.randint(10, size=(7, 10))
                                 ),
-                            ], dtype=object
+                            ],
+                            dtype=object,
                         ),
                         np.array(
                             [
@@ -175,16 +181,19 @@ def test_pad_dense_data(incoming_data: FeatureArray, expected_shape: np.ndarray)
                                 scipy.sparse.csr_matrix(
                                     np.random.randint(10, size=(7, 10))
                                 ),
-                            ], dtype=object
+                            ],
+                            dtype=object,
                         ),
                         np.array(
                             [
                                 scipy.sparse.csr_matrix(
                                     np.random.randint(10, size=(2, 10))
                                 )
-                            ], dtype=object
+                            ],
+                            dtype=object,
                         ),
-                    ], dtype=object
+                    ],
+                    dtype=object,
                 ),
                 number_of_dimensions=4,
             ),

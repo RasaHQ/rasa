@@ -247,7 +247,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         return (
             np.array(sentence_embeddings),
-            np.array(post_processed_sequence_embeddings),
+            np.array(post_processed_sequence_embeddings, dtype=object),
         )
 
     def _tokenize_example(
@@ -448,7 +448,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             unmasked_embedding = embedding[: actual_sequence_lengths[index]]
             nonpadded_sequence_embeddings.append(unmasked_embedding)
 
-        return np.array(nonpadded_sequence_embeddings)
+        return np.array(nonpadded_sequence_embeddings, dtype=object)
 
     def _compute_batch_sequence_features(
         self, batch_attention_mask: np.ndarray, padded_token_ids: List[List[int]]
@@ -557,8 +557,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
                     ]
                 )
             reshaped_sequence_embeddings.append(embedding)
-
-        return np.array(reshaped_sequence_embeddings)
+        return np.array(reshaped_sequence_embeddings, dtype=object)
 
     def _get_model_features_for_batch(
         self,
@@ -655,7 +654,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         for embeddings, tokens in zip(sequence_embeddings, batch_tokens):
             sequence_final_embeddings.append(embeddings[: len(tokens)])
 
-        return sentence_embeddings, np.array(sequence_final_embeddings)
+        return sentence_embeddings, np.array(sequence_final_embeddings, dtype=object)
 
     def _get_docs_for_batch(
         self,

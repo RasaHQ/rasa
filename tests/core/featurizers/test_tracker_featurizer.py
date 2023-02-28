@@ -72,7 +72,8 @@ def test_convert_action_labels_to_ids(domain: Domain):
                     domain.action_names_or_texts.index("utter_goodbye"),
                 ]
             ),
-        ], dtype=object
+        ],
+        dtype=object,
     )
 
     assert expected_output.size == actual_output.size

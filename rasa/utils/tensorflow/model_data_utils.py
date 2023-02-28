@@ -394,9 +394,7 @@ def _feature_arrays_for_attribute(
 
     for key, values in _dense_features.items():
         if consider_dialogue_dimension:
-            dense_features[key] = FeatureArray(
-                np.array(values), number_of_dimensions=4
-            )
+            dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
         else:
             dense_features[key] = FeatureArray(
                 np.array([v[0] for v in values]), number_of_dimensions=3
