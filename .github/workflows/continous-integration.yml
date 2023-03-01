@@ -476,7 +476,7 @@ jobs:
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
+          JOBS: 1
           PYTHONIOENCODING: "utf-8"
           DD_ENV: test-flaky
           DD_SERVICE: rasa
