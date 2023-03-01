@@ -363,10 +363,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        #os: [ubuntu-22.04, windows-2019]
-        os: [windows-2019]
-        #python-version: [3.7, 3.8, 3.9, "3.10"]
-        python-version: [3.8, 3.9]
+        os: [ubuntu-22.04, windows-2019]
+        python-version: [3.7, 3.8, 3.9, "3.10"]
 
     steps:
       - name: Run DataDog Agent
