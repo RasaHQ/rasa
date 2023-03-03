@@ -806,3 +806,25 @@ def test_use_shared_vocab_exception(
         )
     else:
         new_cvf.train(data)
+
+
+@pytest.mark.parametrize("min_df", [1, 2])
+def test_create_independent_vocab_vectorizers_min_df(
+    min_df: int, load_featurizer: Callable[..., CountVectorsFeaturizer]
+):
+    cvf = load_featurizer()
+    result = cvf._create_independent_vocab_vectorizers(
+        {
+            "min_df": min_df,
+            "analyzer": "word",
+            "strip_accents": None,
+            "lowercase": True,
+            "stop_words": None,
+            "min_ngram": 1,
+            "max_ngram": 1,
+            "max_df": 1,
+            "max_features": None,
+        }
+    )
+    assert result["action_name"].min_df == 1
+    assert result["text"].min_df == min_df
