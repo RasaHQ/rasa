@@ -441,8 +441,8 @@ class TmpKerasModel(Model):
                         _use_cached_eval_dataset=(
                             False
                             if (
-                                hasattr(val_x, batch_size)
-                                and isinstnace(val_x.batch_size, list)
+                                hasattr(val_x, "batch_size")
+                                and isinstance(val_x.batch_size, list)
                             )
                             else True
                         ),
