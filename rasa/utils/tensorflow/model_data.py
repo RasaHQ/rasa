@@ -28,7 +28,7 @@ def ragged_array_to_ndarray(ragged_array: Iterable[np.ndarray]) -> np.ndarray:
 
     Ragged array, also known as a jagged array, irregular array is an array of
     arrays of which the member arrays can be of different lengths.
-    Try to convert as is (preserves type), if fails becuase not all numpy arrays has
+    Try to convert as is (preserves type), if it fails because not all numpy arrays have
     the same shape, then creates numpy array of objects.
     """
     try:
