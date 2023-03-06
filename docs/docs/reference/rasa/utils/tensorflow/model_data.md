@@ -2,6 +2,19 @@
 sidebar_label: rasa.utils.tensorflow.model_data
 title: rasa.utils.tensorflow.model_data
 ---
+#### ragged\_array\_to\_ndarray
+
+```python
+def ragged_array_to_ndarray(ragged_array: Iterable[np.ndarray]) -> np.ndarray
+```
+
+Converts ragged array to numpy array.
+
+Ragged array, also known as a jagged array, irregular array is an array of
+arrays of which the member arrays can be of different lengths.
+Try to convert as is (preserves type), if it fails because not all numpy arrays have
+the same shape, then creates numpy array of objects.
+
 ## FeatureArray Objects
 
 ```python
