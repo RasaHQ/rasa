@@ -65,12 +65,14 @@ def initialize_managers(endpoints_file: Optional[Text]) -> None:
 
 
 @hookspec  # type: ignore[misc]
-def update_endpoint_config(
+def update_endpoint_config(  # type: ignore[empty-body]
     endpoint_config: "EndpointConfig",
 ) -> "EndpointConfig":
     """Hook specification for updating endpoint config."""
 
 
 @hookspec  # type: ignore[misc]
-def get_auth_retry_wrapper(tracker_store: "TrackerStore") -> "TrackerStore":
+def get_auth_retry_wrapper(  # type: ignore[empty-body]
+    tracker_store: "TrackerStore",
+) -> "TrackerStore":
     """Hook specification for wrapping with AuthRetryTrackerStore."""
