@@ -2,6 +2,7 @@ from typing import Text
 
 import pytest
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.core.constants import SlotMappingType
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActiveLoop
@@ -131,3 +132,38 @@ def test_slot_mappings_invalid_type_raises():
                   entity: some_entity
             """
         )
+
+
+def test_slot_mappings_check_mapping_validity_from_intent():
+    slot_name = "mood"
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - greet
+        - goodbye
+        - mood_great
+        - mood_unhappy
+
+        slots:
+          {slot_name}:
+            type: categorical
+            values:
+             - great
+             - sad
+            mappings:
+             - type: from_intent
+               not_intent: mood_unhappy
+               value: great
+             - type: from_intent
+               intent: mood_unhappy
+               value: sad
+        """
+    )
+    mappings_for_slot = domain.as_dict().get("slots").get(slot_name).get("mappings")
+    assert SlotMapping.check_mapping_validity(
+        slot_name=slot_name,
+        mapping_type=SlotMappingType.FROM_INTENT,
+        mapping=mappings_for_slot[0],
+        domain=domain,
+    )
