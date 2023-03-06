@@ -39,7 +39,7 @@ def refine_cli(
     """Customizable hook for adding CLI commands."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec  # type: ignore[misc, empty-body]
 def get_version_info() -> Tuple[Text, Text]:
     """Hook specification for getting plugin version info."""
 

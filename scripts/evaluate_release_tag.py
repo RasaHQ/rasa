@@ -41,18 +41,11 @@ def git_plain_tag_versions(versions: List[Version]) -> List[Version]:
 
 
 def filter_non_alpha_releases(tags: List[Version]) -> List[Version]:
-    return [tag for tag in tags if tag.is_alpha is False]
-
-
-def get_existing_tag_versions() -> List[Version]:
-    stdout = check_output(["git", "tag"])
-    tags = set(stdout.decode().split("\n"))
-    versions = [Version(tag) for tag in tags if is_valid_version(tag)]
-    return versions
+    return [tag for tag in tags if not tag.is_alpha]
 
 
 def should_build_docs(tag: Version) -> bool:
-    existing_tags = get_existing_tag_versions()
+    existing_tags = git_existing_tag_versions()
     non_alpha_releases = filter_non_alpha_releases(existing_tags)
     non_alpha_releases.sort()
     latest_version = non_alpha_releases[-1]

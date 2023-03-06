@@ -43,7 +43,7 @@ jobs:
         security-checks: 'secret'
     - name: Alert on secret finding
       if: steps.trivy.outcome == 'failure'
-      uses: slackapi/slack-github-action@936158bbe252e9a6062e793ea4609642c966e302
+      uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
       with:
         payload: |
           {
@@ -85,7 +85,7 @@ jobs:
 
       - name: Set up Python 3.10 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: '3.10'
 
@@ -97,7 +97,7 @@ jobs:
 
       - name: Install poetry 🦄
         if: needs.changes.outputs.backend == 'true'
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 

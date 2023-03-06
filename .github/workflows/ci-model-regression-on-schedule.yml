@@ -61,7 +61,7 @@ jobs:
 
       - name: Setup Python
         id: python
-        uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: '3.8' 
 
@@ -110,7 +110,7 @@ jobs:
         if: env.GH_RUNNER_IMAGE_TAG == 'latest'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
+        uses: voxmedia/github-action-slack-notify-build@3665186a8c1a022b28a1dbe0954e73aa9081ea9e
         with:
           channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
           status: WARNING
@@ -122,16 +122,19 @@ jobs:
           export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
+      # Setup gcloud auth
+      - uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d
         with:
-          version: "${{ env.GCLOUD_VERSION }}"
-          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
 
-      # Get the GKE credentials so we can deploy to the cluster
-      - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}"
+      # Get the GKE credentials for the cluster
+      - name: Get GKE Cluster Credentials
+        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
+        with:
+          cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}
 
       - name: Deploy Github Runner
         run: |-
@@ -142,7 +145,7 @@ jobs:
         if: failure()
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
+        uses: voxmedia/github-action-slack-notify-build@3665186a8c1a022b28a1dbe0954e73aa9081ea9e
         with:
           channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
           status: FAILED
@@ -276,7 +279,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: '3.10'
@@ -288,7 +291,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -460,7 +463,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
-        uses: 8398a7/action-slack@a189acbf0b7ea434558662ae25a0de71df69a435 # v3
+        uses: 8398a7/action-slack@bdc6f9de222d3b7518e6cf99c4f3410f653cfde3 # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -509,7 +512,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: '3.10'
 
@@ -654,7 +657,7 @@ jobs:
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@a189acbf0b7ea434558662ae25a0de71df69a435 #v3
+        uses: 8398a7/action-slack@bdc6f9de222d3b7518e6cf99c4f3410f653cfde3 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -694,7 +697,7 @@ jobs:
 
       - name: Setup Python
         id: python
-        uses: actions/setup-python@c4e89fac7e8767b327bbad6cb4d859eda999cf08
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: '3.8' 
 
@@ -703,16 +706,19 @@ jobs:
           echo "CLOUDSDK_PYTHON=${{ steps.python.outputs.python-path }}" >> $GITHUB_OUTPUT
           export CLOUDSDK_PYTHON=${{ steps.python.outputs.python-path }}
 
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
+      # Setup gcloud auth
+      - uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d
         with:
-          version: "${{ env.GCLOUD_VERSION }}"
-          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
 
-      # Get the GKE credentials so we can deploy to the cluster
-      - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}"
+      # Get the GKE credentials for the cluster
+      - name: Get GKE Cluster Credentials
+        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
+        with:
+          cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}
 
       - name: Remove Github Runner
         run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30
