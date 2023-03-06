@@ -24,16 +24,17 @@ logger = logging.getLogger(__name__)
 
 
 def ragged_array_to_ndarray(ragged_array: Iterable[np.ndarray]) -> np.ndarray:
-    """Converts list (iterable) of numpy arrays to numpy array.
+    """Converts ragged array to numpy array.
 
+    Ragged array, also known as a jagged array, irregular array is an array of
+    arrays of which the member arrays can be of different lengths.
     Try to convert as is (preserves type), if fails becuase not all numpy arrays has
     the same shape, then creates numpy array of objects.
     """
     try:
-        x = np.array(ragged_array)
+        return np.array(ragged_array)
     except ValueError:
-        x = np.array(ragged_array, dtype=object)
-    return x
+        return np.array(ragged_array, dtype=object)
 
 
 class FeatureArray(np.ndarray):
