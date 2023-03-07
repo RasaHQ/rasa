@@ -172,6 +172,7 @@ module.exports = {
                     label: 'Architecture', // name still confusing with architecture page elsewhere
                     items: [
                         'arch-overview',
+                        'secrets-managers',
                         'tracker-stores',
                         'event-brokers',
                         'model-storage',
