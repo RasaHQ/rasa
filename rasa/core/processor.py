@@ -178,7 +178,7 @@ class MessageProcessor:
 
         tracker.update_with_events(extraction_events, self.domain)
 
-        events_as_str = "\n".join([str(e) for e in extraction_events])
+        events_as_str = ", ".join([repr(e) or str(e) for e in extraction_events])
         logger.debug(
             f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
             f"resulting in {len(extraction_events)} events: {events_as_str}"
