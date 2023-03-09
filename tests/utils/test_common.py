@@ -9,7 +9,7 @@ from typing import Any, Text, Type
 from unittest import mock
 
 import pytest
-from pytest import LogCaptureFixture, MonkeyPatch
+from pytest import LogCaptureFixture
 
 from rasa.core.agent import Agent
 
