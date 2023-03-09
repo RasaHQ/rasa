@@ -276,9 +276,11 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
             for prediction in predictions:
                 prediction.probabilities[index_of_rejected_action] = 0.0
 
-        predictions = plugin_manager().hook.filter_and_rerank_actions(
+        filtered_reranked_predictions = plugin_manager().hook.filter_and_rerank_actions(
             domain=domain, predictions=predictions, tracker=tracker
-        )[0]
+        )
+        if filtered_reranked_predictions:
+            predictions = filtered_reranked_predictions
         return DefaultPolicyPredictionEnsemble._pick_best_policy(predictions)
 
     def combine_predictions(

@@ -103,7 +103,7 @@ def generate_space_activation_actions(domain: "Domain") -> List["Action"]:
     """Hook specification for getting a plugin's list of space activation actions."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec(firstresult=True)  # type: ignore[misc]
 def filter_and_rerank_actions(
     domain: "Domain",
     predictions: List["PolicyPrediction"],
