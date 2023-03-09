@@ -435,7 +435,17 @@ class TmpKerasModel(Model):
                         workers=workers,
                         use_multiprocessing=use_multiprocessing,
                         return_dict=True,
-                        _use_cached_eval_dataset=True,
+                        # When batch_size is dynamic then the length
+                        # of dataset is changing, which triggers
+                        # _insufficient_data and validation stops (ENG-133)
+                        _use_cached_eval_dataset=(
+                            False
+                            if (
+                                hasattr(val_x, "batch_size")
+                                and isinstance(val_x.batch_size, list)
+                            )
+                            else True
+                        ),
                     )
                     val_logs = {"val_" + name: val for name, val in val_logs.items()}
                     epoch_logs.update(val_logs)
