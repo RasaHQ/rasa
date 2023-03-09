@@ -276,13 +276,9 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
             for prediction in predictions:
                 prediction.probabilities[index_of_rejected_action] = 0.0
 
-        logger.debug("*************************************")
-        logger.debug(f"{predictions}")
-        logger.debug(f"{tracker}")
-        logger.debug(f"{domain}")
         predictions = plugin_manager().hook.filter_and_rerank_actions(
-            domain=domain, predictions=predictions, config={}
-        )
+            domain=domain, predictions=predictions, tracker=tracker
+        )[0]
         return DefaultPolicyPredictionEnsemble._pick_best_policy(predictions)
 
     def combine_predictions(
@@ -314,8 +310,6 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         # Reminder: If just a single policy is given, we do *not* just return it because
         # it is expected that the final prediction contains mandatory and optional
         # events in the `events` attribute and no optional events.
-        logger.debug("HEREEEEE")
-        logger.debug("*************************************")
         winning_prediction = self._best_policy_prediction(
             predictions=predictions, domain=domain, tracker=tracker
         )

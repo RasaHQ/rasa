@@ -105,6 +105,8 @@ def generate_space_activation_actions(domain: "Domain") -> List["Action"]:
 
 @hookspec  # type: ignore[misc]
 def filter_and_rerank_actions(
-    domain: "Domain", predictions: List["PolicyPrediction"], config
-) -> List["Action"]:
-    """Hook specification for getting a plugin's list of space activation actions."""
+    domain: "Domain",
+    predictions: List["PolicyPrediction"],
+    tracker: DialogueStateTracker,
+) -> List["PolicyPrediction"]:
+    """Hook specification for getting list of filtered and reranked actions."""
