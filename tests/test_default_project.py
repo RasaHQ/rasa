@@ -13,6 +13,7 @@ import rasa.cli.scaffold
 import rasa.cli.train
 import rasa.cli.shell
 import rasa.shared.utils.io
+from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.utils.common import EXPECTED_WARNINGS
 
 
@@ -24,6 +25,8 @@ def test_default_project_has_no_warnings(
     rasa.cli.scaffold.create_initial_project(".")
 
     config = copy.deepcopy(default_config)
+    # change default assistant id value to prevent config validation errors
+    config[ASSISTANT_ID_KEY] = "some_unique_assistant_name"
     for _, items in config.items():
         for item in items:
             if "epochs" in item:
@@ -32,17 +35,17 @@ def test_default_project_has_no_warnings(
 
     rasa.shared.utils.io.write_yaml(config, "config.yml")
 
-    with pytest.warns(None) as warning_recorder:
+    with pytest.warns() as warning_recorder:
         rasa.cli.data.validate_files(parser.parse_args(["data", "validate"]))
         rasa.cli.train.run_training(parser.parse_args(["train"]))
 
     # pytest.warns would override any warning filters that we could set
     assert not [
-        warning
+        warning.message
         for warning in warning_recorder.list
         if not any(
             type(warning.message) == warning_type
-            and re.match(warning_message, str(warning.message))
+            and re.search(warning_message, str(warning.message))
             for warning_type, warning_message in EXPECTED_WARNINGS
         )
     ]

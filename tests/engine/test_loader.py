@@ -13,6 +13,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.shared.core.domain import Domain
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -70,8 +71,11 @@ def test_loader_loads_graph_runner(
     output_filename = tmp_path / "model.tar.gz"
 
     importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[], domain_path=str(domain_path)
+        training_data_paths=[],
+        domain_path=str(domain_path),
+        config_path="data/test_config/config_unique_assistant_id.yml",
     )
+    config = importer.get_config()
 
     trained_at = datetime.utcnow()
     with freezegun.freeze_time(trained_at):
@@ -80,6 +84,7 @@ def test_loader_loads_graph_runner(
                 train_schema=train_schema,
                 predict_schema=predict_schema,
                 training_type=TrainingType.BOTH,
+                assistant_id=config.get(ASSISTANT_ID_KEY),
                 language=None,
                 core_target=None,
                 nlu_target=None,
@@ -105,6 +110,7 @@ def test_loader_loads_graph_runner(
     assert model_metadata.predict_schema == predict_schema
     assert model_metadata.train_schema == train_schema
     assert model_metadata.model_id
+    assert model_metadata.assistant_id == config.get(ASSISTANT_ID_KEY)
     assert model_metadata.domain.as_dict() == Domain.from_path(domain_path).as_dict()
     assert model_metadata.rasa_open_source_version == rasa.__version__
     assert model_metadata.trained_at == trained_at

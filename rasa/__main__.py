@@ -99,8 +99,9 @@ def main() -> None:
     cmdline_arguments = arg_parser.parse_args()
 
     log_level = getattr(cmdline_arguments, "loglevel", None)
+    logging_config_file = getattr(cmdline_arguments, "logging_config_file", None)
     configure_logging_and_warnings(
-        log_level, warn_only_once=True, filter_repeated_logs=True
+        log_level, logging_config_file, warn_only_once=True, filter_repeated_logs=True
     )
 
     tf_env.setup_tf_environment()

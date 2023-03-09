@@ -25,7 +25,7 @@ from typing import (
 )
 
 import rasa.shared.utils.io
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import ASSISTANT_ID_KEY, DEFAULT_SENDER_ID
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -222,6 +222,7 @@ class DialogueStateTracker:
 
         # Optional model_id to add to all events.
         self.model_id: Optional[Text] = None
+        self.assistant_id: Optional[Text] = None
 
     ###
     # Public tracker interface
@@ -651,6 +652,9 @@ class DialogueStateTracker:
 
         if self.model_id and METADATA_MODEL_ID not in event.metadata:
             event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
+
+        if self.assistant_id and ASSISTANT_ID_KEY not in event.metadata:
+            event.metadata = {**event.metadata, ASSISTANT_ID_KEY: self.assistant_id}
 
         self.events.append(event)
         event.apply_to(self)

@@ -36,6 +36,95 @@ def test_validate_yaml_schema(file, schema):
 @pytest.mark.parametrize(
     "file, schema",
     [
+        ("data/test_domains/valid_actions.yml", DOMAIN_SCHEMA_FILE),
+    ],
+)
+def test_validate_yaml_schema_actions(file: Text, schema: Text):
+    # should raise no exception
+    validation_utils.validate_yaml_schema(rasa.shared.utils.io.read_file(file), schema)
+
+
+@pytest.mark.parametrize(
+    "content, schema",
+    [
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - utter_default: {send_domain: 1}
+        """,
+            DOMAIN_SCHEMA_FILE,
+        ),
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - utter_default: {send_domain: 0}
+        """,
+            DOMAIN_SCHEMA_FILE,
+        ),
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - utter_default: {send_domain: Ttrue}
+        """,
+            DOMAIN_SCHEMA_FILE,
+        ),
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - utter_default: {send_domain: ""}
+        """,
+            DOMAIN_SCHEMA_FILE,
+        ),
+    ],
+)
+def test_invalid_send_domain_value_in_actions(content: Text, schema: Text):
+    with pytest.raises(validation_utils.YamlValidationException):
+        validation_utils.validate_yaml_schema(content, schema)
+
+
+@pytest.mark.parametrize(
+    "file, schema",
+    [
         ("data/test_domains/invalid_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_domains/wrong_response_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_domains/wrong_custom_response_format.yml", DOMAIN_SCHEMA_FILE),

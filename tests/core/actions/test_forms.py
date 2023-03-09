@@ -1,8 +1,10 @@
+import logging
 import textwrap
 from typing import Dict, Text, List, Any, Union
 from unittest.mock import Mock
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
@@ -1879,3 +1881,65 @@ async def test_extract_slots_with_mapping_conditions_during_form_activation():
     )
 
     assert form_events == expected_events
+
+
+async def test_form_validation_happens_once(caplog: LogCaptureFixture):
+    """
+    Tests if form validation happens once instead of twice.
+    Solves the bug presented in https://rasahq.atlassian.net/browse/ENG-117
+    """
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])
+    form_name = "my_form"
+    action_server = EndpointConfig(ACTION_SERVER_URL)
+    action = FormAction(form_name, action_server)
+    slot_name = "num_people"
+    domain = textwrap.dedent(
+        f"""
+    slots:
+      {slot_name}:
+        type: float
+        mappings:
+        - type: from_entity
+          entity: number
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+        - {slot_name}
+    responses:
+      utter_ask_num_people:
+      - text: "How many people?"
+    actions:
+      - validate_{form_name}
+    """
+    )
+    domain = Domain.from_yaml(domain)
+    form_validation_events = [
+        {
+            "event": "slot",
+            "timestamp": None,
+            "name": "num_people",
+            "value": 5,
+        }
+    ]
+    with aioresponses() as mocked, caplog.at_level(logging.DEBUG):
+        mocked.post(
+            ACTION_SERVER_URL,
+            payload={"events": form_validation_events},
+        )
+        _ = await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert (
+            sum(
+                [
+                    1
+                    for message in caplog.messages
+                    if f"Calling action endpoint to run action 'validate_{form_name}'."
+                    in message
+                ]
+            )
+            == 1
+        )

@@ -178,6 +178,8 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
             and _validate_story_structure(validator, args)
         )
 
+    validator.warn_if_config_mandatory_keys_are_not_set()
+
     telemetry.track_validate_files(all_good)
     if not all_good:
         rasa.shared.utils.cli.print_error_and_exit(
