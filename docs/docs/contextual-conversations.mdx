@@ -100,7 +100,7 @@ always have a higher [policy priority](./policies.mdx#policy-priority) and will 
 
 The [TEDPolicy](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/) is made to handle
 unexpected user behaviors. For example,
-in the conversation below (extracted from a conversation on [Rasa Enterprise](https://rasa.com/docs/rasa-enterprise/user-guide/review-conversations/)):
+in the conversation below (extracted from a conversation on [Rasa X/Enterprise](https://rasa.com/docs/rasa-enterprise/user-guide/review-conversations/)):
 
 ```yaml-rasa
 stories:
@@ -131,13 +131,13 @@ stories:
 ```
 
 Here we can see the user has completed a few chitchat tasks first, and then ultimately
-asks how they can get started with Rasa Enterprise. The TEDPolicy correctly predicts that
-Rasa Enterprise should be explained to the user, and then also takes them down the getting started
+asks how they can get started with Rasa X/Enterprise. The TEDPolicy correctly predicts that
+Rasa X/Enterprise should be explained to the user, and then also takes them down the getting started
 path, without asking all the qualifying questions first.
 
 Since the machine-learning policy has generalized to this situation, you should add this story
 to your training data to continuously improve your bot and help the model generalize
-better in future. [Rasa Enterprise](https://rasa.com/docs/rasa-enterprise/) is a tool that can help
+better in future. [Rasa X/Enterprise](https://rasa.com/docs/rasa-enterprise/) is a tool that can help
 you improve your bot and make it more contextual.
 
 

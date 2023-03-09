@@ -62,7 +62,8 @@ def test_filter_non_alpha_releases(releases: List[Version], expected: List[Versi
         ),
     ],
 )
-@patch("scripts.evaluate_release_tag.get_existing_tag_versions")
+
+@patch("scripts.evaluate_release_tag.git_existing_tag_versions")
 def test_should_build_docs(
     mock_get_existing_tag_versions,
     releases: List[Version],

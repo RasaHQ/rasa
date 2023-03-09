@@ -632,7 +632,24 @@ class FormAction(LoopAction):
         events_so_far: List[Event],
     ) -> List[Event]:
         """Executes form loop after activation."""
-        events = await self._validate_if_required(tracker, domain, output_channel, nlg)
+        events: List[Event] = []
+        """
+        Call to validation is not required when the slots are already validated
+        at the time of form activation.
+        events_so_far:
+            - empty when slots have not been validated.
+            - has SlotSet objects when already validated.
+            - ActiveLoop object when events have not been validated.
+        Hence the events are filtered to remove ActiveLoop object that was added
+        at the time of form activation.
+        """
+        filtered_events = [
+            event for event in events_so_far if not isinstance(event, ActiveLoop)
+        ]
+        if not filtered_events:
+            events = await self._validate_if_required(
+                tracker, domain, output_channel, nlg
+            )
 
         if not self._user_rejected_manually(events):
             events += await self.request_next_slot(
@@ -658,25 +675,22 @@ class FormAction(LoopAction):
         # We explicitly check only the last occurrences for each possible termination
         # event instead of doing `return event in events_so_far` to make it possible
         # to override termination events which were returned earlier.
-        return (
-            next(
-                (
-                    event
-                    for event in reversed(events_so_far)
-                    if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
-                ),
-                None,
-            )
-            == SlotSet(REQUESTED_SLOT, None)
-            or next(
-                (
-                    event
-                    for event in reversed(events_so_far)
-                    if isinstance(event, ActiveLoop)
-                ),
-                None,
-            )
-            == ActiveLoop(None)
+        return next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
+            ),
+            None,
+        ) == SlotSet(REQUESTED_SLOT, None) or next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, ActiveLoop)
+            ),
+            None,
+        ) == ActiveLoop(
+            None
         )
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:

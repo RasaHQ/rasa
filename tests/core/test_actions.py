@@ -29,7 +29,6 @@ from rasa.core.actions.action import (
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.constants import COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME
-
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
@@ -2249,11 +2248,15 @@ async def test_action_extract_slots_disallowed_events(caplog: LogCaptureFixture)
                 domain,
             )
 
+        caplog_info_records = list(
+            filter(lambda x: x[1] == logging.INFO, caplog.record_tuples)
+        )
+
         assert all(
             [
                 "Running custom action 'action_test' has resulted "
-                "in an event of type 'reset_slots'." in message
-                for message in caplog.messages
+                "in an event of type 'reset_slots'." in record[2]
+                for record in caplog_info_records
             ]
         )
         assert slot_events == [SlotSet("custom_slot_one", 1)]
@@ -2618,7 +2621,10 @@ async def test_action_extract_slots_does_not_raise_disallowed_warning_for_slot_e
                 domain,
             )
 
-        assert len(caplog.messages) == 0
+        caplog_info_records = list(
+            filter(lambda x: x[1] == logging.INFO, caplog.record_tuples)
+        )
+        assert len(caplog_info_records) == 0
 
         assert events == [
             SlotSet("custom_slot_b", "test_B"),

@@ -90,6 +90,21 @@ class SpacyNLP(GraphComponent):
 
         try:
             language = spacy.load(spacy_model_name, disable=["parser"])
+            spacy_runtime_version = spacy.about.__version__
+            spacy_model_info = spacy.info(spacy_model_name)
+            spacy_model_version_req = (
+                spacy_model_info.get("spacy_version")
+                if isinstance(spacy_model_info, dict)
+                else ""
+            )
+            if not spacy.util.is_compatible_version(
+                spacy_runtime_version, spacy_model_version_req
+            ):
+                raise InvalidModelError(
+                    f"The specified model - {spacy_model_name} requires a spaCy "
+                    f"runtime version {spacy_model_version_req} and is not compatible "
+                    f"with the current spaCy runtime version {spacy_runtime_version}"
+                )
             return SpacyModel(model=language, model_name=spacy_model_name)
         except OSError:
             raise InvalidModelError(
@@ -99,8 +114,8 @@ class SpacyNLP(GraphComponent):
                 f"More information can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Lists required dependencies (see parent class for full docstring)."""
         return ["spacy"]
 
@@ -120,7 +135,7 @@ class SpacyNLP(GraphComponent):
         model = cls.load_model(spacy_model_name)
 
         cls.ensure_proper_language_model(model.model)
-        return cls(model, config)
+        return cls(model, {**cls.get_default_config(), **config})
 
     @staticmethod
     def ensure_proper_language_model(nlp: Optional[Language]) -> None:

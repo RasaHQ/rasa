@@ -4,9 +4,9 @@ sidebar_label: Actions
 title: Actions
 ---
 
-When a Rasa Open Source assistant calls a custom action, it sends a request to the action server. 
-Rasa Open Source only knows about whatever events and responses come back in the request response;
-it's up to the action server to call the correct code based on the action name that Rasa Open Source provides.
+When a Rasa assistant calls a custom action, it sends a request to the action server. 
+Rasa only knows about whatever events and responses come back in the request response;
+it's up to the action server to call the correct code based on the action name that Rasa provides.
 
 To better understand what happens when Rasa calls a custom action, consider 
 the following example:
@@ -18,6 +18,18 @@ The action `action_tell_weather` will use an API to get the weather forecast ,
 using a default location if the user doesn't specify one. 
 The action will set the `temperature` to the maximum temperature of the weather forecast.
 The message returned will differ according to the channel they are using. 
+
+
+:::info Compressed body in HTTP requests
+Rasa has the capability to compress the HTTP request body for custom actions.
+By default, this option is off to keep backward compatibility with older versions of
+custom action servers which did not receive the compressed body in the HTTP request for custom actions.
+To enable this option, set environment variable COMPRESS_ACTION_SERVER_REQUEST to `True`.
+
+Rasa SDK versions `3.2.2`, `3.3.1`, `3.4.1` and upwards,
+support both compressed and non-compressed body in the HTTP request for
+running custom action server. There is no additional setup required.
+:::
 
 ## Custom Action Input
 
@@ -146,6 +158,7 @@ Your action server receives the following payload from the Rasa server:
 }
 ```
 
+
 ### `next_action`
 
 The `next_action` field tells your action server what action to run. 
@@ -190,9 +203,12 @@ It is unlikely that a custom action
 will refer to its contents, as they are static and do not indicate the state
 of the conversation. 
 
+You can control if an action should receive a domain or not.
+Visit [selective-domain](../domain.mdx#select-which-actions-should-receive-domain)
+
 ### `version`
 
-This is the version of the Rasa Open Source server. A custom action
+This is the version of the Rasa server. A custom action
 is also unlikely to refer to this, although you might use it in a 
 verification step if your action server
 is only compatible with certain Rasa versions.
@@ -230,7 +246,7 @@ events, the order won't matter, but with other event types it can.
 ### `responses`
 
 A response can be of any of the response types described in the
-[ documentation on rich responses](../responses.mdx#rich-responses).
+[documentation on rich responses](../responses.mdx#rich-responses).
 See the response sample of the [API spec](/pages/action-server-api) for the expected formats. 
 
 In the example case, you want to send the user a message with the weather forecast. 

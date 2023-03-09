@@ -2,27 +2,27 @@ name: Docs Tests
 on:
   push:
     branches:
-    - main
+      - main
     tags:
-    - '*'
+      - "*"
   pull_request:
     types: [opened, synchronize, labeled]
 
 concurrency:
-  group: ci-docs-tests-${{ github.ref }}  # branch or tag name
+  group: ci-docs-tests-${{ github.ref }} # branch or tag name
   cancel-in-progress: true
 
 env:
-  DEFAULT_PYTHON_VERSION: '3.9'
+  DEFAULT_PYTHON_VERSION: "3.10"
 
 jobs:
   changes:
     name: Check for file changes
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       docs: ${{ steps.filter.outputs.docs }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         id: filter
         with:
@@ -31,94 +31,23 @@ jobs:
 
   test_documentation:
     name: Test Documentation
-    runs-on: ubuntu-20.04
-    needs: [ changes ]
-    if: needs.changes.outputs.docs == 'true'
-
-    steps:
-    - name: Checkout git repository 🕝
-      uses: actions/checkout@v3
-
-    - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-      uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
-      with:
-        python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
-
-    - name: Set up Node 12.x 🦙
-      uses: actions/setup-node@v2.3.0
-      with:
-        node-version: '12.x'
-
-    - name: Read Poetry Version 🔢
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
-
-    - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
-
-    - name: Load Poetry Cached Libraries ⬇
-      id: cache-poetry
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
-
-    - name: Clear Poetry cache
-      if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-docs-tests')
-      run: rm -r .venv
-
-    - name: Create virtual environment
-      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-docs-tests'))
-      run: python -m venv create .venv
-
-    - name: Set up virtual environment
-      if: needs.changes.outputs.docs == 'true'
-      run: poetry config virtualenvs.in-project true
-
-    - name: Load Yarn Cached Packages ⬇
-      uses: actions/cache@v3
-      with:
-        path: docs/node_modules
-        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-        restore-keys: ${{ runner.os }}-yarn-12.x
-
-    - name: Install Dependencies 📦
-      run: |
-        sudo apt-get -y install libpq-dev
-        make install-full install-docs
-
-    - name: Run Swagger 🕵️‍♀️
-      run: |
-        npm install -g swagger-cli
-        swagger-cli validate docs/static/spec/action-server.yml
-        swagger-cli validate docs/static/spec/rasa.yml
-
-    - name: Test Docs 🕸
-      run: make test-docs
-
-  documentation_lint:
-    name: Documentation Linting Checks
-    runs-on: ubuntu-20.04
-    needs: [ changes ]
+    runs-on: ubuntu-22.04
+    needs: [changes]
     if: needs.changes.outputs.docs == 'true'
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6  # v3.0
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@v2.3.0
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
         with:
-          node-version: '12.x'
+          node-version: "12.x"
 
       - name: Read Poetry Version 🔢
         run: |
@@ -126,13 +55,13 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -151,7 +80,78 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Load Yarn Cached Packages ⬇
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        with:
+          path: docs/node_modules
+          key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-12.x
+
+      - name: Install Dependencies 📦
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full install-docs
+
+      - name: Run Swagger 🕵️‍♀️
+        run: |
+          npm install -g swagger-cli
+          swagger-cli validate docs/static/spec/action-server.yml
+          swagger-cli validate docs/static/spec/rasa.yml
+
+      - name: Test Docs 🕸
+        run: make test-docs
+
+  documentation_lint:
+    name: Documentation Linting Checks
+    runs-on: ubuntu-22.04
+    needs: [changes]
+    if: needs.changes.outputs.docs == 'true'
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Set up Node 12.x 🦙
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
+        with:
+          node-version: "12.x"
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-docs-tests')
+        run: rm -r .venv
+
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-docs-tests'))
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        if: needs.changes.outputs.docs == 'true'
+        run: poetry config virtualenvs.in-project true
+
+      - name: Load Yarn Cached Packages ⬇
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: docs/node_modules
           key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}

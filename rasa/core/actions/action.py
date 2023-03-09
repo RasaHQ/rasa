@@ -15,10 +15,11 @@ from typing import (
 
 import aiohttp
 import rasa.core
+from rasa.core.actions.constants import DEFAULT_SELECTIVE_DOMAIN, SELECTIVE_DOMAIN
 from rasa.core.constants import (
+    DEFAULT_REQUEST_TIMEOUT,
     COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
     DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
-    DEFAULT_REQUEST_TIMEOUT,
 )
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
@@ -410,7 +411,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return None
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[literal-required]
         ]
 
         if (
@@ -443,7 +444,7 @@ class ActionRetrieveResponse(ActionBotResponse):
             return []
 
         response_selector_properties = latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[misc]
+            RESPONSE_SELECTOR_PROPERTY_NAME  # type: ignore[literal-required]
         ]
 
         if (
@@ -641,27 +642,44 @@ class RemoteAction(Action):
         self.action_endpoint = action_endpoint
 
     def _action_call_format(
-        self, tracker: "DialogueStateTracker", domain: "Domain"
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
     ) -> Dict[Text, Any]:
         """Create the request json send to the action server."""
         from rasa.shared.core.trackers import EventVerbosity
 
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 
-        return {
+        result = {
             "next_action": self._name,
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
-            "domain": domain.as_dict(),
             "version": rasa.__version__,
         }
+
+        if (
+            not self._is_selective_domain_enabled()
+            or domain.does_custom_action_explicitly_need_domain(self.name())
+        ):
+            result["domain"] = domain.as_dict()
+
+        return result
+
+    def _is_selective_domain_enabled(self) -> bool:
+        if self.action_endpoint is None:
+            return False
+        return bool(
+            self.action_endpoint.kwargs.get(SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN)
+        )
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
         """Expected response schema for an Action endpoint.
 
         Used for validation of the response returned from the
-        Action endpoint."""
+        Action endpoint.
+        """
         schema = {
             "type": "object",
             "properties": {
@@ -748,6 +766,7 @@ class RemoteAction(Action):
                 COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
                 DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
             )
+
             response: Any = await self.action_endpoint.request(
                 json=json_body,
                 method="post",
@@ -973,7 +992,7 @@ class ActionDefaultAskAffirmation(Action):
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[misc]
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[literal-required] # noqa: E501
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 

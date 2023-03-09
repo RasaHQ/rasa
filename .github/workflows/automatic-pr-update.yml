@@ -7,11 +7,11 @@ jobs:
   # thats's all. single step is needed - if PR is mergeable according to
   # branch protection rules it will be merged automatically
   mergepal:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'RasaHQ/rasa'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       - uses: rasahq/update-pr-branch@2c1851b449b09173288465f259bc9ec599b2e51f
         with:
           token: ${{ secrets.UPDATE_BRANCH_PAT }}

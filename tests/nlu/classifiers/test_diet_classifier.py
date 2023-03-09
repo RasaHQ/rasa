@@ -12,6 +12,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.features import Features
+from rasa.nlu.constants import BILOU_ENTITIES
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -536,6 +537,7 @@ async def test_train_tensorboard_logging(
     assert len(all_files) == 2
 
 
+@pytest.mark.flaky
 async def test_train_model_checkpointing(
     default_model_storage: ModelStorage,
     default_diet_resource: Resource,
@@ -895,3 +897,25 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
         train_load_and_process_diet(
             finetune_classifier, pipeline=pipeline, training_data=iter2_path
         )
+
+
+@pytest.mark.timeout(120, func_only=True)
+async def test_no_bilou_when_entity_recognition_off(
+    create_diet: Callable[..., DIETClassifier],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+):
+    """test diet doesn't produce BILOU tags when ENTITIY_RECOGNITION false."""
+
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    diet = create_diet({ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1})
+
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, training_data="data/test/demo-rasa-composite-entities.yml"
+    )
+
+    diet.train(training_data=training_data)
+
+    assert all(msg.get(BILOU_ENTITIES) is None for msg in training_data.nlu_examples)

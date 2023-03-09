@@ -25,7 +25,7 @@ from typing import (
 )
 
 import rasa.shared.utils.io
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import ASSISTANT_ID_KEY, DEFAULT_SENDER_ID
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -222,6 +222,7 @@ class DialogueStateTracker:
 
         # Optional model_id to add to all events.
         self.model_id: Optional[Text] = None
+        self.assistant_id: Optional[Text] = None
 
     ###
     # Public tracker interface
@@ -271,7 +272,7 @@ class DialogueStateTracker:
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[misc]  # noqa: E501
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[literal-required]  # noqa: E501
 
         return parse_data_with_nlu_state
 
@@ -651,6 +652,9 @@ class DialogueStateTracker:
 
         if self.model_id and METADATA_MODEL_ID not in event.metadata:
             event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
+
+        if self.assistant_id and ASSISTANT_ID_KEY not in event.metadata:
+            event.metadata = {**event.metadata, ASSISTANT_ID_KEY: self.assistant_id}
 
         self.events.append(event)
         event.apply_to(self)

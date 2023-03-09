@@ -1,11 +1,13 @@
 import copy
 import json
+import re
 import textwrap
 from pathlib import Path
 import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
+from pytest import WarningsRecorder
 
 from rasa.shared.exceptions import YamlSyntaxException, YamlException
 import rasa.shared.utils.io
@@ -45,6 +47,7 @@ from rasa.shared.core.domain import (
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.utils.validation import YamlValidationException
+from rasa.utils.common import EXPECTED_WARNINGS
 
 
 def test_slots_states_before_user_utterance(domain: Domain):
@@ -921,7 +924,7 @@ def test_domain_from_multiple_files():
 
     assert expected_intents == domain.intents
     assert expected_entities == sorted(domain.entities)
-    assert expected_actions == domain.user_actions
+    assert sorted(expected_actions) == sorted(domain.user_actions)
     assert expected_responses == domain.responses
     assert expected_forms == domain.forms
     assert domain.session_config.session_expiration_time == 360
@@ -1834,13 +1837,12 @@ def test_domain_invalid_yml_in_folder():
         Domain.from_directory("data/test_domains/test_domain_from_directory/")
 
 
-def test_invalid_domain_dir_with_duplicates():
+def test_invalid_domain_dir_with_duplicates(recwarn: WarningsRecorder):
     """
     Raises InvalidDomain if a domain is loaded from a directory with duplicated slots,
     responses and intents in domain files.
     """
-    with pytest.warns(UserWarning) as warning:
-        Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
+    Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
 
     error_message = (
         "The following duplicated intents have been found across multiple domain files: greet \n"
@@ -1848,7 +1850,14 @@ def test_invalid_domain_dir_with_duplicates():
         "utter_did_that_help, utter_greet \n"
         "The following duplicated slots have been found across multiple domain files: mood"
     )
-    assert error_message == warning[2].message.args[0]
+    for warning in recwarn.list:
+        # filter expected warnings
+        if not any(
+            type(warning.message) == warning_type
+            and re.search(warning_message, str(warning.message))
+            for warning_type, warning_message in EXPECTED_WARNINGS
+        ):
+            assert error_message == warning.message.args[0]
 
 
 def test_domain_fingerprint_consistency_across_runs():
@@ -2057,4 +2066,174 @@ def test_merge_domain_with_separate_session_config():
     assert (
         domain.session_config.session_expiration_time
         == expected_session_expiration_time
+    )
+
+
+@pytest.mark.parametrize(
+    "actions, expected_result",
+    [
+        (
+            [
+                {"action_hello_world": {"send_domain": False}},
+                {"action_say_something": {"send_domain": True}},
+                {"action_calculate": {"send_domain": True}},
+                "action_no_domain",
+            ],
+            ["action_say_something", "action_calculate"],
+        ),
+        (
+            [
+                {"action_hello_world": {"send_domain": False}},
+                {"action_say_something": {"send_domain": False}},
+                {"action_calculate": {"send_domain": False}},
+            ],
+            [],
+        ),
+        (
+            [
+                {"action_hello_world": {"send_domain": True}},
+                {"action_say_something": {"send_domain": True}},
+                {"action_calculate": {"send_domain": True}},
+            ],
+            ["action_hello_world", "action_say_something", "action_calculate"],
+        ),
+        ([], []),
+        (
+            ["action_say_something", "action_calculate"],
+            [],
+        ),
+    ],
+)
+def test_collect_actions_which_explicitly_need_domain(
+    actions: List[Union[Dict[Text, Any], str]], expected_result: List[str]
+):
+    result = Domain._collect_actions_which_explicitly_need_domain(actions)
+
+    # assert that two unordered lists have same elements
+    assert sorted(result) == sorted(expected_result)
+
+
+@pytest.mark.parametrize(
+    "actions, expected_result",
+    [
+        (
+            [
+                {"action_hello_world": {"send_domain": False}},
+                {"action_say_something": {"send_domain": True}},
+                {"action_calculate": {"send_domain": True}},
+                "action_no_domain",
+            ],
+            [
+                "action_hello_world",
+                "action_say_something",
+                "action_calculate",
+                "action_no_domain",
+            ],
+        )
+    ],
+)
+def test_collect_actions(
+    actions: List[Union[Dict[Text, Any], str]], expected_result: List[str]
+):
+    result = Domain._collect_action_names(actions)
+
+    # assert that two unordered lists have same elements
+    assert sorted(result) == sorted(expected_result)
+
+
+@pytest.mark.parametrize(
+    "content, expected_user_actions, expected_actions_which_explicitly_need_domain",
+    [
+        (
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - action_hello: {{send_domain: True}}
+          - action_bye: {{send_domain: True}}
+          - action_no_domain
+          """,
+            ["action_hello", "action_bye", "action_no_domain"],
+            ["action_hello", "action_bye"],
+        ),
+        (
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - action_hello
+          - action_bye
+          - action_no_domain
+          """,
+            ["action_hello", "action_bye", "action_no_domain"],
+            [],
+        ),
+    ],
+)
+def test_domain_loads_actions_which_explicitly_need_domain(
+    content: str,
+    expected_user_actions: List[str],
+    expected_actions_which_explicitly_need_domain: List[str],
+):
+    domain = Domain.from_yaml(content)
+    assert domain._custom_actions == expected_user_actions
+    assert (
+        domain._actions_which_explicitly_need_domain
+        == expected_actions_which_explicitly_need_domain
+    )
+
+
+def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
+    test_yaml_1 = textwrap.dedent(
+        """
+        actions:
+          - action_hello
+          - action_bye
+          - action_send_domain: {send_domain: True}"""
+    )
+
+    test_yaml_2 = textwrap.dedent(
+        """
+        actions:
+          - action_find_restaurants:
+                send_domain: True"""
+    )
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+
+    domain = domain_1.merge(domain_2)
+
+    # single attribute should be taken from domain_1
+    expected_actions = [
+        "action_hello",
+        "action_bye",
+        "action_send_domain",
+        "action_find_restaurants",
+    ]
+    expected_actions_that_need_domain = [
+        "action_send_domain",
+        "action_find_restaurants",
+    ]
+    assert sorted(domain._custom_actions) == sorted(expected_actions)
+    assert sorted(domain._actions_which_explicitly_need_domain) == sorted(
+        expected_actions_that_need_domain
     )

@@ -1,0 +1,159 @@
+---
+sidebar_label: Rasa Pro installation
+title: Rasa Pro installation
+description: Install Rasa Pro in your production environment to create an enterprise ready Rasa deployment.
+---
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import RasaProLabel from '@theme/RasaProLabel';
+import RasaProBanner from '@theme/RasaProBanner';
+
+<RasaProLabel />
+
+<RasaProBanner/>
+
+In this section you will learn how to install **Rasa Plus**, a drop-in replacement enterprise-ready version of Rasa Open Source, on your development environment.
+
+To learn more about deployments, please visit the following sections:
+
+- [Deploying Rasa Plus in production](../../deploy/deploy-rasa)
+- [Deploying Rasa Pro Services in production](../../deploy/deploy-rasa-pro-services)
+
+To learn more about compatibility between different versions of  Rasa Plus and Rasa Pro Services, please see
+[compatibility matrix](../../compatibility-matrix.mdx).
+
+## Rasa Plus Setup
+
+
+Rasa Plus requires access credentials to install and a license to use. The instructions below assume you have
+credentials and a license.
+
+### Install for Development
+
+Rasa Plus is a drop-in replacement and enterprise-ready version of Rasa Open Source.
+Additional functionality is provided through plugins while allowing you to continue using the existing Rasa Open Source CLI commands and parameters as you used to.
+
+Installing Rasa Plus instead of Rasa Open Source will not break any existing scripts, automation or functionality you have built around Rasa Open Source.
+
+The `rasa-plus` python packages as well as the docker containers are hosted on our GCP artifact registry.
+As a prerequisite, you will need:
+
+- to [install](https://cloud.google.com/sdk/docs/install) and [initialize](https://cloud.google.com/sdk/docs/initializing) the Google Cloud CLI.
+- to verify that the user or service account you are using has the required permissions to access the repository.
+
+#### Authentication Set-Up
+
+In order for the package manager of choice (e.g, `pip` or `poetry`) to have the necessary credentials to authenticate with the registry, follow the steps in the [Google documentation](https://cloud.google.com/artifact-registry/docs/python/authentication#keyring).
+
+Where required, input the following parameters:
+
+```sh
+gcloud artifacts print-settings python \
+    --project=rasa-releases \
+    --repository=rasa-plus-py \
+    --location=europe-west3
+```
+
+#### Installing with `pip`
+
+Enter the following settings to the `.pypirc` file:
+
+```
+[distutils]
+index-servers =
+    rasa-plus-py
+
+[rasa-plus-py]
+repository: https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/
+
+```
+
+Next, add these specific settings to the pip configuration file as instructed in the [GCP authentication documentation](https://cloud.google.com/artifact-registry/docs/python/authentication#keyring-setup):
+
+```
+[global]
+extra-index-url = https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/simple/
+
+```
+
+Finally, you should be able to run `pip install rasa-plus`.
+
+#### Installing with `poetry`
+
+To install `rasa-plus` with `poetry`, you will need to associate the artifact registry URL with `rasa-plus` before installing it.
+Note that you must upgrade poetry to the latest minor (`1.2.0`) in order for `poetry` to work with the GCP authentication set-up.
+Proceed with the following steps:
+
+1. Run `poetry self add "keyrings.google-artifactregistry-auth"`
+2. Add this section to `pyproject.toml`:
+
+```toml
+[[tool.poetry.source]]
+name = "rasa-plus"
+url = "https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/simple"
+default = false
+secondary = true
+
+```
+
+3. Run `poetry install`.
+
+#### Installing with Docker
+
+To be able to pull the docker using `pull` you need to be authenticated first.
+
+```bash
+gcloud auth configure-docker europe-west3-docker.pkg.dev
+docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
+```
+
+### Run Rasa Plus locally
+
+Rasa Plus will look for your license in the env var `RASA_PRO_LICENSE`.
+You can set this env var temporarily in your terminal, but it is recommended
+to set it persistently so that you don't have to set it every time you run
+Rasa Plus.
+
+Bash:
+
+```sh
+## Temporary
+export RASA_PRO_LICENSE=<your-license-string>
+
+## Persistent
+echo "export RASA_PRO_LICENSE=<your-license-string>" >> ~/.bashrc
+## If you're using a different flavor of bash e.g. Zsh, replace .bashrc with your shell's initialization script e.g. ~/.zshrc
+```
+
+Windows Powershell:
+
+```powershell
+## Temporary
+$env: RASA_PRO_LICENSE=<your-license-string>
+
+## Persistent
+[System.Environment]::SetEnvironmentVariable('RASA_PRO_LICENSE','<your-license-string>')
+```
+
+Then you can use the [`rasa` CLI](https://rasa.com/docs/rasa/command-line-interface) as usual, for example:
+
+```sh
+rasa init
+```
+
+:::note
+
+If you run `rasa train` or `rasa run` after you’ve enabled tracing using Jaeger as a backend in your local development environment,
+you might come across this error `OSError: [Errno 40] Message too long`.
+
+This could be caused by the OS of your local development environment restricting UDP packet size.
+You can find out the current UDP packet size by running `sysctl net.inet.udp.maxdgram` on macOS.
+You can increase UDP packet size by running `sudo sysctl -w net.inet.udp.maxdgram=65535`.
+
+:::
+
+
+Congratulations! You have now successfully installed Rasa Plus on your development environment.
+To learn more about production deployments, visit:
+- [Deploying Rasa Plus in production](../../deploy/deploy-rasa)
+- [Deploying Rasa Pro Services in production](../../deploy/deploy-rasa-pro-services)

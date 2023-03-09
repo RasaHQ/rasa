@@ -53,3 +53,32 @@ def test_generating_trackers(
 
     assert len(trackers) == expected_trackers
     assert all(isinstance(t, TrackerWithCachedStates) for t in trackers)
+
+
+def test_generated_trackers_can_omit_unset_slots(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+):
+    reader = YAMLStoryReader()
+    steps = reader.read_from_file("data/test_yaml_stories/rules_greet_and_goodbye.yml")
+
+    domain = Domain.from_path(
+        "data/test_domains/initial_slot_values_greet_and_goodbye.yml"
+    )
+
+    component = TrainingTrackerProvider.create(
+        TrainingTrackerProvider.get_default_config(),
+        default_model_storage,
+        Resource("xy"),
+        default_execution_context,
+    )
+
+    trackers = component.provide(story_graph=StoryGraph(steps), domain=domain)
+
+    assert len(trackers) == 2
+    assert all([t.is_rule_tracker for t in trackers])
+
+    states_without_unset_slots = trackers[0].past_states(domain, omit_unset_slots=True)
+    assert not any(["slots" in state for state in states_without_unset_slots])
+
+    states_with_unset_slots = trackers[0].past_states(domain, omit_unset_slots=False)
+    assert all(["slots" in state for state in states_with_unset_slots])

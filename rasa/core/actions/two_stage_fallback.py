@@ -181,6 +181,6 @@ def _message_clarification(tracker: DialogueStateTracker) -> List[Event]:
         )
 
     clarification = copy.deepcopy(latest_message)
-    clarification.parse_data[INTENT][PREDICTED_CONFIDENCE_KEY] = 1.0  # type: ignore[misc]  # noqa E501
+    clarification.parse_data[INTENT][PREDICTED_CONFIDENCE_KEY] = 1.0  # type: ignore[literal-required]  # noqa E501
     clarification.timestamp = time.time()
     return [ActionExecuted(ACTION_LISTEN_NAME), clarification]

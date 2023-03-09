@@ -425,7 +425,7 @@ it's been specified). You can do this by defining a custom slot class.
 
 The code below defines a custom slot class called `NumberOfPeopleSlot`. 
 The featurization defines how the value of this slot gets converted to a vector
-so Rasa Open Source machine learning model can deal with it.
+so Rasa machine learning model can deal with it.
 The `NumberOfPeopleSlot` has three possible “values”, which can be represented with
 a vector of length `2`.
 
@@ -485,7 +485,7 @@ slots:
     - type: custom
 ```
 
-Now that your custom slot class can be used by Rasa Open Source, add training stories that diverge based on the value of the `people` slot.
+Now that your custom slot class can be used by Rasa, add training stories that diverge based on the value of the `people` slot.
 You could write one story for the case where `people` has a value between 1 and 6, and one for a value greater than six. You can choose any value within these ranges to put in your stories, since they are all featurized the same way (see the featurization table above).
 
 
@@ -525,7 +525,7 @@ to update your assistant.
 
 :::
 
-Rasa Open Source comes with four predefined mappings to fill slots
+Rasa comes with four predefined mappings to fill slots
 based on the latest user message.
 
 In addition to the predefined mappings, you can define [custom slot mappings](./domain.mdx#custom-slot-mappings).
@@ -793,6 +793,31 @@ For example, an action could:
 
 All [custom actions](./custom-actions.mdx) should be listed in your domain, except responses which need not be listed
 under `actions:` as they are already listed under `responses:`.
+
+### Select which actions should receive domain
+:::info New in 3.4.3
+You can control if an action should receive a domain or not.
+:::
+
+To do this you must first enable selective domain in you endpoint configuration for
+`action_endpoint` in `endpoints.yml`.
+```YAML
+# endpoints.yml
+action_endpoint:
+ url: "http://localhost:5055/webhook" # URL to your action server
+ enable_selective_domain: true
+```
+**After selective domain for custom actions is enabled, domain will be sent only to
+those custom actions which have specifically stated that they need it.**
+To specify if an action needs the domain add `{send_domain: true}` to custom action in the list
+of actions in `domain.yml`:
+```YAML
+# domain.yml
+actions:
+  - action_hello_world: {send_domain: True} # will receive domain
+  - action_calculate_mass_of_sun # will not receive domain
+```
+
 
 ## Session configuration
 

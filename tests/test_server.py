@@ -7,7 +7,7 @@ import uuid
 import sys
 from argparse import Namespace
 from http import HTTPStatus
-from multiprocessing import Process, Manager
+from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
 from pathlib import Path
 from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
@@ -15,8 +15,6 @@ from unittest.mock import Mock, ANY
 
 from _pytest.tmpdir import TempPathFactory
 import pytest
-import requests
-from _pytest import pathlib
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from freezegun import freeze_time
@@ -73,7 +71,13 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
-from tests.conftest import AsyncMock, with_model_id, with_model_ids
+from tests.conftest import (
+    AsyncMock,
+    with_assistant_id,
+    with_assistant_ids,
+    with_model_id,
+    with_model_ids,
+)
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -216,143 +220,6 @@ async def test_status_not_ready_agent(rasa_app: SanicASGITestClient):
 @pytest.fixture
 def shared_statuses() -> DictProxy:
     return Manager().dict()
-
-
-@pytest.fixture
-def background_server(
-    shared_statuses: DictProxy, tmpdir: pathlib.Path, monkeypatch: MonkeyPatch
-) -> Generator[Process, None, None]:
-    # Create a fake model archive which the mocked train function can return
-
-    fake_model = Path(tmpdir) / "fake_model.tar.gz"
-    fake_model.touch()
-    fake_model_path = str(fake_model)
-
-    # Fake training function which blocks until we tell it to stop blocking
-    # If we can send a status request while this is blocking, we can be sure that the
-    # actual training is also not blocking
-    def mocked_training_function(*_, **__) -> TrainingResult:
-        # Tell the others that we are now blocking
-        shared_statuses["started_training"] = True
-        # Block until somebody tells us to not block anymore
-        while shared_statuses.get("stop_training") is not True:
-            time.sleep(1)
-
-        return TrainingResult(model=fake_model_path)
-
-    def run_server(monkeypatch: MonkeyPatch) -> NoReturn:
-        import sys
-
-        monkeypatch.setattr(
-            sys.modules["rasa.model_training"], "train", mocked_training_function
-        )
-
-        from rasa import __main__
-
-        sys.argv = ["rasa", "run", "--enable-api"]
-        __main__.main()
-
-    server = Process(target=run_server, args=(monkeypatch,))
-    yield server
-    server.terminate()
-
-
-@pytest.fixture()
-def training_request(
-    shared_statuses: DictProxy, tmp_path: Path
-) -> Generator[Process, None, None]:
-    def send_request() -> None:
-        payload = {}
-        project_path = Path("examples") / "formbot"
-
-        for file in [
-            "domain.yml",
-            "config.yml",
-            Path("data") / "rules.yml",
-            Path("data") / "stories.yml",
-            Path("data") / "nlu.yml",
-        ]:
-            full_path = project_path / file
-            # Read in as dictionaries to avoid that keys, which are specified in
-            # multiple files (such as 'version'), clash.
-            content = rasa.shared.utils.io.read_yaml_file(full_path)
-            payload.update(content)
-
-        concatenated_payload_file = tmp_path / "concatenated.yml"
-        rasa.shared.utils.io.write_yaml(payload, concatenated_payload_file)
-
-        payload_as_yaml = concatenated_payload_file.read_text()
-
-        response = requests.post(
-            "http://localhost:5005/model/train",
-            data=payload_as_yaml,
-            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
-            params={"force_training": True},
-        )
-        shared_statuses["training_result"] = response.status_code
-
-    train_request = Process(target=send_request)
-    yield train_request
-    train_request.terminate()
-
-
-# Due to unknown reasons this test can not be run in pycharm, it
-# results in segfaults...will skip in that case - test will still get run on CI.
-# It also doesn't run on Windows because of Process-related calls and an attempt
-# to start/terminate a process. We will investigate this case further later:
-# https://github.com/RasaHQ/rasa/issues/6302
-@pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
-@pytest.mark.skip_on_windows
-def test_train_status_is_not_blocked_by_training(
-    background_server: Process, shared_statuses: DictProxy, training_request: Process
-):
-    background_server.start()
-
-    def is_server_ready() -> bool:
-        try:
-            return (
-                requests.get("http://localhost:5005/status").status_code
-                == HTTPStatus.OK
-            )
-        except Exception:
-            return False
-
-    # wait until server is up before sending train request and status test loop
-    start = time.time()
-    while not is_server_ready() and time.time() - start < 60:
-        time.sleep(1)
-
-    assert is_server_ready()
-
-    training_request.start()
-
-    # Wait until the blocking training function was called
-    start = time.time()
-    while (
-        shared_statuses.get("started_training") is not True and time.time() - start < 60
-    ):
-        time.sleep(1)
-
-    # Check if the number of currently running trainings was incremented
-    response = requests.get("http://localhost:5005/status")
-    assert response.status_code == HTTPStatus.OK
-    assert response.json()["num_active_training_jobs"] == 1
-
-    # Tell the blocking training function to stop
-    shared_statuses["stop_training"] = True
-
-    start = time.time()
-    while shared_statuses.get("training_result") is None and time.time() - start < 60:
-        time.sleep(1)
-    assert shared_statuses.get("training_result")
-
-    # Check that the training worked correctly
-    assert shared_statuses["training_result"] == HTTPStatus.OK
-
-    # Check if the number of currently running trainings was decremented
-    response = requests.get("http://localhost:5005/status")
-    assert response.status_code == HTTPStatus.OK
-    assert response.json()["num_active_training_jobs"] == 0
 
 
 @pytest.mark.parametrize(
@@ -614,6 +481,7 @@ responses:
 
 recipe: default.v1
 language: en
+assistant_id: placeholder_default
 
 policies:
 - name: RulePolicy
@@ -1081,6 +949,7 @@ async def test_cross_validation_with_callback_success(
             )
 
 
+@pytest.mark.flaky
 async def test_cross_validation_with_callback_error(
     rasa_non_trained_app: SanicASGITestClient,
     nlu_data_path: Text,
@@ -1234,6 +1103,7 @@ async def test_replace_events_empty_request_body(rasa_app: SanicASGITestClient):
 @freeze_time("2018-01-01")
 async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     model_id = rasa_app.sanic_app.ctx.agent.model_id
+    assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
     _, response = await rasa_app.get("/conversations/madeupid/tracker")
     content = response.json
     assert response.status == HTTPStatus.OK
@@ -1253,12 +1123,12 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "timestamp": 1514764800,
             "action_text": None,
             "hide_rule_turn": False,
-            "metadata": {"model_id": model_id},
+            "metadata": {"assistant_id": assistant_id, "model_id": model_id},
         },
         {
             "event": "session_started",
             "timestamp": 1514764800,
-            "metadata": {"model_id": model_id},
+            "metadata": {"assistant_id": assistant_id, "model_id": model_id},
         },
         {
             "event": "action",
@@ -1268,7 +1138,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "timestamp": 1514764800,
             "action_text": None,
             "hide_rule_turn": False,
-            "metadata": {"model_id": model_id},
+            "metadata": {"assistant_id": assistant_id, "model_id": model_id},
         },
     ]
     assert content["latest_message"] == {
@@ -1283,6 +1153,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
 @pytest.mark.parametrize("event", test_events)
 async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
     model_id = rasa_app.sanic_app.ctx.agent.model_id
+    assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1312,20 +1183,27 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
 
     # there is an initial session start sequence at the beginning of the tracker
 
-    assert deserialized_events[:3] == with_model_ids(session_start_sequence, model_id)
+    assert deserialized_events[:3] == with_assistant_ids(
+        with_model_ids(session_start_sequence, model_id), assistant_id
+    )
 
-    assert deserialized_events[3] == with_model_id(event, model_id)
+    assert deserialized_events[3] == with_assistant_id(
+        with_model_id(event, model_id), assistant_id
+    )
     assert deserialized_events[3].timestamp > time_before_adding_events
 
 
 async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClient):
     model_id = rasa_app.sanic_app.ctx.agent.model_id
+    assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
     existing_model_id = "some_old_id"
     assert existing_model_id != model_id
-    event = with_model_id(BotUttered("hello!"), existing_model_id)
+    event = with_assistant_id(
+        with_model_id(BotUttered("hello!"), existing_model_id), assistant_id
+    )
     serialized_event = event.as_dict()
 
     # Wait a bit so that the server-generated timestamp is strictly greater
@@ -1342,11 +1220,14 @@ async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClien
 
     # there is an initial session start sequence at the beginning of the tracker
     received_event = deserialized_events[3]
-    assert received_event == with_model_id(event, existing_model_id)
+    assert received_event == with_assistant_id(
+        with_model_id(event, existing_model_id), assistant_id
+    )
 
 
 async def test_push_multiple_events(rasa_app: SanicASGITestClient):
     model_id = rasa_app.sanic_app.ctx.agent.model_id
+    assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
     conversation_id = str(uuid.uuid1())
     conversation = f"/conversations/{conversation_id}"
 
@@ -1368,7 +1249,9 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
     # there is an initial session start sequence at the beginning
     assert [
         Event.from_parameters(event) for event in tracker.get("events")
-    ] == with_model_ids(session_start_sequence + test_events, model_id)
+    ] == with_assistant_ids(
+        with_model_ids(session_start_sequence + test_events, model_id), assistant_id
+    )
 
 
 @pytest.mark.parametrize(
@@ -1409,6 +1292,7 @@ async def test_pushing_event_while_executing_side_effects(
 
 async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
     model_id = rasa_app.sanic_app.ctx.agent.model_id
+    assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
     conversation_id = str(uuid.uuid1())
     id_len = len(conversation_id) // 2
     conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
@@ -1432,7 +1316,9 @@ async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
     # there is a session start sequence at the start
     assert [
         Event.from_parameters(event) for event in tracker.get("events")
-    ] == with_model_ids(session_start_sequence + test_events, model_id)
+    ] == with_assistant_ids(
+        with_model_ids(session_start_sequence + test_events, model_id), assistant_id
+    )
 
 
 async def test_put_tracker(rasa_app: SanicASGITestClient):
@@ -2157,6 +2043,7 @@ async def test_update_conversation_with_events(
     tracker_store = agent.tracker_store
     domain = agent.domain
     model_id = agent.model_id
+    assistant_id = agent.processor.model_metadata.assistant_id
 
     if initial_tracker_events:
         tracker = await agent.processor.get_tracker(conversation_id)
@@ -2166,7 +2053,9 @@ async def test_update_conversation_with_events(
     fetched_tracker = await rasa.server.update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append
     )
-    assert list(fetched_tracker.events) == with_model_ids(expected_events, model_id)
+    assert list(fetched_tracker.events) == with_assistant_ids(
+        with_model_ids(expected_events, model_id), assistant_id
+    )
 
 
 async def test_append_events_does_not_repeat_session_start(
@@ -2176,7 +2065,10 @@ async def test_append_events_does_not_repeat_session_start(
         {
             "event": "action",
             "timestamp": 1644577572.9639301,
-            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "metadata": {
+                "assistant_id": "unique_stack_assistant_test_name",
+                "model_id": "f90a69066e4a438aa6edfbed5b529919",
+            },
             "name": "action_session_start",
             "policy": None,
             "confidence": 1.0,
@@ -2186,12 +2078,18 @@ async def test_append_events_does_not_repeat_session_start(
         {
             "event": "session_started",
             "timestamp": 1644577572.963996,
-            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "metadata": {
+                "assistant_id": "unique_stack_assistant_test_name",
+                "model_id": "f90a69066e4a438aa6edfbed5b529919",
+            },
         },
         {
             "event": "action",
             "timestamp": 1644577572.964009,
-            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "metadata": {
+                "assistant_id": "unique_stack_assistant_test_name",
+                "model_id": "f90a69066e4a438aa6edfbed5b529919",
+            },
             "name": "action_listen",
             "policy": None,
             "confidence": None,

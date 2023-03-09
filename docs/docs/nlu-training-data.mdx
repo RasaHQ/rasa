@@ -328,6 +328,6 @@ performance of the machine learning model when predicting entities.
 
 :::note inconsistent BILOU tags
 When the option `BILOU_flag` is set to `True`, the model may predict inconsistent BILOU tags, e.g.
-`B-person I-location L-person`. Rasa Open Source uses some heuristics to clean up the inconsistent BILOU tags.
+`B-person I-location L-person`. Rasa uses some heuristics to clean up the inconsistent BILOU tags.
 For example, `B-person I-location L-person` would be changed into `B-person I-person L-person`.
 :::
