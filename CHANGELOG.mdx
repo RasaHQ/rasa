@@ -16,6 +16,14 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.3.6] - 2023-03-09
+                       
+Rasa 3.3.6 (2023-03-09)                        
+### Bugfixes
+- [#12103](https://github.com/rasahq/rasa/issues/12103): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
+- [#12117](https://github.com/rasahq/rasa/issues/12117): Fix validation metrics calculation when batch_size is dynamic.
+
+
 ## [3.3.5] - 2023-02-21                          
 
 No significant changes.
