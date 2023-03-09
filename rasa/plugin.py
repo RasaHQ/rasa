@@ -60,7 +60,7 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None:
 
 
 @hookspec  # type: ignore[misc]
-def initialize_managers(endpoints_file: Optional[Text]) -> None:
+def init_managers(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising managers."""
 
 
