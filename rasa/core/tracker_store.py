@@ -163,18 +163,18 @@ class TrackerStore:
         import sqlalchemy.exc
 
         if isinstance(obj, EndpointConfig):
-            result = plugin_manager().hook.update_endpoint_config(
+            updated_endpoint_config = plugin_manager().hook.update_endpoint_config(
                 endpoint_config=obj, endpoint_type="tracker_store"
             )
-            obj = result[0] if result else obj
+            obj = updated_endpoint_config if updated_endpoint_config else obj
 
         try:
             tracker_store = create_tracker_store(obj, domain, event_broker)
 
-            result = plugin_manager().hook.get_auth_retry_wrapper(
+            auth_retry_wrapper = plugin_manager().hook.get_auth_retry_wrapper(
                 tracker_store=tracker_store
             )
-            tracker_store = result[0] if result else tracker_store
+            tracker_store = auth_retry_wrapper if auth_retry_wrapper else tracker_store
 
             return tracker_store
         except (

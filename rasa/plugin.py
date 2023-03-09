@@ -64,14 +64,14 @@ def init_managers(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising managers."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec(firstresult=True)  # type: ignore[misc]
 def update_endpoint_config(  # type: ignore[empty-body]
-    endpoint_config: "EndpointConfig",
+    endpoint_config: "EndpointConfig", endpoint_type: Text
 ) -> "EndpointConfig":
     """Hook specification for updating endpoint config."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec(firstresult=True)  # type: ignore[misc]
 def get_auth_retry_wrapper(  # type: ignore[empty-body]
     tracker_store: "TrackerStore",
 ) -> "TrackerStore":
