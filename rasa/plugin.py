@@ -109,4 +109,4 @@ def filter_and_rerank_actions(
     predictions: List["PolicyPrediction"],
     tracker: DialogueStateTracker,
 ) -> List["PolicyPrediction"]:
-    """Hook specification for getting list of filtered and reranked policy predictions."""
+    """Hook spec for getting list of filtered and reranked policy predictions."""
