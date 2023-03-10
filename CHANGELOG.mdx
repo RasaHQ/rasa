@@ -16,6 +16,18 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.4.5] - 2023-03-09
+                       
+Rasa 3.4.5 (2023-03-09)                        
+### Bugfixes
+- [#12059](https://github.com/rasahq/rasa/issues/12059): Check unresolved slots before initiating model training.
+- [#12096](https://github.com/rasahq/rasa/issues/12096): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
+- [#12099](https://github.com/rasahq/rasa/issues/12099): Fix validation metrics calculation when batch_size is dynamic.
+
+### Improved Documentation
+- [#12062](https://github.com/rasahq/rasa/issues/12062): Add a link to an existing docs section on how to test the audio channel on `localhost`.
+
+
 ## [3.4.4] - 2023-02-17
 
 Rasa 3.4.4 (2023-02-17)
