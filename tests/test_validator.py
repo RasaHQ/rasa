@@ -35,11 +35,22 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
               steps:
               - user: |
                   hello assistant! Can you help me today?
-              - action: utter_greet
-            - story: path 2
-              steps:
               - intent: greet
               - action: utter_greet
+              - intent: affirm
+              - action: utter_greet
+              - intent: bot_challenge
+              - action: utter_greet
+              - intent: deny
+              - action: goodbye
+              - intent: goodbye
+              - action: utter_goodbye
+              - intent: mood_great
+              - action: utter_happy
+              - intent: mood_unhappy
+              - action: utter_cheer_up
+              - action: utter_did_that_help
+              - action: utter_iamabot
             """
         )
     importer = RasaFileImporter(
@@ -49,7 +60,16 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
     )
 
     validator = Validator.from_importer(importer)
-    assert validator.verify_nlu()
+    # Since the nlu file actually fails validation,
+    # record warnings to make sure that the only raised warning
+    # is about the duplicate example 'good afternoon'
+    with pytest.warns(UserWarning) as record:
+        validator.verify_nlu(ignore_warnings=False)
+        assert len(record) == 1
+        assert (
+            "The example 'good afternoon' was found labeled with multiple different"
+            in record[0].message.args[0]
+        )
 
 
 def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
@@ -57,7 +77,8 @@ def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
         domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path]
     )
     validator = Validator.from_importer(importer)
-    assert validator.verify_intents()
+    # force validator to not ignore warnings (default is True)
+    assert validator.verify_intents(ignore_warnings=False)
 
 
 def test_verify_intents_does_fail_on_invalid_data(nlu_data_path: Text):
@@ -66,7 +87,8 @@ def test_verify_intents_does_fail_on_invalid_data(nlu_data_path: Text):
         domain_path="data/test_domains/default.yml", training_data_paths=[nlu_data_path]
     )
     validator = Validator.from_importer(importer)
-    assert not validator.verify_intents()
+    # force validator to not ignore warnings (default is True)
+    assert not validator.verify_intents(ignore_warnings=False)
 
 
 def test_verify_valid_responses():
@@ -90,7 +112,8 @@ def test_verify_valid_responses_in_rules(nlu_data_path: Text):
         ],
     )
     validator = Validator.from_importer(importer)
-    assert not validator.verify_utterances_in_stories()
+    # force validator to not ignore warnings (default is True)
+    assert not validator.verify_utterances_in_stories(ignore_warnings=False)
 
 
 def test_verify_story_structure(stories_path: Text):
@@ -98,6 +121,7 @@ def test_verify_story_structure(stories_path: Text):
         domain_path="data/test_domains/default.yml", training_data_paths=[stories_path]
     )
     validator = Validator.from_importer(importer)
+    # force validator to not ignore warnings (default is True)
     assert validator.verify_story_structure(ignore_warnings=False)
 
 
@@ -107,6 +131,7 @@ def test_verify_bad_story_structure():
         training_data_paths=["data/test_yaml_stories/stories_conflicting_2.yml"],
     )
     validator = Validator.from_importer(importer)
+    # force validator to not ignore warnings (default is True)
     assert not validator.verify_story_structure(ignore_warnings=False)
 
 
@@ -135,6 +160,7 @@ def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
         training_data_paths=[story_file_name],
     )
     validator = Validator.from_importer(importer)
+    # force validator to not ignore warnings (default is True)
     assert not validator.verify_story_structure(ignore_warnings=False)
 
 
@@ -167,6 +193,7 @@ def test_verify_correct_e2e_story_structure(tmp_path: Path):
         training_data_paths=[story_file_name],
     )
     validator = Validator.from_importer(importer)
+    # force validator to not ignore warnings (default is True)
     assert validator.verify_story_structure(ignore_warnings=False)
 
 
@@ -192,6 +219,7 @@ def test_verify_correct_e2e_story_structure_with_intents(tmp_path: Path):
         training_data_paths=[story_file_name],
     )
     validator = Validator.from_importer(importer)
+    # force validator to not ignore warnings (default is True)
     assert validator.verify_story_structure(ignore_warnings=False)
 
 
@@ -218,11 +246,13 @@ def test_verify_bad_story_structure_ignore_warnings():
 def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
+
     importer = RasaFileImporter(
         domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path]
     )
     validator = Validator.from_importer(importer)
-    assert not validator.verify_example_repetition_in_intents(False)
+    # force validator to not ignore warnings (default is True)
+    assert not validator.verify_example_repetition_in_intents(ignore_warnings=False)
 
 
 def test_verify_logging_message_for_intent_not_used_in_nlu(
@@ -230,7 +260,8 @@ def test_verify_logging_message_for_intent_not_used_in_nlu(
 ):
     caplog.clear()
     with pytest.warns(UserWarning) as record:
-        validator_under_test.verify_intents(False)
+        # force validator to not ignore warnings (default is True)
+        validator_under_test.verify_intents(ignore_warnings=False)
 
     assert (
         "The intent 'goodbye' is listed in the domain file, "
@@ -244,7 +275,8 @@ def test_verify_logging_message_for_intent_not_used_in_story(
 ):
     caplog.clear()
     with pytest.warns(UserWarning) as record:
-        validator_under_test.verify_intents_in_stories(False)
+        # force validator to not ignore warnings (default is True)
+        validator_under_test.verify_intents_in_stories(ignore_warnings=False)
 
     assert "The intent 'goodbye' is not used in any story or rule." in (
         m.message.args[0] for m in record
@@ -256,7 +288,8 @@ def test_verify_logging_message_for_unused_utterance(
 ):
     caplog.clear()
     with pytest.warns(UserWarning) as record:
-        validator_under_test.verify_utterances_in_stories(False)
+        # force validator to not ignore warnings (default is True)
+        validator_under_test.verify_utterances_in_stories(ignore_warnings=False)
 
     assert "The utterance 'utter_chatter' is not used in any story or rule." in (
         m.message.args[0] for m in record
@@ -272,7 +305,8 @@ def test_verify_logging_message_for_repetition_in_intents(caplog, nlu_data_path:
     validator = Validator.from_importer(importer)
     caplog.clear()  # clear caplog to avoid counting earlier debug messages
     with pytest.warns(UserWarning) as record:
-        validator.verify_example_repetition_in_intents(False)
+        # force validator to not ignore warnings (default is True)
+        validator.verify_example_repetition_in_intents(ignore_warnings=False)
     assert len(record) == 1
     assert "You should fix that conflict " in record[0].message.args[0]
 
@@ -316,7 +350,8 @@ def test_verify_there_is_not_example_repetition_in_intents():
         training_data_paths=["examples/knowledgebasebot/data/nlu.yml"],
     )
     validator = Validator.from_importer(importer)
-    assert validator.verify_example_repetition_in_intents(False)
+    # force validator to not ignore warnings (default is True)
+    assert validator.verify_example_repetition_in_intents(ignore_warnings=False)
 
 
 def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Text):
@@ -415,7 +450,8 @@ def test_response_selector_responses_in_domain_no_errors():
         ],
     )
     validator = Validator.from_importer(importer)
-    assert validator.verify_utterances_in_stories(ignore_warnings=True)
+    # force validator to not ignore warnings (default is True)
+    assert validator.verify_utterances_in_stories(ignore_warnings=False)
 
 
 def test_invalid_domain_mapping_policy():
@@ -757,3 +793,66 @@ def test_verify_from_trigger_intent_slot_mapping_not_in_forms_does_not_warn(
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         assert validator.verify_slot_mappings()
+
+
+def test_verify_utterances_does_not_error_when_no_utterance_template_provided(
+    tmp_path: Path, nlu_data_path: Path
+):
+    story_file_name = tmp_path / "stories.yml"
+    with open(story_file_name, "w") as file:
+        file.write(
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            stories:
+            - story: path 1
+              steps:
+              - intent: greet
+              - action: utter_greet
+            """
+        )
+    domain_file_name = tmp_path / "domain.yml"
+    with open(domain_file_name, "w") as file:
+        file.write(
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            intents:
+              - greet
+            actions:
+              - utter_greet
+            """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=domain_file_name,
+        training_data_paths=[story_file_name, nlu_data_path],
+    )
+
+    validator = Validator.from_importer(importer)
+    # force validator to not ignore warnings (default is True)
+    assert not validator.verify_utterances_in_stories(ignore_warnings=False)
+    # test whether ignoring warnings actually works
+    assert validator.verify_utterances_in_stories(ignore_warnings=True)
+
+
+@pytest.mark.parametrize(
+    "config_file, message",
+    [
+        (
+            "data/test_config/config_defaults.yml",
+            "The config file is missing a unique value for "
+            "the 'assistant_id' mandatory key.",
+        ),
+        (
+            "data/test_config/config_no_assistant_id.yml",
+            "The config file is missing the 'assistant_id' mandatory key.",
+        ),
+    ],
+)
+def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
+    config_file: Text, message: Text
+) -> None:
+    importer = RasaFileImporter(config_file=config_file)
+    validator = Validator.from_importer(importer)
+
+    with pytest.warns(UserWarning, match=message):
+        validator.warn_if_config_mandatory_keys_are_not_set()

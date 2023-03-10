@@ -1,5 +1,7 @@
 version: "3.1"
 
+assistant_id: placeholder_default
+
 pipeline:
   - name: WhitespaceTokenizer
   - name: RegexFeaturizer

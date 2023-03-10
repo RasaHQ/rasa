@@ -36,7 +36,8 @@ async def test_random_seed(
     tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
     policies_config = {
-        "policies": [{"name": "TEDPolicy", "random_seed": 42}, {"name": "RulePolicy"}]
+        "assistant_id": "placeholder_default",
+        "policies": [{"name": "TEDPolicy", "random_seed": 42}, {"name": "RulePolicy"}],
     }
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.write_yaml(policies_config, config_file)
