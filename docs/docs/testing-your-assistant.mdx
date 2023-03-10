@@ -540,18 +540,25 @@ import RasaProBanner from "@theme/RasaProBanner";
 
 <RasaProBanner />
 
+:::info New in 3.5
+
+You can now use end-to-end testing to test your assistant as a whole, including dialogue management and custom actions.
+
+:::
+
 End-to-end testing is an enhanced and comprehensive CLI-based testing tool that allows you to test conversation scenarios
 with different pre-configured contexts, execute [custom actions](./action-server/actions.mdx), verify [response](./responses.mdx)
 texts or names, and assert when [slots](./domain.mdx#slots) are filled.
 
 End-to-end testing is not limited to testing only the NLU or the dialogue model and allows you to design
-effective acceptance or integrations tests. The main features of end-to-end testing are:
+effective acceptance or integration tests. The main features of end-to-end testing are:
 - integration with the [action server](./action-server/running-action-server.mdx): you can execute custom actions in your
 tests; the prerequisite is to start the action server in the background.
 - test parametrization (e.g. different user profiles or other external factors): you can define multiple test fixtures
 with different pre-filled slots and re-use them in your tests.
-- verifying response texts or names: you can assert that the bot response text (including interpolated responses with
-slot values and conditional response variations) or `utter` name is as expected.
+- verifying response texts or names: you can assert that the bot response text (including [interpolated responses](./responses.mdx#using-variables-in-responses)
+with slot values and [conditional response variations](./responses.mdx#conditional-response-variations)) or `utter` name
+is as expected.
 - asserting that the bot sets the slot value as expected.
 
 ### How to write test cases
@@ -581,7 +588,7 @@ The following example shows a test case file with fixtures and two test cases th
 ```yaml
 fixtures:
  - premium:  # name of the fixture must be provided and be unique
-   - membership_type: premium  # # every fixture can contain multiple slot key-value pairs
+   - membership_type: premium  # every fixture can contain multiple slot key-value pairs
    - logged_in: True
  - standard:
    - logged_in: True
@@ -652,10 +659,10 @@ The output style is inspired by `pytest`:
 
 - Failed test cases will be stacked, each highlighting the difference in identified mismatches in similar style to `git diff`:
 expected messages will be preceded by `+` prefix, while actual messages will be preceded by `-` prefix.
-- The short test summary includes a list of every failed test case name and file location in a new line
+- The short test summary includes a list of every failed test case name and file location in a new line.
 
-If `-o` flag is specified in the command, the results are also written to the `tests/e2e_results.yml` file, which will be
-a list of test results with the following keys:
+If `-o` flag is specified in the command, the results are also written to the `tests/e2e_results.yml` file, which will
+contain a list of test results with the following keys:
 - `name`: the name of the test case
 - `pass_status`: the status of the test case, either `True` or `False`
 - `expected_steps`: the expected test steps
