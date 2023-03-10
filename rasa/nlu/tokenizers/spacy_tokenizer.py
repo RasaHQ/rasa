@@ -34,6 +34,8 @@ class SpacyTokenizer(Tokenizer):
             "intent_split_symbol": "_",
             # Regular expression to detect tokens
             "token_pattern": None,
+            # Symbol on which prefix should be split
+            "prefix_separator_symbol": None,
         }
 
     @staticmethod
