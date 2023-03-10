@@ -179,6 +179,26 @@ Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
 - [#11548](https://github.com/rasahq/rasa/issues/11548)
 
 
+## [3.2.13] - 2023-03-09
+
+Rasa 3.2.13 (2023-03-09)
+### Bugfixes
+- [#12099](https://github.com/rasahq/rasa/issues/12099): Fix validation metrics calculation when batch_size is dynamic.
+- [#12102](https://github.com/rasahq/rasa/issues/12102): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
+
+
+## [3.2.12] - 2023-02-21
+### Features
+- [#11087](https://github.com/rasahq/rasa/issues/11087): Add metadata to Websocket channel. Messages can now include a `metadata` object which will be included as metadata to Rasa.  The metadata can be supplied on a user configurable key with the `metadata_key` setting in the `socketio` section of the `credentials.yml`.
+
+### Improvements
+- [#11995](https://github.com/rasahq/rasa/issues/11995): Add capability to send compressed body in HTTP request to action server.
+Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
+
+### Bugfixes
+- [#11926](https://github.com/rasahq/rasa/issues/11926): Decision to publish docs should not consider next major and minor alpha release versions.
+
+
 ## [3.2.11] - 2022-12-05
 ### Improvements
 - [#11596](https://github.com/rasahq/rasa/issues/11596): Caching `Message` and `Features` fingerprints unless they are altered, saving up to 2/3 of fingerprinting time in our tests.

@@ -217,6 +217,7 @@ def test_cli_missing_log_level_env_var_used():
     rasa_logger = logging.getLogger("rasa")
     assert rasa_logger.level == logging.WARNING
     matplotlib_logger = logging.getLogger("matplotlib")
+
     assert matplotlib_logger.level == logging.INFO
 
 
