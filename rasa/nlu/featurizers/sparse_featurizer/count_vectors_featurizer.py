@@ -757,7 +757,6 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
         attribute_vectorizers = {}
 
         for attribute in cls._attributes_for(parameters["analyzer"]):
-
             attribute_vocabulary = vocabulary[attribute] if vocabulary else None
 
             attribute_vectorizer = CountVectorizer(
@@ -769,7 +768,9 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
                 stop_words=parameters["stop_words"],
                 ngram_range=(parameters["min_ngram"], parameters["max_ngram"]),
                 max_df=parameters["max_df"],
-                min_df=parameters["min_df"],
+                min_df=parameters["min_df"]
+                if attribute == rasa.shared.nlu.constants.TEXT
+                else 1,
                 max_features=parameters["max_features"],
                 analyzer=parameters["analyzer"],
                 vocabulary=attribute_vocabulary,
