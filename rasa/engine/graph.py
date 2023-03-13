@@ -436,6 +436,8 @@ class GraphNode:
         Args:
             *inputs_from_previous_nodes: The output of all parent nodes. Each is a
                 dictionary with a single item mapping the node's name to its output.
+                If the node couldn't be resolved and has no output, the node name is
+                provided instead of a tuple.
 
         Returns:
             The node name and its output.
@@ -443,23 +445,25 @@ class GraphNode:
         # filter out arguments that dask couldn't lookup
         received_inputs: Dict[Text, Any] = {}
         for i in inputs_from_previous_nodes:
-            if type(i) is tuple:
-                arg_name, arg_value = i
-                received_inputs[arg_name] = arg_value
+            if isinstance(i, tuple):
+                node_name, node_output = i
+                received_inputs[node_name] = node_output
             else:
                 logger.warning(
-                    f"Received unresolved argument: '{i}'. "
+                    f"Node '{i}' was not resolved, there is no putput. "
                     f"Another component should have provided this as an "
                     f"output."
                 )
 
         kwargs = {}
-        for input_name, input_node in self._inputs.items():
-            if input_node not in received_inputs:
+        for input_name, input_provider_node_name in self._inputs.items():
+            if input_provider_node_name not in received_inputs:
                 raise GraphRunError(
-                    f"Missing input from parent node. Expected input '{input_node}'."
+                    f"Missing input to run node '{self._node_name}'. "
+                    f"Expected input '{input_provider_node_name}' to "
+                    f"provide parameter '{input_name}'."
                 )
-            kwargs[input_name] = received_inputs[input_node]
+            kwargs[input_name] = received_inputs[input_provider_node_name]
 
         input_hook_outputs = self._run_before_hooks(kwargs)
 
@@ -572,6 +576,7 @@ class GraphModelConfiguration:
     train_schema: GraphSchema
     predict_schema: GraphSchema
     training_type: TrainingType
+    assistant_id: Optional[Text]
     language: Optional[Text]
     core_target: Optional[Text]
     nlu_target: Optional[Text]

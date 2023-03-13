@@ -169,6 +169,12 @@ def _walk_and_check_for_cycles(
             f"'{node_name}' specified in 'needs'."
         )
 
+    if node_name not in schema.nodes:
+        raise GraphSchemaValidationException(
+            f"Node '{node_name}' is not part of the graph. Node was expected to be "
+            f"present in the graph as it is used by another component."
+        )
+
     parents = schema.nodes[node_name].needs.values()
     for parent_name in parents:
         if not _is_placeholder_input(parent_name):

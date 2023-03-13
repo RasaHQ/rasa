@@ -34,7 +34,11 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         for constraint in constraints:
             name = constraint["name"]
             value = constraint["value"]
-            if filled_slots.get(name) != value:
+            filled_slots_value = filled_slots.get(name)
+            if isinstance(filled_slots_value, str) and isinstance(value, str):
+                if filled_slots_value.casefold() != value.casefold():
+                    return False
+            elif filled_slots_value != value:
                 return False
 
         return True

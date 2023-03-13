@@ -129,6 +129,7 @@ def create_test_schema(
         train_schema=train_schema,
         predict_schema=predict_schema,
         training_type=TrainingType.BOTH,
+        assistant_id="test_assistant",
         core_target=None,
         nlu_target="nlu_target",
         language=language,
@@ -711,6 +712,7 @@ def test_cycle(is_train_graph: bool):
                 train_schema=train_schema,
                 predict_schema=predict_schema,
                 training_type=TrainingType.BOTH,
+                assistant_id="test_assistant",
                 language=None,
                 core_target=None,
                 nlu_target="nlu_target",
@@ -751,6 +753,7 @@ def test_validation_with_placeholders():
             train_schema=graph_config,
             predict_schema=DEFAULT_PREDICT_SCHEMA,
             training_type=TrainingType.BOTH,
+            assistant_id="test_assistant",
             language=None,
             core_target=None,
             nlu_target="nlu_target",
@@ -780,6 +783,7 @@ def test_validation_with_missing_nlu_target():
                 train_schema=GraphSchema({}),
                 predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
+                assistant_id="test_assistant",
                 language=None,
                 core_target=None,
                 nlu_target=None,
@@ -821,6 +825,7 @@ def test_validation_with_nlu_target_used_by_other_node():
                 train_schema=GraphSchema({}),
                 predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
+                assistant_id="test_assistant",
                 language=None,
                 core_target=None,
                 nlu_target="A",
@@ -848,6 +853,7 @@ def test_validation_with_nlu_target_wrong_type():
                 train_schema=GraphSchema({}),
                 predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
+                assistant_id="test_assistant",
                 language=None,
                 core_target=None,
                 nlu_target="A",
@@ -875,6 +881,7 @@ def test_validation_with_missing_core_target():
                 train_schema=GraphSchema({}),
                 predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
+                assistant_id="test_assistant",
                 language=None,
                 core_target="B",
                 nlu_target="A",
@@ -904,6 +911,7 @@ def test_validation_with_core_target_wrong_type():
                 train_schema=GraphSchema({}),
                 predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
+                assistant_id="test_assistant",
                 language=None,
                 core_target="A",
                 nlu_target="A",
@@ -953,6 +961,7 @@ def test_validation_with_core_target_used_by_other_node():
                 train_schema=GraphSchema({}),
                 predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
+                assistant_id="test_assistant",
                 language=None,
                 core_target="B",
                 nlu_target="A",
@@ -1137,7 +1146,13 @@ def test_validate_validates_required_components(
     else:
         predict_schema = graph_schema
     graph_config = GraphModelConfiguration(
-        train_schema, predict_schema, TrainingType.BOTH, None, None, "nlu_target"
+        train_schema,
+        predict_schema,
+        TrainingType.BOTH,
+        "test_assistant",
+        None,
+        None,
+        "nlu_target",
     )
 
     num_unmet = test_case.num_unmet_requirements

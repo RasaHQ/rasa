@@ -16,9 +16,72 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
-## [3.4.0] - 2022-12-14
+## [3.4.5] - 2023-03-09
                        
-Rasa 3.4.0 (2022-12-14)                        
+Rasa 3.4.5 (2023-03-09)                        
+### Bugfixes
+- [#12059](https://github.com/rasahq/rasa/issues/12059): Check unresolved slots before initiating model training.
+- [#12096](https://github.com/rasahq/rasa/issues/12096): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
+- [#12099](https://github.com/rasahq/rasa/issues/12099): Fix validation metrics calculation when batch_size is dynamic.
+
+### Improved Documentation
+- [#12062](https://github.com/rasahq/rasa/issues/12062): Add a link to an existing docs section on how to test the audio channel on `localhost`.
+
+
+## [3.4.4] - 2023-02-17
+
+Rasa 3.4.4 (2023-02-17)
+### Improvements
+- [#11997](https://github.com/rasahq/rasa/issues/11997): Add capability to send compressed body in HTTP request to action server.
+  Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
+
+### Bugfixes
+- [#12052](https://github.com/rasahq/rasa/issues/12052): Fix the error which resulted during merging multiple domain files where at least one of them contains custom actions that explicitly need `send_domain` set as True in the domain.
+
+
+## [3.4.3] - 2023-02-14
+
+Rasa 3.4.3 (2023-02-14)
+### Improvements
+- [#12001](https://github.com/rasahq/rasa/issues/12001): Add support for custom RulePolicy.
+- [#12013](https://github.com/rasahq/rasa/issues/12013): Add capability to select which custom actions should receive domain when they are invoked.
+
+### Bugfixes
+- [#11942](https://github.com/rasahq/rasa/issues/11942): Fix calling the form validation action twice for the same user message triggering a form.
+- [#12033](https://github.com/rasahq/rasa/issues/12033): Fix conditional response does not check other conditions if first condition matches.
+
+### Improved Documentation
+- [#11976](https://github.com/rasahq/rasa/issues/11976): Add section in tracker store docs to document the fallback tracker store mechanism.
+
+
+## [3.4.2] - 2023-01-27
+
+Rasa 3.4.2 (2023-01-27)
+### Bugfixes
+- [#11926](https://github.com/rasahq/rasa/issues/11926): Decision to publish docs should not consider next major and minor alpha release versions.
+- [#11968](https://github.com/rasahq/rasa/issues/11968): Exit training/running Rasa model when SpaCy runtime version is not compatible with the specified SpaCy model version.
+- [#11971](https://github.com/rasahq/rasa/issues/11971): The new custom logging feature was not working due to small syntax issue in the argparse level.
+
+  Previously, the file name passed using the argument --logging-config-file was never retrieved so it never creates the new custom config file with the desired formatting.
+
+### Miscellaneous internal changes
+- [#11924](https://github.com/rasahq/rasa/issues/11924)
+
+
+## [3.4.1] - 2023-01-19
+
+Rasa 3.4.1 (2023-01-19)
+### Bugfixes
+- [#11923](https://github.com/rasahq/rasa/issues/11923): Changed categorical slot comparison to be case insensitive.
+- [#11929](https://github.com/rasahq/rasa/issues/11929): Exit training when transformer_size is not divisible by the number_of_attention_heads parameter and update the transformer documentations.
+
+### Improved Documentation
+- [#11899](https://github.com/rasahq/rasa/issues/11899): Update compatibility matrix between Rasa-plus and Rasa Pro services.
+
+
+## [3.4.0] - 2022-12-14
+
+Rasa 3.4.0 (2022-12-14)
 ### Features
 - [#11087](https://github.com/rasahq/rasa/issues/11087): Add metadata to Websocket channel. Messages can now include a `metadata` object which will be included as metadata to Rasa.  The metadata can be supplied on a user configurable key with the `metadata_key` setting in the `socketio` section of the `credentials.yml`.
 
@@ -32,6 +95,7 @@ Rasa 3.4.0 (2022-12-14)
 - [#11869](https://github.com/rasahq/rasa/issues/11869): Implements a new CLI option `--jwt-private-key` required to have complete support for asymmetric algorithms as specified
   originally in the docs.
 
+
 ### Improved Documentation
 - [#11766](https://github.com/rasahq/rasa/issues/11766): Clarify in the documentation how to write testing stories if a user presses a button with payload.
 - [#11801](https://github.com/rasahq/rasa/issues/11801): Clarify prioritisation of used slot asking option in forms in documentation.
@@ -39,8 +103,29 @@ Rasa 3.4.0 (2022-12-14)
 ### Miscellaneous internal changes
 - [#11742](https://github.com/rasahq/rasa/issues/11742), [#11800](https://github.com/rasahq/rasa/issues/11800), [#11817](https://github.com/rasahq/rasa/issues/11817), [#11877](https://github.com/rasahq/rasa/issues/11877)
 
+## [3.3.6] - 2023-03-09
+
+Rasa 3.3.6 (2023-03-09)                        
+### Bugfixes
+- [#12103](https://github.com/rasahq/rasa/issues/12103): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
+- [#12117](https://github.com/rasahq/rasa/issues/12117): Fix validation metrics calculation when batch_size is dynamic.
+
+
+## [3.3.5] - 2023-02-21                          
+
+No significant changes.
+
+
+## [3.3.4] - 2023-02-14
+
+Rasa 3.3.4 (2023-02-14)                        
+### Improvements
+- [#11996](https://github.com/rasahq/rasa/issues/11996): Add capability to send compressed body in HTTP request to action server.
+Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
+- [#12001](https://github.com/rasahq/rasa/issues/12001): Add support for custom RulePolicy.
 
 ## [3.3.3] - 2022-12-01
+
 ### Bugfixes
 - [#11792](https://github.com/rasahq/rasa/issues/11792): Bypass Windows path length restrictions upon saving and reading a model archive in `rasa.engine.storage.LocalModelStorage`.
 
@@ -92,6 +177,26 @@ Rasa 3.4.0 (2022-12-14)
 
 ### Miscellaneous internal changes
 - [#11548](https://github.com/rasahq/rasa/issues/11548)
+
+
+## [3.2.13] - 2023-03-09
+
+Rasa 3.2.13 (2023-03-09)
+### Bugfixes
+- [#12099](https://github.com/rasahq/rasa/issues/12099): Fix validation metrics calculation when batch_size is dynamic.
+- [#12102](https://github.com/rasahq/rasa/issues/12102): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
+
+
+## [3.2.12] - 2023-02-21
+### Features
+- [#11087](https://github.com/rasahq/rasa/issues/11087): Add metadata to Websocket channel. Messages can now include a `metadata` object which will be included as metadata to Rasa.  The metadata can be supplied on a user configurable key with the `metadata_key` setting in the `socketio` section of the `credentials.yml`.
+
+### Improvements
+- [#11995](https://github.com/rasahq/rasa/issues/11995): Add capability to send compressed body in HTTP request to action server.
+Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
+
+### Bugfixes
+- [#11926](https://github.com/rasahq/rasa/issues/11926): Decision to publish docs should not consider next major and minor alpha release versions.
 
 
 ## [3.2.11] - 2022-12-05

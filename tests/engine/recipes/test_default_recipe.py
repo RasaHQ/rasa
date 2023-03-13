@@ -9,7 +9,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 import rasa.shared.utils.io
-from rasa.shared.constants import CONFIG_AUTOCONFIGURABLE_KEYS
+from rasa.shared.constants import ASSISTANT_ID_KEY, CONFIG_AUTOCONFIGURABLE_KEYS
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import GraphSchema, GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import (
@@ -716,3 +716,48 @@ def test_comment_causing_invalid_autoconfig(tmp_path: Path):
     dumped = rasa.shared.utils.io.read_yaml_file(config_file)
 
     assert dumped
+
+
+def test_needs_from_args():
+    @DefaultV1Recipe.register(
+        DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER,
+        is_trainable=True,
+        model_from="Herman",
+    )
+    class MyClassGraphComponent(GraphComponent):
+        @classmethod
+        def run(
+            cls,
+            bar: Any,
+            resource: Resource,
+            foo: Any,
+            training_trackers: Any,
+            training_data: Any,
+            tracker: Any,
+        ) -> int:
+            return 42
+
+    assert DefaultV1Recipe()._get_needs_from_args(MyClassGraphComponent, "run") == {
+        "bar": "bar_provider",
+        "foo": "foo_provider",
+        "resource": "resource_provider",
+        "training_trackers": "training_tracker_provider",
+        "training_data": "nlu_training_data_provider",
+        "tracker": PLACEHOLDER_TRACKER,
+    }
+
+
+@pytest.mark.parametrize(
+    "config_file",
+    [
+        "data/test_config/config_unique_assistant_id.yml",
+        "data/test_config/config_defaults.yml",
+    ],
+)
+def test_graph_config_for_recipe_with_assistant_id(config_file):
+    config = rasa.shared.utils.io.read_model_configuration(config_file)
+
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
+    model_config = recipe.graph_config_for_recipe(config, {})
+
+    assert model_config.assistant_id == config.get(ASSISTANT_ID_KEY)

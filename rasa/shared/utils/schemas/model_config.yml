@@ -7,6 +7,9 @@ mapping:
   language:
     type: "str"
     required: False
+  assistant_id:
+    type: "str"
+    required: False
   pipeline:
     type: "seq"
     required: False
