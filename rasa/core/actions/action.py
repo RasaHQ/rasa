@@ -182,7 +182,7 @@ def action_for_name_or_text(
 
     if (
         action_name_or_text in defaults
-        and action_name_or_text not in domain.user_actions_and_forms
+        and action_name_or_text not in domain.user_actions_and_loops
     ):
         return defaults[action_name_or_text]
 
@@ -204,6 +204,14 @@ def action_for_name_or_text(
         from rasa.core.actions.forms import FormAction
 
         return FormAction(action_name_or_text, action_endpoint)
+
+    is_flow = action_name_or_text in domain.flow_names
+    # Users can override the flow by defining an action with the same name as the flow
+    user_overrode_flow_action = is_flow and action_name_or_text in domain.user_actions
+    if is_flow and not user_overrode_flow_action:
+        from rasa.core.actions.flows import FlowAction
+
+        return FlowAction(action_name_or_text, action_endpoint)
 
     return RemoteAction(action_name_or_text, action_endpoint)
 
@@ -1018,6 +1026,18 @@ class ActionDefaultAskRephrase(ActionBotResponse):
     def __init__(self) -> None:
         """Initializes action default ask rephrase."""
         super().__init__("utter_ask_rephrase", silent_fail=True)
+
+
+class ActionExtractSteps(Action):
+    """Extract flow steps."""
+
+    def __init__(self, action_endpoint: Optional[EndpointConfig]) -> None:
+        """Initializes default action extract slots."""
+        self._action_endpoint = action_endpoint
+
+    def name(self) -> Text:
+        """Returns action_extract_slots name."""
+        return "action_extract_steps"
 
 
 class ActionExtractSlots(Action):

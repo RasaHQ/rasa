@@ -37,6 +37,7 @@ RULE_SNIPPET_ACTION_NAME = "..."
 ACTION_EXTRACT_SLOTS = "action_extract_slots"
 ACTION_VALIDATE_SLOT_MAPPINGS = "action_validate_slot_mappings"
 
+
 DEFAULT_ACTION_NAMES = [
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -76,6 +77,7 @@ IS_EXTERNAL = "is_external"
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 REQUESTED_SLOT = "requested_slot"
+NEXT_STEP = "next_step"
 
 # slots for knowledge base
 SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
@@ -85,6 +87,7 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
 DEFAULT_SLOT_NAMES = {
     REQUESTED_SLOT,
+    NEXT_STEP,
     SESSION_START_METADATA_SLOT,
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,

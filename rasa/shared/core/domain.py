@@ -86,12 +86,14 @@ KEY_ENTITIES = "entities"
 KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
+KEY_FLOWS = "flows"
 KEY_E2E_ACTIONS = "e2e_actions"
 KEY_RESPONSES_TEXT = "text"
 
 ALL_DOMAIN_KEYS = [
     KEY_SLOTS,
     KEY_FORMS,
+    KEY_FLOWS,
     KEY_ACTIONS,
     KEY_ENTITIES,
     KEY_INTENTS,
@@ -266,6 +268,7 @@ class Domain:
             responses=responses,
             action_names=actions,
             forms=data.get(KEY_FORMS, {}),
+            flows=data.get(KEY_FLOWS, {}),
             data=Domain._cleaned_data(data),
             action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
@@ -370,6 +373,7 @@ class Domain:
             KEY_ACTIONS: rasa.shared.utils.common.merge_lists_of_dicts,
             KEY_E2E_ACTIONS: rasa.shared.utils.common.merge_lists,
             KEY_FORMS: rasa.shared.utils.common.merge_dicts,
+            KEY_FLOWS: rasa.shared.utils.common.merge_dicts,
             KEY_RESPONSES: rasa.shared.utils.common.merge_dicts,
             KEY_SLOTS: rasa.shared.utils.common.merge_dicts,
         }
@@ -731,6 +735,7 @@ class Domain:
         responses: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         forms: Union[Dict[Text, Any], List[Text]],
+        flows: Union[Dict[Text, Any], List[Text]],
         data: Dict,
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
@@ -765,6 +770,10 @@ class Domain:
         self.form_names, self.forms, overridden_form_actions = self._initialize_forms(
             forms
         )
+
+        self.flow_names, self.flows, overridden_flow_actions = self._initialize_flows(
+            flows
+        )
         action_names += overridden_form_actions
 
         self.responses = responses
@@ -796,6 +805,11 @@ class Domain:
                 form_name
                 for form_name in self.form_names
                 if form_name not in self._custom_actions
+            ]
+            + [
+                flow_name
+                for flow_name in self.flow_names
+                if flow_name not in self._custom_actions
             ]
             + self.action_texts
         )
@@ -874,6 +888,27 @@ class Domain:
                 forms[form_name] = {REQUIRED_SLOTS_KEY: form_data}
         return list(forms.keys()), forms, []
 
+    @staticmethod
+    def _initialize_flows(
+        flows: Dict[Text, Any]
+    ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
+        """Retrieves the initial values for the Domain's flow fields.
+
+        Args:
+            forms: Parsed content of the `flows` section in the domain.
+
+        Returns:
+            The form names, a mapping of form names and required slots, and custom
+            actions.
+            Returning custom actions for each forms means that Rasa Open Source should
+            not use the default `FormAction` for the forms, but rather a custom action
+            for it. This can e.g. be used to run the deprecated Rasa Open Source 1
+            `FormAction` which is implemented in the Rasa SDK.
+        """
+        # for flow_name, flow_data in flows.items():
+
+        return list(flows.keys()), flows, []
+
     def __hash__(self) -> int:
         """Returns a unique hash for the domain."""
         return int(self.fingerprint(), 16)
@@ -910,9 +945,9 @@ class Domain:
         return sorted_intents
 
     @rasa.shared.utils.common.lazy_property
-    def user_actions_and_forms(self) -> List[Text]:
+    def user_actions_and_loops(self) -> List[Text]:
         """Returns combination of user actions and forms."""
-        return self.user_actions + self.form_names
+        return self.user_actions + self.form_names + self.flow_names
 
     @rasa.shared.utils.common.lazy_property
     def num_actions(self) -> int:
@@ -951,6 +986,7 @@ class Domain:
     def _add_default_slots(self) -> None:
         """Sets up the default slots and slot values for the domain."""
         self._add_requested_slot()
+        self._add_next_step_slot()
         self._add_knowledge_base_slots()
         self._add_categorical_slot_default_value()
         self._add_session_metadata_slot()
@@ -963,6 +999,23 @@ class Domain:
         """
         for slot in [s for s in self.slots if isinstance(s, CategoricalSlot)]:
             slot.add_default_value()
+
+    def _add_next_step_slot(self) -> None:
+        """Add a slot called `next_step_slot` to the list of slots.
+
+        The value of this slot will hold the name of the id of the next step
+        in the flow.
+        """
+        if self.flow_names and rasa.shared.core.constants.NEXT_STEP not in [
+            slot.name for slot in self.slots
+        ]:
+            self.slots.append(
+                TextSlot(
+                    rasa.shared.core.constants.NEXT_STEP,
+                    mappings=[],
+                    influence_conversation=False,
+                )
+            )
 
     def _add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.
@@ -1580,7 +1633,7 @@ class Domain:
         """
         return [
             action
-            for action in self.user_actions_and_forms
+            for action in self.user_actions_and_loops
             if action not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
 
@@ -1926,6 +1979,7 @@ def warn_about_duplicates_found_during_domain_merging(
     for key in [
         KEY_INTENTS,
         KEY_FORMS,
+        KEY_FLOWS,
         KEY_ACTIONS,
         KEY_E2E_ACTIONS,
         KEY_RESPONSES,
