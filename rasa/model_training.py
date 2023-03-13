@@ -164,6 +164,7 @@ def train(
     )
 
     stories = file_importer.get_stories()
+    flows = file_importer.get_flows()
     nlu_data = file_importer.get_nlu_data()
 
     training_type = TrainingType.BOTH
@@ -188,9 +189,9 @@ def train(
         )
         training_type = TrainingType.NLU
 
-    elif stories.is_empty():
+    elif stories.is_empty() and flows.is_empty():
         rasa.shared.utils.cli.print_warning(
-            "No stories present. Just a Rasa NLU model will be trained."
+            "No stories or flows present. Just a Rasa NLU model will be trained."
         )
         training_type = TrainingType.NLU
 
