@@ -15,7 +15,7 @@ help:
 	@echo "    formatter"
 	@echo "        Apply black formatting to code."
 	@echo "    lint"
-	@echo "        Lint code with flake8, and check if black formatter should be applied."
+	@echo "        Lint code with ruff, and check if black formatter should be applied."
 	@echo "    lint-docstrings"
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
@@ -83,7 +83,7 @@ format: formatter
 
 lint:
      # Ignore docstring errors when running on the entire project
-	poetry run flake8 rasa tests --extend-ignore D
+	poetry run ruff check rasa tests --ignore D
 	poetry run black --check rasa tests
 	make lint-docstrings
 
@@ -94,11 +94,11 @@ lint-docstrings:
 # Check only production code. Ignore other flake errors which are captured by `lint`
 # Diff of committed changes (shows only changes introduced by your branch
 ifneq ($(strip $(BRANCH)),)
-	git diff $(BRANCH)...HEAD -- rasa | poetry run flake8 --select D --diff
+	git diff $(BRANCH)...HEAD -- rasa | poetry run ruff check rasa --select D --diff
 endif
 
 	# Diff of uncommitted changes for running locally
-	git diff HEAD -- rasa | poetry run flake8 --select D --diff
+	git diff HEAD -- rasa | poetry run ruff check rasa --select D --diff
 
 lint-changelog:
 	# Lint changelog filenames to avoid merging of incorrectly named changelog fragment files
