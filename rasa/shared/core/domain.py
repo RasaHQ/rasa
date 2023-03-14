@@ -1010,7 +1010,7 @@ class Domain:
             slot.name for slot in self.slots
         ]:
             self.slots.append(
-                TextSlot(
+                AnySlot(
                     rasa.shared.core.constants.NEXT_STEP,
                     mappings=[],
                     influence_conversation=False,

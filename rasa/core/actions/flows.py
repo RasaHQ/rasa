@@ -1,6 +1,6 @@
 from typing import Text, List, Optional, Union, Any, Dict
 import logging
-
+from pypred import Predicate
 from rasa.core.actions import action
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import OutputChannel
@@ -11,6 +11,7 @@ from rasa.shared.core.constants import (
     NEXT_STEP,
 )
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.events import (
     Event,
     SlotSet,
@@ -129,6 +130,28 @@ class FlowAction(FormAction):
             )
 
         return events
+    
+    def _eval_predicate(self, predicate: Text, domain: Domain, tracker: "DialogueStateTracker") -> bool:
+        """Evaluate a predicate condition."""
+        def get_value(initial_value: Union[Text, None]) -> Union[Text,float,bool,None]:
+            if initial_value and not isinstance(initial_value, str):
+                raise ValueError(f"Slot is not a text slot")
+            elif not initial_value:
+                return None
+            elif initial_value.lower() in ["true", "false"]:
+                return initial_value.lower() == "true"
+            return float(initial_value) if initial_value.isnumeric() else initial_value
+
+        text_slots = dict({slot.name: get_value(tracker.get_slot(slot.name)) for slot in domain.slots if isinstance(slot, TextSlot)})
+        p = Predicate(predicate)
+        evaluation, _ = p.analyze(text_slots)
+        return evaluation
+
+    def _get_else_predicate(self, next_items: Dict, domain: Domain, tracker: "DialogueStateTracker") -> Text:
+        negated_if_predicates = list((f"not ({item.get('if')})" for item in next_items if item.get('if') is not None ))
+        else_predicate = "and".join(negated_if_predicates)
+        return else_predicate
+    
 
     def _get_next_step(
         self,
@@ -146,7 +169,25 @@ class FlowAction(FormAction):
         ):
             return next_step_slot
         elif next_step_slot.get("next") is not None:
-            next_id = next_step_slot.get("next")
+            next_info = next_step_slot.get("next")
+            next_id = None
+            if isinstance(next_info, str):
+                next_id = next_step_slot.get("next")
+
+            else:
+                if_statements = list((item.get('if') for item in next_info if item.get('if') is not None ))
+                evaluations = list((self._eval_predicate(if_statement, domain, tracker) for if_statement in if_statements))
+                first_true_index = next((index for index, evaluation in enumerate(evaluations) if evaluation), None)
+                # first_true_index = next((evaluation for evaluation in evaluations if evaluation is True), None)
+                if first_true_index is not None:
+                    next_id = next_info[first_true_index].get('then')
+                else:
+                    else_case = next((item for item in next_info if item.get('else')), None)
+                    if else_case:
+                        next_id = else_case.get('else')
+                            
+            if next_id is None:
+                raise Exception(f"Conditions in step {next_step_slot['id']} are not covering all possibilities")
             next_steps = list(
                 filter(lambda step: step["id"] == next_id, self.steps(domain))
             )
