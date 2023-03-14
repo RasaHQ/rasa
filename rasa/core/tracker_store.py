@@ -162,19 +162,17 @@ class TrackerStore:
         import pymongo.errors
         import sqlalchemy.exc
 
-        if isinstance(obj, EndpointConfig):
-            updated_endpoint_config = plugin_manager().hook.update_endpoint_config(
-                endpoint_config=obj, endpoint_type="tracker_store"
-            )
-            obj = updated_endpoint_config if updated_endpoint_config else obj
-
         try:
-            tracker_store = create_tracker_store(obj, domain, event_broker)
-
             auth_retry_wrapper = plugin_manager().hook.get_auth_retry_wrapper(
-                tracker_store=tracker_store
+                endpoint_config=obj,
+                domain=domain,
+                event_broker=event_broker,
             )
-            tracker_store = auth_retry_wrapper if auth_retry_wrapper else tracker_store
+            tracker_store = (
+                auth_retry_wrapper
+                if auth_retry_wrapper
+                else create_tracker_store(obj, domain, event_broker)
+            )
 
             return tracker_store
         except (

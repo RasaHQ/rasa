@@ -1,7 +1,7 @@
 import argparse
 import functools
 import sys
-from typing import List, Optional, TYPE_CHECKING, Text, Tuple
+from typing import List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import pluggy
 
@@ -65,14 +65,9 @@ def init_managers(endpoints_file: Optional[Text]) -> None:
 
 
 @hookspec(firstresult=True)  # type: ignore[misc]
-def update_endpoint_config(  # type: ignore[empty-body]
-    endpoint_config: "EndpointConfig", endpoint_type: Text
-) -> "EndpointConfig":
-    """Hook specification for updating endpoint config."""
-
-
-@hookspec(firstresult=True)  # type: ignore[misc]
 def get_auth_retry_wrapper(  # type: ignore[empty-body]
-    tracker_store: "TrackerStore",
+    endpoint_config: Union["TrackerStore", "EndpointConfig"],
+    domain: "Domain",
+    event_broker: Optional["EventBroker"] = None,
 ) -> "TrackerStore":
     """Hook specification for wrapping with AuthRetryTrackerStore."""
