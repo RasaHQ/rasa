@@ -318,7 +318,7 @@ ignore = [
 ]
 line-length = 88
 # TODO: enable more checks like RUF
-select = ["D", "E", "F", "W"]
+select = ["D", "E", "F", "W", "RUF006"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
