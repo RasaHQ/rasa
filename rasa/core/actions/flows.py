@@ -1,5 +1,6 @@
 from typing import Text, List, Optional, Union, Any, Dict
 import logging
+from copy import deepcopy
 from pypred import Predicate
 from rasa.core.actions import action
 from rasa.core.actions.forms import FormAction
@@ -45,11 +46,47 @@ class FlowAction(FormAction):
         """Return the flow name."""
         return self._flow_name
 
+    @staticmethod
+    def _add_embedded_flows_steps(steps: List[Dict], domain: Domain) -> List[Dict]:
+        """Embed flows in the next step."""
+        additional_steps = []
+        link_steps = list((step for step in steps if step.get("link")))
+        for link_step in link_steps :
+            embeddedable_flow = domain.flows.get(link_step.get("link", ""), None)
+            
+            if not embeddedable_flow:
+                raise Exception(
+                    f"Flow '{link_step.get('link')}' not found in domain."
+                )
+            
+            prefix = link_step.get("link", "") + "_"
+            steps_to_embed = deepcopy(embeddedable_flow.get("steps", []))
+            if not steps_to_embed:
+                continue
+            
+            for index, step in enumerate(steps_to_embed):
+                step["id"] = link_step.get('id') if index == 0 else prefix + step["id"]
+                if step.get("next"):
+                    if isinstance(step["next"], str):
+                        step["next"] = prefix + step["next"]
+                    else:
+                        for condition in step["next"]:
+                            if condition.get("if"):
+                                condition["then"] = prefix + condition["then"]
+                else:
+                    # Link back to the calling flow
+                    if link_step.get("next"):
+                        step["next"] = link_step.get("next")
+                additional_steps.append(step)   
+        steps = [step for step in steps if not step.get("link")]
+        return steps + additional_steps
+
+
     def steps(self, domain: Domain) -> List[Dict]:
         """Return all the steps of the flow."""
         flow = domain.flows.get(self._flow_name)
         if flow:
-            return flow.get("steps", [])
+            return self._add_embedded_flows_steps(flow.get("steps", []), domain)
         return []
 
     def required_slots(self, domain: Domain) -> List[Text]:
@@ -151,7 +188,7 @@ class FlowAction(FormAction):
         negated_if_predicates = list((f"not ({item.get('if')})" for item in next_items if item.get('if') is not None ))
         else_predicate = "and".join(negated_if_predicates)
         return else_predicate
-    
+
 
     def _get_next_step(
         self,
@@ -160,8 +197,9 @@ class FlowAction(FormAction):
     ) -> Optional[Dict]:
         """Get the next step to execute."""
         next_step_slot = tracker.get_slot(NEXT_STEP)
+        all_steps = self.steps(domain)
         if next_step_slot is None:
-            return self.steps(domain)[0]
+            return all_steps[0]
         # If the question is not answered, we return the current step
         elif (
             self._get_step_type(next_step_slot) == "question"
@@ -178,7 +216,6 @@ class FlowAction(FormAction):
                 if_statements = list((item.get('if') for item in next_info if item.get('if') is not None ))
                 evaluations = list((self._eval_predicate(if_statement, domain, tracker) for if_statement in if_statements))
                 first_true_index = next((index for index, evaluation in enumerate(evaluations) if evaluation), None)
-                # first_true_index = next((evaluation for evaluation in evaluations if evaluation is True), None)
                 if first_true_index is not None:
                     next_id = next_info[first_true_index].get('then')
                 else:
@@ -188,8 +225,9 @@ class FlowAction(FormAction):
                             
             if next_id is None:
                 raise Exception(f"Conditions in step {next_step_slot['id']} are not covering all possibilities")
+            # next_steps = list((step['id'] for step in all_steps if step['id'] == next_id))
             next_steps = list(
-                filter(lambda step: step["id"] == next_id, self.steps(domain))
+                filter(lambda step: step["id"] == next_id, all_steps)
             )
             if len(next_steps) == 1:
                 return next_steps[0]
