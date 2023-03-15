@@ -309,6 +309,25 @@ extras = ["tls", "srv"]
 git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix_signal_issue"
 
+[tool.mypy]
+# some libraries do not have type hints; ideally we remove
+# this at some point but it will require a lot of efforts from us and library owners
+mypy_path = "./stubs"
+ignore_missing_imports = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_calls = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+disallow_untyped_decorators = true
+# FIXME: should be switch to true (default) after fixing implicit Optional in the codebase
+no_implicit_optional = false
+# FIXME: working our way towards removing these
+# see https://github.com/RasaHQ/rasa/pull/6470
+# the list below is sorted by the number of errors for each error code, in decreasing order
+disable_error_code = ["arg-type"]
+
 [tool.ruff]
 # See https://beta.ruff.rs/docs/rules/ for error code documentation
 ignore = [
