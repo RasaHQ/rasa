@@ -41,6 +41,7 @@ from rasa.utils.tensorflow.constants import (
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
     HIDDEN_LAYERS_SIZES,
+    RUN_EAGERLY,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -449,7 +450,6 @@ async def test_softmax_normalization(
 async def test_margin_loss_is_not_normalized(
     create_train_load_and_process_diet: Callable[..., Message]
 ):
-
     _, parsed_message = create_train_load_and_process_diet(
         {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, EVAL_NUM_EPOCHS: 1},
         training_data="data/test/many_intents.yml",
@@ -628,15 +628,13 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
-@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "classifier_params",
     [
-        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: False},
-        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
+        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: False, RUN_EAGERLY: True},
+        {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True, RUN_EAGERLY: True},
     ],
 )
-@pytest.mark.timeout(300, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params: Dict[Text, Any],
     create_train_load_and_process_diet: Callable[..., Message],
