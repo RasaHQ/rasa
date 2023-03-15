@@ -312,9 +312,12 @@ git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix_signal_issue"
 
 [tool.ruff]
-# TODO: add comments (same as setup.cfg)
-# TODO: missing W503, E203, E231
-ignore = ["D100", "D104", "D105"]
+# See https://beta.ruff.rs/docs/rules/ for error code documentation
+ignore = [
+    "D100", # ignore missing docstrings in public module
+    "D104", # ignore missing docstrings in public package
+    "D105", # ignore missing docstrings in magic methods
+]
 line-length = 88
 # TODO: enable more checks like RUF
 select = ["D", "E", "F", "W"]
