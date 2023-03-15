@@ -15,7 +15,7 @@
         "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
         "python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
         "python.linting.banditPath": "/usr/local/py-utils/bin/bandit",
-        "python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
+        "python.linting.ruffPath": "/usr/local/py-utils/bin/ruff",
         "python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
         "python.linting.pycodestylePath": "/usr/local/py-utils/bin/pycodestyle",
         "python.linting.pydocstylePath": "/usr/local/py-utils/bin/pydocstyle",
@@ -29,7 +29,7 @@
     ],
     // memory is required for frontend build...fails for machines with less than 10g
     // "hostRequirements": {
-    //    "memory": "12gb"     
+    //    "memory": "12gb"
     // },
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
     // This can be used to network with other containers or the host.
