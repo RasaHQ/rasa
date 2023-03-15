@@ -6,7 +6,7 @@ import json
 import logging
 import re
 import time
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.shared.constants import DOCS_URL_CONNECTORS_SLACK
@@ -206,6 +206,7 @@ class SlackInput(InputChannel):
         self.use_threads = use_threads
         self.slack_signing_secret = slack_signing_secret
         self.conversation_granularity = conversation_granularity
+        self._background_tasks: Set[asyncio.Task] = set()
 
         self._validate_credentials()
 
@@ -386,7 +387,12 @@ class SlackInput(InputChannel):
                 metadata=metadata,
             )
 
-            asyncio.create_task(on_new_message(user_msg))
+            # We need to save a reference to this background task to
+            # make sure it doesn't disappear. See:
+            # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
+            task: asyncio.Task = asyncio.create_task(on_new_message(user_msg))
+            self._background_tasks.add(task)
+            task.add_done_callback(self._background_tasks.discard)
         except Exception as e:
             logger.error(f"Exception when trying to handle message.{e}")
             logger.error(str(e), exc_info=True)
