@@ -349,6 +349,11 @@ markers = [
 timeout = 60
 timeout_func_only = true
 
+[tool.bandit]
+skips = [
+    "B104", # checks for binding 0.0.0.0 interface, which should be fine for containers.
+    "B301", # checks for pickle usage, which is a necessary evil.
+]
 
 [tool.ruff]
 # See https://beta.ruff.rs/docs/rules/ for error code documentation

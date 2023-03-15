@@ -96,7 +96,7 @@ lint-changelog:
 	./scripts/lint_changelog_files.sh
 
 lint-security:
-	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
+	poetry run bandit -ll -ii -r --config pyproject.toml rasa/*
 
 types:
 	poetry run mypy rasa
