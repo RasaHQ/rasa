@@ -248,9 +248,6 @@ metal = ["tensorflow-metal"]
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-
 [tool.poetry.dependencies.tensorflow]
 version = "~2.11.0"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
@@ -327,6 +324,14 @@ no_implicit_optional = false
 # see https://github.com/RasaHQ/rasa/pull/6470
 # the list below is sorted by the number of errors for each error code, in decreasing order
 disable_error_code = ["arg-type"]
+
+[tool.pytest.ini_options]
+# Function starting with the following pattern are considered for test cases.
+python_functions = "test_"
+filterwarnings = ["ignore::ResourceWarning:ruamel[.*]"]
+log_cli_level = "WARNING"
+log_cli = true
+asyncio_mode = "auto"
 
 [tool.ruff]
 # See https://beta.ruff.rs/docs/rules/ for error code documentation
