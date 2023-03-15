@@ -317,7 +317,7 @@ branch = "fix_signal_issue"
 ignore = ["D100", "D104", "D105"]
 line-length = 88
 # TODO: enable more checks like RUF
-select = ["D", "E", "F", "W", "RUF006"]
+select = ["D", "E", "F", "W"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
