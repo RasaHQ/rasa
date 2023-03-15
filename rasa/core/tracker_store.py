@@ -287,6 +287,29 @@ class TrackerStore:
         """
         return await self.retrieve(conversation_id)
 
+    async def get_or_create_full_tracker(
+        self,
+        sender_id: Text,
+        append_action_listen: bool = True,
+    ) -> "DialogueStateTracker":
+        """Returns tracker or creates one if the retrieval returns None.
+
+        Args:
+            sender_id: Conversation ID associated with the requested tracker.
+            append_action_listen: Whether to append an initial `action_listen`.
+
+        Returns:
+            The tracker for the conversation ID.
+        """
+        tracker = await self.retrieve_full_tracker(sender_id)
+
+        if tracker is None:
+            tracker = await self.create_tracker(
+                sender_id, append_action_listen=append_action_listen
+            )
+
+        return tracker
+
     async def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker."""
         if self.event_broker is None:
@@ -1284,6 +1307,16 @@ class FailSafeTrackerStore(TrackerStore):
         except Exception as e:
             self.on_tracker_store_error(e)
             await self.fallback_tracker_store.save(tracker)
+
+    async def retrieve_full_tracker(
+        self, sender_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Calls `retrieve_full_tracker` method of primary tracker store."""
+        try:
+            return await self._tracker_store.retrieve_full_tracker(sender_id)
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            return None
 
 
 def _create_from_endpoint_config(
