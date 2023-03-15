@@ -351,7 +351,7 @@ class MessageProcessor:
         tracker.model_id = self.model_metadata.model_id
         return tracker
 
-    async def fetch_full_tracker_and_update_session(
+    async def fetch_full_tracker_with_initial_session(
         self,
         conversation_id: Text,
         output_channel: Optional[OutputChannel] = None,
@@ -374,7 +374,8 @@ class MessageProcessor:
         )
         tracker.model_id = self.model_metadata.model_id
 
-        await self._update_tracker_session(tracker, output_channel, metadata)
+        if not tracker.events:
+            await self._update_tracker_session(tracker, output_channel, metadata)
 
         return tracker
 
