@@ -1787,3 +1787,40 @@ async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
     assert ActiveLoop("test_form") in tracker.events
     assert SlotSet(slot_name, slot_value) in tracker.events
     assert tracker.get_slot(slot_name) == slot_value
+
+
+async def test_processor_fetch_full_tracker_with_initial_session_inexistent_tracker(
+    default_processor: MessageProcessor,
+) -> None:
+    """Test that the tracker is created with the correct initial session data."""
+    sender_id = uuid.uuid4().hex
+    tracker = await default_processor.fetch_full_tracker_with_initial_session(sender_id)
+
+    assert tracker.sender_id == sender_id
+    assert tracker.latest_message == UserUttered.empty()
+    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert len(tracker.events) == 3
+
+    first_recorded_event = tracker.events[0]
+    assert isinstance(first_recorded_event, ActionExecuted)
+    assert first_recorded_event.action_name == ACTION_SESSION_START_NAME
+
+    assert isinstance(tracker.events[1], SessionStarted)
+
+
+async def test_processor_fetch_full_tracker_with_initial_session_existing_tracker(
+    default_processor: MessageProcessor,
+):
+    """Test that an existing tracker is correctly retrieved."""
+    sender_id = uuid.uuid4().hex
+    expected_events = [
+        UserUttered("hello"),
+        Restarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id, evts=expected_events)
+    await default_processor.save_tracker(tracker)
+
+    tracker = await default_processor.fetch_full_tracker_with_initial_session(sender_id)
+    assert tracker.sender_id == sender_id
+    assert all([event in expected_events for event in tracker.events])

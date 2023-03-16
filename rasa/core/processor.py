@@ -362,10 +362,12 @@ class MessageProcessor:
         Args:
             conversation_id: The ID of the conversation for which the history should be
                 retrieved.
+            output_channel: Output channel associated with the incoming user message.
+            metadata: Data sent from client associated with the incoming user message.
 
         Returns:
-            Tracker for the conversation. Creates an empty tracker in case it's a new
-            conversation.
+            Tracker for the conversation. Creates an empty tracker with a new session
+            initialized in case it's a new conversation.
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
