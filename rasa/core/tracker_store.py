@@ -1289,7 +1289,7 @@ class FailSafeTrackerStore(TrackerStore):
         try:
             return await self._tracker_store.retrieve(sender_id)
         except Exception as e:
-            self.on_tracker_store_error(e)
+            self.on_tracker_store_retrieve_error(e)
             return None
 
     async def keys(self) -> Iterable[Text]:
@@ -1315,8 +1315,23 @@ class FailSafeTrackerStore(TrackerStore):
         try:
             return await self._tracker_store.retrieve_full_tracker(sender_id)
         except Exception as e:
-            self.on_tracker_store_error(e)
+            self.on_tracker_store_retrieve_error(e)
             return None
+
+    def on_tracker_store_retrieve_error(self, error: Exception) -> None:
+        """Calls `_on_tracker_store_error` callable attribute if set.
+
+        Otherwise, logs the error.
+        """
+        if self._on_tracker_store_error:
+            self._on_tracker_store_error(error)
+        else:
+            logger.error(
+                f"Error happened when trying to retrieve conversation tracker from "
+                f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
+                f"the '{InMemoryTrackerStore.__name__}'. Please "
+                f"investigate the following error: {error}."
+            )
 
 
 def _create_from_endpoint_config(

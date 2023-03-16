@@ -1,4 +1,5 @@
 import logging
+from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -20,7 +21,7 @@ from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.engine.url import URL
 from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import rasa.core.tracker_store
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
@@ -976,3 +977,74 @@ def test_create_awaitable_tracker_store_with_endpoint_config():
 
     assert isinstance(tracker_store, AwaitableTrackerStore)
     assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
+
+
+async def test_fail_safe_tracker_store_retrieve_full_tracker(domain: Domain) -> None:
+    primary_tracker_store = SQLTrackerStore(domain)
+    sender_id = uuid.uuid4().hex
+
+    expected_tracker = DialogueStateTracker.from_events(
+        sender_id=sender_id,
+        evts=[UserUttered("hi"), Restarted(), ActionExecuted("action_listen")],
+    )
+
+    tracker_store = FailSafeTrackerStore(primary_tracker_store)
+    await tracker_store.save(expected_tracker)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == expected_tracker
+
+
+async def test_fail_safe_tracker_store_retrieve_full_tracker_with_exception(
+    caplog: LogCaptureFixture,
+) -> None:
+    primary_tracker_store = MagicMock()
+    primary_tracker_store.domain = Domain.empty()
+    primary_tracker_store.event_broker = None
+
+    exception = Exception("Something went wrong")
+    primary_tracker_store.retrieve_full_tracker = AsyncMock(side_effect=exception)
+
+    tracker_store = FailSafeTrackerStore(primary_tracker_store)
+    with caplog.at_level(logging.ERROR):
+        await tracker_store.retrieve_full_tracker("some_id")
+
+    assert "Error happened when trying to retrieve conversation tracker" in caplog.text
+    assert f"Please investigate the following error: {exception}." in caplog.text
+
+
+async def test_get_or_create_full_tracker_without_action_listen() -> None:
+    tracker_store = SQLTrackerStore(Domain.empty())
+    sender_id = uuid.uuid4().hex
+    tracker = await tracker_store.get_or_create_full_tracker(
+        sender_id=sender_id, append_action_listen=False
+    )
+    assert tracker.sender_id == sender_id
+    assert tracker.events == deque()
+
+
+async def test_get_or_create_full_tracker_with_action_listen() -> None:
+    tracker_store = SQLTrackerStore(Domain.empty())
+    sender_id = uuid.uuid4().hex
+    tracker = await tracker_store.get_or_create_full_tracker(
+        sender_id=sender_id, append_action_listen=True
+    )
+    assert tracker.sender_id == sender_id
+    assert tracker.events == deque([ActionExecuted(ACTION_LISTEN_NAME)])
+
+
+async def test_get_or_create_full_tracker_with_existing_tracker() -> None:
+    tracker_store = SQLTrackerStore(Domain.empty())
+    sender_id = uuid.uuid4().hex
+
+    expected_events = [UserUttered("hi"), Restarted(), ActionExecuted("action_listen")]
+    tracker = DialogueStateTracker.from_events(
+        sender_id=sender_id, evts=expected_events
+    )
+    await tracker_store.save(tracker)
+
+    tracker = await tracker_store.get_or_create_full_tracker(
+        sender_id=sender_id, append_action_listen=False
+    )
+    assert tracker.sender_id == sender_id
+    assert tracker.events == deque(expected_events)
