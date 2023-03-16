@@ -121,8 +121,8 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
     EPOCH_OVERRIDE,
     USE_GPU,
+    RUN_EAGERLY,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -344,6 +344,11 @@ class TEDPolicy(Policy):
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
             USE_GPU: True,
+            # Determines whether to construct the model graph or not.
+            # This is advantageous when the model is only trained or inferred for
+            # a few steps, as the compilation of the graph tends to take more time than
+            # running it. It is recommended to not adjust the optimization parameter.
+            RUN_EAGERLY: False,
         }
 
     def __init__(
@@ -661,7 +666,8 @@ class TEDPolicy(Policy):
                 self._entity_tag_specs,
             )
             self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]),
+                run_eagerly=self.config[RUN_EAGERLY],
             )
         (
             data_generator,
@@ -1172,8 +1178,8 @@ class TEDPolicy(Policy):
                 feature_name: features
                 for feature_name, features in model_data_example.items()
                 if feature_name
-                # we need to remove label features for prediction if they are present
-                in PREDICTION_FEATURES
+                   # we need to remove label features for prediction if they are present
+                   in PREDICTION_FEATURES
             },
         )
         return model_data_example, predict_data_example
