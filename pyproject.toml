@@ -334,6 +334,7 @@ log_cli = true
 asyncio_mode = "auto"
 markers = [
     "skip_on_windows",              # mark a test as a test that shouldn't be executed on Windows.
+    "skip_on_ci",                   # mark a test to skip in the CI
     "sequential",                   # mark tests than cannot be ran in parallel (e.g. because they need access to the same resource).
     "category_cli",                 # Marks tests for the command-line interface.
     "category_core_featurizers",    # Marks tests for components which featurize trackers for the policies.
