@@ -21,6 +21,5 @@ policies:
   - name: TEDPolicy
     max_history: 5
     epochs: 1
-    run_eagerly: True
   - name: MemoizationPolicy
   - name: RulePolicy

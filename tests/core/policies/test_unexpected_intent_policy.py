@@ -57,14 +57,9 @@ from tests.core.policies.test_ted_policy import TestTEDPolicy
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     @staticmethod
     def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
-        class UnexpecTEDIntentPolicyEager(UnexpecTEDIntentPolicy):
-            @staticmethod
-            def get_default_config() -> Dict[Text, Any]:
-                config = UnexpecTEDIntentPolicy.get_default_config()
-                config[RUN_EAGERLY] = True
-                return config
+        
 
-        return UnexpecTEDIntentPolicyEager
+        return UnexpecTEDIntentPolicy
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:

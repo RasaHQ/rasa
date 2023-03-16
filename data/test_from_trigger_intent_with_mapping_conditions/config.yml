@@ -44,9 +44,7 @@ policies:
    - name: UnexpecTEDIntentPolicy
      max_history: 5
      epochs: 1
-     run_eagerly: true
    - name: TEDPolicy
      max_history: 5
      epochs: 1
      constrain_similarities: true
-     run_eagerly: true

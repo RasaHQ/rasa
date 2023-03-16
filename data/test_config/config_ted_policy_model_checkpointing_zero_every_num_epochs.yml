@@ -6,4 +6,3 @@ policies:
     evaluate_on_number_of_examples: 14
     evaluate_every_number_of_epochs: 0
     checkpoint_model: True
-    run_eagerly: True
