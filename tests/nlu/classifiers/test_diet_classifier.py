@@ -462,7 +462,13 @@ async def test_margin_loss_is_not_normalized(
     create_train_load_and_process_diet: Callable[..., Message]
 ):
     _, parsed_message = create_train_load_and_process_diet(
-        {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, EVAL_NUM_EPOCHS: 1, RUN_EAGERLY: True},
+        {
+            LOSS_TYPE: "margin",
+            RANDOM_SEED: 42,
+            EPOCHS: 1,
+            EVAL_NUM_EPOCHS: 1,
+            RUN_EAGERLY: True,
+        },
         training_data="data/test/many_intents.yml",
     )
     parse_data = parsed_message.data
@@ -556,7 +562,13 @@ async def test_train_model_checkpointing(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
     create_train_load_and_process_diet(
-        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True, RUN_EAGERLY: True}
+        {
+            EPOCHS: 2,
+            EVAL_NUM_EPOCHS: 1,
+            EVAL_NUM_EXAMPLES: 10,
+            CHECKPOINT_MODEL: True,
+            RUN_EAGERLY: True,
+        }
     )
     with default_model_storage.read_from(default_diet_resource) as model_dir:
         all_files = list(model_dir.rglob("*.*"))
@@ -566,7 +578,9 @@ async def test_train_model_checkpointing(
 async def test_process_unfeaturized_input(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    classifier, _ = create_train_load_and_process_diet(diet_config={EPOCHS: 1, RUN_EAGERLY: True})
+    classifier, _ = create_train_load_and_process_diet(
+        diet_config={EPOCHS: 1, RUN_EAGERLY: True}
+    )
     message_text = "message text"
     unfeaturized_message = Message(data={TEXT: message_text})
     classified_message = classifier.process([unfeaturized_message])[0]
@@ -582,7 +596,9 @@ async def test_train_model_not_checkpointing(
     default_diet_resource: Resource,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    create_train_load_and_process_diet({EPOCHS: 1, CHECKPOINT_MODEL: False, RUN_EAGERLY: True})
+    create_train_load_and_process_diet(
+        {EPOCHS: 1, CHECKPOINT_MODEL: False, RUN_EAGERLY: True}
+    )
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
         all_files = list(model_dir.rglob("*.*"))
@@ -623,7 +639,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
                 CHECKPOINT_MODEL: True,
                 EVAL_NUM_EXAMPLES: 0,
                 EVAL_NUM_EPOCHS: 1,
-                RUN_EAGERLY: True
+                RUN_EAGERLY: True,
             }
         )
 
@@ -667,7 +683,9 @@ async def test_process_gives_diagnostic_data(
 ):
     default_execution_context.should_add_diagnostic_data = should_add_diagnostic_data
     default_execution_context.node_name = "DIETClassifier_node_name"
-    _, processed_message = create_train_load_and_process_diet({EPOCHS: 1, RUN_EAGERLY: True})
+    _, processed_message = create_train_load_and_process_diet(
+        {EPOCHS: 1, RUN_EAGERLY: True}
+    )
 
     if should_add_diagnostic_data:
         # Tests if processing a message returns attention weights as numpy array.
@@ -925,7 +943,9 @@ async def test_no_bilou_when_entity_recognition_off(
         {"component": WhitespaceTokenizer},
         {"component": CountVectorsFeaturizer},
     ]
-    diet = create_diet({ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1, RUN_EAGERLY: True})
+    diet = create_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1, RUN_EAGERLY: True}
+    )
 
     training_data, loaded_pipeline = train_and_preprocess(
         pipeline, training_data="data/test/demo-rasa-composite-entities.yml"

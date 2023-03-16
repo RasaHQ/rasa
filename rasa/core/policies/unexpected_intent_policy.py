@@ -100,6 +100,7 @@ from rasa.utils.tensorflow.constants import (
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
     USE_GPU,
+    RUN_EAGERLY,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
@@ -283,6 +284,11 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
             USE_GPU: True,
+            # Determines whether to construct the model graph or not.
+            # This is advantageous when the model is only trained or inferred for
+            # a few steps, as the compilation of the graph tends to take more time than
+            # running it. It is recommended to not adjust the optimization parameter.
+            RUN_EAGERLY: False,
         }
 
     def __init__(

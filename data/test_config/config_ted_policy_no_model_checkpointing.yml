@@ -4,3 +4,4 @@ policies:
   - name: TEDPolicy
     epochs: 2
     checkpoint_model: False
+    run_eagerly: True

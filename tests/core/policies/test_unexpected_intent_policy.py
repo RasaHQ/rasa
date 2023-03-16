@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Optional, List, Dict, Type
+from typing import Optional, List, Dict, Type, Text, Any
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -45,6 +45,7 @@ from rasa.utils.tensorflow.constants import (
     NEGATIVE_SCORES_KEY,
     RANKING_KEY,
     RANKING_LENGTH,
+    RUN_EAGERLY,
 )
 from rasa.shared.nlu.constants import INTENT
 from rasa.shared.core.events import Event
@@ -56,7 +57,14 @@ from tests.core.policies.test_ted_policy import TestTEDPolicy
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     @staticmethod
     def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
-        return UnexpecTEDIntentPolicy
+        class UnexpecTEDIntentPolicyEager(UnexpecTEDIntentPolicy):
+            @staticmethod
+            def get_default_config() -> Dict[Text, Any]:
+                config = UnexpecTEDIntentPolicy.get_default_config()
+                config[RUN_EAGERLY] = True
+                return config
+
+        return UnexpecTEDIntentPolicyEager
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:

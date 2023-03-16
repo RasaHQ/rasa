@@ -158,7 +158,13 @@ def train_persist_load_with_different_settings(
     "config_params",
     [
         {EPOCHS: 1, RUN_EAGERLY: True},
-        {EPOCHS: 1, MASKED_LM: True, TRANSFORMER_SIZE: 256, NUM_TRANSFORMER_LAYERS: 1, RUN_EAGERLY: True},
+        {
+            EPOCHS: 1,
+            MASKED_LM: True,
+            TRANSFORMER_SIZE: 256,
+            NUM_TRANSFORMER_LAYERS: 1,
+            RUN_EAGERLY: True,
+        },
     ],
 )
 def test_train_selector(
@@ -322,7 +328,7 @@ def test_train_model_checkpointing(
         CHECKPOINT_MODEL: True,
         EVAL_NUM_EPOCHS: 1,
         EVAL_NUM_EXAMPLES: 10,
-        RUN_EAGERLY: True
+        RUN_EAGERLY: True,
     }
 
     response_selector = create_response_selector(config_params)
@@ -404,7 +410,8 @@ async def test_process_gives_diagnostic_data(
 
 
 @pytest.mark.parametrize(
-    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, RUN_EAGERLY: True})]
+    "classifier_params",
+    [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, RUN_EAGERLY: True})],
 )
 async def test_margin_loss_is_not_normalized(
     classifier_params: Dict[Text, int],
