@@ -51,7 +51,6 @@ from rasa.utils.tensorflow.constants import (
     IDS,
     EPOCHS,
     EPOCH_OVERRIDE,
-    RUN_EAGERLY,
 )
 from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow import model_data_utils
