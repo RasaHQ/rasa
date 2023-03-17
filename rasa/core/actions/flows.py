@@ -51,21 +51,19 @@ class FlowAction(FormAction):
         """Embed flows in the next step."""
         additional_steps = []
         link_steps = list((step for step in steps if step.get("link")))
-        for link_step in link_steps :
+        for link_step in link_steps:
             embeddedable_flow = domain.flows.get(link_step.get("link", ""), None)
-            
+
             if not embeddedable_flow:
-                raise Exception(
-                    f"Flow '{link_step.get('link')}' not found in domain."
-                )
-            
+                raise Exception(f"Flow '{link_step.get('link')}' not found in domain.")
+
             prefix = link_step.get("link", "") + "_"
             steps_to_embed = deepcopy(embeddedable_flow.get("steps", []))
             if not steps_to_embed:
                 continue
-            
+
             for index, step in enumerate(steps_to_embed):
-                step["id"] = link_step.get('id') if index == 0 else prefix + step["id"]
+                step["id"] = link_step.get("id") if index == 0 else prefix + step["id"]
                 if step.get("next"):
                     if isinstance(step["next"], str):
                         step["next"] = prefix + step["next"]
@@ -77,10 +75,9 @@ class FlowAction(FormAction):
                     # Link back to the calling flow
                     if link_step.get("next"):
                         step["next"] = link_step.get("next")
-                additional_steps.append(step)   
+                additional_steps.append(step)
         steps = [step for step in steps if not step.get("link")]
         return steps + additional_steps
-
 
     def steps(self, domain: Domain) -> List[Dict]:
         """Return all the steps of the flow."""
@@ -167,28 +164,46 @@ class FlowAction(FormAction):
             )
 
         return events
-    
-    def _eval_predicate(self, predicate: Text, domain: Domain, tracker: "DialogueStateTracker") -> bool:
+
+    def _eval_predicate(
+        self, predicate: Text, domain: Domain, tracker: "DialogueStateTracker"
+    ) -> bool:
         """Evaluate a predicate condition."""
-        def get_value(initial_value: Union[Text, None]) -> Union[Text,float,bool,None]:
+
+        def get_value(
+            initial_value: Union[Text, None]
+        ) -> Union[Text, float, bool, None]:
             if initial_value and not isinstance(initial_value, str):
-                raise ValueError(f"Slot is not a text slot")
+                raise ValueError("Slot is not a text slot")
             elif not initial_value:
                 return None
             elif initial_value.lower() in ["true", "false"]:
                 return initial_value.lower() == "true"
             return float(initial_value) if initial_value.isnumeric() else initial_value
 
-        text_slots = dict({slot.name: get_value(tracker.get_slot(slot.name)) for slot in domain.slots if isinstance(slot, TextSlot)})
+        text_slots = dict(
+            {
+                slot.name: get_value(tracker.get_slot(slot.name))
+                for slot in domain.slots
+                if isinstance(slot, TextSlot)
+            }
+        )
         p = Predicate(predicate)
         evaluation, _ = p.analyze(text_slots)
         return evaluation
 
-    def _get_else_predicate(self, next_items: Dict, domain: Domain, tracker: "DialogueStateTracker") -> Text:
-        negated_if_predicates = list((f"not ({item.get('if')})" for item in next_items if item.get('if') is not None ))
+    def _get_else_predicate(
+        self, next_items: Dict, domain: Domain, tracker: "DialogueStateTracker"
+    ) -> Text:
+        negated_if_predicates = list(
+            (
+                f"not ({item.get('if')})"
+                for item in next_items
+                if item.get("if") is not None
+            )
+        )
         else_predicate = "and".join(negated_if_predicates)
         return else_predicate
-
 
     def _get_next_step(
         self,
@@ -213,22 +228,41 @@ class FlowAction(FormAction):
                 next_id = next_step_slot.get("next")
 
             else:
-                if_statements = list((item.get('if') for item in next_info if item.get('if') is not None ))
-                evaluations = list((self._eval_predicate(if_statement, domain, tracker) for if_statement in if_statements))
-                first_true_index = next((index for index, evaluation in enumerate(evaluations) if evaluation), None)
+                if_statements = list(
+                    (item.get("if") for item in next_info if item.get("if") is not None)
+                )
+                evaluations = list(
+                    (
+                        self._eval_predicate(if_statement, domain, tracker)
+                        for if_statement in if_statements
+                    )
+                )
+                first_true_index = next(
+                    (
+                        index
+                        for index, evaluation in enumerate(evaluations)
+                        if evaluation
+                    ),
+                    None,
+                )
                 if first_true_index is not None:
-                    next_id = next_info[first_true_index].get('then')
+                    next_id = next_info[first_true_index].get("then")
                 else:
-                    else_case = next((item for item in next_info if item.get('else')), None)
+                    else_case = next(
+                        (item for item in next_info if item.get("else")), None
+                    )
                     if else_case:
-                        next_id = else_case.get('else')
-                            
+                        next_id = else_case.get("else")
+
             if next_id is None:
-                raise Exception(f"Conditions in step {next_step_slot['id']} are not covering all possibilities")
-            # next_steps = list((step['id'] for step in all_steps if step['id'] == next_id))
-            next_steps = list(
-                filter(lambda step: step["id"] == next_id, all_steps)
-            )
+                raise Exception(
+                    f"Conditions in step {next_step_slot['id']} "
+                    f"are not covering all possibilities"
+                )
+            # next_steps = list(
+            #     (step["id"] for step in all_steps if step["id"] == next_id)
+            # )
+            next_steps = list(filter(lambda step: step["id"] == next_id, all_steps))
             if len(next_steps) == 1:
                 return next_steps[0]
             elif len(next_steps) == 0:

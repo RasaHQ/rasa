@@ -13,6 +13,7 @@ from rasa.core.featurizers.precomputation import (
     CoreFeaturizationInputConverter,
     CoreFeaturizationCollector,
 )
+from rasa.graph_components.providers.flows_provider import FlowsProvider
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 
@@ -566,6 +567,13 @@ class DefaultV1Recipe(Recipe):
             constructor_name="create",
             fn="provide",
             config={"exclusion_percentage": cli_parameters.get("exclusion_percentage")},
+            is_input=True,
+        )
+        train_nodes["flows_provider"] = SchemaNode(
+            needs={"importer": "finetuning_validator"},
+            uses=FlowsProvider,
+            constructor_name="create",
+            fn="provide",
             is_input=True,
         )
         train_nodes["training_tracker_provider"] = SchemaNode(

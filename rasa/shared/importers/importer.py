@@ -4,6 +4,7 @@ from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, Union, cas
 import logging
 
 import rasa.shared.constants
+from rasa.shared.core.flows.flow import FlowsList
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
@@ -56,6 +57,15 @@ class TrainingDataImporter(ABC):
 
         Returns:
             `StoryGraph` containing all loaded stories.
+        """
+        ...
+
+    @abstractmethod
+    def get_flows(self) -> FlowsList:
+        """Retrieves the flows that should be used for training.
+
+        Returns:
+            `FlowsList` containing all loaded flows.
         """
         ...
 
