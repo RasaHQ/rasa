@@ -90,6 +90,7 @@ def test_synonym_mapper_with_ints(
 
     assert message.get(ENTITIES) == entities
 
+
 def test_synonym_alternate_case(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
@@ -135,7 +136,7 @@ def test_synonym_alternate_case(
 
     # synonym key for self is present
     assert mapper.synonyms.get("austria") == "austria"
-    
+
     # all replacement values are correct
     assert entities[0]["value"] == "austria"
     assert entities[1]["value"] == "austria"
