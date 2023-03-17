@@ -235,6 +235,7 @@ class LocalModelStorage(ModelStorage):
             trained_at=datetime.utcnow(),
             rasa_open_source_version=rasa.__version__,
             model_id=uuid.uuid4().hex,
+            assistant_id=model_configuration.assistant_id,
             domain=domain,
             train_schema=model_configuration.train_schema,
             predict_schema=model_configuration.predict_schema,

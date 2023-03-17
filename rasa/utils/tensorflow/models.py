@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Any, TYPE_CHECKING
 
 from keras.utils import tf_utils
+from keras import Model
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
@@ -29,6 +30,7 @@ from rasa.utils.tensorflow.constants import (
     LEARNING_RATE,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
+    RUN_EAGERLY,
 )
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
@@ -38,7 +40,6 @@ from rasa.utils.tensorflow.model_data import (
 import rasa.utils.train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow import rasa_layers
-from rasa.utils.tensorflow.temp_keras_modules import TmpKerasModel
 from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
@@ -58,7 +59,7 @@ LABEL_SUB_KEY = IDS
 
 
 # noinspection PyMethodOverriding
-class RasaModel(TmpKerasModel):
+class RasaModel(Model):
     """Abstract custom Keras model.
 
      This model overwrites the following methods:
@@ -92,6 +93,8 @@ class RasaModel(TmpKerasModel):
 
         self._tf_predict_step: Optional["GenericFunction"] = None
         self.prepared_for_prediction = False
+
+        self._checkpoint = tf.train.Checkpoint(model=self)
 
     def _set_random_seed(self) -> None:
         random.seed(self.random_seed)
@@ -425,8 +428,11 @@ class RasaModel(TmpKerasModel):
         # create empty model
         model = cls(*args, **kwargs)
         learning_rate = kwargs.get("config", {}).get(LEARNING_RATE, 0.001)
+        run_eagerly = kwargs.get("config", {}).get(RUN_EAGERLY)
         # need to train on 1 example to build weights of the correct size
-        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate))
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate), run_eagerly=run_eagerly
+        )
         data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
         model.fit(data_generator, verbose=False)
         # load trained weights
@@ -710,7 +716,10 @@ class TransformerRasaModel(RasaModel):
         Args:
             data_example: a data example that is stored with the ML component.
         """
-        self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
+        self.compile(
+            optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]),
+            run_eagerly=self.config[RUN_EAGERLY],
+        )
         label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
         label_sub_key = LABEL_SUB_KEY if self.config[INTENT_CLASSIFICATION] else None
 

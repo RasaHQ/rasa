@@ -37,7 +37,7 @@ from rasa.core.channels import channel, RestInput
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import Event, UserUttered
 from rasa.core.exporter import Exporter
@@ -162,6 +162,7 @@ def simple_config_path(tmp_path_factory: TempPathFactory) -> Text:
     config = textwrap.dedent(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        assistant_id: placeholder_default
         pipeline:
         - name: WhitespaceTokenizer
         - name: KeywordIntentClassifier
@@ -854,6 +855,15 @@ def with_model_id(event: Event, model_id: Text) -> Event:
     new_event = copy.deepcopy(event)
     new_event.metadata[METADATA_MODEL_ID] = model_id
     return new_event
+
+
+def with_assistant_id(event: Event, assistant_id: Text) -> Event:
+    event.metadata[ASSISTANT_ID_KEY] = assistant_id
+    return event
+
+
+def with_assistant_ids(events: List[Event], assistant_id: Text) -> List[Event]:
+    return [with_assistant_id(event, assistant_id) for event in events]
 
 
 @pytest.fixture(autouse=True)

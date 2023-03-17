@@ -166,7 +166,12 @@ async def test_train_persist_load_parse(
 ):
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        config_file, {"pipeline": pipeline, "language": language}
+        config_file,
+        {
+            "pipeline": pipeline,
+            "language": language,
+            "assistant_id": "placeholder_default",
+        },
     )
 
     persisted_path = rasa.model_training.train_nlu(
@@ -192,7 +197,9 @@ def test_train_persist_load_parse_non_windows(
 
 def test_train_model_empty_pipeline(nlu_as_json_path: Text, tmp_path: Path):
     config_file = tmp_path / "config.yml"
-    rasa.shared.utils.io.dump_obj_as_json_to_file(config_file, {"pipeline": []})
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        config_file, {"pipeline": [], "assistant_id": "placeholder_default"}
+    )
 
     with pytest.raises(ValueError):
         rasa.model_training.train_nlu(
@@ -226,7 +233,11 @@ def test_train_model_training_data_persisted(
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         config_file,
-        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"},
+        {
+            "pipeline": [{"name": "KeywordIntentClassifier"}],
+            "language": "en",
+            "assistant_id": "placeholder_default",
+        },
     )
 
     persisted_path = rasa.model_training.train_nlu(
@@ -254,7 +265,11 @@ def test_train_model_no_training_data_persisted(
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         config_file,
-        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"},
+        {
+            "pipeline": [{"name": "KeywordIntentClassifier"}],
+            "language": "en",
+            "assistant_id": "placeholder_default",
+        },
     )
 
     persisted_path = rasa.model_training.train_nlu(

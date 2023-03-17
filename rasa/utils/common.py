@@ -78,6 +78,9 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     (ImportWarning, "_SixMetaPathImporter.find_spec*"),
     # 3.10 specific warning: https://github.com/pytest-dev/pytest-asyncio/issues/212
     (DeprecationWarning, "There is no current event loop"),
+    # UserWarning which is always issued if the default value for
+    # assistant_id key in config file is not changed
+    (UserWarning, "is missing a unique value for the 'assistant_id' mandatory key.*"),
 ]
 
 EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)

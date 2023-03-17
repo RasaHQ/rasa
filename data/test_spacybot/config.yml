@@ -1,4 +1,5 @@
 recipe: default.v1
+assistant_id: test_spacy_bot
 language: en
 
 pipeline:
