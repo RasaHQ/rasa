@@ -171,7 +171,7 @@ class RestInput(InputChannel):
                     )
                 except Exception:
                     logger.exception(
-                        f"An exception occured while handling "
+                        f"An exception occurred while handling "
                         f"user message '{text}'."
                     )
                 return response.json(collector.messages)

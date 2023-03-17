@@ -1515,7 +1515,7 @@ async def combine_result(
         data: training data
         intent_results: intent evaluation results
         entity_results: entity evaluation results
-        response_selection_results: reponse selection evaluation results
+        response_selection_results: response selection evaluation results
 
     Returns: intent, entity, and response selection metrics
     """
@@ -1578,7 +1578,7 @@ async def cross_validate(
         output: path to folder where reports are stored
         successes: if true successful predictions are written to a file
         errors: if true incorrect predictions are written to a file
-        disable_plotting: if true no confusion matrix and historgram plates are created
+        disable_plotting: if true no confusion matrix and histogram plates are created
         report_as_dict: `True` if the evaluation report should be returned as `dict`.
             If `False` the report is returned in a human-readable text format. If `None`
             `report_as_dict` is considered as `True` in case an `output_directory` is

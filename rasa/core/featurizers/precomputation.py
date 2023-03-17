@@ -36,7 +36,7 @@ class MessageContainerForCoreFeaturization:
     - Our tokenizers add attributes (e.g. token sequences) and not just `Features`,
       which is why we need messages and why we allow messages to contain more than
       just the key attributes.
-    - Due to the way we use this datastructure, it won't contain all features that the
+    - Due to the way we use this data structure, it won't contain all features that the
       policies need (cf. `rasa.core.featurizers.SingleStateFeaturizer`) and sometimes
       the messages will contain no features at all, which is the motivation for the
       name of this class.
@@ -331,7 +331,7 @@ class CoreFeaturizationInputConverter(GraphComponent):
         Each possible user text and intent and each action name and action text
         that can be found in the given domain and story graph appears exactly once
         in the resulting training data. Moreover, each item is contained in a separate
-        messsage.
+        message.
 
         Args:
            domain: the domain
@@ -366,7 +366,7 @@ class CoreFeaturizationInputConverter(GraphComponent):
         Each possible user text and intent and each action name and action text
         that can be found in the events of the given tracker will appear exactly once
         in the resulting messages. Moreover, each item is contained in a separate
-        messsage.
+        message.
 
         Args:
           tracker: a dialogue state tracker containing events

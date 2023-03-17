@@ -42,7 +42,7 @@ class SlackBot(OutputChannel):
         super().__init__()
 
     async def _post_message(self, channel: Text, **kwargs: Any) -> None:
-        # type issues below are ignored because the `run_async` paramenter
+        # type issues below are ignored because the `run_async` parameter
         # above ensures chat_postMessage is await-able. mypy complains
         # because the type annotations are not precise enough in Slack
         if self.thread_id:
@@ -294,7 +294,7 @@ class SlackInput(InputChannel):
 
     @staticmethod
     def _is_interactive_message(payload: Dict) -> bool:
-        """Check wheter the input is a supported interactive input type."""
+        """Check whether the input is a supported interactive input type."""
 
         supported = [
             "button",

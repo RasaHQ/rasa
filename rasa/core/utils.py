@@ -35,7 +35,7 @@ def configure_file_logging(
         logger_obj: Logger object to configure.
         log_file: Path of log file to write to.
         use_syslog: Add syslog as a logger.
-        syslog_address: Adress of the syslog server.
+        syslog_address: Address of the syslog server.
         syslog_port: Port of the syslog server.
         syslog_protocol: Protocol with the syslog server
     """

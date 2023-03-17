@@ -652,7 +652,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     Creates training data from trackers where actions are the output prediction
     labels. Tracker state sequences which represent policy input are truncated
-    to not excede `max_history` states.
+    to not exceeds `max_history` states.
     """
 
     LABEL_NAME = "action"
@@ -893,7 +893,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
     Creates training data from trackers where intents are the output prediction
     labels. Tracker state sequences which represent policy input are truncated
-    to not excede `max_history` states.
+    to not exceeds `max_history` states.
     """
 
     LABEL_NAME = "intent"

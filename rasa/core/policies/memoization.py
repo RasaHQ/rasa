@@ -477,7 +477,7 @@ def _get_max_applied_events_for_max_history(
     """Computes the number of events in the tracker that correspond to max_history.
 
     To ensure that the last user utterance is correctly included in the prediction
-    states, return the index of the most recent `action_listen` event occuring
+    states, return the index of the most recent `action_listen` event occurring
     before the tracker would be truncated according to the value of `max_history`.
 
     Args:
@@ -486,7 +486,7 @@ def _get_max_applied_events_for_max_history(
 
     Returns:
         The number of events, as counted from the end of the event list, that should
-        be taken into accout according to the `max_history` setting. If all events
+        be taken into account according to the `max_history` setting. If all events
         should be taken into account, the return value is `None`.
     """
     if not max_history:
