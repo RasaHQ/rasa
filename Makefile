@@ -90,21 +90,13 @@ lint:
 # Compare against `main` if no branch was provided
 BRANCH ?= main
 lint-docstrings:
-# Lint docstrings only against the the diff to avoid too many errors.
-# Check only production code. Ignore other flake errors which are captured by `lint`
-# Diff of committed changes (shows only changes introduced by your branch
-ifneq ($(strip $(BRANCH)),)
-	git diff $(BRANCH)...HEAD -- rasa | poetry run ruff check --select D --diff
-endif
-
-	# Diff of uncommitted changes for running locally
-	git diff HEAD -- rasa | poetry run ruff check --select D --diff
+	./scripts/lint_python_docstrings.sh $(BRANCH)
 
 lint-changelog:
 	./scripts/lint_changelog_files.sh
 
 lint-security:
-	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
+	poetry run bandit -ll -ii -r --config pyproject.toml rasa/*
 
 types:
 	poetry run mypy rasa

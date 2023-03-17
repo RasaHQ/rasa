@@ -102,8 +102,8 @@ class HangoutsOutput(OutputChannel):
         for simple text messages. All other responses must be sent as cards.
 
         In case the bot sends multiple messages, all are transformed to either
-        cards or text output"""
-
+        cards or text output
+        """
         # check whether current and previous message will send 'text' or 'card'
         if self.messages.get("text"):
             msg_state = "text"
@@ -179,15 +179,14 @@ class HangoutsOutput(OutputChannel):
     ) -> None:
         """Custom json payload is simply forwarded to Google Hangouts without
         any modifications. Use this for more complex cards, which can be created
-        in actions.py."""
+        in actions.py.
+        """
         await self._persist_message(json_message)
 
 
 # Google Hangouts input channel
 class HangoutsInput(InputChannel):
-    """
-    Channel that uses Google Hangouts Chat API to communicate.
-    """
+    """Channel that uses Google Hangouts Chat API to communicate."""
 
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
@@ -214,7 +213,7 @@ class HangoutsInput(InputChannel):
         # session to fetch Google's service certs. Certs don't change frequently,
         # so it makes sense to cache request body, rather than getting it again
         # every message. Actual caching depends on response headers.
-        # see: https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/id_token.py#L15 # noqa: E501, W505
+        # see: https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/id_token.py#L15 # noqa: E501
         cached_session = cachecontrol.CacheControl(requests.session())
         self.google_request = google.auth.transport.requests.Request(
             session=cached_session
@@ -269,8 +268,8 @@ class HangoutsInput(InputChannel):
         return self.name()
 
     def _check_token(self, bot_token: Text) -> None:
-        # see https://developers.google.com/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: E501, W505
-        # and https://google-auth.readthedocs.io/en/latest/user-guide.html#identity-tokens # noqa: E501, W505
+        # see https://developers.google.com/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: E501
+        # and https://google-auth.readthedocs.io/en/latest/user-guide.html#identity-tokens # noqa: E501
         try:
             decoded_token = id_token.verify_token(
                 bot_token,

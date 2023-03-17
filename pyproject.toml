@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.4.5"
+version = "3.4.6"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = ["Rasa Technologies GmbH <hi@rasa.com>"]
 maintainers = ["Tom Bocklisch <tom@rasa.com>"]
@@ -248,9 +248,6 @@ metal = ["tensorflow-metal"]
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-
 [tool.poetry.dependencies.tensorflow]
 version = "~2.11.0"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
@@ -309,16 +306,69 @@ extras = ["tls", "srv"]
 git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix_signal_issue"
 
+[tool.mypy]
+# some libraries do not have type hints; ideally we remove
+# this at some point but it will require a lot of efforts from us and library owners
+mypy_path = "./stubs"
+ignore_missing_imports = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_calls = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+disallow_untyped_decorators = true
+# FIXME: should be switch to true (default) after fixing implicit Optional in the codebase
+no_implicit_optional = false
+# FIXME: working our way towards removing these
+# see https://github.com/RasaHQ/rasa/pull/6470
+# the list below is sorted by the number of errors for each error code, in decreasing order
+disable_error_code = ["arg-type"]
+
+[tool.pytest.ini_options]
+# Function starting with the following pattern are considered for test cases.
+python_functions = "test_"
+filterwarnings = ["ignore::ResourceWarning:ruamel[.*]"]
+log_cli_level = "WARNING"
+log_cli = true
+# asyncio_mode = "auto" FIXME: https://rasahq.atlassian.net/browse/ATO-859
+markers = [
+    "skip_on_windows",              # mark a test as a test that shouldn't be executed on Windows.
+    "skip_on_ci",                   # mark a test to skip in the CI
+    "sequential",                   # mark tests than cannot be ran in parallel (e.g. because they need access to the same resource).
+    "category_cli",                 # Marks tests for the command-line interface.
+    "category_core_featurizers",    # Marks tests for components which featurize trackers for the policies.
+    "category_policies",            # Marks tests for the dialogue policies.
+    "category_nlu_featurizers",     # Marks tests for NLU components which add features to the user message.
+    "category_nlu_predictors",      # Marks tests for NLU components which make predictions based on the user message (e.g. intent classifiers or entity extractors).
+    "category_full_model_training", # Marks tests which test the training workflow for entire models (instead of single policies / components).
+    "category_other_unit_tests",    # Default marker for unit tests which have no `category_` marker applied to them.
+    "category_performance",         # Marker for performance tests (e.g. speed or detecting memory leaks).
+    "flaky",                        # mark a test as flaky (i.e., fails non-deterministically).
+]
+# see https://pypi.org/project/pytest-timeout/
+timeout = 60
+timeout_func_only = true
+
+[tool.bandit]
+skips = [
+    "B104", # checks for binding 0.0.0.0 interface, which should be fine for containers.
+    "B301", # checks for pickle usage, which is a necessary evil.
+]
+
 [tool.ruff]
 # See https://beta.ruff.rs/docs/rules/ for error code documentation
 ignore = [
-    "D100", # ignore missing docstrings in public module
-    "D104", # ignore missing docstrings in public package
-    "D105", # ignore missing docstrings in magic methods
+    "D100",   # ignore missing docstrings in public module
+    "D104",   # ignore missing docstrings in public package
+    "D105",   # ignore missing docstrings in magic methods
+    "RUF001", # ignore ambiguous characters in strings, we need them
+    "RUF002", # ignore ambiguous characters in docstrings, we need them
+    "RUF003", # ignore ambiguous characters in comments, we need them
+    "RUF005", # admittedly an optimization of code rather than a fail
 ]
 line-length = 88
-# TODO: enable more checks like RUF
-select = ["D", "E", "F", "W", "RUF006"]
+select = ["D", "E", "F", "W", "RUF"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
