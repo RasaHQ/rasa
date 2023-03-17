@@ -67,7 +67,7 @@ def init_managers(endpoints_file: Optional[Text]) -> None:
 
 
 @hookspec(firstresult=True)  # type: ignore[misc]
-def get_auth_retry_wrapper(  # type: ignore[empty-body]
+def create_tracker_store(  # type: ignore[empty-body]
     endpoint_config: Union["TrackerStore", "EndpointConfig"],
     domain: "Domain",
     event_broker: Optional["EventBroker"] = None,
