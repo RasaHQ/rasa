@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -euo pipefail
 # Lint docstrings only against the the diff to avoid too many errors.
 # Check only production code. Ignore other other errors which are captured by `lint`
 
