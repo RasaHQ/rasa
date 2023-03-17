@@ -72,7 +72,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.model_testing import compare_nlu_models
-from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
+from rasa.utils.tensorflow.constants import EPOCHS, RUN_EAGERLY
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -434,7 +434,7 @@ async def test_run_cv_evaluation():
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 2},
+            {"name": "LogisticRegressionClassifier", EPOCHS: 2},
         ],
     }
 
@@ -481,7 +481,7 @@ async def test_run_cv_evaluation_no_entities():
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 25},
+            {"name": "LogisticRegressionClassifier", EPOCHS: 25},
         ],
     }
 
@@ -534,8 +534,9 @@ async def test_run_cv_evaluation_with_response_selector():
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 25},
-            {"name": "ResponseSelector", EPOCHS: 2},
+            {"name": "LogisticRegressionClassifier", EPOCHS: 25},
+            {"name": "CRFEntityExtractor", EPOCHS: 25},
+            {"name": "ResponseSelector", EPOCHS: 2, RUN_EAGERLY: True},
         ],
     }
 
@@ -584,14 +585,14 @@ async def test_run_cv_evaluation_with_response_selector():
         for intent_report in response_selection_results.evaluation["report"].values()
     )
 
-    diet_name = "DIETClassifier"
-    assert len(entity_results.train[diet_name]["Accuracy"]) == n_folds
-    assert len(entity_results.train[diet_name]["Precision"]) == n_folds
-    assert len(entity_results.train[diet_name]["F1-score"]) == n_folds
+    entity_extractor_name = "CRFEntityExtractor"
+    assert len(entity_results.train[entity_extractor_name]["Accuracy"]) == n_folds
+    assert len(entity_results.train[entity_extractor_name]["Precision"]) == n_folds
+    assert len(entity_results.train[entity_extractor_name]["F1-score"]) == n_folds
 
-    assert len(entity_results.test[diet_name]["Accuracy"]) == n_folds
-    assert len(entity_results.test[diet_name]["Precision"]) == n_folds
-    assert len(entity_results.test[diet_name]["F1-score"]) == n_folds
+    assert len(entity_results.test[entity_extractor_name]["Accuracy"]) == n_folds
+    assert len(entity_results.test[entity_extractor_name]["Precision"]) == n_folds
+    assert len(entity_results.test[entity_extractor_name]["F1-score"]) == n_folds
     for extractor_evaluation in entity_results.evaluation.values():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
@@ -612,7 +613,7 @@ async def test_run_cv_evaluation_lookup_tables():
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 1, ENTITY_RECOGNITION: False},
+            {"name": "LogisticRegressionClassifier", EPOCHS: 1},
             {"name": "RegexEntityExtractor", "use_lookup_tables": True},
         ],
     }

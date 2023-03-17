@@ -23,10 +23,12 @@ pipeline:
    - name: DIETClassifier
      epochs: 1
      constrain_similarities: true
+     run_eagerly: true
    - name: EntitySynonymMapper
    - name: ResponseSelector
      epochs: 1
      constrain_similarities: true
+     run_eagerly: true
    - name: FallbackClassifier
      threshold: 0.3
      ambiguity_threshold: 0.1
