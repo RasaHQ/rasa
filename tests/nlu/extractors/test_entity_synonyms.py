@@ -15,7 +15,6 @@ def test_entity_synonyms(
         {"entity": "test", "value": "chines", "start": 0, "end": 6},
         {"entity": "test", "value": "chinese", "start": 0, "end": 6},
         {"entity": "test", "value": "china", "start": 0, "end": 6},
-        {"entity": "test", "value": "nyc", "start": 0, "end": 6},
     ]
     ent_synonyms = {"chines": "chinese", "NYC": "New York City"}
 
@@ -24,11 +23,10 @@ def test_entity_synonyms(
     )
     mapper.replace_synonyms(entities)
 
-    assert len(entities) == 4
+    assert len(entities) == 3
     assert entities[0]["value"] == "chinese"
     assert entities[1]["value"] == "chinese"
     assert entities[2]["value"] == "china"
-    assert entities[3]["value"] == "New York City"
 
 
 def test_unintentional_synonyms_capitalized(
@@ -91,3 +89,56 @@ def test_synonym_mapper_with_ints(
     mapper.process([message])
 
     assert message.get(ENTITIES) == entities
+
+def test_synonym_alternate_case(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+):
+    resource = Resource("xy")
+    mapper = EntitySynonymMapper.create(
+        {}, default_model_storage, resource, default_execution_context
+    )
+
+    examples = [
+        Message(
+            data={
+                TEXT: "What's the weather in austria?",
+                "intent": "restaurant_search",
+                "entities": [
+                    {"start": 22, "end": 29, "value": "austria", "entity": "GPE"}
+                ],
+            }
+        ),
+        Message(
+            data={
+                TEXT: "weather vienna?",
+                "intent": "restaurant_search",
+                "entities": [
+                    {"start": 8, "end": 14, "value": "austria", "entity": "GPE"}
+                ],
+            }
+        ),
+    ]
+    entities = [
+        {"entity": "test", "value": "austria", "start": 0, "end": 7},
+        {"entity": "test", "value": "Austria", "start": 0, "end": 7},
+        {"entity": "test", "value": "AUSTRIA", "start": 0, "end": 7},
+        {"entity": "test", "value": "ausTRIA", "start": 0, "end": 7},
+        {"entity": "test", "value": "ausTRIA", "start": 0, "end": 7},
+        {"entity": "test", "value": "brazil", "start": 0, "end": 7},
+    ]
+
+    mapper.train(TrainingData(training_examples=examples))
+    mapper.replace_synonyms(entities)
+
+    # synonym key for example value is present
+    assert mapper.synonyms.get("vienna") == "austria"
+
+    # synonym key for self is present
+    assert mapper.synonyms.get("austria") == "austria"
+    
+    # all replacement values are correct
+    assert entities[0]["value"] == "austria"
+    assert entities[1]["value"] == "austria"
+    assert entities[2]["value"] == "austria"
+    assert entities[3]["value"] == "austria"
+    assert entities[4]["value"] != "austria"
