@@ -74,7 +74,7 @@ class Persistor(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _persist_tar(self, filekey: Text, tarname: Text) -> None:  # noqa: F841
+    def _persist_tar(self, filekey: Text, tarname: Text) -> None:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
         raise NotImplementedError
 

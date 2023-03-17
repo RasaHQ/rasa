@@ -78,7 +78,7 @@ from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
-    from ssl import SSLContext  # noqa: F401
+    from ssl import SSLContext
     from rasa.core.processor import MessageProcessor
     from mypy_extensions import Arg, VarArg, KwArg
 
@@ -86,7 +86,7 @@ if TYPE_CHECKING:
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
     ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        [Arg(Request, "request"), VarArg(), KwArg()],
         Coroutine[Any, Any, SanicResponse],
     ]
 

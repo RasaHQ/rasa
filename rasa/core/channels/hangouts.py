@@ -214,7 +214,7 @@ class HangoutsInput(InputChannel):
         # session to fetch Google's service certs. Certs don't change frequently,
         # so it makes sense to cache request body, rather than getting it again
         # every message. Actual caching depends on response headers.
-        # see: https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/id_token.py#L15 # noqa: E501, W505
+        # see: https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/id_token.py#L15 # noqa: E501
         cached_session = cachecontrol.CacheControl(requests.session())
         self.google_request = google.auth.transport.requests.Request(
             session=cached_session
@@ -269,8 +269,8 @@ class HangoutsInput(InputChannel):
         return self.name()
 
     def _check_token(self, bot_token: Text) -> None:
-        # see https://developers.google.com/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: E501, W505
-        # and https://google-auth.readthedocs.io/en/latest/user-guide.html#identity-tokens # noqa: E501, W505
+        # see https://developers.google.com/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: E501
+        # and https://google-auth.readthedocs.io/en/latest/user-guide.html#identity-tokens # noqa: E501
         try:
             decoded_token = id_token.verify_token(
                 bot_token,

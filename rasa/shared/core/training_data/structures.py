@@ -308,7 +308,7 @@ class StoryStep:
 class RuleStep(StoryStep):
     """A Special type of StoryStep representing a Rule."""
 
-    def __init__(  # noqa: D107
+    def __init__(
         self,
         block_name: Optional[Text] = None,
         start_checkpoints: Optional[List[Checkpoint]] = None,

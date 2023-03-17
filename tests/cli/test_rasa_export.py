@@ -33,7 +33,7 @@ def test_export_help(run: Callable[..., RunResult]):
                    [--minimum-timestamp MINIMUM_TIMESTAMP]
                    [--maximum-timestamp MAXIMUM_TIMESTAMP]
                    [--offset-timestamps-by-seconds OFFSET_TIMESTAMPS_BY_SECONDS]
-                   [--conversation-ids CONVERSATION_IDS]"""  # noqa: E501
+                   [--conversation-ids CONVERSATION_IDS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
