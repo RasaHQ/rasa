@@ -80,8 +80,7 @@ def plot_confusion_matrix(
     zmin: int = 1,
     output_file: Optional[Text] = None,
 ) -> None:
-    """
-    Print and plot the provided confusion matrix.
+    """Print and plot the provided confusion matrix.
     Normalization can be applied by setting `normalize=True`.
 
     Args:

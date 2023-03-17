@@ -102,8 +102,8 @@ class HangoutsOutput(OutputChannel):
         for simple text messages. All other responses must be sent as cards.
 
         In case the bot sends multiple messages, all are transformed to either
-        cards or text output"""
-
+        cards or text output
+        """
         # check whether current and previous message will send 'text' or 'card'
         if self.messages.get("text"):
             msg_state = "text"
@@ -179,15 +179,14 @@ class HangoutsOutput(OutputChannel):
     ) -> None:
         """Custom json payload is simply forwarded to Google Hangouts without
         any modifications. Use this for more complex cards, which can be created
-        in actions.py."""
+        in actions.py.
+        """
         await self._persist_message(json_message)
 
 
 # Google Hangouts input channel
 class HangoutsInput(InputChannel):
-    """
-    Channel that uses Google Hangouts Chat API to communicate.
-    """
+    """Channel that uses Google Hangouts Chat API to communicate."""
 
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:

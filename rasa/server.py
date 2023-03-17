@@ -427,7 +427,6 @@ def create_ssl_context(
         SSL context if a valid certificate chain can be loaded, `None` otherwise.
 
     """
-
     if ssl_certificate:
         import ssl
 
@@ -507,7 +506,6 @@ def configure_cors(
     app: Sanic, cors_origins: Union[Text, List[Text], None] = ""
 ) -> None:
     """Configure CORS origins for the given app."""
-
     # Workaround so that socketio works with requests from other origins.
     # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
     app.config.CORS_AUTOMATIC_OPTIONS = True
@@ -694,7 +692,6 @@ def create_app(
     @app.get("/version")
     async def version(request: Request) -> HTTPResponse:
         """Respond with the version number of the installed Rasa."""
-
         return response.json(
             {
                 "version": rasa.__version__,
