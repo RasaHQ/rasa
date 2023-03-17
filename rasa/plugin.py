@@ -8,7 +8,9 @@ import pluggy
 from rasa.cli import SubParsersAction
 
 if TYPE_CHECKING:
+    from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
+    from rasa.shared.core.domain import Domain
     from rasa.utils.endpoints import EndpointConfig
 
 
