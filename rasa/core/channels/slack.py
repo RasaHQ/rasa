@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class SlackBot(OutputChannel):
-    """A Slack communication channel"""
+    """A Slack communication channel."""
 
     @classmethod
     def name(cls) -> Text:
@@ -265,7 +265,6 @@ class SlackInput(InputChannel):
         Returns:
             str: parsed and cleaned version of the input text
         """
-
         uids_to_remove = uids_to_remove or []
 
         for uid_to_remove in uids_to_remove:
@@ -296,7 +295,6 @@ class SlackInput(InputChannel):
     @staticmethod
     def _is_interactive_message(payload: Dict) -> bool:
         """Check wheter the input is a supported interactive input type."""
-
         supported = [
             "button",
             "select",
@@ -354,7 +352,7 @@ class SlackInput(InputChannel):
     ) -> Any:
         """Slack retries to post messages up to 3 times based on
         failure conditions defined here:
-        https://api.slack.com/events-api#failure_conditions
+        https://api.slack.com/events-api#failure_conditions.
         """
         retry_reason = request.headers.get(self.retry_reason_header)
         retry_count = request.headers.get(self.retry_num_header)
@@ -467,7 +465,6 @@ class SlackInput(InputChannel):
         Returns:
             `True` if the request came from Slack.
         """
-
         try:
             slack_signing_secret = bytes(self.slack_signing_secret, "utf-8")
 
