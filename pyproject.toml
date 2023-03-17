@@ -362,7 +362,10 @@ ignore = [
     "D100",   # ignore missing docstrings in public module
     "D104",   # ignore missing docstrings in public package
     "D105",   # ignore missing docstrings in magic methods
-    "RUF005",
+    "RUF001", # ignore ambiguous characters in strings, we need them
+    "RUF002", # ignore ambiguous characters in docstrings, we need them
+    "RUF003", # ignore ambiguous characters in comments, we need them
+    "RUF005", # admittedly an optimization of code rather than a fail
     "RUF006", # FIXME in https://github.com/RasaHQ/rasa/pull/12136
 ]
 line-length = 88
