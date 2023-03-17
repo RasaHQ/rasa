@@ -359,13 +359,14 @@ skips = [
 [tool.ruff]
 # See https://beta.ruff.rs/docs/rules/ for error code documentation
 ignore = [
-    "D100", # ignore missing docstrings in public module
-    "D104", # ignore missing docstrings in public package
-    "D105", # ignore missing docstrings in magic methods
+    "D100",   # ignore missing docstrings in public module
+    "D104",   # ignore missing docstrings in public package
+    "D105",   # ignore missing docstrings in magic methods
+    "RUF005",
+    "RUF006", # FIXME in https://github.com/RasaHQ/rasa/pull/12136
 ]
 line-length = 88
-# TODO: enable more checks like RUF
-select = ["D", "E", "F", "W"]
+select = ["D", "E", "F", "W", "RUF"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
