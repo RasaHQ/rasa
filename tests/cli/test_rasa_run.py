@@ -39,7 +39,7 @@ def test_run_help(
                 [--log-file LOG_FILE] [--use-syslog]
                 [--syslog-address SYSLOG_ADDRESS] [--syslog-port SYSLOG_PORT]
                 [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
-                """  # noqa: E501
+                """
         + version_dependent
         + """
                 [--remote-storage REMOTE_STORAGE]
@@ -69,11 +69,11 @@ def test_run_action_help(
         # output for CLI arguments with `nargs="*"
         help_text = f"""usage: {RASA_EXE} run actions [-h] [-v] [-vv] [--quiet]
                         [--logging-config-file LOGGING_CONFIG_FILE] [-p PORT]
-                        [--cors [CORS ...]] [--actions ACTIONS]"""  # noqa: E501
+                        [--cors [CORS ...]] [--actions ACTIONS]"""
     else:
         help_text = f"""usage: {RASA_EXE} run actions [-h] [-v] [-vv] [--quiet]
                         [--logging-config-file LOGGING_CONFIG_FILE] [-p PORT]
-                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]"""  # noqa: E501
+                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
