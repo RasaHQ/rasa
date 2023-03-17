@@ -15,6 +15,7 @@ pipeline:
   - name: "DIETClassifier"
     entity_recognition: False
     epochs: 1
+    run_eagerly: True
 
 policies:
   - name: TEDPolicy
