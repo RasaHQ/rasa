@@ -582,7 +582,7 @@ async def test_update_tracker_session(
     await default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
-    tracker = await default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
 
     assert list(tracker.events) == [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -606,7 +606,7 @@ async def test_update_tracker_session_with_metadata(
     )
     await default_processor.handle_message(message)
 
-    tracker = await default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
     events = list(tracker.events)
 
     assert events[0] == with_model_id(
@@ -699,7 +699,7 @@ async def test_update_tracker_session_with_slots(
     await default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
-    tracker = await default_processor.tracker_store.retrieve(sender_id)
+    tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
     events = list(tracker.events)
 
     # the first three events should be up to the user utterance
@@ -852,7 +852,9 @@ async def test_handle_message_with_session_start(
         UserMessage(f"/greet{json.dumps(slot_2)}", default_channel, sender_id)
     )
 
-    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_full_tracker(
+        sender_id
+    )
 
     # make sure the sequence of events is as expected
     expected = with_model_ids(

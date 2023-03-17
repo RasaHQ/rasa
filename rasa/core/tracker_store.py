@@ -429,8 +429,7 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
             rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
         )
 
-        if not multiple_tracker_sessions:
-            logger.debug(f"Tracker for conversation ID '{sender_id}' is empty.")
+        if 0 <= len(multiple_tracker_sessions) <= 1:
             return tracker
 
         return multiple_tracker_sessions[-1]

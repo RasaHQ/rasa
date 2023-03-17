@@ -937,6 +937,7 @@ def get_trackers_for_conversation_sessions(
             evts,
             tracker.slots.values(),
             sender_source=tracker.sender_source,
+            max_event_history=tracker._max_event_history,
         )
         for evts in split_conversations
     ]
