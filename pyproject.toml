@@ -331,7 +331,7 @@ python_functions = "test_"
 filterwarnings = ["ignore::ResourceWarning:ruamel[.*]"]
 log_cli_level = "WARNING"
 log_cli = true
-asyncio_mode = "auto"
+# asyncio_mode = "auto" FIXME: https://rasahq.atlassian.net/browse/ATO-859
 markers = [
     "skip_on_windows",              # mark a test as a test that shouldn't be executed on Windows.
     "skip_on_ci",                   # mark a test to skip in the CI
