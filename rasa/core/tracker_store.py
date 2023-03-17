@@ -514,11 +514,45 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         Returns:
             Tracker containing events from the latest conversation sessions.
         """
+        return await self._retrieve(sender_id, fetch_all_sessions=False)
+
+    async def retrieve_full_tracker(
+        self, sender_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Retrieves tracker for all conversation sessions.
+
+        The Redis key is formed by appending a prefix to sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+
+        Returns:
+            Tracker containing events from all conversation sessions.
+        """
+        return await self._retrieve(sender_id, fetch_all_sessions=True)
+
+    async def _retrieve(
+        self, sender_id: Text, fetch_all_sessions: bool
+    ) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id."""
         stored = self.red.get(self.key_prefix + sender_id)
-        if stored is not None:
-            return self.deserialise_tracker(sender_id, stored)
-        else:
+        if stored is None:
+            logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
             return None
+
+        tracker = self.deserialise_tracker(sender_id, stored)
+        if fetch_all_sessions:
+            return tracker
+
+        # only return the last session
+        multiple_tracker_sessions = (
+            rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
+        )
+
+        if 0 <= len(multiple_tracker_sessions) <= 1:
+            return tracker
+
+        return multiple_tracker_sessions[-1]
 
     async def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store."""
@@ -605,6 +639,18 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
 
         Based on the session_date sort key.
         """
+        return await self._retrieve(sender_id, fetch_all_sessions=False)
+
+    async def retrieve_full_tracker(
+        self, sender_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Retrieves tracker for all conversation sessions."""
+        return await self._retrieve(sender_id, fetch_all_sessions=True)
+
+    async def _retrieve(
+        self, sender_id: Text, fetch_all_sessions: bool
+    ) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id."""
         dialogues = self.db.query(
             KeyConditionExpression=Key("sender_id").eq(sender_id),
             Limit=1,
@@ -614,10 +660,16 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         if not dialogues:
             return None
 
-        events = dialogues[0].get("events", [])
-
-        # `float`s are stored as `Decimal` objects - we need to convert them back
-        events_with_floats = core_utils.replace_decimals_with_floats(events)
+        if fetch_all_sessions:
+            events_with_floats = [
+                core_utils.replace_decimals_with_floats(dialogue["events"])
+                for dialogue in dialogues
+                if dialogue.get("events")
+            ]
+        else:
+            events = dialogues[0].get("events", [])
+            # `float`s are stored as `Decimal` objects - we need to convert them back
+            events_with_floats = core_utils.replace_decimals_with_floats(events)
 
         if self.domain is None:
             slots = []
@@ -1273,8 +1325,8 @@ class FailSafeTrackerStore(TrackerStore):
             tracker_store: Primary tracker store.
             on_tracker_store_error: Callback which is called when there is an error
                 in the primary tracker store.
+            fallback_tracker_store: Fallback tracker store.
         """
-
         self._fallback_tracker_store: Optional[TrackerStore] = fallback_tracker_store
         self._tracker_store = tracker_store
         self._on_tracker_store_error = on_tracker_store_error
@@ -1295,6 +1347,7 @@ class FailSafeTrackerStore(TrackerStore):
 
     @property
     def fallback_tracker_store(self) -> TrackerStore:
+        """Returns the fallback tracker store."""
         if not self._fallback_tracker_store:
             self._fallback_tracker_store = InMemoryTrackerStore(
                 self._tracker_store.domain, self._tracker_store.event_broker
@@ -1303,6 +1356,7 @@ class FailSafeTrackerStore(TrackerStore):
         return self._fallback_tracker_store
 
     def on_tracker_store_error(self, error: Exception) -> None:
+        """Calls the callback when there is an error in the primary tracker store."""
         if self._on_tracker_store_error:
             self._on_tracker_store_error(error)
         else:

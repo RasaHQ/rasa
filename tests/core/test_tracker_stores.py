@@ -24,7 +24,11 @@ from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManage
 from unittest.mock import MagicMock, Mock
 
 import rasa.core.tracker_store
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+)
 from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -1048,3 +1052,46 @@ async def test_get_or_create_full_tracker_with_existing_tracker() -> None:
     )
     assert tracker.sender_id == sender_id
     assert tracker.events == deque(expected_events)
+
+
+async def test_in_memory_tracker_store_retrieve_full_tracker(domain: Domain) -> None:
+    tracker_store = InMemoryTrackerStore(domain)
+    sender_id = uuid.uuid4().hex
+
+    expected_tracker = DialogueStateTracker.from_events(
+        sender_id=sender_id,
+        evts=[UserUttered("hi"), Restarted(), ActionExecuted("action_listen")],
+    )
+
+    await tracker_store.save(expected_tracker)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == expected_tracker
+
+
+async def test_in_memory_tracker_store_retrieve(domain: Domain) -> None:
+    tracker_store = InMemoryTrackerStore(domain)
+    sender_id = uuid.uuid4().hex
+
+    events_including_restart = [
+        UserUttered("hi"),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("/restart"),
+        Restarted(),
+        ActionExecuted(ACTION_RESTART_NAME),
+    ]
+
+    events_after_restart = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("Let's start again."),
+    ]
+
+    events = events_including_restart + events_after_restart
+    tracker = DialogueStateTracker.from_events(sender_id=sender_id, evts=events)
+    await tracker_store.save(tracker)
+
+    tracker = await tracker_store.retrieve(sender_id)
+    assert list(tracker.events) == events_after_restart
