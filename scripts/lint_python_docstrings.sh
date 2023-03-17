@@ -18,7 +18,6 @@ fi
 
 # Diff of uncommitted changes for running locally
 DEV_FILES_WITH_DIFF=`git diff HEAD --name-only -- rasa | xargs echo -n`
-NB_DEV_FILES_WITH_DIFF=`echo $DEV_FILES_WITH_DIFF | grep '\S' | wc -l`
 
 if [ ! -z "$DEV_FILES_WITH_DIFF" ]
 then
