@@ -101,6 +101,7 @@ def test_diagnostics(
 class TestTEDPolicy(PolicyTestCollection):
     @staticmethod
     def _policy_class_to_test() -> Type[TEDPolicy]:
+
         return TEDPolicy
 
     def test_train_model_checkpointing(
@@ -716,7 +717,6 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         tmp_path: Path,
         execution_context: ExecutionContext,
     ):
-
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert isinstance(
             trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
@@ -778,7 +778,6 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
 
 
 class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
-
     max_history = 1
 
     def _config(
