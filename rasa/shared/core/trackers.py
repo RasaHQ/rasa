@@ -687,7 +687,7 @@ class DialogueStateTracker:
             if include_source
             else self.sender_id
         )
-        return Story.from_events(self.applied_events(), story_name)
+        return Story.from_events(list(self.events), story_name)
 
     def export_stories(
         self,

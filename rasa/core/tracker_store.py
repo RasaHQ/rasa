@@ -393,17 +393,47 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Returns tracker matching sender_id."""
-        if sender_id in self.store:
-            logger.debug(f"Recreating tracker for id '{sender_id}'")
-            return self.deserialise_tracker(sender_id, self.store[sender_id])
-
-        logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
-
-        return None
+        return await self._retrieve(sender_id, fetch_all_sessions=False)
 
     async def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Tracker Store in memory."""
         return self.store.keys()
+
+    async def retrieve_full_tracker(
+        self, sender_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id."""
+        return await self._retrieve(sender_id, fetch_all_sessions=True)
+
+    async def _retrieve(
+        self, sender_id: Text, fetch_all_sessions: bool
+    ) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id."""
+        if sender_id not in self.store:
+            logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+            return None
+
+        logger.debug(f"Recreating tracker for id '{sender_id}'")
+
+        tracker = self.deserialise_tracker(sender_id, self.store[sender_id])
+
+        if not tracker:
+            logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+            return None
+
+        if fetch_all_sessions:
+            return tracker
+
+        # only return the last session
+        multiple_tracker_sessions = (
+            rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
+        )
+
+        if not multiple_tracker_sessions:
+            logger.debug(f"Tracker for conversation ID '{sender_id}' is empty.")
+            return tracker
+
+        return multiple_tracker_sessions[-1]
 
 
 class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
