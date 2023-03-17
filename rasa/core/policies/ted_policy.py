@@ -123,7 +123,6 @@ from rasa.utils.tensorflow.constants import (
     USE_GPU,
 )
 
-
 logger = logging.getLogger(__name__)
 
 E2E_CONFIDENCE_THRESHOLD = "e2e_confidence_threshold"
@@ -1171,9 +1170,8 @@ class TEDPolicy(Policy):
             data={
                 feature_name: features
                 for feature_name, features in model_data_example.items()
-                if feature_name
                 # we need to remove label features for prediction if they are present
-                in PREDICTION_FEATURES
+                if feature_name in PREDICTION_FEATURES
             },
         )
         return model_data_example, predict_data_example
