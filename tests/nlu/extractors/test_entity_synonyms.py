@@ -60,7 +60,7 @@ def test_unintentional_synonyms_capitalized(
 
     mapper.train(TrainingData(training_examples=examples))
 
-    assert mapper.synonyms.get("mexican") is None
+    assert mapper.synonyms.get("mexican") == "Mexican"
     assert mapper.synonyms.get("tacos") == "Mexican"
 
 
