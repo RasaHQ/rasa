@@ -141,4 +141,5 @@ def test_synonym_alternate_case(
     assert entities[1]["value"] == "austria"
     assert entities[2]["value"] == "austria"
     assert entities[3]["value"] == "austria"
-    assert entities[4]["value"] != "austria"
+    assert entities[4]["value"] == "austria"
+    assert entities[5]["value"] != "austria"
