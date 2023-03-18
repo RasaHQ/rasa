@@ -32,6 +32,7 @@ from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
     UTTER_PREFIX,
+    FLOW_PREFIX,
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -205,6 +206,10 @@ def action_for_name_or_text(
 
         return FormAction(action_name_or_text, action_endpoint)
 
+    if action_name_or_text.startswith(FLOW_PREFIX):
+        from rasa.core.actions.flows import FlowAction
+
+        return FlowAction(action_name_or_text, action_endpoint)
     return RemoteAction(action_name_or_text, action_endpoint)
 
 

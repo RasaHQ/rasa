@@ -570,10 +570,15 @@ class DefaultV1Recipe(Recipe):
             is_input=True,
         )
         train_nodes["flows_provider"] = SchemaNode(
-            needs={"importer": "finetuning_validator"},
+            needs={
+                "importer": "finetuning_validator",
+                "domain": "domain_for_core_training_provider",
+            },
             uses=FlowsProvider,
             constructor_name="create",
-            fn="provide",
+            fn="provide_train",
+            config={},
+            is_target=True,
             is_input=True,
         )
         train_nodes["training_tracker_provider"] = SchemaNode(
@@ -827,6 +832,14 @@ class DefaultV1Recipe(Recipe):
             fn="provide_inference",
             config={},
             resource=Resource("domain_provider"),
+        )
+        predict_nodes["flows_provider"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs={"domain": "domain_provider"},
+            uses=FlowsProvider,
+            fn="provide_inference",
+            config={},
+            resource=Resource("flows_provider"),
         )
 
         node_with_e2e_features = None

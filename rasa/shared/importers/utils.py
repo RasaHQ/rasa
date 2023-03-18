@@ -29,5 +29,5 @@ def flows_from_paths(files: List[Text]) -> FlowsList:
 
     flows = FlowsList(flows=[])
     for file in files:
-        flows.merge(YAMLFlowsReader.read_from_file(file))
+        flows = flows.merge(YAMLFlowsReader.read_from_file(file))
     return flows

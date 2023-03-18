@@ -1,10 +1,21 @@
-from typing import Text, List, Optional, Union, Any, Dict
+from typing import Text, List, Optional, Union, Any
 import logging
-from copy import deepcopy
 from pypred import Predicate
 from rasa.core.actions import action
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import OutputChannel
+from rasa.shared.constants import FLOW_PREFIX
+from rasa.shared.core.flows.flow import (
+    ActionFlowStep,
+    ElseFlowLink,
+    Flow,
+    FlowLinks,
+    FlowStep,
+    FlowsList,
+    IfFlowLink,
+    QuestionFlowStep,
+    StaticFlowLink,
+)
 
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -12,7 +23,7 @@ from rasa.shared.core.constants import (
     NEXT_STEP,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.slots import TextSlot
+from rasa.shared.core.slots import Slot, TextSlot
 from rasa.shared.core.events import (
     Event,
     SlotSet,
@@ -31,60 +42,60 @@ class FlowAction(FormAction):
     """Action which implements and executes the form logic."""
 
     def __init__(
-        self, flow_name: Text, action_endpoint: Optional[EndpointConfig]
+        self, flow_action_name: Text, action_endpoint: Optional[EndpointConfig]
     ) -> None:
         """Creates a `FlowAction`.
 
         Args:
-            flow_name: Name of the flow.
+            flow_action_name: Name of the flow.
             action_endpoint: Endpoint to execute custom actions.
         """
-        self._flow_name = flow_name
-        super().__init__(flow_name, action_endpoint)
+        self._flow_name = flow_action_name[len(FLOW_PREFIX) :]
+        self._flow_action_name = flow_action_name
+        super().__init__(self._flow_action_name, action_endpoint)
 
     def name(self) -> Text:
         """Return the flow name."""
-        return self._flow_name
+        return self._flow_action_name
 
     @staticmethod
-    def _add_embedded_flows_steps(steps: List[Dict], domain: Domain) -> List[Dict]:
-        """Embed flows in the next step."""
-        additional_steps = []
-        link_steps = list((step for step in steps if step.get("link")))
-        for link_step in link_steps:
-            embeddedable_flow = domain.flows.get(link_step.get("link", ""), None)
+    def flow_by_name(domain: Domain, name: Optional[Text]) -> Optional[Flow]:
+        """Return the flow with the given name."""
+        # TODO: this is pretty hacky. we attach it to the domain because
+        #    we have access to the domain in the action.
+        if not name:
+            return None
 
-            if not embeddedable_flow:
-                raise Exception(f"Flow '{link_step.get('link')}' not found in domain.")
+        if not hasattr(domain, "flows"):
+            return None
 
-            prefix = link_step.get("link", "") + "_"
-            steps_to_embed = deepcopy(embeddedable_flow.get("steps", []))
-            if not steps_to_embed:
-                continue
+        flows: FlowsList = domain.flows
+        for flow in flows.underlying_flows:
+            if flow.flow == name:
+                return flow
+        else:
+            return None
 
-            for index, step in enumerate(steps_to_embed):
-                step["id"] = link_step.get("id") if index == 0 else prefix + step["id"]
-                if step.get("next"):
-                    if isinstance(step["next"], str):
-                        step["next"] = prefix + step["next"]
-                    else:
-                        for condition in step["next"]:
-                            if condition.get("if"):
-                                condition["then"] = prefix + condition["then"]
-                else:
-                    # Link back to the calling flow
-                    if link_step.get("next"):
-                        step["next"] = link_step.get("next")
-                additional_steps.append(step)
-        steps = [step for step in steps if not step.get("link")]
-        return steps + additional_steps
-
-    def steps(self, domain: Domain) -> List[Dict]:
+    def steps(self, domain: Domain) -> List[FlowStep]:
         """Return all the steps of the flow."""
-        flow = domain.flows.get(self._flow_name)
+        flow = self.flow_by_name(domain, self._flow_name)
         if flow:
-            return self._add_embedded_flows_steps(flow.get("steps", []), domain)
+            return flow.steps
         return []
+
+    def first_step(self, domain: Domain) -> Optional[FlowStep]:
+        """Return the first step of the flow."""
+        steps = self.steps(domain)
+        return steps[0] if steps else None
+
+    def step_by_id(self, domain: Domain, step_id: Text) -> FlowStep:
+        """Return the step with the given id."""
+        for step in self.steps(domain):
+            if step.id == step_id:
+                return step
+
+        else:
+            raise ValueError(f"Step with id '{step_id}' not found.")
 
     def required_slots(self, domain: Domain) -> List[Text]:
         """A list of required slots that the flow has to fill.
@@ -92,13 +103,11 @@ class FlowAction(FormAction):
         Returns:
             A list of slot names.
         """
-        return list(
-            (
-                step.get("question", "")
-                for step in self.steps(domain)
-                if step.get("question")
-            )
-        )
+        return [
+            step.question
+            for step in self.flow_by_name(domain, self._flow_name).steps
+            if step.question
+        ]
 
     async def activate(
         self,
@@ -135,9 +144,8 @@ class FlowAction(FormAction):
         domain: "Domain",
         events_so_far: List[Event],
     ) -> List[Event]:
-        """Executes form loop after activation."""
-        events: List[Event] = []
-        """
+        """Executes form loop after activation.
+
         Call to validation is not required when the slots are already validated
         at the time of form activation.
         events_so_far:
@@ -147,25 +155,28 @@ class FlowAction(FormAction):
         Hence the events are filtered to remove ActiveLoop object that was added
         at the time of form activation.
         """
-
         filtered_events = [
             event for event in events_so_far if not isinstance(event, ActiveLoop)
         ]
         if not filtered_events:
-            events = await self._validate_if_required(
+            new_events = await self._validate_if_required(
                 tracker, domain, output_channel, nlg
             )
+        else:
+            new_events = []
 
         if tracker.get_slot("requested_slot") is not None:
-            events += [SlotSet(REQUESTED_SLOT, None)]
-        if not self._user_rejected_manually(events):
-            events += await self._exec_next_step(
+            new_events.append(SlotSet(REQUESTED_SLOT, None))
+
+        if not self._user_rejected_manually(new_events):
+            step_events = await self._exec_next_step(
                 tracker, domain, output_channel, nlg, events_so_far
             )
+            new_events.extend(step_events)
 
-        return events
+        return new_events
 
-    def _eval_predicate(
+    def _is_condition_satisfied(
         self, predicate: Text, domain: Domain, tracker: "DialogueStateTracker"
     ) -> bool:
         """Evaluate a predicate condition."""
@@ -175,11 +186,17 @@ class FlowAction(FormAction):
         ) -> Union[Text, float, bool, None]:
             if initial_value and not isinstance(initial_value, str):
                 raise ValueError("Slot is not a text slot")
-            elif not initial_value:
+
+            if not initial_value:
                 return None
-            elif initial_value.lower() in ["true", "false"]:
+
+            if initial_value.lower() in ["true", "false"]:
                 return initial_value.lower() == "true"
-            return float(initial_value) if initial_value.isnumeric() else initial_value
+
+            if initial_value.isnumeric():
+                return float(initial_value)
+
+            return initial_value
 
         text_slots = dict(
             {
@@ -192,96 +209,65 @@ class FlowAction(FormAction):
         evaluation, _ = p.analyze(text_slots)
         return evaluation
 
-    def _get_else_predicate(
-        self, next_items: Dict, domain: Domain, tracker: "DialogueStateTracker"
-    ) -> Text:
-        negated_if_predicates = list(
-            (
-                f"not ({item.get('if')})"
-                for item in next_items
-                if item.get("if") is not None
-            )
-        )
-        else_predicate = "and".join(negated_if_predicates)
-        return else_predicate
+    def _evaluate_flow_links(
+        self, next: FlowLinks, domain: Domain, tracker: "DialogueStateTracker"
+    ) -> Optional[FlowLinks]:
+        """Evaluate the flow links of a step."""
+        if len(next.links) == 1 and isinstance(next.links[0], StaticFlowLink):
+            return next.links[0].target
+
+        # evaluate if conditions
+        for link in next.links:
+            if isinstance(link, IfFlowLink):
+                if self._is_condition_satisfied(link.condition, domain, tracker):
+                    return link.target
+
+        # evaluate else condition
+        for link in next.links:
+            if isinstance(link, ElseFlowLink):
+                return link.target
+
+        return None
 
     def _get_next_step(
         self,
         tracker: "DialogueStateTracker",
         domain: Domain,
-    ) -> Optional[Dict]:
+    ) -> Optional[FlowStep]:
         """Get the next step to execute."""
-        next_step_slot = tracker.get_slot(NEXT_STEP)
-        all_steps = self.steps(domain)
-        if next_step_slot is None:
-            return all_steps[0]
+        if not (current_step_id := tracker.get_slot(NEXT_STEP)):
+            # If the next step is not set, we return the first step
+            # if there is one
+            return self.first_step(domain)
+
+        current_step = self.step_by_id(domain, current_step_id)
+
         # If the question is not answered, we return the current step
-        elif (
-            self._get_step_type(next_step_slot) == "question"
-            and tracker.get_slot(next_step_slot.get("question")) is None
+        if (
+            isinstance(current_step, QuestionFlowStep)
+            and tracker.get_slot(current_step.question) is None
         ):
-            return next_step_slot
-        elif next_step_slot.get("next") is not None:
-            next_info = next_step_slot.get("next")
-            next_id = None
-            if isinstance(next_info, str):
-                next_id = next_step_slot.get("next")
+            return current_step
 
-            else:
-                if_statements = list(
-                    (item.get("if") for item in next_info if item.get("if") is not None)
-                )
-                evaluations = list(
-                    (
-                        self._eval_predicate(if_statement, domain, tracker)
-                        for if_statement in if_statements
-                    )
-                )
-                first_true_index = next(
-                    (
-                        index
-                        for index, evaluation in enumerate(evaluations)
-                        if evaluation
-                    ),
-                    None,
-                )
-                if first_true_index is not None:
-                    next_id = next_info[first_true_index].get("then")
-                else:
-                    else_case = next(
-                        (item for item in next_info if item.get("else")), None
-                    )
-                    if else_case:
-                        next_id = else_case.get("else")
-
-            if next_id is None:
-                raise Exception(
-                    f"Conditions in step {next_step_slot['id']} "
-                    f"are not covering all possibilities"
-                )
-            # next_steps = list(
-            #     (step["id"] for step in all_steps if step["id"] == next_id)
-            # )
-            next_steps = list(filter(lambda step: step["id"] == next_id, all_steps))
-            if len(next_steps) == 1:
-                return next_steps[0]
-            elif len(next_steps) == 0:
-                raise Exception(f"Next step with id {next_id} not found")
-            else:
-                raise Exception(f"Multiple next steps with id {next_id} found")
         # If the next step is not specified, we assume that the flow is done
-        else:
+        if not current_step.has_next():
             return None
 
-    @staticmethod
-    def _get_step_type(step: Dict) -> Text:
-        """Get the type of the step."""
-        if step.get("action"):
-            return "action"
-        elif step.get("question"):
-            return "question"
+        next_id = self._evaluate_flow_links(current_step.next, domain, tracker)
+        if next_id is None:
+            raise Exception(
+                f"Conditions in step {current_step.id} "
+                f"are not covering all possibilities"
+            )
+        return self.step_by_id(domain, next_id)
+
+    def _slot_for_question(self, question: Text, domain: Domain) -> Slot:
+        """Find the slot for a question."""
+        for slot in domain.slots:
+            if slot.name == question:
+                return slot
         else:
-            raise Exception(f"Step type not specified for step {step}")
+            raise Exception(f"Question '{question}' does not map to an existing slot.")
 
     async def _exec_next_step(
         self,
@@ -293,34 +279,43 @@ class FlowAction(FormAction):
     ) -> List[Union[SlotSet, Event]]:
         """Request the next slot and response if needed, else return `None`."""
         next_step = self._get_next_step(tracker, domain)
-        events: List[Event] = [SlotSet(NEXT_STEP, next_step)]
-        if next_step:
-            if FlowAction._get_step_type(next_step) == "question":
-                temp_tracker = self._temporary_tracker(tracker, events_so_far, domain)
-                slot = next(
-                    (
-                        slot
-                        for slot in domain.slots
-                        if slot.name == next_step["question"]
-                    )
-                )
-                events += [SlotSet(REQUESTED_SLOT, slot.name)]
-                events += await self._ask_for_slot(
-                    domain, nlg, output_channel, slot.name, temp_tracker
-                )
-                events += [FollowupAction(ACTION_LISTEN_NAME)]
-            elif FlowAction._get_step_type(next_step) == "action":
-                action_name = next_step.get("action")
-                if action_name is None:
-                    raise Exception(f"Action not specified for step {next_step}")
+        if not next_step:
+            return [SlotSet(NEXT_STEP, None)]
 
-                action_to_run = action.action_for_name_or_text(
-                    action_name, domain, self.action_endpoint
-                )
-                events += await action_to_run.run(output_channel, nlg, tracker, domain)
-                events += [FollowupAction(self.name())]
+        if isinstance(next_step, QuestionFlowStep):
+            temp_tracker = self._temporary_tracker(tracker, events_so_far, domain)
+            slot = self._slot_for_question(next_step.question, domain)
 
-        return events
+            slot_ask_events = await self._ask_for_slot(
+                domain, nlg, output_channel, slot.name, temp_tracker
+            )
+            return [
+                SlotSet(NEXT_STEP, next_step.id),
+                SlotSet(REQUESTED_SLOT, slot.name),
+                *slot_ask_events,
+                FollowupAction(ACTION_LISTEN_NAME),
+            ]
+        elif isinstance(next_step, ActionFlowStep):
+
+            if not (action_name := next_step.action):
+                raise Exception(f"Action not specified for step {next_step}")
+
+            action_to_run = action.action_for_name_or_text(
+                action_name, domain, self.action_endpoint
+            )
+            # TODO: this is black magic, we should find a better way to do this
+            # an action shouldn't run other actions.
+
+            action_events = await action_to_run.run(
+                output_channel, nlg, tracker, domain
+            )
+            return [
+                SlotSet(NEXT_STEP, next_step.id),
+                *action_events,
+                FollowupAction(self.name()),
+            ]
+        else:
+            return [SlotSet(NEXT_STEP, next_step.id)]
 
     async def is_done(
         self,

@@ -7,9 +7,8 @@ import rasa.shared.utils.validation
 from rasa.shared.exceptions import YamlException
 
 from rasa.shared.core.flows.flow import Flow, FlowsList
-from rasa.constants import PACKAGE_NAME
 
-FLOWS_SCHEMA_FILE = "flows/flows_yaml_schema.yml"
+FLOWS_SCHEMA_FILE = "/shared/core/flows/flows_yaml_schema.yml"
 
 
 class YAMLFlowsReader:
@@ -53,9 +52,7 @@ class YAMLFlowsReader:
             `Flow`s read from `string`.
         """
         if not skip_validation:
-            rasa.shared.utils.validation.validate_yaml_schema(
-                string, FLOWS_SCHEMA_FILE, package_name=PACKAGE_NAME
-            )
+            rasa.shared.utils.validation.validate_yaml_schema(string, FLOWS_SCHEMA_FILE)
 
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
@@ -75,9 +72,12 @@ class YamlFlowsWriter:
         Returns:
             The dumped YAML.
         """
-        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
-            {KEY_FLOWS: [flow.as_json() for flow in flows]}
-        )
+        dump = {}
+        for flow in flows:
+            dumped_flow = flow.as_json()
+            del dumped_flow["id"]
+            dump[flow.id] = dumped_flow
+        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(dump)
 
     @staticmethod
     def dump(flows: List[Flow], filename: Union[Text, Path]) -> None:
