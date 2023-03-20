@@ -2627,7 +2627,7 @@ python-versions = "*"
 
 [[package]]
 name = "sanic-testing"
-version = "22.6.0"
+version = "22.12.0"
 description = "Core testing clients for Sanic"
 category = "dev"
 optional = false
@@ -3874,7 +3874,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "4a8741cc9ec43e64a09fed36bded64d7596c9c329f9477d7f4a7f48168f1230b"
+content-hash = "a486a39cfc00d90aa389328288ad5b563cf051a1962b1010552145c87d4c630f"
 
 [metadata.files]
 absl-py = [
@@ -6274,8 +6274,8 @@ sanic-routing = [
     {file = "sanic_routing-0.7.2-py3-none-any.whl", hash = "sha256:523034ffd07aca056040e08de438269c9a880722eee1ace3a32e4f74b394d9aa"},
 ]
 sanic-testing = [
-    {file = "sanic-testing-22.6.0.tar.gz", hash = "sha256:8f006d2332106539cd6f3da8a5c0d1f31472261f3293e43e2c9bbad605e72c5b"},
-    {file = "sanic_testing-22.6.0-py3-none-any.whl", hash = "sha256:d84303e83066de7f18e8c3a0cd04512ba1517dbc31123f14e8aec318b22c008c"},
+    {file = "sanic-testing-22.12.0.tar.gz", hash = "sha256:c9582c9bb9aabd82d3bf9fba2514a0274d0d741d84ce600e3ba2bef7b6c87aed"},
+    {file = "sanic_testing-22.12.0-py3-none-any.whl", hash = "sha256:2cc3338207c6aab4cdc6b89264744a3d51ea66685fe1f30f81f9c376f3ee93a3"},
 ]
 scikit-learn = [
     {file = "scikit-learn-1.0.2.tar.gz", hash = "sha256:b5870959a5484b614f26d31ca4c17524b1b0317522199dc985c3b4256e030767"},
