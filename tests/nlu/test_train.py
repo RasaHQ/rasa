@@ -17,8 +17,8 @@ COMPONENTS_TEST_PARAMS = {
     "DIETClassifier": {EPOCHS: 1, RUN_EAGERLY: True},
     "ResponseSelector": {EPOCHS: 1, RUN_EAGERLY: True},
     "LanguageModelFeaturizer": {
-        "model_name": "distilbert",
-        "model_weights": "distilbert-base-uncased",
+        "model_name": "bert",
+        "model_weights": "sentence-transformers/all-MiniLM-L6-v2",
     },
 }
 
