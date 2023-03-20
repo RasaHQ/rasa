@@ -130,17 +130,18 @@ def test_synonym_alternate_case(
 
     mapper.train(TrainingData(training_examples=examples))
     mapper.replace_synonyms(entities)
+    expected_synonym_value = "austria"
 
     # synonym key for example value is present
-    assert mapper.synonyms.get("vienna") == "austria"
+    assert mapper.synonyms.get("vienna") == expected_synonym_value
 
     # synonym key for self is present
-    assert mapper.synonyms.get("austria") == "austria"
+    assert mapper.synonyms.get("austria") == expected_synonym_value
 
     # all replacement values are correct
-    assert entities[0]["value"] == "austria"
-    assert entities[1]["value"] == "austria"
-    assert entities[2]["value"] == "austria"
-    assert entities[3]["value"] == "austria"
-    assert entities[4]["value"] == "austria"
-    assert entities[5]["value"] != "austria"
+    assert entities[0]["value"] == expected_synonym_value
+    assert entities[1]["value"] == expected_synonym_value
+    assert entities[2]["value"] == expected_synonym_value
+    assert entities[3]["value"] == expected_synonym_value
+    assert entities[4]["value"] == expected_synonym_value
+    assert entities[5]["value"] != expected_synonym_value
