@@ -463,7 +463,10 @@ class IfFlowLink:
         Returns:
             The flow link as a dictionary.
         """
-        return {"then": self.target, "if": self.condition}
+        return {
+            "if": self.condition,
+            "then": self.target,
+        }
 
 
 @dataclass
