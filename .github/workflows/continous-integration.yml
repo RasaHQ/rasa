@@ -211,6 +211,7 @@ jobs:
 
   test:
     name: Run Tests
+    if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
@@ -358,6 +359,7 @@ jobs:
 
   test-flaky:
     name: Run Flaky Tests
+    if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
@@ -496,6 +498,7 @@ jobs:
 
   upload_coverage_reports:
     name: Upload coverage reports to codeclimate
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     # Always upload results even if tests failed
     needs:
@@ -547,6 +550,7 @@ jobs:
 
   integration_test:
     name: Run Integration Tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
     env:
