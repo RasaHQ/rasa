@@ -2566,7 +2566,7 @@ jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
 name = "rocketchat-api"
-version = "1.28.1"
+version = "1.29.0"
 description = "Python API wrapper for Rocket.Chat"
 category = "main"
 optional = false
@@ -3939,7 +3939,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "0f3300fec388574da8bf176d62b0057516678fad9daf978fd378cb64751430f4"
+content-hash = "30853863d0084e8f082aeae4822ca8c20906bb5eb7b518573863874e59219b3c"
 
 [metadata.files]
 absl-py = [
@@ -6276,8 +6276,8 @@ rich = [
     {file = "rich-13.3.2.tar.gz", hash = "sha256:91954fe80cfb7985727a467ca98a7618e5dd15178cc2da10f553b36a93859001"},
 ]
 rocketchat-api = [
-    {file = "rocketchat_API-1.28.1-py3-none-any.whl", hash = "sha256:0dd4a0a063fde3fe6ea95a98142da6dd58af6b75e09f3105e36c7f14130b0fc6"},
-    {file = "rocketchat_API-1.28.1.tar.gz", hash = "sha256:77683cb600b2da27f5334e490f24b88100ee25e943db14de74c102f769ad4778"},
+    {file = "rocketchat_API-1.29.0-py3-none-any.whl", hash = "sha256:e78c71640ee39dab9212e3a8be6b27ec9ca68e66c953e9c1bfbe8aa0c48deaec"},
+    {file = "rocketchat_API-1.29.0.tar.gz", hash = "sha256:ee3d4deefbc73c45843d8c4b83385ec590cd6416362b63ee7175343dab3542ed"},
 ]
 rsa = [
     {file = "rsa-4.9-py3-none-any.whl", hash = "sha256:90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7"},
