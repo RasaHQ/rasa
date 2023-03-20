@@ -3874,11 +3874,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-<<<<<<< HEAD
-content-hash = "30853863d0084e8f082aeae4822ca8c20906bb5eb7b518573863874e59219b3c"
-=======
-content-hash = "6b2b837e0fc054d50da73c1faf4caccf521a0478359357910ac066e0ed157782"
->>>>>>> main
+content-hash = "4a8741cc9ec43e64a09fed36bded64d7596c9c329f9477d7f4a7f48168f1230b"
 
 [metadata.files]
 absl-py = [
