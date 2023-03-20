@@ -95,7 +95,6 @@ class Checkpoint:
         self, trackers: List[DialogueStateTracker]
     ) -> List[DialogueStateTracker]:
         """Filters out all trackers that do not satisfy the conditions."""
-
         if not self.conditions:
             return trackers
 
@@ -308,7 +307,7 @@ class StoryStep:
 class RuleStep(StoryStep):
     """A Special type of StoryStep representing a Rule."""
 
-    def __init__(  # noqa: D107
+    def __init__(
         self,
         block_name: Optional[Text] = None,
         start_checkpoints: Optional[List[Checkpoint]] = None,
@@ -387,7 +386,6 @@ class Story:
     @staticmethod
     def from_events(events: List[Event], story_name: Optional[Text] = None) -> "Story":
         """Create a story from a list of events."""
-
         story_step = StoryStep(story_name)
         for event in events:
             story_step.add_event(event)
@@ -577,8 +575,8 @@ class StoryGraph:
         cps: List[Checkpoint], cp_name_to_ignore: Set[Text]
     ) -> List[Checkpoint]:
         """Finds checkpoints which names are
-        different form names of checkpoints to ignore"""
-
+        different form names of checkpoints to ignore.
+        """
         return [cp for cp in cps if cp.name not in cp_name_to_ignore]
 
     def _remove_unused_generated_cps(
@@ -588,8 +586,8 @@ class StoryGraph:
         story_end_checkpoints: Dict[Text, Text],
     ) -> None:
         """Finds unused generated checkpoints
-        and remove them from story steps."""
-
+        and remove them from story steps.
+        """
         unused_cps = self._find_unused_checkpoints(
             story_steps.values(), story_end_checkpoints
         )
@@ -636,8 +634,8 @@ class StoryGraph:
         checkpoint_name: Text, conditions: Dict[Text, Any], cps: List[Checkpoint]
     ) -> bool:
         """Checks if checkpoint with name and conditions is
-        already in the list of checkpoints."""
-
+        already in the list of checkpoints.
+        """
         for cp in cps:
             if checkpoint_name == cp.name and conditions == cp.conditions:
                 return True
@@ -669,7 +667,6 @@ class StoryGraph:
         story_steps: List[StoryStep],
     ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Topological sort of the steps returning the ids of the steps."""
-
         checkpoints = StoryGraph._group_by_start_checkpoint(story_steps)
         graph = {
             s.id: {
@@ -683,8 +680,7 @@ class StoryGraph:
     def _group_by_start_checkpoint(
         story_steps: List[StoryStep],
     ) -> Dict[Text, List[StoryStep]]:
-        """Returns all the start checkpoint of the steps"""
-
+        """Returns all the start checkpoint of the steps."""
         checkpoints = defaultdict(list)
         for step in story_steps:
             for start in step.start_checkpoints:
@@ -712,7 +708,6 @@ class StoryGraph:
         >>> StoryGraph.topological_sort(example_graph)
         (deque([u'e', u'f', u'a', u'c', u'd', u'b']), [])
         """
-
         # noinspection PyPep8Naming
         GRAY, BLACK = 0, 1
 
@@ -801,7 +796,6 @@ class StoryGraph:
 
     def is_empty(self) -> bool:
         """Checks if `StoryGraph` is empty."""
-
         return not self.story_steps
 
     def __repr__(self) -> Text:
@@ -831,8 +825,8 @@ def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
 def _cap_length(s: Text, char_limit: int = 20, append_ellipsis: bool = True) -> Text:
     """Makes sure the string doesn't exceed the passed char limit.
 
-    Appends an ellipsis if the string is too long."""
-
+    Appends an ellipsis if the string is too long.
+    """
     if len(s) > char_limit:
         if append_ellipsis:
             return s[: char_limit - 3] + "..."
