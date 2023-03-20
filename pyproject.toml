@@ -154,7 +154,7 @@ randomname = "^0.1.5"
 sanic-routing = "^0.7.2"
 pluggy = "^1.0.0"
 slack-sdk = "^3.19.2"
-confluent-kafka = "^1.9.2"
+confluent-kafka = ">=1.9.2,<3.0.0"
 [[tool.poetry.dependencies.dask]]
 version = "2022.2.0"
 python = "~=3.7.0"
