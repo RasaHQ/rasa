@@ -983,20 +983,41 @@ def test_create_awaitable_tracker_store_with_endpoint_config():
     assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
 
 
-async def test_fail_safe_tracker_store_retrieve_full_tracker(domain: Domain) -> None:
-    primary_tracker_store = SQLTrackerStore(domain)
+@pytest.fixture
+def tracker_with_restarted_event() -> DialogueStateTracker:
     sender_id = uuid.uuid4().hex
 
-    expected_tracker = DialogueStateTracker.from_events(
-        sender_id=sender_id,
-        evts=[UserUttered("hi"), Restarted(), ActionExecuted("action_listen")],
-    )
+    events_including_restart = [
+        UserUttered("hi"),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("/restart"),
+        Restarted(),
+        ActionExecuted(ACTION_RESTART_NAME),
+    ]
+
+    events_after_restart = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("Let's start again."),
+    ]
+
+    events = events_including_restart + events_after_restart
+    return DialogueStateTracker.from_events(sender_id=sender_id, evts=events)
+
+
+async def test_fail_safe_tracker_store_retrieve_full_tracker(
+    domain: Domain, tracker_with_restarted_event: DialogueStateTracker
+) -> None:
+    primary_tracker_store = SQLTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
 
     tracker_store = FailSafeTrackerStore(primary_tracker_store)
-    await tracker_store.save(expected_tracker)
+    await tracker_store.save(tracker_with_restarted_event)
 
     tracker = await tracker_store.retrieve_full_tracker(sender_id)
-    assert tracker == expected_tracker
+    assert tracker == tracker_with_restarted_event
 
 
 async def test_fail_safe_tracker_store_retrieve_full_tracker_with_exception(
@@ -1037,61 +1058,84 @@ async def test_get_or_create_full_tracker_with_action_listen() -> None:
     assert tracker.events == deque([ActionExecuted(ACTION_LISTEN_NAME)])
 
 
-async def test_get_or_create_full_tracker_with_existing_tracker() -> None:
-    tracker_store = SQLTrackerStore(Domain.empty())
-    sender_id = uuid.uuid4().hex
+async def test_get_or_create_full_tracker_with_existing_tracker(
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    sender_id = tracker_with_restarted_event.sender_id
 
-    expected_events = [UserUttered("hi"), Restarted(), ActionExecuted("action_listen")]
-    tracker = DialogueStateTracker.from_events(
-        sender_id=sender_id, evts=expected_events
-    )
-    await tracker_store.save(tracker)
+    tracker_store = SQLTrackerStore(Domain.empty())
+    await tracker_store.save(tracker_with_restarted_event)
 
     tracker = await tracker_store.get_or_create_full_tracker(
         sender_id=sender_id, append_action_listen=False
     )
     assert tracker.sender_id == sender_id
-    assert tracker.events == deque(expected_events)
+    assert tracker.events == deque(tracker_with_restarted_event.events)
 
 
-async def test_in_memory_tracker_store_retrieve_full_tracker(domain: Domain) -> None:
+async def test_in_memory_tracker_store_retrieve_full_tracker(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
     tracker_store = InMemoryTrackerStore(domain)
-    sender_id = uuid.uuid4().hex
+    sender_id = tracker_with_restarted_event.sender_id
 
-    expected_tracker = DialogueStateTracker.from_events(
-        sender_id=sender_id,
-        evts=[UserUttered("hi"), Restarted(), ActionExecuted("action_listen")],
-    )
-
-    await tracker_store.save(expected_tracker)
+    await tracker_store.save(tracker_with_restarted_event)
 
     tracker = await tracker_store.retrieve_full_tracker(sender_id)
-    assert tracker == expected_tracker
+    assert tracker == tracker_with_restarted_event
 
 
-async def test_in_memory_tracker_store_retrieve(domain: Domain) -> None:
+async def test_in_memory_tracker_store_retrieve(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
     tracker_store = InMemoryTrackerStore(domain)
-    sender_id = uuid.uuid4().hex
+    sender_id = tracker_with_restarted_event.sender_id
+    await tracker_store.save(tracker_with_restarted_event)
 
-    events_including_restart = [
-        UserUttered("hi"),
-        ActionExecuted("utter_greet"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("/restart"),
-        Restarted(),
-        ActionExecuted(ACTION_RESTART_NAME),
-    ]
+    split_conversations = rasa.shared.core.events.split_events(
+        tracker_with_restarted_event.events,
+        ActionExecuted,
+        {"action_name": ACTION_SESSION_START_NAME},
+        include_splitting_event=True,
+    )
+    events_after_restart = split_conversations[-1]
 
-    events_after_restart = [
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("Let's start again."),
-    ]
+    tracker = await tracker_store.retrieve(sender_id)
+    assert list(tracker.events) == events_after_restart
 
-    events = events_including_restart + events_after_restart
-    tracker = DialogueStateTracker.from_events(sender_id=sender_id, evts=events)
-    await tracker_store.save(tracker)
+
+async def test_mongodb_retrieve_full_tracker(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    tracker_store = MockedMongoTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == tracker_with_restarted_event
+
+
+async def test_mongodb_retrieve(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    tracker_store = MockedMongoTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await tracker_store.save(tracker_with_restarted_event)
+
+    split_conversations = rasa.shared.core.events.split_events(
+        tracker_with_restarted_event.events,
+        ActionExecuted,
+        {"action_name": ACTION_SESSION_START_NAME},
+        include_splitting_event=False,
+    )
+
+    events_after_restart = split_conversations[-1]
 
     tracker = await tracker_store.retrieve(sender_id)
     assert list(tracker.events) == events_after_restart
