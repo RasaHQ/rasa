@@ -24,7 +24,7 @@ class FlowsList:
 
     @classmethod
     def from_json(
-        cls, flows_configs: Optional[List[Dict[Text, Dict[Text, Any]]]]
+        cls, flows_configs: Optional[Dict[Text, Dict[Text, Any]]]
     ) -> FlowsList:
         """Used to read flows from parsed YAML.
 

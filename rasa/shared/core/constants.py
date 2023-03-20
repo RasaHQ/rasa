@@ -77,7 +77,8 @@ IS_EXTERNAL = "is_external"
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 REQUESTED_SLOT = "requested_slot"
-NEXT_STEP = "next_step"
+NEXT_STEP_SLOT = "next_step"
+FLOW_STACK_SLOT = "flow_stack"
 
 # slots for knowledge base
 SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
@@ -87,7 +88,8 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
 DEFAULT_SLOT_NAMES = {
     REQUESTED_SLOT,
-    NEXT_STEP,
+    NEXT_STEP_SLOT,
+    FLOW_STACK_SLOT,
     SESSION_START_METADATA_SLOT,
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,

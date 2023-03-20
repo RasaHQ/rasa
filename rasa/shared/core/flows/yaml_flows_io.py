@@ -56,7 +56,7 @@ class YAMLFlowsReader:
 
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
-        return FlowsList.from_json(yaml_content.get(KEY_FLOWS, []))
+        return FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}))
 
 
 class YamlFlowsWriter:
@@ -77,7 +77,7 @@ class YamlFlowsWriter:
             dumped_flow = flow.as_json()
             del dumped_flow["id"]
             dump[flow.id] = dumped_flow
-        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(dump)
+        return rasa.shared.utils.io.dump_obj_as_yaml_to_string({KEY_FLOWS: dump})
 
     @staticmethod
     def dump(flows: List[Flow], filename: Union[Text, Path]) -> None:

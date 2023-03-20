@@ -952,7 +952,7 @@ class Domain:
     def _add_default_slots(self) -> None:
         """Sets up the default slots and slot values for the domain."""
         self._add_requested_slot()
-        self._add_next_step_slot()
+        self._add_flow_slots()
         self._add_knowledge_base_slots()
         self._add_categorical_slot_default_value()
         self._add_session_metadata_slot()
@@ -966,28 +966,31 @@ class Domain:
         for slot in [s for s in self.slots if isinstance(s, CategoricalSlot)]:
             slot.add_default_value()
 
-    def _add_next_step_slot(self) -> None:
-        """Add a slot called `next_step_slot` to the list of slots.
+    def _add_flow_slots(self) -> None:
+        """Adds the slots needed for the conversation flows.
 
-        The value of this slot will hold the name of the id of the next step
-        in the flow.
+        Add a slot called `next_step_slot` to the list of slots. The value of
+        this slot will hold the name of the id of the next step in the flow.
+
+        Add a slot called `flow_stack_slot` to the list of slots. The value of
+        this slot will be a call stack of the flow ids.
         """
-        if rasa.shared.core.constants.NEXT_STEP not in [
-            slot.name for slot in self.slots
-        ]:
-            self.slots.append(
-                AnySlot(
-                    rasa.shared.core.constants.NEXT_STEP,
-                    mappings=[],
-                    influence_conversation=False,
+        from rasa.shared.core.constants import NEXT_STEP_SLOT, FLOW_STACK_SLOT
+
+        slot_names = [slot.name for slot in self.slots]
+        flow_slots = [NEXT_STEP_SLOT, FLOW_STACK_SLOT]
+
+        for slot in flow_slots:
+            if slot not in slot_names:
+                self.slots.append(
+                    AnySlot(slot, mappings=[], influence_conversation=False)
                 )
-            )
-        else:
-            # TODO: figure out what to do here.
-            logger.warning(
-                "Slot 'next_step' is reserved for the next step slot, "
-                "but it already exists. 🤔"
-            )
+            else:
+                # TODO: figure out what to do here.
+                logger.warning(
+                    f"Slot {slot} is reserved for the next step slot, "
+                    f"but it already exists. 🤔"
+                )
 
     def _add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.

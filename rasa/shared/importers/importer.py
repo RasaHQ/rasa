@@ -149,7 +149,7 @@ class TrainingDataImporter(ABC):
         if isinstance(importer, E2EImporter):
             # When we only train NLU then there is no need to enrich the data with
             # E2E data from Core training data.
-            importer = importer.importer
+            importer = importer._importer
 
         return NluDataImporter(importer)
 
