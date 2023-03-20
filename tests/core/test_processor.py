@@ -1815,7 +1815,6 @@ async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
     assert tracker.get_slot(slot_name) == slot_value
 
 
-
 @pytest.mark.timeout(120, func_only=True)
 async def test_message_processor_raises_warning_if_no_assistant_id(
     trained_async: Callable,
