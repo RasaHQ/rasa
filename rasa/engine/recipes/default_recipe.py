@@ -994,7 +994,7 @@ class DefaultV1Recipe(Recipe):
         if keys_to_configure:
             logger.debug(
                 f"The provided configuration does not contain the key(s) "
-                f"{transform_collection_to_sentence(keys_to_configure)}. "  # noqa: E501, W505
+                f"{transform_collection_to_sentence(keys_to_configure)}. "
                 f"Values will be provided from the default configuration."
             )
 

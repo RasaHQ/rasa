@@ -18,7 +18,7 @@ from rasa.shared.constants import DOCS_URL_COMPONENTS
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from spacy.language import Language  # noqa: F401
+    from spacy.language import Language
     from spacy.tokens import Doc
 
 

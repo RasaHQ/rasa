@@ -8,7 +8,7 @@ title: rasa.core.channels.slack
 class SlackBot(OutputChannel)
 ```
 
-A Slack communication channel
+A Slack communication channel.
 
 #### send\_text\_message
 
@@ -98,7 +98,7 @@ async def process_message(request: Request,
 
 Slack retries to post messages up to 3 times based on
 failure conditions defined here:
-https://api.slack.com/events-api#failure_conditions
+https://api.slack.com/events-api#failure_conditions.
 
 #### get\_metadata
 
