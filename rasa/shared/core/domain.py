@@ -969,7 +969,7 @@ class Domain:
     def _add_flow_slots(self) -> None:
         """Adds the slots needed for the conversation flows.
 
-        Add a slot called `next_step_slot` to the list of slots. The value of
+        Add a slot called `flow_next_step_slot` to the list of slots. The value of
         this slot will hold the name of the id of the next step in the flow.
 
         Add a slot called `flow_stack_slot` to the list of slots. The value of

@@ -77,7 +77,7 @@ IS_EXTERNAL = "is_external"
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 REQUESTED_SLOT = "requested_slot"
-NEXT_STEP_SLOT = "next_step"
+NEXT_STEP_SLOT = "flow_next_step"
 FLOW_STACK_SLOT = "flow_stack"
 
 # slots for knowledge base
