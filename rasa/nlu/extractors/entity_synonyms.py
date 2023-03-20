@@ -170,5 +170,5 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
             # i.e. for a synonym Austria,
             # entities extracted as AUSTRIA, austria, ausTRIA, etc
             # should also have the value of `Austria`
-            if replacement not in self.synonyms:
+            if replacement.lower() not in self.synonyms:
                 self.synonyms[replacement.lower()] = replacement
