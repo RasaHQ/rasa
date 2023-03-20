@@ -672,7 +672,6 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             List of serialised events that aren't currently stored.
 
         """
-
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
         all_events = self._events_from_serialized_tracker(stored)
 
@@ -700,7 +699,6 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             event. Returns all events if no such event is found.
 
         """
-
         events_after_session_start = []
         for event in reversed(events):
             events_after_session_start.append(event)
@@ -1223,7 +1221,6 @@ class FailSafeTrackerStore(TrackerStore):
             on_tracker_store_error: Callback which is called when there is an error
                 in the primary tracker store.
         """
-
         self._fallback_tracker_store: Optional[TrackerStore] = fallback_tracker_store
         self._tracker_store = tracker_store
         self._on_tracker_store_error = on_tracker_store_error
