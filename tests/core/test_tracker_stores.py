@@ -3,6 +3,7 @@ from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
 
+import fakeredis
 import pytest
 import sqlalchemy
 import uuid
@@ -1038,7 +1039,7 @@ async def test_fail_safe_tracker_store_retrieve_full_tracker_with_exception(
     assert f"Please investigate the following error: {exception}." in caplog.text
 
 
-async def test_get_or_create_full_tracker_without_action_listen() -> None:
+async def test_sql_get_or_create_full_tracker_without_action_listen() -> None:
     tracker_store = SQLTrackerStore(Domain.empty())
     sender_id = uuid.uuid4().hex
     tracker = await tracker_store.get_or_create_full_tracker(
@@ -1048,7 +1049,7 @@ async def test_get_or_create_full_tracker_without_action_listen() -> None:
     assert tracker.events == deque()
 
 
-async def test_get_or_create_full_tracker_with_action_listen() -> None:
+async def test_sql_get_or_create_full_tracker_with_action_listen() -> None:
     tracker_store = SQLTrackerStore(Domain.empty())
     sender_id = uuid.uuid4().hex
     tracker = await tracker_store.get_or_create_full_tracker(
@@ -1058,7 +1059,7 @@ async def test_get_or_create_full_tracker_with_action_listen() -> None:
     assert tracker.events == deque([ActionExecuted(ACTION_LISTEN_NAME)])
 
 
-async def test_get_or_create_full_tracker_with_existing_tracker(
+async def test_sql_get_or_create_full_tracker_with_existing_tracker(
     tracker_with_restarted_event: DialogueStateTracker,
 ) -> None:
     sender_id = tracker_with_restarted_event.sender_id
@@ -1071,6 +1072,37 @@ async def test_get_or_create_full_tracker_with_existing_tracker(
     )
     assert tracker.sender_id == sender_id
     assert tracker.events == deque(tracker_with_restarted_event.events)
+
+
+async def test_sql_tracker_store_retrieve_full_tracker(
+    domain: Domain, tracker_with_restarted_event: DialogueStateTracker
+) -> None:
+    tracker_store = SQLTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == tracker_with_restarted_event
+
+
+async def test_sql_tracker_store_retrieve(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    tracker_store = SQLTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+    await tracker_store.save(tracker_with_restarted_event)
+
+    split_conversations = rasa.shared.core.events.split_events(
+        tracker_with_restarted_event.events,
+        ActionExecuted,
+        {"action_name": ACTION_SESSION_START_NAME},
+        include_splitting_event=False,
+    )
+    events_after_restart = split_conversations[-1]
+
+    tracker = await tracker_store.retrieve(sender_id)
+    assert list(tracker.events) == events_after_restart
 
 
 async def test_in_memory_tracker_store_retrieve_full_tracker(
@@ -1106,7 +1138,7 @@ async def test_in_memory_tracker_store_retrieve(
     assert list(tracker.events) == events_after_restart
 
 
-async def test_mongodb_retrieve_full_tracker(
+async def test_mongo_tracker_store_retrieve_full_tracker(
     domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
 ) -> None:
@@ -1119,7 +1151,7 @@ async def test_mongodb_retrieve_full_tracker(
     assert tracker == tracker_with_restarted_event
 
 
-async def test_mongodb_retrieve(
+async def test_mongo_tracker_store_retrieve(
     domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
 ) -> None:
@@ -1139,3 +1171,139 @@ async def test_mongodb_retrieve(
 
     tracker = await tracker_store.retrieve(sender_id)
     assert list(tracker.events) == events_after_restart
+
+
+class MockedRedisTrackerStore(RedisTrackerStore):
+    def __init__(
+        self,
+        domain: Domain,
+    ) -> None:
+        self.red = fakeredis.FakeStrictRedis()
+        self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        self.record_exp = None
+        super(RedisTrackerStore, self).__init__(domain, None)
+
+
+async def test_redis_tracker_store_retrieve_full_tracker(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    tracker_store = MockedRedisTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == tracker_with_restarted_event
+
+
+async def test_redis_tracker_store_retrieve(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    tracker_store = MockedRedisTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await tracker_store.save(tracker_with_restarted_event)
+
+    split_conversations = rasa.shared.core.events.split_events(
+        tracker_with_restarted_event.events,
+        ActionExecuted,
+        {"action_name": ACTION_SESSION_START_NAME},
+        include_splitting_event=True,
+    )
+
+    events_after_restart = split_conversations[-1]
+
+    tracker = await tracker_store.retrieve(sender_id)
+    assert list(tracker.events) == events_after_restart
+
+
+async def test_redis_tracker_store_merge_trackers_same_session() -> None:
+    start_session_sequence = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+    events: List[Event] = start_session_sequence + [UserUttered("hello")]
+    prior_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+
+    events += [BotUttered("Hey! How can I help you?")]
+
+    new_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+
+    actual_tracker = RedisTrackerStore._merge_trackers(prior_tracker, new_tracker)
+
+    assert actual_tracker == new_tracker
+
+
+def test_redis_tracker_store_merge_trackers_overlapping_session() -> None:
+    events: List[Event] = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+        SessionStarted(timestamp=2),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+        UserUttered("hello", timestamp=4),
+        BotUttered("Hey! How can I help you?", timestamp=5),
+        UserUttered("/restart", timestamp=6),
+        ActionExecuted(ACTION_RESTART_NAME, timestamp=7),
+    ]
+
+    new_start_session = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=8),
+        SessionStarted(timestamp=9),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=10),
+    ]
+    events += new_start_session
+    prior_tracker = DialogueStateTracker.from_events(
+        "overlapping-session",
+        evts=events,
+    )
+
+    after_restart_event = [UserUttered("hi again", timestamp=11)]
+
+    new_tracker = DialogueStateTracker.from_events(
+        "overlapping-session",
+        evts=new_start_session + after_restart_event,
+    )
+
+    actual_tracker = RedisTrackerStore._merge_trackers(prior_tracker, new_tracker)
+
+    assert (
+        list(actual_tracker.events) == list(prior_tracker.events) + after_restart_event
+    )
+
+
+def test_redis_tracker_store_merge_trackers_different_session() -> None:
+    events: List[Event] = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+        SessionStarted(timestamp=2),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+        UserUttered("hello", timestamp=4),
+        BotUttered("Hey! How can I help you?", timestamp=5),
+    ]
+    prior_tracker = DialogueStateTracker.from_events(
+        "different-session",
+        evts=events,
+    )
+
+    new_session = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=8),
+        SessionStarted(timestamp=9),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=10),
+        UserUttered("I need help.", timestamp=11),
+    ]
+
+    new_tracker = DialogueStateTracker.from_events(
+        "different-session",
+        evts=new_session,
+    )
+
+    actual_tracker = RedisTrackerStore._merge_trackers(prior_tracker, new_tracker)
+
+    assert list(actual_tracker.events) == list(prior_tracker.events) + new_session

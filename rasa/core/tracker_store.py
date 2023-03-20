@@ -498,6 +498,13 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         if not timeout and self.record_exp:
             timeout = self.record_exp
 
+        stored = self.red.get(self.key_prefix + tracker.sender_id)
+
+        if stored is not None:
+            prior_tracker = self.deserialise_tracker(tracker.sender_id, stored)
+
+            tracker = self._merge_trackers(prior_tracker, tracker)
+
         serialised_tracker = self.serialise_tracker(tracker)
         self.red.set(
             self.key_prefix + tracker.sender_id, serialised_tracker, ex=timeout
@@ -557,6 +564,37 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
     async def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store."""
         return self.red.keys(self.key_prefix + "*")
+
+    @staticmethod
+    def _merge_trackers(
+        prior_tracker: DialogueStateTracker, tracker: DialogueStateTracker
+    ) -> DialogueStateTracker:
+        if not prior_tracker.events:
+            return tracker
+
+        last_event_timestamp = prior_tracker.events[-1].timestamp
+        past_tracker = tracker.travel_back_in_time(target_time=last_event_timestamp)
+
+        if past_tracker.events == prior_tracker.events:
+            return tracker
+
+        merged = tracker.init_copy()
+        merged.update_with_events(
+            list(prior_tracker.events), override_timestamp=False, domain=None
+        )
+
+        for new_event in tracker.events:
+            # Event subclasses implement `__eq__` method that make it difficult
+            # to compare events. We use `as_dict` to compare events.
+            if all(
+                [
+                    new_event.as_dict() != existing_event.as_dict()
+                    for existing_event in merged.events
+                ]
+            ):
+                merged.update(new_event)
+
+        return merged
 
 
 class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
