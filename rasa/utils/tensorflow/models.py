@@ -1,3 +1,5 @@
+import time
+import random
 import tensorflow as tf
 import numpy as np
 import logging
@@ -87,6 +89,8 @@ class RasaModel(Model):
 
         self._training = None  # training phase should be defined when building a graph
 
+        if random_seed is None:
+            random_seed = int(time.time())
         self.random_seed = random_seed
         self._set_random_seed()
 
@@ -96,8 +100,11 @@ class RasaModel(Model):
         self._checkpoint = tf.train.Checkpoint(model=self)
 
     def _set_random_seed(self) -> None:
-        tf.keras.utils.set_random_seed(self.random_seed)
+        random.seed(self.random_seed)
+        np.random.seed(self.random_seed)
+        tf.random.set_seed(self.random_seed)
         tf.experimental.numpy.random.seed(self.random_seed)
+        tf.keras.utils.set_random_seed(self.random_seed)
         # When running on the CuDNN backend, two further options must be set
         os.environ["TF_CUDNN_DETERMINISTIC"] = "1"
         os.environ["TF_DETERMINISTIC_OPS"] = "1"
