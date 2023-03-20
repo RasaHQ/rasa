@@ -8,7 +8,6 @@ pipeline:
   - name: DIETClassifier
     epochs: 30
     random_seed: 2021
-    run_eagerly: True
 
 policies:
   - name: RulePolicy
