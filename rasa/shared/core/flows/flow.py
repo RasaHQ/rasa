@@ -65,6 +65,37 @@ class FlowsList:
         """Merges two lists of flows together."""
         return FlowsList(self.underlying_flows + other.underlying_flows)
 
+    def flow_by_id(self, id: Optional[Text]) -> Optional[Flow]:
+        """Return the flow with the given id."""
+        if not id:
+            return None
+
+        for flow in self.underlying_flows:
+            if flow.id == id:
+                return flow
+        else:
+            return None
+
+    def steps_of_flow(self, flow_id: Text) -> List[FlowStep]:
+        """Return all the steps of the flow."""
+        flow = self.flow_by_id(flow_id)
+        if flow:
+            return flow.steps
+        return []
+
+    def first_step(self, flow_id: Text) -> Optional[FlowStep]:
+        """Return the first step of the flow."""
+        steps = self.steps_of_flow(flow_id)
+        return steps[0] if steps else None
+
+    def step_by_id(self, step_id: Text, flow_id: Text) -> FlowStep:
+        """Return the step with the given id."""
+        for step in self.steps_of_flow(flow_id):
+            if step.id == step_id:
+                return step
+        else:
+            raise ValueError(f"Step with id '{step_id}' not found.")
+
 
 @dataclass
 class Flow:

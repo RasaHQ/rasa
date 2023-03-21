@@ -4,11 +4,12 @@ from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, Union, cas
 import logging
 
 import rasa.shared.constants
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
 from rasa.shared.core.domain import (
+    KEY_FORMS,
     Domain,
     KEY_E2E_ACTIONS,
     KEY_INTENTS,
@@ -381,7 +382,22 @@ class FlowSyncImporter(PassThroughImporter):
 
         flow_names = ["flow_" + flow.id for flow in flows.underlying_flows]
 
-        return domain.merge(Domain.from_dict({"actions": flow_names}))
+        all_question_steps = [
+            step
+            for flow in flows.underlying_flows
+            for step in flow.steps
+            if isinstance(step, QuestionFlowStep)
+        ]
+        forms = {}
+        for step in all_question_steps:
+            form_name = "question_" + step.question
+            forms[form_name] = {
+                rasa.shared.constants.REQUIRED_SLOTS_KEY: [step.question]
+            }
+
+        return domain.merge(
+            Domain.from_dict({KEY_ACTIONS: flow_names, KEY_FORMS: forms})
+        )
 
 
 class ResponsesSyncImporter(PassThroughImporter):

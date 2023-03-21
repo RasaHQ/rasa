@@ -207,9 +207,9 @@ def action_for_name_or_text(
         return FormAction(action_name_or_text, action_endpoint)
 
     if action_name_or_text.startswith(FLOW_PREFIX):
-        from rasa.core.actions.flows import FlowAction
+        from rasa.core.actions.flows import FlowTriggerAction
 
-        return FlowAction(action_name_or_text, action_endpoint)
+        return FlowTriggerAction(action_name_or_text)
     return RemoteAction(action_name_or_text, action_endpoint)
 
 

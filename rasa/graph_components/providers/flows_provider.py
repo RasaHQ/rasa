@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Text
-import rasa.core.actions.flows
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
@@ -55,10 +54,6 @@ class FlowsProvider(GraphComponent):
             flows = YAMLFlowsReader.read_from_file(
                 resource_directory / FLOWS_PERSITENCE_FILE_NAME
             )
-        # TODO: this is hacky, we should not modify the domain. but it
-        # is the easiest way to make the flows available in the
-        # flow action.
-        rasa.core.actions.flows.all_flows = flows
         return cls(model_storage, resource, flows)
 
     def _persist(self, flows: FlowsList) -> None:
@@ -74,10 +69,6 @@ class FlowsProvider(GraphComponent):
     ) -> FlowsList:
         """Provides flows configuration from training data during training."""
         self._flows = importer.get_flows()
-        # TODO: this is hacky, we should not modify the domain. but it
-        # is the easiest way to make the flows available in the
-        # flow action.
-        rasa.core.actions.flows.all_flows = self._flows
         self._persist(self._flows)
         return self._flows
 

@@ -969,16 +969,16 @@ class Domain:
     def _add_flow_slots(self) -> None:
         """Adds the slots needed for the conversation flows.
 
-        Add a slot called `flow_next_step_slot` to the list of slots. The value of
+        Add a slot called `flow_step_slot` to the list of slots. The value of
         this slot will hold the name of the id of the next step in the flow.
 
         Add a slot called `flow_stack_slot` to the list of slots. The value of
         this slot will be a call stack of the flow ids.
         """
-        from rasa.shared.core.constants import NEXT_STEP_SLOT, FLOW_STACK_SLOT
+        from rasa.shared.core.constants import FLOW_STATE_SLOT, FLOW_STACK_SLOT
 
         slot_names = [slot.name for slot in self.slots]
-        flow_slots = [NEXT_STEP_SLOT, FLOW_STACK_SLOT]
+        flow_slots = [FLOW_STATE_SLOT, FLOW_STACK_SLOT]
 
         for slot in flow_slots:
             if slot not in slot_names:
