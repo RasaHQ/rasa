@@ -95,6 +95,7 @@ jobs:
 
   quality:
     name: Code Quality
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
 
