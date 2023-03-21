@@ -23,10 +23,10 @@ class TwilioOutput(Client, OutputChannel):
         return "twilio"
 
     def __init__(
-        self,
-        account_sid: Optional[Text],
-        auth_token: Optional[Text],
-        twilio_number: Optional[Text],
+            self,
+            account_sid: Optional[Text],
+            auth_token: Optional[Text],
+            twilio_number: Optional[Text],
     ) -> None:
         super().__init__(account_sid, auth_token)
         self.twilio_number = twilio_number
@@ -50,7 +50,7 @@ class TwilioOutput(Client, OutputChannel):
         return message
 
     async def send_text_message(
-        self, recipient_id: Text, text: Text, **kwargs: Any
+            self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Sends text message"""
 
@@ -60,7 +60,7 @@ class TwilioOutput(Client, OutputChannel):
             await self._send_message(message_data)
 
     async def send_image_url(
-        self, recipient_id: Text, image: Text, **kwargs: Any
+            self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         """Sends an image."""
 
@@ -72,7 +72,7 @@ class TwilioOutput(Client, OutputChannel):
         await self._send_message(message_data)
 
     async def send_custom_json(
-        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+            self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Send custom json dict"""
 
@@ -103,12 +103,20 @@ class TwilioInput(InputChannel):
             credentials.get("twilio_number"),
         )
 
+    @classmethod
+    def _is_location_message(cls, request):
+        """Check if the users message is a location."""
+        return (
+                request.form.get("Latitude", None) is not None
+                and request.form.get("Longitude", None) is not None
+        )
+
     def __init__(
-        self,
-        account_sid: Optional[Text],
-        auth_token: Optional[Text],
-        twilio_number: Optional[Text],
-        debug_mode: bool = True,
+            self,
+            account_sid: Optional[Text],
+            auth_token: Optional[Text],
+            twilio_number: Optional[Text],
+            debug_mode: bool = True,
     ) -> None:
         self.account_sid = account_sid
         self.auth_token = auth_token
@@ -116,7 +124,7 @@ class TwilioInput(InputChannel):
         self.debug_mode = debug_mode
 
     def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+            self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
         twilio_webhook = Blueprint("twilio_webhook", __name__)
 
@@ -128,8 +136,11 @@ class TwilioInput(InputChannel):
         async def message(request: Request) -> HTTPResponse:
             sender = request.form.get("From", None)
             text = request.form.get("Body", None)
-
             out_channel = self.get_output_channel()
+
+            if self._is_location_message(request):
+                text = "/locationData{{'Latitude': {lat},'Longitude': {long}}}".format(
+                    lat=request.form.get("Latitude"), long=request.form.get("Longitude"))
 
             if sender is not None and message is not None:
                 metadata = self.get_metadata(request)
