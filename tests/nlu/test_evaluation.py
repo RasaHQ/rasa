@@ -11,8 +11,7 @@ from rasa.core.channels import UserMessage
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import Mock
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import Mock, MagicMock
 
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -161,8 +160,6 @@ EN_entity_result_no_tokens = EntityEvaluationResult(EN_targets, EN_predicted, []
 
 @pytest.fixture
 def mocks_for_test_cross_validate(monkeypatch: MonkeyPatch):
-    monkeypatch.setattr("rasa.nlu.test.tempfile.TemporaryDirectory", MagicMock())
-
     mock_write_yaml = MagicMock()
     mock_write_yaml.return_value = "write yaml"
     monkeypatch.setattr("rasa.shared.utils.io.write_yaml", mock_write_yaml)
@@ -217,19 +214,31 @@ async def test_cross_validate(monkeypatch: MonkeyPatch, mocks_for_test_cross_val
 
     n_folds = 2
 
-    with pytest.raises(
-        UnboundLocalError,
-        match="local variable 'intent_evaluation' referenced before assignment",
-    ) as x:
-        await cross_validate(
-            training_data,
-            n_folds,
-            nlu_config,
-            successes=False,
-            errors=False,
-            disable_plotting=True,
-            report_as_dict=True,
-        )
+    await cross_validate(
+        training_data,
+        n_folds,
+        nlu_config,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
+        report_as_dict=True,
+    )
+    mocks_for_test_cross_validate.assert_not_called()
+
+    monkeypatch.setattr(
+        "rasa.nlu.test.combine_result", MagicMock(side_effect=mock_combine_result)
+    )
+    await cross_validate(
+        training_data,
+        n_folds,
+        nlu_config,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
+        report_as_dict=True,
+    )
+
+    mocks_for_test_cross_validate.assert_called_once()
 
 
 def test_token_entity_intersection():
