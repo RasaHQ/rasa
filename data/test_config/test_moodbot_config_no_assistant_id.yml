@@ -11,14 +11,11 @@ pipeline:
     analyzer: char_wb
     min_ngram: 1
     max_ngram: 4
-  - name: "DIETClassifier"
-    entity_recognition: False
-    epochs: 1
-    run_eagerly: True
+  - name: LogisticRegressionClassifier
 
 policies:
-  - name: TEDPolicy
-    max_history: 5
-    epochs: 1
+#  - name: TEDPolicy
+#    max_history: 5
+#    epochs: 1
   - name: MemoizationPolicy
   - name: RulePolicy

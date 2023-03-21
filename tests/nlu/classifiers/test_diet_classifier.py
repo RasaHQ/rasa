@@ -326,7 +326,12 @@ async def test_train_persist_load_with_nested_dict_config(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
 ):
-    config = {HIDDEN_LAYERS_SIZES: {"text": [256, 512]}, ENTITY_RECOGNITION: False}
+    config = {
+        HIDDEN_LAYERS_SIZES: {"text": [256, 512]},
+        ENTITY_RECOGNITION: False,
+        EPOCHS: 1,
+        RUN_EAGERLY: True,
+    }
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 
@@ -341,7 +346,12 @@ async def test_train_persist_load_with_masked_lm_and_eval(
     # reading the used data here so that the test doesn't break if data is changed
     importer = RasaFileImporter(training_data_paths=[nlu_data_path])
     training_data = importer.get_nlu_data()
-    config = {MASKED_LM: True, EVAL_NUM_EXAMPLES: len(training_data.intents)}
+    config = {
+        MASKED_LM: True,
+        EVAL_NUM_EXAMPLES: len(training_data.intents),
+        EPOCHS: 10,
+        RUN_EAGERLY: True,
+    }
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 
@@ -378,7 +388,9 @@ async def test_train_persist_load_with_only_intent_classification(
             RUN_EAGERLY: True,
         }
     )
-    create_diet({MASKED_LM: True, EPOCHS: 1}, load=True, finetune=True)
+    create_diet(
+        {MASKED_LM: True, EPOCHS: 1, RUN_EAGERLY: True}, load=True, finetune=True
+    )
 
 
 @pytest.mark.parametrize(
