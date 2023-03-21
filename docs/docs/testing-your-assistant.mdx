@@ -630,6 +630,13 @@ test_cases:
     - bot: "You can also choose to save 20% by becoming a premium member."
 ```
 
+:::note
+
+If you are using multiple consecutive `slot_was_set` steps in your test case, the order in which these are defined must
+match the order in which the slots are filled in the dialogue.
+
+:::
+
 ### How to run the tests
 
 To run the end-to-end tests locally or in the CI pipeline, use the `rasa test e2e` command.
