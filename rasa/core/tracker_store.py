@@ -691,7 +691,6 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         """Returns tracker matching sender_id."""
         dialogues = self.db.query(
             KeyConditionExpression=Key("sender_id").eq(sender_id),
-            Limit=1,
             ScanIndexForward=False,
         )["Items"]
 
@@ -699,11 +698,11 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
             return None
 
         if fetch_all_sessions:
-            events_with_floats = [
-                core_utils.replace_decimals_with_floats(dialogue["events"])
-                for dialogue in dialogues
-                if dialogue.get("events")
-            ]
+            events_with_floats = []
+            for dialogue in dialogues:
+                if dialogue.get("events"):
+                    events = core_utils.replace_decimals_with_floats(dialogue["events"])
+                    events_with_floats += events
         else:
             events = dialogues[0].get("events", [])
             # `float`s are stored as `Decimal` objects - we need to convert them back
