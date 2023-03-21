@@ -230,7 +230,7 @@ class FlowExecutor:
         """Initializes the `FlowExecutor`.
 
         Args:
-            flow_state: The current flow state.
+            flow_state: State of the flow.
             all_flows: All flows.
         """
         self.flow_state = flow_state
@@ -372,49 +372,44 @@ class FlowExecutor:
             # if there is one
             return self.start_flow(tracker, domain)
 
-        if self._is_step_completed(current_step, tracker):
-            # If the step is completed, we get the next step
-            next_step = self._get_next_step(
-                tracker, domain, current_step, self.flow_state.flow_id
-            )
-
-            if not next_step:
-                if not (current_stack := tracker.get_slot(FLOW_STACK_SLOT)):
-                    # If there is no stack, we assume that the flow is done
-                    # and there is nothing to do
-                    return (None, [SlotSet(FLOW_STATE_SLOT, None)])
-                else:
-                    # If there is a stack, we pop the last item and return it
-                    stack_step_dump = current_stack.pop()
-                    stack_step_info = FlowState.from_dict(stack_step_dump)
-                    stack_step = self.all_flows.step_by_id(
-                        stack_step_info.step_id, stack_step_info.flow_id
-                    )
-                    next_step = self._get_next_step(
-                        tracker, domain, stack_step, stack_step_info.flow_id
-                    )
-                    action, events = self._get_action_for_next_step(
-                        next_step, tracker, domain
-                    )
-                    return (
-                        action,
-                        events
-                        + [
-                            SlotSet(FLOW_STACK_SLOT, current_stack),
-                            SlotSet(
-                                FLOW_STATE_SLOT,
-                                FlowState(
-                                    stack_step_info.flow_id,
-                                    next_step.id if next_step else None,
-                                ).as_dict(),
-                            ),
-                        ],
-                    )
-            else:
-                return self._get_action_for_next_step(next_step, tracker, domain)
-        else:
+        if not self._is_step_completed(current_step, tracker):
             # TODO: figure out
             raise Exception("Not quite sure what to do here yet.")
+
+        # If the step is completed, we get the next step
+        next_step = self._get_next_step(
+            tracker, domain, current_step, self.flow_state.flow_id
+        )
+
+        if next_step:
+            action, events = self._get_action_for_next_step(next_step, tracker, domain)
+            return (action, events)
+
+        # there is no immediate next step, so we check if there is a stack
+        # and if there is, we go one level up the stack
+        if not (current_stack := tracker.get_slot(FLOW_STACK_SLOT)):
+            # If there is no stack, we assume that the flow is done
+            # and there is nothing to do
+            return (None, [SlotSet(FLOW_STATE_SLOT, None)])
+        else:
+            # If there is a stack, we pop the last item and return it
+            stack_step_dump = current_stack.pop()
+            stack_step_info = FlowState.from_dict(stack_step_dump)
+            stack_step = self.all_flows.step_by_id(
+                stack_step_info.step_id, stack_step_info.flow_id
+            )
+            next_step = self._get_next_step(
+                tracker, domain, stack_step, stack_step_info.flow_id
+            )
+            action, events = self._get_action_for_next_step(next_step, tracker, domain)
+            updated_state = FlowState(
+                stack_step_info.flow_id,
+                next_step.id if next_step else None,
+            )
+
+            events.append(SlotSet(FLOW_STACK_SLOT, current_stack))
+            events.append(SlotSet(FLOW_STATE_SLOT, updated_state.as_dict()))
+            return (action, events)
 
     def _get_action_for_next_step(
         self,
@@ -424,15 +419,20 @@ class FlowExecutor:
     ) -> Tuple[Optional[Text], List[Event]]:
         """Get the action for the next step."""
         if isinstance(next_step, QuestionFlowStep):
-            return (
-                "question_" + next_step.question,
-                [
-                    SlotSet(
-                        FLOW_STATE_SLOT,
-                        self.flow_state.with_updated_id(next_step.id).as_dict(),
-                    )
-                ],
+            if next_step.reset_on_reentry:
+                slot = tracker.slots.get(next_step.question, None)
+                initial_value = slot.initial_value if slot else None
+                events = [SlotSet(next_step.question, initial_value)]
+            else:
+                events = []
+
+            events.append(
+                SlotSet(
+                    FLOW_STATE_SLOT,
+                    self.flow_state.with_updated_id(next_step.id).as_dict(),
+                )
             )
+            return ("question_" + next_step.question, events)
         elif isinstance(next_step, ActionFlowStep):
             if not (action_name := next_step.action):
                 raise Exception(f"Action not specified for step {next_step}")

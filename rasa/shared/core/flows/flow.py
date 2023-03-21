@@ -310,6 +310,8 @@ class QuestionFlowStep(FlowStep):
 
     question: Text
     """The question of the flow step."""
+    reset_on_reentry: bool = False
+    """Whether the question should be reset on reentry."""
 
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> QuestionFlowStep:
@@ -324,6 +326,7 @@ class QuestionFlowStep(FlowStep):
         base = super()._from_json(flow_step_config)
         return QuestionFlowStep(
             question=flow_step_config.get("question"),
+            reset_on_reentry=flow_step_config.get("reset_on_reentry", False),
             **base.__dict__,
         )
 
@@ -335,6 +338,7 @@ class QuestionFlowStep(FlowStep):
         """
         dump = super().as_json()
         dump["question"] = self.question
+        dump["reset_on_reentry"] = self.reset_on_reentry
         return dump
 
 
