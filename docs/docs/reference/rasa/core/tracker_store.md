@@ -723,6 +723,17 @@ async def save(tracker: DialogueStateTracker) -> None
 
 Calls `save` method of primary tracker store.
 
+#### create\_tracker\_store
+
+```python
+def create_tracker_store(
+        endpoint_config: Optional[EndpointConfig],
+        domain: Optional[Domain] = None,
+        event_broker: Optional[EventBroker] = None) -> TrackerStore
+```
+
+Creates a tracker store based on the current configuration.
+
 ## AwaitableTrackerStore Objects
 
 ```python
