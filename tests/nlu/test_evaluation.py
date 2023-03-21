@@ -12,6 +12,7 @@ from rasa.core.channels import UserMessage
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
+from unittest.mock import MagicMock, AsyncMock
 
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -156,6 +157,79 @@ EN_entity_result = EntityEvaluationResult(
 )
 
 EN_entity_result_no_tokens = EntityEvaluationResult(EN_targets, EN_predicted, [], "")
+
+
+@pytest.fixture
+def mocks_for_test_cross_validate(monkeypatch: MonkeyPatch):
+    monkeypatch.setattr("rasa.nlu.test.tempfile.TemporaryDirectory", MagicMock())
+
+    mock_write_yaml = MagicMock()
+    mock_write_yaml.return_value = "write yaml"
+    monkeypatch.setattr("rasa.shared.utils.io.write_yaml", mock_write_yaml)
+
+    mock_train_nlu = MagicMock()
+    mock_train_nlu.return_value = "train nlu"
+    monkeypatch.setattr("rasa.model_training.train_nlu", mock_train_nlu)
+
+    mock_agent_load = MagicMock()
+    mock_agent_load.return_value = Agent()
+    monkeypatch.setattr("rasa.nlu.test.Agent.load", mock_agent_load)
+
+    mock_RasaYAMLWriter = MagicMock(dump=MagicMock())
+    monkeypatch.setattr("rasa.nlu.test.RasaYAMLWriter", mock_RasaYAMLWriter)
+
+    monkeypatch.setattr("rasa.nlu.test.combine_result", AsyncMock())
+
+    mock_evaluate_intents = MagicMock()
+    monkeypatch.setattr("rasa.nlu.test.evaluate_intents", mock_evaluate_intents)
+
+    return mock_evaluate_intents
+
+
+async def mock_combine_result(
+    intent_metrics={},
+    entity_metrics={},
+    response_selection_metrics={},
+    processor=None,
+    data=None,
+    intent_results=[],
+    entity_results=None,
+    response_selection_results=None,
+):
+    if intent_results is not None:
+        intent_results += IntentEvaluationResult(1, 2, 3, 4)
+
+
+async def test_cross_validate(monkeypatch: MonkeyPatch, mocks_for_test_cross_validate):
+    training_data = rasa.shared.nlu.training_data.loading.load_data(
+        "data/test/demo-rasa-more-ents-and-multiplied.yml"
+    )
+
+    nlu_config = {
+        "assistant_id": "placeholder_default",
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {"name": "DIETClassifier", EPOCHS: 2},
+        ],
+    }
+
+    n_folds = 2
+
+    with pytest.raises(
+        UnboundLocalError,
+        match="local variable 'intent_evaluation' referenced before assignment",
+    ) as x:
+        await cross_validate(
+            training_data,
+            n_folds,
+            nlu_config,
+            successes=False,
+            errors=False,
+            disable_plotting=True,
+            report_as_dict=True,
+        )
 
 
 def test_token_entity_intersection():
