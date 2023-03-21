@@ -1,0 +1,5 @@
+tracker_store:
+    type: redis
+    url: localhost
+    port: 6379
+    db: 0
