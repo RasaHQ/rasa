@@ -1642,6 +1642,7 @@ async def cross_validate(
                 response_selection_test_results,
             )
 
+        intent_evaluation = {}
         if intent_test_results:
             logger.info("Accumulated test folds intent evaluation results:")
             intent_evaluation = evaluate_intents(
