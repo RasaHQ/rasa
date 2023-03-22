@@ -402,13 +402,22 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
     async def retrieve_full_tracker(
         self, sender_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Returns tracker matching sender_id."""
+        """Returns tracker matching sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+        """
         return await self._retrieve(sender_id, fetch_all_sessions=True)
 
     async def _retrieve(
         self, sender_id: Text, fetch_all_sessions: bool
     ) -> Optional[DialogueStateTracker]:
-        """Returns tracker matching sender_id."""
+        """Returns tracker matching sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+            fetch_all_sessions: Whether to fetch all sessions or only the last one.
+        """
         if sender_id not in self.store:
             logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
             return None
@@ -541,7 +550,12 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
     async def _retrieve(
         self, sender_id: Text, fetch_all_sessions: bool
     ) -> Optional[DialogueStateTracker]:
-        """Returns tracker matching sender_id."""
+        """Returns tracker matching sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+            fetch_all_sessions: Whether to fetch all sessions or only the last one.
+        """
         stored = self.red.get(self.key_prefix + sender_id)
         if stored is None:
             logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
@@ -569,6 +583,13 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
     def _merge_trackers(
         prior_tracker: DialogueStateTracker, tracker: DialogueStateTracker
     ) -> DialogueStateTracker:
+        """Merges two trackers.
+
+        Args:
+            prior_tracker: Tracker containing events from the previous conversation
+                sessions.
+            tracker: Tracker containing events from the current conversation session.
+        """
         if not prior_tracker.events:
             return tracker
 
@@ -682,13 +703,22 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
     async def retrieve_full_tracker(
         self, sender_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Retrieves tracker for all conversation sessions."""
+        """Retrieves tracker for all conversation sessions.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+        """
         return await self._retrieve(sender_id, fetch_all_sessions=True)
 
     async def _retrieve(
         self, sender_id: Text, fetch_all_sessions: bool
     ) -> Optional[DialogueStateTracker]:
-        """Returns tracker matching sender_id."""
+        """Returns tracker matching sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+            fetch_all_sessions: Whether to fetch all sessions or only the last one.
+        """
         dialogues = self.db.query(
             KeyConditionExpression=Key("sender_id").eq(sender_id),
             ScanIndexForward=False,
@@ -1431,7 +1461,11 @@ class FailSafeTrackerStore(TrackerStore):
     async def retrieve_full_tracker(
         self, sender_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Calls `retrieve_full_tracker` method of primary tracker store."""
+        """Calls `retrieve_full_tracker` method of primary tracker store.
+
+        Args:
+            sender_id: The sender id of the tracker to retrieve.
+        """
         try:
             return await self._tracker_store.retrieve_full_tracker(sender_id)
         except Exception as e:
@@ -1442,6 +1476,9 @@ class FailSafeTrackerStore(TrackerStore):
         """Calls `_on_tracker_store_error` callable attribute if set.
 
         Otherwise, logs the error.
+
+        Args:
+            error: The error that occurred.
         """
         if self._on_tracker_store_error:
             self._on_tracker_store_error(error)

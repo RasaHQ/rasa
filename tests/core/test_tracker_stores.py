@@ -985,10 +985,8 @@ def test_create_awaitable_tracker_store_with_endpoint_config():
 
 
 @pytest.fixture
-def tracker_with_restarted_event() -> DialogueStateTracker:
-    sender_id = uuid.uuid4().hex
-
-    events_including_restart = [
+def initial_events_including_restart() -> List[Event]:
+    return [
         UserUttered("hi"),
         ActionExecuted("utter_greet"),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -997,14 +995,25 @@ def tracker_with_restarted_event() -> DialogueStateTracker:
         ActionExecuted(ACTION_RESTART_NAME),
     ]
 
-    events_after_restart = [
+
+@pytest.fixture
+def events_after_restart() -> List[Event]:
+    return [
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("Let's start again."),
     ]
 
-    events = events_including_restart + events_after_restart
+
+@pytest.fixture
+def tracker_with_restarted_event(
+    initial_events_including_restart: List[Event],
+    events_after_restart: List[Event],
+) -> DialogueStateTracker:
+    sender_id = uuid.uuid4().hex
+
+    events = initial_events_including_restart + events_after_restart
     return DialogueStateTracker.from_events(sender_id=sender_id, evts=events)
 
 
@@ -1088,21 +1097,17 @@ async def test_sql_tracker_store_retrieve_full_tracker(
 async def test_sql_tracker_store_retrieve(
     domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
 ) -> None:
     tracker_store = SQLTrackerStore(domain)
     sender_id = tracker_with_restarted_event.sender_id
     await tracker_store.save(tracker_with_restarted_event)
 
-    split_conversations = rasa.shared.core.events.split_events(
-        tracker_with_restarted_event.events,
-        ActionExecuted,
-        {"action_name": ACTION_SESSION_START_NAME},
-        include_splitting_event=False,
-    )
-    events_after_restart = split_conversations[-1]
-
     tracker = await tracker_store.retrieve(sender_id)
-    assert list(tracker.events) == events_after_restart
+
+    # the tracker with the latest session would not contain
+    # action_session_start event for SQLTrackerStore
+    assert list(tracker.events) == events_after_restart[1:]
 
 
 async def test_in_memory_tracker_store_retrieve_full_tracker(
@@ -1121,18 +1126,11 @@ async def test_in_memory_tracker_store_retrieve_full_tracker(
 async def test_in_memory_tracker_store_retrieve(
     domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
 ) -> None:
     tracker_store = InMemoryTrackerStore(domain)
     sender_id = tracker_with_restarted_event.sender_id
     await tracker_store.save(tracker_with_restarted_event)
-
-    split_conversations = rasa.shared.core.events.split_events(
-        tracker_with_restarted_event.events,
-        ActionExecuted,
-        {"action_name": ACTION_SESSION_START_NAME},
-        include_splitting_event=True,
-    )
-    events_after_restart = split_conversations[-1]
 
     tracker = await tracker_store.retrieve(sender_id)
     assert list(tracker.events) == events_after_restart
@@ -1154,23 +1152,18 @@ async def test_mongo_tracker_store_retrieve_full_tracker(
 async def test_mongo_tracker_store_retrieve(
     domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
 ) -> None:
     tracker_store = MockedMongoTrackerStore(domain)
     sender_id = tracker_with_restarted_event.sender_id
 
     await tracker_store.save(tracker_with_restarted_event)
 
-    split_conversations = rasa.shared.core.events.split_events(
-        tracker_with_restarted_event.events,
-        ActionExecuted,
-        {"action_name": ACTION_SESSION_START_NAME},
-        include_splitting_event=False,
-    )
-
-    events_after_restart = split_conversations[-1]
-
     tracker = await tracker_store.retrieve(sender_id)
-    assert list(tracker.events) == events_after_restart
+
+    # the tracker with the latest session would not contain
+    # action_session_start event for MongoTrackerStore
+    assert list(tracker.events) == events_after_restart[1:]
 
 
 class MockedRedisTrackerStore(RedisTrackerStore):
@@ -1200,20 +1193,12 @@ async def test_redis_tracker_store_retrieve_full_tracker(
 async def test_redis_tracker_store_retrieve(
     domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
 ) -> None:
     tracker_store = MockedRedisTrackerStore(domain)
     sender_id = tracker_with_restarted_event.sender_id
 
     await tracker_store.save(tracker_with_restarted_event)
-
-    split_conversations = rasa.shared.core.events.split_events(
-        tracker_with_restarted_event.events,
-        ActionExecuted,
-        {"action_name": ACTION_SESSION_START_NAME},
-        include_splitting_event=True,
-    )
-
-    events_after_restart = split_conversations[-1]
 
     tracker = await tracker_store.retrieve(sender_id)
     assert list(tracker.events) == events_after_restart
@@ -1244,7 +1229,7 @@ async def test_redis_tracker_store_merge_trackers_same_session() -> None:
 
 
 def test_redis_tracker_store_merge_trackers_overlapping_session() -> None:
-    events: List[Event] = [
+    prior_tracker_events: List[Event] = [
         ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
         SessionStarted(timestamp=2),
         ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
@@ -1259,28 +1244,30 @@ def test_redis_tracker_store_merge_trackers_overlapping_session() -> None:
         SessionStarted(timestamp=9),
         ActionExecuted(ACTION_LISTEN_NAME, timestamp=10),
     ]
-    events += new_start_session
+
+    prior_tracker_events += new_start_session
     prior_tracker = DialogueStateTracker.from_events(
         "overlapping-session",
-        evts=events,
+        evts=prior_tracker_events,
     )
 
     after_restart_event = [UserUttered("hi again", timestamp=11)]
+    new_tracker_events = new_start_session + after_restart_event
 
     new_tracker = DialogueStateTracker.from_events(
         "overlapping-session",
-        evts=new_start_session + after_restart_event,
+        evts=new_tracker_events,
     )
 
     actual_tracker = RedisTrackerStore._merge_trackers(prior_tracker, new_tracker)
 
-    assert (
-        list(actual_tracker.events) == list(prior_tracker.events) + after_restart_event
-    )
+    expected_events = prior_tracker_events + after_restart_event
+
+    assert list(actual_tracker.events) == expected_events
 
 
 def test_redis_tracker_store_merge_trackers_different_session() -> None:
-    events: List[Event] = [
+    prior_tracker_events: List[Event] = [
         ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
         SessionStarted(timestamp=2),
         ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
@@ -1289,7 +1276,7 @@ def test_redis_tracker_store_merge_trackers_different_session() -> None:
     ]
     prior_tracker = DialogueStateTracker.from_events(
         "different-session",
-        evts=events,
+        evts=prior_tracker_events,
     )
 
     new_session = [
@@ -1306,4 +1293,5 @@ def test_redis_tracker_store_merge_trackers_different_session() -> None:
 
     actual_tracker = RedisTrackerStore._merge_trackers(prior_tracker, new_tracker)
 
-    assert list(actual_tracker.events) == list(prior_tracker.events) + new_session
+    expected_events = prior_tracker_events + new_session
+    assert list(actual_tracker.events) == expected_events

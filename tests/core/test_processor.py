@@ -1809,6 +1809,10 @@ async def test_processor_fetch_full_tracker_with_initial_session_inexistent_trac
 
     assert isinstance(tracker.events[1], SessionStarted)
 
+    last_recorded_event = tracker.events[2]
+    assert isinstance(last_recorded_event, ActionExecuted)
+    assert last_recorded_event.action_name == ACTION_LISTEN_NAME
+
 
 async def test_processor_fetch_full_tracker_with_initial_session_existing_tracker(
     default_processor: MessageProcessor,
