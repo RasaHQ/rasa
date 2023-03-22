@@ -208,7 +208,7 @@ async def test_cross_validate(monkeypatch: MonkeyPatch, mocks_for_test_cross_val
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 2},
+            {"name": "LogisticRegressionClassifier"},
         ],
     }
 
