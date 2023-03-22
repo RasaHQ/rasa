@@ -47,6 +47,63 @@ Checks whether the config file at `path` contains the `mandatory_keys`.
 
   The list of missing config keys.
 
+#### validate\_assistant\_id\_in\_config
+
+```python
+def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None
+```
+
+Verifies that the assistant_id key exists and has a unique value in config.
+
+Issues a warning if the key does not exist or has the default value and replaces it
+with a pseudo-random string value.
+
+#### validate\_config\_path
+
+```python
+def validate_config_path(config: Optional[Union[Text, "Path"]],
+                         default_config: Text = DEFAULT_CONFIG_PATH) -> Text
+```
+
+Verifies that the config path exists.
+
+Exit if the config file does not exist.
+
+**Arguments**:
+
+- `config` - Path to the config file.
+- `default_config` - default config to use if the file at `config` doesn&#x27;t exist.
+  
+- `Returns` - The path to the config file.
+
+#### validate\_mandatory\_config\_keys
+
+```python
+def validate_mandatory_config_keys(config: Union[Text, "Path"],
+                                   mandatory_keys: List[Text]) -> Text
+```
+
+Get a config from a config file and check if it is valid.
+
+Exit if the config isn&#x27;t valid.
+
+**Arguments**:
+
+- `config` - Path to the config file.
+- `mandatory_keys` - The keys that have to be specified in the config file.
+  
+- `Returns` - The path to the config file if the config is valid.
+
+#### get\_validated\_config
+
+```python
+def get_validated_config(config: Optional[Union[Text, "Path"]],
+                         mandatory_keys: List[Text],
+                         default_config: Text = DEFAULT_CONFIG_PATH) -> Text
+```
+
+Validates config and returns path to validated config file.
+
 #### cancel\_cause\_not\_found
 
 ```python

@@ -71,5 +71,5 @@ Initialise class with client and bucket.
 class AzurePersistor(Persistor)
 ```
 
-Store models on Azure
+Store models on Azure.
 

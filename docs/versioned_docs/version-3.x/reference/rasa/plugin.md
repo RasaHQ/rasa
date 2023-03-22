@@ -49,3 +49,24 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None
 
 Hook specification for initialising plugin telemetry.
 
+#### init\_managers
+
+```python
+@hookspec
+def init_managers(endpoints_file: Optional[Text]) -> None
+```
+
+Hook specification for initialising managers.
+
+#### create\_tracker\_store
+
+```python
+@hookspec(firstresult=True)  # type: ignore[misc]
+def create_tracker_store(
+        endpoint_config: Union["TrackerStore", "EndpointConfig"],
+        domain: "Domain",
+        event_broker: Optional["EventBroker"] = None) -> "TrackerStore"
+```
+
+Hook specification for wrapping with AuthRetryTrackerStore.
+

@@ -332,7 +332,8 @@ Initializes `GraphNode`.
 
 ```python
 def __call__(
-        *inputs_from_previous_nodes: Tuple[Text, Any]) -> Tuple[Text, Any]
+    *inputs_from_previous_nodes: Union[Tuple[Text, Any], Text]
+) -> Tuple[Text, Any]
 ```
 
 Calls the `GraphComponent` run method when the node executes in the graph.
@@ -341,6 +342,8 @@ Calls the `GraphComponent` run method when the node executes in the graph.
 
 - `*inputs_from_previous_nodes` - The output of all parent nodes. Each is a
   dictionary with a single item mapping the node&#x27;s name to its output.
+  If the node couldn&#x27;t be resolved and has no output, the node name is
+  provided instead of a tuple.
   
 
 **Returns**:

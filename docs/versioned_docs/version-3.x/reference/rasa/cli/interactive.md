@@ -40,3 +40,12 @@ def get_provided_model(arg_model: Text) -> Optional[Union[Text, Path]]
 
 Checks model path input and selects model from it.
 
+#### validate\_assistant\_id\_key\_in\_config
+
+```python
+def validate_assistant_id_key_in_config(
+        file_importer: TrainingDataImporter) -> None
+```
+
+Verifies that config contains a unique value for assistant identifier.
+

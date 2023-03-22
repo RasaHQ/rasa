@@ -8,7 +8,7 @@ title: rasa.core.channels.mattermost
 class MattermostBot(OutputChannel)
 ```
 
-A Mattermost communication channel
+A Mattermost communication channel.
 
 #### token\_from\_login
 
