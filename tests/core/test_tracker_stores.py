@@ -984,39 +984,6 @@ def test_create_awaitable_tracker_store_with_endpoint_config():
     assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
 
 
-@pytest.fixture
-def initial_events_including_restart() -> List[Event]:
-    return [
-        UserUttered("hi"),
-        ActionExecuted("utter_greet"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("/restart"),
-        Restarted(),
-        ActionExecuted(ACTION_RESTART_NAME),
-    ]
-
-
-@pytest.fixture
-def events_after_restart() -> List[Event]:
-    return [
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("Let's start again."),
-    ]
-
-
-@pytest.fixture
-def tracker_with_restarted_event(
-    initial_events_including_restart: List[Event],
-    events_after_restart: List[Event],
-) -> DialogueStateTracker:
-    sender_id = uuid.uuid4().hex
-
-    events = initial_events_including_restart + events_after_restart
-    return DialogueStateTracker.from_events(sender_id=sender_id, evts=events)
-
-
 async def test_fail_safe_tracker_store_retrieve_full_tracker(
     domain: Domain, tracker_with_restarted_event: DialogueStateTracker
 ) -> None:
@@ -1105,8 +1072,9 @@ async def test_sql_tracker_store_retrieve(
 
     tracker = await tracker_store.retrieve(sender_id)
 
-    # the tracker with the latest session would not contain
-    # action_session_start event for SQLTrackerStore
+    # the retrieved tracker with the latest session would not contain
+    # `action_session_start` event because the SQLTrackerStore filters
+    # only the events after `session_started` event
     assert list(tracker.events) == events_after_restart[1:]
 
 
@@ -1161,8 +1129,9 @@ async def test_mongo_tracker_store_retrieve(
 
     tracker = await tracker_store.retrieve(sender_id)
 
-    # the tracker with the latest session would not contain
-    # action_session_start event for MongoTrackerStore
+    # the retrieved tracker with the latest session would not contain
+    # `action_session_start` event because the MongoTrackerStore filters
+    # only the events after `session_started` event
     assert list(tracker.events) == events_after_restart[1:]
 
 
