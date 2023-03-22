@@ -51,6 +51,7 @@ from rasa.utils.tensorflow.constants import (
     IDS,
     EPOCHS,
     EPOCH_OVERRIDE,
+    RUN_EAGERLY,
 )
 from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow import model_data_utils
@@ -101,8 +102,14 @@ def test_diagnostics(
 class TestTEDPolicy(PolicyTestCollection):
     @staticmethod
     def _policy_class_to_test() -> Type[TEDPolicy]:
+        class TEDPolicyEager(TEDPolicy):
+            @staticmethod
+            def get_default_config() -> Dict[Text, Any]:
+                config = TEDPolicy.get_default_config()
+                config[RUN_EAGERLY] = True
+                return config
 
-        return TEDPolicy
+        return TEDPolicyEager
 
     def test_train_model_checkpointing(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory

@@ -121,6 +121,7 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
     EPOCH_OVERRIDE,
     USE_GPU,
+    RUN_EAGERLY,
 )
 
 logger = logging.getLogger(__name__)
@@ -343,6 +344,11 @@ class TEDPolicy(Policy):
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
             USE_GPU: True,
+            # Determines whether to construct the model graph or not.
+            # This is advantageous when the model is only trained or inferred for
+            # a few steps, as the compilation of the graph tends to take more time than
+            # running it. It is recommended to not adjust the optimization parameter.
+            RUN_EAGERLY: False,
         }
 
     def __init__(
@@ -660,7 +666,8 @@ class TEDPolicy(Policy):
                 self._entity_tag_specs,
             )
             self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]),
+                run_eagerly=self.config[RUN_EAGERLY],
             )
         (
             data_generator,
@@ -1357,6 +1364,48 @@ class TED(TransformerRasaModel):
         )
 
     # ---GRAPH BUILDING HELPERS---
+    def build(self, input_shape):
+
+        batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+        idx = 0
+        for key, values in self.data_signature.items():
+            for sub_key, signature in values.items():
+                for _ in signature:
+                    batch_data[key][sub_key].append(input_shape[idx])
+                    idx += 1
+
+        for name in self.data_signature.keys():
+            if SENTENCE in self.data_signature[name]:
+                self._tf_layers[f"sparse_dense_concat_layer.{name}"].build(
+                    batch_data[name][SENTENCE]
+                )
+
+                # create encoding layers only for the features which should be encoded;
+                if name not in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
+                    continue
+                # check that there are SENTENCE features for the attribute name in data
+                if (
+                    name in SENTENCE_FEATURES_TO_ENCODE
+                    and FEATURE_TYPE_SENTENCE not in self.data_signature[name]
+                ):
+                    continue
+                #  same for label_data
+                if (
+                    name in LABEL_FEATURES_TO_ENCODE
+                    and FEATURE_TYPE_SENTENCE not in self.label_signature[name]
+                ):
+                    continue
+
+                self._tf_layers[f"encoding_layer.{name}"].build(
+                    [
+                        (
+                            self.config[ENCODING_DIMENSION],
+                            self.config[DENSE_DIMENSION][name],
+                        )
+                    ]
+                )
 
     @staticmethod
     def _compute_dialogue_indices(

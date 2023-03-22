@@ -234,7 +234,20 @@ class ConcatenateSparseDenseFeatures(RasaCustomLayer):
         # Prepare dropout and sparse-to-dense layers if any sparse tensors are expected
         self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
         if any([signature.is_sparse for signature in feature_type_signature]):
+            self.input_dim = [
+                signature for signature in feature_type_signature if signature.is_sparse
+            ][0].units
             self._prepare_layers_for_sparse_tensors(attribute, feature_type, config)
+
+    def build(self, input_shape):
+        input_shape = input_shape[0] if isinstance(input_shape, tuple) else input_shape
+        for input_shape_it in input_shape:
+            super().build(input_shape_it)
+
+        if self.SPARSE_TO_DENSE in self._tf_layers:
+            self._tf_layers[self.SPARSE_TO_DENSE].build(
+                (self._tf_layers[self.SPARSE_TO_DENSE].get_units(), self.input_dim)
+            )
 
     def _check_sparse_input_units(
         self, feature_type_signature: List[FeatureSignature]

@@ -414,6 +414,11 @@ class Ffnn(tf.keras.layers.Layer):
             )
             self._ffn_layers.append(tf.keras.layers.Dropout(dropout_rate))
 
+    def build(self, inputs_shape):
+        super().build(inputs_shape)
+        for layer, input_shape in zip(self._ffn_layers, inputs_shape):
+            layer.build(input_shape)
+
     def call(
         self, x: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None
     ) -> tf.Tensor:
