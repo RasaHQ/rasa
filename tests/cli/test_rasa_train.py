@@ -432,7 +432,7 @@ def test_train_help(run: Callable[..., RunResult]):
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force] [--finetune [FINETUNE]]
                   [--epoch-fraction EPOCH_FRACTION] [--endpoints ENDPOINTS]
-                  {{core,nlu}} ..."""  # noqa: E501
+                  {{core,nlu}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -450,7 +450,7 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
                       [--num-threads NUM_THREADS]
                       [--fixed-model-name FIXED_MODEL_NAME]
                       [--persist-nlu-data] [--finetune [FINETUNE]]
-                      [--epoch-fraction EPOCH_FRACTION]"""  # noqa: E501
+                      [--epoch-fraction EPOCH_FRACTION]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -474,7 +474,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES ...]] [--runs RUNS]
                        [--finetune [FINETUNE]]
-                       [--epoch-fraction EPOCH_FRACTION]"""  # noqa: E501
+                       [--epoch-fraction EPOCH_FRACTION]"""
     else:
         help_text = f"""usage: {RASA_EXE} train core [-h] [-v] [-vv] [--quiet]
                        [--logging-config-file LOGGING_CONFIG_FILE]
@@ -484,7 +484,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
                        [--runs RUNS] [--finetune [FINETUNE]]
-                       [--epoch-fraction EPOCH_FRACTION]"""  # noqa: E501
+                       [--epoch-fraction EPOCH_FRACTION]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

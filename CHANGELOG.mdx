@@ -16,6 +16,43 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.5.0] - 2023-03-21
+                       
+Rasa 3.5.0 (2023-03-21)                        
+### Features
+- [#12053](https://github.com/rasahq/rasa/issues/12053): Add a new required key (`assistant_id`) to `config.yml` to uniquely identify assistants in deployment.
+  The assistant identifier is extracted from the model metadata and added to the metadata of all dialogue events.
+  Re-training will be required to include the assistant id in the event metadata.
+
+  If the assistant identifier is missing from the `config.yml` or the default identifier value is not replaced, a random 
+  identifier is generated during each training.
+
+  An assistant running without an identifier will issue a warning that dialogue events without identifier metadata will be
+  streamed to the event broker.
+
+### Improvements
+- [#11998](https://github.com/rasahq/rasa/issues/11998): Add capability to send compressed body in HTTP request to action server.
+  Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
+
+### Bugfixes
+- [#12136](https://github.com/rasahq/rasa/issues/12136): Address potentially missing events with Pika consumer due to weak references on asynchronous tasks,
+  as specifcied in [Python official documentation](https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task).
+- [#12155](https://github.com/rasahq/rasa/issues/12155): Sets a global seed for numpy, TensorFlow, keras, Python and CuDNN, to ensure consistent random number generation.
+
+### Improved Documentation
+- [#11893](https://github.com/rasahq/rasa/issues/11893): Clarify in the docs, how rules are designed and how to use this behaviour to abort a rule
+
+### Miscellaneous internal changes
+- [#11924](https://github.com/rasahq/rasa/issues/11924), [#11926](https://github.com/rasahq/rasa/issues/11926), [#12006](https://github.com/rasahq/rasa/issues/12006), [#12022](https://github.com/rasahq/rasa/issues/12022), [#12092](https://github.com/rasahq/rasa/issues/12092), [#12135](https://github.com/rasahq/rasa/issues/12135), [#12137](https://github.com/rasahq/rasa/issues/12137), [#12140](https://github.com/rasahq/rasa/issues/12140), [#12154](https://github.com/rasahq/rasa/issues/12154)
+
+
+## [3.4.6] - 2023-03-16
+                       
+Rasa 3.4.6 (2023-03-16)                        
+### Bugfixes
+- [#12098](https://github.com/rasahq/rasa/issues/12098): Fixes CountVectorFeaturizer to train when min_df != 1.
+
+
 ## [3.4.5] - 2023-03-09
                        
 Rasa 3.4.5 (2023-03-09)                        
