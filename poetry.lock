@@ -2378,7 +2378,7 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.4.1"
+version = "3.5.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
@@ -3901,7 +3901,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "6b2b837e0fc054d50da73c1faf4caccf521a0478359357910ac066e0ed157782"
+content-hash = "de8aa558bd96517cb73e83add8cb26bec974a6926ff28e5a0a0edb3796995425"
 
 [metadata.files]
 absl-py = [
@@ -6070,8 +6070,8 @@ randomname = [
     {file = "randomname-0.1.5.tar.gz", hash = "sha256:e10d14ea10895ee5bc417bdcc6d955e0b586f3bc67094ab87afcf8dcac23ab92"},
 ]
 rasa-sdk = [
-    {file = "rasa_sdk-3.4.1-py3-none-any.whl", hash = "sha256:8a52a9d4ebe561a8727911149a1db4fba660bfeb70bd4b61635a9e4dbc927caa"},
-    {file = "rasa_sdk-3.4.1.tar.gz", hash = "sha256:8e63049ad1b362c7e23c89593aa1563abd0031a7d98b6fed44acae31a936f5e8"},
+    {file = "rasa_sdk-3.5.0-py3-none-any.whl", hash = "sha256:d2b1455f7e8587ddaa5611c617c0a3555c3080b0a2f934206a9609149cbdbb75"},
+    {file = "rasa_sdk-3.5.0.tar.gz", hash = "sha256:6de94b5dfa778a2910b690a0046f266d79e09c32a0cbbdd1b6fb58e7c9cf2b10"},
 ]
 redis = [
     {file = "redis-4.4.2-py3-none-any.whl", hash = "sha256:e6206448e2f8a432871d07d432c13ed6c2abcf6b74edb436c99752b1371be387"},
@@ -6213,6 +6213,8 @@ ruamel-yaml-clib = [
     {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:045e0626baf1c52e5527bd5db361bc83180faaba2ff586e763d3d5982a876a9e"},
     {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-macosx_12_6_arm64.whl", hash = "sha256:721bc4ba4525f53f6a611ec0967bdcee61b31df5a56801281027a3a6d1c2daf5"},
     {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl", hash = "sha256:41d0f1fa4c6830176eef5b276af04c89320ea616655d01327d5ce65e50575c94"},
+    {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-win32.whl", hash = "sha256:f6d3d39611ac2e4f62c3128a9eed45f19a6608670c5a2f4f07f24e8de3441d38"},
+    {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-win_amd64.whl", hash = "sha256:da538167284de58a52109a9b89b8f6a53ff8437dd6dc26d33b57bf6699153122"},
     {file = "ruamel.yaml.clib-0.2.7-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:4b3a93bb9bc662fc1f99c5c3ea8e623d8b23ad22f861eb6fce9377ac07ad6072"},
     {file = "ruamel.yaml.clib-0.2.7-cp36-cp36m-macosx_12_0_arm64.whl", hash = "sha256:a234a20ae07e8469da311e182e70ef6b199d0fbeb6c6cc2901204dd87fb867e8"},
     {file = "ruamel.yaml.clib-0.2.7-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:15910ef4f3e537eea7fe45f8a5d19997479940d9196f357152a09031c5be59f3"},
