@@ -5,12 +5,17 @@ The docs are built using [Docusaurus 2](https://v2.docusaurus.io/).
 ## Useful commands
 
 ### Installation
+Firstly, install python dependencies for Rasa:
+
+```
+$ make install
+```
+
+Then, install doc dependencies:
 
 ```
 $ make install-docs
 ```
-
-This command installs the required python dependencies.
 
 ### Local Development
 In order to build the docs, run:
