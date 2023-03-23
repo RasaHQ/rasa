@@ -157,6 +157,20 @@ EN_entity_result = EntityEvaluationResult(
 
 EN_entity_result_no_tokens = EntityEvaluationResult(EN_targets, EN_predicted, [], "")
 
+TRAINING_DATA = rasa.shared.nlu.training_data.loading.load_data(
+    "data/test/demo-rasa-more-ents-and-multiplied.yml"
+)
+NLU_CONFIG = {
+    "assistant_id": "placeholder_default",
+    "language": "en",
+    "pipeline": [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "LogisticRegressionClassifier"},
+    ],
+}
+N_FOLDS = 2
+
 
 @pytest.fixture
 def mocks_for_test_cross_validate(monkeypatch: MonkeyPatch):
@@ -197,27 +211,13 @@ async def mock_combine_result(
         intent_results += IntentEvaluationResult(1, 2, 3, 4)
 
 
-async def test_cross_validate(monkeypatch: MonkeyPatch, mocks_for_test_cross_validate):
-    training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/test/demo-rasa-more-ents-and-multiplied.yml"
-    )
-
-    nlu_config = {
-        "assistant_id": "placeholder_default",
-        "language": "en",
-        "pipeline": [
-            {"name": "WhitespaceTokenizer"},
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "LogisticRegressionClassifier"},
-        ],
-    }
-
-    n_folds = 2
-
+async def test_cross_validate_evaluate_intents_not_called(
+    monkeypatch: MonkeyPatch, mocks_for_test_cross_validate
+):
     await cross_validate(
-        training_data,
-        n_folds,
-        nlu_config,
+        TRAINING_DATA,
+        N_FOLDS,
+        NLU_CONFIG,
         successes=False,
         errors=False,
         disable_plotting=True,
@@ -225,13 +225,17 @@ async def test_cross_validate(monkeypatch: MonkeyPatch, mocks_for_test_cross_val
     )
     mocks_for_test_cross_validate.assert_not_called()
 
+
+async def test_cross_validate_evaluate_intents_called(
+    monkeypatch: MonkeyPatch, mocks_for_test_cross_validate
+):
     monkeypatch.setattr(
         "rasa.nlu.test.combine_result", MagicMock(side_effect=mock_combine_result)
     )
     await cross_validate(
-        training_data,
-        n_folds,
-        nlu_config,
+        TRAINING_DATA,
+        N_FOLDS,
+        NLU_CONFIG,
         successes=False,
         errors=False,
         disable_plotting=True,
