@@ -71,8 +71,9 @@ jobs:
 
   wait_for_docs_tests:
     # Looks for doc test workflows and waits for it to complete successfully
-    # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
+    # Runs on pushes to main exclusively
     name: Wait for docs tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
 
@@ -973,7 +974,7 @@ jobs:
 
     # deploy will only be run when there is a tag available
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-    needs: [quality, test, wait_for_docs_tests, docker] # only run after all other stages succeeded
+    needs: [docker] # only run after the docker build stage succeeds
 
     steps:
       - name: Checkout git repository 🕝

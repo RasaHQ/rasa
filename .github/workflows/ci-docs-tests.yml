@@ -3,13 +3,11 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "*"
   pull_request:
     types: [opened, synchronize, labeled]
 
 concurrency:
-  group: ci-docs-tests-${{ github.ref }} # branch or tag name
+  group: ci-docs-tests-${{ github.ref }} # branch name
   cancel-in-progress: true
 
 env:
