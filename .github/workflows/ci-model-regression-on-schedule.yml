@@ -418,7 +418,7 @@ jobs:
 
       - name: Check duplicate issue
         if: failure() && github.event_name == 'schedule'
-        uses: actions/github-script@d556feaca394842dc55e4734bf3bb9f685482fa0
+        uses: actions/github-script@98814c53be79b1d30f795b907e553d8679345975
         id: issue-exists
         with:
           result-encoding: string
@@ -447,7 +447,7 @@ jobs:
       - name: Create GitHub Issue 📬
         id: create-issue
         if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
-        uses: actions/github-script@d556feaca394842dc55e4734bf3bb9f685482fa0
+        uses: actions/github-script@98814c53be79b1d30f795b907e553d8679345975
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
           github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
@@ -609,7 +609,7 @@ jobs:
 
       - name: Check duplicate issue
         if: steps.performance.outputs.is_dropped == 'true'
-        uses: actions/github-script@d556feaca394842dc55e4734bf3bb9f685482fa0
+        uses: actions/github-script@98814c53be79b1d30f795b907e553d8679345975
         id: issue-exists
         with:
           result-encoding: string
@@ -636,7 +636,7 @@ jobs:
       - name: Create GitHub Issue 📬
         id: create-issue
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: actions/github-script@d556feaca394842dc55e4734bf3bb9f685482fa0
+        uses: actions/github-script@98814c53be79b1d30f795b907e553d8679345975
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
           github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
