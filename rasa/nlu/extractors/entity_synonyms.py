@@ -150,11 +150,11 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
         Adds entities to the synonym lookup table.
         Lowercase is used as keys to make the lookup case-insensitive.
         """
-        if entity is not None:
+        if synonym is not None:
             if entity != synonym:
                 entity_lowercase = entity.lower()
-                if (entity_lowercase in self.synonyms and 
-                        self.synonyms[entity_lowercase] != synonym):
+                if (entity_lowercase in self.synonyms
+                        and self.synonyms[entity_lowercase] != synonym):
                     rasa.shared.utils.io.raise_warning(
                         f"Found conflicting synonym definitions "
                         f"for {repr(entity_lowercase)}. Overwriting target "
