@@ -49,7 +49,10 @@ Remove those examples without a response.
 
 - `response_results` - response selection evaluation results
   
-- `Returns` - response selection evaluation results
+
+**Returns**:
+
+  Response selection evaluation results
 
 #### drop\_intents\_below\_freq
 
@@ -213,7 +216,10 @@ and concatenates them.
 - `aligned_predictions` - aligned predictions
 - `extractor` - entity extractor name
   
-- `Returns` - concatenated predictions
+
+**Returns**:
+
+  Concatenated predictions
 
 #### merge\_confidences
 
@@ -232,7 +238,10 @@ and concatenates them.
 - `aligned_predictions` - aligned predictions
 - `extractor` - entity extractor name
   
-- `Returns` - concatenated confidences
+
+**Returns**:
+
+  Concatenated confidences
 
 #### substitute\_labels
 
