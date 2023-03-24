@@ -143,8 +143,8 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
                 self.add_processor_name(entity)
 
     def _add_entities_if_synonyms(self, entity: Text, synonym: Optional[Text]) -> None:
-        """
-        Adds entities to the synonym lookup table.
+        """Adds entities to the synonym lookup table.
+        
         Lowercase is used as keys to make the lookup case-insensitive.
         """
         if synonym is not None:
