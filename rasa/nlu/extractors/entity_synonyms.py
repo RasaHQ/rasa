@@ -151,6 +151,8 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
         Lowercase is used as keys to make the lookup case-insensitive.
         """
         if synonym is not None:
+            entity = str(entity)
+            synonym = str(synonym)
             if entity != synonym:
                 entity_lowercase = entity.lower()
                 if (entity_lowercase in self.synonyms
