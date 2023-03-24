@@ -124,7 +124,7 @@ def test_synonym_alternate_case(
         {"entity": "test", "value": "Austria", "start": 0, "end": 7},
         {"entity": "test", "value": "AUSTRIA", "start": 0, "end": 7},
         {"entity": "test", "value": "ausTRIA", "start": 0, "end": 7},
-        {"entity": "test", "value": "ausTRIA", "start": 0, "end": 7},
+        {"entity": "test", "value": "Vienna", "start": 0, "end": 7},
         {"entity": "test", "value": "brazil", "start": 0, "end": 7},
     ]
 
