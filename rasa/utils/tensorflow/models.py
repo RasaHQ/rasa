@@ -105,9 +105,6 @@ class RasaModel(Model):
         tf.random.set_seed(self.random_seed)
         tf.experimental.numpy.random.seed(self.random_seed)
         tf.keras.utils.set_random_seed(self.random_seed)
-        # When running on the CuDNN backend, two further options must be set
-        os.environ["TF_CUDNN_DETERMINISTIC"] = "1"
-        os.environ["TF_DETERMINISTIC_OPS"] = "1"
         # Set a fixed value for the hash seed
         os.environ["PYTHONHASHSEED"] = str(self.random_seed)
 
