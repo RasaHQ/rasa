@@ -2,6 +2,7 @@
   "sections": [
     "Model Training",
     "Model Testing",
+    "End-to-End Testing",
     "Model Serving",
     "Markers Extraction",
     "Data Handling",
@@ -528,6 +529,31 @@
       "additionalProperties": false,
       "required": [
         "trackers_count"
+      ]
+    },
+    "End-to-End Testing Started": {
+      "description": "Triggered when end-to-end testing has been started.",
+      "type": "object",
+      "section": "End-to-End Testing",
+      "properties": {
+        "number_of_test_cases": {
+          "type": "integer",
+          "description": "Number of test cases to be run."
+        },
+        "number_of_fixtures": {
+            "type": "integer",
+            "description": "Number of fixtures defined globally."
+        },
+        "uses_fixtures": {
+            "type": "boolean",
+            "description": "Indicates if any fixtures have been defined globally."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+            "number_of_test_cases",
+            "number_of_fixtures",
+            "uses_fixtures"
       ]
     }
   }
