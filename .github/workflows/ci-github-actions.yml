@@ -16,7 +16,7 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-22.04
     #missing matrix
-    strategy: 
+    strategy:
       fail-fast: false
 
     steps:
@@ -68,7 +68,7 @@ jobs:
 
       - name: Lint Code 🎎
         run: |
-          poetry run flake8 .github --extend-ignore D
+          poetry run ruff check .github --extend-ignore D
           poetry run black --check .github
 
       - name: Test Code 🔍

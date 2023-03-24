@@ -1,6 +1,7 @@
 # Docs
 
 The docs are built using [Docusaurus 2](https://v2.docusaurus.io/).
+To run Docusaurus, install `Node.js 12.x`.
 
 ## Useful commands
 
