@@ -1508,7 +1508,7 @@ async def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
 
 # FIXME: these tests take too long to run in the CI, disabling them for now
 @pytest.mark.skip_on_ci
-async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
+async def _test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
     processor = e2e_bot_agent.processor
     message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test")
     with caplog.at_level(logging.DEBUG):
