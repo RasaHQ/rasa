@@ -153,7 +153,8 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
         if entity is not None:
             if entity != synonym:
                 entity_lowercase = entity.lower()
-                if entity_lowercase in self.synonyms and self.synonyms[entity_lowercase] != synonym:
+                if (entity_lowercase in self.synonyms and 
+                        self.synonyms[entity_lowercase] != synonym):
                     rasa.shared.utils.io.raise_warning(
                         f"Found conflicting synonym definitions "
                         f"for {repr(entity_lowercase)}. Overwriting target "
