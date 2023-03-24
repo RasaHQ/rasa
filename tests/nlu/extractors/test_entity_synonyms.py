@@ -103,7 +103,7 @@ def test_synonym_alternate_case(
         Message(
             data={
                 TEXT: "What's the weather in austria?",
-                "intent": "restaurant_search",
+                "intent": "whats_weather",
                 "entities": [
                     {"start": 22, "end": 29, "value": "austria", "entity": "GPE"}
                 ],
@@ -112,7 +112,7 @@ def test_synonym_alternate_case(
         Message(
             data={
                 TEXT: "weather vienna?",
-                "intent": "restaurant_search",
+                "intent": "whats_weather",
                 "entities": [
                     {"start": 8, "end": 14, "value": "austria", "entity": "GPE"}
                 ],
