@@ -93,7 +93,6 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
         return messages
 
     def _persist(self) -> None:
-
         if self.synonyms:
             with self._model_storage.write_to(self._resource) as storage:
                 entity_synonyms_file = storage / EntitySynonymMapper.SYNONYM_FILENAME
@@ -143,9 +142,7 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
                 entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
 
-    def _add_entities_if_synonyms(
-        self, entity: Text, synonym: Optional[Text]
-    ) -> None:
+    def _add_entities_if_synonyms(self, entity: Text, synonym: Optional[Text]) -> None:
         """
         Adds entities to the synonym lookup table.
         Lowercase is used as keys to make the lookup case-insensitive.
@@ -155,8 +152,10 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
             synonym = str(synonym)
             if entity != synonym:
                 entity_lowercase = entity.lower()
-                if (entity_lowercase in self.synonyms
-                        and self.synonyms[entity_lowercase] != synonym):
+                if (
+                    entity_lowercase in self.synonyms
+                    and self.synonyms[entity_lowercase] != synonym
+                ):
                     rasa.shared.utils.io.raise_warning(
                         f"Found conflicting synonym definitions "
                         f"for {repr(entity_lowercase)}. Overwriting target "
