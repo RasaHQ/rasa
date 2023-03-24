@@ -6,15 +6,29 @@ To run Docusaurus, install `Node.js 12.x`.
 ## Useful commands
 
 ### Installation
+Firstly, install python dependencies for Rasa:
 
 ```
-$ yarn
+$ make install
+```
+
+Then, install doc dependencies:
+
+```
+$ make install-docs
 ```
 
 ### Local Development
+In order to build the docs, run:
 
 ```
-$ yarn start
+$ make docs
+```
+
+Then, start doc server in watch mode:
+
+```
+$ make livedocs
 ```
 
 This command starts a local development server and open up a browser window. Most changes are reflected live without having to restart the server.
