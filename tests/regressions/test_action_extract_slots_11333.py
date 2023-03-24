@@ -35,7 +35,7 @@ def model_file():
     return str(BOT_DIRECTORY / "models" / "model.tar.gz")
 
 
-@pytest.mark.flaky
+@pytest.mark.flaky(reruns=3, reruns_delay=2)
 async def test_retaining_slot_values_with_augmented_memoization(model_file: Text):
     agent = await load_agent(model_path=model_file)
 
