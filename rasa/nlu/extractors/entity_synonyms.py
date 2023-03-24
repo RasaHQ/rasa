@@ -144,31 +144,33 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
                 self.add_processor_name(entity)
 
     def _add_entities_if_synonyms(
-        self, entity_a: Text, entity_b: Optional[Text]
+        self, entity: Text, synonym: Optional[Text]
     ) -> None:
-        if entity_b is not None:
-            original = str(entity_a)
-            replacement = str(entity_b)
-
-            if original != replacement:
-                original = original.lower()
-                if original in self.synonyms and self.synonyms[original] != replacement:
+        """
+        Adds entities to the synonym lookup table.
+        Lowercase is used as keys to make the lookup case-insensitive.
+        """
+        if entity is not None:
+            if entity != synonym:
+                entity_lowercase = entity.lower()
+                if entity_lowercase in self.synonyms and self.synonyms[entity_lowercase] != synonym:
                     rasa.shared.utils.io.raise_warning(
                         f"Found conflicting synonym definitions "
-                        f"for {repr(original)}. Overwriting target "
-                        f"{repr(self.synonyms[original])} with "
-                        f"{repr(replacement)}. "
+                        f"for {repr(entity_lowercase)}. Overwriting target "
+                        f"{repr(self.synonyms[entity_lowercase])} with "
+                        f"{repr(synonym)}. "
                         f"Check your training data and remove "
                         f"conflicting synonym definitions to "
                         f"prevent this from happening.",
                         docs=DOCS_URL_TRAINING_DATA + "#synonyms",
                     )
 
-                self.synonyms[original] = replacement
+                self.synonyms[entity_lowercase] = synonym
 
             # add a self-reference to handle entities extracted in alternate cases
             # i.e. for a synonym Austria,
             # entities extracted as AUSTRIA, austria, ausTRIA, etc
             # should also have the value of `Austria`
-            if replacement.lower() not in self.synonyms:
-                self.synonyms[replacement.lower()] = replacement
+            synonym_lowercase = synonym.lower()
+            if synonym_lowercase not in self.synonyms:
+                self.synonyms[synonym_lowercase] = synonym
