@@ -19,5 +19,10 @@ RUN apt-get update -qq && \
   libpng-dev \
   && apt-get autoremove -y
 
+RUN wget --progress=dot:giga -N -P librdkafka/ https://github.com/confluentinc/librdkafka/archive/refs/tags/v1.9.2.tar.gz && \
+    tar -xvf librdkafka/v1.9.2.tar.gz -C librdkafka/ && \
+    cd librdkafka/librdkafka-1.9.2 && ./configure --prefix=/usr && make && make install
+
 # Make sure that all security updates are installed
 RUN apt-get update && apt-get dist-upgrade -y --no-install-recommends
+
