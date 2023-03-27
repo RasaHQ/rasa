@@ -8,7 +8,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "aio-pika"
-version = "8.2.5"
+version = "8.2.3"
 description = "Wrapper for the aiormq for asyncio and humans."
 category = "main"
 optional = false
@@ -3704,7 +3704,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "b2b28daea48b9503b08a27eca0f052ead713c3975e934f1a6f1592cc8b2f3216"
+content-hash = "cc09513162ff267c679100755f7c29631ec6905eca332c47f345a825ec58440d"
 
 [metadata.files]
 absl-py = []
