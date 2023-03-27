@@ -8,19 +8,19 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "aio-pika"
-version = "8.3.0"
+version = "8.2.3"
 description = "Wrapper for the aiormq for asyncio and humans."
 category = "main"
 optional = false
 python-versions = ">3.6, <4"
 
 [package.dependencies]
-aiormq = ">=6.6.3,<6.7.0"
+aiormq = ">=6.4.0,<6.5.0"
 typing-extensions = {version = "*", markers = "python_version < \"3.8.0\""}
 yarl = "*"
 
 [package.extras]
-develop = ["aiomisc (>=16.0,<17.0)", "coverage (!=4.3)", "coveralls", "nox", "pylava", "pytest", "pytest-cov", "shortuuid", "sphinx", "sphinx-autobuild", "timeout-decorator", "tox (>=2.4)"]
+develop = ["aiomisc (>=16.0,<17.0)", "coverage (!=4.3)", "coveralls", "nox", "pyflakes (<2.5)", "pylava", "pytest", "pytest-cov", "shortuuid", "sphinx", "sphinx-autobuild", "timeout-decorator", "tox (>=2.4)"]
 
 [[package]]
 name = "aiofiles"
@@ -83,16 +83,18 @@ aiohttp = ">=2.0.0,<4.0.0"
 
 [[package]]
 name = "aiormq"
-version = "6.6.4"
+version = "6.4.2"
 description = "Pure python AMQP asynchronous client library"
 category = "main"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = ">=3.7"
 
 [package.dependencies]
 pamqp = "3.2.1"
-setuptools = {version = "*", markers = "python_version < \"3.8\""}
 yarl = "*"
+
+[package.extras]
+develop = ["aiomisc (>=16.0,<17.0)", "coverage (!=4.3)", "coveralls", "pylava", "pytest", "pytest-cov", "tox (>=2.4)"]
 
 [[package]]
 name = "aiosignal"
@@ -3883,7 +3885,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "59ef9d1da762020938de838833eda83788dcd98abe8c88cd0301a9881a27284a"
+content-hash = "4904d0784fe51fe805393266c74b628d68cb7c695eec7b0b9f387065336786cc"
 
 [metadata.files]
 absl-py = [
@@ -3891,8 +3893,8 @@ absl-py = [
     {file = "absl_py-1.3.0-py3-none-any.whl", hash = "sha256:34995df9bd7a09b3b8749e230408f5a2a2dd7a68a0d33c12a3d0cb15a041a507"},
 ]
 aio-pika = [
-    {file = "aio-pika-8.3.0.tar.gz", hash = "sha256:c0e2601eda6a1097fe1d33c5f9965a86a27b328ac48914d20c23f675b3ab1797"},
-    {file = "aio_pika-8.3.0-py3-none-any.whl", hash = "sha256:36c4742449f1cbcb83165b3733b090cf88f3d2f7f027225eedb8c7f300b05dde"},
+    {file = "aio-pika-8.2.3.tar.gz", hash = "sha256:175b657ae022f318dd1476209bee4d5b793b0e0b298759fea7c11e1aa0cac6cd"},
+    {file = "aio_pika-8.2.3-py3-none-any.whl", hash = "sha256:6378d70d85259420067a79b0f4a6ea9a867f32a0e77125dc4ed14cef599bbe9c"},
 ]
 aiofiles = [
     {file = "aiofiles-23.1.0-py3-none-any.whl", hash = "sha256:9312414ae06472eb6f1d163f555e466a23aed1c8f60c30cccf7121dba2e53eb2"},
@@ -3996,8 +3998,8 @@ aioresponses = [
     {file = "aioresponses-0.7.4.tar.gz", hash = "sha256:9b8c108b36354c04633bad0ea752b55d956a7602fe3e3234b939fc44af96f1d8"},
 ]
 aiormq = [
-    {file = "aiormq-6.6.4-py3-none-any.whl", hash = "sha256:9fb93dc871eb9c45a410e29669624790c01b70d27f20d512a22b146c411440ea"},
-    {file = "aiormq-6.6.4.tar.gz", hash = "sha256:95835a4db6117263305d450f838ccdc3eabd427c0deb32fd617769ad4c989e98"},
+    {file = "aiormq-6.4.2-py3-none-any.whl", hash = "sha256:fdbf2efed73a2e07437de3af5e3591165efb155a18394dc7295cac9e80943c62"},
+    {file = "aiormq-6.4.2.tar.gz", hash = "sha256:fd815d2bb9d8c950361697a74c1b067bc078726c3ef3b837e979a68a4986b148"},
 ]
 aiosignal = [
     {file = "aiosignal-1.3.1-py3-none-any.whl", hash = "sha256:f8376fb07dd1e86a584e4fcdec80b36b7f81aac666ebc724e2c090300dd83b17"},
@@ -5088,6 +5090,7 @@ langcodes = [
 ]
 libclang = [
     {file = "libclang-15.0.6.1-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:8621795e07b87e17fc7aac9f071bc7fe6b52ed6110c0a96a9975d8113c8c2527"},
+    {file = "libclang-15.0.6.1-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:0bf192c48a8d2992fc5034393ddc99e772ac30e105df84927d62fc88ef8a659f"},
     {file = "libclang-15.0.6.1-py2.py3-none-manylinux2010_x86_64.whl", hash = "sha256:69b01a23ab543908a661532595daa23cf88bd96d80e41f58ba0eaa6a378fe0d8"},
     {file = "libclang-15.0.6.1-py2.py3-none-manylinux2014_aarch64.whl", hash = "sha256:4a5188184b937132c198ee9de9a8a2316d5fdd1a825398d5ad1a8f5e06f9b40e"},
     {file = "libclang-15.0.6.1-py2.py3-none-manylinux2014_armv7l.whl", hash = "sha256:f7ffa02ac5e586cfffde039dcccc439d88d0feac7d77bf9426d9ba7543d16545"},
