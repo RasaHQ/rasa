@@ -4,6 +4,7 @@ import logging
 import logging.config
 import sys
 from pathlib import Path
+from pytest import MonkeyPatch
 from typing import Any, Text, Type
 from unittest import mock
 
@@ -11,13 +12,16 @@ import pytest
 from pytest import LogCaptureFixture
 
 from rasa.core.agent import Agent
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.shared.exceptions import RasaException
 import rasa.utils.common
 from rasa.utils.common import (
     RepeatedLogFilter,
     find_unavailable_packages,
     configure_logging_and_warnings,
     configure_logging_from_file,
+    get_bool_env_variable,
 )
 import tests.conftest
 
@@ -213,6 +217,7 @@ def test_cli_missing_log_level_env_var_used():
     rasa_logger = logging.getLogger("rasa")
     assert rasa_logger.level == logging.WARNING
     matplotlib_logger = logging.getLogger("matplotlib")
+
     assert matplotlib_logger.level == logging.INFO
 
 
@@ -296,3 +301,65 @@ def test_cli_non_existent_handler_id_in_config(caplog: LogCaptureFixture) -> Non
         f"because it failed validation against the built-in Python "
         f"logging schema." in caplog.text
     )
+
+
+@pytest.mark.parametrize(
+    "env_name, env_value, default_value, expected",
+    [
+        ("SOME_VAR", "False", False, False),
+        ("SOME_VAR", "false", False, False),
+        ("SOME_VAR", "False", True, False),
+        ("SOME_VAR", "false", True, False),
+        ("SOME_VAR", "0", False, False),
+        ("SOME_VAR", "0", True, False),
+        ("SOME_VAR", "True", False, True),
+        ("SOME_VAR", "true", False, True),
+        ("SOME_VAR", "true", True, True),
+        ("SOME_VAR", "True", True, True),
+        ("SOME_VAR", "1", False, True),
+        ("SOME_VAR", "1", True, True),
+    ],
+)
+def test_get_bool_env_variable(
+    env_name, env_value, default_value, expected, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setenv(env_name, env_value)
+    result = get_bool_env_variable(env_name, default_value)
+
+    assert result is expected
+
+
+@pytest.mark.parametrize(
+    "env_name, default_value, expected",
+    [
+        ("SOME_VAR", True, True),
+        ("SOME_VAR", False, False),
+    ],
+)
+def test_get_bool_env_variable_not_set(
+    env_name, default_value, expected, monkeypatch: MonkeyPatch
+):
+    result = get_bool_env_variable(env_name, default_value)
+
+    assert result is expected
+
+
+@pytest.mark.parametrize(
+    "env_name, env_value, default_value",
+    [
+        ("SOME_VAR", "ffalse", False),
+        ("SOME_VAR", "ffalse", True),
+        ("SOME_VAR", "ttrue", False),
+        ("SOME_VAR", "ttrue", True),
+        ("SOME_VAR", "11", True),
+        ("SOME_VAR", "00", True),
+        ("SOME_VAR", "01", True),
+    ],
+)
+def test_get_bool_env_variable_with_invalid_value(
+    env_name, env_value, default_value, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setenv(env_name, env_value)
+
+    with pytest.raises(RasaException):
+        get_bool_env_variable(env_name, default_value)

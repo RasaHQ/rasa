@@ -42,6 +42,24 @@ def create_simple_project(path: Path):
     # fast to train
     write_yaml(
         {
+            "assistant_id": "placeholder_default",
+            "language": "en",
+            "pipeline": [{"name": "KeywordIntentClassifier"}],
+            "policies": [
+                {"name": "RulePolicy"},
+                {"name": "MemoizationPolicy", "max_history": 3},
+            ],
+        },
+        path / "config.yml",
+    )
+    return path
+
+
+def create_simple_project_with_missing_assistant_id(path: Path):
+    scaffold.create_initial_project(str(path))
+
+    write_yaml(
+        {
             "language": "en",
             "pipeline": [{"name": "KeywordIntentClassifier"}],
             "policies": [

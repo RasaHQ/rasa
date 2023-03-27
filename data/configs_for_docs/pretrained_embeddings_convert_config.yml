@@ -1,3 +1,4 @@
+assistant_id: example_convert_bot
 language: "en"
 
 pipeline:

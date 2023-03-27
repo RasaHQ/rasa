@@ -51,7 +51,7 @@ jobs:
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
@@ -65,14 +65,15 @@ jobs:
         id: run-all
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
         run: |
-          echo "::set-output name=backend::true"
-          echo "::set-output name=docker::true"
-          echo "::set-output name=docs::true"
+          echo "backend=true" >> $GITHUB_OUTPUT
+          echo "docker=true" >> $GITHUB_OUTPUT
+          echo "docs=true" >> $GITHUB_OUTPUT
 
   wait_for_docs_tests:
     # Looks for doc test workflows and waits for it to complete successfully
-    # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
+    # Runs on pushes to main exclusively
     name: Wait for docs tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
 
@@ -95,13 +96,14 @@ jobs:
 
   quality:
     name: Code Quality
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
 
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
@@ -124,7 +126,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -192,7 +194,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
@@ -211,6 +213,7 @@ jobs:
 
   test:
     name: Run Tests
+    if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
@@ -238,7 +241,7 @@ jobs:
 
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
@@ -261,7 +264,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -350,7 +353,7 @@ jobs:
 
       - name: Store coverage reports
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: ${{ matrix.test }}-coverage
           path: |
@@ -358,6 +361,7 @@ jobs:
 
   test-flaky:
     name: Run Flaky Tests
+    if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
@@ -376,7 +380,7 @@ jobs:
 
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
@@ -399,7 +403,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -488,7 +492,7 @@ jobs:
 
       - name: Store coverage reports
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: ${{ matrix.test }}-coverage
           path: |
@@ -496,6 +500,7 @@ jobs:
 
   upload_coverage_reports:
     name: Upload coverage reports to codeclimate
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     # Always upload results even if tests failed
     needs:
@@ -505,7 +510,7 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.10 🐍
         uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
@@ -514,7 +519,7 @@ jobs:
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
           path: ${{ github.workspace }}/tests_coverage
 
@@ -547,6 +552,7 @@ jobs:
 
   integration_test:
     name: Run Integration Tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
     env:
@@ -600,7 +606,7 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
@@ -623,7 +629,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -705,13 +711,13 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: github.event_name == 'pull_request'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: github.event_name != 'pull_request'
 
       - name: Set up QEMU
@@ -723,7 +729,7 @@ jobs:
         shell: bash
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8c0edbc76e98fa90f69d9a2c020dcb50019dc325
+        uses: docker/setup-buildx-action@f03ac48505955848960e80bbb68046aa35c7b9e7
         with:
           version: v0.5.1
           driver: docker
@@ -746,9 +752,9 @@ jobs:
             | sort -V -C && echo true || echo false) || true)
           # Avoid that the script gets released for alphas or release candidates
           if [[ "${IS_NEWEST_VERSION}" == "true" && "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
-            echo "::set-output name=is_newest_version::true"
+            echo "is_newest_version=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=is_newest_version::false"
+            echo "is_newest_version=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Check if a base image exists
@@ -758,29 +764,29 @@ jobs:
         run: |
           # Base image
           BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
-          echo "::set-output name=base_image_hash::${BASE_IMAGE_HASH}"
+          echo "base_image_hash=${BASE_IMAGE_HASH}" >> $GITHUB_OUTPUT
 
           BASE_IMAGE_EXISTS=$((docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
-          echo "::set-output name=base_exists::${BASE_IMAGE_EXISTS}"
+          echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base MITIE image
           BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
           MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-          echo "::set-output name=base_mitie_image_hash::${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}"
+          echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}" >> $GITHUB_OUTPUT
 
           BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
-          echo "::set-output name=base_mitie_exists::${BASE_IMAGE_MITIE_EXISTS}"
+          echo "base_mitie_exists=${BASE_IMAGE_MITIE_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base poetry image
           BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect rasa/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
-          echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
+          echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base builder image
           BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
-          echo "::set-output name=base_builder_image_hash::${BASE_IMAGE_BUILDER_HASH}"
+          echo "base_builder_image_hash=${BASE_IMAGE_BUILDER_HASH}" >> $GITHUB_OUTPUT
 
           BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
-          echo "::set-output name=base_builder_exists::${BASE_IMAGE_BUILDER_EXISTS}"
+          echo "base_builder_exists=${BASE_IMAGE_BUILDER_EXISTS}" >> $GITHUB_OUTPUT
 
       - name: Build Docker base image 🛠
         if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
@@ -872,7 +878,7 @@ jobs:
       - name: Set output
         id: set_output
         run: |
-          echo "::set-output name=image_tag::${{ env.IMAGE_TAG }}"
+          echo "image_tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
 
   docker:
     name: Build Docker
@@ -894,13 +900,13 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: github.event_name == 'pull_request'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: github.event_name != 'pull_request'
 
       - name: Set up QEMU
@@ -923,7 +929,7 @@ jobs:
         shell: bash
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8c0edbc76e98fa90f69d9a2c020dcb50019dc325
+        uses: docker/setup-buildx-action@f03ac48505955848960e80bbb68046aa35c7b9e7
         id: buildx
         with:
           version: v0.5.1
@@ -981,11 +987,11 @@ jobs:
 
     # deploy will only be run when there is a tag available
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-    needs: [quality, test, wait_for_docs_tests, docker] # only run after all other stages succeeded
+    needs: [docker] # only run after the docker build stage succeeds
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984

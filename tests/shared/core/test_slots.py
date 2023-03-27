@@ -391,7 +391,7 @@ def test_categorical_slot_ignores_none_value():
             name="branch", mappings=[{}], values=["Berlin", None, "San Francisco"]
         )
 
-    assert not ("none" in slot.values)
+    assert "none" not in slot.values
 
     message_text = "Rasa will ignore `null` as a possible value for the 'branch' slot."
     assert any(message_text in record.message.args[0] for record in records)
