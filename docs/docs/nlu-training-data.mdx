@@ -36,7 +36,7 @@ See the [training data format](./training-data-format.mdx) for details on how to
 
 ## Synonyms
 
-Synonyms map extracted entities to a value other than the literal text extracted. 
+Synonyms map extracted entities to a value other than the literal text extracted in a case-insensitive manner. 
 You can use synonyms when there are multiple ways users refer to the same
 thing. Think of the end goal of extracting an entity, and figure out from there which values should be considered equivalent. 
 
@@ -55,7 +55,7 @@ nlu:
 ```
 
 Then, if either of these phrases is extracted as an entity, it will be
-mapped to the value `credit`.
+mapped to the value `credit`. Any alternate casing of these phrases (e.g. `CREDIT`, `credit ACCOUNT`) will also be mapped to the synonym.
 
 :::note Provide Training Examples
 Synonym mapping only happens **after** entities have been extracted.
