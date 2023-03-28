@@ -390,6 +390,9 @@ class MessageProcessor:
         )
         tracker.model_id = self.model_metadata.model_id
 
+        if tracker.assistant_id is None:
+            tracker.assistant_id = self.model_metadata.assistant_id
+
         if not tracker.events:
             await self._update_tracker_session(tracker, output_channel, metadata)
 
@@ -517,7 +520,6 @@ class MessageProcessor:
         tracker: DialogueStateTracker, reminder_event: ReminderScheduled
     ) -> bool:
         """Check if the conversation has been restarted after reminder."""
-
         for e in reversed(tracker.applied_events()):
             if MessageProcessor._is_reminder(e, reminder_event.name):
                 return True
@@ -528,7 +530,6 @@ class MessageProcessor:
         tracker: DialogueStateTracker, reminder_event: ReminderScheduled
     ) -> bool:
         """Check if the user sent a message after the reminder."""
-
         for e in reversed(tracker.events):
             if MessageProcessor._is_reminder(e, reminder_event.name):
                 return False
@@ -830,7 +831,6 @@ class MessageProcessor:
             `False` if `action_name` is `ACTION_LISTEN_NAME` or
             `ACTION_SESSION_START_NAME`, otherwise `True`.
         """
-
         return action_name not in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME)
 
     async def execute_side_effects(
@@ -840,8 +840,8 @@ class MessageProcessor:
         output_channel: OutputChannel,
     ) -> None:
         """Send bot messages, schedule and cancel reminders that are logged
-        in the events array."""
-
+        in the events array.
+        """
         await self._send_bot_messages(events, tracker, output_channel)
         await self._schedule_reminders(events, tracker, output_channel)
         await self._cancel_reminders(events, tracker)
@@ -853,7 +853,6 @@ class MessageProcessor:
         output_channel: OutputChannel,
     ) -> None:
         """Send all the bot messages that are logged in the events array."""
-
         for e in events:
             if not isinstance(e, BotUttered):
                 continue

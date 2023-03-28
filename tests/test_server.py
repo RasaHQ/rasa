@@ -2161,6 +2161,7 @@ async def test_get_tracker_with_query_param_include_events_all(
     rasa_app: SanicASGITestClient,
 ) -> None:
     model_id = rasa_app.sanic_app.ctx.agent.model_id
+    assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
     sender_id, events_to_store = await _create_tracker_for_query_params(
         rasa_app, model_id
     )
@@ -2175,7 +2176,9 @@ async def test_get_tracker_with_query_param_include_events_all(
 
     serialized_actual_events = tracker["events"]
 
-    expected_events = with_model_ids(events_to_store, model_id)
+    expected_events = with_assistant_ids(
+        with_model_ids(events_to_store, model_id), assistant_id
+    )
     serialized_expected_events = [event.as_dict() for event in expected_events]
 
     assert serialized_actual_events == serialized_expected_events
@@ -2185,6 +2188,7 @@ async def test_get_tracker_with_query_param_include_events_after_restart(
     rasa_app: SanicASGITestClient,
 ) -> None:
     model_id = rasa_app.sanic_app.ctx.agent.model_id
+    assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
     sender_id, events_to_store = await _create_tracker_for_query_params(
         rasa_app, model_id
     )
@@ -2203,7 +2207,9 @@ async def test_get_tracker_with_query_param_include_events_after_restart(
         event for event in events_to_store if isinstance(event, Restarted)
     ][0]
     truncated_events = events_to_store[events_to_store.index(restarted_event) + 1 :]
-    expected_events = with_model_ids(truncated_events, model_id)
+    expected_events = with_assistant_ids(
+        with_model_ids(truncated_events, model_id), assistant_id
+    )
     serialized_expected_events = [e.as_dict() for e in expected_events]
 
     assert serialized_actual_events == serialized_expected_events
@@ -2213,6 +2219,7 @@ async def test_get_tracker_with_query_param_include_events_applied(
     rasa_app: SanicASGITestClient,
 ) -> None:
     model_id = rasa_app.sanic_app.ctx.agent.model_id
+    assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
     sender_id, events_to_store = await _create_tracker_for_query_params(
         rasa_app, model_id
     )
@@ -2236,7 +2243,9 @@ async def test_get_tracker_with_query_param_include_events_applied(
     ][0]
     truncated_events = truncated_events[truncated_events.index(session_started) + 1 :]
 
-    expected_events = with_model_ids(truncated_events, model_id)
+    expected_events = with_assistant_ids(
+        with_model_ids(truncated_events, model_id), assistant_id
+    )
     serialized_expected_events = [e.as_dict() for e in expected_events]
 
     assert serialized_actual_events == serialized_expected_events
