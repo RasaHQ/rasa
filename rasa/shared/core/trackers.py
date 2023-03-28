@@ -687,7 +687,7 @@ class DialogueStateTracker:
             if include_source
             else self.sender_id
         )
-        return Story.from_events(self.applied_events(), story_name)
+        return Story.from_events(list(self.events), story_name)
 
     def export_stories(
         self,
@@ -937,6 +937,7 @@ def get_trackers_for_conversation_sessions(
             evts,
             tracker.slots.values(),
             sender_source=tracker.sender_source,
+            max_event_history=tracker._max_event_history,
         )
         for evts in split_conversations
     ]
