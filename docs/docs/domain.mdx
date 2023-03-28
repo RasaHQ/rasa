@@ -809,6 +809,7 @@ action_endpoint:
 ```
 **After selective domain for custom actions is enabled, domain will be sent only to
 those custom actions which have specifically stated that they need it.**
+`validate_form_action` is an exception to this rule as it will always have the domain sent to it.
 To specify if an action needs the domain add `{send_domain: true}` to custom action in the list
 of actions in `domain.yml`:
 ```YAML
@@ -816,6 +817,7 @@ of actions in `domain.yml`:
 actions:
   - action_hello_world: {send_domain: True} # will receive domain
   - action_calculate_mass_of_sun # will not receive domain
+  - validate_my_form # will receive domain
 ```
 
 
