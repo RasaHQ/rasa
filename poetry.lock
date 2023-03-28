@@ -6147,7 +6147,7 @@ name = "tensorflow-text"
 version = "2.11.0"
 description = "TF.Text is a TensorFlow library of text related ops, modules, and subgraphs."
 category = "main"
-optional = true
+optional = false
 python-versions = "*"
 files = [
     {file = "tensorflow_text-2.11.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:c9d4797e331da37419f2b19159fbc0f125ed60467340e9a209ab8f8d65856704"},
@@ -7347,4 +7347,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<3.11"
-content-hash = "df0bd9d0ac9675251e0e4dc5200c8f8032d7dea68d684d03fff81258aa7d1e07"
+content-hash = "fac6b185bd9524110bb0902e81096596800564a15b22d1b70da7dbde2b5ba744"

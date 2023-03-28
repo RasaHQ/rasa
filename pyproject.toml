@@ -296,8 +296,7 @@ optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
 version = "2.11.0"
-markers = "sys_platform!='win32' and platform_machine!='arm64'"
-optional = true
+markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'"
 
 [tool.poetry.dependencies."github3.py"]
 version = "~3.2.0"
