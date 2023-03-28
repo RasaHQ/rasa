@@ -212,20 +212,6 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop.close()
 
 
-# override loop fixture to prevent ScopeMismatch pytest error and
-# implement fix to RuntimeError Event loop is closed issue described
-# here: https://github.com/pytest-dev/pytest-asyncio/issues/371
-@pytest.fixture(scope="session")
-def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    loop._close = loop.close
-    loop.close = lambda: None
-    yield loop
-    loop._close()
-
-
 @pytest.fixture(scope="session")
 async def trained_default_agent_model(
     stories_path: Text,
@@ -868,19 +854,6 @@ def with_model_id(event: Event, model_id: Text) -> Event:
 @pytest.fixture(autouse=True)
 def sanic_test_mode(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(Sanic, "test_mode", True)
-
-
-def filter_expected_warnings(records: WarningsRecorder) -> WarningsRecorder:
-    records_copy = copy.deepcopy(records.list)
-
-    for warning_type, warning_message in rasa.utils.common.EXPECTED_WARNINGS:
-        for record in records_copy:
-            if type(record.message) == warning_type and re.search(
-                warning_message, str(record.message)
-            ):
-                records.pop(type(record.message))
-
-    return records
 
 
 @pytest.fixture
