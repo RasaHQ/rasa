@@ -176,6 +176,7 @@ module.exports = {
                         'event-brokers',
                         'model-storage',
                         'lock-stores',
+                        'secrets-managers',
                         'nlu-only',
                         'nlg',
                     ],
