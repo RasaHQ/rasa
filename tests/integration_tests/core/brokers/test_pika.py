@@ -44,6 +44,13 @@ async def test_pika_event_broker_publish_after_restart(
     with caplog.at_level(logging.DEBUG):
         await broker.close()
         assert "Closing RabbitMQ connection." in caplog.text
+        assert not broker.is_ready()
+
+    caplog.clear()
+
+    with caplog.at_level(logging.ERROR):
+        broker.publish({"event": "test_while_closed"})
+        assert "Failed to publish Pika event" in caplog.text
 
     caplog.clear()
 
