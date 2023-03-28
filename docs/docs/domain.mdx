@@ -809,7 +809,8 @@ action_endpoint:
 ```
 **After selective domain for custom actions is enabled, domain will be sent only to
 those custom actions which have specifically stated that they need it.**
-`validate_form_action` is an exception to this rule as it will always have the domain sent to it.
+Custom actions inheriting from rasa-sdk [FormValidationAction](https://rasa.com/docs/rasa/action-server/validation-action/#formvalidationaction-class)
+parent class are an exception to this rule as they will always have the domain sent to them.
 To specify if an action needs the domain add `{send_domain: true}` to custom action in the list
 of actions in `domain.yml`:
 ```YAML
