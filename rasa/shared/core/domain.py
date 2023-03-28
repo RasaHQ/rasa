@@ -1046,7 +1046,6 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
-
         return [
             f"{slot.name}_{feature_index}"
             for slot in self.slots
@@ -1646,7 +1645,6 @@ class Domain:
         `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
         from domain warnings in case they are not featurized.
         """
-
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
         entity_warnings = self._get_symmetric_difference(self.entities, entities)
         action_warnings = self._get_symmetric_difference(
@@ -1697,7 +1695,6 @@ class Domain:
             mappings: List[Tuple[Text, Text]] = None,
         ) -> Text:
             """Return a message given a list of error locations."""
-
             message = ""
             if duplicates:
                 message += get_duplicate_exception_message(duplicates)
@@ -1709,7 +1706,6 @@ class Domain:
 
         def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]) -> Text:
             """Return a message given a list of duplicates."""
-
             message = ""
             for name, action_name in mappings:
                 if message:
@@ -1914,6 +1910,9 @@ class Domain:
                     )
                     if should_send_domain:
                         action_names += [action_name]
+
+            elif action.startswith("validate_"):
+                action_names += [action]
 
         return action_names
 
