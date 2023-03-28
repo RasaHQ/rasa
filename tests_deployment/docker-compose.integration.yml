@@ -36,3 +36,8 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
       - 5672:5672
+
+  mongodb:
+    image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
+    ports:
+      - "27017:27017"

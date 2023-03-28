@@ -723,7 +723,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await app.ctx.agent.processor.fetch_tracker_with_initial_session(
+        tracker = await app.ctx.agent.processor.fetch_full_tracker_with_initial_session(
             conversation_id
         )
 
