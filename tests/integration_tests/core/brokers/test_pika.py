@@ -1,13 +1,8 @@
-import asyncio
 import logging
-import time
-from typing import AsyncGenerator, Text
+from typing import Text
 
-import aio_pika
 import docker
 import pytest
-from aio_pika import ExchangeType
-from aio_pika.abc import AbstractIncomingMessage
 from pytest import LogCaptureFixture
 
 from rasa.core.brokers.pika import PikaEventBroker, RABBITMQ_EXCHANGE
@@ -36,7 +31,7 @@ async def test_pika_event_broker_connect():
 
 
 @pytest.fixture(autouse=True)
-def docker_client() -> AsyncGenerator[docker.DockerClient, None]:
+def docker_client() -> docker.DockerClient:
     docker_client = docker.from_env()
     prev_containers = docker_client.containers.list(all=True)
 
@@ -45,7 +40,7 @@ def docker_client() -> AsyncGenerator[docker.DockerClient, None]:
 
     docker_client.containers.prune()
 
-    yield docker_client
+    return docker_client
 
 
 @pytest.fixture
@@ -118,7 +113,12 @@ async def test_pika_event_broker_publish_after_restart(
         after_restart_event = {"event": "test_after_restart"}
         await broker._publish(after_restart_event)
 
-        assert f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host " \
-               f"'localhost':\n{event}" in caplog.text
+        assert (
+            f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
+            f"'localhost':\n{after_restart_event}" in caplog.text
+        )
 
     await broker.close()
+
+    rabbitmq_container.stop()
+    rabbitmq_container.remove()
