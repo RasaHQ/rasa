@@ -85,7 +85,7 @@ jobs:
 
       - name: Set up Python 3.10 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
           python-version: '3.10'
 
