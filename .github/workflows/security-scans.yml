@@ -40,7 +40,7 @@ jobs:
         format: 'table'
         scan-type: 'fs'
         exit-code: '1'
-        security-checks: 'secret'
+        scanners: 'secret'
     - name: Alert on secret finding
       if: steps.trivy.outcome == 'failure'
       uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
