@@ -23,9 +23,9 @@ RUN apt-get update -qq && \
 
 RUN \
 if [ "$BUILDPLATFORM" = "linux/arm64" ]; \
-then  wget --progress=dot:giga -N -P librdkafka/ https://github.com/confluentinc/librdkafka/archive/refs/tags/v1.9.2.tar.gz && \
-  tar -xvf librdkafka/v1.9.2.tar.gz -C librdkafka/ && \
-  cd librdkafka/librdkafka-1.9.2 && ./configure --prefix=/usr && make && make install ; \
+then  wget --progress=dot:giga -N -P librdkafka/ https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.0.2.tar.gz && \
+  tar -xvf librdkafka/v2.0.2.tar.gz -C librdkafka/ && \
+  cd librdkafka/librdkafka-2.0.2 && ./configure --prefix=/usr && make && make install ; \
 fi
 
 # Make sure that all security updates are installed
