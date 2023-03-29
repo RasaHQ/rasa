@@ -603,6 +603,16 @@ jobs:
         ports:
           - 5672:5672
 
+      mongodb:
+        image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
+        options: >-
+          --health-cmd "echo 'db.runCommand("ping").ok' | mongosh --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
