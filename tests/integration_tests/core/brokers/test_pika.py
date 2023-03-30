@@ -2,7 +2,6 @@ import logging
 from typing import Text
 
 import docker
-import pytest
 from pytest import LogCaptureFixture
 
 from rasa.core.brokers.pika import PikaEventBroker, RABBITMQ_EXCHANGE
@@ -28,29 +27,6 @@ async def test_pika_event_broker_connect():
         assert broker.is_ready()
     finally:
         await broker.close()
-
-
-@pytest.fixture
-def docker_client() -> docker.DockerClient:
-    docker_client = docker.from_env()
-    prev_containers = docker_client.containers.list(all=True)
-
-    for container in prev_containers:
-        container.stop()
-
-    docker_client.containers.prune()
-
-    return docker_client
-
-
-@pytest.fixture
-def rabbitmq_username() -> Text:
-    return "test_user"
-
-
-@pytest.fixture
-def rabbitmq_password() -> Text:
-    return "test_password"
 
 
 async def test_pika_event_broker_publish_after_restart(
