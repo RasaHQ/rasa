@@ -306,7 +306,7 @@ async def test_train_persist_load_with_different_settings_non_windows(
         },
         {"component": CountVectorsFeaturizer},
     ]
-    config = {MASKED_LM: True, EPOCHS: 1}
+    config = {MASKED_LM: True, EPOCHS: 1, RUN_EAGERLY: True}
     create_train_load_and_process_diet(config, pipeline)
     create_diet(config, load=True, finetune=True)
 
@@ -316,7 +316,7 @@ async def test_train_persist_load_with_different_settings(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
 ):
-    config = {LOSS_TYPE: "margin", EPOCHS: 1}
+    config = {LOSS_TYPE: "margin", EPOCHS: 1, RUN_EAGERLY: True}
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 
@@ -326,7 +326,12 @@ async def test_train_persist_load_with_nested_dict_config(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
 ):
-    config = {HIDDEN_LAYERS_SIZES: {"text": [256, 512]}, ENTITY_RECOGNITION: False}
+    config = {
+        HIDDEN_LAYERS_SIZES: {"text": [256, 512]},
+        ENTITY_RECOGNITION: False,
+        EPOCHS: 1,
+        RUN_EAGERLY: True,
+    }
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 
@@ -341,7 +346,12 @@ async def test_train_persist_load_with_masked_lm_and_eval(
     # reading the used data here so that the test doesn't break if data is changed
     importer = RasaFileImporter(training_data_paths=[nlu_data_path])
     training_data = importer.get_nlu_data()
-    config = {MASKED_LM: True, EVAL_NUM_EXAMPLES: len(training_data.intents)}
+    config = {
+        MASKED_LM: True,
+        EVAL_NUM_EXAMPLES: len(training_data.intents),
+        EPOCHS: 10,
+        RUN_EAGERLY: True,
+    }
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 
@@ -351,7 +361,12 @@ async def test_train_persist_load_with_only_entity_recognition(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
 ):
-    config = {ENTITY_RECOGNITION: True, INTENT_CLASSIFICATION: False, EPOCHS: 1}
+    config = {
+        ENTITY_RECOGNITION: True,
+        INTENT_CLASSIFICATION: False,
+        EPOCHS: 1,
+        RUN_EAGERLY: True,
+    }
     create_train_load_and_process_diet(
         config,
         training_data="data/examples/rasa/demo-rasa-multi-intent.yml",
@@ -366,9 +381,16 @@ async def test_train_persist_load_with_only_intent_classification(
     create_diet: Callable[..., DIETClassifier],
 ):
     create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1}
+        {
+            ENTITY_RECOGNITION: False,
+            INTENT_CLASSIFICATION: True,
+            EPOCHS: 1,
+            RUN_EAGERLY: True,
+        }
     )
-    create_diet({MASKED_LM: True, EPOCHS: 1}, load=True, finetune=True)
+    create_diet(
+        {MASKED_LM: True, EPOCHS: 1, RUN_EAGERLY: True}, load=True, finetune=True
+    )
 
 
 @pytest.mark.parametrize(
@@ -427,6 +449,7 @@ async def test_softmax_normalization(
 ):
     classifier_params[RANDOM_SEED] = 42
     classifier_params[EPOCHS] = 1
+    classifier_params[RUN_EAGERLY] = True
     classifier_params[EVAL_NUM_EPOCHS] = 1
 
     _, parsed_message = create_train_load_and_process_diet(
@@ -451,7 +474,13 @@ async def test_margin_loss_is_not_normalized(
     create_train_load_and_process_diet: Callable[..., Message]
 ):
     _, parsed_message = create_train_load_and_process_diet(
-        {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, EVAL_NUM_EPOCHS: 1},
+        {
+            LOSS_TYPE: "margin",
+            RANDOM_SEED: 42,
+            EPOCHS: 1,
+            EVAL_NUM_EPOCHS: 1,
+            RUN_EAGERLY: True,
+        },
         training_data="data/test/many_intents.yml",
     )
     parse_data = parsed_message.data
@@ -474,16 +503,16 @@ async def test_set_random_seed(
     """test if train result is the same for two runs of tf embedding"""
 
     _, parsed_message1 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1, RUN_EAGERLY: True}
     )
 
     _, parsed_message2 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1, RUN_EAGERLY: True}
     )
 
     # Different random seed
     _, parsed_message3 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1}
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1, RUN_EAGERLY: True}
     )
 
     assert (
@@ -527,6 +556,7 @@ async def test_train_tensorboard_logging(
             CONSTRAIN_SIMILARITIES: True,
             EVAL_NUM_EXAMPLES: 15,
             EVAL_NUM_EPOCHS: 1,
+            RUN_EAGERLY: True,
         },
         pipeline,
     )
@@ -544,7 +574,13 @@ async def test_train_model_checkpointing(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
     create_train_load_and_process_diet(
-        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True}
+        {
+            EPOCHS: 2,
+            EVAL_NUM_EPOCHS: 1,
+            EVAL_NUM_EXAMPLES: 10,
+            CHECKPOINT_MODEL: True,
+            RUN_EAGERLY: True,
+        }
     )
     with default_model_storage.read_from(default_diet_resource) as model_dir:
         all_files = list(model_dir.rglob("*.*"))
@@ -554,7 +590,9 @@ async def test_train_model_checkpointing(
 async def test_process_unfeaturized_input(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    classifier, _ = create_train_load_and_process_diet(diet_config={EPOCHS: 1})
+    classifier, _ = create_train_load_and_process_diet(
+        diet_config={EPOCHS: 1, RUN_EAGERLY: True}
+    )
     message_text = "message text"
     unfeaturized_message = Message(data={TEXT: message_text})
     classified_message = classifier.process([unfeaturized_message])[0]
@@ -570,7 +608,9 @@ async def test_train_model_not_checkpointing(
     default_diet_resource: Resource,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    create_train_load_and_process_diet({EPOCHS: 1, CHECKPOINT_MODEL: False})
+    create_train_load_and_process_diet(
+        {EPOCHS: 1, CHECKPOINT_MODEL: False, RUN_EAGERLY: True}
+    )
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
         all_files = list(model_dir.rglob("*.*"))
@@ -611,6 +651,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
                 CHECKPOINT_MODEL: True,
                 EVAL_NUM_EXAMPLES: 0,
                 EVAL_NUM_EPOCHS: 1,
+                RUN_EAGERLY: True,
             }
         )
 
@@ -654,7 +695,9 @@ async def test_process_gives_diagnostic_data(
 ):
     default_execution_context.should_add_diagnostic_data = should_add_diagnostic_data
     default_execution_context.node_name = "DIETClassifier_node_name"
-    _, processed_message = create_train_load_and_process_diet({EPOCHS: 1})
+    _, processed_message = create_train_load_and_process_diet(
+        {EPOCHS: 1, RUN_EAGERLY: True}
+    )
 
     if should_add_diagnostic_data:
         # Tests if processing a message returns attention weights as numpy array.
@@ -730,7 +773,7 @@ async def test_adjusting_layers_incremental_training(
             "max_ngram": 4,
         },
     ]
-    classifier = create_diet({EPOCHS: 1})
+    classifier = create_diet({EPOCHS: 1, RUN_EAGERLY: True})
     _, processed_message = train_load_and_process_diet(
         classifier, pipeline=pipeline, training_data=iter1_data_path
     )
@@ -759,7 +802,9 @@ async def test_adjusting_layers_incremental_training(
         old_sparse_feature_sizes[FEATURE_TYPE_SENTENCE]
     )
 
-    finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
+    finetune_classifier = create_diet(
+        {EPOCHS: 1, RUN_EAGERLY: True}, load=True, finetune=True
+    )
     assert finetune_classifier.finetune_mode
     _, processed_message_finetuned = train_load_and_process_diet(
         finetune_classifier, pipeline=pipeline, training_data=iter2_data_path
@@ -878,11 +923,13 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
         },
     ]
 
-    classifier = create_diet({EPOCHS: 1})
+    classifier = create_diet({EPOCHS: 1, RUN_EAGERLY: True})
     assert not classifier.finetune_mode
     train_load_and_process_diet(classifier, pipeline=pipeline, training_data=iter1_path)
 
-    finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
+    finetune_classifier = create_diet(
+        {EPOCHS: 1, RUN_EAGERLY: True}, load=True, finetune=True
+    )
     assert finetune_classifier.finetune_mode
 
     if should_raise_exception:
@@ -908,7 +955,9 @@ async def test_no_bilou_when_entity_recognition_off(
         {"component": WhitespaceTokenizer},
         {"component": CountVectorsFeaturizer},
     ]
-    diet = create_diet({ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1})
+    diet = create_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1, RUN_EAGERLY: True}
+    )
 
     training_data, loaded_pipeline = train_and_preprocess(
         pipeline, training_data="data/test/demo-rasa-composite-entities.yml"

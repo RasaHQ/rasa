@@ -281,7 +281,7 @@ def test_test_help(run: Callable[..., RunResult]):
                  [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  [--no-plot] [--successes] [--no-errors] [--no-warnings]
                  [--out OUT]
-                 {{core,nlu}} ..."""  # noqa: E501
+                 {{core,nlu}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -298,7 +298,7 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
                      [-u NLU] [--out OUT] [-c CONFIG [CONFIG ...]] [-d DOMAIN]
                      [--cross-validation] [-f FOLDS] [-r RUNS]
                      [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                     [--successes] [--no-errors] [--no-warnings]"""  # noqa: E501
+                     [--successes] [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
