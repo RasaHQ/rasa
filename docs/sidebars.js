@@ -15,7 +15,7 @@ module.exports = {
                     collapsed: true,
                     type: 'category',
                     items: [
-                        'installation/rasa-pro/architecture-overview',
+                        'installation/rasa-pro/rasa-pro-artifacts',
                         'installation/rasa-pro/installation',
                     ],
                 },
