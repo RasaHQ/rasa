@@ -228,6 +228,26 @@ The default implementation uses `self.retrieve()`.
 
   The fetch tracker containing all events across session starts.
 
+#### get\_or\_create\_full\_tracker
+
+```python
+async def get_or_create_full_tracker(
+        sender_id: Text,
+        append_action_listen: bool = True) -> "DialogueStateTracker"
+```
+
+Returns tracker or creates one if the retrieval returns None.
+
+**Arguments**:
+
+- `sender_id` - Conversation ID associated with the requested tracker.
+- `append_action_listen` - Whether to append an initial `action_listen`.
+  
+
+**Returns**:
+
+  The tracker for the conversation ID.
+
 #### stream\_events
 
 ```python
@@ -314,6 +334,19 @@ async def keys() -> Iterable[Text]
 
 Returns sender_ids of the Tracker Store in memory.
 
+#### retrieve\_full\_tracker
+
+```python
+async def retrieve_full_tracker(
+        sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Returns tracker matching sender_id.
+
+**Arguments**:
+
+- `sender_id` - Conversation ID to fetch the tracker for.
+
 ## RedisTrackerStore Objects
 
 ```python
@@ -369,6 +402,26 @@ The Redis key is formed by appending a prefix to sender_id.
 **Returns**:
 
   Tracker containing events from the latest conversation sessions.
+
+#### retrieve\_full\_tracker
+
+```python
+async def retrieve_full_tracker(
+        sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Retrieves tracker for all conversation sessions.
+
+The Redis key is formed by appending a prefix to sender_id.
+
+**Arguments**:
+
+- `sender_id` - Conversation ID to fetch the tracker for.
+  
+
+**Returns**:
+
+  Tracker containing events from all conversation sessions.
 
 #### keys
 
@@ -445,6 +498,19 @@ async def retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
 Retrieve dialogues for a sender_id in reverse-chronological order.
 
 Based on the session_date sort key.
+
+#### retrieve\_full\_tracker
+
+```python
+async def retrieve_full_tracker(
+        sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Retrieves tracker for all conversation sessions.
+
+**Arguments**:
+
+- `sender_id` - Conversation ID to fetch the tracker for.
 
 #### keys
 
@@ -689,6 +755,7 @@ Create a `FailSafeTrackerStore`.
 - `tracker_store` - Primary tracker store.
 - `on_tracker_store_error` - Callback which is called when there is an error
   in the primary tracker store.
+- `fallback_tracker_store` - Fallback tracker store.
 
 #### domain
 
@@ -698,6 +765,23 @@ def domain() -> Domain
 ```
 
 Returns the domain of the primary tracker store.
+
+#### fallback\_tracker\_store
+
+```python
+@property
+def fallback_tracker_store() -> TrackerStore
+```
+
+Returns the fallback tracker store.
+
+#### on\_tracker\_store\_error
+
+```python
+def on_tracker_store_error(error: Exception) -> None
+```
+
+Calls the callback when there is an error in the primary tracker store.
 
 #### retrieve
 
@@ -722,6 +806,33 @@ async def save(tracker: DialogueStateTracker) -> None
 ```
 
 Calls `save` method of primary tracker store.
+
+#### retrieve\_full\_tracker
+
+```python
+async def retrieve_full_tracker(
+        sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Calls `retrieve_full_tracker` method of primary tracker store.
+
+**Arguments**:
+
+- `sender_id` - The sender id of the tracker to retrieve.
+
+#### on\_tracker\_store\_retrieve\_error
+
+```python
+def on_tracker_store_retrieve_error(error: Exception) -> None
+```
+
+Calls `_on_tracker_store_error` callable attribute if set.
+
+Otherwise, logs the error.
+
+**Arguments**:
+
+- `error` - The error that occurred.
 
 #### create\_tracker\_store
 
