@@ -70,7 +70,6 @@ async def test_pika_event_broker_publish_after_restart(
         environment=environment,
         name="rabbitmq",
         ports={f"{RABBITMQ_PORT}/tcp": RABBITMQ_PORT},
-        user="root",
     )
     rabbitmq_container.reload()
     assert rabbitmq_container.status == "running"
