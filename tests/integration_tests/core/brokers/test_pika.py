@@ -30,7 +30,7 @@ async def test_pika_event_broker_connect():
         await broker.close()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def docker_client() -> docker.DockerClient:
     docker_client = docker.from_env()
     prev_containers = docker_client.containers.list(all=True)
