@@ -26,6 +26,12 @@ from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+)
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import METADATA_MODEL_ID
 import rasa.shared.utils.io
 from rasa import server
@@ -37,7 +43,13 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
-from rasa.shared.core.events import Event, UserUttered
+from rasa.shared.core.events import (
+    ActionExecuted,
+    Event,
+    Restarted,
+    SessionStarted,
+    UserUttered,
+)
 from rasa.core.exporter import Exporter
 
 import rasa.core.run
@@ -842,3 +854,39 @@ def with_model_id(event: Event, model_id: Text) -> Event:
 @pytest.fixture(autouse=True)
 def sanic_test_mode(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(Sanic, "test_mode", True)
+
+
+@pytest.fixture
+def initial_events_including_restart() -> List[Event]:
+    return [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+        SessionStarted(timestamp=2),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+        UserUttered("hi", timestamp=4),
+        ActionExecuted("utter_greet", timestamp=5),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=6),
+        UserUttered("/restart", timestamp=7),
+        Restarted(timestamp=8),
+        ActionExecuted(ACTION_RESTART_NAME, timestamp=9),
+    ]
+
+
+@pytest.fixture
+def events_after_restart() -> List[Event]:
+    return [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=10),
+        SessionStarted(timestamp=11),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=12),
+        UserUttered("Let's start again.", timestamp=13),
+    ]
+
+
+@pytest.fixture
+def tracker_with_restarted_event(
+    initial_events_including_restart: List[Event],
+    events_after_restart: List[Event],
+) -> DialogueStateTracker:
+    sender_id = uuid.uuid4().hex
+    events = initial_events_including_restart + events_after_restart
+
+    return DialogueStateTracker.from_events(sender_id=sender_id, evts=events)
