@@ -2,6 +2,8 @@
 # https://rasa.com/docs/rasa/model-configuration/
 recipe: graph.v1
 
+assistant_id: placeholder_default
+
 language: en
 
 nlu_target: run_RegexMessageHandler

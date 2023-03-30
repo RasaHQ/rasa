@@ -5,6 +5,9 @@ from typing import Set, Text, Optional, Dict, Any, List
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
+    ASSISTANT_ID_DEFAULT_VALUE,
+    ASSISTANT_ID_KEY,
+    CONFIG_MANDATORY_KEYS,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
     UTTER_PREFIX,
@@ -47,6 +50,7 @@ class Validator:
         self.domain = domain
         self.intents = intents
         self.story_graph = story_graph
+        self.config = config or {}
 
     @classmethod
     def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
@@ -77,7 +81,7 @@ class Validator:
                     f"The intent '{intent}' is listed in the domain file, but "
                     f"is not found in the NLU training data."
                 )
-                everything_is_alright = ignore_warnings and everything_is_alright
+                everything_is_alright = ignore_warnings or everything_is_alright
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
@@ -87,7 +91,7 @@ class Validator:
                     f"should need to add that intent to your domain file!",
                     docs=DOCS_URL_DOMAINS,
                 )
-                everything_is_alright = False
+                everything_is_alright = ignore_warnings
 
         return everything_is_alright
 
@@ -106,7 +110,7 @@ class Validator:
         for text, intents in duplication_hash.items():
 
             if len(duplication_hash[text]) > 1:
-                everything_is_alright = ignore_warnings and everything_is_alright
+                everything_is_alright = ignore_warnings
                 intents_string = ", ".join(sorted(intents))
                 rasa.shared.utils.io.raise_warning(
                     f"The example '{text}' was found labeled with multiple "
@@ -122,7 +126,7 @@ class Validator:
         Verifies if the intents used in the stories are valid, and whether
         all valid intents are used in the stories."""
 
-        everything_is_alright = self.verify_intents(ignore_warnings)
+        everything_is_alright = self.verify_intents(ignore_warnings=ignore_warnings)
 
         stories_intents = {
             event.intent["name"]
@@ -139,14 +143,14 @@ class Validator:
                     f"domain file!",
                     docs=DOCS_URL_DOMAINS,
                 )
-                everything_is_alright = False
+                everything_is_alright = ignore_warnings
 
         for intent in self._non_default_intents():
             if intent not in stories_intents:
                 rasa.shared.utils.io.raise_warning(
                     f"The intent '{intent}' is not used in any story or rule."
                 )
-                everything_is_alright = ignore_warnings and everything_is_alright
+                everything_is_alright = ignore_warnings or everything_is_alright
 
         return everything_is_alright
 
@@ -203,7 +207,7 @@ class Validator:
                         f"template defined with its name.",
                         docs=DOCS_URL_ACTIONS + "#utterance-actions",
                     )
-                    everything_is_alright = False
+                    everything_is_alright = ignore_warnings
                 stories_utterances.add(event.action_name)
 
         for utterance in utterance_actions:
@@ -211,7 +215,7 @@ class Validator:
                 rasa.shared.utils.io.raise_warning(
                     f"The utterance '{utterance}' is not used in any story or rule."
                 )
-                everything_is_alright = ignore_warnings and everything_is_alright
+                everything_is_alright = ignore_warnings or everything_is_alright
 
         return everything_is_alright
 
@@ -410,3 +414,24 @@ class Validator:
                 return False
 
         return True
+
+    def warn_if_config_mandatory_keys_are_not_set(self) -> None:
+        """Raises a warning if mandatory keys are not present in the config.
+
+        Additionally, raises a UserWarning if the assistant_id key is filled with the
+        default placeholder value.
+        """
+        for key in set(CONFIG_MANDATORY_KEYS):
+            if key not in self.config:
+                rasa.shared.utils.io.raise_warning(
+                    f"The config file is missing the '{key}' mandatory key."
+                )
+
+        assistant_id = self.config.get(ASSISTANT_ID_KEY)
+
+        if assistant_id is not None and assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
+            rasa.shared.utils.io.raise_warning(
+                f"The config file is missing a unique value for the "
+                f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
+                f"placeholder value with a unique identifier."
+            )

@@ -576,6 +576,7 @@ class GraphModelConfiguration:
     train_schema: GraphSchema
     predict_schema: GraphSchema
     training_type: TrainingType
+    assistant_id: Optional[Text]
     language: Optional[Text]
     core_target: Optional[Text]
     nlu_target: Optional[Text]

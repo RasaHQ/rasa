@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 from pathlib import Path
 from unittest.mock import Mock
 import pytest
@@ -10,9 +11,10 @@ from _pytest.fixtures import FixtureRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from rasa.utils.common import EXPECTED_WARNINGS
 from rasa.validator import Validator
 import rasa.shared.utils.io
 
@@ -260,6 +262,10 @@ def test_validate_files_form_not_found_invalid_domain(
 def test_validate_files_with_active_loop_null(
     file_type: Text, data_type: Text, tmp_path: Path
 ):
+    domain_file = (
+        "data/test_domains/minimal_domain_validate_files_with_active_loop_null.yml"
+    )
+    nlu_file = "data/test_nlu/test_nlu_validate_files_with_active_loop_null.yml"
     file_name = tmp_path / f"{file_type}.yml"
     file_name.write_text(
         f"""
@@ -275,14 +281,24 @@ def test_validate_files_with_active_loop_null(
         """
     )
     args = {
-        "domain": "data/test_domains/restaurant_form.yml",
-        "data": [file_name],
+        "domain": domain_file,
+        "data": [file_name, nlu_file],
         "max_history": None,
-        "config": "data/test_config/config_defaults.yml",
+        "config": "data/test_config/config_unique_assistant_id.yml",
         "fail_on_warnings": False,
     }
-    with pytest.warns(None):
+    with pytest.warns() as warning_recorder:
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+    assert not [
+        warning.message
+        for warning in warning_recorder.list
+        if not any(
+            type(warning.message) == warning_type
+            and re.search(warning_message, str(warning.message))
+            for warning_type, warning_message in EXPECTED_WARNINGS
+        )
+    ]
 
 
 def test_validate_files_form_slots_not_matching(tmp_path: Path):
@@ -384,4 +400,34 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
         "fail_on_warnings": False,
     }
     with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+def test_validate_files_config_default_assistant_id():
+    args = {
+        "domain": "data/test_moodbot/domain.yml",
+        "data": None,
+        "max_history": None,
+        "config": "data/test_config/config_defaults.yml",
+        "fail_on_warnings": False,
+    }
+    msg = (
+        f"The config file is missing a unique value for the "
+        f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
+        f"placeholder value with a unique identifier."
+    )
+    with pytest.warns(UserWarning, match=msg):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+def test_validate_files_config_missing_assistant_id():
+    args = {
+        "domain": "data/test_moodbot/domain.yml",
+        "data": None,
+        "max_history": None,
+        "config": "data/test_config/config_no_assistant_id.yml",
+        "fail_on_warnings": False,
+    }
+    msg = f"The config file is missing the '{ASSISTANT_ID_KEY}' mandatory key."
+    with pytest.warns(UserWarning, match=msg):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))

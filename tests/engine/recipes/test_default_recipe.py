@@ -6,7 +6,7 @@ from _pytest.capture import CaptureFixture
 from pathlib import Path
 
 import rasa.shared.utils.io
-from rasa.shared.constants import CONFIG_AUTOCONFIGURABLE_KEYS
+from rasa.shared.constants import ASSISTANT_ID_KEY, CONFIG_AUTOCONFIGURABLE_KEYS
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import GraphSchema, GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import (
@@ -713,3 +713,19 @@ def test_needs_from_args():
         "training_data": "nlu_training_data_provider",
         "tracker": PLACEHOLDER_TRACKER,
     }
+
+
+@pytest.mark.parametrize(
+    "config_file",
+    [
+        "data/test_config/config_unique_assistant_id.yml",
+        "data/test_config/config_defaults.yml",
+    ],
+)
+def test_graph_config_for_recipe_with_assistant_id(config_file):
+    config = rasa.shared.utils.io.read_model_configuration(config_file)
+
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
+    model_config = recipe.graph_config_for_recipe(config, {})
+
+    assert model_config.assistant_id == config.get(ASSISTANT_ID_KEY)
