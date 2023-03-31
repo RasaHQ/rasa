@@ -164,6 +164,30 @@ conversation.
   Tracker for the conversation. Creates an empty tracker in case it&#x27;s a new
   conversation.
 
+#### fetch\_full\_tracker\_with\_initial\_session
+
+```python
+async def fetch_full_tracker_with_initial_session(
+        conversation_id: Text,
+        output_channel: Optional[OutputChannel] = None,
+        metadata: Optional[Dict] = None) -> DialogueStateTracker
+```
+
+Get the full tracker for a conversation, including events after a restart.
+
+**Arguments**:
+
+- `conversation_id` - The ID of the conversation for which the history should be
+  retrieved.
+- `output_channel` - Output channel associated with the incoming user message.
+- `metadata` - Data sent from client associated with the incoming user message.
+  
+
+**Returns**:
+
+  Tracker for the conversation. Creates an empty tracker with a new session
+  initialized in case it&#x27;s a new conversation.
+
 #### get\_trackers\_for\_all\_conversation\_sessions
 
 ```python

@@ -39,7 +39,7 @@ class DialogueStateTracker()
 Maintains the state of a conversation.
 
 The field max_event_history will only give you these last events,
-it can be set in the tracker_store
+it can be set in the tracker_store.
 
 #### from\_dict
 
@@ -253,7 +253,7 @@ If no entity is found `None` is the default result.
 def get_latest_input_channel() -> Optional[Text]
 ```
 
-Get the name of the input_channel of the latest UserUttered event
+Get the name of the input_channel of the latest UserUttered event.
 
 #### is\_paused
 
@@ -342,7 +342,7 @@ identical to the tracker from which the dialogue was created.
 def copy() -> "DialogueStateTracker"
 ```
 
-Creates a duplicate of this tracker
+Creates a duplicate of this tracker.
 
 #### travel\_back\_in\_time
 

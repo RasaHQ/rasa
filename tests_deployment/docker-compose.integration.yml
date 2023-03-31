@@ -70,3 +70,8 @@ services:
       KAFKA_TOOLS_LOG4J_LOGLEVEL: ERROR
     volumes:
       - ${PWD}/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+
+  mongodb:
+    image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
+    ports:
+      - "27017:27017"
