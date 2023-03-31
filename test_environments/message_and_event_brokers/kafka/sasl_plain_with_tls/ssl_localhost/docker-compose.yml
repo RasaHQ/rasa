@@ -1,0 +1,58 @@
+---
+version: '3'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    container_name: zookeeper
+    environment:
+      ZOO_MY_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SASL_ENABLED: "false"
+
+  broker:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: broker
+    ports:
+      # To learn about configuring Kafka for access across networks see
+      # https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/
+      - "9092:9092"
+      - "29092:29092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # do not use SASL authentication when communicating with Zookeeper (it will use no authentication  and no TLS)
+      ZOOKEEPER_SASL_ENABLED: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # configure two listeners: one for SASL_SSL (TLS with authentication) and one for PLAINTEXT (not TLS and no authentication)
+      # clients can use SASL_SSL to connect to the broker and authenticate using the username and password
+      # the broker can use PLAINTEXT to communicate with other brokers
+      KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9092, PLAINTEXT://0.0.0.0:29092
+      # configure advertised listeners (listeners that will be used by clients to connect to the broker)
+      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://localhost:9092, PLAINTEXT://localhost:29092
+      # let the brokers communicate with each other using PLAINTEXT listener (not TLS and no authentication)
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # enable SASL_PLAIN authentication mechanism (username and password)
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      # configure Kafka to use JAAS (Java Authentication and Authorization Service) for authentication
+      # usernames and passwords will be provided by the JAAS file
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/broker_jaas.conf"
+      # our TLS certificate is signed by a CA (Certificate Authority) and stored in a keystore along with CA certificate
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.server.keystore.jks
+      # keystore is protected by password stored in ssl_keystore_credentials file
+      # this file will be mounted by the confluent KAFKA docker container and password will be set as an environment variable inside container
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: ssl_keystore_credentials
+      # our TLS certificate is signed by a CA (Certificate Authority) which is password protected
+      # to unlock TLS certificate we need to provide CA's password stored in ssl_key_credentials file
+      # this file will be mounted by the confluent KAFKA docker container and password will be set as an environment variable inside container
+      KAFKA_SSL_KEY_CREDENTIALS: ssl_key_credentials
+      # we enable TLSv1.2, TLSv1.1 and TLSv1 encryption protocols
+      KAFKA_SSL_ENABLED_PROTOCOLS: TLSv1.2,TLSv1.1,TLSv1
+      # enable DEBUG logging for Kafka
+      KAFKA_LOG4J_ROOT_LOGLEVEL: DEBUG
+    volumes:
+      - ./broker_jaas.conf:/etc/kafka/broker_jaas.conf
+      - ./server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks
+      - ./ssl_key_credentials:/etc/kafka/secrets/ssl_key_credentials
+      - ./ssl_keystore_credentials:/etc/kafka/secrets/ssl_keystore_credentials
