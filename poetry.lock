@@ -8,7 +8,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "aio-pika"
-version = "8.2.5"
+version = "8.2.3"
 description = "Wrapper for the aiormq for asyncio and humans."
 category = "main"
 optional = false
@@ -703,6 +703,24 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 [package.extras]
 DNSSEC = ["pycryptodome", "ecdsa (>=0.13)"]
 IDNA = ["idna (>=2.1)"]
+
+[[package]]
+name = "docker"
+version = "6.0.1"
+description = "A Python library for the Docker Engine API."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+packaging = ">=14.0"
+pywin32 = {version = ">=304", markers = "sys_platform == \"win32\""}
+requests = ">=2.26.0"
+urllib3 = ">=1.26.0"
+websocket-client = ">=0.32.0"
+
+[package.extras]
+ssh = ["paramiko (>=2.4.3)"]
 
 [[package]]
 name = "docopt"
@@ -2327,6 +2345,14 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,>=2.7"
 tzdata = {version = "*", markers = "python_version >= \"3.6\""}
 
 [[package]]
+name = "pywin32"
+version = "306"
+description = "Python for Window Extensions"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "pyyaml"
 version = "5.4.1"
 description = "YAML parser and emitter for Python"
@@ -3623,6 +3649,19 @@ requests = ">=2.4.2"
 requests-toolbelt = "*"
 
 [[package]]
+name = "websocket-client"
+version = "1.5.1"
+description = "WebSocket client for Python with low level API options"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+docs = ["Sphinx (>=3.4)", "sphinx-rtd-theme (>=0.5)"]
+optional = ["python-socks", "wsaccel"]
+test = ["websockets"]
+
+[[package]]
 name = "websockets"
 version = "10.4"
 description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
@@ -3704,7 +3743,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "b2b28daea48b9503b08a27eca0f052ead713c3975e934f1a6f1592cc8b2f3216"
+content-hash = "ed9acfcb9855f1224cf36e0837de26160bda8007e53384c1993e81db63c6b79a"
 
 [metadata.files]
 absl-py = []
@@ -3761,6 +3800,7 @@ datadog = []
 datadog-api-client = []
 deprecated = []
 dnspython = []
+docker = []
 docopt = []
 docspec = []
 docspec-python = []
@@ -3888,6 +3928,7 @@ python-engineio = []
 python-socketio = []
 pytz = []
 pytz-deprecation-shim = []
+pywin32 = []
 pyyaml = []
 questionary = []
 randomname = []
@@ -3979,6 +4020,7 @@ wasabi = []
 watchdog = []
 wcwidth = []
 webexteamssdk = []
+websocket-client = []
 websockets = []
 werkzeug = []
 wrapt = []
