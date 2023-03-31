@@ -6,6 +6,10 @@
     },
     {
       "type": "doc",
+      "id": "version-3.x/rasa-pro"
+    },
+    {
+      "type": "doc",
       "id": "version-3.x/playground"
     },
     {
@@ -28,7 +32,7 @@
           "items": [
             {
               "type": "doc",
-              "id": "version-3.x/installation/rasa-pro/architecture-overview"
+              "id": "version-3.x/installation/rasa-pro/rasa-pro-artifacts"
             },
             {
               "type": "doc",
@@ -381,6 +385,10 @@
             {
               "type": "doc",
               "id": "version-3.x/lock-stores"
+            },
+            {
+              "type": "doc",
+              "id": "version-3.x/secrets-managers"
             },
             {
               "type": "doc",
