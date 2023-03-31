@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import textwrap
 import time
 import urllib.parse
 import uuid
@@ -10,7 +11,7 @@ from http import HTTPStatus
 from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
 from pathlib import Path
-from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
+from typing import List, Text, Tuple, Type, Generator, NoReturn, Dict, Optional
 from unittest.mock import Mock, ANY
 
 from _pytest.tmpdir import TempPathFactory
@@ -47,6 +48,7 @@ import rasa.nlu.test
 from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
+    ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
@@ -55,6 +57,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     Event,
+    Restarted,
     UserUttered,
     SlotSet,
     BotUttered,
@@ -2066,3 +2069,224 @@ async def test_append_events_does_not_repeat_session_start(
     )
 
     assert response.json["events"] == session_start_events
+
+
+async def _create_tracker_for_query_params(
+    rasa_app: SanicASGITestClient,
+    model_id: Text,
+) -> Tuple[Text, List[Event]]:
+    sender_id = uuid.uuid4().hex
+
+    events_to_store: List[Event] = (
+        session_start_sequence
+        + [
+            UserUttered(
+                "hi",
+                parse_data={
+                    "intent": {"name": "greet"},
+                    "metadata": {"model_id": model_id},
+                },
+            ),
+            ActionExecuted("utter_greet"),
+            BotUttered("hey there"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "/restart",
+                parse_data={
+                    "intent": {"name": "restart"},
+                    "metadata": {"model_id": model_id},
+                },
+            ),
+            ActionExecuted(ACTION_RESTART_NAME),
+            Restarted(),
+        ]
+        + session_start_sequence
+        + [
+            UserUttered(
+                "hi again",
+                parse_data={
+                    "intent": {"name": "greet"},
+                    "metadata": {"model_id": model_id},
+                },
+            ),
+        ]
+    )
+    serialized_events_to_store = [event.as_dict() for event in events_to_store]
+
+    _, response = await rasa_app.post(
+        f"/conversations/{sender_id}/tracker/events", json=serialized_events_to_store
+    )
+    assert response.status == 200
+
+    return sender_id, events_to_store
+
+
+async def test_get_tracker_with_query_param_include_events_all(
+    rasa_app: SanicASGITestClient,
+) -> None:
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
+    sender_id, events_to_store = await _create_tracker_for_query_params(
+        rasa_app, model_id
+    )
+
+    _, response = await rasa_app.get(
+        f"/conversations/{sender_id}/tracker?include_events=ALL"
+    )
+    assert response.status == 200
+
+    tracker = response.json
+    assert tracker["sender_id"] == sender_id
+
+    serialized_actual_events = tracker["events"]
+
+    expected_events = with_model_ids(events_to_store, model_id)
+    serialized_expected_events = [event.as_dict() for event in expected_events]
+
+    assert serialized_actual_events == serialized_expected_events
+
+
+async def test_get_tracker_with_query_param_include_events_after_restart(
+    rasa_app: SanicASGITestClient,
+) -> None:
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
+    sender_id, events_to_store = await _create_tracker_for_query_params(
+        rasa_app, model_id
+    )
+
+    _, response = await rasa_app.get(
+        f"/conversations/{sender_id}/tracker?include_events=AFTER_RESTART"
+    )
+    assert response.status == 200
+
+    tracker = response.json
+    assert tracker["sender_id"] == sender_id
+
+    serialized_actual_events = tracker["events"]
+
+    restarted_event = [
+        event for event in events_to_store if isinstance(event, Restarted)
+    ][0]
+    truncated_events = events_to_store[events_to_store.index(restarted_event) + 1 :]
+    expected_events = with_model_ids(truncated_events, model_id)
+    serialized_expected_events = [e.as_dict() for e in expected_events]
+
+    assert serialized_actual_events == serialized_expected_events
+
+
+async def test_get_tracker_with_query_param_include_events_applied(
+    rasa_app: SanicASGITestClient,
+) -> None:
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
+    sender_id, events_to_store = await _create_tracker_for_query_params(
+        rasa_app, model_id
+    )
+
+    _, response = await rasa_app.get(
+        f"/conversations/{sender_id}/tracker?include_events=APPLIED"
+    )
+    assert response.status == 200
+
+    tracker = response.json
+    assert tracker["sender_id"] == sender_id
+
+    serialized_actual_events = tracker["events"]
+
+    restarted_event = [
+        event for event in events_to_store if isinstance(event, Restarted)
+    ][0]
+    truncated_events = events_to_store[events_to_store.index(restarted_event) + 1 :]
+    session_started = [
+        event for event in truncated_events if isinstance(event, SessionStarted)
+    ][0]
+    truncated_events = truncated_events[truncated_events.index(session_started) + 1 :]
+
+    expected_events = with_model_ids(truncated_events, model_id)
+    serialized_expected_events = [e.as_dict() for e in expected_events]
+
+    assert serialized_actual_events == serialized_expected_events
+
+
+async def test_get_tracker_with_query_param_include_events_none(
+    rasa_app: SanicASGITestClient,
+) -> None:
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
+    sender_id, events_to_store = await _create_tracker_for_query_params(
+        rasa_app, model_id
+    )
+
+    _, response = await rasa_app.get(
+        f"/conversations/{sender_id}/tracker?include_events=NONE"
+    )
+    assert response.status == 200
+
+    tracker = response.json
+    assert tracker["sender_id"] == sender_id
+
+    serialized_actual_events = tracker["events"]
+    assert serialized_actual_events is None
+
+
+async def test_retrieve_story_with_query_param_all_sessions_true(
+    rasa_app: SanicASGITestClient,
+) -> None:
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
+    sender_id, events_to_store = await _create_tracker_for_query_params(
+        rasa_app, model_id
+    )
+
+    _, response = await rasa_app.get(
+        f"/conversations/{sender_id}/story?all_sessions=true"
+    )
+    assert response.status == 200
+
+    story_content = response.body.decode("utf-8")
+
+    expected_first_story = textwrap.dedent(
+        f"""
+    - story: {sender_id}, story 1
+      steps:
+      - intent: greet
+        user: |-
+          hi
+      - action: utter_greet
+      - intent: restart
+        user: |-
+          /restart
+      - action: action_restart"""
+    )
+    assert expected_first_story in story_content
+
+    expected_second_story = textwrap.dedent(
+        f"""
+    - story: {sender_id}, story 2
+      steps:
+      - intent: greet
+        user: |-
+          hi again"""
+    )
+    assert expected_second_story in story_content
+
+
+async def test_retrieve_story_with_query_param_all_sessions_false(
+    rasa_app: SanicASGITestClient,
+) -> None:
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
+    sender_id, events_to_store = await _create_tracker_for_query_params(
+        rasa_app, model_id
+    )
+
+    _, response = await rasa_app.get(
+        f"/conversations/{sender_id}/story?all_sessions=false"
+    )
+    assert response.status == 200
+
+    story_content = response.body.decode("utf-8")
+    expected_story = textwrap.dedent(
+        f"""
+    - story: {sender_id}
+      steps:
+      - intent: greet
+        user: |-
+          hi again"""
+    )
+    assert expected_story in story_content
