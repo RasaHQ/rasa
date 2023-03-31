@@ -16,6 +16,21 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.3.7] - 2023-03-31                         
+### Improvements
+- [#12144](https://github.com/rasahq/rasa/issues/12144): Add a self-reference of the synonym in the EntitySynonymMapper to handle entities extracted in a casing different to synonym case. (For example if a synonym `austria` is added, entities extracted with any alternate casing of the synonym will also be mapped to `austria`). It addresses ATO-616
+
+### Bugfixes
+- [#12187](https://github.com/rasahq/rasa/issues/12187): Fix issue with failures while publishing events to RabbitMQ after a RabbitMQ restart.
+  The fix consists of pinning `aio-pika` dependency to `8.2.3`, since this issue was introduced in `aio-pika` v`8.2.4`.
+- [#12192](https://github.com/rasahq/rasa/issues/12192): Fix 2 issues detected with the HTTP API:
+  - The `GET /conversations/{conversation_id}/tracker` endpoint was not returning the tracker with all sessions when `include_events` query parameter was set to `ALL`.
+  The fix constituted in using `TrackerStore.retrieve_full_tracker` method instead of `TrackerStore.retrieve` method in the function handling the `GET /conversations/{conversation_id}/tracker` endpoint.
+  Implemented or updated this method across all tracker store subclasses.
+  - The `GET /conversations/{conversation_id}/story` endpoint was not returning all the stories for all sessions when `all_sessions` query parameter was set to `true`.
+  The fix constituted in using all events of the tracker to be converted in stories instead of only the `applied_events`.
+
+
 ## [3.3.6] - 2023-03-09
                        
 Rasa 3.3.6 (2023-03-09)                        
