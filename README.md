@@ -305,6 +305,7 @@ make types
 ### Deploying documentation updates
 
 We use `Docusaurus v2` to build docs for tagged versions and for the `main` branch.
+To run Docusaurus, install `Node.js 12.x`.
 The static site that gets built is pushed to the `documentation` branch of this repo.
 
 We host the site on netlify. On `main` branch builds (see `.github/workflows/documentation.yml`), we push the built docs to

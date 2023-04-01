@@ -1,58 +1,29 @@
 [build-system]
-requires = ["poetry-core>=1.0.4"]
+requires = [ "poetry-core>=1.0.4",]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = ["py37", "py38", "py39", "py310"]
+target-version = [ "py37", "py38", "py39", "py310",]
 exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.4.6"
+version = "3.5.1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
-authors = ["Rasa Technologies GmbH <hi@rasa.com>"]
-maintainers = ["Tom Bocklisch <tom@rasa.com>"]
+authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
+maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
 homepage = "https://rasa.com"
 repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
-    "Topic :: Software Development :: Libraries",
-]
-keywords = [
-    "nlp",
-    "machine-learning",
-    "machine-learning-library",
-    "bot",
-    "bots",
-    "botkit",
-    "rasa conversational-agents",
-    "conversational-ai",
-    "chatbot",
-    "chatbot-framework",
-    "bot-framework",
-]
-include = [
-    "LICENSE.txt",
-    "README.md",
-    "rasa/shared/core/training_data/visualization.html",
-    "rasa/cli/default_config.yml",
-    "rasa/shared/importers/*",
-    "rasa/utils/schemas/*",
-    "rasa/keys",
-]
+classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Topic :: Software Development :: Libraries",]
+keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
+include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
 readme = "README.md"
 license = "Apache-2.0"
 [[tool.poetry.source]]
 name = "internal repository mirroring psycopg binary for macos"
 url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
-
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.0.255"
 
 [tool.towncrier]
 package = "rasa"
@@ -94,6 +65,27 @@ directory = "misc"
 name = "Miscellaneous internal changes"
 showcontent = false
 
+[tool.mypy]
+mypy_path = "./stubs"
+ignore_missing_imports = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_calls = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = false
+disable_error_code = [ "arg-type",]
+
+[tool.bandit]
+skips = [ "B104", "B301",]
+
+[tool.ruff]
+ignore = [ "D100", "D104", "D105", "RUF001", "RUF002", "RUF003", "RUF005",]
+line-length = 88
+select = [ "D", "E", "F", "W", "RUF",]
+
 [tool.poetry.dependencies]
 python = ">=3.7,<3.11"
 boto3 = "^1.12"
@@ -118,7 +110,7 @@ colorhash = ">=1.0.2,<1.3.0"
 jsonschema = ">=3.2,<4.18"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2023.0"
-rasa-sdk = "~3.4.1"
+rasa-sdk = "~3.5.0"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = "~21.12"
@@ -238,15 +230,31 @@ types-redis = "^4.3.20"
 httpx = "0.23.3"
 
 [tool.poetry.extras]
-spacy = ["spacy"]
-jieba = ["jieba"]
-transformers = ["transformers", "sentencepiece"]
-full = ["spacy", "transformers", "sentencepiece", "jieba"]
-gh-release-notes = ["github3.py"]
-metal = ["tensorflow-metal"]
+spacy = [ "spacy",]
+jieba = [ "jieba",]
+transformers = [ "transformers", "sentencepiece",]
+full = [ "spacy", "transformers", "sentencepiece", "jieba",]
+gh-release-notes = [ "github3.py",]
+metal = [ "tensorflow-metal",]
 
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.ruff.per-file-ignores]
+"tests/test_telemetry.py" = [ "E501",]
+"tests/shared/core/test_domain.py" = [ "E501",]
+
+[tool.pytest.ini_options]
+python_functions = "test_"
+filterwarnings = [ "ignore::ResourceWarning:ruamel[.*]",]
+log_cli_level = "WARNING"
+log_cli = true
+markers = [ "skip_on_windows", "skip_on_ci", "sequential", "category_cli", "category_core_featurizers", "category_policies", "category_nlu_featurizers", "category_nlu_predictors", "category_full_model_training", "category_other_unit_tests", "category_performance", "flaky",]
+timeout = 60
+timeout_func_only = true
 
 [tool.poetry.dependencies.tensorflow]
 version = "~2.11.0"
@@ -266,7 +274,7 @@ markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 
 [tool.poetry.dependencies.PyJWT]
 version = "^2.0.0"
-extras = ["crypto"]
+extras = [ "crypto",]
 
 [tool.poetry.dependencies.colorama]
 version = "^0.4.4"
@@ -292,7 +300,7 @@ optional = true
 [tool.poetry.dependencies.sentencepiece]
 version = "~0.1.96"
 optional = true
-extras = ["sentencepiece"]
+extras = [ "sentencepiece",]
 
 [tool.poetry.dependencies.jieba]
 version = ">=0.39, <0.43"
@@ -300,79 +308,11 @@ optional = true
 
 [tool.poetry.dependencies.pymongo]
 version = ">=3.8,<3.11"
-extras = ["tls", "srv"]
+extras = [ "tls", "srv",]
 
 [tool.poetry.dev-dependencies.pytest-sanic]
 git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix_signal_issue"
 
-[tool.mypy]
-# some libraries do not have type hints; ideally we remove
-# this at some point but it will require a lot of efforts from us and library owners
-mypy_path = "./stubs"
-ignore_missing_imports = true
-show_error_codes = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-disallow_untyped_calls = true
-disallow_incomplete_defs = true
-disallow_untyped_defs = true
-disallow_untyped_decorators = true
-# FIXME: should be switch to true (default) after fixing implicit Optional in the codebase
-no_implicit_optional = false
-# FIXME: working our way towards removing these
-# see https://github.com/RasaHQ/rasa/pull/6470
-# the list below is sorted by the number of errors for each error code, in decreasing order
-disable_error_code = ["arg-type"]
-
-[tool.pytest.ini_options]
-# Function starting with the following pattern are considered for test cases.
-python_functions = "test_"
-filterwarnings = ["ignore::ResourceWarning:ruamel[.*]"]
-log_cli_level = "WARNING"
-log_cli = true
-# asyncio_mode = "auto" FIXME: https://rasahq.atlassian.net/browse/ATO-859
-markers = [
-    "skip_on_windows",              # mark a test as a test that shouldn't be executed on Windows.
-    "skip_on_ci",                   # mark a test to skip in the CI
-    "sequential",                   # mark tests than cannot be ran in parallel (e.g. because they need access to the same resource).
-    "category_cli",                 # Marks tests for the command-line interface.
-    "category_core_featurizers",    # Marks tests for components which featurize trackers for the policies.
-    "category_policies",            # Marks tests for the dialogue policies.
-    "category_nlu_featurizers",     # Marks tests for NLU components which add features to the user message.
-    "category_nlu_predictors",      # Marks tests for NLU components which make predictions based on the user message (e.g. intent classifiers or entity extractors).
-    "category_full_model_training", # Marks tests which test the training workflow for entire models (instead of single policies / components).
-    "category_other_unit_tests",    # Default marker for unit tests which have no `category_` marker applied to them.
-    "category_performance",         # Marker for performance tests (e.g. speed or detecting memory leaks).
-    "flaky",                        # mark a test as flaky (i.e., fails non-deterministically).
-]
-# see https://pypi.org/project/pytest-timeout/
-timeout = 60
-timeout_func_only = true
-
-[tool.bandit]
-skips = [
-    "B104", # checks for binding 0.0.0.0 interface, which should be fine for containers.
-    "B301", # checks for pickle usage, which is a necessary evil.
-]
-
-[tool.ruff]
-# See https://beta.ruff.rs/docs/rules/ for error code documentation
-ignore = [
-    "D100",   # ignore missing docstrings in public module
-    "D104",   # ignore missing docstrings in public package
-    "D105",   # ignore missing docstrings in magic methods
-    "RUF001", # ignore ambiguous characters in strings, we need them
-    "RUF002", # ignore ambiguous characters in docstrings, we need them
-    "RUF003", # ignore ambiguous characters in comments, we need them
-    "RUF005", # admittedly an optimization of code rather than a fail
-]
-line-length = 88
-select = ["D", "E", "F", "W", "RUF"]
-
-[tool.ruff.pydocstyle]
-convention = "google"
-
-[tool.ruff.per-file-ignores]
-"tests/test_telemetry.py" = ["E501"]
-"tests/shared/core/test_domain.py" = ["E501"]
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.0.255"
