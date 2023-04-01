@@ -85,7 +85,7 @@ jobs:
 
       - name: Create new branch 🐣
         if: always()
-        uses: peterjgrainger/action-create-branch@08259812c8ebdbf1973747f9297e332fa078d3c1
+        uses: peterjgrainger/action-create-branch@64aa569aea81305305c6e92bd236d8c427debff8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -93,7 +93,7 @@ jobs:
 
       - name: Open pull request ☄️
         if: always()
-        uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde
+        uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
         with:
           # using this token to make sure it triggers other actions
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}

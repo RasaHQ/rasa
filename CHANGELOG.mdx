@@ -16,6 +16,32 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.5.3] - 2023-03-30
+                       
+Rasa 3.5.3 (2023-03-30)                        
+### Improved Documentation
+- [#12209](https://github.com/rasahq/rasa/issues/12209): Add new Rasa Pro page in docs, together with minimal content changes.
+
+
+## [3.5.2] - 2023-03-30
+                       
+Rasa 3.5.2 (2023-03-30)                        
+### Improvements
+- [#12144](https://github.com/rasahq/rasa/issues/12144): Add a self-reference of the synonym in the EntitySynonymMapper to handle entities extracted in a casing different to synonym case. (For example if a synonym `austria` is added, entities extracted with any alternate casing of the synonym will also be mapped to `austria`). It addresses ATO-616
+
+### Bugfixes
+- [#12189](https://github.com/rasahq/rasa/issues/12189): Make custom actions inheriting from rasa-sdk `FormValidationAction` parent class an exception of the `selective_domain` rule and always send them domain.
+- [#12193](https://github.com/rasahq/rasa/issues/12193): Fix 2 issues detected with the HTTP API:
+  - The `GET /conversations/{conversation_id}/tracker` endpoint was not returning the tracker with all sessions when `include_events` query parameter was set to `ALL`.
+  The fix constituted in using `TrackerStore.retrieve_full_tracker` method instead of `TrackerStore.retrieve` method in the function handling the `GET /conversations/{conversation_id}/tracker` endpoint.
+  Implemented or updated this method across all tracker store subclasses.
+  - The `GET /conversations/{conversation_id}/story` endpoint was not returning all the stories for all sessions when `all_sessions` query parameter was set to `true`.
+  The fix constituted in using all events of the tracker to be converted in stories instead of only the `applied_events`.
+
+### Improved Documentation
+- [#12110](https://github.com/rasahq/rasa/issues/12110): Add documentation for secrets managers.
+
+
 ## [3.5.1] - 2023-03-24
                        
 Rasa 3.5.1 (2023-03-24)                        

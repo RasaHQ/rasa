@@ -288,6 +288,29 @@ class TrackerStore:
         """
         return await self.retrieve(conversation_id)
 
+    async def get_or_create_full_tracker(
+        self,
+        sender_id: Text,
+        append_action_listen: bool = True,
+    ) -> "DialogueStateTracker":
+        """Returns tracker or creates one if the retrieval returns None.
+
+        Args:
+            sender_id: Conversation ID associated with the requested tracker.
+            append_action_listen: Whether to append an initial `action_listen`.
+
+        Returns:
+            The tracker for the conversation ID.
+        """
+        tracker = await self.retrieve_full_tracker(sender_id)
+
+        if tracker is None:
+            tracker = await self.create_tracker(
+                sender_id, append_action_listen=append_action_listen
+            )
+
+        return tracker
+
     async def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker."""
         if self.event_broker is None:
@@ -371,17 +394,55 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Returns tracker matching sender_id."""
-        if sender_id in self.store:
-            logger.debug(f"Recreating tracker for id '{sender_id}'")
-            return self.deserialise_tracker(sender_id, self.store[sender_id])
-
-        logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
-
-        return None
+        return await self._retrieve(sender_id, fetch_all_sessions=False)
 
     async def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Tracker Store in memory."""
         return self.store.keys()
+
+    async def retrieve_full_tracker(
+        self, sender_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+        """
+        return await self._retrieve(sender_id, fetch_all_sessions=True)
+
+    async def _retrieve(
+        self, sender_id: Text, fetch_all_sessions: bool
+    ) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+            fetch_all_sessions: Whether to fetch all sessions or only the last one.
+        """
+        if sender_id not in self.store:
+            logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+            return None
+
+        logger.debug(f"Recreating tracker for id '{sender_id}'")
+
+        tracker = self.deserialise_tracker(sender_id, self.store[sender_id])
+
+        if not tracker:
+            logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+            return None
+
+        if fetch_all_sessions:
+            return tracker
+
+        # only return the last session
+        multiple_tracker_sessions = (
+            rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
+        )
+
+        if 0 <= len(multiple_tracker_sessions) <= 1:
+            return tracker
+
+        return multiple_tracker_sessions[-1]
 
 
 class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
@@ -447,6 +508,13 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         if not timeout and self.record_exp:
             timeout = self.record_exp
 
+        stored = self.red.get(self.key_prefix + tracker.sender_id)
+
+        if stored is not None:
+            prior_tracker = self.deserialise_tracker(tracker.sender_id, stored)
+
+            tracker = self._merge_trackers(prior_tracker, tracker)
+
         serialised_tracker = self.serialise_tracker(tracker)
         self.red.set(
             self.key_prefix + tracker.sender_id, serialised_tracker, ex=timeout
@@ -463,15 +531,92 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         Returns:
             Tracker containing events from the latest conversation sessions.
         """
+        return await self._retrieve(sender_id, fetch_all_sessions=False)
+
+    async def retrieve_full_tracker(
+        self, sender_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Retrieves tracker for all conversation sessions.
+
+        The Redis key is formed by appending a prefix to sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+
+        Returns:
+            Tracker containing events from all conversation sessions.
+        """
+        return await self._retrieve(sender_id, fetch_all_sessions=True)
+
+    async def _retrieve(
+        self, sender_id: Text, fetch_all_sessions: bool
+    ) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+            fetch_all_sessions: Whether to fetch all sessions or only the last one.
+        """
         stored = self.red.get(self.key_prefix + sender_id)
-        if stored is not None:
-            return self.deserialise_tracker(sender_id, stored)
-        else:
+        if stored is None:
+            logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
             return None
+
+        tracker = self.deserialise_tracker(sender_id, stored)
+        if fetch_all_sessions:
+            return tracker
+
+        # only return the last session
+        multiple_tracker_sessions = (
+            rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
+        )
+
+        if 0 <= len(multiple_tracker_sessions) <= 1:
+            return tracker
+
+        return multiple_tracker_sessions[-1]
 
     async def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store."""
         return self.red.keys(self.key_prefix + "*")
+
+    @staticmethod
+    def _merge_trackers(
+        prior_tracker: DialogueStateTracker, tracker: DialogueStateTracker
+    ) -> DialogueStateTracker:
+        """Merges two trackers.
+
+        Args:
+            prior_tracker: Tracker containing events from the previous conversation
+                sessions.
+            tracker: Tracker containing events from the current conversation session.
+        """
+        if not prior_tracker.events:
+            return tracker
+
+        last_event_timestamp = prior_tracker.events[-1].timestamp
+        past_tracker = tracker.travel_back_in_time(target_time=last_event_timestamp)
+
+        if past_tracker.events == prior_tracker.events:
+            return tracker
+
+        merged = tracker.init_copy()
+        merged.update_with_events(
+            list(prior_tracker.events), override_timestamp=False, domain=None
+        )
+
+        for new_event in tracker.events:
+            # Event subclasses implement `__eq__` method that make it difficult
+            # to compare events. We use `as_dict` to compare events.
+            if all(
+                [
+                    new_event.as_dict() != existing_event.as_dict()
+                    for existing_event in merged.events
+                ]
+            ):
+                merged.update(new_event)
+
+        return merged
 
 
 class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
@@ -554,19 +699,45 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
 
         Based on the session_date sort key.
         """
+        return await self._retrieve(sender_id, fetch_all_sessions=False)
+
+    async def retrieve_full_tracker(
+        self, sender_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Retrieves tracker for all conversation sessions.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+        """
+        return await self._retrieve(sender_id, fetch_all_sessions=True)
+
+    async def _retrieve(
+        self, sender_id: Text, fetch_all_sessions: bool
+    ) -> Optional[DialogueStateTracker]:
+        """Returns tracker matching sender_id.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+            fetch_all_sessions: Whether to fetch all sessions or only the last one.
+        """
         dialogues = self.db.query(
             KeyConditionExpression=Key("sender_id").eq(sender_id),
-            Limit=1,
             ScanIndexForward=False,
         )["Items"]
 
         if not dialogues:
             return None
 
-        events = dialogues[0].get("events", [])
-
-        # `float`s are stored as `Decimal` objects - we need to convert them back
-        events_with_floats = core_utils.replace_decimals_with_floats(events)
+        if fetch_all_sessions:
+            events_with_floats = []
+            for dialogue in dialogues:
+                if dialogue.get("events"):
+                    events = core_utils.replace_decimals_with_floats(dialogue["events"])
+                    events_with_floats += events
+        else:
+            events = dialogues[0].get("events", [])
+            # `float`s are stored as `Decimal` objects - we need to convert them back
+            events_with_floats = core_utils.replace_decimals_with_floats(events)
 
         if self.domain is None:
             slots = []
@@ -605,14 +776,14 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         username: Optional[Text] = None,
         password: Optional[Text] = None,
         auth_source: Optional[Text] = "admin",
-        collection: Optional[Text] = "conversations",
+        collection: Text = "conversations",
         event_broker: Optional[EventBroker] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
         from pymongo.database import Database
         from pymongo import MongoClient
 
-        self.client = MongoClient(
+        self.client: MongoClient = MongoClient(
             host,
             username=username,
             password=password,
@@ -1220,6 +1391,7 @@ class FailSafeTrackerStore(TrackerStore):
             tracker_store: Primary tracker store.
             on_tracker_store_error: Callback which is called when there is an error
                 in the primary tracker store.
+            fallback_tracker_store: Fallback tracker store.
         """
         self._fallback_tracker_store: Optional[TrackerStore] = fallback_tracker_store
         self._tracker_store = tracker_store
@@ -1241,6 +1413,7 @@ class FailSafeTrackerStore(TrackerStore):
 
     @property
     def fallback_tracker_store(self) -> TrackerStore:
+        """Returns the fallback tracker store."""
         if not self._fallback_tracker_store:
             self._fallback_tracker_store = InMemoryTrackerStore(
                 self._tracker_store.domain, self._tracker_store.event_broker
@@ -1249,6 +1422,7 @@ class FailSafeTrackerStore(TrackerStore):
         return self._fallback_tracker_store
 
     def on_tracker_store_error(self, error: Exception) -> None:
+        """Calls the callback when there is an error in the primary tracker store."""
         if self._on_tracker_store_error:
             self._on_tracker_store_error(error)
         else:
@@ -1264,7 +1438,7 @@ class FailSafeTrackerStore(TrackerStore):
         try:
             return await self._tracker_store.retrieve(sender_id)
         except Exception as e:
-            self.on_tracker_store_error(e)
+            self.on_tracker_store_retrieve_error(e)
             return None
 
     async def keys(self) -> Iterable[Text]:
@@ -1282,6 +1456,38 @@ class FailSafeTrackerStore(TrackerStore):
         except Exception as e:
             self.on_tracker_store_error(e)
             await self.fallback_tracker_store.save(tracker)
+
+    async def retrieve_full_tracker(
+        self, sender_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Calls `retrieve_full_tracker` method of primary tracker store.
+
+        Args:
+            sender_id: The sender id of the tracker to retrieve.
+        """
+        try:
+            return await self._tracker_store.retrieve_full_tracker(sender_id)
+        except Exception as e:
+            self.on_tracker_store_retrieve_error(e)
+            return None
+
+    def on_tracker_store_retrieve_error(self, error: Exception) -> None:
+        """Calls `_on_tracker_store_error` callable attribute if set.
+
+        Otherwise, logs the error.
+
+        Args:
+            error: The error that occurred.
+        """
+        if self._on_tracker_store_error:
+            self._on_tracker_store_error(error)
+        else:
+            logger.error(
+                f"Error happened when trying to retrieve conversation tracker from "
+                f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
+                f"the '{InMemoryTrackerStore.__name__}'. Please "
+                f"investigate the following error: {error}."
+            )
 
 
 def _create_from_endpoint_config(
