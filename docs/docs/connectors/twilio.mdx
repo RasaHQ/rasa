@@ -63,57 +63,31 @@ to make the new channel endpoint available for Twilio to send messages to.
 
 #### Receiving location data via twilio (whatsapp)
 
-You can receive location data from user from this channel you need to do the following.
+You can receive location data (WhatsApp Location) from user from this channel, you just need to do the following.
 
-1. Make an intent name locationData and two entities/slots one for Latitude and one for Longitude respectively.
+1. Make an intent name locationData and two entities and slots, one for Latitude and one for Longitude respectively.
 
 ```yaml-rasa title="domain.yml"
 intents:
   - locationData
+
 slots:
    Latitude:
      type: text
      mappings:
-     - type: custom
+     - type: from_entity
+       entity: Latitude
 
    Longitude:
      type: text
      mappings:
-     - type: custom
+     - type: from_entity
+       entity: Longitude
 
 entities:
   - Latitude
   - Longitude
 
-actions:
-  - action_location_data
 ```
 
-2. Once user send the location message it will Trigger the locationData intent you can later handle everything in custom actions.
-
-```python
-from typing import Any, Text, Dict, List
-from rasa_sdk import Action, Tracker
-from rasa_sdk.events import SlotSet
-from rasa_sdk.executor import CollectingDispatcher
-
-
-class ActionLocationData(Action):
-
-    def name(self) -> Text:
-        return "action_location_data"
-
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        Latitude = tracker.get_slot('Latitude')
-        Longitude = tracker.get_slot('Longitude')
-
-        if tracker.latest_message['entities'][0]['entity'] == 'Latitude':
-            Latitude = tracker.latest_message['entities'][0]['value']
-
-        if tracker.latest_message['entities'][1]['entity'] == 'Longitude':
-            Longitude = tracker.latest_message['entities'][1]['value']
-
-        dispatcher.utter_message(text="I got Location")
-
-        return [SlotSet("Latitude", Latitude), SlotSet("Longitude", Longitude)]
-  ```
+2. Once user send the location message it will Trigger the locationData intent and Slots will be set from entities (Note: no need for training data for entities, its being handled through the channel).

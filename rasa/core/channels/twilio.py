@@ -106,10 +106,7 @@ class TwilioInput(InputChannel):
     @classmethod
     def _is_location_message(cls, request):
         """Check if the users message is a location."""
-        return (
-            request.form.get("Latitude", None) is not None
-            and request.form.get("Longitude", None) is not None
-        )
+        return request.form.get("Latitude") and request.form.get("Longitude")
 
     def __init__(
         self,
