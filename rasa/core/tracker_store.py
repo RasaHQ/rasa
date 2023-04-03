@@ -168,6 +168,9 @@ class TrackerStore:
                 domain=domain,
                 event_broker=event_broker,
             )
+
+            _tracker_store = _tracker_store[0] if _tracker_store else None
+
             tracker_store = (
                 _tracker_store
                 if _tracker_store
