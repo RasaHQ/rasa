@@ -2459,7 +2459,7 @@ typing-extensions = ">=4.1.1,<5.0.0"
 
 [[package]]
 name = "redis"
-version = "4.4.2"
+version = "4.4.3"
 description = "Python client for Redis database and key-value store"
 category = "main"
 optional = false
@@ -3924,7 +3924,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "48573c4f91aef8150ee0b176d098f1ebf3f90141c8be327c75a65684eddebe21"
+content-hash = "256584a5c4393b0e0cb59ced4b881fa55d386bf145ef045b6b7c21260c0aedbc"
 
 [metadata.files]
 absl-py = [
@@ -6131,8 +6131,8 @@ rasa-sdk = [
     {file = "rasa_sdk-3.4.1.tar.gz", hash = "sha256:8e63049ad1b362c7e23c89593aa1563abd0031a7d98b6fed44acae31a936f5e8"},
 ]
 redis = [
-    {file = "redis-4.4.2-py3-none-any.whl", hash = "sha256:e6206448e2f8a432871d07d432c13ed6c2abcf6b74edb436c99752b1371be387"},
-    {file = "redis-4.4.2.tar.gz", hash = "sha256:a010f6cb7378065040a02839c3f75c7e0fb37a87116fb4a95be82a95552776c7"},
+    {file = "redis-4.4.3-py3-none-any.whl", hash = "sha256:ff1345ad81bfafc41374b7089b5a6d37d862a4ce101c139e5675f31cf46b5539"},
+    {file = "redis-4.4.3.tar.gz", hash = "sha256:9ba159120f909198e8a53053b0fb2e1593decfe1404d17589c7039e186489d48"},
 ]
 regex = [
     {file = "regex-2022.10.31-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a8ff454ef0bb061e37df03557afda9d785c905dab15584860f982e88be73015f"},
