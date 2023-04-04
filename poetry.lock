@@ -818,15 +818,15 @@ testing = ["pre-commit"]
 
 [[package]]
 name = "fakeredis"
-version = "2.2.0"
+version = "2.10.3"
 description = "Fake implementation of redis API for testing purposes."
 category = "dev"
 optional = false
 python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
-redis = "<4.5"
-sortedcontainers = ">=2.4.0,<3.0.0"
+redis = ">=4"
+sortedcontainers = ">=2.4,<3.0"
 
 [package.extras]
 json = ["jsonpath-ng (>=1.5,<2.0)"]
@@ -2394,14 +2394,14 @@ typing-extensions = ">=4.1.1,<5.0.0"
 
 [[package]]
 name = "redis"
-version = "4.4.3"
+version = "4.5.4"
 description = "Python client for Redis database and key-value store"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
-async-timeout = ">=4.0.2"
+async-timeout = {version = ">=4.0.2", markers = "python_version <= \"3.11.2\""}
 importlib-metadata = {version = ">=1.0", markers = "python_version < \"3.8\""}
 typing-extensions = {version = "*", markers = "python_version < \"3.8\""}
 
@@ -3901,7 +3901,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "2112f50ad93e1823793bfabb7aa4091673c5ab56cd59133fccec5e21bc1e338a"
+content-hash = "1458293ff289ce4a57c8aa2cae050da9f3b70def0831c1a237ddad2d75e102b1"
 
 [metadata.files]
 absl-py = [
@@ -4535,8 +4535,8 @@ execnet = [
     {file = "execnet-1.9.0.tar.gz", hash = "sha256:8f694f3ba9cc92cab508b152dcfe322153975c29bda272e2fd7f3f00f36e47c5"},
 ]
 fakeredis = [
-    {file = "fakeredis-2.2.0-py3-none-any.whl", hash = "sha256:1ac7adf04dcbf8f9886add5972018e0e42781ee772fbaa0a573350cd4e4c66f7"},
-    {file = "fakeredis-2.2.0.tar.gz", hash = "sha256:dacdede58b0e682d5dc6176518858b6933c3d529ec18270f162ad5aaf97f5769"},
+    {file = "fakeredis-2.10.3-py3-none-any.whl", hash = "sha256:078ad729fe7cbcc84c9ff6f25c0e503fd4e19db6956f78049f9991b10c5271ba"},
+    {file = "fakeredis-2.10.3.tar.gz", hash = "sha256:c5dcb070ef3219226e1d6db8836ddad47da1fc821270f6e89cfeb5da1f7f2e38"},
 ]
 fbmessenger = [
     {file = "fbmessenger-6.0.0-py2.py3-none-any.whl", hash = "sha256:82cffd6e2fe02bfcf8ed083c59bdddcfdaa594dd0040f0c49eabbaf0e58d974c"},
@@ -6075,8 +6075,8 @@ rasa-sdk = [
     {file = "rasa_sdk-3.5.0.tar.gz", hash = "sha256:6de94b5dfa778a2910b690a0046f266d79e09c32a0cbbdd1b6fb58e7c9cf2b10"},
 ]
 redis = [
-    {file = "redis-4.4.3-py3-none-any.whl", hash = "sha256:ff1345ad81bfafc41374b7089b5a6d37d862a4ce101c139e5675f31cf46b5539"},
-    {file = "redis-4.4.3.tar.gz", hash = "sha256:9ba159120f909198e8a53053b0fb2e1593decfe1404d17589c7039e186489d48"},
+    {file = "redis-4.5.4-py3-none-any.whl", hash = "sha256:2c19e6767c474f2e85167909061d525ed65bea9301c0770bb151e041b7ac89a2"},
+    {file = "redis-4.5.4.tar.gz", hash = "sha256:73ec35da4da267d6847e47f68730fdd5f62e2ca69e3ef5885c6a78a9374c3893"},
 ]
 regex = [
     {file = "regex-2022.10.31-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a8ff454ef0bb061e37df03557afda9d785c905dab15584860f982e88be73015f"},
