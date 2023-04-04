@@ -275,7 +275,7 @@ jobs:
 
       - name: Create a comment with help description
         if: needs.changes.outputs.docs == 'true'
-        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
+        uses: RasaHQ/create-comment@f7b9064291f7be1fcbd06e3f202cd3adb79e0978
         with:
           mode: "delete-previous"
           id: comment_docs_previews
