@@ -135,7 +135,7 @@ ujson = ">=1.35,<6.0"
 regex = ">=2020.6,<2022.11"
 joblib = ">=0.15.1,<1.3.0"
 sentry-sdk = ">=0.17.0,<1.15.0"
-aio-pika = ">=6.7.1,<9.0.0"
+aio-pika = ">=6.7.1,<8.2.4"
 aiogram = "<2.26"
 typing-extensions = ">=4.1.1,<5.0.0"
 typing-utils = "^0.1.0"
@@ -316,3 +316,4 @@ branch = "fix_signal_issue"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.255"
+docker = "^6.0.1"

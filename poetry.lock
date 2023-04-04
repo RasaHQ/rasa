@@ -8,19 +8,19 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "aio-pika"
-version = "8.3.0"
+version = "8.2.3"
 description = "Wrapper for the aiormq for asyncio and humans."
 category = "main"
 optional = false
 python-versions = ">3.6, <4"
 
 [package.dependencies]
-aiormq = ">=6.6.3,<6.7.0"
+aiormq = ">=6.4.0,<6.5.0"
 typing-extensions = {version = "*", markers = "python_version < \"3.8.0\""}
 yarl = "*"
 
 [package.extras]
-develop = ["aiomisc (>=16.0,<17.0)", "coverage (!=4.3)", "coveralls", "nox", "pylava", "pytest", "pytest-cov", "shortuuid", "sphinx", "sphinx-autobuild", "timeout-decorator", "tox (>=2.4)"]
+develop = ["aiomisc (>=16.0,<17.0)", "coverage (!=4.3)", "coveralls", "nox", "pyflakes (<2.5)", "pylava", "pytest", "pytest-cov", "shortuuid", "sphinx", "sphinx-autobuild", "timeout-decorator", "tox (>=2.4)"]
 
 [[package]]
 name = "aiofiles"
@@ -83,16 +83,18 @@ aiohttp = ">=2.0.0,<4.0.0"
 
 [[package]]
 name = "aiormq"
-version = "6.6.4"
+version = "6.4.2"
 description = "Pure python AMQP asynchronous client library"
 category = "main"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = ">=3.7"
 
 [package.dependencies]
 pamqp = "3.2.1"
-setuptools = {version = "*", markers = "python_version < \"3.8\""}
 yarl = "*"
+
+[package.extras]
+develop = ["aiomisc (>=16.0,<17.0)", "coverage (!=4.3)", "coveralls", "pylava", "pytest", "pytest-cov", "tox (>=2.4)"]
 
 [[package]]
 name = "aiosignal"
@@ -750,6 +752,24 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 [package.extras]
 dnssec = ["ecdsa (>=0.13)", "pycryptodome"]
 idna = ["idna (>=2.1)"]
+
+[[package]]
+name = "docker"
+version = "6.0.1"
+description = "A Python library for the Docker Engine API."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+packaging = ">=14.0"
+pywin32 = {version = ">=304", markers = "sys_platform == \"win32\""}
+requests = ">=2.26.0"
+urllib3 = ">=1.26.0"
+websocket-client = ">=0.32.0"
+
+[package.extras]
+ssh = ["paramiko (>=2.4.3)"]
 
 [[package]]
 name = "docopt"
@@ -2344,6 +2364,14 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,>=2.7"
 tzdata = {version = "*", markers = "python_version >= \"3.6\""}
 
 [[package]]
+name = "pywin32"
+version = "306"
+description = "Python for Window Extensions"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "pyyaml"
 version = "5.4.1"
 description = "YAML parser and emitter for Python"
@@ -3809,6 +3837,19 @@ requests = ">=2.4.2"
 requests-toolbelt = "*"
 
 [[package]]
+name = "websocket-client"
+version = "1.5.1"
+description = "WebSocket client for Python with low level API options"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+docs = ["Sphinx (>=3.4)", "sphinx-rtd-theme (>=0.5)"]
+optional = ["python-socks", "wsaccel"]
+test = ["websockets"]
+
+[[package]]
 name = "websockets"
 version = "10.4"
 description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
@@ -3901,7 +3942,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "d0d8a8fbf403b4e7d643c48768ff3c53dcf359940a0a5eecfb0b3509fa0ec233"
+content-hash = "cb1018ea251827019a45fd3455f82a6e400bf8e0a9cf339c923259f4e96f2e1e"
 
 [metadata.files]
 absl-py = [
@@ -3909,8 +3950,8 @@ absl-py = [
     {file = "absl_py-1.3.0-py3-none-any.whl", hash = "sha256:34995df9bd7a09b3b8749e230408f5a2a2dd7a68a0d33c12a3d0cb15a041a507"},
 ]
 aio-pika = [
-    {file = "aio-pika-8.3.0.tar.gz", hash = "sha256:c0e2601eda6a1097fe1d33c5f9965a86a27b328ac48914d20c23f675b3ab1797"},
-    {file = "aio_pika-8.3.0-py3-none-any.whl", hash = "sha256:36c4742449f1cbcb83165b3733b090cf88f3d2f7f027225eedb8c7f300b05dde"},
+    {file = "aio-pika-8.2.3.tar.gz", hash = "sha256:175b657ae022f318dd1476209bee4d5b793b0e0b298759fea7c11e1aa0cac6cd"},
+    {file = "aio_pika-8.2.3-py3-none-any.whl", hash = "sha256:6378d70d85259420067a79b0f4a6ea9a867f32a0e77125dc4ed14cef599bbe9c"},
 ]
 aiofiles = [
     {file = "aiofiles-23.1.0-py3-none-any.whl", hash = "sha256:9312414ae06472eb6f1d163f555e466a23aed1c8f60c30cccf7121dba2e53eb2"},
@@ -4014,8 +4055,8 @@ aioresponses = [
     {file = "aioresponses-0.7.4.tar.gz", hash = "sha256:9b8c108b36354c04633bad0ea752b55d956a7602fe3e3234b939fc44af96f1d8"},
 ]
 aiormq = [
-    {file = "aiormq-6.6.4-py3-none-any.whl", hash = "sha256:9fb93dc871eb9c45a410e29669624790c01b70d27f20d512a22b146c411440ea"},
-    {file = "aiormq-6.6.4.tar.gz", hash = "sha256:95835a4db6117263305d450f838ccdc3eabd427c0deb32fd617769ad4c989e98"},
+    {file = "aiormq-6.4.2-py3-none-any.whl", hash = "sha256:fdbf2efed73a2e07437de3af5e3591165efb155a18394dc7295cac9e80943c62"},
+    {file = "aiormq-6.4.2.tar.gz", hash = "sha256:fd815d2bb9d8c950361697a74c1b067bc078726c3ef3b837e979a68a4986b148"},
 ]
 aiosignal = [
     {file = "aiosignal-1.3.1-py3-none-any.whl", hash = "sha256:f8376fb07dd1e86a584e4fcdec80b36b7f81aac666ebc724e2c090300dd83b17"},
@@ -4511,6 +4552,10 @@ deprecated = [
 dnspython = [
     {file = "dnspython-1.16.0-py2.py3-none-any.whl", hash = "sha256:f69c21288a962f4da86e56c4905b49d11aba7938d3d740e80d9e366ee4f1632d"},
     {file = "dnspython-1.16.0.zip", hash = "sha256:36c5e8e38d4369a08b6780b7f27d790a292b2b08eea01607865bf0936c558e01"},
+]
+docker = [
+    {file = "docker-6.0.1-py3-none-any.whl", hash = "sha256:dbcb3bd2fa80dca0788ed908218bf43972772009b881ed1e20dfc29a65e49782"},
+    {file = "docker-6.0.1.tar.gz", hash = "sha256:896c4282e5c7af5c45e8b683b0b0c33932974fe6e50fc6906a0a83616ab3da97"},
 ]
 docopt = [
     {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
@@ -6032,6 +6077,22 @@ pytz-deprecation-shim = [
     {file = "pytz_deprecation_shim-0.1.0.post0-py2.py3-none-any.whl", hash = "sha256:8314c9692a636c8eb3bda879b9f119e350e93223ae83e70e80c31675a0fdc1a6"},
     {file = "pytz_deprecation_shim-0.1.0.post0.tar.gz", hash = "sha256:af097bae1b616dde5c5744441e2ddc69e74dfdcb0c263129610d85b87445a59d"},
 ]
+pywin32 = [
+    {file = "pywin32-306-cp310-cp310-win32.whl", hash = "sha256:06d3420a5155ba65f0b72f2699b5bacf3109f36acbe8923765c22938a69dfc8d"},
+    {file = "pywin32-306-cp310-cp310-win_amd64.whl", hash = "sha256:84f4471dbca1887ea3803d8848a1616429ac94a4a8d05f4bc9c5dcfd42ca99c8"},
+    {file = "pywin32-306-cp311-cp311-win32.whl", hash = "sha256:e65028133d15b64d2ed8f06dd9fbc268352478d4f9289e69c190ecd6818b6407"},
+    {file = "pywin32-306-cp311-cp311-win_amd64.whl", hash = "sha256:a7639f51c184c0272e93f244eb24dafca9b1855707d94c192d4a0b4c01e1100e"},
+    {file = "pywin32-306-cp311-cp311-win_arm64.whl", hash = "sha256:70dba0c913d19f942a2db25217d9a1b726c278f483a919f1abfed79c9cf64d3a"},
+    {file = "pywin32-306-cp312-cp312-win32.whl", hash = "sha256:383229d515657f4e3ed1343da8be101000562bf514591ff383ae940cad65458b"},
+    {file = "pywin32-306-cp312-cp312-win_amd64.whl", hash = "sha256:37257794c1ad39ee9be652da0462dc2e394c8159dfd913a8a4e8eb6fd346da0e"},
+    {file = "pywin32-306-cp312-cp312-win_arm64.whl", hash = "sha256:5821ec52f6d321aa59e2db7e0a35b997de60c201943557d108af9d4ae1ec7040"},
+    {file = "pywin32-306-cp37-cp37m-win32.whl", hash = "sha256:1c73ea9a0d2283d889001998059f5eaaba3b6238f767c9cf2833b13e6a685f65"},
+    {file = "pywin32-306-cp37-cp37m-win_amd64.whl", hash = "sha256:72c5f621542d7bdd4fdb716227be0dd3f8565c11b280be6315b06ace35487d36"},
+    {file = "pywin32-306-cp38-cp38-win32.whl", hash = "sha256:e4c092e2589b5cf0d365849e73e02c391c1349958c5ac3e9d5ccb9a28e017b3a"},
+    {file = "pywin32-306-cp38-cp38-win_amd64.whl", hash = "sha256:e8ac1ae3601bee6ca9f7cb4b5363bf1c0badb935ef243c4733ff9a393b1690c0"},
+    {file = "pywin32-306-cp39-cp39-win32.whl", hash = "sha256:e25fd5b485b55ac9c057f67d94bc203f3f6595078d1fb3b458c9c28b7153a802"},
+    {file = "pywin32-306-cp39-cp39-win_amd64.whl", hash = "sha256:39b61c15272833b5c329a2989999dcae836b1eed650252ab1b7bfbe1d59f30f4"},
+]
 pyyaml = [
     {file = "PyYAML-5.4.1-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:3b2b1824fe7112845700f815ff6a489360226a5609b96ec2190a45e62a9fc922"},
     {file = "PyYAML-5.4.1-cp27-cp27m-win32.whl", hash = "sha256:129def1b7c1bf22faffd67b8f3724645203b79d8f4cc81f674654d9902cb4393"},
@@ -7088,6 +7149,10 @@ wcwidth = [
 webexteamssdk = [
     {file = "webexteamssdk-1.6.1-py3-none-any.whl", hash = "sha256:52a7f9d515cd3d53a853e679e16572ec6ca036a223e35b14fea14c99f492a6a4"},
     {file = "webexteamssdk-1.6.1.tar.gz", hash = "sha256:bbc7672f381b26fb22d0d03f87d131a2fa1e7d54c2f37f2e4cd28d725b8b5dfb"},
+]
+websocket-client = [
+    {file = "websocket-client-1.5.1.tar.gz", hash = "sha256:3f09e6d8230892547132177f575a4e3e73cfdf06526e20cc02aa1c3b47184d40"},
+    {file = "websocket_client-1.5.1-py3-none-any.whl", hash = "sha256:cdf5877568b7e83aa7cf2244ab56a3213de587bbe0ce9d8b9600fc77b455d89e"},
 ]
 websockets = [
     {file = "websockets-10.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d58804e996d7d2307173d56c297cf7bc132c52df27a3efaac5e8d43e36c21c48"},
