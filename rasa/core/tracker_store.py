@@ -163,7 +163,6 @@ class TrackerStore:
         import sqlalchemy.exc
 
         try:
-            logger.info(f"Received event broker {event_broker}")
             _tracker_store = plugin_manager().hook.create_tracker_store(
                 endpoint_config=obj,
                 domain=domain,
@@ -316,7 +315,7 @@ class TrackerStore:
     async def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker."""
         if self.event_broker is None:
-            logger.info("No event broker configured. Skipping streaming events.")
+            logger.debug("No event broker configured. Skipping streaming events.")
             return None
 
         offset = await self.number_of_existing_events(tracker.sender_id)
