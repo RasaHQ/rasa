@@ -169,8 +169,6 @@ class TrackerStore:
                 event_broker=event_broker,
             )
 
-            _tracker_store = _tracker_store[0] if _tracker_store else None
-
             tracker_store = (
                 _tracker_store
                 if _tracker_store
@@ -317,6 +315,7 @@ class TrackerStore:
     async def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker."""
         if self.event_broker is None:
+            logger.info("No event broker configured. Skipping streaming events.")
             return None
 
         offset = await self.number_of_existing_events(tracker.sender_id)
