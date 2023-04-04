@@ -222,6 +222,7 @@ async def load_agent(
 
     if endpoints:
         broker = await EventBroker.create(endpoints.event_broker, loop=loop)
+        logger.info(f"Created event broker {broker}")
         tracker_store = TrackerStore.create(
             endpoints.tracker_store, event_broker=broker
         )

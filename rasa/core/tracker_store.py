@@ -163,6 +163,7 @@ class TrackerStore:
         import sqlalchemy.exc
 
         try:
+            logger.info(f"Received event broker {event_broker}")
             _tracker_store = plugin_manager().hook.create_tracker_store(
                 endpoint_config=obj,
                 domain=domain,
