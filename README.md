@@ -424,7 +424,7 @@ steps + get the PR merged.
 
 ### Actively maintained versions
 
-Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page
+Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.
 
 ## License
 Licensed under the Apache License, Version 2.0.
