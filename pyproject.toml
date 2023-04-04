@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.4.7"
+version = "3.4.8"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -24,10 +24,6 @@ license = "Apache-2.0"
 [[tool.poetry.source]]
 name = "internal repository mirroring psycopg binary for macos"
 url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
-
-
-[tool.poetry.group.dev.dependencies]
-docker = "^6.0.1"
 
 [tool.towncrier]
 package = "rasa"
@@ -277,3 +273,6 @@ extras = [ "tls", "srv",]
 [tool.poetry.dev-dependencies.pytest-sanic]
 git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix_signal_issue"
+
+[tool.poetry.group.dev.dependencies]
+docker = "^6.0.1"
