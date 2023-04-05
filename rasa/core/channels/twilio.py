@@ -101,7 +101,7 @@ class TwilioInput(InputChannel):
         )
 
     @classmethod
-    def _is_location_message(cls, request):
+    def _is_location_message(cls, request: Request) -> bool:
         """Check if the users message is a location."""
         return request.form.get("Latitude") and request.form.get("Longitude")
 
