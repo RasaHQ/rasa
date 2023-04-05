@@ -138,11 +138,6 @@ to the following restrictions:
   to use the [duckling entity extractor](../components.mdx#ducklingentityextractor) we recommend a cloud deployment of
   duckling. Progress on this can be tracked on the
   [Duckling project](https://github.com/facebook/duckling/issues/695).
-- You cannot run Rasa in a Docker container on Apple Silicon, only native installations
-  currently work. An installation in docker requires support for Ubuntu aarch64
-  which the current tensorflow version 2.8 does not provide - only MacOS is
-  supported as an operating system running on aarch64. We expect a future
-  upgrade of Tensorflow to allow Apple Silicon users to run Rasa inside of Docker.
 - Rasa on Apple Silicon does not support the [`ConveRTFeaturizer` component](../components.mdx#convertfeaturizer) or pipelines
   containing it. The component relies on `tensorflow-text` which currently
   isn't available for Apple Silicon. Progress on this can be tracked on the
