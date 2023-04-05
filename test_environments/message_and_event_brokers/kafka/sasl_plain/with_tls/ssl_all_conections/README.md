@@ -37,5 +37,5 @@ openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-request -out signed-server-
 # Import root certificate into keystore
 keytool -keystore server.keystore.jks -alias CARoot -import -file ca-cert -storepass 123456 -keypass 123456
 # Import signed certificate into keystore
-keytool -noprompt -keystore server.keystore.jks -alias localhost -import -file snakeoil-ca-1.crt -storepass 123456 -keypass 123456 -ext "SAN=IP:0.0.0.0"
+keytool -noprompt -keystore server.keystore.jks -alias localhost -import -file signed-server-cert -storepass 123456 -keypass 123456 -ext "SAN=IP:0.0.0.0"
 ```

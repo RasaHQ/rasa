@@ -21,7 +21,7 @@ Client will use the CA certificate to verify the identity of the Kafka broker.
 
 You can create the certificates and store them in the keystore using the following commands:
 ```shell
-# Create CA
+# Create private and public key (public key is usually reffered to as Certificate Authority's certificate or CA certificate)
 openssl req -x509 -newkey rsa:4096 -keyout ca-key -out ca-cert -days 365 -nodes -subj '/CN=localhost/OU=Atom/O=Rasa/L=Berlin/ST=Germany/C=GE' -passin pass:123456 -passout pass:123456
 
 # Create server keystore protected with storepass and keypass
@@ -33,8 +33,9 @@ keytool -keystore server.keystore.jks -alias localhost -certreq -file cert-reque
 # Sign the certificate request
 openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-request -out signed-server-cert -days 365 -CAcreateserial -passin pass:123456
 
-# Import root certificate into keystore
+# Import CA certificate into keystore
+# It will be used to decrypt (unseal) the signed certificate sent by the Kafka broker
 keytool -keystore server.keystore.jks -alias CARoot -import -file ca-cert -storepass 123456 -keypass 123456
 # Import signed certificate into keystore
-keytool -noprompt -keystore server.keystore.jks -alias localhost -import -file snakeoil-ca-1.crt -storepass 123456 -keypass 123456 -ext "SAN=DNS:localhost"
+keytool -noprompt -keystore server.keystore.jks -alias localhost -import -file signed-server-cert -storepass 123456 -keypass 123456 -ext "SAN=DNS:localhost"
 ```
