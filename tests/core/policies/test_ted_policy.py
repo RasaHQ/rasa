@@ -580,6 +580,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
 class TestTEDPolicyConfigurationOptions:
     """Helper class to skip redundant and long-running tests in subclasses."""
+
     @pytest.mark.parametrize("should_finetune", [False])
     @pytest.mark.skip()
     def test_persist_and_load(
@@ -597,7 +598,7 @@ class TestTEDPolicyConfigurationOptions:
 
     @pytest.mark.skip()
     def test_train_model_checkpointing(
-            self, tmp_path: Path, tmp_path_factory: TempPathFactory
+        self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):
         """This takes long and does not need to be tested for every config change."""
         pass
@@ -611,7 +612,7 @@ class TestTEDPolicyConfigurationOptions:
 
     @pytest.mark.skip()
     def test_doesnt_checkpoint_with_zero_eval_num_examples(
-            self, tmp_path: Path, tmp_path_factory: TempPathFactory
+        self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):
         """This takes long and does not need to be tested for every config change."""
 
@@ -619,25 +620,26 @@ class TestTEDPolicyConfigurationOptions:
         "should_finetune, epoch_override, expected_epoch_value",
         [
             (
-                    True,
-                    TEDPolicy.get_default_config()[EPOCHS] + 1,
-                    TEDPolicy.get_default_config()[EPOCHS] + 1,
+                True,
+                TEDPolicy.get_default_config()[EPOCHS] + 1,
+                TEDPolicy.get_default_config()[EPOCHS] + 1,
             )
-        ]
+        ],
     )
     @pytest.mark.skip()
     def test_epoch_override_when_loaded(
-            self,
-            trained_policy: TEDPolicy,
-            should_finetune: bool,
-            epoch_override: int,
-            expected_epoch_value: int,
-            resource: Resource,
-            model_storage: ModelStorage,
-            execution_context: ExecutionContext,
+        self,
+        trained_policy: TEDPolicy,
+        should_finetune: bool,
+        epoch_override: int,
+        expected_epoch_value: int,
+        resource: Resource,
+        model_storage: ModelStorage,
+        execution_context: ExecutionContext,
     ):
         """This takes long and does not need to be tested for every config change."""
         pass
+
 
 class TestTEDPolicyMargin(TestTEDPolicyConfigurationOptions, TestTEDPolicy):
     def _config(
@@ -746,8 +748,9 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicyConfigurationOptions, TestTEDP
         assert trained_policy.config[RANKING_LENGTH] == 11
 
 
-class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicyConfigurationOptions,
-                                          TestTEDPolicy):
+class TestTEDPolicyWithStandardFeaturizer(
+    TestTEDPolicyConfigurationOptions, TestTEDPolicy
+):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -826,8 +829,9 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicyConfigurationOptions, TestTEDPoli
         )
 
 
-class TestTEDPolicyWithRelativeAttention(TestTEDPolicyConfigurationOptions,
-                                         TestTEDPolicy):
+class TestTEDPolicyWithRelativeAttention(
+    TestTEDPolicyConfigurationOptions, TestTEDPolicy
+):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -841,8 +845,9 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicyConfigurationOptions,
         }
 
 
-class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicyConfigurationOptions,
-                                                      TestTEDPolicy):
+class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(
+    TestTEDPolicyConfigurationOptions, TestTEDPolicy
+):
     max_history = 1
 
     def _config(
