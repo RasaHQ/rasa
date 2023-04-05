@@ -16,6 +16,17 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.5.4] - 2023-04-05
+                       
+Rasa 3.5.4 (2023-04-05)                        
+### Bugfixes
+- [#12226](https://github.com/rasahq/rasa/issues/12226): Fix issue with failures while publishing events to RabbitMQ after a RabbitMQ restart.
+  The fix consists of pinning `aio-pika` dependency to `8.2.3`, since this issue was introduced in `aio-pika` v`8.2.4`.
+
+### Miscellaneous internal changes
+- [#12230](https://github.com/rasahq/rasa/issues/12230), [#12232](https://github.com/rasahq/rasa/issues/12232), [#12238](https://github.com/rasahq/rasa/issues/12238)
+
+
 ## [3.5.3] - 2023-03-30
                        
 Rasa 3.5.3 (2023-03-30)                        
