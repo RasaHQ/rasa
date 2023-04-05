@@ -778,14 +778,14 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         username: Optional[Text] = None,
         password: Optional[Text] = None,
         auth_source: Optional[Text] = "admin",
-        collection: Optional[Text] = "conversations",
+        collection: Text = "conversations",
         event_broker: Optional[EventBroker] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
         from pymongo.database import Database
         from pymongo import MongoClient
 
-        self.client = MongoClient(
+        self.client: MongoClient = MongoClient(
             host,
             username=username,
             password=password,
