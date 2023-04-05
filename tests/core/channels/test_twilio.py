@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_twilio_channel():
-
+    """Twilio channel test."""
     input_channel = TwilioInput(
         account_sid="ACCOUNT_SID",
         # Find your Account SID and Auth Token at twilio.com/console

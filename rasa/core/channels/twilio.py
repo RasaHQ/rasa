@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class TwilioOutput(Client, OutputChannel):
-    """Output channel for Twilio"""
+    """Output channel for Twilio."""
 
     @classmethod
     def name(cls) -> Text:
@@ -52,8 +52,7 @@ class TwilioOutput(Client, OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-        """Sends text message"""
-
+        """Sends text message."""
         message_data = {"to": recipient_id, "from_": self.twilio_number}
         for message_part in text.strip().split("\n\n"):
             message_data.update({"body": message_part})
@@ -63,7 +62,6 @@ class TwilioOutput(Client, OutputChannel):
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         """Sends an image."""
-
         message_data = {
             "to": recipient_id,
             "from_": self.twilio_number,
@@ -74,8 +72,7 @@ class TwilioOutput(Client, OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        """Send custom json dict"""
-
+        """Send custom json dict."""
         json_message.setdefault("to", recipient_id)
         if not json_message.get("media_url"):
             json_message.setdefault("body", "")
@@ -86,7 +83,7 @@ class TwilioOutput(Client, OutputChannel):
 
 
 class TwilioInput(InputChannel):
-    """Twilio input channel"""
+    """Twilio input channel."""
 
     @classmethod
     def name(cls) -> Text:
