@@ -61,11 +61,11 @@ Restart your Rasa server
 to make the new channel endpoint available for Twilio to send messages to.
 
 
-#### Receiving location data via twilio (whatsapp)
+### Receiving Location Data from Whatsapp with Twilio connector
 
-You can receive location data (WhatsApp Location) from user from this channel, you just need to do the following.
+This is how you can receive location data (WhatsApp Location) from a user on this channel:
 
-1. Make an intent name locationData and two entities and slots, one for Latitude and one for Longitude respectively.
+1. Create an intent named "locationData" and define two entities and slots for Latitude and Longitude respectively.
 
 ```yaml-rasa title="domain.yml"
 intents:
@@ -90,4 +90,4 @@ entities:
 
 ```
 
-2. Once user send the location message it will Trigger the locationData intent and Slots will be set from entities (Note: no need for training data for entities, its being handled through the channel).
+2. When the user sends a location message, the locationData intent will be triggered and the slots will be set from the entities. Note that you do not need to provide training data for the entities as they are handled by the channel.
