@@ -136,6 +136,7 @@ class TwilioInput(InputChannel):
             out_channel = self.get_output_channel()
 
             if self._is_location_message(request):
+                # Twilio when sending a location message/media does not send any text in the "body" tag so text will always be None
                 text = "/locationData{{'Latitude': {lat},'Longitude': {long}}}".format(
                     lat=request.form.get("Latitude"), long=request.form.get("Longitude")
                 )
