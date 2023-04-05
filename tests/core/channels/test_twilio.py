@@ -12,9 +12,8 @@ def test_twilio_channel():
         # Find your Account SID and Auth Token at twilio.com/console
         auth_token="AUTH_TOKEN",
         # Phone Number you want to use
-        twilio_number="TWILIO_NUMBER"
+        twilio_number="TWILIO_NUMBER",
     )
-
     s = run.configure_app([input_channel], port=5011)
     routes_list = utils.list_routes(s)
 
