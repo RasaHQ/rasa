@@ -66,6 +66,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         )
         return featurizer
 
+    @staticmethod
+    def persist_and_load_policy(
+        trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
+        return trained_policy.__class__.load(
+            trained_policy.config, model_storage, resource, execution_context
+        )
+
     def test_ranking_length(self, trained_policy: UnexpecTEDIntentPolicy):
         assert trained_policy.config[RANKING_LENGTH] == LABEL_RANKING_LENGTH
 
