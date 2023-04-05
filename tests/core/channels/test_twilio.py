@@ -1,5 +1,4 @@
 import logging
-import pytest
 from rasa.core import utils, run
 from rasa.core.channels.twilio import TwilioInput
 
