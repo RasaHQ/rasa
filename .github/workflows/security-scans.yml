@@ -34,13 +34,13 @@ jobs:
         fetch-depth: '0'
     - name: Run Trivy vulnerability scanner
       id: trivy
-      uses: aquasecurity/trivy-action@9ab158e8597f3b310480b9a69402b419bc03dbd5
+      uses: aquasecurity/trivy-action@1f0aa582c8c8f5f7639610d6d38baddfea4fdcee
       continue-on-error: true
       with:
         format: 'table'
         scan-type: 'fs'
         exit-code: '1'
-        security-checks: 'secret'
+        scanners: 'secret'
     - name: Alert on secret finding
       if: steps.trivy.outcome == 'failure'
       uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
@@ -85,7 +85,7 @@ jobs:
 
       - name: Set up Python 3.10 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
           python-version: '3.10'
 
@@ -104,7 +104,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
