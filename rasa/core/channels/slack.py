@@ -6,7 +6,7 @@ import json
 import logging
 import re
 import time
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.shared.constants import DOCS_URL_CONNECTORS_SLACK
@@ -15,13 +15,13 @@ import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
-from slack import WebClient
+from slack_sdk.web.async_client import AsyncWebClient
 
 logger = logging.getLogger(__name__)
 
 
 class SlackBot(OutputChannel):
-    """A Slack communication channel"""
+    """A Slack communication channel."""
 
     @classmethod
     def name(cls) -> Text:
@@ -38,7 +38,7 @@ class SlackBot(OutputChannel):
         self.slack_channel = slack_channel
         self.thread_id = thread_id
         self.proxy = proxy
-        self.client = WebClient(token, run_async=True, proxy=proxy)
+        self.client = AsyncWebClient(token, proxy=proxy)
         super().__init__()
 
     async def _post_message(self, channel: Text, **kwargs: Any) -> None:
@@ -46,11 +46,11 @@ class SlackBot(OutputChannel):
         # above ensures chat_postMessage is await-able. mypy complains
         # because the type annotations are not precise enough in Slack
         if self.thread_id:
-            await self.client.chat_postMessage(  # type: ignore[misc]
+            await self.client.chat_postMessage(
                 channel=channel, **kwargs, thread_ts=self.thread_id
             )
         else:
-            await self.client.chat_postMessage(channel=channel, **kwargs)  # type: ignore[misc]  # noqa: E501
+            await self.client.chat_postMessage(channel=channel, **kwargs)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
@@ -206,6 +206,7 @@ class SlackInput(InputChannel):
         self.use_threads = use_threads
         self.slack_signing_secret = slack_signing_secret
         self.conversation_granularity = conversation_granularity
+        self._background_tasks: Set[asyncio.Task] = set()
 
         self._validate_credentials()
 
@@ -264,7 +265,6 @@ class SlackInput(InputChannel):
         Returns:
             str: parsed and cleaned version of the input text
         """
-
         uids_to_remove = uids_to_remove or []
 
         for uid_to_remove in uids_to_remove:
@@ -295,7 +295,6 @@ class SlackInput(InputChannel):
     @staticmethod
     def _is_interactive_message(payload: Dict) -> bool:
         """Check wheter the input is a supported interactive input type."""
-
         supported = [
             "button",
             "select",
@@ -353,7 +352,7 @@ class SlackInput(InputChannel):
     ) -> Any:
         """Slack retries to post messages up to 3 times based on
         failure conditions defined here:
-        https://api.slack.com/events-api#failure_conditions
+        https://api.slack.com/events-api#failure_conditions.
         """
         retry_reason = request.headers.get(self.retry_reason_header)
         retry_count = request.headers.get(self.retry_num_header)
@@ -386,7 +385,12 @@ class SlackInput(InputChannel):
                 metadata=metadata,
             )
 
-            asyncio.create_task(on_new_message(user_msg))
+            # We need to save a reference to this background task to
+            # make sure it doesn't disappear. See:
+            # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
+            task: asyncio.Task = asyncio.create_task(on_new_message(user_msg))
+            self._background_tasks.add(task)
+            task.add_done_callback(self._background_tasks.discard)
         except Exception as e:
             logger.error(f"Exception when trying to handle message.{e}")
             logger.error(str(e), exc_info=True)
@@ -461,7 +465,6 @@ class SlackInput(InputChannel):
         Returns:
             `True` if the request came from Slack.
         """
-
         try:
             slack_signing_secret = bytes(self.slack_signing_secret, "utf-8")
 

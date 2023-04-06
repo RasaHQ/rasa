@@ -164,7 +164,15 @@ def test_test_nlu_cross_validation_with_autoconfig(
     config_path = str(testdir.tmpdir / "config.yml")
     nlu_path = str(testdir.tmpdir / "nlu.yml")
     shutil.copy(str(moodbot_nlu_data_path), nlu_path)
-    write_yaml({"language": "en", "pipeline": None, "policies": None}, config_path)
+    write_yaml(
+        {
+            "assistant_id": "placeholder_default",
+            "language": "en",
+            "pipeline": None,
+            "policies": None,
+        },
+        config_path,
+    )
     args = [
         shutil.which(RASA_EXE),
         "test",
@@ -264,50 +272,54 @@ def test_test_core_comparison_after_train(
 def test_test_help(run: Callable[..., RunResult]):
     output = run("test", "--help")
 
-    help_text = f"""usage: {RASA_EXE} test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
-                 [--fail-on-prediction-errors] [--url URL]
-                 [--evaluate-model-directory] [-u NLU]
+    help_text = f"""usage: {RASA_EXE} test [-h] [-v] [-vv] [--quiet]
+                 [--logging-config-file LOGGING_CONFIG_FILE] [-m MODEL]
+                 [-s STORIES] [--max-stories MAX_STORIES]
+                 [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
+                 [--url URL] [--evaluate-model-directory] [-u NLU]
                  [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
                  [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  [--no-plot] [--successes] [--no-errors] [--no-warnings]
                  [--out OUT]
-                 {{core,nlu}} ..."""  # noqa: E501
+                 {{core,nlu}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = {line.strip() for line in output.outlines}
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help
 
 
 def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
-    help_text = f"""usage: {RASA_EXE} test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
-                     [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
-                     [--no-plot] [--successes] [--no-errors] [--no-warnings]"""  # noqa: E501
+    help_text = f"""usage: {RASA_EXE} test nlu [-h] [-v] [-vv] [--quiet]
+                     [--logging-config-file LOGGING_CONFIG_FILE] [-m MODEL]
+                     [-u NLU] [--out OUT] [-c CONFIG [CONFIG ...]] [-d DOMAIN]
+                     [--cross-validation] [-f FOLDS] [-r RUNS]
+                     [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
+                     [--successes] [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = {line.strip() for line in output.outlines}
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help
 
 
 def test_test_core_help(run: Callable[..., RunResult]):
     output = run("test", "core", "--help")
 
-    help_text = f"""usage: {RASA_EXE} test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
-                      [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
-                      [--e2e] [--endpoints ENDPOINTS]
-                      [--fail-on-prediction-errors] [--url URL]
-                      [--evaluate-model-directory] [--no-plot] [--successes]
-                      [--no-errors] [--no-warnings]"""  # noqa: E501
+    help_text = f"""usage: {RASA_EXE} test core [-h] [-v] [-vv] [--quiet]
+                      [--logging-config-file LOGGING_CONFIG_FILE]
+                      [-m MODEL [MODEL ...]] [-s STORIES]
+                      [--max-stories MAX_STORIES] [--out OUT] [--e2e]
+                      [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
+                      [--url URL] [--evaluate-model-directory] [--no-plot]
+                      [--successes] [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = {line.strip() for line in output.outlines}
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help

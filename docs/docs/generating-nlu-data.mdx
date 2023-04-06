@@ -4,7 +4,7 @@ sidebar_label: Generating NLU Data
 title: Generating NLU Data
 ---
 
-NLU (Natural Language Understanding) is the part of Rasa Open Source that performs
+NLU (Natural Language Understanding) is the part of Rasa that performs
 intent classification, entity extraction, and response retrieval.
 
 NLU will take in a sentence such as "I am looking for a French restaurant in the center
@@ -111,8 +111,8 @@ stories:
 
 ## Improving Entity Recognition
 
-With Rasa Open Source, you can define custom entities and annotate them in your training data
-to teach your model to recognize them. Rasa Open Source also provides components
+With Rasa, you can define custom entities and annotate them in your training data
+to teach your model to recognize them. Rasa also provides components
 to extract pre-trained entities, as well as other forms of training data to help
 your model recognize and process entities.
 
@@ -121,7 +121,7 @@ your model recognize and process entities.
 Common entities such as names, addresses, and cities require a large amount of training
 data for an NLU model to generalize effectively.
 
-Rasa Open Source provides two great options for
+Rasa provides two great options for
 pre-trained extraction: [SpacyEntityExtractor](./components.mdx#SpacyEntityExtractor)
 and [DucklingEntityExtractor](./components.mdx#DucklingEntityExtractor).
 Because these extractors have been pre-trained on a large corpus of data, you can use them
@@ -156,6 +156,9 @@ in, they might respond with "my truck," "a car," or "I drive a batmobile."
 It would be a good idea to map `truck`, `car`, and `batmobile` to the normalized value
 `auto` so that the processing logic will only need to account for a narrow set of
 possibilities (see [synonyms](./training-data-format.mdx#synonyms)).
+
+Synonyms can also be used to standardize the extracted entities. A synonym for `iPhone` can 
+map `iphone` or `IPHONE` to the synonym without adding these options in the synonym examples.
 
 ## Handling Edge Cases
 

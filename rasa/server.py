@@ -78,7 +78,7 @@ from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
-    from ssl import SSLContext  # noqa: F401
+    from ssl import SSLContext
     from rasa.core.processor import MessageProcessor
     from mypy_extensions import Arg, VarArg, KwArg
 
@@ -86,7 +86,7 @@ if TYPE_CHECKING:
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
     ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        [Arg(Request, "request"), VarArg(), KwArg()],
         Coroutine[Any, Any, SanicResponse],
     ]
 
@@ -427,7 +427,6 @@ def create_ssl_context(
         SSL context if a valid certificate chain can be loaded, `None` otherwise.
 
     """
-
     if ssl_certificate:
         import ssl
 
@@ -507,7 +506,6 @@ def configure_cors(
     app: Sanic, cors_origins: Union[Text, List[Text], None] = ""
 ) -> None:
     """Configure CORS origins for the given app."""
-
     # Workaround so that socketio works with requests from other origins.
     # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
     app.config.CORS_AUTOMATIC_OPTIONS = True
@@ -645,6 +643,7 @@ def create_app(
     auth_token: Optional[Text] = None,
     response_timeout: int = DEFAULT_RESPONSE_TIMEOUT,
     jwt_secret: Optional[Text] = None,
+    jwt_private_key: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
 ) -> Sanic:
@@ -653,7 +652,7 @@ def create_app(
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
 
-    # Setup the Sanic-JWT extension
+    # Set up the Sanic-JWT extension
     if jwt_secret and jwt_method:
         # `sanic-jwt` depends on having an available event loop when making the call to
         # `Initialize`. If there is none, the server startup will fail with
@@ -671,6 +670,7 @@ def create_app(
         Initialize(
             app,
             secret=jwt_secret,
+            private_key=jwt_private_key,
             authenticate=authenticate,
             algorithm=jwt_method,
             user_id="username",
@@ -692,7 +692,6 @@ def create_app(
     @app.get("/version")
     async def version(request: Request) -> HTTPResponse:
         """Respond with the version number of the installed Rasa."""
-
         return response.json(
             {
                 "version": rasa.__version__,
@@ -721,7 +720,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await app.ctx.agent.processor.fetch_tracker_with_initial_session(
+        tracker = await app.ctx.agent.processor.fetch_full_tracker_with_initial_session(
             conversation_id
         )
 

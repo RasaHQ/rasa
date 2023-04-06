@@ -56,7 +56,7 @@ word vectors in your pipeline.
   ```
 
   For more information where to get that file from, head over to
-  [installing MITIE](./installation.mdx#dependencies-for-mitie).
+  [installing MITIE](./installation/installing-rasa-open-source.mdx#dependencies-for-mitie).
 
 
   You can also pre-train your own word vectors from a language corpus using MITIE. To do so:
@@ -124,7 +124,7 @@ word vectors in your pipeline.
   ```
 
   For more information on how to download the spaCy models, head over to
-  [installing SpaCy](./installation.mdx#dependencies-for-spacy).
+  [installing SpaCy](./installation/installing-rasa-open-source.mdx#dependencies-for-spacy).
 
   In addition to SpaCy's pretrained language models, you can also use this component to
   attach spaCy models that you've trained yourself.
@@ -493,10 +493,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   :::
 
   :::note
-  To use `ConveRTFeaturizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
+  To use `ConveRTFeaturizer`, install Rasa with `pip3 install rasa[convert]`.
 
   Note that this component cannot currently run on MacOS using M1 / M2 architecture. 
-  More information on this limitation is available [here](./installation.mdx#m1--m2-apple-silicon-limitations).
+  More information on this limitation is available [here](./installation/environment-set-up.mdx#m1--m2-apple-silicon-limitations).
   :::
 
 
@@ -573,6 +573,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   | DistilBERT     | distilbert   | distilbert-base-uncased |
   +----------------+--------------+-------------------------+
   | RoBERTa        | roberta      | roberta-base            |
+  +----------------+--------------+-------------------------+
+  | camemBERT      | camembert    | camembert-base          |
   +----------------+--------------+-------------------------+
   ```
 
@@ -1392,6 +1394,8 @@ More details on the parameters can be found on the [scikit-learn documentation p
   * `transformer_size`:
     This parameter sets the number of units in the transformer (default: `256`).
     The vectors coming out of the transformers will have the given `transformer_size`.
+    The `transformer_size` should be a multiple of the `number_of_attention_heads` parameter,
+    the training exits with an error otherwise.
 
   * `connection_density`:
     This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
@@ -1888,7 +1892,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   ===================  ==========================================================================================
   Feature Name         Description
   ===================  ==========================================================================================
-  low                  Checks if the token is lower case.
+  low                  word identity - use the lower-cased token as a feature.
   upper                Checks if the token is upper case.
   title                Checks if the token starts with an uppercase character and all remaining characters are
                        lowercased.
@@ -2038,7 +2042,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   Configure which dimensions, i.e. entity types, the duckling component
   should extract. A full list of available dimensions can be found in
-  the [duckling documentation](https://duckling.wit.ai/).
+  the [duckling project readme](https://github.com/facebook/duckling).
   Leaving the dimensions option unspecified will extract all available dimensions.
 
   ```yaml-rasa
@@ -2340,6 +2344,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     * `transformer_size`:
       This parameter sets the number of units in the transformer (default: `256`).
       The vectors coming out of the transformers will have the given `transformer_size`.
+      The `transformer_size` should be a multiple of the `number_of_attention_heads` parameter,
+      the training exits with an error otherwise.
 
     * `connection_density`:
       This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
@@ -2677,6 +2683,8 @@ Selectors predict a bot response from a set of candidate responses.
   * `transformer_size`:
     This parameter sets the number of units in the transformer (default: `None`).
     The vectors coming out of the transformers will have the given `transformer_size`.
+    The `transformer_size` should be a multiple of the `number_of_attention_heads` parameter,
+    the training exits with an error otherwise.
 
   * `connection_density`:
     This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
@@ -2877,7 +2885,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 ## Custom Components
 
 :::info New in 3.0
-Rasa Open Source 3.0 unified the implementation of NLU components and policies.
+Rasa 3.0 unified the implementation of NLU components and policies.
 This requires changes to custom components written for earlier versions of Rasa Open
 Source. Please see the
 [migration guide](migration-guide.mdx#custom-policies-and-custom-components) for a

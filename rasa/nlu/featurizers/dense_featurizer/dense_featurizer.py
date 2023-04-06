@@ -48,10 +48,7 @@ class DenseFeaturizer(Featurizer[np.ndarray], ABC):
         if pooling_operation == MEAN_POOLING:
             return np.mean(dense_sequence_features, axis=0, keepdims=True)
         elif pooling_operation == MAX_POOLING:
-            # [numpy-upgrade] type ignore can be removed after upgrading to numpy 1.23
-            return np.max(
-                dense_sequence_features, axis=0, keepdims=True
-            )  # type: ignore[no-untyped-call]
+            return np.max(dense_sequence_features, axis=0, keepdims=True)
         else:
             raise InvalidConfigException(
                 f"Invalid pooling operation specified. Available operations are "

@@ -18,7 +18,7 @@ from rasa.shared.constants import DOCS_URL_COMPONENTS
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from spacy.language import Language  # noqa: F401
+    from spacy.language import Language
     from spacy.tokens import Doc
 
 
@@ -90,6 +90,21 @@ class SpacyNLP(GraphComponent):
 
         try:
             language = spacy.load(spacy_model_name, disable=["parser"])
+            spacy_runtime_version = spacy.about.__version__
+            spacy_model_info = spacy.info(spacy_model_name)
+            spacy_model_version_req = (
+                spacy_model_info.get("spacy_version")
+                if isinstance(spacy_model_info, dict)
+                else ""
+            )
+            if not spacy.util.is_compatible_version(
+                spacy_runtime_version, spacy_model_version_req
+            ):
+                raise InvalidModelError(
+                    f"The specified model - {spacy_model_name} requires a spaCy "
+                    f"runtime version {spacy_model_version_req} and is not compatible "
+                    f"with the current spaCy runtime version {spacy_runtime_version}"
+                )
             return SpacyModel(model=language, model_name=spacy_model_name)
         except OSError:
             raise InvalidModelError(

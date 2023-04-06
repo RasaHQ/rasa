@@ -301,6 +301,14 @@ def process_messages(
                 ],
             ],
         ),
+        (
+            "camembert",
+            None,
+            ["J'aime le camembert !"],
+            [(5, 768)],
+            [[0.07532623, 0.01274978, -0.08567604, 0.00386575]],
+            [[0.00233287, -0.08452773, 0.0410389, 0.03026095, -0.06296296]],
+        ),
     ],
 )
 class TestShapeValuesTrainAndProcess:
@@ -327,14 +335,18 @@ class TestShapeValuesTrainAndProcess:
 
             # Look at the value of first dimension for a few starting timesteps
             assert np.allclose(
-                computed_sequence_vec[: len(expected_sequence_vec[index]), 0],
+                computed_sequence_vec[: len(expected_sequence_vec[index]), 0].astype(
+                    float
+                ),
                 expected_sequence_vec[index],
                 atol=1e-4,
             )
 
             # Look at the first value of first five dimensions
             assert np.allclose(
-                computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-4
+                computed_sentence_vec[0][:5].astype(float),
+                expected_cls_vec[index],
+                atol=1e-4,
             )
 
             (intent_sequence_vec, intent_sentence_vec) = messages[
@@ -540,6 +552,14 @@ class TestShapeValuesTrainAndProcess:
                 "sentence embeddings",
             ],
             [[1, 1], [1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1, 1, 1, 4, 1], [1, 4]],
+        ),
+        (
+            "camembert",
+            "camembert-base",
+            [
+                "J'aime le camembert !",
+            ],
+            [[1, 1, 1, 3]],
         ),
     ],
 )

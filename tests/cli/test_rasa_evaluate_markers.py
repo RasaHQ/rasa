@@ -50,6 +50,7 @@ def test_evaluate_markers_help(run: Callable[..., RunResult]):
     output = run("evaluate", "markers", "--help")
 
     help_text = f"""usage: {RASA_EXE} evaluate markers [-h] [-v] [-vv] [--quiet]
+    [--logging-config-file LOGGING_CONFIG_FILE]
     {{first_n,sample_n,all}} ..."""
 
     lines = [line.strip() for line in help_text.split("\n")]
@@ -64,6 +65,7 @@ def test_evaluate_markers_first_n_help(run: Callable[..., RunResult]):
     output = run("evaluate", "markers", "first_n", "--help")
 
     help_text = f"""usage: {RASA_EXE} evaluate markers first_n [-h] [-v] [-vv] [--quiet]
+    [--logging-config-file LOGGING_CONFIG_FILE]
     [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
@@ -80,8 +82,9 @@ def test_evaluate_markers_sample_n_help(run: Callable[..., RunResult]):
     # We need to specify an output_filename as that's the first positional parameter
     output = run("evaluate", "markers", "sample_n", "--help")
 
-    help_text = f"""usage: {RASA_EXE} evaluate markers sample_n [-h] [-v] [-vv] [--quiet] [--seed SEED]
-    [--config CONFIG]
+    help_text = f"""usage: {RASA_EXE} evaluate markers sample_n [-h] [-v] [-vv] [--quiet]
+    [--logging-config-file LOGGING_CONFIG_FILE]
+    [--seed SEED] [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
     count output_filename"""  # noqa: E501
@@ -97,10 +100,12 @@ def test_evaluate_markers_all_help(run: Callable[..., RunResult]):
     # We need to specify an output_filename as that's the first positional parameter
     output = run("evaluate", "markers", "all", "--help")
 
-    help_text = f"""usage: {RASA_EXE} evaluate markers all [-h] [-v] [-vv] [--quiet] [--config CONFIG]
+    help_text = f"""usage: {RASA_EXE} evaluate markers all [-h] [-v] [-vv] [--quiet]
+    [--logging-config-file LOGGING_CONFIG_FILE]
+    [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
-    output_filename"""  # noqa: E501
+    output_filename"""
 
     lines = [line.strip() for line in help_text.split("\n")]
     # expected help text lines should appear somewhere in the output

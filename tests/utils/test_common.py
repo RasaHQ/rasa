@@ -1,20 +1,44 @@
+import json
 import os
 import logging
+import logging.config
+import sys
 from pathlib import Path
+from pytest import MonkeyPatch
 from typing import Any, Text, Type
 from unittest import mock
 
 import pytest
+from pytest import LogCaptureFixture
 
 from rasa.core.agent import Agent
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.shared.exceptions import RasaException
 import rasa.utils.common
 from rasa.utils.common import (
     RepeatedLogFilter,
     find_unavailable_packages,
     configure_logging_and_warnings,
+    configure_logging_from_file,
+    get_bool_env_variable,
 )
 import tests.conftest
+
+
+@pytest.fixture(autouse=True)
+def reset_logging() -> None:
+    manager = logging.root.manager
+    manager.disabled = logging.NOTSET
+    for logger in manager.loggerDict.values():
+        if isinstance(logger, logging.Logger):
+            logger.setLevel(logging.NOTSET)
+            logger.propagate = True
+            logger.disabled = False
+            logger.filters.clear()
+            handlers = logger.handlers.copy()
+            for handler in handlers:
+                logger.removeHandler(handler)
 
 
 def test_repeated_log_filter():
@@ -159,20 +183,20 @@ def test_cli_missing_log_level_default_used():
     configure_logging_and_warnings()
     rasa_logger = logging.getLogger("rasa")
     # Default log level is currently INFO
-    rasa_logger.level == logging.INFO
+    assert rasa_logger.level == logging.INFO
     matplotlib_logger = logging.getLogger("matplotlib")
     # Default log level for libraries is currently ERROR
-    matplotlib_logger.level == logging.ERROR
+    assert matplotlib_logger.level == logging.ERROR
 
 
 def test_cli_log_level_debug_used():
     """Test CLI with log level uses for rasa logger whereas libraries stay default."""
     configure_logging_and_warnings(logging.DEBUG)
     rasa_logger = logging.getLogger("rasa")
-    rasa_logger.level == logging.DEBUG
+    assert rasa_logger.level == logging.DEBUG
     matplotlib_logger = logging.getLogger("matplotlib")
     # Default log level for libraries is currently ERROR
-    matplotlib_logger.level == logging.ERROR
+    assert matplotlib_logger.level == logging.ERROR
 
 
 @mock.patch.dict(os.environ, {"LOG_LEVEL": "WARNING"})
@@ -180,10 +204,10 @@ def test_cli_log_level_overrides_env_var_used():
     """Test CLI log level has precedence over env var."""
     configure_logging_and_warnings(logging.DEBUG)
     rasa_logger = logging.getLogger("rasa")
-    rasa_logger.level == logging.DEBUG
+    assert rasa_logger.level == logging.DEBUG
     matplotlib_logger = logging.getLogger("matplotlib")
     # Default log level for libraries is currently ERROR
-    matplotlib_logger.level == logging.ERROR
+    assert matplotlib_logger.level == logging.ERROR
 
 
 @mock.patch.dict(os.environ, {"LOG_LEVEL": "WARNING", "LOG_LEVEL_MATPLOTLIB": "INFO"})
@@ -191,6 +215,151 @@ def test_cli_missing_log_level_env_var_used():
     """Test CLI without log level uses env var for both rasa and libraries."""
     configure_logging_and_warnings()
     rasa_logger = logging.getLogger("rasa")
-    rasa_logger.level == logging.WARNING
+    assert rasa_logger.level == logging.WARNING
     matplotlib_logger = logging.getLogger("matplotlib")
-    matplotlib_logger.level == logging.INFO
+
+    assert matplotlib_logger.level == logging.INFO
+
+
+def test_cli_valid_logging_configuration() -> None:
+    logging_config_file = "data/test_logging_config_files/test_logging_config.yml"
+    configure_logging_from_file(logging_config_file=logging_config_file)
+    rasa_logger = logging.getLogger("rasa")
+
+    handlers = rasa_logger.handlers
+    assert len(handlers) == 1
+    assert isinstance(handlers[0], logging.FileHandler)
+    assert "test_handler" == rasa_logger.handlers[0].name
+
+    logging_message = "This is a test info log."
+    rasa_logger.info(logging_message)
+
+    handler_filename = handlers[0].baseFilename
+    assert Path(handler_filename).exists()
+
+    with open(handler_filename, "r") as logs:
+        data = logs.readlines()
+        logs_dict = json.loads(data[-1])
+        assert logs_dict.get("message") == logging_message
+
+        for key in ["time", "name", "levelname"]:
+            assert key in logs_dict.keys()
+
+
+@pytest.mark.parametrize(
+    "logging_config_file",
+    [
+        "data/test_logging_config_files/test_missing_required_key_invalid_config.yml",
+        "data/test_logging_config_files/test_invalid_value_for_level_in_config.yml",
+        "data/test_logging_config_files/test_invalid_handler_key_in_config.yml",
+    ],
+)
+def test_cli_invalid_logging_configuration(
+    logging_config_file: Text, caplog: LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.DEBUG):
+        configure_logging_from_file(logging_config_file=logging_config_file)
+
+    assert (
+        f"The logging config file {logging_config_file} could not be applied "
+        f"because it failed validation against the built-in Python "
+        f"logging schema." in caplog.text
+    )
+
+
+@pytest.mark.skipif(
+    sys.version_info.minor == 7, reason="no error is raised with python 3.7"
+)
+def test_cli_invalid_format_value_in_config(caplog: LogCaptureFixture) -> None:
+    logging_config_file = (
+        "data/test_logging_config_files/test_invalid_format_value_in_config.yml"
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        configure_logging_from_file(logging_config_file=logging_config_file)
+
+    assert (
+        f"The logging config file {logging_config_file} could not be applied "
+        f"because it failed validation against the built-in Python "
+        f"logging schema." in caplog.text
+    )
+
+
+@pytest.mark.skipif(
+    sys.version_info.minor in [9, 10], reason="no error is raised with python 3.9"
+)
+def test_cli_non_existent_handler_id_in_config(caplog: LogCaptureFixture) -> None:
+    logging_config_file = (
+        "data/test_logging_config_files/test_non_existent_handler_id.yml"
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        configure_logging_from_file(logging_config_file=logging_config_file)
+
+    assert (
+        f"The logging config file {logging_config_file} could not be applied "
+        f"because it failed validation against the built-in Python "
+        f"logging schema." in caplog.text
+    )
+
+
+@pytest.mark.parametrize(
+    "env_name, env_value, default_value, expected",
+    [
+        ("SOME_VAR", "False", False, False),
+        ("SOME_VAR", "false", False, False),
+        ("SOME_VAR", "False", True, False),
+        ("SOME_VAR", "false", True, False),
+        ("SOME_VAR", "0", False, False),
+        ("SOME_VAR", "0", True, False),
+        ("SOME_VAR", "True", False, True),
+        ("SOME_VAR", "true", False, True),
+        ("SOME_VAR", "true", True, True),
+        ("SOME_VAR", "True", True, True),
+        ("SOME_VAR", "1", False, True),
+        ("SOME_VAR", "1", True, True),
+    ],
+)
+def test_get_bool_env_variable(
+    env_name, env_value, default_value, expected, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setenv(env_name, env_value)
+    result = get_bool_env_variable(env_name, default_value)
+
+    assert result is expected
+
+
+@pytest.mark.parametrize(
+    "env_name, default_value, expected",
+    [
+        ("SOME_VAR", True, True),
+        ("SOME_VAR", False, False),
+    ],
+)
+def test_get_bool_env_variable_not_set(
+    env_name, default_value, expected, monkeypatch: MonkeyPatch
+):
+    result = get_bool_env_variable(env_name, default_value)
+
+    assert result is expected
+
+
+@pytest.mark.parametrize(
+    "env_name, env_value, default_value",
+    [
+        ("SOME_VAR", "ffalse", False),
+        ("SOME_VAR", "ffalse", True),
+        ("SOME_VAR", "ttrue", False),
+        ("SOME_VAR", "ttrue", True),
+        ("SOME_VAR", "11", True),
+        ("SOME_VAR", "00", True),
+        ("SOME_VAR", "01", True),
+    ],
+)
+def test_get_bool_env_variable_with_invalid_value(
+    env_name, env_value, default_value, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setenv(env_name, env_value)
+
+    with pytest.raises(RasaException):
+        get_bool_env_variable(env_name, default_value)
