@@ -5,12 +5,14 @@ from hashlib import md5
 from io import StringIO
 import json
 import os
+import sys
 from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Union
 import warnings
 import random
 import string
+import fcntl
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
@@ -626,3 +628,21 @@ def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
 def random_string(length: int) -> Text:
     """Returns a random string of given length."""
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+def handle_print_blocking(output: Text) -> None:
+    """Handle print blocking (BlockingIOError).
+    Only available to Unix systems since it uses fcntl
+    to directly manipulate I/O control on STDOUT.
+
+    Args:
+        output: Text to be printed to STDOUT.
+    """
+    old = fcntl.fcntl(sys.stdout.fileno(), fcntl.F_GETFL)
+    # bitwise "and" between the old stdout and "not" (reverse)
+    # the os nonblock file descriptor flag to unblock STDOUT
+    new = old & ~os.O_NONBLOCK
+    fcntl.fcntl(sys.stdout.fileno(), fcntl.F_SETFL, new)
+    print(output)
+    fcntl.fcntl(sys.stdout.fileno(), fcntl.F_SETFL, old)
+    sys.stdout.flush()
