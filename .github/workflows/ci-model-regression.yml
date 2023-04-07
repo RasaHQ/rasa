@@ -81,7 +81,7 @@ jobs:
           echo "help_description=$OUTPUT" >> $GITHUB_OUTPUT
 
       - name: Create a comment with help description
-        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
         with:
           mode: "delete-previous"
           id: comment_help_description
@@ -118,7 +118,7 @@ jobs:
           reactions: eyes
 
       - name: Re-create the comment with the configuration
-        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
         if: steps.fc_config.outputs.comment-id != '' && steps.fc_config.outputs.comment-body != ''
         with:
           mode: "delete-previous"
@@ -143,7 +143,7 @@ jobs:
           reactions: heart, hooray, rocket
 
       - name: Add a comment that the tests are in progress
-        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
         if: steps.fc_config_update.outputs.comment-id != ''
         with:
           mode: "delete-previous"
