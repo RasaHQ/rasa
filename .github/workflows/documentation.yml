@@ -40,7 +40,7 @@ jobs:
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
+      - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
@@ -275,7 +275,7 @@ jobs:
 
       - name: Create a comment with help description
         if: needs.changes.outputs.docs == 'true'
-        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
         with:
           mode: "delete-previous"
           id: comment_docs_previews
