@@ -107,7 +107,6 @@ def _add_data_split_parsers(
     arguments.set_split_arguments(stories_split_parser)
 
 
-
 def _add_data_validate_parsers(
     data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
@@ -170,12 +169,15 @@ def split_stories_data(args: argparse.Namespace) -> None:
         args: Commandline arguments
     """
     from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-        YAMLStoryReader, KEY_STORIES
+        YAMLStoryReader,
+        KEY_STORIES,
     )
     from sklearn.model_selection import train_test_split
 
     data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    data_files = rasa.shared.data.get_data_files(data_path, YAMLStoryReader.is_stories_file)
+    data_files = rasa.shared.data.get_data_files(
+        data_path, YAMLStoryReader.is_stories_file
+    )
     out_path = pathlib.Path(args.out)
     out_path.mkdir(parents=True, exist_ok=True)
 
@@ -190,8 +192,9 @@ def split_stories_data(args: argparse.Namespace) -> None:
         file_path = pathlib.Path(file_name)
 
         # everything besides stories are going into the training data
-        train, test = train_test_split(stories, test_size=1-args.training_fraction,
-                                       random_state=args.random_seed)
+        train, test = train_test_split(
+            stories, test_size=1 - args.training_fraction, random_state=args.random_seed
+        )
         out_file_train = out_path / ("train_" + file_path.name)
         out_file_test = out_path / ("test_" + file_path.name)
 
@@ -200,10 +203,8 @@ def split_stories_data(args: argparse.Namespace) -> None:
         rasa.shared.utils.io.write_yaml(file_data, out_file_train)
 
         # test file contains just test stories
-        rasa.shared.utils.io.write_yaml({
-            KEY_STORIES: test
-        }, out_file_test)
-        logger.info("From %s we produced file %s with %d stories and %s with %d stories",
+        rasa.shared.utils.io.write_yaml({KEY_STORIES: test}, out_file_test)
+        logger.info("From %s we produced %s with %d stories and %s with %d stories",
                     file_name, out_file_train, len(train), out_file_test, len(test))
 
 
