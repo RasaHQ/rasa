@@ -635,14 +635,11 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tmp_path: Path,
     ):
         """Skips predictions to prevent loop."""
-        loaded_policy = self.persist_and_load_policy(
-            trained_policy, model_storage, resource, execution_context
-        )
         precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
         with caplog.at_level(logging.DEBUG):
-            prediction = loaded_policy.predict_action_probabilities(
+            prediction = trained_policy.predict_action_probabilities(
                 tracker, default_domain, precomputations
             )
 
@@ -651,7 +648,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         ) == should_skip
 
         if should_skip:
-            assert prediction.probabilities == loaded_policy._default_predictions(
+            assert prediction.probabilities == trained_policy._default_predictions(
                 default_domain
             )
 
@@ -691,20 +688,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker_events: List[Event],
     ):
         """Skips predictions if there's a new intent created."""
-        loaded_policy = self.persist_and_load_policy(
-            trained_policy, model_storage, resource, execution_context
-        )
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
 
         with caplog.at_level(logging.DEBUG):
-            prediction = loaded_policy.predict_action_probabilities(
+            prediction = trained_policy.predict_action_probabilities(
                 tracker, default_domain, precomputations=None
             )
 
         assert "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
 
-        assert prediction.probabilities == loaded_policy._default_predictions(
+        assert prediction.probabilities == trained_policy._default_predictions(
             default_domain
         )
 
@@ -779,9 +773,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker_events_without_action: List[Event],
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(
-            trained_policy, model_storage, resource, execution_context
-        )
         precomputations = None
         tracker_with_action = DialogueStateTracker.from_events(
             "test 1", evts=tracker_events_with_action
@@ -789,10 +780,10 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker_without_action = DialogueStateTracker.from_events(
             "test 2", evts=tracker_events_without_action
         )
-        prediction_with_action = loaded_policy.predict_action_probabilities(
+        prediction_with_action = trained_policy.predict_action_probabilities(
             tracker_with_action, default_domain, precomputations
         )
-        prediction_without_action = loaded_policy.predict_action_probabilities(
+        prediction_without_action = trained_policy.predict_action_probabilities(
             tracker_without_action, default_domain, precomputations
         )
 
