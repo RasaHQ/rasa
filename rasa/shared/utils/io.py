@@ -5,12 +5,14 @@ from hashlib import md5
 from io import StringIO
 import json
 import os
+import sys
 from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Union
 import warnings
 import random
 import string
+import portalocker
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
@@ -626,3 +628,20 @@ def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
 def random_string(length: int) -> Text:
     """Returns a random string of given length."""
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+def handle_print_blocking(output: Text) -> None:
+    """Handle print blocking (BlockingIOError) by getting the STDOUT lock.
+
+    Args:
+        output: Text to be printed to STDOUT.
+    """
+    # Locking again to obtain STDOUT with a lock.
+    with portalocker.Lock(sys.stdout) as lock:
+        if sys.platform == "win32":
+            # colorama is used to fix a regression where colors can not be printed on
+            # windows. https://github.com/RasaHQ/rasa/issues/7053
+            from colorama import AnsiToWin32
+            lock = AnsiToWin32(lock).stream
+
+        print(output, file=lock, flush=True)

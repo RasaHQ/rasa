@@ -1,3 +1,4 @@
+import builtins
 import os
 import string
 import textwrap
@@ -9,6 +10,8 @@ import copy
 from pathlib import Path
 import numpy as np
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from unittest.mock import Mock
 
 import rasa.shared
 from rasa.shared.nlu.training_data.features import Features
@@ -620,3 +623,22 @@ def test_deep_container_fingerprint_can_use_instance_fingerprint():
     m1 = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
     f = Features(m1, "sentence", "text", "CountVectorsFeaturizer")
     assert rasa.shared.utils.io.deep_container_fingerprint(f) == f.fingerprint()
+
+
+# Can't manipulate the STDOUT file descriptor
+# in pytest (it's a io.StringIO instance not a file)
+def test_handle_print_blocking(monkeypatch: MonkeyPatch):
+    def mock_print(*args, **kwargs):
+        raise BlockingIOError()
+
+    mock = Mock()
+    monkeypatch.setattr(builtins, "print", mock_print)
+    monkeypatch.setattr(rasa.shared.utils.io, "handle_print_blocking", mock)
+
+    # Sanity checks that the prints are actually raising the exception
+    rasa.shared.utils.cli.print_info("Test BlockingIOError")
+    rasa.shared.utils.cli.print_success("Test BlockingIOError")
+    rasa.shared.utils.cli.print_warning("Test BlockingIOError")
+    rasa.shared.utils.cli.print_error("Test BlockingIOError")
+
+    assert mock.call_count == 4
