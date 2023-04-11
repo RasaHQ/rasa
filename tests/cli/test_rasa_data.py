@@ -431,3 +431,43 @@ def test_validate_files_config_missing_assistant_id():
     msg = f"The config file is missing the '{ASSISTANT_ID_KEY}' mandatory key."
     with pytest.warns(UserWarning, match=msg):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+def test_data_split_stories(run_in_simple_project: Callable[..., RunResult]):
+    stories_yml = (
+        "stories:\n"
+        "- story: story 1\n"
+        "  steps:\n"
+        "  - intent: intent_a\n"
+        "  - action: utter_a\n"
+        "- story: story 2\n"
+        "  steps:\n"
+        "  - intent: intent_a\n"
+        "  - action: utter_a\n"
+    )
+
+    Path("data/stories.yml").write_text(stories_yml)
+    run_in_simple_project(
+        "data",
+        "split",
+        "stories",
+        "--random-seed",
+        "123",
+        "--training-fraction",
+        "0.5"
+    )
+
+    folder = Path("train_test_split")
+    assert folder.exists()
+
+    train_file = folder / "train_stories.yml"
+    assert train_file.exists()
+    test_file = folder / "test_stories.yml"
+    assert test_file.exists()
+
+    train_data = rasa.shared.utils.io.read_yaml_file(train_file)
+    assert len(train_data.get('stories', [])) == 1
+    assert train_data['stories'][0].get('story') == "story 1"
+    test_data = rasa.shared.utils.io.read_yaml_file(test_file)
+    assert len(test_data.get('stories', [])) == 1
+    assert test_data['stories'][0].get('story') == "story 2"
