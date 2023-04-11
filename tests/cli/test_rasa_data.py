@@ -448,13 +448,7 @@ def test_data_split_stories(run_in_simple_project: Callable[..., RunResult]):
 
     Path("data/stories.yml").write_text(stories_yml)
     run_in_simple_project(
-        "data",
-        "split",
-        "stories",
-        "--random-seed",
-        "123",
-        "--training-fraction",
-        "0.5"
+        "data", "split", "stories", "--random-seed", "123", "--training-fraction", "0.5"
     )
 
     folder = Path("train_test_split")
@@ -466,8 +460,8 @@ def test_data_split_stories(run_in_simple_project: Callable[..., RunResult]):
     assert test_file.exists()
 
     train_data = rasa.shared.utils.io.read_yaml_file(train_file)
-    assert len(train_data.get('stories', [])) == 1
-    assert train_data['stories'][0].get('story') == "story 1"
+    assert len(train_data.get("stories", [])) == 1
+    assert train_data["stories"][0].get("story") == "story 1"
     test_data = rasa.shared.utils.io.read_yaml_file(test_file)
-    assert len(test_data.get('stories', [])) == 1
-    assert test_data['stories'][0].get('story') == "story 2"
+    assert len(test_data.get("stories", [])) == 1
+    assert test_data["stories"][0].get("story") == "story 2"
