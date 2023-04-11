@@ -63,9 +63,9 @@ Hook specification for initialising managers.
 ```python
 @hookspec(firstresult=True)  # type: ignore[misc]
 def create_tracker_store(
-        endpoint_config: Union["TrackerStore", "EndpointConfig"],
-        domain: "Domain",
-        event_broker: Optional["EventBroker"] = None) -> "TrackerStore"
+        endpoint_config: Union["TrackerStore",
+                               "EndpointConfig"], domain: "Domain",
+        event_broker: Optional["EventBroker"]) -> "TrackerStore"
 ```
 
 Hook specification for wrapping with AuthRetryTrackerStore.

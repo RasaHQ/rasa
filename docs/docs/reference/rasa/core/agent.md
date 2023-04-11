@@ -151,7 +151,6 @@ The return value of this function is parsed_data.
 
 **Example**:
 
-  
   {\
 - `&quot;text&quot;` - &#x27;/greet{&quot;name&quot;:&quot;Rasa&quot;}&#x27;,\
 - `&quot;intent&quot;` - {&quot;name&quot;: &quot;greet&quot;, &quot;confidence&quot;: 1.0},\
