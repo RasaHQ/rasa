@@ -7,7 +7,6 @@ from rasa.engine.graph import GraphComponent
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.runner.interface import ExecutionContext
-from rasa.plugin import plugin_manager
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
@@ -276,11 +275,6 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
             for prediction in predictions:
                 prediction.probabilities[index_of_rejected_action] = 0.0
 
-        filtered_reranked_predictions = plugin_manager().hook.filter_and_rerank_actions(
-            domain=domain, predictions=predictions, tracker=tracker
-        )
-        if filtered_reranked_predictions:
-            predictions = filtered_reranked_predictions
         return DefaultPolicyPredictionEnsemble._pick_best_policy(predictions)
 
     def combine_predictions(
@@ -312,6 +306,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         # Reminder: If just a single policy is given, we do *not* just return it because
         # it is expected that the final prediction contains mandatory and optional
         # events in the `events` attribute and no optional events.
+
         winning_prediction = self._best_policy_prediction(
             predictions=predictions, domain=domain, tracker=tracker
         )
