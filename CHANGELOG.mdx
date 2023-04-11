@@ -16,22 +16,104 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
-## [3.4.9] - 2023-04-05                         
+## [3.5.4] - 2023-04-05
+
+Rasa 3.5.4 (2023-04-05)
+### Bugfixes
+- [#12226](https://github.com/rasahq/rasa/issues/12226): Fix issue with failures while publishing events to RabbitMQ after a RabbitMQ restart.
+  The fix consists of pinning `aio-pika` dependency to `8.2.3`, since this issue was introduced in `aio-pika` v`8.2.4`.
+- [#12232](https://github.com/rasahq/rasa/issues/12232): Patch redis Race Conditiion vulnerability.
+
+### Miscellaneous internal changes
+- [#12230](https://github.com/rasahq/rasa/issues/12230), [#12238](https://github.com/rasahq/rasa/issues/12238)
+
+
+## [3.5.3] - 2023-03-30
+
+Rasa 3.5.3 (2023-03-30)
+### Improved Documentation
+- [#12209](https://github.com/rasahq/rasa/issues/12209): Add new Rasa Pro page in docs, together with minimal content changes.
+
+
+## [3.5.2] - 2023-03-30
+
+Rasa 3.5.2 (2023-03-30)
+### Improvements
+- [#12144](https://github.com/rasahq/rasa/issues/12144): Add a self-reference of the synonym in the EntitySynonymMapper to handle entities extracted in a casing different to synonym case. (For example if a synonym `austria` is added, entities extracted with any alternate casing of the synonym will also be mapped to `austria`). It addresses ATO-616
+
+### Bugfixes
+- [#12189](https://github.com/rasahq/rasa/issues/12189): Make custom actions inheriting from rasa-sdk `FormValidationAction` parent class an exception of the `selective_domain` rule and always send them domain.
+- [#12193](https://github.com/rasahq/rasa/issues/12193): Fix 2 issues detected with the HTTP API:
+  - The `GET /conversations/{conversation_id}/tracker` endpoint was not returning the tracker with all sessions when `include_events` query parameter was set to `ALL`.
+  The fix constituted in using `TrackerStore.retrieve_full_tracker` method instead of `TrackerStore.retrieve` method in the function handling the `GET /conversations/{conversation_id}/tracker` endpoint.
+  Implemented or updated this method across all tracker store subclasses.
+  - The `GET /conversations/{conversation_id}/story` endpoint was not returning all the stories for all sessions when `all_sessions` query parameter was set to `true`.
+  The fix constituted in using all events of the tracker to be converted in stories instead of only the `applied_events`.
+
+### Improved Documentation
+- [#12110](https://github.com/rasahq/rasa/issues/12110): Add documentation for secrets managers.
+
+
+## [3.5.1] - 2023-03-24
+
+Rasa 3.5.1 (2023-03-24)
+### Bugfixes
+- [#12174](https://github.com/rasahq/rasa/issues/12174): Fixes training `DIETCLassifier` on the GPU.
+
+  A deterministic GPU implementation of SparseTensorDenseMatmulOp is not currently available
+
+### Improved Documentation
+- [#12127](https://github.com/rasahq/rasa/issues/12127): Updated `Test your assistant` section to describe the new end-to-end testing feature.
+  Also updated CLI and telemetry reference docs.
+- [#12169](https://github.com/rasahq/rasa/issues/12169): Update Compatibility Matrix.
+
+
+## [3.5.0] - 2023-03-21
+
+Rasa 3.5.0 (2023-03-21)
+### Features
+- [#12053](https://github.com/rasahq/rasa/issues/12053): Add a new required key (`assistant_id`) to `config.yml` to uniquely identify assistants in deployment.
+  The assistant identifier is extracted from the model metadata and added to the metadata of all dialogue events.
+  Re-training will be required to include the assistant id in the event metadata.
+
+  If the assistant identifier is missing from the `config.yml` or the default identifier value is not replaced, a random
+  identifier is generated during each training.
+
+  An assistant running without an identifier will issue a warning that dialogue events without identifier metadata will be
+  streamed to the event broker.
+
+### Improvements
+- [#11998](https://github.com/rasahq/rasa/issues/11998): Add capability to send compressed body in HTTP request to action server.
+  Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
+
+### Bugfixes
+- [#12136](https://github.com/rasahq/rasa/issues/12136): Address potentially missing events with Pika consumer due to weak references on asynchronous tasks,
+  as specifcied in [Python official documentation](https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task).
+- [#12155](https://github.com/rasahq/rasa/issues/12155): Sets a global seed for numpy, TensorFlow, keras, Python and CuDNN, to ensure consistent random number generation.
+
+### Improved Documentation
+- [#11893](https://github.com/rasahq/rasa/issues/11893): Clarify in the docs, how rules are designed and how to use this behaviour to abort a rule
+
+### Miscellaneous internal changes
+- [#11924](https://github.com/rasahq/rasa/issues/11924), [#11926](https://github.com/rasahq/rasa/issues/11926), [#12006](https://github.com/rasahq/rasa/issues/12006), [#12022](https://github.com/rasahq/rasa/issues/12022), [#12092](https://github.com/rasahq/rasa/issues/12092), [#12135](https://github.com/rasahq/rasa/issues/12135), [#12137](https://github.com/rasahq/rasa/issues/12137), [#12140](https://github.com/rasahq/rasa/issues/12140), [#12154](https://github.com/rasahq/rasa/issues/12154)
+
+
+## [3.4.9] - 2023-04-05
 ### Miscellaneous internal changes
 - [#12234](https://github.com/rasahq/rasa/issues/12234)
 
 
 ## [3.4.8] - 2023-04-03
-                       
-Rasa 3.4.8 (2023-04-03)                        
+
+Rasa 3.4.8 (2023-04-03)
 ### Bugfixes
 - [#12186](https://github.com/rasahq/rasa/issues/12186): Fix issue with failures while publishing events to RabbitMQ after a RabbitMQ restart.
   The fix consists of pinning `aio-pika` dependency to `8.2.3`, since this issue was introduced in `aio-pika` v`8.2.4`.
 
 
 ## [3.4.7] - 2023-03-30
-                       
-Rasa 3.4.7 (2023-03-30)                        
+
+Rasa 3.4.7 (2023-03-30)
 ### Improvements
 - [#12144](https://github.com/rasahq/rasa/issues/12144): Add a self-reference of the synonym in the EntitySynonymMapper to handle entities extracted in a casing different to synonym case. (For example if a synonym `austria` is added, entities extracted with any alternate casing of the synonym will also be mapped to `austria`). It addresses ATO-616
 
@@ -46,8 +128,8 @@ Rasa 3.4.7 (2023-03-30)
 
 
 ## [3.4.6] - 2023-03-16
-                       
-Rasa 3.4.6 (2023-03-16)                        
+
+Rasa 3.4.6 (2023-03-16)
 ### Bugfixes
 - [#12098](https://github.com/rasahq/rasa/issues/12098): Fixes CountVectorFeaturizer to train when min_df != 1.
 
@@ -65,8 +147,8 @@ Rasa 3.4.5 (2023-03-09)
 
 
 ## [3.4.4] - 2023-02-17
-                       
-Rasa 3.4.4 (2023-02-17)                        
+
+Rasa 3.4.4 (2023-02-17)
 ### Improvements
 - [#11997](https://github.com/rasahq/rasa/issues/11997): Add capability to send compressed body in HTTP request to action server.
   Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
@@ -76,8 +158,8 @@ Rasa 3.4.4 (2023-02-17)
 
 
 ## [3.4.3] - 2023-02-14
-                       
-Rasa 3.4.3 (2023-02-14)                        
+
+Rasa 3.4.3 (2023-02-14)
 ### Improvements
 - [#12001](https://github.com/rasahq/rasa/issues/12001): Add support for custom RulePolicy.
 - [#12013](https://github.com/rasahq/rasa/issues/12013): Add capability to select which custom actions should receive domain when they are invoked.
@@ -91,8 +173,8 @@ Rasa 3.4.3 (2023-02-14)
 
 
 ## [3.4.2] - 2023-01-27
-                       
-Rasa 3.4.2 (2023-01-27)                        
+
+Rasa 3.4.2 (2023-01-27)
 ### Bugfixes
 - [#11926](https://github.com/rasahq/rasa/issues/11926): Decision to publish docs should not consider next major and minor alpha release versions.
 - [#11968](https://github.com/rasahq/rasa/issues/11968): Exit training/running Rasa model when SpaCy runtime version is not compatible with the specified SpaCy model version.
@@ -105,8 +187,8 @@ Rasa 3.4.2 (2023-01-27)
 
 
 ## [3.4.1] - 2023-01-19
-                       
-Rasa 3.4.1 (2023-01-19)                        
+
+Rasa 3.4.1 (2023-01-19)
 ### Bugfixes
 - [#11923](https://github.com/rasahq/rasa/issues/11923): Changed categorical slot comparison to be case insensitive.
 - [#11929](https://github.com/rasahq/rasa/issues/11929): Exit training when transformer_size is not divisible by the number_of_attention_heads parameter and update the transformer documentations.
@@ -116,8 +198,8 @@ Rasa 3.4.1 (2023-01-19)
 
 
 ## [3.4.0] - 2022-12-14
-                       
-Rasa 3.4.0 (2022-12-14)                        
+
+Rasa 3.4.0 (2022-12-14)
 ### Features
 - [#11087](https://github.com/rasahq/rasa/issues/11087): Add metadata to Websocket channel. Messages can now include a `metadata` object which will be included as metadata to Rasa.  The metadata can be supplied on a user configurable key with the `metadata_key` setting in the `socketio` section of the `credentials.yml`.
 
@@ -131,6 +213,7 @@ Rasa 3.4.0 (2022-12-14)
 - [#11869](https://github.com/rasahq/rasa/issues/11869): Implements a new CLI option `--jwt-private-key` required to have complete support for asymmetric algorithms as specified
   originally in the docs.
 
+
 ### Improved Documentation
 - [#11766](https://github.com/rasahq/rasa/issues/11766): Clarify in the documentation how to write testing stories if a user presses a button with payload.
 - [#11801](https://github.com/rasahq/rasa/issues/11801): Clarify prioritisation of used slot asking option in forms in documentation.
@@ -138,8 +221,29 @@ Rasa 3.4.0 (2022-12-14)
 ### Miscellaneous internal changes
 - [#11742](https://github.com/rasahq/rasa/issues/11742), [#11800](https://github.com/rasahq/rasa/issues/11800), [#11817](https://github.com/rasahq/rasa/issues/11817), [#11877](https://github.com/rasahq/rasa/issues/11877)
 
+## [3.3.6] - 2023-03-09
+
+Rasa 3.3.6 (2023-03-09)
+### Bugfixes
+- [#12103](https://github.com/rasahq/rasa/issues/12103): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
+- [#12117](https://github.com/rasahq/rasa/issues/12117): Fix validation metrics calculation when batch_size is dynamic.
+
+
+## [3.3.5] - 2023-02-21
+
+No significant changes.
+
+
+## [3.3.4] - 2023-02-14
+
+Rasa 3.3.4 (2023-02-14)
+### Improvements
+- [#11996](https://github.com/rasahq/rasa/issues/11996): Add capability to send compressed body in HTTP request to action server.
+Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
+- [#12001](https://github.com/rasahq/rasa/issues/12001): Add support for custom RulePolicy.
 
 ## [3.3.3] - 2022-12-01
+
 ### Bugfixes
 - [#11792](https://github.com/rasahq/rasa/issues/11792): Bypass Windows path length restrictions upon saving and reading a model archive in `rasa.engine.storage.LocalModelStorage`.
 
@@ -191,6 +295,26 @@ Rasa 3.4.0 (2022-12-14)
 
 ### Miscellaneous internal changes
 - [#11548](https://github.com/rasahq/rasa/issues/11548)
+
+
+## [3.2.13] - 2023-03-09
+
+Rasa 3.2.13 (2023-03-09)
+### Bugfixes
+- [#12099](https://github.com/rasahq/rasa/issues/12099): Fix validation metrics calculation when batch_size is dynamic.
+- [#12102](https://github.com/rasahq/rasa/issues/12102): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
+
+
+## [3.2.12] - 2023-02-21
+### Features
+- [#11087](https://github.com/rasahq/rasa/issues/11087): Add metadata to Websocket channel. Messages can now include a `metadata` object which will be included as metadata to Rasa.  The metadata can be supplied on a user configurable key with the `metadata_key` setting in the `socketio` section of the `credentials.yml`.
+
+### Improvements
+- [#11995](https://github.com/rasahq/rasa/issues/11995): Add capability to send compressed body in HTTP request to action server.
+Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
+
+### Bugfixes
+- [#11926](https://github.com/rasahq/rasa/issues/11926): Decision to publish docs should not consider next major and minor alpha release versions.
 
 
 ## [3.2.11] - 2022-12-05

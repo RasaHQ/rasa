@@ -52,7 +52,7 @@ jobs:
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
+      - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
@@ -71,8 +71,9 @@ jobs:
 
   wait_for_docs_tests:
     # Looks for doc test workflows and waits for it to complete successfully
-    # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
+    # Runs on pushes to main exclusively
     name: Wait for docs tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
 
@@ -95,6 +96,7 @@ jobs:
 
   quality:
     name: Code Quality
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
 
@@ -105,7 +107,7 @@ jobs:
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -117,14 +119,14 @@ jobs:
 
       - name: Install poetry 🦄
         if: needs.changes.outputs.backend == 'true'
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -211,6 +213,7 @@ jobs:
 
   test:
     name: Run Tests
+    if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
@@ -226,7 +229,7 @@ jobs:
           - test-other-unit-tests
           - test-performance
         os: [ubuntu-22.04, windows-2019]
-        python-version: [3.7, 3.8, 3.9, '3.10']
+        python-version: [3.7, 3.8, 3.9, "3.10"]
 
     steps:
       - name: Run DataDog Agent
@@ -242,7 +245,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -254,14 +257,14 @@ jobs:
 
       - name: Install poetry 🦄
         if: needs.changes.outputs.backend == 'true'
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -358,13 +361,14 @@ jobs:
 
   test-flaky:
     name: Run Flaky Tests
+    if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, windows-2019]
-        python-version: [3.7, 3.8, 3.9, '3.10']
+        python-version: [3.7, 3.8, 3.9, "3.10"]
 
     steps:
       - name: Run DataDog Agent
@@ -380,7 +384,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -392,14 +396,14 @@ jobs:
 
       - name: Install poetry 🦄
         if: needs.changes.outputs.backend == 'true'
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -496,6 +500,7 @@ jobs:
 
   upload_coverage_reports:
     name: Upload coverage reports to codeclimate
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     # Always upload results even if tests failed
     needs:
@@ -508,9 +513,9 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
@@ -537,7 +542,7 @@ jobs:
 
       - name: Upload reports to codeclimate
         if: needs.changes.outputs.backend == 'true'
-        uses: paambaati/codeclimate-action@84cea27117a473d605400ca3a97fcef7e433e2d6
+        uses: paambaati/codeclimate-action@ac3f177ece9928d220a8bd1c2f1957926fd3b67e
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODECLIMATE_REPORTER_ID }}
         with:
@@ -547,6 +552,7 @@ jobs:
 
   integration_test:
     name: Run Non-Sequential Integration Tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
     env:
@@ -614,7 +620,7 @@ jobs:
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -626,14 +632,14 @@ jobs:
 
       - name: Install poetry 🦄
         if: needs.changes.outputs.backend == 'true'
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -793,6 +799,9 @@ jobs:
       image_tag: ${{ steps.set_output.outputs.image_tag }}
       # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
       is_newest_version: ${{ steps.rasa_get_version.outputs.is_newest_version }}
+    strategy:
+      matrix:
+        arch: [linux/amd64, linux/arm64]
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
       # to checkout HEAD commit for a pull request.
@@ -807,13 +816,16 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: github.event_name != 'pull_request'
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18
+
       - name: Read Poetry Version 🔢
         run: |
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8c0edbc76e98fa90f69d9a2c020dcb50019dc325
+        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c
         with:
           version: v0.5.1
           driver: docker
@@ -872,27 +884,55 @@ jobs:
           BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
           echo "base_builder_exists=${BASE_IMAGE_BUILDER_EXISTS}" >> $GITHUB_OUTPUT
 
-      - name: Build Docker base image and push 🛠 ⬆
+      - name: Build Docker base image 🛠
         if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base --push
-      - name: Build Docker mitie base image and push 🛠 ⬆
-        if: steps.check_image.outputs.base_mitie_exists == 'false'
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base
+
+      - name: Push Docker base image if it's not building from a fork ⬆
+        if: (steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base --push
+
+      - name: Build Docker mitie base image 🛠
+        if: steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-mitie --push
-      - name: Build Docker poetry base image and push 🛠 ⬆
-        if: steps.check_image.outputs.base_poetry_exists == 'false'
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-mitie
+
+      - name: Push Docker mitie base image if it's not building from a fork ⬆
+        if: (steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-mitie --push
+
+      - name: Build Docker poetry base image 🛠
+        if: steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-poetry --push
-      - name: Build Docker builder base image and push 🛠 ⬆
-        if: steps.check_image.outputs.base_builder_exists == 'false'
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-poetry
+
+      - name: Push Docker poetry base image if it's not building from a fork ⬆
+        if: (steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        run: |
+          export IMAGE_TAG=${{ env.POETRY_VERSION }}
+          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-poetry --push
+
+      - name: Build Docker builder base image 🛠
+        if: steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-builder --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-builder
+
+      - name: Push Docker builder base image if it's not building from a fork ⬆
+        if: (steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-builder --push
 
       # Set environment variables for a pull request
       #
@@ -949,6 +989,7 @@ jobs:
     strategy:
       matrix:
         image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
+        arch: [linux/amd64, linux/arm64]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
@@ -963,6 +1004,9 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: github.event_name != 'pull_request'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18
 
       - name: Free disk space
         if: needs.changes.outputs.docker == 'true'
@@ -981,11 +1025,14 @@ jobs:
         shell: bash
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8c0edbc76e98fa90f69d9a2c020dcb50019dc325
+        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c
         id: buildx
         with:
           version: v0.5.1
           driver: docker
+
+      - name: Echo Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Login to DockerHub Registry 🔢
         if: needs.changes.outputs.docker == 'true'
@@ -1002,19 +1049,19 @@ jobs:
       - name: Build Docker image
         if: needs.changes.outputs.docker == 'true'
         run: |
-          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }}
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }}
 
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
         run: |
-          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
       - name: Push image with ${{github.ref}} tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
         run: |
           IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
-          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
           # Tag the image as latest
           if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
@@ -1036,14 +1083,14 @@ jobs:
 
     # deploy will only be run when there is a tag available
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-    needs: [quality, test, wait_for_docs_tests, docker] # only run after all other stages succeeded
+    needs: [docker] # only run after the docker build stage succeeds
 
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
           python-version: 3.9
 
@@ -1053,7 +1100,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -1068,7 +1115,7 @@ jobs:
         run: poetry build
 
       - name: Publish to PyPI 📦
-        uses: pypa/gh-action-pypi-publish@37f50c210e3d2f9450da2cd423303d6a14a6e29f
+        uses: pypa/gh-action-pypi-publish@48b317d84d5f59668bb13be49d1697e36b3ad009
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}

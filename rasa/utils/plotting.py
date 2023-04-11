@@ -32,7 +32,7 @@ def _fix_matplotlib_backend() -> None:
         try:
             # on OSX sometimes the tkinter package is broken and can't be imported.
             # we'll try to import it and if it fails we will use a different backend
-            import tkinter  # noqa: 401
+            import tkinter
         except (ImportError, ModuleNotFoundError):
             logger.debug("Setting matplotlib backend to 'agg'")
             matplotlib.use("agg")
@@ -41,7 +41,7 @@ def _fix_matplotlib_backend() -> None:
     elif backend is None:  # pragma: no cover
         try:
             # If the `tkinter` package is available, we can use the `TkAgg` backend
-            import tkinter  # noqa: 401
+            import tkinter
 
             logger.debug("Setting matplotlib backend to 'TkAgg'")
             matplotlib.use("TkAgg")
@@ -80,8 +80,7 @@ def plot_confusion_matrix(
     zmin: int = 1,
     output_file: Optional[Text] = None,
 ) -> None:
-    """
-    Print and plot the provided confusion matrix.
+    """Print and plot the provided confusion matrix.
     Normalization can be applied by setting `normalize=True`.
 
     Args:

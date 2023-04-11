@@ -2,6 +2,8 @@
 # https://rasa.com/docs/rasa/model-configuration/
 recipe: default.v1
 
+assistant_id: placeholder_default
+
 # Configuration for Rasa NLU.
 # https://rasa.com/docs/rasa/nlu/components/
 language: en
@@ -21,6 +23,7 @@ pipeline:
   - name: DIETClassifier
     epochs: 100
     constrain_similarities: true
+    run_eagerly: true
   - name: EntitySynonymMapper
   # - name: ResponseSelector
   #   epochs: 100

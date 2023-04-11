@@ -1,4 +1,5 @@
 import logging
+import warnings
 from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
@@ -21,7 +22,7 @@ from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.engine.url import URL
-from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
+from typing import Any, Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
 from unittest.mock import MagicMock, Mock
 
 import rasa.core.tracker_store
@@ -276,7 +277,8 @@ def test_tracker_store_with_host_argument_from_string(domain: Domain):
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.HostExampleTrackerStore"
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("error")
         tracker_store = TrackerStore.create(store_config, domain)
 
     assert len(record) == 0
@@ -982,6 +984,26 @@ def test_create_awaitable_tracker_store_with_endpoint_config():
 
     assert isinstance(tracker_store, AwaitableTrackerStore)
     assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
+
+
+@pytest.mark.parametrize(
+    "endpoints_file, expected_type",
+    [
+        (None, InMemoryTrackerStore),
+        ("data/test_endpoints/endpoints_sql.yml", SQLTrackerStore),
+        ("data/test_endpoints/endpoints_redis.yml", RedisTrackerStore),
+    ],
+)
+def test_create_tracker_store_from_endpoints_file(
+    endpoints_file: Optional[Text], expected_type: Any, domain: Domain
+) -> None:
+    endpoint_config = read_endpoint_config(endpoints_file, "tracker_store")
+    tracker_store = rasa.core.tracker_store.create_tracker_store(
+        endpoint_config, domain
+    )
+
+    assert rasa.core.tracker_store.check_if_tracker_store_async(tracker_store) is True
+    assert isinstance(tracker_store, expected_type)
 
 
 async def test_fail_safe_tracker_store_retrieve_full_tracker(
