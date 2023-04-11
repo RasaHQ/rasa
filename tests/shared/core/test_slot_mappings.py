@@ -187,11 +187,11 @@ def test_slot_mappings_check_mapping_validity_from_valid_intent_list():
             mappings:
             - type: from_intent
               value: "testing 123"
-              intent: 
+              intent:
                 - goodbye
                 - mood_great
                 - greet
-        
+
         forms:
             test_form:
                 required_slots:
@@ -225,11 +225,11 @@ def test_slot_mappings_check_mapping_validity_from_invalid_intent_list():
             mappings:
             - type: from_intent
               value: "testing 123"
-              intent: 
+              intent:
                 - affirm
                 - deny
                 - greet
-        
+
         forms:
             test_form:
                 required_slots:
