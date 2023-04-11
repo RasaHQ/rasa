@@ -186,7 +186,7 @@ def split_stories_data(args: argparse.Namespace) -> None:
         file_data = rasa.shared.utils.io.read_yaml_file(file_name)
         stories = file_data.get(KEY_STORIES, [])
         if not stories:
-            logger.info("File %s has no stories, skipped", file_name)
+            logger.info(f"File {file_name} has no stories, skipped")
             continue
 
         file_path = pathlib.Path(file_name)
@@ -204,8 +204,11 @@ def split_stories_data(args: argparse.Namespace) -> None:
 
         # test file contains just test stories
         rasa.shared.utils.io.write_yaml({KEY_STORIES: test}, out_file_test)
-        logger.info("From %s we produced %s with %d stories and %s with %d stories",
-                    file_name, out_file_train, len(train), out_file_test, len(test))
+        logger.info(
+            f"From {file_name} we produced {out_file_train} "
+            f"with {len(train)} stories and {out_file_test} "
+            f"with {len(test)} stories"
+        )
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
