@@ -40,3 +40,12 @@
 #  username: username
 #  password: password
 #  queue: queue
+
+#secrets_manager:
+#  type: "vault"
+#  url: http://localhost:8200
+#  token: ${VAULT_TOKEN}
+#  # optional (default: rasa-secrets)
+#  #secrets_path: <path to the secrets in the vault>
+#  # optional (if transit secrets engine is enabled and used to encrypt secrets in the Vault)
+#  #transit_mount_point: "transit"
