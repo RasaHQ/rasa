@@ -167,3 +167,85 @@ def test_slot_mappings_check_mapping_validity_from_intent():
         mapping=mappings_for_slot[0],
         domain=domain,
     )
+
+
+def test_slot_mappings_check_mapping_validity_from_valid_intent_list():
+    slot_name = "mood"
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - greet
+        - goodbye
+        - mood_great
+        - mood_unhappy
+
+        slots:
+          {slot_name}:
+            type: any
+            influence_conversation: false
+            mappings:
+            - type: from_intent
+              value: "testing 123"
+              intent:
+                - goodbye
+                - mood_great
+                - greet
+
+        forms:
+            test_form:
+                required_slots:
+                - test_slot
+        """
+    )
+    mappings_for_slot = domain.as_dict().get("slots").get(slot_name).get("mappings")
+    assert SlotMapping.check_mapping_validity(
+        slot_name=slot_name,
+        mapping_type=SlotMappingType.FROM_INTENT,
+        mapping=mappings_for_slot[0],
+        domain=domain,
+    )
+
+
+@pytest.mark.parametrize(
+    "intent, expected",
+    [(["a", "b", "c"], False), ([], True), ("", True), ({}, True), (None, False)],
+)
+def test_slot_mappings_check_mapping_validity_from_invalid_intent_list(
+    intent: Text, expected: bool
+):
+    slot_name = "mood"
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - greet
+        - goodbye
+        - mood_great
+        - mood_unhappy
+
+        slots:
+          {slot_name}:
+            type: any
+            influence_conversation: false
+            mappings:
+            - type: from_intent
+              value: "testing 123"
+              intent: {intent}
+
+        forms:
+            test_form:
+                required_slots:
+                - test_slot
+        """
+    )
+    mappings_for_slot = domain.as_dict().get("slots").get(slot_name).get("mappings")
+    assert (
+        SlotMapping.check_mapping_validity(
+            slot_name=slot_name,
+            mapping_type=SlotMappingType.FROM_INTENT,
+            mapping=mappings_for_slot[0],
+            domain=domain,
+        )
+        is expected
+    )
