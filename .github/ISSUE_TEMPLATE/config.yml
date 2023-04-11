@@ -1,5 +1,11 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Bug Report
+    url: https://rasa-open-source.atlassian.net/browse/OSS
+    about: Create a report to help us improve https://rasa-open-source.atlassian.net/browse/OSS
+  - name: Feature request
+    url: https://rasa-open-source.atlassian.net/browse/OSS
+    about: Suggest an idea on how to improve Rasa https://rasa-open-source.atlassian.net/browse/OSS
   - name: Ask a question
     url: https://forum.rasa.com/
     about: If you have a "How do I?" question please ask in the forum https://forum.rasa.com

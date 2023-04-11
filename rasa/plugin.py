@@ -1,11 +1,18 @@
 import argparse
 import functools
 import sys
-from typing import List, Optional, Text, Tuple
+from typing import List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import pluggy
 
 from rasa.cli import SubParsersAction
+
+if TYPE_CHECKING:
+    from rasa.core.brokers.broker import EventBroker
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.shared.core.domain import Domain
+    from rasa.utils.endpoints import EndpointConfig
+
 
 hookspec = pluggy.HookspecMarker("rasa")
 
@@ -39,7 +46,7 @@ def refine_cli(
     """Customizable hook for adding CLI commands."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec  # type: ignore[misc, empty-body]
 def get_version_info() -> Tuple[Text, Text]:
     """Hook specification for getting plugin version info."""
 
@@ -52,3 +59,17 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
 @hookspec  # type: ignore[misc]
 def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
+
+
+@hookspec  # type: ignore[misc]
+def init_managers(endpoints_file: Optional[Text]) -> None:
+    """Hook specification for initialising managers."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def create_tracker_store(  # type: ignore[empty-body]
+    endpoint_config: Union["TrackerStore", "EndpointConfig"],
+    domain: "Domain",
+    event_broker: Optional["EventBroker"],
+) -> "TrackerStore":
+    """Hook specification for wrapping with AuthRetryTrackerStore."""

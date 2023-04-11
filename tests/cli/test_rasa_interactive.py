@@ -28,7 +28,7 @@ def test_interactive_help(run: Callable[..., RunResult]):
                         [--debug-plots] [--finetune [FINETUNE]]
                         [--epoch-fraction EPOCH_FRACTION] [--force]
                         [--persist-nlu-data]
-                        {{core}} ... [model-as-positional-argument]"""  # noqa: E501
+                        {{core}} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -48,7 +48,7 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
                              [--out OUT] [--augmentation AUGMENTATION]
                              [--debug-plots] [--finetune [FINETUNE]]
                              [--epoch-fraction EPOCH_FRACTION] [-p PORT]
-                             [model-as-positional-argument]"""  # noqa: E501
+                             [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

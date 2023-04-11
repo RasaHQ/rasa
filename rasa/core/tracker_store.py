@@ -30,6 +30,7 @@ import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.plugin import plugin_manager
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.constants import (
@@ -162,17 +163,18 @@ class TrackerStore:
         import sqlalchemy.exc
 
         try:
-            tracker_store = _create_from_endpoint_config(obj, domain, event_broker)
-            if not check_if_tracker_store_async(tracker_store):
-                rasa.shared.utils.io.raise_deprecation_warning(
-                    f"Tracker store implementation "
-                    f"{tracker_store.__class__.__name__} "
-                    f"is not asynchronous. Non-asynchronous tracker stores "
-                    f"are currently deprecated and will be removed in 4.0. "
-                    f"Please make the following methods async: "
-                    f"{_get_async_tracker_store_methods()}"
-                )
-                tracker_store = AwaitableTrackerStore(tracker_store)
+            _tracker_store = plugin_manager().hook.create_tracker_store(
+                endpoint_config=obj,
+                domain=domain,
+                event_broker=event_broker,
+            )
+
+            tracker_store = (
+                _tracker_store
+                if _tracker_store
+                else create_tracker_store(obj, domain, event_broker)
+            )
+
             return tracker_store
         except (
             BotoCoreError,
@@ -313,6 +315,7 @@ class TrackerStore:
     async def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker."""
         if self.event_broker is None:
+            logger.debug("No event broker configured. Skipping streaming events.")
             return None
 
         offset = await self.number_of_existing_events(tracker.sender_id)
@@ -775,14 +778,14 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         username: Optional[Text] = None,
         password: Optional[Text] = None,
         auth_source: Optional[Text] = "admin",
-        collection: Optional[Text] = "conversations",
+        collection: Text = "conversations",
         event_broker: Optional[EventBroker] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
         from pymongo.database import Database
         from pymongo import MongoClient
 
-        self.client = MongoClient(
+        self.client: MongoClient = MongoClient(
             host,
             username=username,
             password=password,
@@ -842,7 +845,6 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             List of serialised events that aren't currently stored.
 
         """
-
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
         all_events = self._events_from_serialized_tracker(stored)
 
@@ -870,7 +872,6 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             event. Returns all events if no such event is found.
 
         """
-
         events_after_session_start = []
         for event in reversed(events):
             events_after_session_start.append(event)
@@ -1566,6 +1567,28 @@ def _load_from_module_name_in_endpoint_config(
             f"Using `InMemoryTrackerStore` instead."
         )
         return InMemoryTrackerStore(domain)
+
+
+def create_tracker_store(
+    endpoint_config: Optional[EndpointConfig],
+    domain: Optional[Domain] = None,
+    event_broker: Optional[EventBroker] = None,
+) -> TrackerStore:
+    """Creates a tracker store based on the current configuration."""
+    tracker_store = _create_from_endpoint_config(endpoint_config, domain, event_broker)
+
+    if not check_if_tracker_store_async(tracker_store):
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"Tracker store implementation "
+            f"{tracker_store.__class__.__name__} "
+            f"is not asynchronous. Non-asynchronous tracker stores "
+            f"are currently deprecated and will be removed in 4.0. "
+            f"Please make the following methods async: "
+            f"{_get_async_tracker_store_methods()}"
+        )
+        tracker_store = AwaitableTrackerStore(tracker_store)
+
+    return tracker_store
 
 
 class AwaitableTrackerStore(TrackerStore):

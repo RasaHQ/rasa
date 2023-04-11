@@ -47,6 +47,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
 )
 from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
     DOCS_URL_DOMAINS,
     DEFAULT_SENDER_ID,
     DOCS_URL_POLICIES,
@@ -96,6 +97,17 @@ class MessageProcessor:
         self.model_filename, self.model_metadata, self.graph_runner = self._load_model(
             model_path
         )
+
+        if self.model_metadata.assistant_id is None:
+            rasa.shared.utils.io.raise_warning(
+                f"The model metadata does not contain a value for the "
+                f"'{ASSISTANT_ID_KEY}' attribute. Check that 'config.yml' "
+                f"file contains a value for the '{ASSISTANT_ID_KEY}' key "
+                f"and re-train the model. Failure to do so will result in "
+                f"streaming events without a unique assistant identifier.",
+                UserWarning,
+            )
+
         self.model_path = Path(model_path)
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter
@@ -349,6 +361,8 @@ class MessageProcessor:
             conversation_id, append_action_listen=False
         )
         tracker.model_id = self.model_metadata.model_id
+        if tracker.assistant_id is None:
+            tracker.assistant_id = self.model_metadata.assistant_id
         return tracker
 
     async def fetch_full_tracker_with_initial_session(
@@ -375,6 +389,9 @@ class MessageProcessor:
             conversation_id, False
         )
         tracker.model_id = self.model_metadata.model_id
+
+        if tracker.assistant_id is None:
+            tracker.assistant_id = self.model_metadata.assistant_id
 
         if not tracker.events:
             await self._update_tracker_session(tracker, output_channel, metadata)
@@ -503,7 +520,6 @@ class MessageProcessor:
         tracker: DialogueStateTracker, reminder_event: ReminderScheduled
     ) -> bool:
         """Check if the conversation has been restarted after reminder."""
-
         for e in reversed(tracker.applied_events()):
             if MessageProcessor._is_reminder(e, reminder_event.name):
                 return True
@@ -514,7 +530,6 @@ class MessageProcessor:
         tracker: DialogueStateTracker, reminder_event: ReminderScheduled
     ) -> bool:
         """Check if the user sent a message after the reminder."""
-
         for e in reversed(tracker.events):
             if MessageProcessor._is_reminder(e, reminder_event.name):
                 return False
@@ -816,7 +831,6 @@ class MessageProcessor:
             `False` if `action_name` is `ACTION_LISTEN_NAME` or
             `ACTION_SESSION_START_NAME`, otherwise `True`.
         """
-
         return action_name not in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME)
 
     async def execute_side_effects(
@@ -826,8 +840,8 @@ class MessageProcessor:
         output_channel: OutputChannel,
     ) -> None:
         """Send bot messages, schedule and cancel reminders that are logged
-        in the events array."""
-
+        in the events array.
+        """
         await self._send_bot_messages(events, tracker, output_channel)
         await self._schedule_reminders(events, tracker, output_channel)
         await self._cancel_reminders(events, tracker)
@@ -839,7 +853,6 @@ class MessageProcessor:
         output_channel: OutputChannel,
     ) -> None:
         """Send all the bot messages that are logged in the events array."""
-
         for e in events:
             if not isinstance(e, BotUttered):
                 continue

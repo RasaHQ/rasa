@@ -26,6 +26,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
+from rasa.utils.tensorflow.model_data import ragged_array_to_ndarray
 from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
 
 
@@ -57,7 +58,7 @@ def test_convert_action_labels_to_ids(domain: Domain):
     actual_output = tracker_featurizer._convert_labels_to_ids(
         trackers_as_actions, domain
     )
-    expected_output = np.array(
+    expected_output = ragged_array_to_ndarray(
         [
             np.array(
                 [
@@ -151,7 +152,6 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
     moodbot_domain: Domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
 ):
-
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
@@ -199,7 +199,6 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
 def test_trackers_ignore_action_unlikely_intent_with_full_dialogue_tracker_featurizer(
     moodbot_domain: Domain, moodbot_features: Dict[Text, Dict[Text, Features]]
 ):
-
     tracker = DialogueStateTracker.from_events(
         "default",
         [
@@ -269,7 +268,6 @@ def test_trackers_ignore_action_unlikely_intent_with_full_dialogue_tracker_featu
 def test_trackers_keep_action_unlikely_intent_with_full_dialogue_tracker_featurizer(
     moodbot_domain: Domain, moodbot_features: Dict[Text, Dict[Text, Features]]
 ):
-
     tracker = DialogueStateTracker.from_events(
         "default",
         [
@@ -537,7 +535,6 @@ def test_prediction_states_with_full_dialogue_tracker_featurizer(
 def test_prediction_states_hide_rule_states_with_full_dialogue_tracker_featurizer(
     moodbot_domain: Domain,
 ):
-
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
@@ -618,7 +615,6 @@ def test_prediction_states_hide_rule_states_with_full_dialogue_tracker_featurize
 def test_prediction_states_ignore_action_intent_unlikely_full_dialogue_featurizer(
     moodbot_domain: Domain,
 ):
-
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
@@ -676,7 +672,6 @@ def test_prediction_states_ignore_action_intent_unlikely_full_dialogue_featurize
 def test_prediction_states_keeps_action_intent_unlikely_full_dialogue_featurizer(
     moodbot_domain: Domain,
 ):
-
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
@@ -1285,7 +1280,6 @@ def test_prediction_states_with_max_history_tracker_featurizer(
     moodbot_domain: Domain,
     max_history: Optional[int],
 ):
-
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = MaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
@@ -1337,7 +1331,6 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
     moodbot_domain: Domain,
     max_history: Optional[int],
 ):
-
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = MaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
@@ -1426,7 +1419,6 @@ def test_prediction_states_ignores_action_intent_unlikely_max_history_featurizer
     moodbot_domain: Domain,
     max_history: Optional[int],
 ):
-
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = MaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
@@ -1492,7 +1484,6 @@ def test_prediction_states_keeps_action_intent_unlikely_max_history_featurizer(
     moodbot_domain: Domain,
     max_history: Optional[int],
 ):
-
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = MaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
@@ -1848,7 +1839,6 @@ def test_create_state_features_with_intent_max_history_tracker_featurizer(
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
-
     # IntentMaxHistoryTrackerFeaturizer prediction is only done after
     # a UserUttered event so remove the last BotUttered and
     # ActionExecuted events.
@@ -1904,7 +1894,6 @@ def test_state_features_ignore_action_unlikely_intent_intent_max_history_featuri
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
-
     tracker = DialogueStateTracker.from_events(
         "default",
         [
@@ -1971,7 +1960,6 @@ def test_state_features_keep_action_unlikely_intent_intent_max_history_featurize
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
-
     tracker = DialogueStateTracker.from_events(
         "default",
         [
@@ -2031,7 +2019,6 @@ def test_prediction_states_with_intent_max_history_tracker_featurizer(
     moodbot_domain: Domain,
     max_history: Optional[int],
 ):
-
     # IntentMaxHistoryTrackerFeaturizer prediction is only done after
     # a UserUttered event so remove the last BotUttered and
     # ActionExecuted events.
@@ -2085,7 +2072,6 @@ def test_prediction_states_hide_rule_states_intent_max_history_featurizer(
     moodbot_domain: Domain,
     max_history: Optional[int],
 ):
-
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
@@ -2145,7 +2131,6 @@ def test_prediction_states_ignores_action_intent_unlikely_intent_max_history_fea
     moodbot_domain: Domain,
     max_history: Optional[int],
 ):
-
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
@@ -2207,7 +2192,6 @@ def test_prediction_states_keeps_action_intent_unlikely_intent_max_history_featu
     moodbot_domain: Domain,
     max_history: Optional[int],
 ):
-
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history

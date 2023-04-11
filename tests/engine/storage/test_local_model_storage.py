@@ -96,7 +96,7 @@ def test_read_long_resource_names_windows(
     domain: Domain,
 ):
     model_dir = tmp_path_factory.mktemp("model_dir")
-    version = "3.3.0"
+    version = "3.5.0"
 
     # full path length > 260 chars
     # but each component of the path needs to be below 255 chars
@@ -142,6 +142,7 @@ def test_read_long_resource_names_windows(
             trained_at=datetime.utcnow(),
             rasa_open_source_version=version,
             model_id="xxxxxxx",
+            assistant_id="test_assistant",
             domain=domain,
             train_schema=train_schema,
             predict_schema=predict_schema,
@@ -214,7 +215,13 @@ def test_create_model_package(tmp_path_factory: TempPathFactory, domain: Domain)
         train_model_storage.create_model_package(
             archive_path,
             GraphModelConfiguration(
-                train_schema, predict_schema, TrainingType.BOTH, None, None, "nlu"
+                train_schema,
+                predict_schema,
+                TrainingType.BOTH,
+                "test_assistant",
+                None,
+                None,
+                "nlu",
             ),
             domain,
         )
@@ -237,6 +244,7 @@ def test_create_model_package(tmp_path_factory: TempPathFactory, domain: Domain)
     assert packaged_metadata.rasa_open_source_version == rasa.__version__
     assert packaged_metadata.trained_at == trained_at
     assert packaged_metadata.model_id
+    assert packaged_metadata.assistant_id == "test_assistant"
     assert packaged_metadata.project_fingerprint
 
     persisted_resources = load_model_storage_dir.glob("*")
@@ -257,12 +265,19 @@ def test_read_unsupported_model(
     # Create outdated model meta data
     trained_at = datetime.utcnow()
     model_configuration = GraphModelConfiguration(
-        graph_schema, graph_schema, TrainingType.BOTH, None, None, "nlu"
+        graph_schema,
+        graph_schema,
+        TrainingType.BOTH,
+        "test_assistant",
+        None,
+        None,
+        "nlu",
     )
     outdated_model_meta_data = ModelMetadata(
         trained_at=trained_at,
         rasa_open_source_version=rasa.__version__,  # overwrite later to avoid error
         model_id=uuid.uuid4().hex,
+        assistant_id=model_configuration.assistant_id,
         domain=domain,
         train_schema=model_configuration.train_schema,
         predict_schema=model_configuration.predict_schema,
@@ -309,7 +324,13 @@ def test_create_package_with_non_existing_parent(tmp_path: Path):
     storage.create_model_package(
         model_file,
         GraphModelConfiguration(
-            GraphSchema({}), GraphSchema({}), TrainingType.BOTH, None, None, "nlu"
+            GraphSchema({}),
+            GraphSchema({}),
+            TrainingType.BOTH,
+            "test_assistant",
+            None,
+            None,
+            "nlu",
         ),
         Domain.empty(),
     )
@@ -333,7 +354,13 @@ def test_create_model_package_with_non_existing_dir(
     default_model_storage.create_model_package(
         path,
         GraphModelConfiguration(
-            GraphSchema({}), GraphSchema({}), TrainingType.BOTH, None, None, "nlu"
+            GraphSchema({}),
+            GraphSchema({}),
+            TrainingType.BOTH,
+            "test_assistant",
+            None,
+            None,
+            "nlu",
         ),
         Domain.empty(),
     )
