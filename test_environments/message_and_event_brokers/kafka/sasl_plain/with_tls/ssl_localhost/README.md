@@ -12,7 +12,7 @@ Client should also import this certificate to verify the identity of the Kafka b
 * `ssk_key_password` - file containing the password for the CA private key, used to unlock the CA certificate
 * `broker_jaas.conf` - JAAS configuration file for the broker, contains usernames and passwords a client can use to authenticate
 
-### How to generate certificates for TLS bound to DNS localhost
+## How to generate certificates for TLS bound to DNS localhost
 First we need to produce certificates for the Kafka brokers and store them in the server's keystore.
 We create a certificate authority (CA), also known as root certificate, 
 and use it to sign the certificate request for the Kafka broker.

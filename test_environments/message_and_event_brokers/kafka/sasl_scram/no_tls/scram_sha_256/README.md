@@ -17,5 +17,5 @@ KAFKA_OPTS="-Djava.security.auth.login.config=zookeeper_client_jaas.conf" kafka-
 # Exit from zookeeper container
 exit
 
-docker-compose up -d kafka
+docker-compose up -d kafka-broker
 ```
