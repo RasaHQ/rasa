@@ -6,13 +6,12 @@ services:
     hostname: zookeeper
     container_name: zookeeper
     ports:
-      - "22181:22181"
+      - "2181:2181"
     environment:
       ZOOKEEPER_SERVER_ID: 1
-      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
       ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: "DEBUG"
-      ZOOKEEPER_SERVERS: zookeeper:22888:23888
       KAFKA_OPTS: -Djava.security.auth.login.config=/etc/kafka/secrets/zookeeper_server_jaas.conf
         -Dquorum.auth.enableSasl=true
         -Dquorum.auth.learnerRequireSasl=true
@@ -24,8 +23,6 @@ services:
         -DrequireClientAuthScheme=sasl
         -Dquorum.auth.learner.loginContext=QuorumLearner
         -Dquorum.auth.server.loginContext=QuorumServer
-    networks:
-      - kafka-cluster-network
     volumes:
       - ./zookeeper_server_jaas.conf:/etc/kafka/secrets/zookeeper_server_jaas.conf
       - ./zookeeper_client_jaas.conf:/etc/kafka/secrets/zookeeper_client_jaas.conf
@@ -41,7 +38,7 @@ services:
       - zookeeper
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:22181
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9092, PLAINTEXT://0.0.0.0:29092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: SASL_SSL://localhost:9092, PLAINTEXT://localhost:29092
@@ -63,10 +60,4 @@ services:
     volumes:
       - ./ssl:/etc/kafka/secrets
       - ./broker_jaas.conf:/etc/kafka/secrets/conf/kafka_server_jaas.conf
-    networks:
-      - kafka-cluster-network
 
-networks:
-  kafka-cluster-network:
-    driver: bridge
-    name: kafka-cluster-network

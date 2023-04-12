@@ -1,5 +1,5 @@
 ---
-version: '3'
+version: '3.8'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
@@ -9,15 +9,22 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
       ZOOKEEPER_SASL_ENABLED: "false"
+    healthcheck:
+      test: nc -z localhost 2181 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
 
-  broker:
+  kafka-broker:
     image: confluentinc/cp-kafka:7.3.2
     container_name: broker
     ports:
       - "9092:9092"
       - "29092:29092"
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       # do not use SASL authentication when communicating with Zookeeper (it will use no authentication  and no TLS)
@@ -54,3 +61,9 @@ services:
       - ./server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks
       - ./ssl_key_credentials:/etc/kafka/secrets/ssl_key_credentials
       - ./ssl_keystore_credentials:/etc/kafka/secrets/ssl_keystore_credentials
+    healthcheck:
+      test: nc -z localhost 9092 || exit 1
+      interval: 30s
+      retries: 10
+      start_period: 15s
+      timeout: 10s

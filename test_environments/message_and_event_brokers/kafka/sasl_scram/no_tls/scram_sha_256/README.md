@@ -1,3 +1,5 @@
+# Overview
+
 This is a simple setup of Kafka with SASL_SCRAM authentication (SHA-256 algorithm) and without TLS encryption. 
 It is intended to be used to set up test environment in which Kafka brokers require clients to authenticate.
 All communication is done over insecure plain connection (without TLS).

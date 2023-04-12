@@ -1,5 +1,5 @@
 ---
-version: '3.5'
+version: '3.8'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
@@ -23,8 +23,6 @@ services:
         -DrequireClientAuthScheme=sasl
         -Dquorum.auth.learner.loginContext=QuorumLearner
         -Dquorum.auth.server.loginContext=QuorumServer
-    networks:
-      - kafka-cluster-network
     volumes:
       - ./zookeeper_server_jaas.conf:/etc/kafka/secrets/zookeeper_server_jaas.conf
       - ./zookeeper_client_jaas.conf:/etc/kafka/client/zookeeper_client_jaas.conf
@@ -57,10 +55,4 @@ services:
         -Djava.security.auth.login.config=/etc/kafka/secrets/conf/kafka_server_jaas.conf
     volumes:
       - ./broker_jaas.conf:/etc/kafka/secrets/conf/kafka_server_jaas.conf
-    networks:
-      - kafka-cluster-network
 
-networks:
-  kafka-cluster-network:
-    driver: bridge
-    name: kafka-cluster-network
