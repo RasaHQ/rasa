@@ -59,7 +59,6 @@ def raise_warning(
     **kwargs: Any,
 ) -> None:
     """Emit a `warnings.warn` with sensible defaults and a colored warning msg."""
-
     original_formatter = warnings.formatwarning
 
     def should_show_source_line() -> bool:
@@ -123,7 +122,6 @@ def write_text_file(
 
 def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) -> Any:
     """Read text from a file."""
-
     try:
         with open(filename, encoding=encoding) as f:
             return f.read()
@@ -155,8 +153,8 @@ def list_directory(path: Text) -> List[Text]:
     """Returns all files and folders excluding hidden files.
 
     If the path points to a file, returns the file. This is a recursive
-    implementation returning files in any depth of the path."""
-
+    implementation returning files in any depth of the path.
+    """
     if not isinstance(path, str):
         raise ValueError(
             f"`resource_name` must be a string type. " f"Got `{type(path)}` instead"
@@ -183,8 +181,8 @@ def list_directory(path: Text) -> List[Text]:
 def list_files(path: Text) -> List[Text]:
     """Returns all files excluding hidden files.
 
-    If the path points to a file, returns the file."""
-
+    If the path points to a file, returns the file.
+    """
     return [fn for fn in list_directory(path) if os.path.isfile(fn)]
 
 
@@ -196,8 +194,8 @@ def _filename_without_prefix(file: Text) -> Text:
 def list_subdirectories(path: Text) -> List[Text]:
     """Returns all folders excluding hidden files.
 
-    If the path points to a file, returns an empty list."""
-
+    If the path points to a file, returns an empty list.
+    """
     return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
 
 
@@ -387,7 +385,7 @@ def write_yaml(
     target: Union[Text, Path, StringIO],
     should_preserve_key_order: bool = False,
 ) -> None:
-    """Writes a yaml to the file or to the stream
+    """Writes a yaml to the file or to the stream.
 
     Args:
         data: The data to write.
@@ -491,7 +489,6 @@ def is_logging_disabled() -> bool:
 
 def create_directory_for_file(file_path: Union[Text, Path]) -> None:
     """Creates any missing parent directories of this file path."""
-
     create_directory(os.path.dirname(file_path))
 
 
@@ -522,8 +519,8 @@ def dump_obj_as_yaml_to_string(
 def create_directory(directory_path: Text) -> None:
     """Creates a directory and its super paths.
 
-    Succeeds even if the path already exists."""
-
+    Succeeds even if the path already exists.
+    """
     try:
         os.makedirs(directory_path)
     except OSError as e:
@@ -538,10 +535,10 @@ def raise_deprecation_warning(
     docs: Optional[Text] = None,
     **kwargs: Any,
 ) -> None:
-    """
-    Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
-    a version until which we'll warn, and after which the support for the feature will
-    be removed.
+    """Thin wrapper around `raise_warning()` to raise a deprecation warning.
+
+    It requires a version until which we'll warn, and after which the support
+    for the feature will be removed.
     """
     if warn_until_version not in message:
         message = f"{message} (will be removed in {warn_until_version})"
@@ -642,6 +639,7 @@ def handle_print_blocking(output: Text) -> None:
             # colorama is used to fix a regression where colors can not be printed on
             # windows. https://github.com/RasaHQ/rasa/issues/7053
             from colorama import AnsiToWin32
+
             lock = AnsiToWin32(lock).stream
 
         print(output, file=lock, flush=True)
