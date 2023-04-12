@@ -777,20 +777,23 @@ class RemoteAction(Action):
                 DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
             )
 
-            plugin_manager().hook.prefix_stripping_for_custom_actions(
+            modified_json = plugin_manager().hook.prefix_stripping_for_custom_actions(
                 json_body=json_body
             )
             logger.debug("******************** json_body *********************")
             logger.debug(json_body)
             response: Any = await self.action_endpoint.request(
-                json=json_body,
+                json=modified_json if modified_json else json_body,
                 method="post",
                 timeout=DEFAULT_REQUEST_TIMEOUT,
                 compress=should_compress,
             )
             logger.debug("******************** response *********************")
             logger.debug(response)
-            plugin_manager().hook.prefixing_custom_actions_response(response=response)
+            if modified_json:
+                plugin_manager().hook.prefixing_custom_actions_response(
+                    response=response, domain=domain
+                )
             logger.debug("******************** mod response *********************")
             logger.debug(response)
             logger.debug("++++++++++++++++++++++++++++++++++++++++++++++++++++")
