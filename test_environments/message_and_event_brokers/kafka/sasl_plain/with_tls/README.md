@@ -14,7 +14,7 @@ All certificates required for TLS are already generated. **They are not intended
 <br>Certificates in this environment, are used to verify the identity of the Kafka broker to the clients.
 Pre-generated certificates are valid through `30/3/2024`. 
 If you need to generate new certificates checkout the README 
-files in directories `ssl_all_connections` and `ssl_localhost`.
+files in directories `./ssl_all_connections` and `./ssl_localhost`.
 
 
 ## How to connect to Kafka broker
