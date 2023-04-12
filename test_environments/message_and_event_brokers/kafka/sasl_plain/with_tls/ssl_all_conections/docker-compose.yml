@@ -14,8 +14,6 @@ services:
     image: confluentinc/cp-kafka:7.3.2
     container_name: broker
     ports:
-      # To learn about configuring Kafka for access across networks see
-      # https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/
       - "9092:9092"
       - "29092:29092"
     depends_on:
@@ -34,7 +32,6 @@ services:
       KAFKA_SSL_KEYSTORE_CREDENTIALS: ssl_keystore_credentials
       KAFKA_SSL_KEY_CREDENTIALS: ssl_key_credentials
       KAFKA_SSL_ENABLED_PROTOCOLS: TLSv1.2,TLSv1.1,TLSv1
-#      KAFKA_SSL_CLIENT_AUTH: none
       KAFKA_LOG4J_ROOT_LOGLEVEL: DEBUG
     volumes:
       - ./broker_jaas.conf:/etc/kafka/broker_jaas.conf

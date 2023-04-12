@@ -49,8 +49,6 @@ services:
       KAFKA_SSL_KEYSTORE_FILENAME: server.keystore.jks
       KAFKA_SSL_KEYSTORE_CREDENTIALS: ssl_keystore_credentials
       KAFKA_SSL_KEY_CREDENTIALS: ssl_key_credentials
-#      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.broker.truststore.jks
-#      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: broker_truststore_creds
       KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-256
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_OFFSETS_RETENTION_MINUTES: 172800
