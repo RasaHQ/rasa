@@ -105,8 +105,7 @@ def test_load_model_from_aws_remote_storage(
     def mock_aws_persistor(name: Text) -> AWSPersistor:
         aws_persistor = AWSPersistor(
             os.environ.get("BUCKET_NAME"),
-            os.environ.get("AWS_ENDPOINT_URL"),
-            os.environ.get("AWS_DEFAULT_REGION"),
+            region_name=os.environ.get("AWS_DEFAULT_REGION"),
         )
         monkeypatch.setattr(aws_persistor, "s3", conn)
         monkeypatch.setattr(aws_persistor, "bucket", conn.Bucket(bucket_name))
