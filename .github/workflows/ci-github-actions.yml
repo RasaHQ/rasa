@@ -9,18 +9,19 @@ on:
   pull_request:
 
 env:
-  DEFAULT_PYTHON_VERSION: "3.9"
+  DEFAULT_PYTHON_VERSION: "3.10"
 
 jobs:
   test:
-    name: Run Actions Tests
-    runs-on: ubuntu-20.04
+    name: Run Tests
+    runs-on: ubuntu-22.04
+    #missing matrix
     strategy:
       fail-fast: false
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Download gomplate
         run: |-
@@ -28,7 +29,7 @@ jobs:
           sudo chmod +x /usr/local/bin/gomplate
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -38,13 +39,13 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@v3
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -67,7 +68,7 @@ jobs:
 
       - name: Lint Code 🎎
         run: |
-          poetry run flake8 .github --extend-ignore D
+          poetry run ruff check .github --extend-ignore D
           poetry run black --check .github
 
       - name: Test Code 🔍

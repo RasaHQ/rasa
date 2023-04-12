@@ -1,5 +1,6 @@
 # here is some comment
 recipe: default.v1
+assistant_id: placeholder_default
 language: en
 
 # another comment

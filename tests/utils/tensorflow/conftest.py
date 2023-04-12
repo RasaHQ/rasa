@@ -2,7 +2,11 @@ import pytest
 import scipy.sparse
 import numpy as np
 
-from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray
+from rasa.utils.tensorflow.model_data import (
+    RasaModelData,
+    FeatureArray,
+    ragged_array_to_ndarray,
+)
 
 
 @pytest.fixture
@@ -14,7 +18,7 @@ async def model_data() -> RasaModelData:
             "text": {
                 "sentence": [
                     FeatureArray(
-                        np.array(
+                        ragged_array_to_ndarray(
                             [
                                 np.random.rand(5, 14),
                                 np.random.rand(2, 14),
@@ -26,7 +30,7 @@ async def model_data() -> RasaModelData:
                         number_of_dimensions=3,
                     ),
                     FeatureArray(
-                        np.array(
+                        ragged_array_to_ndarray(
                             [
                                 scipy.sparse.csr_matrix(
                                     np.random.randint(5, size=(5, 10))
@@ -52,7 +56,7 @@ async def model_data() -> RasaModelData:
             "action_text": {
                 "sequence": [
                     FeatureArray(
-                        np.array(
+                        ragged_array_to_ndarray(
                             [
                                 [
                                     scipy.sparse.csr_matrix(
@@ -111,7 +115,7 @@ async def model_data() -> RasaModelData:
                         number_of_dimensions=4,
                     ),
                     FeatureArray(
-                        np.array(
+                        ragged_array_to_ndarray(
                             [
                                 [
                                     np.random.rand(5, 14),
@@ -141,7 +145,7 @@ async def model_data() -> RasaModelData:
             "dialogue": {
                 "sentence": [
                     FeatureArray(
-                        np.array(
+                        ragged_array_to_ndarray(
                             [
                                 np.random.randint(2, size=(5, 10)),
                                 np.random.randint(2, size=(2, 10)),
@@ -160,7 +164,7 @@ async def model_data() -> RasaModelData:
             "entities": {
                 "tag_ids": [
                     FeatureArray(
-                        np.array(
+                        ragged_array_to_ndarray(
                             [
                                 np.array([[0], [1], [1], [0], [2]]),
                                 np.array([[2], [0]]),

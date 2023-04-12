@@ -3,6 +3,7 @@ import contextlib
 import copy
 import os
 import random
+import re
 import textwrap
 
 import jwt
@@ -12,6 +13,7 @@ import uuid
 
 from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
 from spacy import Language
+from pytest import WarningsRecorder
 
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
@@ -19,7 +21,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from sanic.request import Request
 
-from typing import Iterator, Callable
+from typing import Generator, Iterator, Callable
 
 from pathlib import Path
 from sanic import Sanic
@@ -41,7 +43,7 @@ from rasa.core.channels import channel, RestInput
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -57,6 +59,7 @@ from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model_training import train, train_nlu
 from rasa.shared.exceptions import RasaException
 import rasa.utils.common
+import rasa.utils.io
 
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
@@ -171,6 +174,7 @@ def simple_config_path(tmp_path_factory: TempPathFactory) -> Text:
     config = textwrap.dedent(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        assistant_id: placeholder_default
         pipeline:
         - name: WhitespaceTokenizer
         - name: KeywordIntentClassifier
@@ -210,6 +214,20 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+# override loop fixture to prevent ScopeMismatch pytest error and
+# implement fix to RuntimeError Event loop is closed issue described
+# here: https://github.com/pytest-dev/pytest-asyncio/issues/371
+@pytest.fixture(scope="session")
+def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    loop._close = loop.close
+    loop.close = lambda: None
+    yield loop
+    loop._close()
 
 
 @pytest.fixture(scope="session")
@@ -851,9 +869,31 @@ def with_model_id(event: Event, model_id: Text) -> Event:
     return new_event
 
 
+def with_assistant_id(event: Event, assistant_id: Text) -> Event:
+    event.metadata[ASSISTANT_ID_KEY] = assistant_id
+    return event
+
+
+def with_assistant_ids(events: List[Event], assistant_id: Text) -> List[Event]:
+    return [with_assistant_id(event, assistant_id) for event in events]
+
+
 @pytest.fixture(autouse=True)
 def sanic_test_mode(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(Sanic, "test_mode", True)
+
+
+def filter_expected_warnings(records: WarningsRecorder) -> WarningsRecorder:
+    records_copy = copy.deepcopy(records.list)
+
+    for warning_type, warning_message in rasa.utils.common.EXPECTED_WARNINGS:
+        for record in records_copy:
+            if type(record.message) == warning_type and re.search(
+                warning_message, str(record.message)
+            ):
+                records.pop(type(record.message))
+
+    return records
 
 
 @pytest.fixture

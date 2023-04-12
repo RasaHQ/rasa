@@ -13,7 +13,7 @@ more information, see the Cards section).
 
 In order to connect your Rasa bot to Google Hangouts Chat, you first need to create a project in
 Google Developer Console that includes the Hangouts API. There you can specify your bot's endpoint.
-This endpoint should look like look like `https://<host>:<port>/webhooks/hangouts/webhook`, replacing
+This endpoint should look like `https://<host>:<port>/webhooks/hangouts/webhook`, replacing
 the host and port with the appropriate values from your running Rasa server.
 
 :::note configure https
@@ -52,7 +52,7 @@ to make the new channel endpoint available for Google Hangouts to send messages 
 
 ### Cards and Interactive Cards
 
-There are two ways in which Hangouts Chat will display bot messages, either as text or card. For each recevied
+There are two ways in which Hangouts Chat will display bot messages, either as text or card. For each received
 request, your bot will send all messages in one response. If one of those messages is a card (e.g. an image),
 all other messages are converted to card format as well.
 

@@ -105,6 +105,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     SOFTMAX,
+    RUN_EAGERLY,
 )
 
 logger = logging.getLogger(__name__)
@@ -282,6 +283,11 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # Note that renormalization only makes sense if confidences are generated
             # via `softmax`.
             RENORMALIZE_CONFIDENCES: False,
+            # Determines whether to construct the model graph or not.
+            # This is advantageous when the model is only trained or inferred for
+            # a few steps, as the compilation of the graph tends to take more time than
+            # running it. It is recommended to not adjust the optimization parameter.
+            RUN_EAGERLY: False,
         }
 
     def __init__(
@@ -829,7 +835,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
-        if self.component_config[BILOU_FLAG]:
+        if (
+            self.component_config[BILOU_FLAG]
+            and self.component_config[ENTITY_RECOGNITION]
+        ):
             bilou_utils.apply_bilou_schema(training_data)
 
         label_id_index_mapping = self._label_id_index_mapping(
@@ -902,7 +911,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
             self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
+                optimizer=tf.keras.optimizers.Adam(
+                    self.component_config[LEARNING_RATE]
+                ),
+                run_eagerly=self.component_config[RUN_EAGERLY],
             )
         else:
             if self.model is None:

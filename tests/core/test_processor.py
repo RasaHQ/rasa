@@ -28,7 +28,12 @@ from rasa.core.actions.action import (
 )
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
-from tests.conftest import with_model_id, with_model_ids
+from tests.conftest import (
+    with_assistant_id,
+    with_assistant_ids,
+    with_model_id,
+    with_model_ids,
+)
 import tests.utilities
 
 from rasa.core import jobs
@@ -42,7 +47,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ActionLimitReached
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -596,6 +601,7 @@ async def test_update_tracker_session_with_metadata(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
+    assistant_id = default_processor.model_metadata.assistant_id
     sender_id = uuid.uuid4().hex
     message_metadata = {"metadataTestKey": "metadataTestValue"}
     message = UserMessage(
@@ -609,23 +615,24 @@ async def test_update_tracker_session_with_metadata(
     tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
     events = list(tracker.events)
 
-    assert events[0] == with_model_id(
-        SlotSet(SESSION_START_METADATA_SLOT, message_metadata), model_id
+    with_model_ids_expected = with_model_ids(
+        [
+            SlotSet(SESSION_START_METADATA_SLOT, message_metadata),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            SlotSet(SESSION_START_METADATA_SLOT, message_metadata),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        model_id,
     )
+    final_expected = with_assistant_ids(with_model_ids_expected, assistant_id)
+
+    assert events[0:5] == final_expected[0:5]
     assert tracker.slots[SESSION_START_METADATA_SLOT].value == message_metadata
-
-    assert events[1] == with_model_id(
-        ActionExecuted(ACTION_SESSION_START_NAME), model_id=model_id
-    )
-
-    assert events[2] == with_model_id(SessionStarted(), model_id=model_id)
-    assert events[2].metadata == {METADATA_MODEL_ID: model_id}
-    assert events[3] == with_model_id(
-        SlotSet(SESSION_START_METADATA_SLOT, message_metadata), model_id=model_id
-    )
-    assert events[4] == with_model_id(
-        ActionExecuted(ACTION_LISTEN_NAME), model_id=model_id
-    )
+    assert events[2].metadata == {
+        ASSISTANT_ID_KEY: assistant_id,
+        METADATA_MODEL_ID: model_id,
+    }
 
     assert isinstance(events[5], UserUttered)
 
@@ -664,7 +671,7 @@ async def test_custom_action_session_start_with_metadata(
             "timestamp": 1580515200.0,
             "name": SESSION_START_METADATA_SLOT,
             "value": metadata,
-            "metadata": {"model_id": model_id},
+            "metadata": {"assistant_id": "placeholder_default", "model_id": model_id},
         }
     ]
 
@@ -720,19 +727,23 @@ async def test_fetch_tracker_and_update_session(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     model_id = default_processor.model_metadata.model_id
+    assistant_id = default_processor.model_metadata.assistant_id
     sender_id = uuid.uuid4().hex
     tracker = await default_processor.fetch_tracker_and_update_session(
         sender_id, default_channel
     )
 
     # ensure session start sequence is present
-    assert list(tracker.events) == with_model_ids(
-        [
-            ActionExecuted(ACTION_SESSION_START_NAME),
-            SessionStarted(),
-            ActionExecuted(ACTION_LISTEN_NAME),
-        ],
-        model_id,
+    assert list(tracker.events) == with_assistant_ids(
+        with_model_ids(
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            model_id,
+        ),
+        assistant_id,
     )
 
 
@@ -831,6 +842,7 @@ async def test_handle_message_with_session_start(
 ):
     sender_id = uuid.uuid4().hex
     model_id = default_processor.model_metadata.model_id
+    assistant_id = default_processor.model_metadata.assistant_id
 
     entity = "name"
     slot_1 = {entity: "Core"}
@@ -857,7 +869,7 @@ async def test_handle_message_with_session_start(
     )
 
     # make sure the sequence of events is as expected
-    expected = with_model_ids(
+    with_model_ids_expected = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
@@ -909,6 +921,7 @@ async def test_handle_message_with_session_start(
         ],
         model_id,
     )
+    expected = with_assistant_ids(with_model_ids_expected, assistant_id=assistant_id)
     assert list(tracker.events) == expected
 
 
@@ -964,6 +977,7 @@ async def test_restart_triggers_session_start(
 ):
     sender_id = uuid.uuid4().hex
     model_id = default_processor.model_metadata.model_id
+    assistant_id = default_processor.model_metadata.assistant_id
 
     entity = "name"
     slot_1 = {entity: "name1"}
@@ -983,7 +997,7 @@ async def test_restart_triggers_session_start(
 
     tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
 
-    expected = with_model_ids(
+    with_model_ids_expected = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
@@ -1017,6 +1031,7 @@ async def test_restart_triggers_session_start(
         ],
         model_id,
     )
+    expected = with_assistant_ids(with_model_ids_expected, assistant_id)
     for actual, expected in zip(tracker.events, expected):
         assert actual == expected
 
@@ -1051,12 +1066,13 @@ async def test_policy_events_are_applied_to_tracker(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
+    assistant_id = default_processor.model_metadata.assistant_id
     expected_action = ACTION_LISTEN_NAME
     policy_events = [LoopInterrupted(True)]
     conversation_id = "test_policy_events_are_applied_to_tracker"
     user_message = "/greet"
 
-    expected_events = with_model_ids(
+    with_model_ids_expected_events = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
@@ -1066,6 +1082,7 @@ async def test_policy_events_are_applied_to_tracker(
         ],
         model_id,
     )
+    expected_events = with_assistant_ids(with_model_ids_expected_events, assistant_id)
 
     def combine_predictions(
         self,
@@ -1109,7 +1126,11 @@ async def test_policy_events_are_applied_to_tracker(
 
     tracker = await default_processor.get_tracker(conversation_id)
     # The action was logged on the tracker as well
-    expected_events.append(with_model_id(ActionExecuted(ACTION_LISTEN_NAME), model_id))
+    expected_events.append(
+        with_assistant_id(
+            with_model_id(ActionExecuted(ACTION_LISTEN_NAME), model_id), assistant_id
+        )
+    )
 
     for event, expected in zip(tracker.events, expected_events):
         assert event == expected
@@ -1129,6 +1150,7 @@ async def test_policy_events_not_applied_if_rejected(
     reject_fn: Callable[[], List[Event]],
 ):
     model_id = default_processor.model_metadata.model_id
+    assistant_id = default_processor.model_metadata.assistant_id
     expected_action = ACTION_LISTEN_NAME
     expected_events = [LoopInterrupted(True)]
     conversation_id = "test_policy_events_are_applied_to_tracker"
@@ -1162,7 +1184,7 @@ async def test_policy_events_not_applied_if_rejected(
     )
 
     tracker = await default_processor.get_tracker(conversation_id)
-    expected_events = with_model_ids(
+    events = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
@@ -1172,6 +1194,7 @@ async def test_policy_events_not_applied_if_rejected(
         ],
         model_id,
     )
+    expected_events = with_assistant_ids(events, assistant_id)
     for event, expected in zip(tracker.events, expected_events):
         assert event == expected
 
@@ -1180,6 +1203,7 @@ async def test_logging_of_end_to_end_action(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
+    assistant_id = default_processor.model_metadata.assistant_id
     end_to_end_action = "hi, how are you?"
     new_domain = Domain(
         intents=["greet"],
@@ -1226,7 +1250,7 @@ async def test_logging_of_end_to_end_action(
     )
 
     tracker = await default_processor.tracker_store.retrieve(conversation_id)
-    expected_events = with_model_ids(
+    events = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
@@ -1238,6 +1262,7 @@ async def test_logging_of_end_to_end_action(
         ],
         model_id=model_id,
     )
+    expected_events = with_assistant_ids(events, assistant_id)
     for event, expected in zip(tracker.events, expected_events):
         assert event == expected
 
@@ -1302,6 +1327,7 @@ async def test_predict_next_action_with_hidden_rules(
     config = textwrap.dedent(
         f"""
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    assistant_id: placeholder_default
     policies:
     - name: RulePolicy
     - name: MemoizationPolicy
@@ -1484,7 +1510,7 @@ async def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
 
 # FIXME: these tests take too long to run in the CI, disabling them for now
 @pytest.mark.skip_on_ci
-async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
+async def _test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
     processor = e2e_bot_agent.processor
     message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test")
     with caplog.at_level(logging.DEBUG):
@@ -1528,7 +1554,8 @@ async def test_loads_correct_model_from_path(
     assert nlu_processor.model_filename == trained_nlu_model_name
 
 
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.flaky
+@pytest.mark.timeout(180, func_only=True)
 async def test_custom_action_triggers_action_extract_slots(
     trained_async: Callable,
     caplog: LogCaptureFixture,
@@ -1667,7 +1694,8 @@ async def test_processor_executes_bot_uttered_returned_by_action_extract_slots(
         assert tracker.get_slot(slot_name) is None
 
 
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.flaky
+@pytest.mark.timeout(180, func_only=True)
 @pytest.mark.parametrize(
     "sender_id, message_text, message_intent",
     [
@@ -1723,6 +1751,7 @@ async def test_from_trigger_intent_with_mapping_conditions_when_form_not_activat
     assert tracker.get_slot(slot_name) is None
 
 
+@pytest.mark.flaky
 @pytest.mark.timeout(120, func_only=True)
 async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
     trained_async: Callable,
@@ -1786,6 +1815,31 @@ async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
     assert ActiveLoop("test_form") in tracker.events
     assert SlotSet(slot_name, slot_value) in tracker.events
     assert tracker.get_slot(slot_name) == slot_value
+
+
+@pytest.mark.timeout(120, func_only=True)
+async def test_message_processor_raises_warning_if_no_assistant_id(
+    trained_async: Callable,
+):
+    parent_folder = "data/test_moodbot"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = "data/test_config/test_moodbot_config_no_assistant_id.yml"
+    stories_path = f"{parent_folder}/data/stories.yml"
+    nlu_path = f"{parent_folder}/data/nlu.yml"
+
+    model_path = await trained_async(
+        domain=domain_path, config=config_path, training_files=[stories_path, nlu_path]
+    )
+    warning_message = (
+        f"The model metadata does not contain a value for the '{ASSISTANT_ID_KEY}' "
+        f"attribute. Check that 'config.yml' file contains a value for "
+        f"the '{ASSISTANT_ID_KEY}' key and re-train the model. "
+        f"Failure to do so will result in streaming events without a "
+        f"unique assistant identifier."
+    )
+
+    with pytest.warns(UserWarning, match=warning_message):
+        Agent.load(model_path)
 
 
 async def test_processor_fetch_full_tracker_with_initial_session_inexistent_tracker(

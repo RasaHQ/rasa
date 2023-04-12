@@ -5,6 +5,9 @@ title: Command Line Interface
 description: Command line interface for open source chatbot framework Rasa. Learn how to train, test and run your machine learning-based conversational AI assistants
 abstract: The command line interface (CLI) gives you easy-to-remember commands for common tasks. This page describes the behavior of the commands and the parameters you can pass to them.
 ---
+import RasaProLabel from "@theme/RasaProLabel";
+
+import RasaProBanner from "@theme/RasaProBanner";
 
 ## Cheat Sheet
 
@@ -19,6 +22,7 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa run actions`      |Starts an action server using the Rasa SDK.                                                                                               |
 |`rasa visualize`        |Generates a visual representation of your stories.                                                                                        |
 |`rasa test`             |Tests a trained Rasa model on any files starting with `test_`.                                                                            |
+|`rasa test e2e`         |Runs end-to-end testing fully integrated with the action server that serves as acceptance testing.                                        |
 |`rasa data split nlu`   |Performs a 80/20 split of your NLU training data.                                                                                         |
 |`rasa data convert`     |Converts training data between different formats.                                                                                         |
 |`rasa data migrate`     |Migrates 2.0 domain to 3.0 format.                                                                                                        |
@@ -57,6 +61,18 @@ LOG_LEVEL_LIBRARIES=DEBUG LOG_LEVEL_MATPLOTLIB=DEBUG rasa shell --verbose
 ```
 
 As an aside, CLI log level sets the level at the root logger (which has the important handler - `coloredlogs` handler); this means even if an environment variable sets a library logger to a lower level, the root logger will reject messages from that library. If not specified, the CLI log level is set to `INFO`.
+
+## Custom logging configuration
+
+:::info New in 3.4
+
+The Rasa CLI now includes a new argument `--logging-config-file` which accepts a YAML file as value.
+
+:::
+
+You can now configure any logging formatters or handlers in a separate YAML file.
+The logging config YAML file must follow the [Python built-in dictionary schema](https://docs.python.org/3/library/logging.config.html#dictionary-schema-details), otherwise it will fail validation.
+You can pass this file as argument to the `--logging-config-file` CLI option and use it with any of the rasa commands.
 
 ## rasa init
 
@@ -202,6 +218,14 @@ at http://localhost:5005/visualization.html
 as soon as the session has started. This diagram can take some time to generate.
 To skip the visualization, run `rasa interactive --skip-visualization`.
 
+:::info Add the `assistant_id` key introduced in 3.5
+
+Running interactive learning with a pre-trained model whose metadata does not include the `assistant_id`
+will exit with an error. If this happens, add the required key with a unique identifier value in `config.yml`
+and re-run training.
+
+:::
+
 
 The following arguments can be used to configure the interactive learning session:
 
@@ -216,7 +240,7 @@ You can start a chat session by running:
 rasa shell
 ```
 
-By default this will load up the latest trained model.
+By default, this will load up the latest trained model.
 You can specify a different model to be loaded by using the `--model` flag.
 
 If you start the shell with an NLU-only model, `rasa shell` will output the
@@ -356,6 +380,58 @@ The following arguments are available for `rasa test`:
 ```text [rasa test --help]
 ```
 
+## rasa test e2e
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+:::info New in 3.5
+
+You can now use end-to-end testing to test your assistant as a whole, including dialogue management and custom actions.
+
+:::
+
+To run [end-to-end testing](./testing-your-assistant.mdx#end-to-end-testing) on your trained model, run:
+
+```bash
+rasa test e2e
+```
+
+This will test your latest trained model on any end-to-end test cases you have.
+If you want to use a different model, you can specify it using the `--model` flag.
+
+The following arguments are available for `rasa test e2e`:
+
+```text
+usage: rasa test e2e [-h] [-v] [-vv] [--quiet] [--logging-config-file LOGGING_CONFIG_FILE] [--fail-fast] [-o] [--remote-storage REMOTE_STORAGE] [-m MODEL] [--endpoints ENDPOINTS] [path-to-test-cases]
+
+Runs end-to-end testing.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o, --e2e-results     Results file containing end-to-end testing summary. (default: None)
+  --remote-storage REMOTE_STORAGE
+                        Set the remote location where your Rasa model is stored, e.g. on AWS. (default: None)
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is specified, it will use the latest model in this directory. (default: models)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the connectors as a yml file. (default: endpoints.yml)
+
+Python Logging Options:
+  You can control level of log messages printed. In addition to these arguments, a more fine grained configuration can be achieved with environment variables. See online documentation for more info.
+
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default: None)
+  --logging-config-file LOGGING_CONFIG_FILE
+                        If set, the name of the logging configuration file will be set to the given name. (default: None)
+
+Testing Settings:
+  path-to-test-cases    Input file or folder containing end-to-end test cases. (default: tests/e2e_test_cases.yml)
+  --fail-fast           Fail the test suite as soon as a unit test fails. (default: False)
+```
+
 ## rasa data split
 
 To create a train-test split of your NLU training data, run:
@@ -371,7 +447,7 @@ the following arguments:
 ```text [rasa data split nlu --help]
 ```
 
-If you have NLG data for retrieval actions, this will be saved to seperate files:
+If you have NLG data for retrieval actions, this will be saved to separate files:
 
 ```bash
 ls train_test_split
@@ -457,6 +533,13 @@ identical training examples.
 The validator also checks if you have any stories where different assistant actions follow from the same
 dialogue history. Conflicts between stories will prevent a model from learning the correct
 pattern for a dialogue.
+
+:::info Searching for the `assistant_id` key introduced in 3.5
+
+The validator will check whether the `assistant_id` key is present in the config file and will issue a warning if this
+key is missing or if the default value has not been changed.
+
+:::
 
 If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the
 smallest of those values in the validator command using the `--max-history <max_history>` flag.

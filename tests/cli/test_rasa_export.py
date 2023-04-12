@@ -27,17 +27,19 @@ from tests.cli.conftest import RASA_EXE
 def test_export_help(run: Callable[..., RunResult]):
     output = run("export", "--help")
 
-    help_text = f"""usage: {RASA_EXE} export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
+    help_text = f"""usage: {RASA_EXE} export [-h] [-v] [-vv] [--quiet]
+                   [--logging-config-file LOGGING_CONFIG_FILE]
+                   [--endpoints ENDPOINTS]
                    [--minimum-timestamp MINIMUM_TIMESTAMP]
                    [--maximum-timestamp MAXIMUM_TIMESTAMP]
                    [--offset-timestamps-by-seconds OFFSET_TIMESTAMPS_BY_SECONDS]
-                   [--conversation-ids CONVERSATION_IDS]"""  # noqa: E501
+                   [--conversation-ids CONVERSATION_IDS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = {line.strip() for line in output.outlines}
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help
 
 
 @pytest.mark.parametrize(

@@ -3,6 +3,7 @@
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
 INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
+PLATFORM ?= "linux/amd64"
 
 help:
 	@echo "make"
@@ -15,7 +16,7 @@ help:
 	@echo "    formatter"
 	@echo "        Apply black formatting to code."
 	@echo "    lint"
-	@echo "        Lint code with flake8, and check if black formatter should be applied."
+	@echo "        Lint code with ruff, and check if black formatter should be applied."
 	@echo "    lint-docstrings"
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
@@ -83,30 +84,20 @@ format: formatter
 
 lint:
      # Ignore docstring errors when running on the entire project
-	poetry run flake8 rasa tests --extend-ignore D
+	poetry run ruff check rasa tests --ignore D
 	poetry run black --check rasa tests
 	make lint-docstrings
 
 # Compare against `main` if no branch was provided
 BRANCH ?= main
 lint-docstrings:
-# Lint docstrings only against the the diff to avoid too many errors.
-# Check only production code. Ignore other flake errors which are captured by `lint`
-# Diff of committed changes (shows only changes introduced by your branch
-ifneq ($(strip $(BRANCH)),)
-	git diff $(BRANCH)...HEAD -- rasa | poetry run flake8 --select D --diff
-endif
-
-	# Diff of uncommitted changes for running locally
-	git diff HEAD -- rasa | poetry run flake8 --select D --diff
+	./scripts/lint_python_docstrings.sh $(BRANCH)
 
 lint-changelog:
-	# Lint changelog filenames to avoid merging of incorrectly named changelog fragment files
-	# For more info about proper changelog file naming, see https://github.com/RasaHQ/rasa/blob/main/changelog/README.md
-	poetry run flake8 --exclude=*.feature.md,*.improvement.md,*.bugfix.md,*.doc.md,*.removal.md,*.misc.md,README.md,_template.md.jinja2  changelog/* -q
+	./scripts/lint_changelog_files.sh
 
 lint-security:
-	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
+	poetry run bandit -ll -ii -r --config pyproject.toml rasa/*
 
 types:
 	poetry run mypy rasa
@@ -146,7 +137,11 @@ prepare-wget-macos:
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
 
-prepare-tests-ubuntu: prepare-tests-files
+# runs install-full target again in CI job runs, because poetry introduced a change
+# in behaviour in versions >= 1.2 (whenever you install a specific extra only, e.g.
+# spacy, poetry will uninstall all other extras from the environment)
+# See discussion thread: https://rasa-hq.slack.com/archives/C01HHMR4X8S/p1667924056444669
+prepare-tests-ubuntu: prepare-tests-files install-full
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
 prepare-wget-windows:
@@ -161,13 +156,17 @@ prepare-tests-windows: prepare-wget-windows prepare-tests-files
 prepare-wget-windows-gha:
 	powershell -command "Choco-Install wget"
 
-prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files
+# runs install-full target again in CI job runs, because poetry introduced a change
+# in behaviour in versions >= 1.2 (whenever you install a specific extra only, e.g.
+# spacy, poetry will uninstall all other extras from the environment)
+# See discussion thread: https://rasa-hq.slack.com/archives/C01HHMR4X8S/p1667924056444669
+prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files install-full
 	powershell -command "Choco-Install graphviz"
 
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
 
 test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
@@ -178,37 +177,41 @@ else
 	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
 endif
 
-test-cli: PYTEST_MARKER=category_cli
+test-cli: PYTEST_MARKER=category_cli and (not flaky)
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker
 
-test-core-featurizers: PYTEST_MARKER=category_core_featurizers
+test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky)
 test-core-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-core-featurizers: test-marker
 
-test-policies: PYTEST_MARKER=category_policies
+test-policies: PYTEST_MARKER=category_policies and (not flaky)
 test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker
 
-test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers
+test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky)
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: test-marker
 
-test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors
+test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky)
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: test-marker
 
-test-full-model-training: PYTEST_MARKER=category_full_model_training
+test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
 test-full-model-training: test-marker
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: test-marker
 
-test-performance: PYTEST_MARKER=category_performance
+test-performance: PYTEST_MARKER=category_performance and (not flaky)
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker
+
+test-flaky: PYTEST_MARKER=flaky
+test-flaky: DD_ARGS := $(or $(DD_ARGS),)
+test-flaky: test-marker
 
 test-gh-actions:
 	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest .github/tests --cov .github/scripts
@@ -216,7 +219,7 @@ test-gh-actions:
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
@@ -256,40 +259,48 @@ release:
 build-docker:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
-	docker buildx bake -f docker/docker-bake.hcl base && \
-	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
-	docker buildx bake -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake -f docker/docker-bake.hcl default
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl default
 
 build-docker-full:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
-	docker buildx bake -f docker/docker-bake.hcl base-images && \
-	docker buildx bake -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake -f docker/docker-bake.hcl full
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-images && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl full
 
 build-docker-mitie-en:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
-	docker buildx bake -f docker/docker-bake.hcl base-images && \
-	docker buildx bake -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake -f docker/docker-bake.hcl mitie-en
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-images && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl mitie-en
 
 build-docker-spacy-en:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
-	docker buildx bake -f docker/docker-bake.hcl base && \
-	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
-	docker buildx bake -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake -f docker/docker-bake.hcl spacy-en
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl spacy-en
 
 build-docker-spacy-de:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
-	docker buildx bake -f docker/docker-bake.hcl base && \
-	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
-	docker buildx bake -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake -f docker/docker-bake.hcl spacy-de
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl spacy-de
+
+build-docker-spacy-it:
+	export IMAGE_NAME=rasa && \
+	docker buildx use default && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl spacy-it
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \
