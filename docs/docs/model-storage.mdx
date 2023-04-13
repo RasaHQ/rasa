@@ -135,7 +135,9 @@ following environment variables before running any command requiring the storage
 * `BUCKET_NAME`: environment variable specifying the S3 bucket
 
 * `AWS_ENDPOINT_URL`: The complete URL to use for the AWS S3 requests. You need to
-  specify a complete URL (including the "http/https" scheme).
+  specify a complete URL (including the "http/https" scheme), for example: `https://s3.amazonaws.com`.
+  Note that by setting the bucket name to `BUCKET_NAME` environment variable, you should not provide the bucket or
+  object URL to `AWS_ENDPOINT_URL`.
 
 
 Once all environment variables are set, you can start the Rasa server with
