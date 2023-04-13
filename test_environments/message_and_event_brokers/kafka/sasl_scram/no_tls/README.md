@@ -1,4 +1,4 @@
-# Overview
+# Setup of Kafka with SASL_SCRAM authentication (SHA-256 and SHA-512 algorithm) and without TLS encryption
 
 This is a simple setup of Kafka with SASL_SCRAM authentication (SHA-256 and SHA-512 algorithm) and without TLS encryption. 
 It is intended to be used to set up test environment in which Kafka brokers require clients to authenticate.
