@@ -1,4 +1,4 @@
-# Overview
+# Setup Kafka broker with SASL PLAIN authentication and TLS encryption
 This is a simple setup of Kafka with authentication and TLS encryption. 
 It is intended to be used to set up test environment in which Kafka brokers require clients to authenticate.
 All communication is done over secure TLS connection.

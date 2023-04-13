@@ -1,3 +1,5 @@
+# Setup Kafka broker with TLS and SASL_PLAIN (accept connections from all IPs)
+
 This directory contains `docker-compose.yml` along with pre-generated certificates for TLS bound to IP `0.0.0.0`.
 
 ## Description of files in this directory

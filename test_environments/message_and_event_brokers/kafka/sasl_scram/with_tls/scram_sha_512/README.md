@@ -1,3 +1,5 @@
+# Setup Kafka broker with SASL SCRAM (SHA-512) authentication and TLS encryption
+
 This is a simple setup of Kafka with SASL_SCRAM (SHA-512 algorithm) authentication and TLS encryption.
 
 To run:
