@@ -1,4 +1,5 @@
 import builtins
+import sys
 import os
 import string
 import textwrap
@@ -11,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 
 import rasa.shared
 from rasa.shared.nlu.training_data.features import Features
@@ -625,20 +626,41 @@ def test_deep_container_fingerprint_can_use_instance_fingerprint():
     assert rasa.shared.utils.io.deep_container_fingerprint(f) == f.fingerprint()
 
 
-# Can't manipulate the STDOUT file descriptor
-# in pytest (it's a io.StringIO instance not a file)
+@pytest.mark.skip_on_windows
 def test_handle_print_blocking(monkeypatch: MonkeyPatch):
-    def mock_print(*args, **kwargs):
-        raise BlockingIOError()
+    mock = MagicMock()
+    monkeypatch.setattr(rasa.shared.utils.io, "portalocker", mock)
 
-    mock = Mock()
+    print_output = "Test block handling"
+    rasa.shared.utils.io.handle_print_blocking(print_output)
+
+    assert mock.Lock.called
+    assert mock.Lock.call_args[0][0] == sys.stdout
+
+    # print specific calls
+    # STDOUT write call
+    assert mock.mock_calls[2][1][0] == print_output
+    # STDOUT was flushed before __exit__
+    assert "flush" in mock.mock_calls[-2][0]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows only test")
+def test_handle_print_blocking_windows(monkeypatch: MonkeyPatch):
+    mock = MagicMock()
+    mock_print = MagicMock()
+    monkeypatch.setattr(rasa.shared.utils.io, "portalocker", mock)
     monkeypatch.setattr(builtins, "print", mock_print)
-    monkeypatch.setattr(rasa.shared.utils.io, "handle_print_blocking", mock)
 
-    # Sanity checks that the prints are actually raising the exception
-    rasa.shared.utils.cli.print_info("Test BlockingIOError")
-    rasa.shared.utils.cli.print_success("Test BlockingIOError")
-    rasa.shared.utils.cli.print_warning("Test BlockingIOError")
-    rasa.shared.utils.cli.print_error("Test BlockingIOError")
+    print_output = "Test block handling"
+    rasa.shared.utils.io.handle_print_blocking(print_output)
 
-    assert mock.call_count == 4
+    assert mock.Lock.called
+    assert mock.Lock.call_args[0][0] == sys.stdout
+
+    assert mock_print.called
+    assert mock_print.call_args[0][0] == print_output
+
+    from colorama import ansitowin32
+
+    assert isinstance(mock_print.call_args[1]["file"], ansitowin32.StreamWrapper)
+    assert mock_print.call_args[1]["flush"]
