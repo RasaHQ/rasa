@@ -6,10 +6,10 @@ To run:
 docker-compose up -d zookeeper
 
 # Create kafkabroker and kafkaclient users on zookeeper
-docker exec -it zookeeper bash
+docker exec -it zookeeper-scram-sha-256-tls bash
 cd /etc/kafka/client
-KAFKA_OPTS="-Djava.security.auth.login.config=zookeeper_client_jaas.conf" kafka-configs --zookeeper localhost:2181 --alter --add-config 'SCRAM-SHA-256=[iterations=4096,password=password]' --entity-type users --entity-name kafkabroker
-KAFKA_OPTS="-Djava.security.auth.login.config=zookeeper_client_jaas.conf" kafka-configs --zookeeper localhost:2181 --alter --add-config 'SCRAM-SHA-256=[iterations=4096,password=password]' --entity-type users --entity-name client
+KAFKA_OPTS="-Djava.security.auth.login.config=zookeeper_client_jaas.conf" kafka-configs --zookeeper localhost:2188 --alter --add-config 'SCRAM-SHA-256=[iterations=4096,password=password]' --entity-type users --entity-name kafkabroker
+KAFKA_OPTS="-Djava.security.auth.login.config=zookeeper_client_jaas.conf" kafka-configs --zookeeper localhost:2188 --alter --add-config 'SCRAM-SHA-256=[iterations=4096,password=password]' --entity-type users --entity-name client
 
 # Exit from zookeeper container
 exit

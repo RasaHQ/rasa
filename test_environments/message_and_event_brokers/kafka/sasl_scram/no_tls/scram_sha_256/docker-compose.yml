@@ -3,13 +3,12 @@ version: '3.8'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
-    hostname: zookeeper
-    container_name: zookeeper
+    container_name: zookeeper-sasl-scram-sha-256-no-tls
     ports:
-      - "2181:2181"
+      - "2186:2186"
     environment:
       ZOOKEEPER_SERVER_ID: 1
-      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_CLIENT_PORT: 2186
       ZOOKEEPER_TICK_TIME: 2000
       ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: "DEBUG"
       KAFKA_OPTS: -Djava.security.auth.login.config=/etc/kafka/secrets/zookeeper_server_jaas.conf
@@ -29,16 +28,15 @@ services:
 
   kafka-broker:
     image: confluentinc/cp-kafka:7.3.2
-    hostname: kafka-broker
-    container_name: kafka-broker
+    container_name: kafka-broker-sasl-scram-sha-256-no-tls
     ports:
-      - "9092:9092"
+      - "9096:9096"
     depends_on:
       - zookeeper
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: SASL_PLAINTEXT://localhost:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2186
+      KAFKA_ADVERTISED_LISTENERS: SASL_PLAINTEXT://localhost:9096
       KAFKA_MIN_INSYNC_REPLICAS: 1
       KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-256
       KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SASL_PLAINTEXT

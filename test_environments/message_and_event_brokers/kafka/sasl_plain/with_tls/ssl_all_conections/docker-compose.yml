@@ -3,7 +3,7 @@ version: '3.8'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
-    container_name: zookeeper
+    container_name: zookeeper-sasl-plain-tls-all-connections
     environment:
       ZOO_MY_ID: 1
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -18,10 +18,10 @@ services:
 
   kafka-broker:
     image: confluentinc/cp-kafka:7.3.2
-    container_name: kafka-broker
+    container_name: kafka-broker-sasl-plain-tls-all-connections
     ports:
-      - "9092:9092"
-      - "29092:29092"
+      - "9094:9094"
+      - "29094:29094"
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -29,8 +29,8 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       ZOOKEEPER_SASL_ENABLED: "false"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9092, PLAINTEXT://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://localhost:9092, PLAINTEXT://localhost:29092
+      KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9094, PLAINTEXT://0.0.0.0:29094
+      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://localhost:9094, PLAINTEXT://localhost:29094
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
@@ -46,7 +46,7 @@ services:
       - ./ssl_key_credentials:/etc/kafka/secrets/ssl_key_credentials
       - ./ssl_keystore_credentials:/etc/kafka/secrets/ssl_keystore_credentials
     healthcheck:
-      test: nc -z localhost 9092 || exit 1
+      test: nc -z localhost 9094 || exit 1
       interval: 30s
       retries: 10
       start_period: 15s

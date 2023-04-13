@@ -3,7 +3,7 @@ version: '3.8'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
-    container_name: zookeeper
+    container_name: zookeeper-sasl-plain-tls-localhost
     environment:
       ZOO_MY_ID: 1
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -18,10 +18,10 @@ services:
 
   kafka-broker:
     image: confluentinc/cp-kafka:7.3.2
-    container_name: broker
+    container_name: broker-sasl-plain-tls-localhost
     ports:
-      - "9092:9092"
-      - "29092:29092"
+      - "9095:9095"
+      - "29095:29095"
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -33,9 +33,9 @@ services:
       # configure two listeners: one for SASL_SSL (TLS with authentication) and one for PLAINTEXT (not TLS and no authentication)
       # clients can use SASL_SSL to connect to the broker and authenticate using the username and password
       # the broker can use PLAINTEXT to communicate with other brokers
-      KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9092, PLAINTEXT://0.0.0.0:29092
+      KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9095, PLAINTEXT://0.0.0.0:29095
       # configure advertised listeners (listeners that will be used by clients to connect to the broker)
-      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://localhost:9092, PLAINTEXT://localhost:29092
+      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://localhost:9095, PLAINTEXT://localhost:29095
       # let the brokers communicate with each other using PLAINTEXT listener (not TLS and no authentication)
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       # enable SASL_PLAIN authentication mechanism (username and password)
@@ -62,7 +62,7 @@ services:
       - ./ssl_key_credentials:/etc/kafka/secrets/ssl_key_credentials
       - ./ssl_keystore_credentials:/etc/kafka/secrets/ssl_keystore_credentials
     healthcheck:
-      test: nc -z localhost 9092 || exit 1
+      test: nc -z localhost 9095 || exit 1
       interval: 30s
       retries: 10
       start_period: 15s
