@@ -34,7 +34,7 @@ If you skip verification of the certificate communication over secure TLS will s
 but the identity of the Kafka broker will not be verified.
 
 
-# About certificates
+## About certificates
 Certificates consist of a CA (Certificate Authority) and a certificate signed by a certificate authority (CA).
 <br>CA is used to sign the certificate of the Kafka broker. When Kafka broker is contacted by a client, 
 it sends its certificate to the client.
@@ -42,7 +42,7 @@ it sends its certificate to the client.
 If the certificate is valid, the client can connect to the broker.
 
 
-# Troubleshooting
+## Troubleshooting
 To inspect content of the keystore, you can use the following command:
 ```shell
 keytool -list -v -keystore server.keystore.jks -storepass 123456 -keypass 123456
