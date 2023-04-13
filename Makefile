@@ -67,9 +67,10 @@ install:
 	poetry install
 
 install-mitie:
+	poetry run python -m pip install -U pip
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
 
-install-full: install install-mitie
+install-full: install-mitie
 	poetry install -E full
 
 install-docs:
@@ -103,7 +104,6 @@ types:
 static-checks: lint lint-security types
 
 prepare-spacy:
-	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
 	poetry run python -m spacy download de_core_news_sm
 
@@ -128,11 +128,7 @@ prepare-wget-macos:
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
 
-# runs install-full target again in CI job runs, because poetry introduced a change
-# in behaviour in versions >= 1.2 (whenever you install a specific extra only, e.g.
-# spacy, poetry will uninstall all other extras from the environment)
-# See discussion thread: https://rasa-hq.slack.com/archives/C01HHMR4X8S/p1667924056444669
-prepare-tests-ubuntu: prepare-tests-files install-full
+prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
 prepare-wget-windows:
@@ -147,11 +143,7 @@ prepare-tests-windows: prepare-wget-windows prepare-tests-files
 prepare-wget-windows-gha:
 	powershell -command "Choco-Install wget"
 
-# runs install-full target again in CI job runs, because poetry introduced a change
-# in behaviour in versions >= 1.2 (whenever you install a specific extra only, e.g.
-# spacy, poetry will uninstall all other extras from the environment)
-# See discussion thread: https://rasa-hq.slack.com/archives/C01HHMR4X8S/p1667924056444669
-prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files install-full
+prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files
 	powershell -command "Choco-Install graphviz"
 
 test: clean
