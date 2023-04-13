@@ -14,6 +14,5 @@ To connect to the broker from the client, use one of the users:
 |--------|--------------|
 | admin  | admin-secret |
 | alice  | alice-secret |
-|--------|--------------|
 
 These users are defined in the `kafka_jaas.conf` file.
