@@ -3,7 +3,7 @@ This is a simple setup of Kafka with authentication and TLS encryption.
 It is intended to be used to set up test environment in which Kafka brokers require clients to authenticate.
 All communication is done over secure TLS connection.
 
-Test environments are location in directories:
+Test environments are located in directories:
 * `ssl_all_connections` - Broker certificate has SAN set to `0.0.0.0`
 * `ssl_localhost` - Broker certificate has SAN set to `localhost`
 
