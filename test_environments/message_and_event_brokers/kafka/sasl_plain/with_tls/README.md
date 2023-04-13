@@ -3,6 +3,21 @@ This is a simple setup of Kafka with authentication and TLS encryption.
 It is intended to be used to set up test environment in which Kafka brokers require clients to authenticate.
 All communication is done over secure TLS connection.
 
+#### About Subject Alternate Name (SAN)
+A Subject Alternate Name (or SAN) certificate is a digital security 
+certificate which allows multiple hostnames or IPs to be protected by a single certificate.
+
+Examples:
+<br>If TLS certificate has SAN set to `194.3.5.1`, then clients will accept the certificate if IP of Kafka broker
+to which they are connecting is `194.3.5.1`.
+<br>If TLS certificate has SAN set to `localhost`, then clients will accept the certificate if the hostname
+of the Kafka broker to which we are connecting is `localhost`.
+<br>If TLS certificate has SAN set to `rasa.com`, then clients will accept the certificate if the hostname
+of the Kafka broker to which we are connecting is `rasa.com`.
+<br>If TLS certificate has SAN set to 0.0.0.0  then clients will accept the certificate 
+from any hostname or IP address. This is useful for testing purposes. DO NOT USE THIS IN PRODUCTION!!!
+
+### Supported Test Environments
 Test environments are located in directories:
 * `ssl_all_connections` - Broker certificate has SAN set to `0.0.0.0`
 * `ssl_localhost` - Broker certificate has SAN set to `localhost`
