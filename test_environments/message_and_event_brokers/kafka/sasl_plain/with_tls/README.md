@@ -23,7 +23,7 @@ Test environments are located in directories:
 * `ssl_localhost` - Broker certificate has SAN set to `localhost`
 
 All certificates required for TLS are already generated. **They are not intended to be used in production.**
-<br>Certificates in this environment, are used to verify the identity of the Kafka broker to the clients.
+<br>Certificates in this environment are used to verify the identity of the Kafka broker to the clients.
 Pre-generated certificates are valid through `30/3/2024`. 
 If you need to generate new certificates checkout the README 
 files in directories `./ssl_all_connections` and `./ssl_localhost`.
@@ -50,8 +50,21 @@ but the identity of the Kafka broker will not be verified.
 
 
 ## About certificates
-Certificates consist of a CA (Certificate Authority) and a certificate signed by a certificate authority (CA).
-<br>CA is used to sign the certificate of the Kafka broker. When Kafka broker is contacted by a client, 
+RSA algorithm is used to generate private and public keys used to sign/verify/encrypt/decrypt data.
+<br>
+Certificate Authority (CA) is a trusted entity which issues (signs) certificates from other entities.
+Certificate Authority generates a private key and a public key.
+<br>Private key is used to sign certificates from other entities. It must be protected and not shared.
+<br>Public key is used to verify the signature of the certificate. It is shared with the clients.
+Clients use the public key to verify that the certificate 
+it received was signed by the CA and not by a malicious entity.
+
+In TLS communication we need to have:
+* a CA's private key
+* a CA's public key, also called `CA certificate`
+* a certificate of the Kafka broker signed by CA's private key
+
+When Kafka broker is contacted by a client, 
 it sends its certificate to the client.
 <br>Client verifies the certificate using the CA certificate. 
 If the certificate is valid, the client can connect to the broker.
