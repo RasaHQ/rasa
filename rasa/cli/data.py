@@ -184,6 +184,7 @@ def split_stories_data(args: argparse.Namespace) -> None:
     # load Yaml stories data
     for file_name in data_files:
         file_data = rasa.shared.utils.io.read_yaml_file(file_name)
+        assert isinstance(file_data, dict)
         stories = file_data.get(KEY_STORIES, [])
         if not stories:
             logger.info(f"File {file_name} has no stories, skipped")
