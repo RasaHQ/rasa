@@ -305,6 +305,7 @@ make types
 ### Deploying documentation updates
 
 We use `Docusaurus v2` to build docs for tagged versions and for the `main` branch.
+To run Docusaurus, install `Node.js 12.x`.
 The static site that gets built is pushed to the `documentation` branch of this repo.
 
 We host the site on netlify. On `main` branch builds (see `.github/workflows/documentation.yml`), we push the built docs to
@@ -423,10 +424,7 @@ steps + get the PR merged.
 
 ### Actively maintained versions
 
-We're actively maintaining _any minor on our latest major release_ and _the latest minor of the previous major release_.
-Currently, this means the following minor versions will receive bugfixes updates:
-- 2.8
-- Every minor version on 3.x
+Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.
 
 ## License
 Licensed under the Apache License, Version 2.0.
