@@ -127,7 +127,7 @@ prepare-transformers:
 	CACHE_DIR=$$HOME_DIR/.cache/torch/transformers;\
 	mkdir -p "$$CACHE_DIR";\
 	i=0;\
-	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
+	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget -nv $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
 
 prepare-tests-macos:
 	brew install wget graphviz || true
