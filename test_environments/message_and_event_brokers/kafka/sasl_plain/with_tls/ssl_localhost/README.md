@@ -3,6 +3,7 @@
 This directory contains `docker-compose.yml` along with pre-generated certificates for TLS bound to IP `localhost`.
 
 ## Description of files in this directory
+
 * `docker-compose.yml` - docker compose file with Kafka and Zookeeper containers
 * `server.keystore.jks` - keystore with server certificates and CA certificate
 * `ca-cert` - CA (Certificate Authority) certificate (used to sign the server certificate), it must be imported into the keystore as a trusted certificate. 
@@ -15,6 +16,7 @@ Client should also import this certificate to verify the identity of the Kafka b
 * `broker_jaas.conf` - JAAS configuration file for the broker, contains usernames and passwords a client can use to authenticate
 
 ## How to generate certificates for TLS bound to DNS localhost
+
 First we need to produce certificates for the Kafka brokers and store them in the server's keystore.
 We create a certificate authority (CA), also known as root certificate, 
 and use it to sign the certificate request for the Kafka broker.

@@ -6,11 +6,13 @@ All communication is done over insecure plain connection (without TLS).
 Kafka will be listening on port 9092. You can connect to the broker with URL localhost:9092.
 
 ## How to start the environment
+
 We provide two different test environments for this setup. One with SHA-256 and one with SHA-512.
 Checkout the README.md file in the corresponding directories for more information.
 
 
 ## How to connect to the broker
+
 To connect to the broker from the client, use user:
 
 | User        | Password       |

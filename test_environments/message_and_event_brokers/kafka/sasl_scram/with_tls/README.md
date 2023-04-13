@@ -1,5 +1,5 @@
-# Overview
-This is a simple setup of Kafka with SASL_SCRAM (SHA-256 algorith) authentication and TLS encryption. 
+# Setup Kafka broker with SASL SCRAM authentication and TLS encryption
+This is a simple setup of Kafka with SASL_SCRAM authentication and TLS encryption. 
 It is intended to be used to set up test environment in which Kafka brokers require clients to authenticate.
 All communication is done over secure TLS connection.
 
@@ -20,7 +20,7 @@ section.
 
 ## How to connect to Kafka broker
 To connect to the broker from the client use:
-* URL localhost:9092
+* URL localhost:9098 (SASL SCRAM SHA 256) or localhost:9099 (SASL SCRAM SHA 512)
 * one of the users
 
     | User        | Password     |

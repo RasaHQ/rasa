@@ -31,7 +31,7 @@ files in directories `./ssl_all_connections` and `./ssl_localhost`.
 
 ## How to connect to Kafka broker
 To connect to the broker from the client use:
-* URL localhost:9092
+* URL localhost:9094 (clients accept certificate from any IP Kafka broker my run on) or localhost:9095 (clients accept certificate only from Kafka Broker running on localhost)
 * one of the users
 
     | User   | Password     |
@@ -50,6 +50,7 @@ but the identity of the Kafka broker will not be verified.
 
 
 ## About certificates
+
 RSA algorithm is used to generate private and public keys used to sign/verify/encrypt/decrypt data.
 <br>
 Certificate Authority (CA) is a trusted entity which issues (signs) certificates from other entities.
@@ -69,8 +70,10 @@ it sends its certificate to the client.
 <br>Client verifies the certificate using the CA certificate. 
 If the certificate is valid, the client can connect to the broker.
 
+More about TLS can be read here: https://www.cloudflare.com/learning/ssl/transport-layer-security-tls/
 
 ## Troubleshooting
+
 To inspect content of the keystore, you can use the following command:
 ```shell
 keytool -list -v -keystore server.keystore.jks -storepass 123456 -keypass 123456
