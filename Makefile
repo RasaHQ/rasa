@@ -35,8 +35,6 @@ help:
 	@echo "        Download all additional resources needed to use spacy as part of Rasa."
 	@echo "    prepare-mitie"
 	@echo "        Download all additional resources needed to use mitie as part of Rasa."
-	@echo "    prepare-transformers"
-	@echo "        Download all models needed for testing LanguageModelFeaturizer."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
@@ -122,14 +120,7 @@ else
 endif
 	rm data/MITIE*.bz2
 
-prepare-transformers:
-	if [ $(OS) = "Windows_NT" ]; then HOME_DIR="$(HOMEDRIVE)$(HOMEPATH)"; else HOME_DIR=$(HOME); fi;\
-	CACHE_DIR=$$HOME_DIR/.cache/torch/transformers;\
-	mkdir -p "$$CACHE_DIR";\
-	i=0;\
-	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
-
-prepare-tests-files: prepare-spacy prepare-mitie install-mitie prepare-transformers
+prepare-tests-files: prepare-spacy prepare-mitie install-mitie
 
 prepare-wget-macos:
 	brew install wget || true
