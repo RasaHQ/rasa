@@ -178,7 +178,7 @@ test-nlu-predictors: prepare-spacy prepare-mitie test-marker
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
-test-full-model-training: test-marker
+test-full-model-training: prepare-spacy prepare-mitie test-marker
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
