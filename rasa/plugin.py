@@ -112,8 +112,8 @@ def filter_and_rerank_actions(
     """Hook spec for getting list of filtered and reranked policy predictions."""
 
 
-@hookspec  # type: ignore[misc]
-def prefix_stripping_for_custom_actions(json_body: Dict[Text, Any]) -> None:
+@hookspec(firstresult=True)  # type: ignore[misc]
+def prefix_stripping_for_custom_actions(json_body: Dict[Text, Any]) -> Dict[Text, Any]:
     """Remove namespacing introduced by spaces before custom actions call."""
 
 
