@@ -211,8 +211,3 @@ def get_purelib() -> str:
 
 def get_platlib() -> str:
     return sysconfig.get_paths()["platlib"]
-
-
-def get_prefixed_libs(prefix: str) -> typing.Tuple[str, str]:
-    paths = sysconfig.get_paths(vars={"base": prefix, "platbase": prefix})
-    return (paths["purelib"], paths["platlib"])
