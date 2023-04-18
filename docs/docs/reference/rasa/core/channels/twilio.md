@@ -8,7 +8,7 @@ title: rasa.core.channels.twilio
 class TwilioOutput(Client, OutputChannel)
 ```
 
-Output channel for Twilio
+Output channel for Twilio.
 
 #### send\_text\_message
 
@@ -17,7 +17,7 @@ async def send_text_message(recipient_id: Text, text: Text,
                             **kwargs: Any) -> None
 ```
 
-Sends text message
+Sends text message.
 
 #### send\_image\_url
 
@@ -35,7 +35,7 @@ async def send_custom_json(recipient_id: Text, json_message: Dict[Text, Any],
                            **kwargs: Any) -> None
 ```
 
-Send custom json dict
+Send custom json dict.
 
 ## TwilioInput Objects
 
@@ -43,5 +43,5 @@ Send custom json dict
 class TwilioInput(InputChannel)
 ```
 
-Twilio input channel
+Twilio input channel.
 
