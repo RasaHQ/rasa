@@ -131,6 +131,10 @@ psycopg2-binary = ">=2.8.2,<2.10.0"
 python-dateutil = "~2.8"
 protobuf = ">=3.9.2,< 3.20"
 tensorflow_hub = "~0.12.0"
+# pin required for tensorflow-io-gcs-filesystem
+# to maintain compatibility with tensorflow 2.11,
+# remove pin once upgraded to tensorflow 2.12 in rasa
+tensorflow-io-gcs-filesystem = "0.31.0"
 setuptools = ">=41.0.0"
 ujson = ">=1.35,<6.0"
 regex = ">=2020.6,<2022.11"
