@@ -329,10 +329,18 @@ def test_validate_assistant_id_in_config(config_file: Text) -> None:
 
 def test_validate_assistant_id_in_config_preserves_comment() -> None:
     config_file = "data/test_config/config_no_assistant_id_with_comments.yml"
-    copy_config_data = copy.deepcopy(rasa.shared.utils.io.read_yaml_file(config_file))
+    original_config_data = copy.deepcopy(
+        rasa.shared.utils.io.read_yaml_file(config_file)
+    )
 
+    # append assistant_id to the config file
     rasa.cli.utils.validate_assistant_id_in_config(config_file)
+
     config_data = rasa.shared.utils.io.read_yaml_file(config_file)
+
+    assert "assistant_id" in config_data
+
+    # get all content of config file including comments
     yaml = YAML()
     buffer = io.StringIO()
     yaml.dump(config_data, buffer)
@@ -343,4 +351,4 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
         assert comment.format(i) in config_file_content
 
     # reset input files to original state
-    rasa.shared.utils.io.write_yaml(copy_config_data, config_file, True)
+    rasa.shared.utils.io.write_yaml(original_config_data, config_file, True)
