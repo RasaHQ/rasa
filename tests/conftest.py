@@ -212,8 +212,10 @@ def endpoints_path() -> Text:
 @pytest.fixture(scope="session")
 def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
+    loop._close = loop.close
+    loop.close = lambda: None
     yield loop
-    loop.close()
+    loop._close()
 
 
 # override loop fixture to prevent ScopeMismatch pytest error and
