@@ -116,7 +116,7 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
     Issues a warning if the key does not exist or has the default value and replaces it
     with a pseudo-random string value.
     """
-    config_data = rasa.shared.utils.io.read_config_file(config_file)
+    config_data = rasa.shared.utils.io.read_config_file(config_file, reader_type="rt")
     assistant_id = config_data.get(ASSISTANT_ID_KEY)
 
     if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
