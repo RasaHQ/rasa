@@ -83,7 +83,7 @@ These different services need to be run and configured to be able to communicate
     Pull the Rasa Pro Services image to your machine:
 
     ```shell
-    docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
+    docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro
     ```
 
     :::note
@@ -102,7 +102,7 @@ These different services need to be run and configured to be able to communicate
         -e RASA_PRO_LICENSE=<your_license> \
         -e KAFKA_BROKER_ADDRESS=<BROKER_URL> \
         -e KAFKA_TOPIC=rasa-events \
-        europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
+        europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro
     ```
 
     For production deployments, we recommend to us
