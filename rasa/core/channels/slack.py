@@ -34,7 +34,6 @@ class SlackBot(OutputChannel):
         thread_id: Optional[Text] = None,
         proxy: Optional[Text] = None,
     ) -> None:
-
         self.slack_channel = slack_channel
         self.thread_id = thread_id
         self.proxy = proxy
