@@ -2719,7 +2719,7 @@ numpy = ">=1.17.3,<1.25.0"
 
 [[package]]
 name = "sentencepiece"
-version = "0.1.97"
+version = "0.1.98"
 description = "SentencePiece python wrapper"
 category = "main"
 optional = true
@@ -3743,7 +3743,7 @@ transformers = ["transformers", "sentencepiece"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "ca7851ad7ee7e2b079c15eda18f17e393158b8786f73cb2bb1117f8c6e66a651"
+content-hash = "537867afc31910dfe6a20c0719856ab22126fedf14c8fca3008038e2f97c3e50"
 
 [metadata.files]
 absl-py = []
