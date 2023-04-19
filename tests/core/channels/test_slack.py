@@ -303,14 +303,16 @@ def test_slack_message_sanitization():
         == 0
     )
 
+
 def test_escape_called():
-    with patch('re.escape') as mock_escape:
+    with patch("re.escape") as mock_escape:
         input_text = "Some text"
         uids_to_remove = ["uid1", "uid2"]
         SlackInput._sanitize_user_message(input_text, uids_to_remove)
 
         # Check if re.escape was called with the expected argument
         mock_escape.assert_called_with("uid1")
+
 
 def test_slack_init_token_parameter():
     ch = SlackInput("xoxb-test", slack_signing_secret="foobar")
@@ -423,7 +425,6 @@ def test_is_slack_message_true():
 
 
 def test_is_slack_message_false():
-
     event = {
         "type": "message",
         "channel": "C2147483705",
