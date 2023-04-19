@@ -7,9 +7,10 @@ on:
     - '[0-9]+.[0-9]+.x'
     # Don't merge 2.8.x into main
     - '!2.8.x'
-    # Don't merge 3.0 and 3.1 into main
+    # Don't merge 3.0, 3.1 and 3.2 into main
     - '!3.0.x'
     - '!3.1.x'
+    - '!3.2.x'
 
     types:
     # means that the PR is closed, we still have to check if it was merged
@@ -84,6 +85,7 @@ jobs:
                 These release-merge-PRs are currently open: https://github.com/${{ github.repository }}/pulls?q=is%3Aopen+label%3A${{ env.LABEL_TYPE }}+head%3Amerge-${{ steps.get-branch-name.outputs.release_branch }}-main"
 
       - name: Create new branch 🐣
+        id: create-new-branch
         if: always()
         uses: peterjgrainger/action-create-branch@64aa569aea81305305c6e92bd236d8c427debff8
         env:
@@ -91,8 +93,16 @@ jobs:
         with:
           branch: ${{ steps.get-branch-name.outputs.new_branch }}
 
+      - name: Notify Slack if creating a new branch failed 💬
+        if: ${{ failure() && steps.create-new-branch.conclusion == 'failure' }}
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "🚨 There was a problem with creating a new branch containing commits from the ${{ env.RELEASE_BRANCH }} release branch. Check out the Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
       - name: Open pull request ☄️
-        if: always()
+        if: ${{ always() && steps.create-new-branch.conclusion == 'success' }}
         uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
         with:
           # using this token to make sure it triggers other actions
