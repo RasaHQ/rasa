@@ -329,14 +329,17 @@ def test_validate_assistant_id_in_config(config_file: Text) -> None:
 
 def test_validate_assistant_id_in_config_preserves_comment() -> None:
     config_file = "data/test_config/config_no_assistant_id_with_comments.yml"
+    reader_type = ["safe", "rt"]
     original_config_data = copy.deepcopy(
-        rasa.shared.utils.io.read_yaml_file(config_file, reader_type="rt")
+        rasa.shared.utils.io.read_yaml_file(config_file, reader_type=reader_type)
     )
 
     # append assistant_id to the config file
     rasa.cli.utils.validate_assistant_id_in_config(config_file)
 
-    config_data = rasa.shared.utils.io.read_yaml_file(config_file, reader_type="rt")
+    config_data = rasa.shared.utils.io.read_yaml_file(
+        config_file, reader_type=reader_type
+    )
 
     assert "assistant_id" in config_data
 
