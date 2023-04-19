@@ -197,5 +197,6 @@ excluded_words:
   - rustup-init
   - rustc
   - conftest
+  - winpty
 
 spellcheck_filenames: false
