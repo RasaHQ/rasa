@@ -363,19 +363,22 @@ def _is_ascii(text: Text) -> bool:
     return all(ord(character) < 128 for character in text)
 
 
-def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
+def read_yaml_file(
+    filename: Union[Text, Path], reader_type: Union[Text, List[Text]] = "safe"
+) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
     Raises an exception if the content of the file can not be parsed as YAML.
 
     Args:
         filename: The path to the file which should be read.
+        reader_type: Reader type to use. By default "safe" will be used.
 
     Returns:
         Parsed content of the file.
     """
     try:
-        return read_yaml(read_file(filename, DEFAULT_ENCODING))
+        return read_yaml(read_file(filename, DEFAULT_ENCODING), reader_type)
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(filename, e)
 
@@ -535,10 +538,9 @@ def raise_deprecation_warning(
     docs: Optional[Text] = None,
     **kwargs: Any,
 ) -> None:
-    """Thin wrapper around `raise_warning()` to raise a deprecation warning.
-
-    It requires a version until which we'll warn, and after which the support
-    for the feature will be removed.
+    """Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
+    a version until which we'll warn, and after which the support for the feature will
+    be removed.
     """
     if warn_until_version not in message:
         message = f"{message} (will be removed in {warn_until_version})"
@@ -551,13 +553,18 @@ def raise_deprecation_warning(
     raise_warning(message, FutureWarning, docs, **kwargs)
 
 
-def read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any:
+def read_validated_yaml(
+    filename: Union[Text, Path],
+    schema: Text,
+    reader_type: Union[Text, List[Text]] = "safe",
+) -> Any:
     """Validates YAML file content and returns parsed content.
 
     Args:
         filename: The path to the file which should be read.
         schema: The path to the schema file which should be used for validating the
             file content.
+        reader_type: Reader type to use. By default "safe" will be used.
 
     Returns:
         The parsed file content.
@@ -569,14 +576,17 @@ def read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any:
     content = read_file(filename)
 
     rasa.shared.utils.validation.validate_yaml_schema(content, schema)
-    return read_yaml(content)
+    return read_yaml(content, reader_type)
 
 
-def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
+def read_config_file(
+    filename: Union[Path, Text], reader_type: Union[Text, List[Text]] = "safe"
+) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary.
 
     Args:
         filename: The path to the file which should be read.
+        reader_type: Reader type to use. By default "safe" will be used.
 
     Raises:
         YamlValidationException: In case file content is not a `Dict`.
@@ -584,7 +594,7 @@ def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
     Returns:
         Parsed config file.
     """
-    return read_validated_yaml(filename, CONFIG_SCHEMA_FILE)
+    return read_validated_yaml(filename, CONFIG_SCHEMA_FILE, reader_type)
 
 
 def read_model_configuration(filename: Union[Path, Text]) -> Dict[Text, Any]:
