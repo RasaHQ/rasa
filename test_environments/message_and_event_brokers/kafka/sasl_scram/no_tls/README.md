@@ -8,7 +8,15 @@ Kafka will be listening on port 9092. You can connect to the broker with URL loc
 ## How to start the environment
 
 We provide two different test environments for this setup. One with SHA-256 and one with SHA-512.
-Checkout the README.md file in the corresponding directories for more information.
+
+Typical startup of the environment:
+1. Start Zookeeper container
+2. Add two users to Zookeeper
+    * One will be used by Kafka to authenticate itself to Zookeeper
+    * The other will be used by the client to authenticate to Kafka
+3. Start Kafka container
+
+Details of the startup are described in the corresponding README.md files in the directories.
 
 
 ## How to connect to the broker
