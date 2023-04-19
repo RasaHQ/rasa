@@ -393,8 +393,7 @@ class Agent:
         Returns:
             The parsed message.
 
-            Example:
-
+        Example:
                 {\
                     "text": '/greet{"name":"Rasa"}',\
                     "intent": {"name": "greet", "confidence": 1.0},\

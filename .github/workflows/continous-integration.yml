@@ -52,7 +52,7 @@ jobs:
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
+      - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
         if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
@@ -551,7 +551,7 @@ jobs:
           debug: true
 
   integration_test:
-    name: Run Integration Tests
+    name: Run Non-Sequential Integration Tests
     if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
@@ -686,6 +686,92 @@ jobs:
         run: |
           make test-integration
 
+  sequential_integration_test:
+    name: Run Sequential Integration Tests
+    runs-on: ubuntu-20.04
+    needs: [changes]
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    services:
+      postgres:
+        image: postgres:13
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          # postgres image requires password to be set
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
+          # mapping container ports to the host
+          - 5432:5432
+
+    steps:
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
       # these integration tests need to be ran in a sequential fashion,
       # due to environment constraints, so we're running them in a single process.
       - name: Test Code with Services 🩺 (sequential)
@@ -713,6 +799,9 @@ jobs:
       image_tag: ${{ steps.set_output.outputs.image_tag }}
       # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
       is_newest_version: ${{ steps.rasa_get_version.outputs.is_newest_version }}
+    strategy:
+      matrix:
+        arch: [linux/amd64, linux/arm64]
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
       # to checkout HEAD commit for a pull request.
@@ -726,6 +815,9 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: github.event_name != 'pull_request'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18
 
       - name: Read Poetry Version 🔢
         run: |
@@ -796,51 +888,51 @@ jobs:
         if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base
 
       - name: Push Docker base image if it's not building from a fork ⬆
         if: (steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base --push
 
       - name: Build Docker mitie base image 🛠
         if: steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-mitie
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-mitie
 
       - name: Push Docker mitie base image if it's not building from a fork ⬆
         if: (steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-mitie --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-mitie --push
 
       - name: Build Docker poetry base image 🛠
         if: steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-poetry
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-poetry
 
       - name: Push Docker poetry base image if it's not building from a fork ⬆
         if: (steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-poetry --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-poetry --push
 
       - name: Build Docker builder base image 🛠
         if: steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-builder
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-builder
 
       - name: Push Docker builder base image if it's not building from a fork ⬆
         if: (steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-builder --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl base-builder --push
 
       # Set environment variables for a pull request
       #
@@ -897,6 +989,7 @@ jobs:
     strategy:
       matrix:
         image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
+        arch: [linux/amd64, linux/arm64]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
@@ -911,6 +1004,9 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         if: github.event_name != 'pull_request'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18
 
       - name: Free disk space
         if: needs.changes.outputs.docker == 'true'
@@ -935,6 +1031,9 @@ jobs:
           version: v0.5.1
           driver: docker
 
+      - name: Echo Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
       - name: Login to DockerHub Registry 🔢
         if: needs.changes.outputs.docker == 'true'
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
@@ -950,19 +1049,19 @@ jobs:
       - name: Build Docker image
         if: needs.changes.outputs.docker == 'true'
         run: |
-          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }}
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }}
 
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
         run: |
-          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
       - name: Push image with ${{github.ref}} tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
         run: |
           IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
-          docker buildx bake -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
           # Tag the image as latest
           if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then

@@ -114,6 +114,11 @@ Rasa uses Poetry for packaging and dependency management. If you want to build i
 you have to install Poetry first. Please follow
 [the official guide](https://python-poetry.org/docs/#installation) to see all possible options.
 
+To update an existing poetry version to the [version](.github/poetry_version.txt), currently used in rasa, run:
+```shell
+    poetry self update <version>
+```
+
 ### Managing environments
 
 The official [Poetry guide](https://python-poetry.org/docs/managing-environments/) suggests to use
