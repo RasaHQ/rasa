@@ -1,6 +1,9 @@
 # Setup Kafka broker with TLS and SASL_PLAIN (accept connections from all IPs)
 
 This directory contains `docker-compose.yml` along with pre-generated certificates for TLS bound to IP `0.0.0.0`.
+Pre-generated certificates are valid for one year term (not that MacOS allows certificates with maximum validity of two years)
+and are due to expire somewhere around March 20th, 2024.
+If certificates are expired, you can generate new ones [here](#how-to-generate-certificates-for-tls-bound-to-ip-0000).
 
 ## Description of files in this directory
 
@@ -18,11 +21,10 @@ Client should also import this certificate to verify the identity of the Kafka b
 
 ## How to generate certificates for TLS bound to IP 0.0.0.0
 
-First we need to produce certificates for the Kafka brokers and store them in the server's keystore.
-We create a certificate authority (CA), also known as root certificate, 
-and use it to sign the certificate request for the Kafka broker.
-Kafka broker will send its signed certificate to the client. 
-Client will use the CA certificate to verify the identity of the Kafka broker.
+In order to provide TLS encryption for Kafka broker, we need to generate a keystore with a signed certificate for the broker.
+We only need to generate certificates once a year and to commit them (along with keystore), as they are valid for one year term.
+
+Refer to [this](../README.md#about-certificates) section for more details about RSA certificates.
 
 You can create the certificates and store them in the keystore using the following commands:
 ```shell
