@@ -265,6 +265,7 @@ log_cli = true
 markers = [ "skip_on_windows", "skip_on_ci", "sequential", "category_cli", "category_core_featurizers", "category_policies", "category_nlu_featurizers", "category_nlu_predictors", "category_full_model_training", "category_other_unit_tests", "category_performance", "flaky",]
 timeout = 60
 timeout_func_only = true
+asyncio_mode = "auto"
 
 [tool.poetry.dependencies.tensorflow]
 version = "2.11.0"
