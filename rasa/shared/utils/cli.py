@@ -6,15 +6,17 @@ import rasa.shared.utils.io
 
 def print_color(*args: Any, color: Text) -> None:
     output = rasa.shared.utils.io.wrap_with_color(*args, color=color)
-    try:
+    stream = sys.stdout
+    if sys.platform == "win32":
         # colorama is used to fix a regression where colors can not be printed on
         # windows. https://github.com/RasaHQ/rasa/issues/7053
         from colorama import AnsiToWin32
 
         stream = AnsiToWin32(sys.stdout).stream
+    try:
         print(output, file=stream)
-    except ImportError:
-        print(output)
+    except BlockingIOError:
+        rasa.shared.utils.io.handle_print_blocking(output)
 
 
 def print_success(*args: Any) -> None:
@@ -35,6 +37,5 @@ def print_error(*args: Any) -> None:
 
 def print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn:
     """Print error message and exit the application."""
-
     print_error(message)
     sys.exit(exit_code)
