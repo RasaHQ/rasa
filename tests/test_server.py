@@ -11,7 +11,7 @@ from http import HTTPStatus
 from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
 from pathlib import Path
-from typing import List, Text, Tuple, Type, Generator, NoReturn, Dict, Optional
+from typing import Any, List, Text, Tuple, Type, Generator, NoReturn, Dict, Optional
 from unittest.mock import Mock, ANY
 
 from _pytest.tmpdir import TempPathFactory
@@ -2335,3 +2335,51 @@ async def test_retrieve_story_with_query_param_all_sessions_false(
           hi again"""
     )
     assert expected_story in story_content
+
+
+async def test_retrieve_tracker_with_customized_action_session_start(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    sender_id = str(uuid.uuid1())
+
+    async def mock_run_action_session_start(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> List[Event]:
+        _events: List[Event] = [
+            SessionStarted(),
+            BotUttered("Hey there!", {"name": "utter_greet"}),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ]
+
+        return _events
+
+    monkeypatch.setattr(
+        "rasa.core.actions.action.ActionSessionStart.run", mock_run_action_session_start
+    )
+
+    _, response = await rasa_app.get(
+        f"/conversations/{sender_id}/tracker",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == 200
+
+    tracker = response.json
+    assert tracker is not None
+
+    tracker_events = tracker.get("events")
+    assert len(tracker_events) == 4
+
+    assert tracker_events[0].get("event") == "action"
+    assert tracker_events[0].get("name") == "action_session_start"
+
+    assert tracker_events[1].get("event") == "session_started"
+
+    assert tracker_events[2].get("event") == "bot"
+    assert tracker_events[2].get("text") == "Hey there!"
+
+    assert tracker_events[3].get("event") == "action"
+    assert tracker_events[3].get("name") == "action_listen"
