@@ -42,9 +42,17 @@ To connect to the broker from the client use:
 Users which are available for clients are defined in the `kafka_jaas.conf` file.
 
 Add CA certificate to the client certificate pool before starting it.
+<br>
+One option is to add it to the OS's certificate pool on the machine you are running the client on.
+<br>
+The other option is to add certificate to the client's in-memory certificate pool, which is active only during the client's runtime.
+Consult documentation of the library you are using to manage certificates or library which you are 
+using to connect to Kafka broker on how to add certificate to in-memory certificate pool. 
 <br>This is required to verify the identity of the Kafka broker.
 <br>If you want to skip verification of the Kafka broker's identity, 
 you can instruct your client to skip verification of the certificate.
+<br>
+Consult the library you are using to connect to Kafka broker on how to skip verification of the certificate.
 If you skip verification of the certificate communication over secure TLS will still be used, 
 but the identity of the Kafka broker will not be verified.
 
