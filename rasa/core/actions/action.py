@@ -780,23 +780,16 @@ class RemoteAction(Action):
             modified_json = plugin_manager().hook.prefix_stripping_for_custom_actions(
                 json_body=json_body
             )
-            logger.debug("******************** json_body *********************")
-            logger.debug(json_body)
             response: Any = await self.action_endpoint.request(
                 json=modified_json if modified_json else json_body,
                 method="post",
                 timeout=DEFAULT_REQUEST_TIMEOUT,
                 compress=should_compress,
             )
-            logger.debug("******************** response *********************")
-            logger.debug(response)
             if modified_json:
                 plugin_manager().hook.prefixing_custom_actions_response(
                     response=response, domain=domain
                 )
-            logger.debug("******************** mod response *********************")
-            logger.debug(response)
-            logger.debug("++++++++++++++++++++++++++++++++++++++++++++++++++++")
             self._validate_action_result(response)
 
             events_json = response.get("events", [])
