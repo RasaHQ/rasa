@@ -267,7 +267,7 @@ class SlackInput(InputChannel):
         uids_to_remove = uids_to_remove or []
 
         for uid_to_remove in uids_to_remove:
-            escaped_uid = re.escape(uid_to_remove)
+            escaped_uid = re.escape(str(uid_to_remove))
 
             # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,

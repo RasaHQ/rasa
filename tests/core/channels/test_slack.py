@@ -248,7 +248,7 @@ def test_slack_no_metadata():
 
 
 def test_slack_message_sanitization():
-    test_uid = 17213535
+    test_uid = "17213535"
     target_message_1 = "You can sit here if you want"
     target_message_2 = "Hey, you can sit here if you want !"
     target_message_3 = "Hey, you can sit here if you want!"
