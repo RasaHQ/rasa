@@ -280,11 +280,11 @@ class SlackInput(InputChannel):
             ]:
                 text = re.sub(regex, replacement, text)
 
-        # Find multiple case-insensitive mailto or http links like
+        # Find multiple mailto or http links like
         # <mailto:xyz@rasa.com|xyz@rasa.com> or
         # <http://url.com|url.com> in text and substitute
         # it with original content
-        pattern = r"(?i)<(?:mailto|https?):\/\/[^|]+\|([^\|>]+)>"
+        pattern = r"(\<(?:mailto|https?):\/\/[^|]+\|([^\|>]+)>"
         match = re.findall(pattern, text)
 
         if match:

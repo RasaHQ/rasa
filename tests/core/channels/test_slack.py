@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Any, Dict, Text
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from aioresponses import aioresponses
 import pytest
@@ -303,6 +303,14 @@ def test_slack_message_sanitization():
         == 0
     )
 
+def test_escape_called():
+    with patch('re.escape') as mock_escape:
+        input_text = "Some text"
+        uids_to_remove = ["uid1", "uid2"]
+        SlackInput._sanitize_user_message(input_text, uids_to_remove)
+
+        # Check if re.escape was called with the expected argument
+        mock_escape.assert_called_with("uid1")
 
 def test_slack_init_token_parameter():
     ch = SlackInput("xoxb-test", slack_signing_secret="foobar")
