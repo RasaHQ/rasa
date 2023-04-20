@@ -210,7 +210,9 @@ Parses yaml from a text.
 
 ```python
 def read_yaml_file(
-        filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]
+    filename: Union[Text, Path],
+    reader_type: Union[Text, List[Text]] = "safe"
+) -> Union[List[Any], Dict[Text, Any]]
 ```
 
 Parses a yaml file.
@@ -220,6 +222,7 @@ Raises an exception if the content of the file can not be parsed as YAML.
 **Arguments**:
 
 - `filename` - The path to the file which should be read.
+- `reader_type` - Reader type to use. By default &quot;safe&quot; will be used.
   
 
 **Returns**:
@@ -234,7 +237,7 @@ def write_yaml(data: Any,
                should_preserve_key_order: bool = False) -> None
 ```
 
-Writes a yaml to the file or to the stream
+Writes a yaml to the file or to the stream.
 
 **Arguments**:
 
@@ -354,7 +357,9 @@ be removed.
 #### read\_validated\_yaml
 
 ```python
-def read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any
+def read_validated_yaml(filename: Union[Text, Path],
+                        schema: Text,
+                        reader_type: Union[Text, List[Text]] = "safe") -> Any
 ```
 
 Validates YAML file content and returns parsed content.
@@ -364,6 +369,7 @@ Validates YAML file content and returns parsed content.
 - `filename` - The path to the file which should be read.
 - `schema` - The path to the schema file which should be used for validating the
   file content.
+- `reader_type` - Reader type to use. By default &quot;safe&quot; will be used.
   
 
 **Returns**:
@@ -379,7 +385,9 @@ Validates YAML file content and returns parsed content.
 #### read\_config\_file
 
 ```python
-def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]
+def read_config_file(
+        filename: Union[Path, Text],
+        reader_type: Union[Text, List[Text]] = "safe") -> Dict[Text, Any]
 ```
 
 Parses a yaml configuration file. Content needs to be a dictionary.
@@ -387,6 +395,7 @@ Parses a yaml configuration file. Content needs to be a dictionary.
 **Arguments**:
 
 - `filename` - The path to the file which should be read.
+- `reader_type` - Reader type to use. By default &quot;safe&quot; will be used.
   
 
 **Raises**:
@@ -446,4 +455,16 @@ def random_string(length: int) -> Text
 ```
 
 Returns a random string of given length.
+
+#### handle\_print\_blocking
+
+```python
+def handle_print_blocking(output: Text) -> None
+```
+
+Handle print blocking (BlockingIOError) by getting the STDOUT lock.
+
+**Arguments**:
+
+- `output` - Text to be printed to STDOUT.
 
