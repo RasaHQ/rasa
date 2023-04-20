@@ -578,7 +578,70 @@ class TestTEDPolicy(PolicyTestCollection):
         assert isinstance(featurizer.state_featurizer, state_featurizer)
 
 
-class TestTEDPolicyMargin(TestTEDPolicy):
+class TestTEDPolicyConfigurationOptions:
+    """Helper class to skip redundant and long-running tests in subclasses."""
+
+    @pytest.mark.parametrize("should_finetune", [False])
+    @pytest.mark.skip()
+    def test_persist_and_load(
+        self,
+        trained_policy: Policy,
+        default_domain: Domain,
+        should_finetune: bool,
+        stories_path: Text,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
+        """This takes long and does not need to be tested for every config change."""
+        pass
+
+    @pytest.mark.skip()
+    def test_train_model_checkpointing(
+        self, tmp_path: Path, tmp_path_factory: TempPathFactory
+    ):
+        """This takes long and does not need to be tested for every config change."""
+        pass
+
+    @pytest.mark.skip()
+    def test_doesnt_checkpoint_with_no_checkpointing(
+        self, tmp_path: Path, tmp_path_factory: TempPathFactory
+    ):
+        """This takes long and does not need to be tested for every config change."""
+        pass
+
+    @pytest.mark.skip()
+    def test_doesnt_checkpoint_with_zero_eval_num_examples(
+        self, tmp_path: Path, tmp_path_factory: TempPathFactory
+    ):
+        """This takes long and does not need to be tested for every config change."""
+
+    @pytest.mark.parametrize(
+        "should_finetune, epoch_override, expected_epoch_value",
+        [
+            (
+                True,
+                TEDPolicy.get_default_config()[EPOCHS] + 1,
+                TEDPolicy.get_default_config()[EPOCHS] + 1,
+            )
+        ],
+    )
+    @pytest.mark.skip()
+    def test_epoch_override_when_loaded(
+        self,
+        trained_policy: TEDPolicy,
+        should_finetune: bool,
+        epoch_override: int,
+        expected_epoch_value: int,
+        resource: Resource,
+        model_storage: ModelStorage,
+        execution_context: ExecutionContext,
+    ):
+        """This takes long and does not need to be tested for every config change."""
+        pass
+
+
+class TestTEDPolicyMargin(TestTEDPolicyConfigurationOptions, TestTEDPolicy):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -586,6 +649,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         return {
             **TEDPolicy.get_default_config(),
             LOSS_TYPE: "margin",
+            EPOCHS: 2,
             **config_override,
         }
 
@@ -619,7 +683,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         assert min(prediction.probabilities) >= -1.0
 
 
-class TestTEDPolicyWithEval(TestTEDPolicy):
+class TestTEDPolicyWithEval(TestTEDPolicyConfigurationOptions, TestTEDPolicy):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -632,7 +696,7 @@ class TestTEDPolicyWithEval(TestTEDPolicy):
         }
 
 
-class TestTEDPolicyNormalization(TestTEDPolicy):
+class TestTEDPolicyNormalization(TestTEDPolicyConfigurationOptions, TestTEDPolicy):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -662,7 +726,7 @@ class TestTEDPolicyNormalization(TestTEDPolicy):
         assert sum(predicted_probabilities) == pytest.approx(1)
 
 
-class TestTEDPolicyLowRankingLength(TestTEDPolicy):
+class TestTEDPolicyLowRankingLength(TestTEDPolicyConfigurationOptions, TestTEDPolicy):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -673,7 +737,7 @@ class TestTEDPolicyLowRankingLength(TestTEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 3
 
 
-class TestTEDPolicyHighRankingLength(TestTEDPolicy):
+class TestTEDPolicyHighRankingLength(TestTEDPolicyConfigurationOptions, TestTEDPolicy):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -684,7 +748,9 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 11
 
 
-class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
+class TestTEDPolicyWithStandardFeaturizer(
+    TestTEDPolicyConfigurationOptions, TestTEDPolicy
+):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -733,7 +799,7 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
 
-class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
+class TestTEDPolicyWithMaxHistory(TestTEDPolicyConfigurationOptions, TestTEDPolicy):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -763,7 +829,9 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         )
 
 
-class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
+class TestTEDPolicyWithRelativeAttention(
+    TestTEDPolicyConfigurationOptions, TestTEDPolicy
+):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
@@ -777,7 +845,9 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
         }
 
 
-class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
+class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(
+    TestTEDPolicyConfigurationOptions, TestTEDPolicy
+):
     max_history = 1
 
     def _config(
