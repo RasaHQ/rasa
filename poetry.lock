@@ -4597,14 +4597,14 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.5.0"
+version = "3.5.1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
 python-versions = ">=3.7,<3.11"
 files = [
-    {file = "rasa_sdk-3.5.0-py3-none-any.whl", hash = "sha256:d2b1455f7e8587ddaa5611c617c0a3555c3080b0a2f934206a9609149cbdbb75"},
-    {file = "rasa_sdk-3.5.0.tar.gz", hash = "sha256:6de94b5dfa778a2910b690a0046f266d79e09c32a0cbbdd1b6fb58e7c9cf2b10"},
+    {file = "rasa_sdk-3.5.1-py3-none-any.whl", hash = "sha256:5fd551ce3de0a9dbddc3519fa8ca1b1db2325ba419dc3da99eaaa79c65a69bfc"},
+    {file = "rasa_sdk-3.5.1.tar.gz", hash = "sha256:13ac2229365ab4b99f5ca4010219b9353a56cefa266ce99248860c97b716c251"},
 ]
 
 [package.dependencies]
@@ -4614,6 +4614,7 @@ prompt-toolkit = ">=3.0,<3.0.29"
 sanic = ">=21.12.0,<22.0.0"
 Sanic-Cors = ">=2.0.0,<3.0.0"
 typing-extensions = ">=4.1.1,<5.0.0"
+websockets = ">=10.0,<11.0"
 
 [[package]]
 name = "redis"
