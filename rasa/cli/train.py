@@ -84,6 +84,12 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         for f in args.data
     ]
 
+    if args.validate:
+        from rasa.cli.data import validate_files
+        args.fail_on_warnings = False
+        args.max_history = None
+        validate_files(args)
+
     training_result = train_all(
         domain=domain,
         config=config,
