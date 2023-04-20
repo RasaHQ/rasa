@@ -283,7 +283,7 @@ class SlackInput(InputChannel):
         # <mailto:xyz@rasa.com|xyz@rasa.com> or
         # <http://url.com|url.com> in text and substitute
         # it with original content
-        pattern = r"(\<(?:mailto|https?):\/\/[^|]+\|([^\|>]+)>)"
+        pattern = r"(\<(?:mailto|https?):\/\/.*?\|.*?\>)"
         match = re.findall(pattern, text)
 
         if match:

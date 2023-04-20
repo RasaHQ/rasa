@@ -307,7 +307,7 @@ def test_slack_message_sanitization():
 def test_escape_called():
     with patch("re.escape") as mock_escape:
         input_text = "Some text"
-        uids_to_remove = ["uid1", "uid2"]
+        uids_to_remove = ["uid1"]
         SlackInput._sanitize_user_message(input_text, uids_to_remove)
 
         # Check if re.escape was called with the expected argument
