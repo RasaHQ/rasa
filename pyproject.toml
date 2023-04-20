@@ -236,7 +236,7 @@ mypy-extensions = "^0.4.3"
 sanic-testing = ">=21.12.0,<22.9.0"
 analytics-python = "^1.4.0"
 datadog-api-client = "^2.0.0"
-datadog = "^0.44.0"
+datadog = "^0.45.0"
 types-redis = "^4.3.20"
 httpx = "0.23.3"
 
