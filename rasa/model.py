@@ -13,7 +13,7 @@ from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
-# TODO: rename this whole module.
+# TODO: rename this whole module at some point.
 
 
 def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
