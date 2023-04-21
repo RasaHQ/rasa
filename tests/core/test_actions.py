@@ -2826,6 +2826,7 @@ async def test_action_extract_slots_priority_of_slot_mappings():
     tracker.update_with_events(events, domain=domain)
     assert tracker.get_slot("location_slot") == entity_value
 
+
 async def test_action_extract_slots_does_allows_slotset_for_same_value(
     caplog: LogCaptureFixture,
 ):
