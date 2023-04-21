@@ -70,6 +70,6 @@ def init_managers(endpoints_file: Optional[Text]) -> None:
 def create_tracker_store(  # type: ignore[empty-body]
     endpoint_config: Union["TrackerStore", "EndpointConfig"],
     domain: "Domain",
-    event_broker: Optional["EventBroker"] = None,
+    event_broker: Optional["EventBroker"],
 ) -> "TrackerStore":
     """Hook specification for wrapping with AuthRetryTrackerStore."""

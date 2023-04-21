@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: rasahq/update-pr-branch@2c1851b449b09173288465f259bc9ec599b2e51f
+      - uses: rasahq/update-pr-branch@f7012036a6d5659cfbc37f180716963511e81f95
         with:
           token: ${{ secrets.UPDATE_BRANCH_PAT }}
           # required parameter by original action -

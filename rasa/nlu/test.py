@@ -152,9 +152,9 @@ def remove_empty_response_examples(
     Args:
         response_results: response selection evaluation results
 
-    Returns: response selection evaluation results
+    Returns:
+        Response selection evaluation results
     """
-
     filtered = []
     for r in response_results:
         # substitute None values with empty string
@@ -267,7 +267,6 @@ def write_response_successes(
         response_results: response selection evaluation result
         successes_filename: filename of file to save successful predictions to
     """
-
     successes = [
         {
             "text": r.message,
@@ -704,9 +703,9 @@ def merge_labels(
         aligned_predictions: aligned predictions
         extractor: entity extractor name
 
-    Returns: concatenated predictions
+    Returns:
+        Concatenated predictions
     """
-
     if extractor:
         label_lists = [ap["extractor_labels"][extractor] for ap in aligned_predictions]
     else:
@@ -727,9 +726,9 @@ def merge_confidences(
         aligned_predictions: aligned predictions
         extractor: entity extractor name
 
-    Returns: concatenated confidences
+    Returns:
+        Concatenated confidences
     """
-
     label_lists = [ap["confidences"][extractor] for ap in aligned_predictions]
     return list(itertools.chain(*label_lists))
 
@@ -953,14 +952,12 @@ def is_token_within_entity(token: Token, entity: Dict) -> bool:
 
 def does_token_cross_borders(token: Token, entity: Dict) -> bool:
     """Checks if a token crosses the boundaries of an entity."""
-
     num_intersect = determine_intersection(token, entity)
     return 0 < num_intersect < len(token.text)
 
 
 def determine_intersection(token: Token, entity: Dict) -> int:
     """Calculates how many characters a given token and entity share."""
-
     pos_token = set(range(token.start, token.end))
     pos_entity = set(range(entity["start"], entity["end"]))
     return len(pos_token.intersection(pos_entity))
@@ -1016,8 +1013,7 @@ def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
 def pick_best_entity_fit(
     token: Token, candidates: List[Dict[Text, Any]]
 ) -> Optional[Dict[Text, Any]]:
-    """
-    Determines the best fitting entity given intersecting entities.
+    """Determines the best fitting entity given intersecting entities.
 
     Args:
         token: a single token
@@ -1042,8 +1038,7 @@ def determine_token_labels(
     extractors: Optional[Set[Text]] = None,
     attribute_key: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> Text:
-    """
-    Determines the token label for the provided attribute key given entities that do
+    """Determines the token label for the provided attribute key given entities that do
     not overlap.
 
     Args:
@@ -1072,8 +1067,7 @@ def determine_entity_for_token(
     entities: List[Dict[Text, Any]],
     extractors: Optional[Set[Text]] = None,
 ) -> Optional[Dict[Text, Any]]:
-    """
-    Determines the best fitting entity for the given token, given entities that do
+    """Determines the best fitting entity for the given token, given entities that do
     not overlap.
 
     Args:
@@ -1458,7 +1452,6 @@ def generate_folds(
     n: int, training_data: TrainingData
 ) -> Iterator[Tuple[TrainingData, TrainingData]]:
     """Generates n cross validation folds for given training data."""
-
     from sklearn.model_selection import StratifiedKFold
 
     skf = StratifiedKFold(n_splits=n, shuffle=True)
@@ -1642,6 +1635,7 @@ async def cross_validate(
                 response_selection_test_results,
             )
 
+        intent_evaluation = {}
         if intent_test_results:
             logger.info("Accumulated test folds intent evaluation results:")
             intent_evaluation = evaluate_intents(
@@ -1770,8 +1764,7 @@ async def compare_nlu(
     output: Text,
     runs: int,
 ) -> List[int]:
-    """
-    Trains and compares multiple NLU models.
+    """Trains and compares multiple NLU models.
     For each run and exclusion percentage a model per config file is trained.
     Thereby, the model is trained only on the current percentage of training data.
     Afterwards, the model is tested on the complete test data of that run.
