@@ -59,31 +59,6 @@ jobs:
             echo "labels=${LABEL_TYPE}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Close outdated release-merge PRs 🧹
-        run: |
-          # fetch all open merge-PRs that have been opened from the current release branch
-          gh pr list -S "is:open label:${LABEL_TYPE} head:merge-${{ steps.get-branch-name.outputs.release_branch }}-main" > prs.txt
-          less prs.txt
-
-          # extract the PR ids
-          awk '{print $1}' prs.txt > pr_ids.txt
-
-          # close all outdated PRs
-          while read id; do
-            gh pr close $id -d
-          done <pr_ids.txt
-        env:
-            GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-      - name: Notify Slack when closing of outdated merge-PRs failed 💬
-        if: failure()
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }}
-        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
-        with:
-          args: "🚨 There was a problem with closing outdated release-merge-PRs of the ${{ env.RELEASE_BRANCH }} release branch. Check out the Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \
-                These release-merge-PRs are currently open: https://github.com/${{ github.repository }}/pulls?q=is%3Aopen+label%3A${{ env.LABEL_TYPE }}+head%3Amerge-${{ steps.get-branch-name.outputs.release_branch }}-main"
-
       - name: Create new branch 🐣
         id: create-new-branch
         if: always()
@@ -102,7 +77,7 @@ jobs:
           args: "🚨 There was a problem with creating a new branch containing commits from the ${{ env.RELEASE_BRANCH }} release branch. Check out the Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Open pull request ☄️
-        if: ${{ always() && steps.create-new-branch.conclusion == 'success' }}
+        if: ${{ steps.create-new-branch.conclusion == 'success' }}
         uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
         with:
           # using this token to make sure it triggers other actions
@@ -113,3 +88,31 @@ jobs:
           pr_template: .github/PULL_REQUEST_AUTOMATIC_TEMPLATE.md
           pr_label: ${{ steps.get-github-labels.outputs.labels }}
           pr_reviewer: ${{ github.event.pull_request.user.login }}
+
+      - name: Close outdated release-merge PRs 🧹
+        run: |
+          # fetch all open merge-PRs that have been opened from the current release branch
+          gh pr list -S "is:open label:${LABEL_TYPE} head:merge-${{ steps.get-branch-name.outputs.release_branch }}-main" > prs.txt
+          less prs.txt
+
+          # delete newly opened PR from the list
+          awk '!/${{ steps.get-branch-name.outputs.new_branch }}/' prs.txt > temp && mv temp prs.txt
+
+          # extract the PR ids
+          awk '{print $1}' prs.txt > pr_ids.txt
+
+          # close all outdated PRs
+          while read id; do
+            gh pr close $id -d
+          done <pr_ids.txt
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Notify Slack when closing of outdated merge-PRs failed 💬
+        if: failure()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "🚨 There was a problem with closing outdated release-merge-PRs of the ${{ env.RELEASE_BRANCH }} release branch. Check out the Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \
+                These release-merge-PRs are currently open: https://github.com/${{ github.repository }}/pulls?q=is%3Aopen+label%3A${{ env.LABEL_TYPE }}+head%3Amerge-${{ steps.get-branch-name.outputs.release_branch }}-main"
