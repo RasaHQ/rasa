@@ -90,6 +90,7 @@ jobs:
           pr_reviewer: ${{ github.event.pull_request.user.login }}
 
       - name: Close outdated release-merge PRs 🧹
+        id: close-outdated-release-merge-prs
         run: |
           # fetch all open merge-PRs that have been opened from the current release branch
           gh pr list -S "is:open label:${LABEL_TYPE} head:merge-${{ steps.get-branch-name.outputs.release_branch }}-main" > prs.txt
@@ -109,7 +110,7 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Notify Slack when closing of outdated merge-PRs failed 💬
-        if: failure()
+        if: ${{ failure() && steps.close-outdated-release-merge-prs.conclusion == 'failure'}}
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
