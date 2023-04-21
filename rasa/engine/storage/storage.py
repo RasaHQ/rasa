@@ -54,7 +54,7 @@ class ModelStorage(abc.ABC):
         """
         ...
 
-    @classmethod
+    @classmethod  # type: ignore[empty-body]
     def metadata_from_archive(
         cls, model_archive_path: Union[Text, Path]
     ) -> ModelMetadata:
@@ -104,7 +104,7 @@ class ModelStorage(abc.ABC):
         """
         ...
 
-    def create_model_package(
+    def create_model_package(  # type: ignore[empty-body]
         self,
         model_archive_path: Union[Text, Path],
         model_configuration: GraphModelConfiguration,
