@@ -153,7 +153,6 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
         `True` if the resolved intent name is present in the list of retrieval
         intents, `False` otherwise.
     """
-
     return (
         ActionRetrieveResponse.intent_name_from_action(action_name) in retrieval_intents
     )
@@ -210,7 +209,6 @@ def action_for_name_or_text(
 
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
     """Create BotUttered event from message."""
-
     bot_message = BotUttered(
         text=message.pop("text", None),
         data={
@@ -236,7 +234,6 @@ class Action:
 
     def name(self) -> Text:
         """Unique identifier of this simple action."""
-
         raise NotImplementedError
 
     async def run(
@@ -508,7 +505,8 @@ class ActionListen(Action):
     """The first action in any turn - bot waits for a user message.
 
     The bot should stop taking further actions and wait for the user to say
-    something."""
+    something.
+    """
 
     def name(self) -> Text:
         return ACTION_LISTEN_NAME
@@ -568,7 +566,6 @@ class ActionSessionStart(Action):
         tracker: "DialogueStateTracker",
     ) -> List["SlotSet"]:
         """Fetch SlotSet events from tracker and carry over key, value and metadata."""
-
         return [
             SlotSet(key=event.key, value=event.value, metadata=event.metadata)
             for event in tracker.applied_events()
@@ -830,7 +827,8 @@ class RemoteAction(Action):
 
 class ActionExecutionRejection(RasaException):
     """Raising this exception will allow other policies
-    to predict a different action"""
+    to predict a different action.
+    """
 
     def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
         self.action_name = action_name
