@@ -151,16 +151,31 @@ def add_dry_run_param(
 def add_validate_before_train(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ) -> None:
-    """Adds `--validate argument to a specified `parser`.
+    """Adds parameters for validating the domain and data files before training.
 
     Args:
         parser: An instance of `ArgumentParser` or `_ActionsContainer`.
     """
     parser.add_argument(
-        "--validate",
+        "--validate-before-training",
         default=False,
         action="store_true",
         help="Validate domain and data files before training.",
+    )
+
+    parser.add_argument(
+        "--fail-on-validation-warnings",
+        default=False,
+        action="store_true",
+        help="Fail on validation warnings. "
+        "If omitted only errors will exit with a non zero status code",
+    )
+
+    parser.add_argument(
+        "--validation-max-history",
+        type=int,
+        default=None,
+        help="Number of turns taken into account for story structure validation.",
     )
 
 

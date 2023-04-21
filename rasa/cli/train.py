@@ -6,6 +6,7 @@ from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
 
 import rasa.cli.utils
+from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.utils.common
 from rasa.core.train import do_compare_training
 from rasa.shared.constants import (
@@ -84,11 +85,14 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         for f in args.data
     ]
 
-    if args.validate:
-        from rasa.cli.data import validate_files
-        args.fail_on_warnings = False
-        args.max_history = None
-        validate_files(args)
+    if args.validate_before_training:
+        importer = TrainingDataImporter.load_from_config(
+            domain_path=args.domain, training_data_paths=args.data, config_path=config
+        )
+        rasa.cli.utils.validate_files(
+            args.fail_on_validation_warnings,
+            args.validation_max_history,
+            importer)
 
     training_result = train_all(
         domain=domain,
