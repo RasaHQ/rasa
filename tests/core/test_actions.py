@@ -2891,6 +2891,6 @@ async def test_action_extract_slots_does_allows_slotset_for_same_value(
         assert len(caplog_info_records) == 0
 
         assert events == [
-            SlotSet("custom_slot_b", "test_B"),
+            SlotSet("custom_slot_a", "test_A"),
             SlotSet("custom_slot_a", "test_A"),
         ]
