@@ -32,6 +32,12 @@ import RasaProBanner from "@theme/RasaProBanner";
 |`rasa evaluate markers`   |Extracts markers from an existing tracker store.                                                                                          |
 |`rasa -h`                 |Shows all available commands.                                                                                                             |
 
+:::note
+If you run into character encoding issues on Windows like: `UnicodeEncodeError: 'charmap' codec can't encode character ...` or
+the terminal is not displaying colored messages properly, prepend `winpty` to the command you would like to run.
+For example `winpty rasa init` instead of `rasa init`
+:::
+
 ## Log Level
 
 Rasa produces log messages at several different levels (eg. warning, info, error and so on). You can control which level of logs you would like to see with `--verbose` (same as `-v`) or `--debug` (same as `-vv`) as optional command line arguments. See each command below for more explanation on what these arguments mean.

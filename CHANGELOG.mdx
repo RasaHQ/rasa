@@ -16,16 +16,48 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
-## [3.5.3] - 2023-03-30
+## [3.5.5] - 2023-04-20
                        
-Rasa 3.5.3 (2023-03-30)                        
+Rasa 3.5.5 (2023-04-20)                        
+### Bugfixes
+- [#12268](https://github.com/rasahq/rasa/issues/12268): Allow slot mapping parameter `intent` to accept a list of intent names (as strings), in addition to accepting an intent name as a single string.
+- [#12271](https://github.com/rasahq/rasa/issues/12271): Fix `BlockingIOError` when running `rasa shell` on utterances with more than 5KB of text.
+- [#12286](https://github.com/rasahq/rasa/issues/12286): Use `ruamel.yaml` round-trip loader in order to preserve all comments after appending `assistant_id` to `config.yml`.
+- [#12295](https://github.com/rasahq/rasa/issues/12295): Fix `AttributeError: 'NoneType' object has no attribute 'send_response'` caused by retrieving tracker via `GET /conversations/{conversation_id}/tracker` endpoint when `action_session_start` is customized in a custom action.
+  This was addressed by passing an instance of `CollectingOutputChannel` to the method retrieving the tracker from the `MessageProcessor`.
+
+### Improved Documentation
+- [#12272](https://github.com/rasahq/rasa/issues/12272): Updated AWS model loading documentation to indicate what should `AWS_ENDPOINT_URL` environment variable be set to.
+  Added integration test for AWS model loading.
+- [#12279](https://github.com/rasahq/rasa/issues/12279): Updated Rasa Pro Services documentation to add `KAFKA_SSL_CA_LOCATION` environment variable. Allows connections over SSL to Kafka
+- [#12290](https://github.com/rasahq/rasa/issues/12290): Added note to CLI documentation to address encoding and color issues on certain Windows terminals
+
+### Miscellaneous internal changes
+- [#12267](https://github.com/rasahq/rasa/issues/12267)
+
+
+## [3.5.4] - 2023-04-05
+
+Rasa 3.5.4 (2023-04-05)
+### Bugfixes
+- [#12226](https://github.com/rasahq/rasa/issues/12226): Fix issue with failures while publishing events to RabbitMQ after a RabbitMQ restart.
+  The fix consists of pinning `aio-pika` dependency to `8.2.3`, since this issue was introduced in `aio-pika` v`8.2.4`.
+- [#12232](https://github.com/rasahq/rasa/issues/12232): Patch redis Race Conditiion vulnerability.
+
+### Miscellaneous internal changes
+- [#12230](https://github.com/rasahq/rasa/issues/12230), [#12238](https://github.com/rasahq/rasa/issues/12238)
+
+
+## [3.5.3] - 2023-03-30
+
+Rasa 3.5.3 (2023-03-30)
 ### Improved Documentation
 - [#12209](https://github.com/rasahq/rasa/issues/12209): Add new Rasa Pro page in docs, together with minimal content changes.
 
 
 ## [3.5.2] - 2023-03-30
-                       
-Rasa 3.5.2 (2023-03-30)                        
+
+Rasa 3.5.2 (2023-03-30)
 ### Improvements
 - [#12144](https://github.com/rasahq/rasa/issues/12144): Add a self-reference of the synonym in the EntitySynonymMapper to handle entities extracted in a casing different to synonym case. (For example if a synonym `austria` is added, entities extracted with any alternate casing of the synonym will also be mapped to `austria`). It addresses ATO-616
 
@@ -43,8 +75,8 @@ Rasa 3.5.2 (2023-03-30)
 
 
 ## [3.5.1] - 2023-03-24
-                       
-Rasa 3.5.1 (2023-03-24)                        
+
+Rasa 3.5.1 (2023-03-24)
 ### Bugfixes
 - [#12174](https://github.com/rasahq/rasa/issues/12174): Fixes training `DIETCLassifier` on the GPU.
 
@@ -57,14 +89,14 @@ Rasa 3.5.1 (2023-03-24)
 
 
 ## [3.5.0] - 2023-03-21
-                       
-Rasa 3.5.0 (2023-03-21)                        
+
+Rasa 3.5.0 (2023-03-21)
 ### Features
 - [#12053](https://github.com/rasahq/rasa/issues/12053): Add a new required key (`assistant_id`) to `config.yml` to uniquely identify assistants in deployment.
   The assistant identifier is extracted from the model metadata and added to the metadata of all dialogue events.
   Re-training will be required to include the assistant id in the event metadata.
 
-  If the assistant identifier is missing from the `config.yml` or the default identifier value is not replaced, a random 
+  If the assistant identifier is missing from the `config.yml` or the default identifier value is not replaced, a random
   identifier is generated during each training.
 
   An assistant running without an identifier will issue a warning that dialogue events without identifier metadata will be
@@ -86,16 +118,45 @@ Rasa 3.5.0 (2023-03-21)
 - [#11924](https://github.com/rasahq/rasa/issues/11924), [#11926](https://github.com/rasahq/rasa/issues/11926), [#12006](https://github.com/rasahq/rasa/issues/12006), [#12022](https://github.com/rasahq/rasa/issues/12022), [#12092](https://github.com/rasahq/rasa/issues/12092), [#12135](https://github.com/rasahq/rasa/issues/12135), [#12137](https://github.com/rasahq/rasa/issues/12137), [#12140](https://github.com/rasahq/rasa/issues/12140), [#12154](https://github.com/rasahq/rasa/issues/12154)
 
 
+## [3.4.9] - 2023-04-05
+### Miscellaneous internal changes
+- [#12234](https://github.com/rasahq/rasa/issues/12234)
+
+
+## [3.4.8] - 2023-04-03
+
+Rasa 3.4.8 (2023-04-03)
+### Bugfixes
+- [#12186](https://github.com/rasahq/rasa/issues/12186): Fix issue with failures while publishing events to RabbitMQ after a RabbitMQ restart.
+  The fix consists of pinning `aio-pika` dependency to `8.2.3`, since this issue was introduced in `aio-pika` v`8.2.4`.
+
+
+## [3.4.7] - 2023-03-30
+
+Rasa 3.4.7 (2023-03-30)
+### Improvements
+- [#12144](https://github.com/rasahq/rasa/issues/12144): Add a self-reference of the synonym in the EntitySynonymMapper to handle entities extracted in a casing different to synonym case. (For example if a synonym `austria` is added, entities extracted with any alternate casing of the synonym will also be mapped to `austria`). It addresses ATO-616
+
+### Bugfixes
+- [#12139](https://github.com/rasahq/rasa/issues/12139): Fix 2 issues detected with the HTTP API:
+  - The `GET /conversations/{conversation_id}/tracker` endpoint was not returning the tracker with all sessions when `include_events` query parameter was set to `ALL`.
+  The fix constituted in using `TrackerStore.retrieve_full_tracker` method instead of `TrackerStore.retrieve` method in the function handling the `GET /conversations/{conversation_id}/tracker` endpoint.
+  Implemented or updated this method across all tracker store subclasses.
+  - The `GET /conversations/{conversation_id}/story` endpoint was not returning all the stories for all sessions when `all_sessions` query parameter was set to `true`.
+  The fix constituted in using all events of the tracker to be converted in stories instead of only the `applied_events`.
+- [#12189](https://github.com/rasahq/rasa/issues/12189): Make custom actions inheriting from rasa-sdk `FormValidationAction` parent class an exception of the `selective_domain` rule and always send them domain.
+
+
 ## [3.4.6] - 2023-03-16
-                       
-Rasa 3.4.6 (2023-03-16)                        
+
+Rasa 3.4.6 (2023-03-16)
 ### Bugfixes
 - [#12098](https://github.com/rasahq/rasa/issues/12098): Fixes CountVectorFeaturizer to train when min_df != 1.
 
 
 ## [3.4.5] - 2023-03-09
-                       
-Rasa 3.4.5 (2023-03-09)                        
+
+Rasa 3.4.5 (2023-03-09)
 ### Bugfixes
 - [#12059](https://github.com/rasahq/rasa/issues/12059): Check unresolved slots before initiating model training.
 - [#12096](https://github.com/rasahq/rasa/issues/12096): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
@@ -180,22 +241,41 @@ Rasa 3.4.0 (2022-12-14)
 ### Miscellaneous internal changes
 - [#11742](https://github.com/rasahq/rasa/issues/11742), [#11800](https://github.com/rasahq/rasa/issues/11800), [#11817](https://github.com/rasahq/rasa/issues/11817), [#11877](https://github.com/rasahq/rasa/issues/11877)
 
+## [3.3.8] - 2023-04-06
+### Miscellaneous internal changes
+- [#12235](https://github.com/rasahq/rasa/issues/12235)
+
+
+## [3.3.7] - 2023-03-31
+### Improvements
+- [#12144](https://github.com/rasahq/rasa/issues/12144): Add a self-reference of the synonym in the EntitySynonymMapper to handle entities extracted in a casing different to synonym case. (For example if a synonym `austria` is added, entities extracted with any alternate casing of the synonym will also be mapped to `austria`). It addresses ATO-616
+
+### Bugfixes
+- [#12187](https://github.com/rasahq/rasa/issues/12187): Fix issue with failures while publishing events to RabbitMQ after a RabbitMQ restart.
+  The fix consists of pinning `aio-pika` dependency to `8.2.3`, since this issue was introduced in `aio-pika` v`8.2.4`.
+- [#12192](https://github.com/rasahq/rasa/issues/12192): Fix 2 issues detected with the HTTP API:
+  - The `GET /conversations/{conversation_id}/tracker` endpoint was not returning the tracker with all sessions when `include_events` query parameter was set to `ALL`.
+  The fix constituted in using `TrackerStore.retrieve_full_tracker` method instead of `TrackerStore.retrieve` method in the function handling the `GET /conversations/{conversation_id}/tracker` endpoint.
+  Implemented or updated this method across all tracker store subclasses.
+  - The `GET /conversations/{conversation_id}/story` endpoint was not returning all the stories for all sessions when `all_sessions` query parameter was set to `true`.
+  The fix constituted in using all events of the tracker to be converted in stories instead of only the `applied_events`.
+
 ## [3.3.6] - 2023-03-09
 
-Rasa 3.3.6 (2023-03-09)                        
+Rasa 3.3.6 (2023-03-09)
 ### Bugfixes
 - [#12103](https://github.com/rasahq/rasa/issues/12103): Fixes the bug when a slot (with `from_intent` mapping which contains no input for `intent` parameter) will no longer fill for any intent that is not under the `not_intent` parameter.
 - [#12117](https://github.com/rasahq/rasa/issues/12117): Fix validation metrics calculation when batch_size is dynamic.
 
 
-## [3.3.5] - 2023-02-21                          
+## [3.3.5] - 2023-02-21
 
 No significant changes.
 
 
 ## [3.3.4] - 2023-02-14
 
-Rasa 3.3.4 (2023-02-14)                        
+Rasa 3.3.4 (2023-02-14)
 ### Improvements
 - [#11996](https://github.com/rasahq/rasa/issues/11996): Add capability to send compressed body in HTTP request to action server.
 Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
