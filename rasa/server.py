@@ -721,7 +721,8 @@ def create_app(
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
         tracker = await app.ctx.agent.processor.fetch_full_tracker_with_initial_session(
-            conversation_id
+            conversation_id,
+            output_channel=CollectingOutputChannel(),
         )
 
         try:
