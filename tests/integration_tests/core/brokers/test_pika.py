@@ -31,6 +31,7 @@ async def test_pika_event_broker_connect():
         await broker.close()
 
 
+@pytest.mark.xdist_group("rabbitmq")
 async def test_pika_event_broker_publish_after_restart(
     docker_client: docker.DockerClient,
     caplog: LogCaptureFixture,
@@ -101,6 +102,7 @@ async def test_pika_event_broker_publish_after_restart(
     rabbitmq_container.remove()
 
 
+@pytest.mark.xdist_group("rabbitmq")
 @pytest.mark.parametrize("host_component", ["localhost", "myuser:mypassword@localhost"])
 async def test_pika_event_broker_connect_with_path_and_query_params_in_url(
     docker_client: docker.DockerClient,
