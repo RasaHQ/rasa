@@ -14,7 +14,6 @@ from rasa.shared.nlu.training_data.message import Message
 if typing.TYPE_CHECKING:
     from rasa.rasa.engine.graph import SchemaNode
     from rasa.shared.core.domain import Domain
-    from rasa.core.actions.action import Action
     from rasa.core.policies.policy import PolicyPrediction
 
 hookspec = pluggy.HookspecMarker("rasa")
@@ -96,11 +95,6 @@ def clean_entity_targets_for_evaluation(
     merged_targets: List[str], extractor: str
 ) -> List[str]:
     """Remove entity targets for space-based entity extractors."""
-
-
-@hookspec  # type: ignore[misc]
-def generate_space_activation_actions(domain: "Domain") -> List["Action"]:
-    """Hook specification for getting a plugin's list of space activation actions."""
 
 
 @hookspec(firstresult=True)  # type: ignore[misc]
