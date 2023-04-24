@@ -28,6 +28,18 @@ Load data from a file path and split the NLU data into test and train examples.
 
 - `args` - Commandline arguments
 
+#### split\_stories\_data
+
+```python
+def split_stories_data(args: argparse.Namespace) -> None
+```
+
+Load data from a file path and split stories into test and train examples.
+
+**Arguments**:
+
+- `args` - Commandline arguments
+
 #### validate\_files
 
 ```python
