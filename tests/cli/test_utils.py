@@ -337,7 +337,7 @@ def test_data_validate_stories_with_max_history_zero():
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml",
         "data/test_moodbot/domain.yml",
-        "data/test_moodbot/data"
+        "data/test_moodbot/data",
     )
 
     with pytest.raises(argparse.ArgumentTypeError):
@@ -365,7 +365,7 @@ def test_validate_files_action_not_found_invalid_domain(
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml",
         "data/test_moodbot/domain.yml",
-        [file_name]
+        [file_name],
     )
 
     with pytest.raises(SystemExit):
@@ -394,7 +394,7 @@ def test_validate_files_form_not_found_invalid_domain(
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml",
         "data/test_restaurantbot/domain.yml",
-        [file_name]
+        [file_name],
     )
     with pytest.raises(SystemExit):
         rasa.cli.utils.validate_files(False, None, importer)
@@ -428,7 +428,7 @@ def test_validate_files_with_active_loop_null(
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_unique_assistant_id.yml",
         domain_file,
-        [file_name, nlu_file]
+        [file_name, nlu_file],
     )
     with pytest.warns() as warning_recorder:
         rasa.cli.utils.validate_files(False, None, importer)
@@ -469,7 +469,7 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml",
         domain_file_name,
-        "data/test_moodbot/data"
+        "data/test_moodbot/data",
     )
     with pytest.raises(SystemExit):
         rasa.cli.utils.validate_files(False, None, importer)
@@ -480,10 +480,9 @@ def test_validate_files_exit_early():
         importer = TrainingDataImporter.load_from_config(
             "data/test_config/config_defaults.yml",
             "data/test_domains/duplicate_intents.yml",
-            "data/test_moodbot/data"
+            "data/test_moodbot/data",
         )
         rasa.cli.utils.validate_files(True, None, importer)
-
 
     assert pytest_e.type == SystemExit
     assert pytest_e.value.code == 1
@@ -493,7 +492,7 @@ def test_validate_files_invalid_domain():
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml",
         "data/test_domains/default_with_mapping.yml",
-        None
+        None,
     )
 
     with pytest.raises(SystemExit):
@@ -535,9 +534,7 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
                 """
     )
     importer = TrainingDataImporter.load_from_config(
-        "data/test_config/config_defaults.yml",
-        str(domain),
-        None
+        "data/test_config/config_defaults.yml", str(domain), None
     )
     with pytest.raises(SystemExit):
         rasa.cli.utils.validate_files(False, None, importer)
@@ -545,9 +542,7 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
 
 def test_validate_files_config_default_assistant_id():
     importer = TrainingDataImporter.load_from_config(
-        "data/test_config/config_defaults.yml",
-        "data/test_moodbot/domain.yml",
-        None
+        "data/test_config/config_defaults.yml", "data/test_moodbot/domain.yml", None
     )
     msg = (
         f"The config file is missing a unique value for the "
@@ -562,7 +557,7 @@ def test_validate_files_config_missing_assistant_id():
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_no_assistant_id.yml",
         "data/test_moodbot/domain.yml",
-        None
+        None,
     )
     msg = f"The config file is missing the '{ASSISTANT_ID_KEY}' mandatory key."
     with pytest.warns(UserWarning, match=msg):

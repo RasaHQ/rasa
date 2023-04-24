@@ -1,21 +1,10 @@
-import argparse
 import os
-import re
 from pathlib import Path
-from unittest.mock import Mock
-import pytest
-from collections import namedtuple
-from typing import Callable, Text
+from typing import Callable
 
 from _pytest.fixtures import FixtureRequest
-from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
-from rasa.cli import data, utils
-from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.utils.common import EXPECTED_WARNINGS
-from rasa.validator import Validator
 import rasa.shared.utils.io
 
 from tests.cli.conftest import RASA_EXE
@@ -174,8 +163,8 @@ def test_data_migrate_help(run: Callable[..., RunResult]):
 
 
 def test_data_validate_default_options(
-    run_in_simple_project: Callable[..., RunResult],
-    request: FixtureRequest):
+    run_in_simple_project: Callable[..., RunResult], request: FixtureRequest
+):
     test_data_dir = Path(request.config.rootdir, "data", "test_moodbot", "data")
     test_domain = Path(request.config.rootdir, "data", "test_moodbot", "domain.yml")
     test_config = Path(request.config.rootdir, "data", "test_moodbot", "config.yml")
@@ -188,7 +177,7 @@ def test_data_validate_default_options(
         "--domain",
         str(test_domain),
         "-c",
-        str(test_config)
+        str(test_config),
     )
 
     # should not raise any errors
@@ -196,8 +185,8 @@ def test_data_validate_default_options(
 
 
 def test_data_validate_not_used_warning(
-    run_in_simple_project: Callable[..., RunResult],
-    request: FixtureRequest):
+    run_in_simple_project: Callable[..., RunResult], request: FixtureRequest
+):
     test_data_dir = Path(request.config.rootdir, "data", "test_validation", "data")
     test_domain = Path(request.config.rootdir, "data", "test_validation", "domain.yml")
     test_config = Path(request.config.rootdir, "data", "test_moodbot", "config.yml")
@@ -210,11 +199,11 @@ def test_data_validate_not_used_warning(
         "--domain",
         str(test_domain),
         "-c",
-        str(test_config)
+        str(test_config),
     )
 
     for warning in [
         "The intent 'goodbye' is not used in any story or rule.",
-        "The utterance 'utter_chatter' is not used in any story or rule."
+        "The utterance 'utter_chatter' is not used in any story or rule.",
     ]:
         assert warning in str(result.stderr)

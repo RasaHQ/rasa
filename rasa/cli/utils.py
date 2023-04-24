@@ -211,11 +211,12 @@ def get_validated_config(
 
     return config
 
+
 def validate_files(
     fail_on_warnings: bool,
     max_history: Optional[int],
     importer: TrainingDataImporter,
-    stories_only: bool = False
+    stories_only: bool = False,
 ) -> None:
     """Validates either the story structure or the entire project.
 
@@ -230,20 +231,12 @@ def validate_files(
     validator = Validator.from_importer(importer)
 
     if stories_only:
-        all_good = _validate_story_structure(
-            validator,
-            max_history,
-            fail_on_warnings)
+        all_good = _validate_story_structure(validator, max_history, fail_on_warnings)
     else:
         all_good = (
             _validate_domain(validator)
-            and _validate_nlu(
-                validator,
-                fail_on_warnings)
-            and _validate_story_structure(
-                validator,
-                max_history,
-                fail_on_warnings)
+            and _validate_nlu(validator, fail_on_warnings)
+            and _validate_story_structure(validator, max_history, fail_on_warnings)
         )
 
     validator.warn_if_config_mandatory_keys_are_not_set()
@@ -270,19 +263,18 @@ def _validate_nlu(validator: "Validator", fail_on_warnings: bool) -> bool:
 
 
 def _validate_story_structure(
-    validator: "Validator",
-    max_history: Optional[int],
-    fail_on_warnings: bool) -> bool:
+    validator: "Validator", max_history: Optional[int], fail_on_warnings: bool
+) -> bool:
     # Check if a valid setting for `max_history` was given
     if isinstance(max_history, int) and max_history < 1:
         raise argparse.ArgumentTypeError(
-            f"The value of `--max-history {max_history}` "
-            f"is not a positive integer."
+            f"The value of `--max-history {max_history}` " f"is not a positive integer."
         )
 
     return validator.verify_story_structure(
         not fail_on_warnings, max_history=max_history
     )
+
 
 def cancel_cause_not_found(
     current: Optional[Union["Path", Text]],
