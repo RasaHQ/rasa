@@ -2,6 +2,7 @@ import logging
 from typing import Text
 
 import docker
+import pytest
 import randomname
 from pytest import LogCaptureFixture
 
@@ -100,8 +101,10 @@ async def test_pika_event_broker_publish_after_restart(
     rabbitmq_container.remove()
 
 
+@pytest.mark.parametrize("host_component", ["localhost", "myuser:mypassword@localhost"])
 async def test_pika_event_broker_connect_with_path_and_query_params_in_url(
     docker_client: docker.DockerClient,
+    host_component: Text,
 ) -> None:
     username = "myuser"
     password = "mypassword"
@@ -128,7 +131,7 @@ async def test_pika_event_broker_connect_with_path_and_query_params_in_url(
     query_param = "heartbeat=5"
 
     broker = PikaEventBroker(
-        host=f"amqp://{RABBITMQ_HOST}/{vhost}?{query_param}",
+        host=f"amqp://{host_component}/{vhost}?{query_param}",
         username=username,
         password=password,
         port=RABBITMQ_PORT,

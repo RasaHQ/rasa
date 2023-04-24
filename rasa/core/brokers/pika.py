@@ -165,15 +165,18 @@ class PikaEventBroker(EventBroker):
         # `password`.
         if self.host.startswith("amqp"):
 
-            parsed_host = urlparse(self.host)
-            amqp_user = f"{self.username}:{self.password}"
-            url = f"{parsed_host.scheme}://{amqp_user}@{parsed_host.netloc}:{self.port}"
+            if self.username in self.host and self.password in self.host:
+                url = self.host
+            else:
+                parsed_host = urlparse(self.host)
+                amqp_user = f"{self.username}:{self.password}"
+                url = f"{parsed_host.scheme}://{amqp_user}@{parsed_host.netloc}:{self.port}"  # noqa: E501
 
-            if parsed_host.path:
-                url = f"{url}{parsed_host.path}"
+                if parsed_host.path:
+                    url = f"{url}{parsed_host.path}"
 
-            if parsed_host.query:
-                url = f"{url}?{parsed_host.query}"
+                if parsed_host.query:
+                    url = f"{url}?{parsed_host.query}"
 
         ssl_options = _create_rabbitmq_ssl_options(self.host)
         logger.info("Connecting to RabbitMQ ...")
