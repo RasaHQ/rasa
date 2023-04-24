@@ -172,4 +172,49 @@ def test_data_migrate_help(run: Callable[..., RunResult]):
     for line in lines:
         assert line.strip() in printed_help
 
-# TODO: add tests for `rasa data validate` now that validate_files is moved to utils
+
+def test_data_validate_default_options(
+    run_in_simple_project: Callable[..., RunResult],
+    request: FixtureRequest):
+    test_data_dir = Path(request.config.rootdir, "data", "test_moodbot", "data")
+    test_domain = Path(request.config.rootdir, "data", "test_moodbot", "domain.yml")
+    test_config = Path(request.config.rootdir, "data", "test_moodbot", "config.yml")
+
+    result = run_in_simple_project(
+        "data",
+        "validate",
+        "--data",
+        str(test_data_dir),
+        "--domain",
+        str(test_domain),
+        "-c",
+        str(test_config)
+    )
+
+    # should not raise any errors
+    assert result.ret == 0
+
+
+def test_data_validate_not_used_warning(
+    run_in_simple_project: Callable[..., RunResult],
+    request: FixtureRequest):
+    test_data_dir = Path(request.config.rootdir, "data", "test_validation", "data")
+    test_domain = Path(request.config.rootdir, "data", "test_validation", "domain.yml")
+    test_config = Path(request.config.rootdir, "data", "test_moodbot", "config.yml")
+
+    result = run_in_simple_project(
+        "data",
+        "validate",
+        "--data",
+        str(test_data_dir),
+        "--domain",
+        str(test_domain),
+        "-c",
+        str(test_config)
+    )
+
+    for warning in [
+        "The intent 'goodbye' is not used in any story or rule.",
+        "The utterance 'utter_chatter' is not used in any story or rule."
+    ]:
+        assert warning in str(result.stderr)

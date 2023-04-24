@@ -476,18 +476,18 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
         rasa.cli.utils.validate_files(False, None, importer)
 
 
-# def test_validate_files_exit_early():
-#     with pytest.raises(SystemExit) as pytest_e:
-#             importer = TrainingDataImporter.load_from_config(
-#             "data/test_config/config_defaults.yml",
-#             "data/test_domains/duplicate_intents.yml",
-#             "data/test_moodbot/data"
-#         )
-#         rasa.cli.utils.validate_files(True, None, importer)
+def test_validate_files_exit_early():
+    with pytest.raises(SystemExit) as pytest_e:
+        importer = TrainingDataImporter.load_from_config(
+            "data/test_config/config_defaults.yml",
+            "data/test_domains/duplicate_intents.yml",
+            "data/test_moodbot/data"
+        )
+        rasa.cli.utils.validate_files(True, None, importer)
 
 
-#     assert pytest_e.type == SystemExit
-#     assert pytest_e.value.code == 1
+    assert pytest_e.type == SystemExit
+    assert pytest_e.value.code == 1
 
 
 def test_validate_files_invalid_domain():

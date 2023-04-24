@@ -509,3 +509,56 @@ def test_train_nlu_finetune_with_model(
     assert any(
         "Your Rasa model is trained and saved at" in line for line in output.outlines
     )
+
+
+def test_train_validation_warnings(
+    run_in_simple_project: Callable[..., RunResult],
+    request: pytest.FixtureRequest
+    ):
+    test_data_dir = Path(request.config.rootdir, "data", "test_validation", "data")
+    test_domain = Path(request.config.rootdir, "data", "test_validation", "domain.yml")
+
+    result = run_in_simple_project(
+        "train",
+        "--validate-before-training",
+        "--data",
+        str(test_data_dir),
+        "--domain",
+        str(test_domain),
+        "-c",
+        "config.yml"
+    )
+
+    assert result.ret == 0
+    for warning in [
+        "The intent 'goodbye' is not used in any story or rule.",
+        "The utterance 'utter_chatter' is not used in any story or rule."
+    ]:
+        assert warning in str(result.stderr)
+
+
+def test_train_validation_fail_on_warnings(
+    run_in_simple_project: Callable[..., RunResult],
+    request: pytest.FixtureRequest
+    ):
+    test_data_dir = Path(request.config.rootdir, "data", "test_moodbot", "data")
+    test_domain = Path(
+        request.config.rootdir,
+        "data",
+        "test_domains",
+        "duplicate_intents.yml"
+    )
+
+    result = run_in_simple_project(
+        "train",
+        "--validate-before-training",
+        "--fail-on-validation-warnings",
+        "--data",
+        str(test_data_dir),
+        "--domain",
+        str(test_domain),
+        "-c",
+        "config.yml"
+    )
+
+    assert result.ret == 1
