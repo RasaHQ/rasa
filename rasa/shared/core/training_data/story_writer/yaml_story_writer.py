@@ -219,7 +219,7 @@ class YAMLStoryWriter(StoryWriter):
                         # of `rasa.shared`
                         for predicted in user_utterance.predicted_entities:  # type: ignore[attr-defined] # noqa: E501
                             if predicted["start"] == entity["start"]:
-                                commented_entity = user_utterance.inline_comment_for_entity(  # noqa: E501
+                                commented_entity = user_utterance.inline_comment_for_entity(  # type: ignore[attr-defined] # noqa: E501
                                     predicted, entity
                                 )
                                 if commented_entity:
@@ -247,7 +247,7 @@ class YAMLStoryWriter(StoryWriter):
         if hasattr(user_utterance, "inline_comment"):
             # FIXME: to fix this type issue, WronglyClassifiedUserUtterance needs to
             # be imported but it's currently outside of `rasa.shared`
-            comment = user_utterance.inline_comment(
+            comment = user_utterance.inline_comment(  # type: ignore[attr-defined]
                 force_comment_generation=not entities
             )
             if comment:
@@ -291,7 +291,7 @@ class YAMLStoryWriter(StoryWriter):
         if hasattr(action, "inline_comment"):
             # FIXME: to fix this type issue, WarningPredictedAction needs to
             # be imported but it's currently outside of `rasa.shared`
-            comment = action.inline_comment()
+            comment = action.inline_comment()  # type: ignore[attr-defined]
             if KEY_ACTION in result and comment:
                 result.yaml_add_eol_comment(comment, KEY_ACTION)
             elif KEY_BOT_END_TO_END_MESSAGE in result and comment:
