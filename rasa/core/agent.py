@@ -3,7 +3,6 @@ from asyncio import AbstractEventLoop, CancelledError
 import functools
 import logging
 import os
-import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
