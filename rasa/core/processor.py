@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 import tarfile
-import tempfile
 import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
@@ -55,6 +54,7 @@ from rasa.shared.constants import (
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 import rasa.core.tracker_store
 import rasa.core.actions.action
 import rasa.shared.core.trackers
@@ -129,7 +129,7 @@ class MessageProcessor:
             raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
         logger.info(f"Loading model {model_tar}...")
-        with tempfile.TemporaryDirectory() as temporary_directory:
+        with TempDirectoryPath(get_temp_dir_name()) as temporary_directory:
             try:
                 metadata, runner = loader.load_predict_graph_runner(
                     Path(temporary_directory),
