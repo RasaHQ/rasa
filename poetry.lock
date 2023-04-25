@@ -178,6 +178,21 @@ yarl = ">=1.0,<2.0"
 speedups = ["Brotli", "aiodns", "cchardet"]
 
 [[package]]
+name = "aiohttp-retry"
+version = "2.8.3"
+description = "Simple retry client for aiohttp"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "aiohttp_retry-2.8.3-py3-none-any.whl", hash = "sha256:3aeeead8f6afe48272db93ced9440cf4eda8b6fd7ee2abb25357b7eb28525b45"},
+    {file = "aiohttp_retry-2.8.3.tar.gz", hash = "sha256:9a8e637e31682ad36e1ff9f8bcba912fcfc7d7041722bc901a4b948da4d71ea9"},
+]
+
+[package.dependencies]
+aiohttp = "*"
+
+[[package]]
 name = "aioresponses"
 version = "0.7.4"
 description = "Mock out requests made by ClientSession from aiohttp package"
@@ -6544,17 +6559,19 @@ vision = ["Pillow"]
 
 [[package]]
 name = "twilio"
-version = "7.14.2"
+version = "8.1.0"
 description = "Twilio API client and TwiML generator"
 category = "main"
 optional = false
-python-versions = ">=3.6.0"
+python-versions = ">=3.7.0"
 files = [
-    {file = "twilio-7.14.2-py2.py3-none-any.whl", hash = "sha256:21a7b6460f27de469e8480020fe7ef6d225ecb34c2af6f38068c1f7e6083815a"},
-    {file = "twilio-7.14.2.tar.gz", hash = "sha256:18fa85693641cfafaf2433c3af545e3766b691046a277914ae01bf7c805bc6cb"},
+    {file = "twilio-8.1.0-py2.py3-none-any.whl", hash = "sha256:19be48f21e799b9dd10e2e0a5633962438e04842864e806409f4f2dbe446a868"},
+    {file = "twilio-8.1.0.tar.gz", hash = "sha256:a31863119655cd3643f788099f6ea3fe74eea59ce3f65600f9a4931301311c08"},
 ]
 
 [package.dependencies]
+aiohttp = ">=3.8.4"
+aiohttp-retry = ">=2.8.3"
 PyJWT = ">=2.0.0,<3.0.0"
 pytz = "*"
 requests = ">=2.0.0"
@@ -7407,4 +7424,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<3.11"
-content-hash = "dc60de6ca65dd6abf6066bc9a341a72e7072f55c30af16a0c58b7e396134dbac"
+content-hash = "e6b8994a614a43fc683078dc8cd53ad9fa7594e46ffae000e44d905f0d9c57f8"
