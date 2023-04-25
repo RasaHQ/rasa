@@ -131,6 +131,7 @@ pluggy = "^1.0.0"
 # pin required for tensorflow-io-gcs-filesystem
 # remove pin once upgraded to tensorflow 2.12 in rasa
 tensorflow-io-gcs-filesystem = "0.25.0"
+markdown = "3.3.4"
 [[tool.poetry.dependencies.numpy]]
 version = ">=1.19.2,<1.22.0"
 python = "~=3.7.0"
