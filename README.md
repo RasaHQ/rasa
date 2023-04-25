@@ -440,9 +440,9 @@ the bottom of the
 [Libraries Summary](https://libraries.io/github/RasaHQ/rasa).
 
 ### Additional Release Tasks 
-In order to check compatibility between the new released Rasa version to the latest version of Rasax, we perform the following steps:
+In order to check compatibility between the new released Rasa version to the latest version of Rasa X/Enterprise, we perform the following steps:
 1. Following a new Rasa release, an automated pull request is created in [Rasa-X-Demo](https://github.com/RasaHQ/rasa-x-demo/pulls). 
 2. Once the above PR is merged, follow instructions [here](https://github.com/RasaHQ/rasa-x-demo/blob/master/.github/VERSION_BUMPER_PR_COMMENT.md), to release a version.
-3. Update the new version in the Rasax [env file](https://github.com/RasaHQ/rasa-x/blob/main/.env).
-The [Rasa-X-Demo](https://github.com/RasaHQ/rasa-x-demo) project uses the new updated Rasa version to train and test a model which in turn is used by our CI to run tests in the Rasax repository, 
-thus validating compatibility between Rasa and Rasax.
+3. Update the new version in the Rasa X/Enterprise [env file](https://github.com/RasaHQ/rasa-x/blob/main/.env).
+The [Rasa-X-Demo](https://github.com/RasaHQ/rasa-x-demo) project uses the new updated Rasa version to train and test a model which in turn is used by our CI to run tests in the Rasa X/Enterprise repository, 
+thus validating compatibility between Rasa and Rasa X/Enterprise.
