@@ -3,7 +3,6 @@ import concurrent.futures
 import logging
 import multiprocessing
 import os
-import tempfile
 import traceback
 from collections import defaultdict
 from functools import reduce, wraps
@@ -66,6 +65,7 @@ from rasa.core.channels.channel import (
 import rasa.shared.core.events
 from rasa.shared.core.events import Event
 from rasa.core.test import test
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
@@ -630,7 +630,7 @@ def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
 
     @wraps(f)
     async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
-        with tempfile.TemporaryDirectory() as directory:
+        with TempDirectoryPath(get_temp_dir_name()) as directory:
             # Decorated request handles need to have a parameter `temporary_directory`
             return await f(*args, temporary_directory=Path(directory), **kwargs)
 
