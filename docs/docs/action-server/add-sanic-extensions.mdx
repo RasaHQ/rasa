@@ -1,0 +1,54 @@
+---
+id: add-sanic-extensions
+sidebar_label: Adding Sanic Extensions
+title: Add Sanic Extensions using Pluggy
+---
+
+# Add Sanic extensions
+With the use of Pluggy, you can now create additional sanic extensions by accessing the app object created by the action server.
+
+## Step by Step Guide on creating your own sanic extension in rasa_sdk
+This example will show how to create a sanic listener using plugins.
+
+### Step 1
+Create a package in your action server project called `rasa_sdk_plugins`. Rasa SDK will try to instantiate this package in your project to start plugins.
+If no plugins found, it will print an info that there are no plugins in your project.
+
+### Step 2
+Instantiate the package `rasa_sdk_plugins` and initialise the hooks. create an `__init__.py` Plugin manager will look for the module where the hooks are implemented
+
+```
+def init_hooks(manager: pluggy.PluginManager) -> None:
+    """Initialise hooks into rasa sdk."""
+    import sys
+    logger.info("Finding hooks")
+    manager.register(sys.modules["rasa_sdk_plugins.your_module"])
+```
+### Step 3
+Implement the hook `attach_sanic_app_extensions`. This hook forwards the app object created by Sanic in the `rasa_sdk` and allows you to create additional routes, middlewares, listeners and background tasks. Here's an example of this implementation that creates a listener.
+
+In your `rasa_sdk_plugins.your_module.py`
+
+```
+from __future__ import annotations
+import logging
+
+import pluggy
+
+from functools import partial
+
+logger = logging.getLogger(__name__)
+hookimpl = pluggy.HookimplMarker("rasa_sdk")
+
+@hookimpl  # type: ignore[misc]
+def attach_sanic_app_extensions(app) -> bool:
+    logger.info("hook called")
+    app.register_listener(
+        partial(print),
+        "before_server_start",
+    )
+    return app
+
+async def print(app, loop):
+    logger.info("BEFORE SERVER START")
+```
