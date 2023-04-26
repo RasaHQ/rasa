@@ -119,6 +119,6 @@ def prefix_stripping_for_custom_actions(json_body: Dict[Text, Any]) -> Dict[Text
 
 @hookspec  # type: ignore[misc]
 def prefixing_custom_actions_response(
-    response: Dict[Text, Any], domain: "Domain"
+    json_body: Dict[Text, Any], response: Dict[Text, Any]
 ) -> None:
     """Add namespacing to the response from custom actions."""

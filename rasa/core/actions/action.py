@@ -788,7 +788,7 @@ class RemoteAction(Action):
             )
             if modified_json:
                 plugin_manager().hook.prefixing_custom_actions_response(
-                    response=response, domain=domain
+                    json_body=json_body, response=response
                 )
             self._validate_action_result(response)
 
