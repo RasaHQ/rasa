@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: 3.9
 
@@ -93,7 +93,7 @@ jobs:
       # Authenticate and push to the release registry
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
-        uses: 'google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d'
+        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
         with:
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
