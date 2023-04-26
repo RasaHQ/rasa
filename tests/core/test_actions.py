@@ -2855,7 +2855,7 @@ async def test_action_extract_slots_allows_slotset_for_same_value(
 
     # Set the value of the slot in the tracker manually
     tracker.update(SlotSet("custom_slot_a", "test_A"))
-    action_server_url = "http://my-action-server:5055/webhook"
+    action_server_url = "https://my-action-server:5055/webhook"
 
     with aioresponses() as mocked:
         mocked.post(
