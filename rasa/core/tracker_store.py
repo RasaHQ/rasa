@@ -335,12 +335,6 @@ class TrackerStore:
             body.update(event.as_dict())
             event_broker.publish(body)
 
-    async def number_of_existing_events(self, sender_id: Text) -> int:
-        """Return number of stored events for a given sender id."""
-        old_tracker = await self.retrieve(sender_id)
-
-        return len(old_tracker.events) if old_tracker else 0
-
     async def keys(self) -> Iterable[Text]:
         """Returns the set of values for the tracker store's primary key."""
         raise NotImplementedError()
