@@ -541,7 +541,7 @@ class Agent:
         persistor = get_persistor(self.remote_storage)
 
         if persistor is not None:
-            with TempDirectoryPath(get_temp_dir_name) as temporary_directory:
+            with TempDirectoryPath(get_temp_dir_name()) as temporary_directory:
                 persistor.retrieve(model_name, temporary_directory)
                 self.load_model(temporary_directory)
 
