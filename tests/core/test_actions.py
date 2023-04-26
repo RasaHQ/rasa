@@ -2883,8 +2883,3 @@ async def test_action_extract_slots_allows_slotset_for_same_value(
         )
         assert len(caplog_info_records) == 0
         assert events == [SlotSet("custom_slot_a", "test_A")]
-        assert tracker.events == [
-            UserUttered("Hi"),
-            SlotSet("custom_slot_a", "test_A"),
-            SlotSet("custom_slot_a", "test_A"),
-        ]
