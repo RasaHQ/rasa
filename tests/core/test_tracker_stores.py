@@ -1,3 +1,4 @@
+import itertools
 import logging
 import warnings
 from collections import deque
@@ -52,6 +53,7 @@ from rasa.core.tracker_store import (
     DynamoTrackerStore,
     FailSafeTrackerStore,
     AwaitableTrackerStore,
+    TrackerEventDiffEngine,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
@@ -1286,3 +1288,36 @@ def test_redis_tracker_store_merge_trackers_different_session() -> None:
 
     expected_events = prior_tracker_events + new_session
     assert list(actual_tracker.events) == expected_events
+
+
+async def test_tracker_event_diff_engine_event_difference() -> None:
+    start_session_sequence = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+    events: List[Event] = start_session_sequence + [UserUttered("hello")]
+    prior_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+
+    events += [BotUttered("Hey! How can I help you?")]
+
+    new_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+
+    event_diff = await TrackerEventDiffEngine.event_difference(
+        prior_tracker, new_tracker
+    )
+    new_tracker_events = list(new_tracker.events)
+    prior_tracker_events = list(prior_tracker.events)
+
+    new_events = list(
+        itertools.islice(
+            new_tracker_events, len(prior_tracker_events), len(new_tracker_events)
+        )
+    )
+    assert new_events == event_diff
