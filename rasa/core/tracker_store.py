@@ -318,9 +318,8 @@ class TrackerStore:
             logger.debug("No event broker configured. Skipping streaming events.")
             return None
 
-        offset = await self.number_of_existing_events(tracker.sender_id)
-        events = tracker.events
-        new_events = list(itertools.islice(events, offset, len(events)))
+        old_tracker = await self.retrieve(tracker.sender_id)
+        new_events = await TrackerEventDiffEngine.event_difference(old_tracker, tracker)
 
         await self._stream_new_events(self.event_broker, new_events, tracker.sender_id)
 
@@ -1664,3 +1663,21 @@ class AwaitableTrackerStore(TrackerStore):
             if isawaitable(result)
             else result  # type: ignore[return-value]
         )
+
+
+class TrackerEventDiffEngine:
+    """Computes event difference of two trackers."""
+
+    @staticmethod
+    async def event_difference(
+        original: DialogueStateTracker, tracker: DialogueStateTracker
+    ) -> List[Event]:
+        """Returns all events from the new tracker which are not present
+        in the original tracker.
+
+        Args:
+            tracker: Tracker containing events from the current conversation session.
+        """
+        offset = len(original.events) if original else 0
+        events = tracker.events
+        return list(itertools.islice(events, offset, len(events)))
