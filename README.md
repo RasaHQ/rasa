@@ -427,6 +427,17 @@ need your fixes to be on the `2.0.x` release branch). All patch releases must co
 steps + get the PR merged.
 4. Once the PR is in, pull the `.x` branch again and push the tag!
 
+### Additional Release Tasks 
+**Note: This is only required if the released version is the highest version available.
+For instance, perform the following steps when version > [version](https://github.com/RasaHQ/rasa/blob/main/rasa/version.py) on main.**
+
+In order to check compatibility between the new released Rasa version to the latest version of Rasa X/Enterprise, we perform the following steps:
+1. Following a new Rasa release, an automated pull request is created in [Rasa-X-Demo](https://github.com/RasaHQ/rasa-x-demo/pulls). 
+2. Once the above PR is merged, follow instructions [here](https://github.com/RasaHQ/rasa-x-demo/blob/master/.github/VERSION_BUMPER_PR_COMMENT.md), to release a version.
+3. Update the new version in the Rasa X/Enterprise [env file](https://github.com/RasaHQ/rasa-x/blob/main/.env).
+The [Rasa-X-Demo](https://github.com/RasaHQ/rasa-x-demo) project uses the new updated Rasa version to train and test a model which in turn is used by our CI to run tests in the Rasa X/Enterprise repository, 
+thus validating compatibility between Rasa and Rasa X/Enterprise.
+
 ### Actively maintained versions
 
 Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.

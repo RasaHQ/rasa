@@ -16,6 +16,26 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.5.5] - 2023-04-20
+                       
+Rasa 3.5.5 (2023-04-20)                        
+### Bugfixes
+- [#12268](https://github.com/rasahq/rasa/issues/12268): Allow slot mapping parameter `intent` to accept a list of intent names (as strings), in addition to accepting an intent name as a single string.
+- [#12271](https://github.com/rasahq/rasa/issues/12271): Fix `BlockingIOError` when running `rasa shell` on utterances with more than 5KB of text.
+- [#12286](https://github.com/rasahq/rasa/issues/12286): Use `ruamel.yaml` round-trip loader in order to preserve all comments after appending `assistant_id` to `config.yml`.
+- [#12295](https://github.com/rasahq/rasa/issues/12295): Fix `AttributeError: 'NoneType' object has no attribute 'send_response'` caused by retrieving tracker via `GET /conversations/{conversation_id}/tracker` endpoint when `action_session_start` is customized in a custom action.
+  This was addressed by passing an instance of `CollectingOutputChannel` to the method retrieving the tracker from the `MessageProcessor`.
+
+### Improved Documentation
+- [#12272](https://github.com/rasahq/rasa/issues/12272): Updated AWS model loading documentation to indicate what should `AWS_ENDPOINT_URL` environment variable be set to.
+  Added integration test for AWS model loading.
+- [#12279](https://github.com/rasahq/rasa/issues/12279): Updated Rasa Pro Services documentation to add `KAFKA_SSL_CA_LOCATION` environment variable. Allows connections over SSL to Kafka
+- [#12290](https://github.com/rasahq/rasa/issues/12290): Added note to CLI documentation to address encoding and color issues on certain Windows terminals
+
+### Miscellaneous internal changes
+- [#12267](https://github.com/rasahq/rasa/issues/12267)
+
+
 ## [3.5.4] - 2023-04-05
 
 Rasa 3.5.4 (2023-04-05)
