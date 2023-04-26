@@ -107,7 +107,7 @@ def _set_not_required_args(args: argparse.Namespace) -> None:
     args.dry_run = False
     args.validate_before_training = False
     args.fail_on_validation_warnings = False
-    args.validation_max_history = False
+    args.validation_max_history = None
 
 
 def perform_interactive_learning(

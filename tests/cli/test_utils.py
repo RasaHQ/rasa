@@ -341,7 +341,11 @@ def test_data_validate_stories_with_max_history_zero():
     )
 
     with pytest.raises(argparse.ArgumentTypeError):
-        rasa.cli.utils.validate_files(False, 0, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=False,
+            max_history=0,
+            importer=importer,
+        )
 
 
 @pytest.mark.parametrize(
@@ -369,7 +373,11 @@ def test_validate_files_action_not_found_invalid_domain(
     )
 
     with pytest.raises(SystemExit):
-        rasa.cli.utils.validate_files(False, None, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=False,
+            max_history=None,
+            importer=importer,
+        )
 
 
 @pytest.mark.parametrize(
@@ -397,7 +405,11 @@ def test_validate_files_form_not_found_invalid_domain(
         [file_name],
     )
     with pytest.raises(SystemExit):
-        rasa.cli.utils.validate_files(False, None, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=False,
+            max_history=None,
+            importer=importer,
+        )
 
 
 @pytest.mark.parametrize(
@@ -431,7 +443,11 @@ def test_validate_files_with_active_loop_null(
         [file_name, nlu_file],
     )
     with pytest.warns() as warning_recorder:
-        rasa.cli.utils.validate_files(False, None, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=False,
+            max_history=None,
+            importer=importer,
+        )
 
     assert not [
         warning.message
@@ -472,7 +488,11 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
         "data/test_moodbot/data",
     )
     with pytest.raises(SystemExit):
-        rasa.cli.utils.validate_files(False, None, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=False,
+            max_history=None,
+            importer=importer,
+        )
 
 
 def test_validate_files_exit_early():
@@ -482,7 +502,11 @@ def test_validate_files_exit_early():
             "data/test_domains/duplicate_intents.yml",
             "data/test_moodbot/data",
         )
-        rasa.cli.utils.validate_files(True, None, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=True,
+            max_history=None,
+            importer=importer,
+        )
 
     assert pytest_e.type == SystemExit
     assert pytest_e.value.code == 1
@@ -496,7 +520,11 @@ def test_validate_files_invalid_domain():
     )
 
     with pytest.raises(SystemExit):
-        rasa.cli.utils.validate_files(False, None, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=False,
+            max_history=None,
+            importer=importer,
+        )
         with pytest.warns(UserWarning) as w:
             assert "Please migrate to RulePolicy." in str(w[0].message)
 
@@ -537,7 +565,11 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
         "data/test_config/config_defaults.yml", str(domain), None
     )
     with pytest.raises(SystemExit):
-        rasa.cli.utils.validate_files(False, None, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=False,
+            max_history=None,
+            importer=importer,
+        )
 
 
 def test_validate_files_config_default_assistant_id():
@@ -550,7 +582,11 @@ def test_validate_files_config_default_assistant_id():
         f"placeholder value with a unique identifier."
     )
     with pytest.warns(UserWarning, match=msg):
-        rasa.cli.utils.validate_files(False, None, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=False,
+            max_history=None,
+            importer=importer,
+        )
 
 
 def test_validate_files_config_missing_assistant_id():
@@ -561,7 +597,11 @@ def test_validate_files_config_missing_assistant_id():
     )
     msg = f"The config file is missing the '{ASSISTANT_ID_KEY}' mandatory key."
     with pytest.warns(UserWarning, match=msg):
-        rasa.cli.utils.validate_files(False, None, importer)
+        rasa.cli.utils.validate_files(
+            fail_on_warnings=False,
+            max_history=None,
+            importer=importer,
+        )
 
 
 def test_validate_assistant_id_in_config_preserves_comment() -> None:

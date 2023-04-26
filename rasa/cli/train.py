@@ -1,4 +1,5 @@
 import argparse
+import logging
 import sys
 from typing import Dict, List, Optional, Text
 
@@ -16,6 +17,8 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def add_subparser(
@@ -86,6 +89,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     ]
 
     if args.validate_before_training:
+        logger.info("Started validating domain and training data")
         importer = TrainingDataImporter.load_from_config(
             domain_path=args.domain, training_data_paths=args.data, config_path=config
         )
