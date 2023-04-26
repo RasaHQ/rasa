@@ -2509,7 +2509,7 @@ async def test_action_extract_slots_with_none_value_custom_mapping():
             tracker,
             domain,
         )
-        assert events == []
+        assert events == [SlotSet("custom_slot", None)]
 
 
 async def test_action_extract_slots_returns_bot_uttered():
@@ -2827,7 +2827,7 @@ async def test_action_extract_slots_priority_of_slot_mappings():
     assert tracker.get_slot("location_slot") == entity_value
 
 
-async def test_action_extract_slots_does_allows_slotset_for_same_value(
+async def test_action_extract_slots_allows_slotset_for_same_value(
     caplog: LogCaptureFixture,
 ):
     domain_yaml = textwrap.dedent(
@@ -2853,18 +2853,11 @@ async def test_action_extract_slots_does_allows_slotset_for_same_value(
         sender_id="test_id", evts=[event], slots=domain.slots
     )
 
+    # Set the value of the slot in the tracker manually
+    tracker.update(SlotSet("custom_slot_a", "test_A"))
     action_server_url = "http://my-action-server:5055/webhook"
 
     with aioresponses() as mocked:
-        mocked.post(
-            action_server_url,
-            payload={
-                "events": [
-                    {"event": "slot", "name": "custom_slot_a", "value": "test_A"}
-                ]
-            },
-        )
-
         mocked.post(
             action_server_url,
             payload={
@@ -2889,8 +2882,9 @@ async def test_action_extract_slots_does_allows_slotset_for_same_value(
             filter(lambda x: x[1] == logging.INFO, caplog.record_tuples)
         )
         assert len(caplog_info_records) == 0
-
-        assert events == [
+        assert events == [SlotSet("custom_slot_a", "test_A")]
+        assert tracker.events == [
+            UserUttered("Hi"),
             SlotSet("custom_slot_a", "test_A"),
             SlotSet("custom_slot_a", "test_A"),
         ]
