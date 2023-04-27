@@ -45,6 +45,7 @@ from rasa.shared.core.trackers import (
     ActionExecuted,
     DialogueStateTracker,
     EventVerbosity,
+    TrackerEventDiffEngine,
 )
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -318,9 +319,8 @@ class TrackerStore:
             logger.debug("No event broker configured. Skipping streaming events.")
             return None
 
-        offset = await self.number_of_existing_events(tracker.sender_id)
-        events = tracker.events
-        new_events = list(itertools.islice(events, offset, len(events)))
+        old_tracker = await self.retrieve(tracker.sender_id)
+        new_events = TrackerEventDiffEngine.event_difference(old_tracker, tracker)
 
         await self._stream_new_events(self.event_broker, new_events, tracker.sender_id)
 
@@ -335,12 +335,6 @@ class TrackerStore:
             body = {"sender_id": sender_id}
             body.update(event.as_dict())
             event_broker.publish(body)
-
-    async def number_of_existing_events(self, sender_id: Text) -> int:
-        """Return number of stored events for a given sender id."""
-        old_tracker = await self.retrieve(sender_id)
-
-        return len(old_tracker.events) if old_tracker else 0
 
     async def keys(self) -> Iterable[Text]:
         """Returns the set of values for the tracker store's primary key."""
