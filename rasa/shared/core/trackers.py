@@ -884,7 +884,7 @@ class TrackerEventDiffEngine:
     """Computes event difference of two trackers."""
 
     @staticmethod
-    async def event_difference(
+    def event_difference(
         original: DialogueStateTracker, tracker: DialogueStateTracker
     ) -> List[Event]:
         """Returns all events from the new tracker which are not present

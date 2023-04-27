@@ -320,7 +320,7 @@ class TrackerStore:
             return None
 
         old_tracker = await self.retrieve(tracker.sender_id)
-        new_events = await TrackerEventDiffEngine.event_difference(old_tracker, tracker)
+        new_events = TrackerEventDiffEngine.event_difference(old_tracker, tracker)
 
         await self._stream_new_events(self.event_broker, new_events, tracker.sender_id)
 

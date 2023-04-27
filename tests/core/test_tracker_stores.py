@@ -1307,8 +1307,6 @@ async def test_tracker_event_diff_engine_event_difference() -> None:
         evts=events,
     )
 
-    event_diff = await TrackerEventDiffEngine.event_difference(
-        prior_tracker, new_tracker
-    )
+    event_diff = TrackerEventDiffEngine.event_difference(prior_tracker, new_tracker)
 
     assert new_events == event_diff
