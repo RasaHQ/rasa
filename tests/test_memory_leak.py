@@ -2,7 +2,6 @@ import abc
 import json
 import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 from typing import Text, List, Tuple, Optional, Union
@@ -13,6 +12,7 @@ import pytest
 
 import rasa
 import rasa.shared.utils.io
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 
 PROFILING_INTERVAL = 0.1
 
@@ -126,7 +126,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
     def function_to_profile(self) -> None:
         import rasa.model_training
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
             rasa.model_training.train_nlu(
                 _custom_default_config(temp_dir, epochs=self.epochs),
                 Path("data", "test_nlu_no_responses", "sara_nlu_data.yml"),
@@ -155,7 +155,7 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
     def function_to_profile(self) -> None:
         import rasa.model_training
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
             rasa.model_training.train_core(
                 "data/test_domains/default_with_slots.yml",
                 _custom_default_config(temp_dir, epochs=self.epochs, max_history=None),
@@ -213,7 +213,7 @@ class TestCRFDenseFeaturesLeak(MemoryLeakTest):
             ]
         }
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
             config_for_test = Path(temp_dir) / "test_config.yml"
             rasa.shared.utils.io.write_yaml(config, config_for_test)
 

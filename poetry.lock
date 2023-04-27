@@ -178,6 +178,21 @@ yarl = ">=1.0,<2.0"
 speedups = ["Brotli", "aiodns", "cchardet"]
 
 [[package]]
+name = "aiohttp-retry"
+version = "2.8.3"
+description = "Simple retry client for aiohttp"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "aiohttp_retry-2.8.3-py3-none-any.whl", hash = "sha256:3aeeead8f6afe48272db93ced9440cf4eda8b6fd7ee2abb25357b7eb28525b45"},
+    {file = "aiohttp_retry-2.8.3.tar.gz", hash = "sha256:9a8e637e31682ad36e1ff9f8bcba912fcfc7d7041722bc901a4b948da4d71ea9"},
+]
+
+[package.dependencies]
+aiohttp = "*"
+
+[[package]]
 name = "aioresponses"
 version = "0.7.4"
 description = "Mock out requests made by ClientSession from aiohttp package"
@@ -1299,14 +1314,14 @@ typing-extensions = ">=3.10.0"
 
 [[package]]
 name = "datadog"
-version = "0.44.0"
+version = "0.45.0"
 description = "The Datadog Python library"
 category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 files = [
-    {file = "datadog-0.44.0-py2.py3-none-any.whl", hash = "sha256:57c4878d3a8351f652792cdba78050274789dcc44313adec096e87f9d3ca5992"},
-    {file = "datadog-0.44.0.tar.gz", hash = "sha256:071170f0c7ef22511dbf7f9bd76c4be500ee2d3d52072900a5c87b5495d2c733"},
+    {file = "datadog-0.45.0-py2.py3-none-any.whl", hash = "sha256:144fce48bda79484b102349f159c4ea4c7cd35361f9e0d031ddf931a922a38a4"},
+    {file = "datadog-0.45.0.tar.gz", hash = "sha256:6bffed67448cb4bf5dff559fb2acee1c06e7da8612b8e2a734f278b50b396603"},
 ]
 
 [package.dependencies]
@@ -1486,14 +1501,14 @@ testing = ["pre-commit"]
 
 [[package]]
 name = "fakeredis"
-version = "2.10.3"
+version = "2.11.0"
 description = "Fake implementation of redis API for testing purposes."
 category = "dev"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "fakeredis-2.10.3-py3-none-any.whl", hash = "sha256:078ad729fe7cbcc84c9ff6f25c0e503fd4e19db6956f78049f9991b10c5271ba"},
-    {file = "fakeredis-2.10.3.tar.gz", hash = "sha256:c5dcb070ef3219226e1d6db8836ddad47da1fc821270f6e89cfeb5da1f7f2e38"},
+    {file = "fakeredis-2.11.0-py3-none-any.whl", hash = "sha256:156ef67713dd53000c28dd341be61a365c20230bc17c8fb8320b0c123e667aff"},
+    {file = "fakeredis-2.11.0.tar.gz", hash = "sha256:d25883dc52c31546e586b6ec3c49c5999b3025bfc4812532d71dedcfed56fee1"},
 ]
 
 [package.dependencies]
@@ -1853,14 +1868,14 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2,<1.0dev)"]
 
 [[package]]
 name = "google-auth"
-version = "2.17.1"
+version = "2.17.3"
 description = "Google Authentication Library"
 category = "main"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*"
 files = [
-    {file = "google-auth-2.17.1.tar.gz", hash = "sha256:8f379b46bad381ad2a0b989dfb0c13ad28d3c2a79f27348213f8946a1d15d55a"},
-    {file = "google_auth-2.17.1-py2.py3-none-any.whl", hash = "sha256:357ff22a75b4c0f6093470f21816a825d2adee398177569824e37b6c10069e19"},
+    {file = "google-auth-2.17.3.tar.gz", hash = "sha256:ce311e2bc58b130fddf316df57c9b3943c2a7b4f6ec31de9663a9333e4064efc"},
+    {file = "google_auth-2.17.3-py2.py3-none-any.whl", hash = "sha256:f586b274d3eb7bd932ea424b1c702a30e0393a2e2bc4ca3eae8263ffd8be229f"},
 ]
 
 [package.dependencies]
@@ -6544,17 +6559,19 @@ vision = ["Pillow"]
 
 [[package]]
 name = "twilio"
-version = "7.14.2"
+version = "8.1.0"
 description = "Twilio API client and TwiML generator"
 category = "main"
 optional = false
-python-versions = ">=3.6.0"
+python-versions = ">=3.7.0"
 files = [
-    {file = "twilio-7.14.2-py2.py3-none-any.whl", hash = "sha256:21a7b6460f27de469e8480020fe7ef6d225ecb34c2af6f38068c1f7e6083815a"},
-    {file = "twilio-7.14.2.tar.gz", hash = "sha256:18fa85693641cfafaf2433c3af545e3766b691046a277914ae01bf7c805bc6cb"},
+    {file = "twilio-8.1.0-py2.py3-none-any.whl", hash = "sha256:19be48f21e799b9dd10e2e0a5633962438e04842864e806409f4f2dbe446a868"},
+    {file = "twilio-8.1.0.tar.gz", hash = "sha256:a31863119655cd3643f788099f6ea3fe74eea59ce3f65600f9a4931301311c08"},
 ]
 
 [package.dependencies]
+aiohttp = ">=3.8.4"
+aiohttp-retry = ">=2.8.3"
 PyJWT = ">=2.0.0,<3.0.0"
 pytz = "*"
 requests = ">=2.0.0"
@@ -6647,14 +6664,14 @@ cryptography = ">=35.0.0"
 
 [[package]]
 name = "types-python-dateutil"
-version = "2.8.19.11"
+version = "2.8.19.12"
 description = "Typing stubs for python-dateutil"
 category = "dev"
 optional = false
 python-versions = "*"
 files = [
-    {file = "types-python-dateutil-2.8.19.11.tar.gz", hash = "sha256:de66222c54318c2e05ceb4956976d16696240a45fc2c98e54bfe9a56ce5e1eff"},
-    {file = "types_python_dateutil-2.8.19.11-py3-none-any.whl", hash = "sha256:357553f8056cfbb8ce8ea0ca4a6a3480268596748360df73a94c2b8c113a5b06"},
+    {file = "types-python-dateutil-2.8.19.12.tar.gz", hash = "sha256:355b2cb82b31e556fd18e7b074de7c350c680ab80608f0cc55ba6770d986d67d"},
+    {file = "types_python_dateutil-2.8.19.12-py3-none-any.whl", hash = "sha256:fe5b545e678ec13e3ddc83a0eee1545c1b5e2fba4cfc39b276ab6f4e7604a923"},
 ]
 
 [[package]]
@@ -7407,4 +7424,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<3.11"
-content-hash = "b08132449c38460f666186867cd47fd3fdd60865748a40de713374798f41bf6d"
+content-hash = "e6b8994a614a43fc683078dc8cd53ad9fa7594e46ffae000e44d905f0d9c57f8"
