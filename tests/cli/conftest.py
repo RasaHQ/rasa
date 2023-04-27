@@ -96,6 +96,17 @@ def run_in_simple_project(testdir: Testdir) -> Callable[..., RunResult]:
 
     return do_run
 
+@pytest.fixture
+def run_in_simple_project_with_warnings(testdir: Testdir) -> Callable[..., RunResult]:
+    os.environ["LOG_LEVEL"] = "WARNING"
+
+    create_simple_project(testdir.tmpdir)
+
+    def do_run(*args):
+        args = [shutil.which(RASA_EXE)] + list(args)
+        return testdir.run(*args)
+
+    return do_run
 
 @pytest.fixture
 def run_in_simple_project_with_model(
