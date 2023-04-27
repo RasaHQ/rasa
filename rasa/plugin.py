@@ -14,7 +14,6 @@ from rasa.shared.nlu.training_data.message import Message
 if typing.TYPE_CHECKING:
     from rasa.rasa.engine.graph import SchemaNode
     from rasa.shared.core.domain import Domain
-    from rasa.core.actions.action import Action
     from rasa.core.policies.policy import PolicyPrediction
 
 hookspec = pluggy.HookspecMarker("rasa")
@@ -72,6 +71,7 @@ def modify_default_recipe_graph_predict_nodes(
 @hookspec  # type: ignore[misc]
 def get_version_info() -> Tuple[Text, Text]:
     """Hook specification for getting plugin version info."""
+    return "", ""
 
 
 @hookspec  # type: ignore[misc]
@@ -96,11 +96,7 @@ def clean_entity_targets_for_evaluation(
     merged_targets: List[str], extractor: str
 ) -> List[str]:
     """Remove entity targets for space-based entity extractors."""
-
-
-@hookspec  # type: ignore[misc]
-def generate_space_activation_actions(domain: "Domain") -> List["Action"]:
-    """Hook specification for getting a plugin's list of space activation actions."""
+    return []
 
 
 @hookspec(firstresult=True)  # type: ignore[misc]
@@ -110,3 +106,4 @@ def filter_and_rerank_actions(
     tracker: DialogueStateTracker,
 ) -> List["PolicyPrediction"]:
     """Hook spec for getting list of filtered and reranked policy predictions."""
+    return []
