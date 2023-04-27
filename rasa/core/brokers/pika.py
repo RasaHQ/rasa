@@ -159,7 +159,7 @@ class PikaEventBroker(EventBroker):
 
         self._exchange = await self._set_up_exchange(channel)
 
-    def configure_url(self) -> Optional[Text]:
+    def _configure_url(self) -> Optional[Text]:
         """Configures the URL to connect to RabbitMQ."""
         url = None
 
@@ -187,7 +187,7 @@ class PikaEventBroker(EventBroker):
     async def _connect(self) -> aio_pika.abc.AbstractRobustConnection:
         # The `url` parameter will take precedence over parameters like `login` or
         # `password`.
-        url = self.configure_url()
+        url = self._configure_url()
 
         ssl_options = _create_rabbitmq_ssl_options(self.host)
         logger.info("Connecting to RabbitMQ ...")

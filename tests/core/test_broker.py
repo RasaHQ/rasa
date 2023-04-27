@@ -405,5 +405,5 @@ def test_pika_event_broker_configure_url(
     username = "test_user"
     password = "test_pass"
     broker = PikaEventBroker(host=host, username=username, password=password)
-    url = broker.configure_url()
+    url = broker._configure_url()
     assert url == expected_url
