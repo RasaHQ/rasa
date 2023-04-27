@@ -1,4 +1,3 @@
-import itertools
 import logging
 import warnings
 from collections import deque
@@ -1301,8 +1300,8 @@ async def test_tracker_event_diff_engine_event_difference() -> None:
         "same-session",
         evts=events,
     )
-
-    events += [BotUttered("Hey! How can I help you?")]
+    new_events = [BotUttered("Hey! How can I help you?")]
+    events += new_events
 
     new_tracker = DialogueStateTracker.from_events(
         "same-session",
@@ -1312,12 +1311,5 @@ async def test_tracker_event_diff_engine_event_difference() -> None:
     event_diff = await TrackerEventDiffEngine.event_difference(
         prior_tracker, new_tracker
     )
-    new_tracker_events = list(new_tracker.events)
-    prior_tracker_events = list(prior_tracker.events)
 
-    new_events = list(
-        itertools.islice(
-            new_tracker_events, len(prior_tracker_events), len(new_tracker_events)
-        )
-    )
     assert new_events == event_diff
