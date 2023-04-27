@@ -45,6 +45,7 @@ from rasa.shared.core.trackers import (
     ActionExecuted,
     DialogueStateTracker,
     EventVerbosity,
+    TrackerEventDiffEngine,
 )
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -1657,21 +1658,3 @@ class AwaitableTrackerStore(TrackerStore):
             if isawaitable(result)
             else result  # type: ignore[return-value]
         )
-
-
-class TrackerEventDiffEngine:
-    """Computes event difference of two trackers."""
-
-    @staticmethod
-    async def event_difference(
-        original: DialogueStateTracker, tracker: DialogueStateTracker
-    ) -> List[Event]:
-        """Returns all events from the new tracker which are not present
-        in the original tracker.
-
-        Args:
-            tracker: Tracker containing events from the current conversation session.
-        """
-        offset = len(original.events) if original else 0
-        events = tracker.events
-        return list(itertools.islice(events, offset, len(events)))

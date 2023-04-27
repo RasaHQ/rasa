@@ -1,5 +1,6 @@
 import copy
 import dataclasses
+import itertools
 import logging
 import os
 import time
@@ -877,6 +878,24 @@ class DialogueStateTracker:
             data["events"] = list(self.events)
 
         return rasa.shared.utils.io.get_dictionary_fingerprint(data)
+
+
+class TrackerEventDiffEngine:
+    """Computes event difference of two trackers."""
+
+    @staticmethod
+    async def event_difference(
+        original: DialogueStateTracker, tracker: DialogueStateTracker
+    ) -> List[Event]:
+        """Returns all events from the new tracker which are not present
+        in the original tracker.
+
+        Args:
+            tracker: Tracker containing events from the current conversation session.
+        """
+        offset = len(original.events) if original else 0
+        events = tracker.events
+        return list(itertools.islice(events, offset, len(events)))
 
 
 def get_active_loop_name(

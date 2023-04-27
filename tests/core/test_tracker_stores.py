@@ -52,9 +52,8 @@ from rasa.core.tracker_store import (
     DynamoTrackerStore,
     FailSafeTrackerStore,
     AwaitableTrackerStore,
-    TrackerEventDiffEngine,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, TrackerEventDiffEngine
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.conftest import AsyncMock
