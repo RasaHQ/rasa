@@ -377,3 +377,33 @@ async def test_sql_connection_error(monkeypatch: MonkeyPatch):
     )
     with pytest.raises(ConnectionException):
         await EventBroker.create(cfg)
+
+
+@pytest.mark.parametrize(
+    "host,expected_url",
+    [
+        ("localhost", None),
+        ("amqp://localhost", "amqp://test_user:test_pass@localhost:5672"),
+        (
+            "amqp://test_user:test_pass@localhost",
+            "amqp://test_user:test_pass@localhost:5672",
+        ),
+        (
+            "amqp://test_user:test_pass@localhost/myvhost?connection_timeout=10",
+            "amqp://test_user:test_pass@localhost:5672/myvhost?connection_timeout=10",
+        ),
+        ("amqp://localhost:5672", "amqp://test_user:test_pass@localhost:5672"),
+        (
+            "amqp://test_user:test_pass@localhost:5672/myvhost?connection_timeout=10",
+            "amqp://test_user:test_pass@localhost:5672/myvhost?connection_timeout=10",
+        ),
+    ],
+)
+def test_pika_event_broker_configure_url(
+    host: Text, expected_url: Optional[Text]
+) -> None:
+    username = "test_user"
+    password = "test_pass"
+    broker = PikaEventBroker(host=host, username=username, password=password)
+    url = broker._configure_url()
+    assert url == expected_url
