@@ -366,7 +366,9 @@ class Agent:
         if isinstance(self.nlg, TemplatedNaturalLanguageGenerator):
             self.nlg.responses = self.domain.responses
         elif self.nlg.nlg_templated:
-            self.nlg.nlg_templated.responses = self.domain.responses if self.domain else {}
+            self.nlg.nlg_templated.responses = (
+                self.domain.responses if self.domain else {}
+            )
 
     @property
     def model_id(self) -> Optional[Text]:

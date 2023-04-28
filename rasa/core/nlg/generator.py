@@ -63,7 +63,9 @@ def _create_from_endpoint_config(
             responses = domain.responses
 
         # this is the default type if no nlg type is set
-        nlg = CallbackNaturalLanguageGenerator(endpoint_config=endpoint_config, responses=responses)
+        nlg = CallbackNaturalLanguageGenerator(
+            endpoint_config=endpoint_config, responses=responses
+        )
     elif endpoint_config.type.lower() == "response":
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
