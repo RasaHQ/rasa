@@ -498,15 +498,6 @@ jobs:
           path: |
             ${{ github.workspace }}/${{ matrix.test }}-coverage
 
-  upload_coverage_reports:
-    name: Upload coverage reports to codeclimate
-    if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
-    # Always upload results even if tests failed
-    needs:
-      - test
-      - changes
-
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
@@ -540,15 +531,28 @@ jobs:
           coverage combine "${final_dir}/"*
           coverage xml
 
-      - name: Upload reports to codeclimate
-        if: needs.changes.outputs.backend == 'true'
-        uses: paambaati/codeclimate-action@ac3f177ece9928d220a8bd1c2f1957926fd3b67e
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CODECLIMATE_REPORTER_ID }}
+  sonarcloud:
+    if: github.ref_type != 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
-          coverageLocations: |
-            ${{ github.workspace }}/coverage.xml:coverage.py
-          debug: true
+        # Disabling shallow clone is recommended for improving relevancy of reporting
+          fetch-depth: 0
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Analyze with SonarCloud
+        uses: sonarsource/sonarcloud-github-action@master
+        with:
+          args: >
+            -Dsonar.projectKey=RasaHQ_rasa
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.tests=tests/
+            -Dsonar.verbose=true
 
   integration_test:
     name: Run Non-Sequential Integration Tests
