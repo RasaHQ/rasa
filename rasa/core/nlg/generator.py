@@ -57,8 +57,13 @@ def _create_from_endpoint_config(
     elif endpoint_config.type is None or endpoint_config.type.lower() == "callback":
         from rasa.core.nlg import CallbackNaturalLanguageGenerator
 
+        # include_message option will include the templated response in the NLG payload
+        responses = None
+        if endpoint_config.include_message:
+            responses = domain.responses
+
         # this is the default type if no nlg type is set
-        nlg = CallbackNaturalLanguageGenerator(endpoint_config=endpoint_config)
+        nlg = CallbackNaturalLanguageGenerator(endpoint_config=endpoint_config, responses=responses)
     elif endpoint_config.type.lower() == "response":
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 

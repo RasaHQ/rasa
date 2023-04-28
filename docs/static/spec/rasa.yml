@@ -1810,6 +1810,10 @@ components:
         wait_time_between_pulls:
           type: integer
           description: Time to wait between pulls from model server
+        include_message:
+          type: boolean
+          description: If true, message text will be passed to the NLG
+          example: true
 
     YAMLTrainingRequest:
       type: object
