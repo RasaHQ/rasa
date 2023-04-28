@@ -498,6 +498,15 @@ jobs:
           path: |
             ${{ github.workspace }}/${{ matrix.test }}-coverage
 
+  upload_coverage_reports:
+    name: Upload coverage reports
+    if: github.ref_type != 'tag'
+    runs-on: ubuntu-22.04
+    # Always upload results even if tests failed
+    needs:
+      - test
+      - changes
+
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
@@ -530,6 +539,23 @@ jobs:
           pip install coverage
           coverage combine "${final_dir}/"*
           coverage xml
+
+      - name: Analyse code with SonarCloud
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          # Disabling shallow clone is recommended for improving relevancy of reporting
+          fetch-depth: 0
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=RasaHQ_rasa
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.tests=tests/
+            -Dsonar.verbose=true
 
   integration_test:
     name: Run Non-Sequential Integration Tests
