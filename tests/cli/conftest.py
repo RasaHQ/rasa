@@ -96,6 +96,7 @@ def run_in_simple_project(testdir: Testdir) -> Callable[..., RunResult]:
 
     return do_run
 
+
 @pytest.fixture
 def run_in_simple_project_with_warnings(testdir: Testdir) -> Callable[..., RunResult]:
     os.environ["LOG_LEVEL"] = "WARNING"
@@ -107,6 +108,7 @@ def run_in_simple_project_with_warnings(testdir: Testdir) -> Callable[..., RunRe
         return testdir.run(*args)
 
     return do_run
+
 
 @pytest.fixture
 def run_in_simple_project_with_model(

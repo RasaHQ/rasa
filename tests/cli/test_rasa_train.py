@@ -537,12 +537,11 @@ def test_train_validation_warnings(
 
 
 def test_train_validation_fail_on_warnings(
-    run_in_simple_project_with_warnings: Callable[..., RunResult], request: pytest.FixtureRequest
+    run_in_simple_project_with_warnings: Callable[..., RunResult],
+    request: pytest.FixtureRequest,
 ):
     test_data_dir = Path(request.config.rootdir, "data", "test_moodbot", "data")
-    test_domain = Path(
-        request.config.rootdir, "data", "test_domains", "domain.yml"
-    )
+    test_domain = Path(request.config.rootdir, "data", "test_domains", "domain.yml")
 
     result = run_in_simple_project_with_warnings(
         "train",
@@ -556,17 +555,21 @@ def test_train_validation_fail_on_warnings(
         "config.yml",
     )
 
-    assert 'Project validation completed with errors.' in str(result.outlines)
+    assert "Project validation completed with errors." in str(result.outlines)
     assert result.ret == 1
 
 
-def test_train_validation_max_history(
-    run_in_simple_project_with_warnings: Callable[..., RunResult], request: pytest.FixtureRequest
+def test_train_validation_max_history_1(
+    run_in_simple_project_with_warnings: Callable[..., RunResult],
+    request: pytest.FixtureRequest,
 ):
-    test_data_dir = Path(request.config.rootdir, "data", "test_yaml_stories", "stories_conflicting_after_3.yml")
-    test_domain = Path(
-        request.config.rootdir, "data", "test_domains", "default.yml"
+    test_data_dir = Path(
+        request.config.rootdir,
+        "data",
+        "test_yaml_stories",
+        "stories_conflicting_at_1.yml",
     )
+    test_domain = Path(request.config.rootdir, "data", "test_domains", "default.yml")
 
     result = run_in_simple_project_with_warnings(
         "train",
@@ -581,4 +584,34 @@ def test_train_validation_max_history(
         "config.yml",
     )
 
+    assert "Story structure conflict" in str(result.errlines)
+    assert result.ret == 0
+
+
+def test_train_validation_max_history_2(
+    run_in_simple_project_with_warnings: Callable[..., RunResult],
+    request: pytest.FixtureRequest,
+):
+    test_data_dir = Path(
+        request.config.rootdir,
+        "data",
+        "test_yaml_stories",
+        "stories_conflicting_at_1.yml",
+    )
+    test_domain = Path(request.config.rootdir, "data", "test_domains", "default.yml")
+
+    result = run_in_simple_project_with_warnings(
+        "train",
+        "--validate-before-training",
+        "--validation-max-history",
+        "2",
+        "--data",
+        str(test_data_dir),
+        "--domain",
+        str(test_domain),
+        "-c",
+        "config.yml",
+    )
+
+    assert "Story structure conflict" not in str(result.errlines)
     assert result.ret == 0
