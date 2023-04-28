@@ -109,7 +109,7 @@ jobs:
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
       - name: Update the comment with the configuration
-        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d
+        uses: peter-evans/create-or-update-comment@3383acd359705b10cb1eeef05c0e88c056ea4666
         if: steps.fc_config.outputs.comment-id != ''
         with:
           comment-id: ${{ steps.fc_config.outputs.comment-id }}
@@ -135,7 +135,7 @@ jobs:
           body-includes: "^/modeltest"
 
       - name: Add reaction
-        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d
+        uses: peter-evans/create-or-update-comment@3383acd359705b10cb1eeef05c0e88c056ea4666
         if: steps.fc_config_update.outputs.comment-id != ''
         with:
           edit-mode: "replace"
@@ -220,7 +220,7 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud auth
-      - uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d
+      - uses: google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf
         with:
           service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
           credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -367,7 +367,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: '3.10'
@@ -612,7 +612,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: '3.10'
@@ -760,7 +760,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: '3.10'
 
@@ -865,7 +865,7 @@ jobs:
           echo "to_ts=$TIME_UNIX_NOW" >> $GITHUB_OUTPUT
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@3d60a5b2dae89d44e0c6ddc69dd7536aec2071cd # v2.5.0
+        uses: marocchino/sticky-pull-request-comment@f61b6cf21ef2fcc468f4345cdfcc9bda741d2343 # v2.6.2
         if: ${{ always() }}
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -906,7 +906,7 @@ jobs:
 
     steps:
       # Setup gcloud auth
-      - uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d
+      - uses: google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf
         with:
           service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
           credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}

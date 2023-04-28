@@ -107,7 +107,7 @@ jobs:
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -245,7 +245,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -384,7 +384,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -504,7 +504,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: "3.10"
 
@@ -530,29 +530,6 @@ jobs:
           pip install coverage
           coverage combine "${final_dir}/"*
           coverage xml
-
-  sonarcloud:
-    if: github.ref_type != 'tag'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-        with:
-        # Disabling shallow clone is recommended for improving relevancy of reporting
-          fetch-depth: 0
-      - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      - name: Analyze with SonarCloud
-        uses: sonarsource/sonarcloud-github-action@master
-        with:
-          args: >
-            -Dsonar.projectKey=RasaHQ_rasa
-            -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.tests=tests/
-            -Dsonar.verbose=true
 
   integration_test:
     name: Run Non-Sequential Integration Tests
@@ -624,7 +601,7 @@ jobs:
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -724,7 +701,7 @@ jobs:
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -1094,7 +1071,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: 3.9
 
@@ -1119,7 +1096,7 @@ jobs:
         run: poetry build
 
       - name: Publish to PyPI 📦
-        uses: pypa/gh-action-pypi-publish@48b317d84d5f59668bb13be49d1697e36b3ad009
+        uses: pypa/gh-action-pypi-publish@0bf742be3ebe032c25dd15117957dc15d0cfc38d
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}

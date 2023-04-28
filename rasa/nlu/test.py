@@ -1,7 +1,6 @@
 import itertools
 import os
 import logging
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -26,11 +25,11 @@ from rasa import telemetry
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.processor import MessageProcessor
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
-import rasa.utils.common
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
 import rasa.nlu.classifiers.fallback_classifier
@@ -1583,7 +1582,7 @@ async def cross_validate(
     """
     import rasa.model_training
 
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
         tmp_path = Path(temp_dir)
 
         if isinstance(nlu_config, Dict):
