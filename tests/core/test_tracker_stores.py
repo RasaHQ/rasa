@@ -53,7 +53,7 @@ from rasa.core.tracker_store import (
     FailSafeTrackerStore,
     AwaitableTrackerStore,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, TrackerEventDiffEngine
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.conftest import AsyncMock
@@ -1286,3 +1286,27 @@ def test_redis_tracker_store_merge_trackers_different_session() -> None:
 
     expected_events = prior_tracker_events + new_session
     assert list(actual_tracker.events) == expected_events
+
+
+async def test_tracker_event_diff_engine_event_difference() -> None:
+    start_session_sequence = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+    events: List[Event] = start_session_sequence + [UserUttered("hello")]
+    prior_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+    new_events = [BotUttered("Hey! How can I help you?")]
+    events += new_events
+
+    new_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+
+    event_diff = TrackerEventDiffEngine.event_difference(prior_tracker, new_tracker)
+
+    assert new_events == event_diff

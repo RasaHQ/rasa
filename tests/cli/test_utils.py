@@ -22,13 +22,14 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
 )
 import rasa.shared.utils.io
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
 
 
 @contextlib.contextmanager
 def make_actions_subdir():
     """Create a subdir called actions to test model argument handling."""
-    with tempfile.TemporaryDirectory() as tempdir:
+    with TempDirectoryPath(get_temp_dir_name()) as tempdir:
         cwd = os.getcwd()
         os.chdir(tempdir)
         try:
@@ -49,7 +50,7 @@ def make_actions_subdir():
 )
 def test_parse_last_positional_argument_as_model_path(argv):
     with make_actions_subdir():
-        test_model_dir = tempfile.gettempdir()
+        test_model_dir = get_temp_dir_name()
         argv.append(test_model_dir)
 
         sys.argv = argv.copy()
