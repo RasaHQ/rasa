@@ -1,0 +1,29 @@
+version: "3.1"
+
+stories:
+- story: rsa token - not given on first intent
+  steps:
+  - intent: install_app
+  - slot_was_set:
+    - rsa_token: unknown
+  - action: utter_ask_rsa_token_type
+  - or:
+    - slot_was_set:
+      - rsa_token: hard
+    - slot_was_set:
+      - rsa_token: soft
+    - slot_was_set:
+      - rsa_token: unknown
+  - action: utter_token_type
+
+- story: rsa token - type given in intent
+  steps:
+  - intent: install_app
+  - or:
+    - slot_was_set:
+      - rsa_token: hard
+    - slot_was_set:
+      - rsa_token: soft
+    - slot_was_set:
+      - rsa_token: unknown
+  - action: utter_token_type
