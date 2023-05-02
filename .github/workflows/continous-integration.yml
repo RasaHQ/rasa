@@ -511,6 +511,9 @@ jobs:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          # Disabling shallow clone is recommended for improving relevancy of coverage reporting
+          fetch-depth: 0
 
       - name: Set up Python 3.10 🐍
         uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
@@ -541,21 +544,10 @@ jobs:
           coverage xml
 
       - name: Analyse code with SonarCloud
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-        with:
-          # Disabling shallow clone is recommended for improving relevancy of reporting
-          fetch-depth: 0
-      - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@master
+        uses: sonarsource/sonarcloud-github-action@5875562561d22a34be0c657405578705a169af6c
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=RasaHQ_rasa
-            -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.tests=tests/
-            -Dsonar.verbose=true
 
   integration_test:
     name: Run Non-Sequential Integration Tests
