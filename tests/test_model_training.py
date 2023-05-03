@@ -6,7 +6,7 @@ import tempfile
 import os
 import textwrap
 from pathlib import Path
-from typing import Text
+from typing import Text, Dict, Union, Any
 from unittest.mock import Mock
 
 import pytest
@@ -27,10 +27,18 @@ import rasa.nlu
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import GraphModelConfiguration
+from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.shared.data import TrainingType
+from rasa.model_training import (
+    CODE_FORCED_TRAINING,
+    CODE_NEEDS_TO_BE_RETRAINED,
+    CODE_NO_NEED_TO_TRAIN,
+    _dry_run_result,
+)
 from rasa.shared.core.events import ActionExecuted, SlotSet
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph, StoryStep
+from rasa.shared.data import TrainingType
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.utils.io
@@ -284,6 +292,7 @@ class TestE2e:
             ]
         )
 
+    @pytest.mark.acceptance
     def test_models_not_retrained_if_no_new_data(
         self,
         trained_e2e_model: Text,
@@ -1088,3 +1097,48 @@ def test_check_unresolved_slots(capsys: CaptureFixture):
         ]
     )
     assert rasa.model_training._check_unresolved_slots(domain, stories) is None
+
+@pytest.mark.parametrize(
+    "fingerprint_results, expected_code",
+    [
+        (
+            {
+                "key 1": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 1"
+                ),
+                "key 2": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 2"
+                ),
+                "key 3": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 3"
+                ),
+            },
+            CODE_NO_NEED_TO_TRAIN,
+        ),
+        (
+            {
+                "key 1": FingerprintStatus(
+                    is_hit=False, output_fingerprint="fingerprint 1"
+                ),
+                "key 2": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 2"
+                ),
+                "key 3": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 3"
+                ),
+            },
+            CODE_NEEDS_TO_BE_RETRAINED,
+        ),
+    ],
+)
+def test_dry_run_result_no_force_retraining(
+    fingerprint_results: Dict[Text, Union[FingerprintStatus, Any]],
+    expected_code: int,
+):
+    result = _dry_run_result(fingerprint_results, force_full_training=False)
+    assert result.code == expected_code
+
+
+def test_dry_run_result_force_retraining():
+    result = _dry_run_result({}, force_full_training=True)
+    assert result.code == CODE_FORCED_TRAINING
