@@ -82,9 +82,7 @@ async def test_setting_slot_with_custom_action(model_file: Text):
     }
 
     # Send the second message
-    await agent.handle_message(
-        _build_user_message(output_channel, "hard")
-    )
+    await agent.handle_message(_build_user_message(output_channel, "hard"))
 
     # Check that the bot confirms that the user has
     # requested for an RSA token of type hard
@@ -109,10 +107,7 @@ async def test_setting_slot_with_custom_action(model_file: Text):
         )
 
         await agent.handle_message(
-            _build_user_message(
-                output_channel,
-                "help me install a hard rsa token"
-            )
+            _build_user_message(output_channel, "help me install a hard rsa token")
         )
 
     # Check that the bot confirms that the user
