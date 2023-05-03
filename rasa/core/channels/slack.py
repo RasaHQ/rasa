@@ -34,7 +34,6 @@ class SlackBot(OutputChannel):
         thread_id: Optional[Text] = None,
         proxy: Optional[Text] = None,
     ) -> None:
-
         self.slack_channel = slack_channel
         self.thread_id = thread_id
         self.proxy = proxy
@@ -268,13 +267,15 @@ class SlackInput(InputChannel):
         uids_to_remove = uids_to_remove or []
 
         for uid_to_remove in uids_to_remove:
+            escaped_uid = re.escape(str(uid_to_remove))
+
             # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,
             # but is a good first approximation
             for regex, replacement in [
-                (rf"<@{uid_to_remove}>\s", ""),
-                (rf"\s<@{uid_to_remove}>", ""),  # a bit arbitrary but probably OK
-                (rf"<@{uid_to_remove}>", " "),
+                (rf"<@{escaped_uid}>\s", ""),
+                (rf"\s<@{escaped_uid}>", ""),  # a bit arbitrary but probably OK
+                (rf"<@{escaped_uid}>", " "),
             ]:
                 text = re.sub(regex, replacement, text)
 
@@ -282,7 +283,7 @@ class SlackInput(InputChannel):
         # <mailto:xyz@rasa.com|xyz@rasa.com> or
         # <http://url.com|url.com> in text and substitute
         # it with original content
-        pattern = r"(\<(?:mailto|http|https):\/\/.*?\|.*?\>)"
+        pattern = r"(\<(?:mailto|https?):\/\/.*?\|.*?\>)"
         match = re.findall(pattern, text)
 
         if match:
