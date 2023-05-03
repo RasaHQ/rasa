@@ -506,7 +506,8 @@ class MessageProcessor:
 
         logger.debug(
             f"Predicted next action '{action.name()}' with confidence "
-            f"{prediction.max_confidence:.2f}."
+            f"{prediction.max_confidence:.2f}. "
+            f"sender_id: {tracker.sender_id}"
         )
 
         return action, prediction
@@ -623,7 +624,10 @@ class MessageProcessor:
             [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
         )
         if slot_values.strip():
-            logger.debug(f"Current slot values: \n{slot_values}")
+            logger.debug(
+                f"Current slot values: \n{slot_values}. "
+                f"sender_id: {tracker.sender_id}"
+            )
 
     def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
         """Warns the user if the NLU parse data contains unrecognized features.
@@ -685,10 +689,9 @@ class MessageProcessor:
             parse_data = self._parse_message_with_graph(message, only_output_properties)
 
         logger.debug(
-            "Received user message '{}' with intent '{}' "
-            "and entities '{}'".format(
-                parse_data["text"], parse_data["intent"], parse_data["entities"]
-            )
+            f"Received user message '{parse_data['text']}' with intent '{parse_data['intent']}' "
+            f"and entities '{parse_data['entities']}' "
+            f"sender_id: {message.sender_id}"
         )
 
         self._check_for_unseen_features(parse_data)
@@ -970,13 +973,19 @@ class MessageProcessor:
             isinstance(event, ActionExecutionRejected) for event in events
         )
         if not action_was_rejected_manually:
-            logger.debug(f"Policy prediction ended with events '{prediction.events}'.")
+            logger.debug(
+                f"Policy prediction ended with events '{prediction.events}'. "
+                f"sender_id: {tracker.sender_id}"
+            )
             tracker.update_with_events(prediction.events, self.domain)
 
             # log the action and its produced events
             tracker.update(action.event_for_successful_execution(prediction))
 
-        logger.debug(f"Action '{action.name()}' ended with events '{events}'.")
+        logger.debug(
+            f"Action '{action.name()}' ended with events '{events}'. "
+            f"sender_id: {tracker.sender_id}"
+        )
         tracker.update_with_events(events, self.domain)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
