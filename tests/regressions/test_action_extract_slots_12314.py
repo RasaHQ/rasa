@@ -10,7 +10,11 @@ from rasa import train
 from rasa.core.agent import load_agent
 from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.utils.endpoints import EndpointConfig
-from rasa.core.actions.action import ActionExtractSlots
+from rasa.core.actions import action
+from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered
 
 SENDER = "sender"
 
@@ -57,8 +61,15 @@ async def test_setting_slot_with_custom_action(model_file: Text):
     """
     agent = await load_agent(model_path=model_file)
     output_channel = CollectingOutputChannel()
+    domain = Domain.from_path(BOT_DIRECTORY / "domain.yml")
     action_server_url = "https://my-action-server:5055/webhook"
-    action_server = EndpointConfig(action_server_url)
+    endpoint = EndpointConfig(action_server_url)
+    remote_action = action.RemoteAction("action_rsa_token", endpoint)
+
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
 
     # Check that the bot asks for the type of RSA token
     with aioresponses() as mocked:
@@ -71,7 +82,8 @@ async def test_setting_slot_with_custom_action(model_file: Text):
                         "name": "rsa_token",
                         "value": "unknown",
                     }
-                ]
+                ],
+                "responses": [],
             },
         )
 
@@ -79,7 +91,12 @@ async def test_setting_slot_with_custom_action(model_file: Text):
         await agent.handle_message(
             _build_user_message(output_channel, "help me install a rsa token")
         )
-        ActionExtractSlots(action_server)
+        await remote_action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
 
     assert output_channel.messages[-1] == {
         "recipient_id": SENDER,
@@ -107,14 +124,20 @@ async def test_setting_slot_with_custom_action(model_file: Text):
                         "name": "rsa_token",
                         "value": "hard",
                     }
-                ]
+                ],
+                "responses": [],
             },
         )
 
         await agent.handle_message(
             _build_user_message(output_channel, "help me install a hard rsa token")
         )
-        ActionExtractSlots(action_server)
+        await remote_action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
 
     # Check that the bot confirms that the user
     # has requested for an RSA token of type hard
