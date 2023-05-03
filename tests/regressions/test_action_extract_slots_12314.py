@@ -46,10 +46,12 @@ async def test_setting_slot_with_custom_action(model_file: Text):
     User: help me install a hard rsa token
     Bot: User has requested rsa token type of hard
 
-    The custom action should set the slot `rsa_token` to the value `hard` in the second and third message.
+    The custom action should set the slot `rsa_token` to
+    the value `hard` in the second and third message.
     A `SlotSet` event should be emitted in the third message.
 
-    From the Jira Comment by Chris, https://rasahq.atlassian.net/browse/ATO-678?focusedCommentId=18017
+    From the Jira Comment by Chris,
+    https://rasahq.atlassian.net/browse/ATO-678?focusedCommentId=18017
     """
     agent = await load_agent(model_path=model_file)
     output_channel = CollectingOutputChannel()
@@ -80,9 +82,12 @@ async def test_setting_slot_with_custom_action(model_file: Text):
     }
 
     # Send the second message
-    await agent.handle_message(_build_user_message(output_channel, "hard"))
+    await agent.handle_message(
+        _build_user_message(output_channel, "hard")
+    )
 
-    # Check that the bot confirms that the user has requested for an RSA token of type hard
+    # Check that the bot confirms that the user has
+    # requested for an RSA token of type hard
     assert output_channel.messages[-1] == {
         "recipient_id": SENDER,
         "text": "User has requested rsa token type of hard",
@@ -104,10 +109,14 @@ async def test_setting_slot_with_custom_action(model_file: Text):
         )
 
         await agent.handle_message(
-            _build_user_message(output_channel, "help me install a hard rsa token")
+            _build_user_message(
+                output_channel,
+                "help me install a hard rsa token"
+            )
         )
 
-    # Check that the bot confirms that the user has requested for an RSA token of type hard
+    # Check that the bot confirms that the user
+    # has requested for an RSA token of type hard
     assert output_channel.messages[-1] == {
         "recipient_id": SENDER,
         "text": "User has requested rsa token type of hard",
