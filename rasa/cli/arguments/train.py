@@ -157,7 +157,7 @@ def add_validate_before_train(
         parser: An instance of `ArgumentParser` or `_ActionsContainer`.
     """
     parser.add_argument(
-        "--validate-before-training",
+        "--skip-validation",
         default=False,
         action="store_true",
         help="Validate domain and data files before training.",

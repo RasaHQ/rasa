@@ -88,8 +88,8 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         for f in args.data
     ]
 
-    if args.validate_before_training:
-        logger.info("Started validating domain and training data")
+    if not args.skip_validation:
+        logger.info("Started validating domain and training data...")
         importer = TrainingDataImporter.load_from_config(
             domain_path=args.domain, training_data_paths=args.data, config_path=config
         )

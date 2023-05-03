@@ -105,7 +105,7 @@ def _set_not_required_args(args: argparse.Namespace) -> None:
     args.fixed_model_name = None
     args.store_uncompressed = False
     args.dry_run = False
-    args.validate_before_training = False
+    args.skip_validation = True
     args.fail_on_validation_warnings = False
     args.validation_max_history = None
 

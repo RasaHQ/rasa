@@ -123,6 +123,7 @@ def test_train_no_domain_exists(
     os.remove("domain.yml")
     run_in_simple_project(
         "train",
+        "--skip-validation",
         "-c",
         "config.yml",
         "--data",
@@ -427,7 +428,7 @@ def test_train_help(run: Callable[..., RunResult]):
     help_text = f"""usage: {RASA_EXE} train [-h] [-v] [-vv] [--quiet]
                   [--logging-config-file LOGGING_CONFIG_FILE]
                   [--data DATA [DATA ...]] [-c CONFIG] [-d DOMAIN] [--out OUT]
-                  [--dry-run] [--validate-before-training]
+                  [--dry-run] [--skip-validation]
                   [--fail-on-validation-warnings]
                   [--validation-max-history VALIDATION_MAX_HISTORY]
                   [--augmentation AUGMENTATION] [--debug-plots]
@@ -519,7 +520,6 @@ def test_train_validation_warnings(
 
     result = run_in_simple_project(
         "train",
-        "--validate-before-training",
         "--data",
         str(test_data_dir),
         "--domain",
@@ -545,7 +545,6 @@ def test_train_validation_fail_on_warnings(
 
     result = run_in_simple_project_with_warnings(
         "train",
-        "--validate-before-training",
         "--fail-on-validation-warnings",
         "--data",
         str(test_data_dir),
@@ -573,7 +572,6 @@ def test_train_validation_max_history_1(
 
     result = run_in_simple_project_with_warnings(
         "train",
-        "--validate-before-training",
         "--validation-max-history",
         "1",
         "--data",
@@ -602,7 +600,6 @@ def test_train_validation_max_history_2(
 
     result = run_in_simple_project_with_warnings(
         "train",
-        "--validate-before-training",
         "--validation-max-history",
         "2",
         "--data",
