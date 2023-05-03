@@ -446,8 +446,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         # No match found
         logger.debug(
-            f"Current tracker state {old_states}. "
-            f"sender_id: {tracker.sender_id}"
+            f"Current tracker state {old_states}. " f"sender_id: {tracker.sender_id}"
         )
         return None
 

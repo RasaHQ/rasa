@@ -1092,8 +1092,7 @@ class RulePolicy(MemoizationPolicy):
             )
         else:
             logger.debug(
-                "There is no applicable rule. "
-                f"sender_id: {tracker.sender_id}"
+                "There is no applicable rule. " f"sender_id: {tracker.sender_id}"
             )
 
         # if we didn't predict anything from the rules, then the feature key created
