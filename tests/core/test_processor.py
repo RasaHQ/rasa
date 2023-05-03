@@ -1881,3 +1881,20 @@ async def test_processor_fetch_full_tracker_with_initial_session_existing_tracke
     tracker = await default_processor.fetch_full_tracker_with_initial_session(sender_id)
     assert tracker.sender_id == sender_id
     assert all([event in expected_events for event in tracker.events])
+
+async def test_sender_id_in_logs(
+    default_processor: MessageProcessor,
+    caplog: LogCaptureFixture
+):
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG):
+        tracker = DialogueStateTracker.from_events(
+            "test",
+            evts=[
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered("Hi!"),
+                ActionExecuted("test_action"),
+            ],
+        )
+        default_processor.predict_next_with_tracker_if_should(tracker)
+        assert f"sender_id: {tracker.sender_id}" in caplog.text
