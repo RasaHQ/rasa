@@ -336,10 +336,9 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U ddtrace
 
-      - name: Test Code 🔍 (multi-process)
+      - name: Test Code 🔍
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
           PYTHONIOENCODING: "utf-8"
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
@@ -475,10 +474,9 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U ddtrace
 
-      - name: Test Code 🔍 (multi-process)
+      - name: Test Code 🔍
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
           PYTHONIOENCODING: "utf-8"
           DD_ENV: test-flaky
           DD_SERVICE: rasa
