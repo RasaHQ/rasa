@@ -9,6 +9,8 @@ from aioresponses import aioresponses
 from rasa import train
 from rasa.core.agent import load_agent
 from rasa.core.channels import UserMessage, CollectingOutputChannel
+from rasa.utils.endpoints import EndpointConfig
+from rasa.core.actions.action import ActionExtractSlots
 
 SENDER = "sender"
 
@@ -55,11 +57,13 @@ async def test_setting_slot_with_custom_action(model_file: Text):
     """
     agent = await load_agent(model_path=model_file)
     output_channel = CollectingOutputChannel()
+    action_server_url = "https://my-action-server:5055/webhook"
+    action_server = EndpointConfig(action_server_url)
 
     # Check that the bot asks for the type of RSA token
     with aioresponses() as mocked:
         mocked.post(
-            "http://localhost:5055/webhook",
+            action_server_url,
             payload={
                 "events": [
                     {
@@ -75,6 +79,7 @@ async def test_setting_slot_with_custom_action(model_file: Text):
         await agent.handle_message(
             _build_user_message(output_channel, "help me install a rsa token")
         )
+        ActionExtractSlots(action_server)
 
     assert output_channel.messages[-1] == {
         "recipient_id": SENDER,
@@ -94,7 +99,7 @@ async def test_setting_slot_with_custom_action(model_file: Text):
     # Send the third message
     with aioresponses() as mocked:
         mocked.post(
-            "http://localhost:5055/webhook",
+            action_server_url,
             payload={
                 "events": [
                     {
@@ -109,6 +114,7 @@ async def test_setting_slot_with_custom_action(model_file: Text):
         await agent.handle_message(
             _build_user_message(output_channel, "help me install a hard rsa token")
         )
+        ActionExtractSlots(action_server)
 
     # Check that the bot confirms that the user
     # has requested for an RSA token of type hard
