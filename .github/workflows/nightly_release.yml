@@ -106,71 +106,71 @@ jobs:
           gcloud artifacts print-settings python --project=rasa-releases --repository=rasa --location=europe-west3 > ~/.pypirc
           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa/ ${{ format('{0}/dist/*', github.workspace) }} 
 
-    docker:
-      name: Build Docker
-      runs-on: ubuntu-22.04
-      needs: [changes, build_docker_base_images_and_set_env]
-      env:
-        GCLOUD_VERSION: "297.0.1"
-        # Registry used to store Docker images used for release purposes
-        RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases"
+  docker:
+    name: Build Docker
+    runs-on: ubuntu-22.04
+    needs: run_script_and_tag_nightly_release
+    env:
+      GCLOUD_VERSION: "297.0.1"
+      # Registry used to store Docker images used for release purposes
+      RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases"
+      IMAGE_TAG: ${{ needs.run_script_and_tag_nightly_release.outputs.tag_name }}
 
-      steps:
-        - name: Checkout git repository 🕝
-          uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
-        - name: Free disk space
-          # tries to make sure we do not run out of disk space, see
-          # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
-          run: |
-            sudo swapoff -a
-            sudo rm -f /swapfile
-            sudo apt clean
-            docker rmi $(docker image ls -aq)
-            df -h
+      - name: Free disk space
+        # tries to make sure we do not run out of disk space, see
+        # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt clean
+          docker rmi $(docker image ls -aq)
+          df -h
 
-        - name: Read Poetry Version 🔢
-          run: |
-            echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-          shell: bash
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
-        - name: Set up Docker Buildx
-          uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c
-          id: buildx
-          with:
-            version: v0.5.1
-            driver: docker
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c
+        id: buildx
+        with:
+          version: v0.5.1
+          driver: docker
 
-        - name: Echo Available platforms
-          run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: Echo Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
 
-        - name: Copy Segment write key to the package
-          env:
-            RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
-            RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
-          run: |
-            ./scripts/write_keys_file.sh
+      - name: Copy Segment write key to the package
+        env:
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+        run: |
+          ./scripts/write_keys_file.sh
 
-        - name: Build Docker image
-          run: |
-            IMAGE_TAG=${{ needs.run_script_and_tag_nightly_release.outputs.tag_name }}
-            docker buildx bake -f docker/docker-bake.hcl base
-            docker buildx bake -f docker/docker-bake.hcl base-builder
-            docker buildx bake -f docker/docker-bake.hcl default
-            docker tag rasa/rasa:base-localdev ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
+      - name: Build Docker image
+        run: |
+          docker buildx bake -f docker/docker-bake.hcl base
+          docker buildx bake -f docker/docker-bake.hcl base-builder
+          docker buildx bake -f docker/docker-bake.hcl default
+          docker tag rasa/rasa:base-localdev ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
 
-        # Authenticate and push to the release registry
-        - id: 'auth-release'
-          name: Authenticate with gcloud for release registry 🎫
-          uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
-          with:
-            credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+      # Authenticate and push to the release registry
+      - id: 'auth-release'
+        name: Authenticate with gcloud for release registry 🎫
+        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        with:
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
-        - name: Authenticate docker for release registry 🎫
-          run: |
-            # Set up docker to authenticate via gcloud command-line tool.
-            gcloud auth configure-docker europe-west3-docker.pkg.dev
+      - name: Authenticate docker for release registry 🎫
+        run: |
+          # Set up docker to authenticate via gcloud command-line tool.
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
 
-        - name: Push image to release registry
-          run: |
-            docker push ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
+      - name: Push image to release registry
+        run: |
+          docker push ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}

@@ -4,8 +4,6 @@ on:
   push:
     branches-ignore:
       - nightly_docker
-    branches:
-      - main
     tags:
       - "*"
   pull_request:
