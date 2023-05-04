@@ -1501,14 +1501,14 @@ testing = ["pre-commit"]
 
 [[package]]
 name = "fakeredis"
-version = "2.11.0"
+version = "2.11.2"
 description = "Fake implementation of redis API for testing purposes."
 category = "dev"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "fakeredis-2.11.0-py3-none-any.whl", hash = "sha256:156ef67713dd53000c28dd341be61a365c20230bc17c8fb8320b0c123e667aff"},
-    {file = "fakeredis-2.11.0.tar.gz", hash = "sha256:d25883dc52c31546e586b6ec3c49c5999b3025bfc4812532d71dedcfed56fee1"},
+    {file = "fakeredis-2.11.2-py3-none-any.whl", hash = "sha256:69a504328a89e5e5f2d05a4236b570fb45244c96997c5002c8c6a0503b95f289"},
+    {file = "fakeredis-2.11.2.tar.gz", hash = "sha256:e0fef512b8ec49679d373456aa4698a4103005ecd7ca0b13170a2c1d3af949c5"},
 ]
 
 [package.dependencies]
@@ -7432,4 +7432,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<3.11"
-content-hash = "0c73318d461445af80482d5f5c523937b66f7a4090784fd0b659e83a39e69a54"
+content-hash = "5c3cd587cc8a7350797798784e76eaad0a9e0bf30d87597abe03a37596ee53f3"
