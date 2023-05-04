@@ -73,6 +73,7 @@ class KafkaEventBroker(EventBroker):
         self.producer: Optional[Producer] = None
         self.url = url
         self._topic = topic
+        self.non_anonymized_events_topic = topic
         self.client_id = client_id
         self.partition_by_sender = partition_by_sender
         self.security_protocol = security_protocol.upper()
