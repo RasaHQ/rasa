@@ -72,7 +72,7 @@ class KafkaEventBroker(EventBroker):
         """
         self.producer: Optional[Producer] = None
         self.url = url
-        self.topic = topic
+        self._topic = topic
         self.client_id = client_id
         self.partition_by_sender = partition_by_sender
         self.security_protocol = security_protocol.upper()
@@ -90,6 +90,15 @@ class KafkaEventBroker(EventBroker):
         self._cancelled = False
         self._poll_thread = threading.Thread(target=self._poll_loop)
         self._poll_thread.start()
+        self.topics: List[Dict[Text, Any]] = kwargs.get("topics", [])
+
+    @property
+    def topic(self) -> Text:
+        return self._topic
+
+    @topic.setter
+    def topic(self, topic: Text) -> None:
+        self._topic = topic
 
     @classmethod
     async def from_endpoint_config(

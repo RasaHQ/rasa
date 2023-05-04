@@ -1,0 +1,9 @@
+event_broker:
+  type: kafka
+  security_protocol: PLAINTEXT
+  topic: topic
+  url: localhost
+  client_id: kafka-python-rasa
+  topics:
+    - name: topic1
+    - name: topic2

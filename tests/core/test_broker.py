@@ -407,3 +407,11 @@ def test_pika_event_broker_configure_url(
     broker = PikaEventBroker(host=host, username=username, password=password)
     url = broker._configure_url()
     assert url == expected_url
+
+
+async def test_kafka_event_broker_with_topics() -> None:
+    endpoints_file = "data/test_endpoints/event_brokers/kafka_topics.yml"
+    broker_config = read_endpoint_config(endpoints_file, "event_broker")
+    broker = await KafkaEventBroker.from_endpoint_config(broker_config)
+
+    assert broker.topics == [{"name": "topic1"}, {"name": "topic2"}]
