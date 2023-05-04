@@ -157,7 +157,7 @@ jobs:
           docker buildx bake -f docker/docker-bake.hcl base
           docker buildx bake -f docker/docker-bake.hcl base-builder
           docker buildx bake -f docker/docker-bake.hcl default
-          docker tag rasa/rasa:base-localdev ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
+          docker tag rasa/rasa:base-builder-${IMAGE_TAG} ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
 
       # Authenticate and push to the release registry
       - id: 'auth-release'
