@@ -689,8 +689,9 @@ class MessageProcessor:
             parse_data = self._parse_message_with_graph(message, only_output_properties)
 
         logger.debug(
-            f"Received user message '{parse_data['text']}' with intent '{parse_data['intent']}' "
-            f"and entities '{parse_data['entities']}' "
+            f"Received user message '{parse_data['text']}' "
+            f"with intent '{parse_data['intent']}' "
+            f"and entities '{parse_data['entities']}'. "
             f"sender_id: {message.sender_id}"
         )
 

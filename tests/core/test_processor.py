@@ -1882,9 +1882,9 @@ async def test_processor_fetch_full_tracker_with_initial_session_existing_tracke
     assert tracker.sender_id == sender_id
     assert all([event in expected_events for event in tracker.events])
 
+
 async def test_sender_id_in_logs(
-    default_processor: MessageProcessor,
-    caplog: LogCaptureFixture
+    default_processor: MessageProcessor, caplog: LogCaptureFixture
 ):
     caplog.clear()
     with caplog.at_level(logging.DEBUG):
