@@ -160,7 +160,7 @@ def add_validate_before_train(
         "--skip-validation",
         default=False,
         action="store_true",
-        help="Validate domain and data files before training.",
+        help="Skip validation step before training.",
     )
 
     parser.add_argument(
