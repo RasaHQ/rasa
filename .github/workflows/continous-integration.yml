@@ -2,6 +2,8 @@ name: Continuous Integration
 
 on:
   push:
+    branches-ignore:
+      - nightly_docker
     branches:
       - main
     tags:
