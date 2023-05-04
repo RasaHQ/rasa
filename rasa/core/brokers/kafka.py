@@ -90,7 +90,9 @@ class KafkaEventBroker(EventBroker):
         self._cancelled = False
         self._poll_thread = threading.Thread(target=self._poll_loop)
         self._poll_thread.start()
-        self.topics: List[Dict[Text, Any]] = kwargs.get("topics", [])
+        self.anonymized_events_topics: List[Dict[Text, Any]] = kwargs.get(
+            "anonymized_events_topics", []
+        )
 
     @property
     def topic(self) -> Text:

@@ -4,6 +4,8 @@ event_broker:
   topic: topic
   url: localhost
   client_id: kafka-python-rasa
-  topics:
+  anonymized_events_topics:
     - name: topic1
+      anonymization_rules: my_rules
     - name: topic2
+      anonymization_rules: other_rules

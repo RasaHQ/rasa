@@ -414,4 +414,7 @@ async def test_kafka_event_broker_with_topics() -> None:
     broker_config = read_endpoint_config(endpoints_file, "event_broker")
     broker = await KafkaEventBroker.from_endpoint_config(broker_config)
 
-    assert broker.topics == [{"name": "topic1"}, {"name": "topic2"}]
+    assert broker.anonymized_events_topics == [
+        {"name": "topic1", "anonymization_rules": "my_rules"},
+        {"name": "topic2", "anonymization_rules": "other_rules"},
+    ]
