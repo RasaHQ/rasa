@@ -1,7 +1,10 @@
 usage: rasa train [-h] [-v] [-vv] [--quiet]
                   [--logging-config-file LOGGING_CONFIG_FILE]
                   [--data DATA [DATA ...]] [-c CONFIG] [-d DOMAIN] [--out OUT]
-                  [--dry-run] [--augmentation AUGMENTATION] [--debug-plots]
+                  [--dry-run] [--skip-validation]
+                  [--fail-on-validation-warnings]
+                  [--validation-max-history VALIDATION_MAX_HISTORY]
+                  [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force] [--finetune [FINETUNE]]
@@ -39,6 +42,13 @@ options:
                         needs to be retrained - 8 means the training was
                         forced (--force argument is specified) (default:
                         False)
+  --skip-validation     Skip validation step before training. (default: False)
+  --fail-on-validation-warnings
+                        Fail on validation warnings. If omitted only errors
+                        will exit with a non zero status code (default: False)
+  --validation-max-history VALIDATION_MAX_HISTORY
+                        Number of turns taken into account for story structure
+                        validation. (default: None)
   --augmentation AUGMENTATION
                         How much data augmentation to use during training.
                         (default: 50)

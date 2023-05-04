@@ -1,7 +1,7 @@
 import argparse
 import logging
 import pathlib
-from typing import List, TYPE_CHECKING
+from typing import List
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -17,9 +17,6 @@ import rasa.shared.nlu.training_data.util
 import rasa.shared.utils.cli
 import rasa.utils.common
 import rasa.shared.utils.io
-
-if TYPE_CHECKING:
-    from rasa.validator import Validator
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +114,11 @@ def _add_data_validate_parsers(
         help="Validates domain and data files to check for possible mistakes.",
     )
     _append_story_structure_arguments(validate_parser)
-    validate_parser.set_defaults(func=validate_files)
+    validate_parser.set_defaults(
+        func=lambda args: rasa.cli.utils.validate_files(
+            args.fail_on_warnings, args.max_history, _build_training_data_importer(args)
+        )
+    )
     arguments.set_validator_arguments(validate_parser)
 
     validate_subparsers = validate_parser.add_subparsers()
@@ -128,8 +129,26 @@ def _add_data_validate_parsers(
         help="Checks for inconsistencies in the story files.",
     )
     _append_story_structure_arguments(story_structure_parser)
-    story_structure_parser.set_defaults(func=validate_stories)
+
+    story_structure_parser.set_defaults(
+        func=lambda args: rasa.cli.utils.validate_files(
+            args.fail_on_warnings,
+            args.max_history,
+            _build_training_data_importer(args),
+            stories_only=True,
+        )
+    )
     arguments.set_validator_arguments(story_structure_parser)
+
+
+def _build_training_data_importer(args: argparse.Namespace) -> "TrainingDataImporter":
+    config = rasa.cli.utils.get_validated_path(
+        args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
+    )
+
+    return TrainingDataImporter.load_from_config(
+        domain_path=args.domain, training_data_paths=args.data, config_path=config
+    )
 
 
 def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
@@ -210,79 +229,6 @@ def split_stories_data(args: argparse.Namespace) -> None:
             f"with {len(train)} stories and {out_file_test} "
             f"with {len(test)} stories"
         )
-
-
-def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
-    """Validates either the story structure or the entire project.
-
-    Args:
-        args: Commandline arguments
-        stories_only: If `True`, only the story structure is validated.
-    """
-    from rasa.validator import Validator
-
-    config = rasa.cli.utils.get_validated_path(
-        args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
-    )
-
-    importer = TrainingDataImporter.load_from_config(
-        domain_path=args.domain, training_data_paths=args.data, config_path=config
-    )
-
-    validator = Validator.from_importer(importer)
-
-    if stories_only:
-        all_good = _validate_story_structure(validator, args)
-    else:
-        all_good = (
-            _validate_domain(validator)
-            and _validate_nlu(validator, args)
-            and _validate_story_structure(validator, args)
-        )
-
-    validator.warn_if_config_mandatory_keys_are_not_set()
-
-    telemetry.track_validate_files(all_good)
-    if not all_good:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Project validation completed with errors."
-        )
-
-
-def validate_stories(args: argparse.Namespace) -> None:
-    """Validates that training data file content conforms to training data spec.
-
-    Args:
-        args: Commandline arguments
-    """
-    validate_files(args, stories_only=True)
-
-
-def _validate_domain(validator: "Validator") -> bool:
-    return (
-        validator.verify_domain_validity()
-        and validator.verify_actions_in_stories_rules()
-        and validator.verify_forms_in_stories_rules()
-        and validator.verify_form_slots()
-        and validator.verify_slot_mappings()
-    )
-
-
-def _validate_nlu(validator: "Validator", args: argparse.Namespace) -> bool:
-    return validator.verify_nlu(not args.fail_on_warnings)
-
-
-def _validate_story_structure(validator: "Validator", args: argparse.Namespace) -> bool:
-    # Check if a valid setting for `max_history` was given
-    if isinstance(args.max_history, int) and args.max_history < 1:
-        raise argparse.ArgumentTypeError(
-            f"The value of `--max-history {args.max_history}` "
-            f"is not a positive integer."
-        )
-
-    return validator.verify_story_structure(
-        not args.fail_on_warnings, max_history=args.max_history
-    )
 
 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
