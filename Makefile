@@ -188,6 +188,10 @@ test-flaky: PYTEST_MARKER=flaky
 test-flaky: DD_ARGS := $(or $(DD_ARGS),)
 test-flaky: prepare-spacy prepare-mitie test-marker
 
+test-acceptance: PYTEST_MARKER=acceptance and (not flaky)
+test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
+test-acceptance: prepare-spacy prepare-mitie test-marker
+
 test-gh-actions:
 	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest .github/tests --cov .github/scripts
 

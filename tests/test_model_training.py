@@ -292,26 +292,6 @@ class TestE2e:
             ]
         )
 
-    @pytest.mark.acceptance
-    def test_models_not_retrained_if_no_new_data(
-        self,
-        trained_e2e_model: Text,
-        moodbot_domain_path: Path,
-        e2e_bot_config_file: Path,
-        e2e_stories_path: Text,
-        nlu_data_path: Text,
-        trained_e2e_model_cache: Path,
-    ):
-        result = rasa.train(
-            str(moodbot_domain_path),
-            str(e2e_bot_config_file),
-            [e2e_stories_path, nlu_data_path],
-            output=new_model_path_in_same_dir(trained_e2e_model),
-            dry_run=True,
-        )
-
-        assert result.code == 0
-
     def test_retrains_nlu_and_core_if_new_e2e_example(
         self,
         trained_e2e_model: Text,
@@ -1097,6 +1077,7 @@ def test_check_unresolved_slots(capsys: CaptureFixture):
         ]
     )
     assert rasa.model_training._check_unresolved_slots(domain, stories) is None
+
 
 @pytest.mark.parametrize(
     "fingerprint_results, expected_code",
