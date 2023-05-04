@@ -283,7 +283,9 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
     ) -> List[Text]:
         plugin_manager().hook.modify_default_recipe_graph_train_nodes(
-            train_nodes=train_nodes
+            train_config=train_config,
+            train_nodes=train_nodes,
+            cli_parameters=cli_parameters,
         )
 
         persist_nlu_data = bool(cli_parameters.get("persist_nlu_training_data"))
@@ -534,7 +536,9 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
     ) -> None:
         plugin_manager().hook.modify_default_recipe_graph_train_nodes(
-            train_nodes=train_nodes
+            train_config=train_config,
+            train_nodes=train_nodes,
+            cli_parameters=cli_parameters,
         )
         train_nodes["domain_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},

@@ -1,7 +1,7 @@
 import argparse
 import functools
 import sys
-from typing import Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple
 import typing
 
 import pluggy
@@ -48,9 +48,17 @@ def refine_cli(
     """Customizable hook for adding CLI commands."""
 
 
+@hookspec(firstresult=True)  # type: ignore[misc]
+def extract_space_from_args(args: argparse.Namespace) -> Dict[Text, Any]:
+    """Extracts space from the command line arguments."""
+    return {}
+
+
 @hookspec  # type: ignore[misc]
 def modify_default_recipe_graph_train_nodes(
-    train_nodes: Dict[Text, "SchemaNode"]
+    train_config: Dict[Text, Any],
+    train_nodes: Dict[Text, "SchemaNode"],
+    cli_parameters: Dict[Text, Any],
 ) -> None:
     """Hook specification to modify the default recipe graph for training.
 

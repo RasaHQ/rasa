@@ -8,6 +8,7 @@ import rasa.cli.arguments.train as train_arguments
 import rasa.cli.utils
 import rasa.utils.common
 from rasa.core.train import do_compare_training
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
@@ -93,7 +94,10 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         force_training=args.force,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
-        core_additional_arguments=extract_core_additional_arguments(args),
+        core_additional_arguments={
+            **extract_core_additional_arguments(args),
+            **_extract_additional_arguments(args),
+        },
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
         model_to_finetune=_model_for_finetuning(args),
         finetuning_epoch_fraction=args.epoch_fraction,
@@ -131,7 +135,10 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
     story_file = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
-    additional_arguments = extract_core_additional_arguments(args)
+    additional_arguments = {
+        **extract_core_additional_arguments(args),
+        **_extract_additional_arguments(args),
+    }
 
     # Policies might be a list for the compare training. Do normal training
     # if only list item was passed.
@@ -185,7 +192,10 @@ def run_nlu_training(args: argparse.Namespace) -> Optional[Text]:
         output=args.out,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
-        additional_arguments=extract_nlu_additional_arguments(args),
+        additional_arguments={
+            **extract_nlu_additional_arguments(args),
+            **_extract_additional_arguments(args),
+        },
         domain=args.domain,
         model_to_finetune=_model_for_finetuning(args),
         finetuning_epoch_fraction=args.epoch_fraction,
@@ -210,3 +220,8 @@ def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
         arguments["num_threads"] = args.num_threads
 
     return arguments
+
+
+def _extract_additional_arguments(args: argparse.Namespace) -> Dict:
+    space = plugin_manager().hook.extract_space_from_args(args=args)
+    return space or {}
