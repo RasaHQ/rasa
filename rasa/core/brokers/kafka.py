@@ -72,8 +72,7 @@ class KafkaEventBroker(EventBroker):
         """
         self.producer: Optional[Producer] = None
         self.url = url
-        self._topic = topic
-        self.non_anonymized_events_topic = topic
+        self.topic = topic
         self.client_id = client_id
         self.partition_by_sender = partition_by_sender
         self.security_protocol = security_protocol.upper()
@@ -94,14 +93,6 @@ class KafkaEventBroker(EventBroker):
         self.anonymized_events_topics: List[Dict[Text, Any]] = kwargs.get(
             "anonymized_events_topics", []
         )
-
-    @property
-    def topic(self) -> Text:
-        return self._topic
-
-    @topic.setter
-    def topic(self, topic: Text) -> None:
-        self._topic = topic
 
     @classmethod
     async def from_endpoint_config(
