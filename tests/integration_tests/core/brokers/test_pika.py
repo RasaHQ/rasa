@@ -2,6 +2,8 @@ import logging
 from typing import Text
 
 import docker
+import pytest
+import randomname
 from pytest import LogCaptureFixture
 
 from rasa.core.brokers.pika import PikaEventBroker, RABBITMQ_EXCHANGE
@@ -29,6 +31,7 @@ async def test_pika_event_broker_connect():
         await broker.close()
 
 
+@pytest.mark.xdist_group("rabbitmq")
 async def test_pika_event_broker_publish_after_restart(
     docker_client: docker.DockerClient,
     caplog: LogCaptureFixture,
@@ -97,3 +100,51 @@ async def test_pika_event_broker_publish_after_restart(
 
     rabbitmq_container.stop()
     rabbitmq_container.remove()
+
+
+@pytest.mark.xdist_group("rabbitmq")
+@pytest.mark.parametrize("host_component", ["localhost", "myuser:mypassword@localhost"])
+async def test_pika_event_broker_connect_with_path_and_query_params_in_url(
+    docker_client: docker.DockerClient,
+    host_component: Text,
+) -> None:
+    username = "myuser"
+    password = "mypassword"
+    vhost = "myvhost"
+    hostname = "my-rabbitmq"
+
+    environment = {
+        "RABBITMQ_DEFAULT_USER": username,
+        "RABBITMQ_DEFAULT_PASS": password,
+        "RABBITMQ_DEFAULT_VHOST": vhost,
+    }
+
+    rabbitmq_container = docker_client.containers.run(
+        image="rabbitmq:3-management",
+        detach=True,
+        environment=environment,
+        name=f"rabbitmq_{randomname.generate(5)}",
+        hostname=hostname,
+        ports={f"{RABBITMQ_PORT}/tcp": RABBITMQ_PORT, "15672/tcp": 15672},
+    )
+    rabbitmq_container.reload()
+    assert rabbitmq_container.status == "running"
+
+    query_param = "heartbeat=5"
+
+    broker = PikaEventBroker(
+        host=f"amqp://{host_component}/{vhost}?{query_param}",
+        username=username,
+        password=password,
+        port=RABBITMQ_PORT,
+        queues=[RABBITMQ_DEFAULT_QUEUE],
+    )
+
+    try:
+        await broker.connect()
+        assert broker.is_ready()
+    finally:
+        await broker.close()
+
+        rabbitmq_container.stop()
+        rabbitmq_container.remove()
