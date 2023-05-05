@@ -106,90 +106,15 @@ jobs:
           gcloud artifacts print-settings python --project=rasa-releases --repository=rasa --location=europe-west3 > ~/.pypirc
           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa/ ${{ format('{0}/dist/*', github.workspace) }} 
 
-  build_docker_base_images:
-    name: Build Docker base images and setup environment
-    runs-on: ubuntu-22.04
-    needs: run_script_and_tag_nightly_release
-    env:
-      IMAGE_TAG: ${{ needs.run_script_and_tag_nightly_release.outputs.tag_name }}
-    outputs:
-      base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
-      base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
-      base_builder_image_hash: ${{ steps.check_image.outputs.base_builder_image_hash }}
-    steps:
-      - name: Checkout git repository 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-        if: github.event_name != 'pull_request'
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18
-
-      - name: Read Poetry Version 🔢
-        run: |
-          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c
-        with:
-          version: v0.5.1
-          driver: docker
-
-      - name: Check if a base image exists
-        id: check_image
-        env:
-          DOCKER_CLI_EXPERIMENTAL: enabled
-        run: |
-          # Base image
-          BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
-          echo "base_image_hash=${BASE_IMAGE_HASH}" >> $GITHUB_OUTPUT
-
-          # Base MITIE image
-          BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
-          MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-          echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}" >> $GITHUB_OUTPUT
-
-          # Base poetry image
-          BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect rasa/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
-          echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
-
-          # Base builder image
-          BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
-          echo "base_builder_image_hash=${BASE_IMAGE_BUILDER_HASH}" >> $GITHUB_OUTPUT
-
-      - name: Build Docker base image 🛠
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base
-
-      - name: Build Docker mitie base image 🛠
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-mitie
-
-      - name: Build Docker poetry base image 🛠
-        run: |
-          export IMAGE_TAG=${{ env.POETRY_VERSION }}
-          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-poetry
-
-      - name: Build Docker builder base image 🛠
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
-          docker buildx bake -f docker/docker-bake.hcl base-builder
-
   docker:
     name: Build Docker
     runs-on: ubuntu-22.04
-    needs: [build_docker_base_images]
+    needs: run_script_and_tag_nightly_release
     env:
       GCLOUD_VERSION: "297.0.1"
       # Registry used to store Docker images used for release purposes
       RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases"
       IMAGE_TAG: ${{ needs.run_script_and_tag_nightly_release.outputs.tag_name }}
-      BASE_IMAGE_HASH: ${{ needs.build_docker_base_images.outputs.base_image_hash }}
-      BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images.outputs.base_mitie_image_hash }}
-      BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images.outputs.base_builder_image_hash }}
 
     steps:
       - name: Checkout git repository 🕝
@@ -229,7 +154,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker buildx bake -f docker/docker-bake.hcl default
+          docker build . -t rasa/rasa:base-localdev -f docker/Dockerfile.base
+          docker build . -t rasa/rasa:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg POETRY_VERSION=1.4.2
+          docker build . -t rasa/rasa:base-mitie-localdev -f docker/Dockerfile.base-mitie
+          docker build . -t rasa/rasa:base-poetry -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg BASE_IMAGE_HASH=localdev
+          docker build . -t rasa/rasa:${IMAGE_TAG} -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev
           docker tag rasa/rasa:${IMAGE_TAG} ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
 
       # Authenticate and push to the release registry
