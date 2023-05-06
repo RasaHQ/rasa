@@ -88,7 +88,7 @@ select = [ "D", "E", "F", "W", "RUF",]
 
 [tool.poetry.dependencies]
 python = ">=3.7,<3.11"
-boto3 = "^1.12"
+boto3 = "^1.26.124"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.6"
 attrs = ">=19.3,<22.2"
@@ -213,7 +213,7 @@ freezegun = "^1.0.0"
 responses = "^0.22.0"
 aioresponses = "^0.7.2"
 moto = "~=4.1.2"
-fakeredis = "^2.11.0"
+fakeredis = "^2.11.2"
 mongomock = "^4.1.2"
 black = "^22.10.0"
 google-cloud-storage = "^2.4.0"
@@ -310,7 +310,7 @@ version = ">=4.13.0, <=4.26.0"
 optional = true
 
 [tool.poetry.dependencies.sentencepiece]
-version = "~0.1.96"
+version = "~0.1.99"
 optional = true
 extras = [ "sentencepiece",]
 
