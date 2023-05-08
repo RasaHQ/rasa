@@ -509,6 +509,7 @@ class ActionListen(Action):
     """
 
     def name(self) -> Text:
+        """Returns action listen name."""
         return ACTION_LISTEN_NAME
 
     async def run(
@@ -826,11 +827,15 @@ class RemoteAction(Action):
 
 
 class ActionExecutionRejection(RasaException):
-    """Raising this exception will allow other policies
-    to predict a different action.
+    """Raising this exception will allow other policies to predict a different action.
+
+    Args:
+        action_name: The name of the rejected action.
+        message: Optional. A custom message to include in the exception.
     """
 
     def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
+        """Create a new ActionExecutionRejection exception."""
         self.action_name = action_name
         self.message = message or "Custom action '{}' rejected to run".format(
             action_name
