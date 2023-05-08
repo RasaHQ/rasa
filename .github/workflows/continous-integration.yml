@@ -313,9 +313,6 @@ jobs:
           make install-full
           make prepare-tests-windows-gha
 
-      - name: Install Full Dependencies
-        run: make install-full
-
       - name: Add github workflow problem matchers
         if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
         # only annotate based on test runs on ubuntu: otherwise
