@@ -24,9 +24,9 @@ different distributed services, for example, your action server.
 
 ### Supported Tracing Backends/Collectors
 
-To trace requests in Rasa Pro, you can either use
+To trace requests in Rasa Pro, you can use
 [Jaeger](https://www.jaegertracing.io/) as a backend, or use
-the [OTEL Collector (OpenTelemetry Collector)](https://opentelemetry.io/docs/collector/).
+the [OTEL Collector (OpenTelemetry Collector)](https://opentelemetry.io/docs/collector/) or [Sentry](https://sentry.io)
 to collect traces and then send them to the backend of your choice.
 See [Configuring a Tracing Backend or Collector](#configuring-a-tracing-backend-or-collector)
 for instructions.
@@ -53,6 +53,12 @@ details on what attributes are made available as part of the trace context.
 To configure a tracing backend or collector, add a `tracing` entry to your endpoints
 i.e. in your `endpoints.yml` file, or in the relevant section of your Helm values in a deployment.
 
+Each of the backends support the following options:
+
+- `service_name`: is the OpenTelemetry service name used in the traces
+- `show_utterance`: will add the user utterance as the tracing tag `message_text`. It is `False` by default.
+- `show_slots`: will add all slots and their values as tracing tags. It is `False` by default.
+
 ### Jaeger
 
 To configure a Jaeger tracing backend, specify the `type` as `jaeger`.
@@ -63,7 +69,8 @@ tracing:
   host: localhost
   port: 6831
   service_name: rasa
-  sync_export: ~
+  show_utterance: True
+  show_slots: True
 ```
 
 ### OTEL Collector
@@ -80,6 +87,36 @@ tracing:
   insecure: false
   service_name: rasa
   root_certificates: ./tests/unit/tracing/fixtures/ca.pem
+  show_utterance: True
+  show_slots: True
+```
+
+### Sentry Collector
+
+[Sentry](https://sentry.io) APM is supported via the [SentrySpanProcessor](https://docs.sentry.io/platforms/python/performance/instrumentation/opentelemetry/).
+
+:::info Disable Telemetry
+Because Rasa uses Sentry to collect anonymous usage telemetry, you must disable the usage stats to so that the tracing can be sent to your Sentry instance.
+Set the following environment variables before you start rasa pro:
+ 
+```sh
+export RASA_TELEMETRY_ENABLED=false
+export RASA_PRO_TELEMETRY_ENABLED=false
+```
+:::
+
+To configure the Sentry span collector, specify the `type` as `sentry` along with your Sentry DSN endpoint.
+
+```yaml
+tracing:
+  type: sentry
+  endpoint: https://123@456.ingest.sentry.io/789
+  server_name: test
+  debug: True
+  environment: production
+  service_name: rasa
+  show_utterance: True
+  show_slots: True
 ```
 
 ## Traced Events
