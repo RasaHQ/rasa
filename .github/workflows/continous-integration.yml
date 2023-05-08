@@ -291,7 +291,6 @@ jobs:
 
       - name: Install Dependencies (Linux) 📦
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
-        continue-on-error: false
         run: |
           sudo apt-get -y install libpq-dev
           make install-full | tee .output
@@ -300,7 +299,6 @@ jobs:
 
       - name: Install Dependencies (Windows) 📦
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        continue-on-error: false
         # Restoring cache doesn't work properly on Windows due to symlinks.
         # We create symlinks for spacy models, that's why we need to clean them up
         # before caching the dependencies directory.
@@ -312,7 +310,7 @@ jobs:
             Remove-Item -Force -Recurse $spacy_data_dir
             New-Item -Path $spacy_data_dir -Type Directory
           }
-          make install-full
+          if ! make install-full; then exit 1; fi  # exit with non-zero code if make fails
           make prepare-tests-windows-gha
 
       - name: Add github workflow problem matchers
