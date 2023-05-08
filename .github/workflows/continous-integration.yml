@@ -310,7 +310,7 @@ jobs:
             Remove-Item -Force -Recurse $spacy_data_dir
             New-Item -Path $spacy_data_dir -Type Directory
           }
-          if ! make install-full; then exit 1; fi  # exit with non-zero code if make fails
+          if (! make install-full); then exit 1; fi  # exit with non-zero code if make fails
           make prepare-tests-windows-gha
 
       - name: Add github workflow problem matchers
