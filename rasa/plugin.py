@@ -80,3 +80,11 @@ def read_anonymization_rules(  # type: ignore[empty-body]
     endpoints_file: Optional[Text],
 ) -> List[Any]:
     """Hook specification for reading anonymization rules."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def create_anonymization_pipeline(
+    anonymization_rules: List[Any],
+    event_broker_config: Optional[EndpointConfig],
+) -> Optional[Any]:
+    """Hook specification for creating the anonymization pipeline."""
