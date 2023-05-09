@@ -498,8 +498,8 @@ jobs:
           path: |
             ${{ github.workspace }}/${{ matrix.test }}-coverage
 
-  upload_coverage_reports:
-    name: Upload coverage reports
+  prepare_coverage_reports:
+    name: Prepare coverage reports
     if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     # Always upload results even if tests failed
@@ -545,7 +545,7 @@ jobs:
     if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs:
-      - upload_coverage_reports
+      - prepare_coverage_reports
 
     steps:
       - name: Checkout git repository 🕝
