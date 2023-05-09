@@ -1,8 +1,6 @@
 name: Nightly Builds
 on:
   pull_request:
-  workflow_dispatch:
-
 
 jobs:
   run_script_and_tag_nightly_release:
@@ -113,7 +111,7 @@ jobs:
     env:
       GCLOUD_VERSION: "297.0.1"
       # Registry used to store Docker images used for release purposes
-      RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases"
+      DEV_REGISTRY: "europe-west3-docker.pkg.dev/rasa-ci-cd/rasa"
       IMAGE_TAG: ${{ needs.run_script_and_tag_nightly_release.outputs.tag_name }}
 
     steps:
@@ -142,9 +140,6 @@ jobs:
           version: v0.5.1
           driver: docker
 
-      - name: Echo Available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
-
       - name: Copy Segment write key to the package
         env:
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
@@ -155,24 +150,23 @@ jobs:
       - name: Build Docker image
         run: |
           docker build . -t rasa/rasa:base-localdev -f docker/Dockerfile.base
-          docker build . -t rasa/rasa:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg POETRY_VERSION=1.4.2
-          docker build . -t rasa/rasa:base-mitie-localdev -f docker/Dockerfile.base-mitie
+          docker build . -t rasa/rasa:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg POETRY_VERSION=${{ env.POETRY_VERSION }}
           docker build . -t rasa/rasa:base-poetry -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg BASE_IMAGE_HASH=localdev
           docker build . -t rasa/rasa:${IMAGE_TAG} -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev
-          docker tag rasa/rasa:${IMAGE_TAG} ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
+          docker tag rasa/rasa:${IMAGE_TAG} ${{env.DEV_REGISTRY}}/rasa:${IMAGE_TAG}
 
       # Authenticate and push to the release registry
-      - id: 'auth-release'
-        name: Authenticate with gcloud for release registry 🎫
+      - id: 'auth-dev'
+        name: Authenticate with gcloud for dev registry 🎫
         uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
         with:
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
-      - name: Authenticate docker for release registry 🎫
+      - name: Authenticate docker for dev registry 🎫
         run: |
           # Set up docker to authenticate via gcloud command-line tool.
           gcloud auth configure-docker europe-west3-docker.pkg.dev
 
       - name: Push image to release registry
         run: |
-          docker push ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
+          docker push ${{env.DEV_REGISTRY}}/rasa:${IMAGE_TAG}
