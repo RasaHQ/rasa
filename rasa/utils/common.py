@@ -516,37 +516,6 @@ def directory_size_in_mb(
     return size / 1_048_576
 
 
-def copy_directory(source: Path, destination: Path) -> None:
-    """Copies the content of one directory into another.
-
-    Unlike `shutil.copytree` this doesn't raise if `destination` already exists.
-
-    # TODO: Drop this in favor of `shutil.copytree(..., dirs_exist_ok=True)` when
-    # dropping Python 3.7.
-
-    Args:
-        source: The directory whose contents should be copied to `destination`.
-        destination: The directory which should contain the content `source` in the end.
-
-    Raises:
-        ValueError: If destination is not empty.
-    """
-    if not destination.exists():
-        destination.mkdir(parents=True)
-
-    if list(destination.glob("*")):
-        raise ValueError(
-            f"Destination path '{destination}' is not empty. Directories "
-            f"can only be copied to empty directories."
-        )
-
-    for item in source.glob("*"):
-        if item.is_dir():
-            shutil.copytree(item, destination / item.name)
-        else:
-            shutil.copy2(item, destination / item.name)
-
-
 def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
     """Tries to import all package names and returns the packages where it failed.
 

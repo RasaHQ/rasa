@@ -11,6 +11,7 @@ import pytest
 import sys
 import uuid
 
+import shutil
 from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
 from spacy import Language
 from pytest import WarningsRecorder
@@ -446,7 +447,7 @@ def trained_e2e_model_cache(
     monkeypatch: MonkeyPatch,
 ) -> Path:
     copied_cache = tmp_path_factory.mktemp("copy")
-    rasa.utils.common.copy_directory(_trained_e2e_model_cache, copied_cache)
+    shutil.copytree(_trained_e2e_model_cache, copied_cache, dirs_exist_ok=True)
 
     with enable_cache(copied_cache):
         yield copied_cache

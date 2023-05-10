@@ -1,6 +1,7 @@
 import warnings
 from pathlib import Path
 
+import shutil
 import rasa.shared.utils.io
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -1015,7 +1016,7 @@ def test_nlu_training_data_validation():
 
 
 def test_no_warnings_with_default_project(tmp_path: Path):
-    rasa.utils.common.copy_directory(Path("rasa/cli/initial_project"), tmp_path)
+    shutil.copytree(Path("rasa/cli/initial_project"), tmp_path, dirs_exist_ok=True)
 
     importer = TrainingDataImporter.load_from_config(
         config_path=str(tmp_path / "config.yml"),

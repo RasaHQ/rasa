@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import shutil
 import pytest
 from _pytest.tmpdir import TempPathFactory
 
@@ -61,7 +62,7 @@ def test_resource_caching_if_already_restored(tmp_path_factory: TempPathFactory)
     resource.to_cache(cache_dir, model_storage)
 
     new_storage_dir = tmp_path_factory.mktemp("new dir")
-    rasa.utils.common.copy_directory(initial_storage_dir, new_storage_dir)
+    shutil.copytree(initial_storage_dir, new_storage_dir, dirs_exist_ok=True)
 
     reinstantiated_resource = Resource.from_cache(
         resource.name,
@@ -99,7 +100,9 @@ def test_resource_caching_if_already_restored_with_different_state(
     (temporary_directory / "another_file").touch()
 
     new_storage_dir = tmp_path_factory.mktemp("new dir")
-    rasa.utils.common.copy_directory(initial_storage_dir, new_storage_dir)
+    rasa.utils.common.copy_directory(
+        initial_storage_dir, new_storage_dir, dirs_exist_ok=True
+    )
 
     with pytest.raises(ValueError):
         Resource.from_cache(
