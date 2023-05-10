@@ -1,10 +1,10 @@
 name: Nightly Builds
 on:
-  pull_request:
-#  schedule:
-#    # Runs every weekday at 1am
-#    - cron: 0 1 * * 1-5
-#  workflow_dispatch:
+  schedule:
+    # Runs every weekday at 1am
+    - cron: 0 1 * * 1-5
+  workflow_dispatch:
+
 
 jobs:
   run_script_and_tag_nightly_release:
