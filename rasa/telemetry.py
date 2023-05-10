@@ -717,14 +717,11 @@ def initialize_error_reporting() -> None:
 
 
 @contextlib.contextmanager
+@ensure_telemetry_enabled
 def track_model_training(
     training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False
 ) -> typing.Generator[None, None, None]:
     """Track a model training started.
-
-    WARNING: since this is a generator, it can't use the ensure telemetry
-        decorator. We need to manually add these checks here. This can be
-        fixed as soon as we drop python 3.6 support.
 
     Args:
         training_data: Training data used for the training.
@@ -732,11 +729,6 @@ def track_model_training(
             or "nlu".
         is_finetuning: `True` if the model is trained by finetuning another model.
     """
-    if not initialize_telemetry():
-        # telemetry reporting is disabled. we won't do any reporting
-        yield  # runs the training
-        return
-
     config = training_data.get_config()
     stories = training_data.get_stories()
     nlu_data = training_data.get_nlu_data()
