@@ -16,6 +16,34 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.5.7] - 2023-05-09
+                       
+Rasa 3.5.7 (2023-05-09)                        
+### Bugfixes
+- [#12314](https://github.com/rasahq/rasa/issues/12314): `SlotSet` events will be emitted when the value set by the custom action is the same as the existing value of the slot. This was fixed for `AugmentedMemoizationPolicy` to work properly with truncated trackers.
+
+  To restore the previous behaviour, the custom action can return a SlotSet only if the slot value has changed. For example,
+
+  ```
+  class CustomAction(Action):
+      def name(self) -> Text:
+          return "custom_action"
+
+      def run(self, dispatcher: CollectingDispatcher,
+              tracker: Tracker,
+              domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+          # current value of the slot
+          slot_value = tracker.get_slot('my_slot')
+
+          # value of the entity
+          # this is parsed from the user utterance
+          entity_value = next(tracker.get_latest_entity_values("entity_name"), None)
+
+          if slot_value != entity_value:
+            return[SlotSet("my_slot", entity_value)]
+  ```
+
+
 ## [3.5.6] - 2023-04-28
                        
 Rasa 3.5.6 (2023-04-28)                        

@@ -526,7 +526,7 @@ class ActionExecutionRejection(RasaException)
 ```
 
 Raising this exception will allow other policies
-to predict a different action
+to predict a different action.
 
 ## ActionRevertFallbackEvents Objects
 
