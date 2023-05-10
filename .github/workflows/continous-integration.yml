@@ -233,7 +233,7 @@ jobs:
 
     steps:
       - name: Run DataDog Agent
-        if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
+        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
         run: |
           docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
           docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
@@ -372,7 +372,7 @@ jobs:
 
     steps:
       - name: Run DataDog Agent
-        if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
+        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
         run: |
           docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
           docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
