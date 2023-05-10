@@ -1,0 +1,90 @@
+FROM ubuntu:22.04
+
+ARG POETRY_VERSION
+ENV DEBIAN_FRONTEND="noninteractive"
+
+# install poetry
+ENV POETRY_VERSION ${POETRY_VERSION}
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH "/root/.local/bin:${PATH}"
+RUN apt-get update -qq && \
+  apt-get install -y --no-install-recommends \
+  python3 \
+  python3-venv \
+  python3-pip \
+  python3-dev \
+  # required by psycopg2 at build and runtime
+  libpq-dev \
+  build-essential \
+  wget \
+  openssh-client \
+  graphviz-dev \
+  pkg-config \
+  git-core \
+  openssl \
+  libssl-dev \
+  libffi7 \
+  libffi-dev \
+  libpng-dev \
+  # required for health check
+  curl \
+  # required for some Python package builds with Ubuntu 22.04
+  cargo \
+  rustc \
+  && apt-get autoremove -y
+
+# Make sure that all security updates are installed
+RUN apt-get update && apt-get dist-upgrade -y --no-install-recommends
+
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 100 \
+   && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 100
+
+# Create rasa user and group
+RUN useradd -rm -d /app -s /sbin/nologin -g root -u 1001 rasa && groupadd -g 1001 rasa
+
+RUN \
+if [ "$BUILDPLATFORM" = "linux/arm64" ]; \
+then  wget --progress=dot:giga -N -P librdkafka/ https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.0.2.tar.gz && \
+  tar -xvf librdkafka/v2.0.2.tar.gz -C librdkafka/ && \
+  cd librdkafka/librdkafka-2.0.2 && ./configure --prefix=/usr && make && make install ; \
+fi
+
+# copy files
+COPY . /build/
+
+# change working directory
+WORKDIR /build
+
+# install dependencies
+RUN python -m venv /opt/venv && \
+  . /opt/venv/bin/activate && \
+  pip install --no-cache-dir -U "pip==22.*" -U "wheel>0.38.0" && \
+  poetry install --no-dev --no-root --no-interaction && \
+  poetry build -f wheel -n && \
+  pip install --no-deps dist/*.whl && \
+  rm -rf dist *.egg-info
+
+# copy everything from /opt
+COPY --from=builder /opt/venv /opt/venv
+
+# make sure we use the virtualenv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# set HOME environment variable
+ENV HOME=/app
+
+# update permissions & change user to not run as root
+WORKDIR /app
+RUN chgrp -R 0 /app && chmod -R g=u /app && chmod o+wr /app
+USER 1001
+
+# create a volume for temporary data
+VOLUME /tmp
+
+# change shell
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# the entry point
+EXPOSE 5005
+ENTRYPOINT ["rasa"]
+CMD ["--help"]

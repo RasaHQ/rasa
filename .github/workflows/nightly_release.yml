@@ -152,10 +152,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build . -t rasa/rasa:base-localdev -f docker/Dockerfile.base
-          docker build . -t rasa/rasa:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg POETRY_VERSION=${{ env.POETRY_VERSION }}
-          docker build . -t rasa/rasa:base-poetry -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg BASE_IMAGE_HASH=localdev
-          docker build . -t rasa/rasa:${IMAGE_TAG} -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa/rasa --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev
+          docker build . -t rasa/rasa:${IMAGE_TAG} -f docker/Dockerfile.test --build-arg POETRY_VERSION=${{ env.POETRY_VERSION }}
           docker tag rasa/rasa:${IMAGE_TAG} ${{env.DEV_REGISTRY}}/rasa:${IMAGE_TAG}
 
       # Authenticate and push to the release registry
