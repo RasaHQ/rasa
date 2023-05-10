@@ -217,7 +217,9 @@ class MessageProcessor:
         )
 
         for event in new_events:
-            self.anonymization_pipeline.run(event)
+            body = {"sender_id": tracker.sender_id}
+            body.update(event.as_dict())
+            self.anonymization_pipeline.run(body)
 
     async def predict_next_for_sender_id(
         self, sender_id: Text
