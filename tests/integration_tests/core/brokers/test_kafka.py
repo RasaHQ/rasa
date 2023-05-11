@@ -23,7 +23,7 @@ def test_kafka_event_broker_valid():
         broker._close()
 
 
-def test_kafka_event_broker_raises_buffer_error(caplog: LogCaptureFixture):
+def test_kafka_event_broker_buffer_error_is_handled(caplog: LogCaptureFixture):
     broker = KafkaEventBroker(
         url="localhost",
         topic="rasa",
