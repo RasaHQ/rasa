@@ -82,6 +82,7 @@ class KafkaEventBroker(EventBroker):
         self.ssl_cafile = ssl_cafile
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
+        self.queue_size = kwargs.get("queue_size")
         self.ssl_check_hostname = "https" if ssl_check_hostname else None
 
         # Async producer implementation followed from confluent-kafka asyncio example:
@@ -124,6 +125,13 @@ class KafkaEventBroker(EventBroker):
             try:
                 self._publish(event)
                 return
+            except BufferError as e:
+                logger.error(
+                    f"Could not publish message to kafka url '{self.url}'. "
+                    f"Failed with error: {e}"
+                )
+                self.producer.poll(1)
+                retries -= 1
             except Exception as e:
                 logger.error(
                     f"Could not publish message to kafka url '{self.url}'. "
@@ -161,6 +169,8 @@ class KafkaEventBroker(EventBroker):
             "bootstrap.servers": self.url,
             "error_cb": kafka_error_callback,
         }
+        if self.queue_size:
+            config["queue.buffering.max.messages"] = self.queue_size
 
         if self.security_protocol == "PLAINTEXT":
             authentication_params: Dict[Text, Any] = {
