@@ -293,9 +293,9 @@ jobs:
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get -y install libpq-dev
-          if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
           make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
 
       - name: Install Dependencies (Windows) 📦
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
