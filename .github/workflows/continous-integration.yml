@@ -293,9 +293,9 @@ jobs:
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
+          make install-full | tee .output
 
       - name: Install Dependencies (Windows) 📦
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
@@ -310,8 +310,8 @@ jobs:
             Remove-Item -Force -Recurse $spacy_data_dir
             New-Item -Path $spacy_data_dir -Type Directory
           }
-          make install-full
           make prepare-tests-windows-gha
+          make install-full
 
       - name: Add github workflow problem matchers
         if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
