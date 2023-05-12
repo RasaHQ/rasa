@@ -223,5 +223,5 @@ def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
 
 
 def _extract_additional_arguments(args: argparse.Namespace) -> Dict:
-    space = plugin_manager().hook.extract_space_from_args(args=args)
+    space = plugin_manager().hook.handle_space_args(args=args)
     return space or {}
