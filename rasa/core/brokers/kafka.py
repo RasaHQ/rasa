@@ -113,6 +113,9 @@ class KafkaEventBroker(EventBroker):
         """Publishes events."""
         from confluent_kafka import KafkaException
 
+        if retries == 1:
+            retries = 2
+
         if self.producer is None:
             self.producer = self._create_producer()
             try:
