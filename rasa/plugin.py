@@ -49,7 +49,7 @@ def refine_cli(
 
 
 @hookspec(firstresult=True)  # type: ignore[misc]
-def extract_space_from_args(args: argparse.Namespace) -> Dict[Text, Any]:
+def handle_space_args(args: argparse.Namespace) -> Dict[Text, Any]:
     """Extracts space from the command line arguments."""
     return {}
 
