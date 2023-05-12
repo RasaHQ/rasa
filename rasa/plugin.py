@@ -93,5 +93,5 @@ def mock_tracker_for_evaluation(
 def clean_entity_targets_for_evaluation(
     merged_targets: List[str], extractor: str
 ) -> List[str]:
-    """Remove entity targets for space-based entity extractors.""
+    """Remove entity targets for space-based entity extractors."""
     return []
