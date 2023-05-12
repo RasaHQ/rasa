@@ -1,7 +1,7 @@
 import argparse
 import functools
 import sys
-from typing import Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple
 import typing
 
 import pluggy
@@ -95,3 +95,16 @@ def clean_entity_targets_for_evaluation(
 ) -> List[str]:
     """Remove entity targets for space-based entity extractors."""
     return []
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def prefix_stripping_for_custom_actions(json_body: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Remove namespacing introduced by spaces before custom actions call."""
+    return {}
+
+
+@hookspec  # type: ignore[misc]
+def prefixing_custom_actions_response(
+    json_body: Dict[Text, Any], response: Dict[Text, Any]
+) -> None:
+    """Add namespacing to the response from custom actions."""
