@@ -28,6 +28,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
@@ -767,13 +768,19 @@ class RemoteAction(Action):
                 DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
             )
 
+            modified_json = plugin_manager().hook.prefix_stripping_for_custom_actions(
+                json_body=json_body
+            )
             response: Any = await self.action_endpoint.request(
-                json=json_body,
+                json=modified_json if modified_json else json_body,
                 method="post",
                 timeout=DEFAULT_REQUEST_TIMEOUT,
                 compress=should_compress,
             )
-
+            if modified_json:
+                plugin_manager().hook.prefixing_custom_actions_response(
+                    json_body=json_body, response=response
+                )
             self._validate_action_result(response)
 
             events_json = response.get("events", [])
