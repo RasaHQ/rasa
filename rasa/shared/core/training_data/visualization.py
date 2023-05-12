@@ -97,7 +97,8 @@ def _fingerprint_node(
     remember max history number of nodes we have visited. Hence, if we randomly
     walk on our directed graph, always only remembering the last `max_history`
     nodes we have visited, we can never remember if we have visited node A or
-    node B if both have the same fingerprint."""
+    node B if both have the same fingerprint.
+    """
 
     # the candidate list contains all node paths that haven't been
     # extended till `max_history` length yet.
@@ -142,7 +143,8 @@ def _outgoing_edges_are_similar(
     it doesn't matter if you are in a or b.
 
     As your path will be the same because the outgoing edges will lead you to
-    the same nodes anyways."""
+    the same nodes anyways.
+    """
 
     ignored = {node_b, node_a}
     a_edges = {
