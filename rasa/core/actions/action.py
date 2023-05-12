@@ -830,7 +830,7 @@ class RemoteAction(Action):
 
 
 class ActionExecutionRejection(RasaException):
-    """Raising this exception will allow other policies to predict a different action."""
+    """Raising this exception will let other policies to predict a different action."""
 
     def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
         self.action_name = action_name
