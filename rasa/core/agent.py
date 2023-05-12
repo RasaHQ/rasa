@@ -3,7 +3,6 @@ from asyncio import AbstractEventLoop, CancelledError
 import functools
 import logging
 import os
-import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
@@ -28,6 +27,7 @@ from rasa.exceptions import ModelNotFound
 from rasa.nlu.utils import is_url
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.tracker_store import TrackerStore
@@ -76,7 +76,7 @@ async def _update_model_from_server(model_server: EndpointConfig, agent: Agent) 
     if not is_url(model_server.url):
         raise aiohttp.InvalidURL(model_server.url)
 
-    with tempfile.TemporaryDirectory() as temporary_directory:
+    with TempDirectoryPath(get_temp_dir_name()) as temporary_directory:
         try:
             new_fingerprint = await _pull_model_and_fingerprint(
                 model_server, agent.fingerprint, temporary_directory
@@ -541,7 +541,7 @@ class Agent:
         persistor = get_persistor(self.remote_storage)
 
         if persistor is not None:
-            with tempfile.TemporaryDirectory() as temporary_directory:
+            with TempDirectoryPath(get_temp_dir_name()) as temporary_directory:
                 persistor.retrieve(model_name, temporary_directory)
                 self.load_model(temporary_directory)
 
