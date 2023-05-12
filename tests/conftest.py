@@ -28,6 +28,12 @@ from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+)
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import METADATA_MODEL_ID
 import rasa.shared.utils.io
 from rasa import server
@@ -39,7 +45,13 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
 from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
-from rasa.shared.core.events import Event, UserUttered
+from rasa.shared.core.events import (
+    ActionExecuted,
+    Event,
+    Restarted,
+    SessionStarted,
+    UserUttered,
+)
 from rasa.core.exporter import Exporter
 
 import rasa.core.run
@@ -197,25 +209,24 @@ def endpoints_path() -> Text:
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
+# update: implement fix to RuntimeError Event loop is closed issue described
+# here: https://github.com/pytest-dev/pytest-asyncio/issues/371
 @pytest.fixture(scope="session")
 def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-# override loop fixture to prevent ScopeMismatch pytest error and
-# implement fix to RuntimeError Event loop is closed issue described
-# here: https://github.com/pytest-dev/pytest-asyncio/issues/371
-@pytest.fixture(scope="session")
-def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
     loop._close = loop.close
     loop.close = lambda: None
     yield loop
     loop._close()
+
+
+# override loop fixture to prevent ScopeMismatch pytest error and
+# align the result of the loop fixture with that of the event_loop fixture
+@pytest.fixture(scope="session")
+def loop(
+    event_loop: asyncio.AbstractEventLoop,
+) -> Generator[asyncio.AbstractEventLoop, None, None]:
+    yield event_loop
 
 
 @pytest.fixture(scope="session")
@@ -882,3 +893,39 @@ def filter_expected_warnings(records: WarningsRecorder) -> WarningsRecorder:
                 records.pop(type(record.message))
 
     return records
+
+
+@pytest.fixture
+def initial_events_including_restart() -> List[Event]:
+    return [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+        SessionStarted(timestamp=2),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+        UserUttered("hi", timestamp=4),
+        ActionExecuted("utter_greet", timestamp=5),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=6),
+        UserUttered("/restart", timestamp=7),
+        Restarted(timestamp=8),
+        ActionExecuted(ACTION_RESTART_NAME, timestamp=9),
+    ]
+
+
+@pytest.fixture
+def events_after_restart() -> List[Event]:
+    return [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=10),
+        SessionStarted(timestamp=11),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=12),
+        UserUttered("Let's start again.", timestamp=13),
+    ]
+
+
+@pytest.fixture
+def tracker_with_restarted_event(
+    initial_events_including_restart: List[Event],
+    events_after_restart: List[Event],
+) -> DialogueStateTracker:
+    sender_id = uuid.uuid4().hex
+    events = initial_events_including_restart + events_after_restart
+
+    return DialogueStateTracker.from_events(sender_id=sender_id, evts=events)

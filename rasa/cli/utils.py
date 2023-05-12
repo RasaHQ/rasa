@@ -1,4 +1,5 @@
 import json
+import argparse
 import logging
 import os
 import sys
@@ -10,18 +11,21 @@ import randomname
 
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
     DEFAULT_CONFIG_PATH,
 )
 from rasa.shared.utils.cli import print_error
+from rasa import telemetry
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from questionary import Question
     from typing_extensions import Literal
+    from rasa.validator import Validator
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +120,9 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
     Issues a warning if the key does not exist or has the default value and replaces it
     with a pseudo-random string value.
     """
-    config_data = rasa.shared.utils.io.read_config_file(config_file)
+    config_data = rasa.shared.utils.io.read_config_file(
+        config_file, reader_type=["safe", "rt"]
+    )
     assistant_id = config_data.get(ASSISTANT_ID_KEY)
 
     if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
@@ -204,6 +210,70 @@ def get_validated_config(
     config = validate_mandatory_config_keys(config, mandatory_keys)
 
     return config
+
+
+def validate_files(
+    fail_on_warnings: bool,
+    max_history: Optional[int],
+    importer: TrainingDataImporter,
+    stories_only: bool = False,
+) -> None:
+    """Validates either the story structure or the entire project.
+
+    Args:
+        fail_on_warnings: `True` if the process should exit with a non-zero status
+        max_history: The max history to use when validating the story structure.
+        importer: The `TrainingDataImporter` to use to load the training data.
+        stories_only: If `True`, only the story structure is validated.
+    """
+    from rasa.validator import Validator
+
+    validator = Validator.from_importer(importer)
+
+    if stories_only:
+        all_good = _validate_story_structure(validator, max_history, fail_on_warnings)
+    else:
+        all_good = (
+            _validate_domain(validator)
+            and _validate_nlu(validator, fail_on_warnings)
+            and _validate_story_structure(validator, max_history, fail_on_warnings)
+        )
+
+    validator.warn_if_config_mandatory_keys_are_not_set()
+
+    telemetry.track_validate_files(all_good)
+    if not all_good:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Project validation completed with errors."
+        )
+
+
+def _validate_domain(validator: "Validator") -> bool:
+    return (
+        validator.verify_domain_validity()
+        and validator.verify_actions_in_stories_rules()
+        and validator.verify_forms_in_stories_rules()
+        and validator.verify_form_slots()
+        and validator.verify_slot_mappings()
+    )
+
+
+def _validate_nlu(validator: "Validator", fail_on_warnings: bool) -> bool:
+    return validator.verify_nlu(not fail_on_warnings)
+
+
+def _validate_story_structure(
+    validator: "Validator", max_history: Optional[int], fail_on_warnings: bool
+) -> bool:
+    # Check if a valid setting for `max_history` was given
+    if isinstance(max_history, int) and max_history < 1:
+        raise argparse.ArgumentTypeError(
+            f"The value of `--max-history {max_history}` " f"is not a positive integer."
+        )
+
+    return validator.verify_story_structure(
+        not fail_on_warnings, max_history=max_history
+    )
 
 
 def cancel_cause_not_found(

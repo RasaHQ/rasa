@@ -13,6 +13,7 @@ pipeline:
       - number
   - name: DIETClassifier
     epochs: 1
+    run_eagerly: True
   - name: EntitySynonymMapper
 
 policies:

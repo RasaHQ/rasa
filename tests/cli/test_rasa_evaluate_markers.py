@@ -105,7 +105,7 @@ def test_evaluate_markers_all_help(run: Callable[..., RunResult]):
     [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
-    output_filename"""  # noqa: E501
+    output_filename"""
 
     lines = [line.strip() for line in help_text.split("\n")]
     # expected help text lines should appear somewhere in the output

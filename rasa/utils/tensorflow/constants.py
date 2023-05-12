@@ -112,3 +112,4 @@ TF_DETERMINISTIC_OPS = "TF_DETERMINISTIC_OPS"
 EPOCH_OVERRIDE = "epoch_override"
 
 USE_GPU = "use_gpu"
+RUN_EAGERLY = "run_eagerly"

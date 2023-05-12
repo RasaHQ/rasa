@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 import tarfile
-import tempfile
 import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
@@ -55,6 +54,7 @@ from rasa.shared.constants import (
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 import rasa.core.tracker_store
 import rasa.core.actions.action
 import rasa.shared.core.trackers
@@ -129,7 +129,7 @@ class MessageProcessor:
             raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
         logger.info(f"Loading model {model_tar}...")
-        with tempfile.TemporaryDirectory() as temporary_directory:
+        with TempDirectoryPath(get_temp_dir_name()) as temporary_directory:
             try:
                 metadata, runner = loader.load_predict_graph_runner(
                     Path(temporary_directory),
@@ -365,6 +365,39 @@ class MessageProcessor:
             tracker.assistant_id = self.model_metadata.assistant_id
         return tracker
 
+    async def fetch_full_tracker_with_initial_session(
+        self,
+        conversation_id: Text,
+        output_channel: Optional[OutputChannel] = None,
+        metadata: Optional[Dict] = None,
+    ) -> DialogueStateTracker:
+        """Get the full tracker for a conversation, including events after a restart.
+
+        Args:
+            conversation_id: The ID of the conversation for which the history should be
+                retrieved.
+            output_channel: Output channel associated with the incoming user message.
+            metadata: Data sent from client associated with the incoming user message.
+
+        Returns:
+            Tracker for the conversation. Creates an empty tracker with a new session
+            initialized in case it's a new conversation.
+        """
+        conversation_id = conversation_id or DEFAULT_SENDER_ID
+
+        tracker = await self.tracker_store.get_or_create_full_tracker(
+            conversation_id, False
+        )
+        tracker.model_id = self.model_metadata.model_id
+
+        if tracker.assistant_id is None:
+            tracker.assistant_id = self.model_metadata.assistant_id
+
+        if not tracker.events:
+            await self._update_tracker_session(tracker, output_channel, metadata)
+
+        return tracker
+
     async def get_trackers_for_all_conversation_sessions(
         self, conversation_id: Text
     ) -> List[DialogueStateTracker]:
@@ -487,7 +520,6 @@ class MessageProcessor:
         tracker: DialogueStateTracker, reminder_event: ReminderScheduled
     ) -> bool:
         """Check if the conversation has been restarted after reminder."""
-
         for e in reversed(tracker.applied_events()):
             if MessageProcessor._is_reminder(e, reminder_event.name):
                 return True
@@ -498,7 +530,6 @@ class MessageProcessor:
         tracker: DialogueStateTracker, reminder_event: ReminderScheduled
     ) -> bool:
         """Check if the user sent a message after the reminder."""
-
         for e in reversed(tracker.events):
             if MessageProcessor._is_reminder(e, reminder_event.name):
                 return False
@@ -814,7 +845,6 @@ class MessageProcessor:
             `False` if `action_name` is `ACTION_LISTEN_NAME` or
             `ACTION_SESSION_START_NAME`, otherwise `True`.
         """
-
         return action_name not in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME)
 
     async def execute_side_effects(
@@ -824,8 +854,8 @@ class MessageProcessor:
         output_channel: OutputChannel,
     ) -> None:
         """Send bot messages, schedule and cancel reminders that are logged
-        in the events array."""
-
+        in the events array.
+        """
         await self._send_bot_messages(events, tracker, output_channel)
         await self._schedule_reminders(events, tracker, output_channel)
         await self._cancel_reminders(events, tracker)
@@ -837,7 +867,6 @@ class MessageProcessor:
         output_channel: OutputChannel,
     ) -> None:
         """Send all the bot messages that are logged in the events array."""
-
         for e in events:
             if not isinstance(e, BotUttered):
                 continue

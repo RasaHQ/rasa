@@ -1,7 +1,9 @@
+import time
+import random
 import tensorflow as tf
 import numpy as np
 import logging
-import random
+import os
 from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Any, TYPE_CHECKING
 
@@ -30,6 +32,7 @@ from rasa.utils.tensorflow.constants import (
     LEARNING_RATE,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
+    RUN_EAGERLY,
 )
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
@@ -49,7 +52,6 @@ from rasa.utils.tensorflow.types import BatchData, MaybeNestedBatchData
 
 if TYPE_CHECKING:
     from tensorflow.python.types.core import GenericFunction
-
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +89,8 @@ class RasaModel(Model):
 
         self._training = None  # training phase should be defined when building a graph
 
+        if random_seed is None:
+            random_seed = int(time.time())
         self.random_seed = random_seed
         self._set_random_seed()
 
@@ -97,8 +101,12 @@ class RasaModel(Model):
 
     def _set_random_seed(self) -> None:
         random.seed(self.random_seed)
-        tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
+        tf.random.set_seed(self.random_seed)
+        tf.experimental.numpy.random.seed(self.random_seed)
+        tf.keras.utils.set_random_seed(self.random_seed)
+        # Set a fixed value for the hash seed
+        os.environ["PYTHONHASHSEED"] = str(self.random_seed)
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
@@ -427,8 +435,12 @@ class RasaModel(Model):
         # create empty model
         model = cls(*args, **kwargs)
         learning_rate = kwargs.get("config", {}).get(LEARNING_RATE, 0.001)
+        run_eagerly = kwargs.get("config", {}).get(RUN_EAGERLY)
+
         # need to train on 1 example to build weights of the correct size
-        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate))
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate), run_eagerly=run_eagerly
+        )
         data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
         model.fit(data_generator, verbose=False)
         # load trained weights
@@ -712,7 +724,10 @@ class TransformerRasaModel(RasaModel):
         Args:
             data_example: a data example that is stored with the ML component.
         """
-        self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
+        self.compile(
+            optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]),
+            run_eagerly=self.config[RUN_EAGERLY],
+        )
         label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
         label_sub_key = LABEL_SUB_KEY if self.config[INTENT_CLASSIFICATION] else None
 

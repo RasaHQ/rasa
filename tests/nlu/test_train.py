@@ -7,18 +7,18 @@ from rasa.core.agent import Agent
 from rasa.core.policies.policy import Policy
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.utils.tensorflow.constants import EPOCHS, RUN_EAGERLY
 from typing import Any, Dict, List, Tuple, Text, Union, Optional
 import rasa.model_training
 import rasa.shared.utils.io
 import rasa.engine.recipes.default_components
 
 COMPONENTS_TEST_PARAMS = {
-    "DIETClassifier": {EPOCHS: 1},
-    "ResponseSelector": {EPOCHS: 1},
+    "DIETClassifier": {EPOCHS: 1, RUN_EAGERLY: True},
+    "ResponseSelector": {EPOCHS: 1, RUN_EAGERLY: True},
     "LanguageModelFeaturizer": {
         "model_name": "bert",
-        "model_weights": "bert-base-uncased",
+        "model_weights": "sentence-transformers/all-MiniLM-L6-v2",
     },
 }
 
