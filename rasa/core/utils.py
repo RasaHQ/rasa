@@ -187,7 +187,10 @@ class AvailableEndpoints:
         anonymization_rules = plugin_manager().hook.read_anonymization_rules(
             endpoints_file=endpoint_file
         )
-        anonymization_rules = anonymization_rules if anonymization_rules else None
+
+        # explicitly set to `None` if the list is empty
+        if not anonymization_rules:
+            anonymization_rules = None
 
         return cls(
             nlg,
