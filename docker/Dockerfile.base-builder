@@ -4,6 +4,8 @@ ARG POETRY_VERSION
 
 FROM ${IMAGE_BASE_NAME}:base-poetry-${POETRY_VERSION}
 
+ARG BUILDPLATFORM
+
 RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
   build-essential \
@@ -19,5 +21,13 @@ RUN apt-get update -qq && \
   libpng-dev \
   && apt-get autoremove -y
 
+RUN \
+if [ "$BUILDPLATFORM" = "linux/arm64" ]; \
+then  wget --progress=dot:giga -N -P librdkafka/ https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.0.2.tar.gz && \
+  tar -xvf librdkafka/v2.0.2.tar.gz -C librdkafka/ && \
+  cd librdkafka/librdkafka-2.0.2 && ./configure --prefix=/usr && make && make install ; \
+fi
+
 # Make sure that all security updates are installed
 RUN apt-get update && apt-get dist-upgrade -y --no-install-recommends
+

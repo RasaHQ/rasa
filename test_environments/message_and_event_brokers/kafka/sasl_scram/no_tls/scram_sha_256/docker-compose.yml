@@ -1,0 +1,55 @@
+---
+version: '3.8'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    container_name: zookeeper-sasl-scram-sha-256-no-tls
+    ports:
+      - "2186:2186"
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2186
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: "DEBUG"
+      KAFKA_OPTS: -Djava.security.auth.login.config=/etc/kafka/secrets/zookeeper_server_jaas.conf
+        -Dquorum.auth.enableSasl=true
+        -Dquorum.auth.learnerRequireSasl=true
+        -Dquorum.auth.serverRequireSasl=true
+        -Dquorum.cnxn.threads.size=20
+        -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+        -Dzookeeper.authProvider.2=org.apache.zookeeper.server.auth.DigestAuthenticationProvider
+        -DjaasLoginRenew=3600000
+        -DrequireClientAuthScheme=sasl
+        -Dquorum.auth.learner.loginContext=QuorumLearner
+        -Dquorum.auth.server.loginContext=QuorumServer
+    volumes:
+      - ./zookeeper_server_jaas.conf:/etc/kafka/secrets/zookeeper_server_jaas.conf
+      - ./zookeeper_client_jaas.conf:/etc/kafka/client/zookeeper_client_jaas.conf
+
+  kafka-broker:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: kafka-broker-sasl-scram-sha-256-no-tls
+    ports:
+      - "9096:9096"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2186
+      KAFKA_ADVERTISED_LISTENERS: SASL_PLAINTEXT://localhost:9096
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-256
+      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-256
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_RETENTION_MINUTES: 172800
+      KAFKA_LOG4J_LOGGERS: "kafka.authorizer.logger=DEBUG,kafka.controller=DEBUG"
+      KAFKA_LOG4J_ROOT_LOGLEVEL: "DEBUG"
+      KAFKA_SUPER_USERS: User:kafkabroker;User:kafkaclient
+      KAFKA_ZOOKEEPER_SASL_ENABLED: "true"
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "false"
+      KAFKA_OPTS: -Dzookeeper.sasl.client=true
+        -Dzookeeper.sasl.clientconfig=Client
+        -Djava.security.auth.login.config=/etc/kafka/secrets/conf/kafka_server_jaas.conf
+    volumes:
+      - ./broker_jaas.conf:/etc/kafka/secrets/conf/kafka_server_jaas.conf
