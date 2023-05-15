@@ -86,6 +86,7 @@ class MessageProcessor:
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         on_circuit_break: Optional[LambdaType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
+        anonymization_pipeline: Optional[Any] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
@@ -111,6 +112,7 @@ class MessageProcessor:
         self.model_path = Path(model_path)
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter
+        self.anonymization_pipeline = anonymization_pipeline
 
     @staticmethod
     def _load_model(
@@ -160,6 +162,8 @@ class MessageProcessor:
 
         await self._run_prediction_loop(message.output_channel, tracker)
 
+        await self.run_anonymization_pipeline(tracker)
+
         await self.save_tracker(tracker)
 
         if isinstance(message.output_channel, CollectingOutputChannel):
@@ -197,6 +201,25 @@ class MessageProcessor:
         )
 
         return tracker
+
+    async def run_anonymization_pipeline(self, tracker: DialogueStateTracker) -> None:
+        """Run the anonymization pipeline on the new tracker events.
+
+        Args:
+            tracker: A tracker representing a conversation state.
+        """
+        if self.anonymization_pipeline is None:
+            return None
+
+        old_tracker = await self.tracker_store.retrieve(tracker.sender_id)
+        new_events = rasa.shared.core.trackers.TrackerEventDiffEngine.event_difference(
+            old_tracker, tracker
+        )
+
+        for event in new_events:
+            body = {"sender_id": tracker.sender_id}
+            body.update(event.as_dict())
+            self.anonymization_pipeline.run(body)
 
     async def predict_next_for_sender_id(
         self, sender_id: Text
