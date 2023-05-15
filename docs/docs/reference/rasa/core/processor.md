@@ -13,15 +13,15 @@ The message processor is interface for communicating with a bot model.
 #### \_\_init\_\_
 
 ```python
-def __init__(
-        model_path: Union[Text, Path],
-        tracker_store: rasa.core.tracker_store.TrackerStore,
-        lock_store: LockStore,
-        generator: NaturalLanguageGenerator,
-        action_endpoint: Optional[EndpointConfig] = None,
-        max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
-        on_circuit_break: Optional[LambdaType] = None,
-        http_interpreter: Optional[RasaNLUHttpInterpreter] = None) -> None
+def __init__(model_path: Union[Text, Path],
+             tracker_store: rasa.core.tracker_store.TrackerStore,
+             lock_store: LockStore,
+             generator: NaturalLanguageGenerator,
+             action_endpoint: Optional[EndpointConfig] = None,
+             max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
+             on_circuit_break: Optional[LambdaType] = None,
+             http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
+             anonymization_pipeline: Optional[Any] = None) -> None
 ```
 
 Initializes a `MessageProcessor`.
@@ -54,6 +54,18 @@ Run action to extract slots and update the tracker accordingly.
 **Returns**:
 
   the given (updated) tracker
+
+#### run\_anonymization\_pipeline
+
+```python
+async def run_anonymization_pipeline(tracker: DialogueStateTracker) -> None
+```
+
+Run the anonymization pipeline on the new tracker events.
+
+**Arguments**:
+
+- `tracker` - A tracker representing a conversation state.
 
 #### predict\_next\_for\_sender\_id
 

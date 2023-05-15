@@ -70,3 +70,23 @@ def create_tracker_store(
 
 Hook specification for wrapping with AuthRetryTrackerStore.
 
+#### read\_anonymization\_rules
+
+```python
+@hookspec(firstresult=True)  # type: ignore[misc]
+def read_anonymization_rules(endpoints_file: Optional[Text]) -> List[Any]
+```
+
+Hook specification for reading anonymization rules.
+
+#### create\_anonymization\_pipeline
+
+```python
+@hookspec(firstresult=True)  # type: ignore[misc]
+def create_anonymization_pipeline(
+        anonymization_rules: Optional[List[Any]],
+        event_broker_config: Optional["EndpointConfig"]) -> Optional[Any]
+```
+
+Hook specification for creating the anonymization pipeline.
+
