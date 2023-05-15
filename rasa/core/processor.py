@@ -1,3 +1,4 @@
+import inspect
 import logging
 import os
 from pathlib import Path
@@ -914,9 +915,20 @@ class MessageProcessor:
             # case of a rejection.
             temporary_tracker = tracker.copy()
             temporary_tracker.update_with_events(prediction.events, self.domain)
-            events = await action.run(
-                output_channel, nlg, temporary_tracker, self.domain
-            )
+
+            run_args = inspect.getfullargspec(action.run).args
+            if "metadata" in run_args:
+                events = await action.run(
+                    output_channel,
+                    nlg,
+                    temporary_tracker,
+                    self.domain,
+                    metadata=prediction.action_metadata,
+                )
+            else:
+                events = await action.run(
+                    output_channel, nlg, temporary_tracker, self.domain
+                )
         except rasa.core.actions.action.ActionExecutionRejection:
             events = [
                 ActionExecutionRejected(

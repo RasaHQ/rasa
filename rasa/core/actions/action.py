@@ -38,6 +38,7 @@ from rasa.shared.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
+    ACTION_SEND_TEXT,
     ACTION_SESSION_START_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_DEACTIVATE_LOOP_NAME,
@@ -106,6 +107,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionDefaultAskRephrase(),
         TwoStageFallbackAction(action_endpoint),
         ActionUnlikelyIntent(),
+        ActionSendText(),
         ActionBack(),
         ActionExtractSlots(action_endpoint),
     ]
@@ -245,6 +247,7 @@ class Action:
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Execute the side effects of this action.
 
@@ -1018,6 +1021,27 @@ class ActionDefaultAskRephrase(ActionBotResponse):
     def __init__(self) -> None:
         """Initializes action default ask rephrase."""
         super().__init__("utter_ask_rephrase", silent_fail=True)
+
+
+class ActionSendText(Action):
+    """Sends a text message to the output channel."""
+
+    def name(self) -> Text:
+        return ACTION_SEND_TEXT
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
+
+        fallback = {"text": ""}
+        message = metadata.get("message", fallback)
+        return [create_bot_utterance(message)]
 
 
 class ActionExtractSlots(Action):
