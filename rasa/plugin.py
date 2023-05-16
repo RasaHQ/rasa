@@ -11,10 +11,9 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
-    from rasa.engine.graph import SchemaNode
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
-    from rasa.rasa.engine.graph import SchemaNode
+    from rasa.engine.graph import SchemaNode
     from rasa.shared.core.domain import Domain
     from rasa.utils.endpoints import EndpointConfig
 
