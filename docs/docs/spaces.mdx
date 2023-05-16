@@ -61,14 +61,13 @@ point not compatible with the idea of being able to describe encapsulated units 
 well.
 
 Currently, the only entity extractor that is works with the boundaries that spaces
-create, is an adatped version of the `CRFEntityExtractor`. You can find more on this
+create, is an adapted version of the `CRFEntityExtractor`. You can find more on this
 in the following sections.
 
 
 ## An example spaces bot
 We have created a bot using spaces for you to look at, learn from and experiment with.
-It features three different spaces in the financial domain. Here is the repository:
-TODO(LINK)
+It features three different spaces in the financial domain. [Here is the repository](https://github.com/RasaHQ/financial-spaces-bot)
 
 
 ## How to use spaces
@@ -93,26 +92,26 @@ spaces:
     domain: main/domain.yml
     nlu: main/nlu/training_data.yml
     nlu_test: main/nlu/test_data.yml
-    stories: main/rules.yml
+    rules: main/rules.yml
   - name: transfer_money
     domain: transfer_money/domain.yml
     nlu: transfer_money/nlu/training_data.yml
     nlu_test: transfer_money/nlu/test_data.yml
-    stories: transfer_money/rules.yml
+    rules: transfer_money/rules.yml
     entry_intents:
       - transfer_money
   - name: investment
     domain: investment/domain.yml
     nlu: investment/nlu/training_data.yml
     nlu_test: investment/nlu/test_data.yml
-    stories: investment/rules.yml
+    rules: investment/rules.yml
     entry_intents:
       - buy_stock
   - name: pay_cc
     domain: pay_cc/domain.yml
     nlu: pay_cc/nlu/training_data.yml
     nlu_test: pay_cc/nlu/test_data.yml
-    stories: pay_cc/rules.yml
+    rules: pay_cc/rules.yml
     entry_intents:
       - pay_cc
 
@@ -164,19 +163,20 @@ extraction you need to use the `SpacesCRFEntityExtractor` to make that work with
 Finally, you can see that we are only using the `RulePolicy` here.
 
 After you have created your spaces and made adjustments to the `config.yml`, you can
-train your new assistant using `rasa train -c config.yml`
-
+train your new assistant using `rasa train -c config.yml` and start it afterward with
+`rasa shell`.
 
 
 ## How do spaces work?
 In the following we'll look at how things work under the hood in spaces to give you a
 better understanding of what is happening in case you should need it.
 
-One of the most aspects is that spaces form a hierarchy with two levels. At the top
+One of the most aspects is that spaces form a hierarchy with two layers. At the top
 is the main space which contains shared primitives that should be usable by all spaces.
 The main space is always active. Anything that is defined in a subspace, can
 only be used by that space and not by other subspaces or the main space.
-TODO(PIC)
+
+<img alt="two layer space hierarchy" src={useBaseUrl("/img/spaces_hierarchy.png")} />
 
 ### What happens during the assembly?
 
