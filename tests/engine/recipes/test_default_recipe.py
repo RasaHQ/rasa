@@ -1,4 +1,4 @@
-from typing import Text, Dict, Any, Set
+from typing import Text, Dict, Any, Set, List
 import shutil
 
 import pytest
@@ -6,6 +6,7 @@ from _pytest.capture import CaptureFixture
 from pathlib import Path
 from rasa.engine.constants import PLACEHOLDER_TRACKER
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 import rasa.shared.utils.io
@@ -410,16 +411,16 @@ def test_register_component_using_tracker():
         model_from="Herman",
     )
     class MyClassGraphComponent(GraphComponent):
-        def train(
-            self, training_data: TrainingData, tracker: DialogueStateTracker
-        ) -> Resource:
+        def process(
+            self, messages: List[Message], tracker: DialogueStateTracker
+        ) -> List[Message]:
             ...
 
     config = rasa.shared.utils.io.read_yaml(
         """
         language: "xy"
         version: '2.0'
-        policies:
+        pipeline:
         - name: MyClassGraphComponent
         """
     )
