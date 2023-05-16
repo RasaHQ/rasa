@@ -111,7 +111,7 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> "TrainingDataImporter":
         """Loads core `TrainingDataImporter` instance.
 
