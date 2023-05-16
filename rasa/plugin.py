@@ -109,12 +109,6 @@ def clean_entity_targets_for_evaluation(
     return []
 
 
-@hookspec  # type: ignore[misc]
-def check_for_spaces_importer(module_path: Text) -> bool:
-    """Check if a module path is a spaces data importer."""
-    return False
-
-
 @hookspec(firstresult=True)  # type: ignore[misc]
 def prefix_stripping_for_custom_actions(json_body: Dict[Text, Any]) -> Dict[Text, Any]:
     """Remove namespacing introduced by spaces before custom actions call."""

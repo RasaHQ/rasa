@@ -7,7 +7,6 @@ import rasa.shared.constants
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
-from rasa.plugin import plugin_manager
 from rasa.shared.core.domain import (
     Domain,
     KEY_E2E_ACTIONS,
@@ -99,7 +98,7 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
         config = rasa.shared.utils.io.read_config_file(config_path)
@@ -128,7 +127,7 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> "TrainingDataImporter":
         """Loads nlu `TrainingDataImporter` instance.
 
@@ -151,7 +150,7 @@ class TrainingDataImporter(ABC):
         config_path: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
         from rasa.shared.importers.rasa import RasaFileImporter
@@ -178,7 +177,7 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> Optional["TrainingDataImporter"]:
         from rasa.shared.importers.multi_project import MultiProjectImporter
         from rasa.shared.importers.rasa import RasaFileImporter
@@ -198,10 +197,8 @@ class TrainingDataImporter(ABC):
                 return None
 
         constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
-            importer_config, importer_class
+            {**importer_config, **args}, importer_class
         )
-        if plugin_manager().hook.check_for_spaces_importer(module_path=module_path):
-            constructor_arguments.update(args=args)
 
         return importer_class(
             config_path,
