@@ -227,7 +227,7 @@ class BotFrameworkInput(InputChannel):
             raise InvalidKeyError(f"JWT Key with ID {key_id} not found.")
 
         key_json = self.jwt_keys[key_id]
-        public_key = RSAAlgorithm.from_jwk(key_json)  # type: ignore
+        public_key = RSAAlgorithm.from_jwk(key_json)
         jwt.decode(
             jwt_token,
             key=public_key,
