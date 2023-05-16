@@ -197,7 +197,6 @@ class BotFrameworkInput(InputChannel):
             app_id: Bot Framework's API id
             app_password: Bot Framework application secret
         """
-
         self.app_id = app_id
         self.app_password = app_password
 
