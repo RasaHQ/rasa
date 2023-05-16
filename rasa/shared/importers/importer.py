@@ -7,6 +7,7 @@ import rasa.shared.constants
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
+from rasa.plugin import plugin_manager
 from rasa.shared.core.domain import (
     Domain,
     KEY_E2E_ACTIONS,
@@ -199,12 +200,13 @@ class TrainingDataImporter(ABC):
         constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
             importer_config, importer_class
         )
+        if plugin_manager().hook.check_for_spaces_importer(module_path=module_path):
+            constructor_arguments.update(args=args)
 
         return importer_class(
             config_path,
             domain_path,
             training_data_paths,
-            args=args,
             **constructor_arguments,
         )
 
