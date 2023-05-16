@@ -7,7 +7,6 @@ from pathlib import Path
 from rasa.engine.constants import PLACEHOLDER_TRACKER
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
 
 import rasa.shared.utils.io
 from rasa.shared.constants import ASSISTANT_ID_KEY, CONFIG_AUTOCONFIGURABLE_KEYS
