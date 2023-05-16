@@ -1,7 +1,7 @@
 import argparse
 import functools
 import sys
-import typing
+
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import pluggy
@@ -11,10 +11,9 @@ from rasa.engine.storage.storage import ModelMetadata
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
 
-if typing.TYPE_CHECKING:
-    from rasa.rasa.engine.graph import SchemaNode
 
 if TYPE_CHECKING:
+    from rasa.engine.graph import SchemaNode
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
     from rasa.shared.core.domain import Domain
@@ -129,3 +128,18 @@ def create_tracker_store(  # type: ignore[empty-body]
     event_broker: Optional["EventBroker"],
 ) -> "TrackerStore":
     """Hook specification for wrapping with AuthRetryTrackerStore."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def read_anonymization_rules(  # type: ignore[empty-body]
+    endpoints_file: Optional[Text],
+) -> List[Any]:
+    """Hook specification for reading anonymization rules."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def create_anonymization_pipeline(
+    anonymization_rules: Optional[List[Any]],
+    event_broker_config: Optional["EndpointConfig"],
+) -> Optional[Any]:
+    """Hook specification for creating the anonymization pipeline."""
