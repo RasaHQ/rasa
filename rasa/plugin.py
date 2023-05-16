@@ -1,6 +1,7 @@
 import argparse
 import functools
 import sys
+# TODO: fix me
 import typing
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
@@ -129,3 +130,18 @@ def create_tracker_store(  # type: ignore[empty-body]
     event_broker: Optional["EventBroker"],
 ) -> "TrackerStore":
     """Hook specification for wrapping with AuthRetryTrackerStore."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def read_anonymization_rules(  # type: ignore[empty-body]
+    endpoints_file: Optional[Text],
+) -> List[Any]:
+    """Hook specification for reading anonymization rules."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def create_anonymization_pipeline(
+    anonymization_rules: Optional[List[Any]],
+    event_broker_config: Optional["EndpointConfig"],
+) -> Optional[Any]:
+    """Hook specification for creating the anonymization pipeline."""
