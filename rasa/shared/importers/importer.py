@@ -197,7 +197,7 @@ class TrainingDataImporter(ABC):
                 return None
 
         constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
-            {**importer_config, **args}, importer_class
+            {**importer_config, **(args or {})}, importer_class
         )
 
         return importer_class(
