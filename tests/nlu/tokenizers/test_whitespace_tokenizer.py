@@ -59,7 +59,7 @@ def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceToke
             ],
         ),
         (
-            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 "  # noqa: E501, W505
+            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 "  # noqa: E501
             "https://rasa.com/docs/rasa/components#whitespacetokenizer",
             [
                 "https://www.google.com/search?"

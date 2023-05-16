@@ -1,8 +1,7 @@
 import argparse
 import functools
 import sys
-from typing import Any, Dict, List, Optional, Text, Tuple
-import typing
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import pluggy
 
@@ -11,10 +10,13 @@ from rasa.engine.storage.storage import ModelMetadata
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
+    from rasa.core.brokers.broker import EventBroker
+    from rasa.core.tracker_store import TrackerStore
     from rasa.rasa.engine.graph import SchemaNode
     from rasa.shared.core.domain import Domain
-    from rasa.core.policies.policy import PolicyPrediction
+    from rasa.utils.endpoints import EndpointConfig
+
 
 hookspec = pluggy.HookspecMarker("rasa")
 
@@ -114,10 +116,27 @@ def check_for_spaces_importer(module_path: Text) -> bool:
 
 
 @hookspec(firstresult=True)  # type: ignore[misc]
-def filter_and_rerank_actions(
+def prefix_stripping_for_custom_actions(json_body: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Remove namespacing introduced by spaces before custom actions call."""
+    return {}
+
+
+@hookspec  # type: ignore[misc]
+def prefixing_custom_actions_response(
+    json_body: Dict[Text, Any], response: Dict[Text, Any]
+) -> None:
+    """Add namespacing to the response from custom actions."""
+
+
+@hookspec  # type: ignore[misc]
+def init_managers(endpoints_file: Optional[Text]) -> None:
+    """Hook specification for initialising managers."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def create_tracker_store(  # type: ignore[empty-body]
+    endpoint_config: Union["TrackerStore", "EndpointConfig"],
     domain: "Domain",
-    predictions: List["PolicyPrediction"],
-    tracker: DialogueStateTracker,
-) -> List["PolicyPrediction"]:
-    """Hook spec for getting list of filtered and reranked policy predictions."""
-    return []
+    event_broker: Optional["EventBroker"],
+) -> "TrackerStore":
+    """Hook specification for wrapping with AuthRetryTrackerStore."""

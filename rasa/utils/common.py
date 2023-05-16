@@ -42,14 +42,12 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-
 EXPECTED_PILLOW_DEPRECATION_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # Keras uses deprecated Pillow features
     # cf. https://github.com/keras-team/keras/issues/16639
     (DeprecationWarning, f"{method} is deprecated and will be removed in Pillow 10 .*")
     for method in ["BICUBIC", "NEAREST", "BILINEAR", "HAMMING", "BOX", "LANCZOS"]
 ]
-
 
 EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # TODO (issue #9932)
@@ -81,6 +79,10 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # UserWarning which is always issued if the default value for
     # assistant_id key in config file is not changed
     (UserWarning, "is missing a unique value for the 'assistant_id' mandatory key.*"),
+    (
+        DeprecationWarning,
+        "non-integer arguments to randrange\\(\\) have been deprecated since",
+    ),
 ]
 
 EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)

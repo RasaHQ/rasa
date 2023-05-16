@@ -1,7 +1,10 @@
 import logging
+import warnings
+from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
 
+import fakeredis
 import pytest
 import sqlalchemy
 import uuid
@@ -19,11 +22,15 @@ from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.engine.url import URL
-from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
-from unittest.mock import Mock
+from typing import Any, Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
+from unittest.mock import MagicMock, Mock
 
 import rasa.core.tracker_store
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+)
 from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -46,7 +53,7 @@ from rasa.core.tracker_store import (
     FailSafeTrackerStore,
     AwaitableTrackerStore,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, TrackerEventDiffEngine
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.conftest import AsyncMock
@@ -270,7 +277,8 @@ def test_tracker_store_with_host_argument_from_string(domain: Domain):
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.HostExampleTrackerStore"
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("error")
         tracker_store = TrackerStore.create(store_config, domain)
 
     assert len(record) == 0
@@ -976,3 +984,329 @@ def test_create_awaitable_tracker_store_with_endpoint_config():
 
     assert isinstance(tracker_store, AwaitableTrackerStore)
     assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
+
+
+@pytest.mark.parametrize(
+    "endpoints_file, expected_type",
+    [
+        (None, InMemoryTrackerStore),
+        ("data/test_endpoints/endpoints_sql.yml", SQLTrackerStore),
+        ("data/test_endpoints/endpoints_redis.yml", RedisTrackerStore),
+    ],
+)
+def test_create_tracker_store_from_endpoints_file(
+    endpoints_file: Optional[Text], expected_type: Any, domain: Domain
+) -> None:
+    endpoint_config = read_endpoint_config(endpoints_file, "tracker_store")
+    tracker_store = rasa.core.tracker_store.create_tracker_store(
+        endpoint_config, domain
+    )
+
+    assert rasa.core.tracker_store.check_if_tracker_store_async(tracker_store) is True
+    assert isinstance(tracker_store, expected_type)
+
+
+async def test_fail_safe_tracker_store_retrieve_full_tracker(
+    domain: Domain, tracker_with_restarted_event: DialogueStateTracker
+) -> None:
+    primary_tracker_store = SQLTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    tracker_store = FailSafeTrackerStore(primary_tracker_store)
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == tracker_with_restarted_event
+
+
+async def test_fail_safe_tracker_store_retrieve_full_tracker_with_exception(
+    caplog: LogCaptureFixture,
+) -> None:
+    primary_tracker_store = MagicMock()
+    primary_tracker_store.domain = Domain.empty()
+    primary_tracker_store.event_broker = None
+
+    exception = Exception("Something went wrong")
+    primary_tracker_store.retrieve_full_tracker = AsyncMock(side_effect=exception)
+
+    tracker_store = FailSafeTrackerStore(primary_tracker_store)
+    with caplog.at_level(logging.ERROR):
+        await tracker_store.retrieve_full_tracker("some_id")
+
+    assert "Error happened when trying to retrieve conversation tracker" in caplog.text
+    assert f"Please investigate the following error: {exception}." in caplog.text
+
+
+async def test_sql_get_or_create_full_tracker_without_action_listen() -> None:
+    tracker_store = SQLTrackerStore(Domain.empty())
+    sender_id = uuid.uuid4().hex
+    tracker = await tracker_store.get_or_create_full_tracker(
+        sender_id=sender_id, append_action_listen=False
+    )
+    assert tracker.sender_id == sender_id
+    assert tracker.events == deque()
+
+
+async def test_sql_get_or_create_full_tracker_with_action_listen() -> None:
+    tracker_store = SQLTrackerStore(Domain.empty())
+    sender_id = uuid.uuid4().hex
+    tracker = await tracker_store.get_or_create_full_tracker(
+        sender_id=sender_id, append_action_listen=True
+    )
+    assert tracker.sender_id == sender_id
+    assert tracker.events == deque([ActionExecuted(ACTION_LISTEN_NAME)])
+
+
+async def test_sql_get_or_create_full_tracker_with_existing_tracker(
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    sender_id = tracker_with_restarted_event.sender_id
+
+    tracker_store = SQLTrackerStore(Domain.empty())
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.get_or_create_full_tracker(
+        sender_id=sender_id, append_action_listen=False
+    )
+    assert tracker.sender_id == sender_id
+    assert tracker.events == deque(tracker_with_restarted_event.events)
+
+
+async def test_sql_tracker_store_retrieve_full_tracker(
+    domain: Domain, tracker_with_restarted_event: DialogueStateTracker
+) -> None:
+    tracker_store = SQLTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == tracker_with_restarted_event
+
+
+async def test_sql_tracker_store_retrieve(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+) -> None:
+    tracker_store = SQLTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve(sender_id)
+
+    # the retrieved tracker with the latest session would not contain
+    # `action_session_start` event because the SQLTrackerStore filters
+    # only the events after `session_started` event
+    assert list(tracker.events) == events_after_restart[1:]
+
+
+async def test_in_memory_tracker_store_retrieve_full_tracker(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    tracker_store = InMemoryTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == tracker_with_restarted_event
+
+
+async def test_in_memory_tracker_store_retrieve(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+) -> None:
+    tracker_store = InMemoryTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve(sender_id)
+    assert list(tracker.events) == events_after_restart
+
+
+async def test_mongo_tracker_store_retrieve_full_tracker(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    tracker_store = MockedMongoTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == tracker_with_restarted_event
+
+
+async def test_mongo_tracker_store_retrieve(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+) -> None:
+    tracker_store = MockedMongoTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve(sender_id)
+
+    # the retrieved tracker with the latest session would not contain
+    # `action_session_start` event because the MongoTrackerStore filters
+    # only the events after `session_started` event
+    assert list(tracker.events) == events_after_restart[1:]
+
+
+class MockedRedisTrackerStore(RedisTrackerStore):
+    def __init__(
+        self,
+        domain: Domain,
+    ) -> None:
+        self.red = fakeredis.FakeStrictRedis()
+        self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        self.record_exp = None
+        super(RedisTrackerStore, self).__init__(domain, None)
+
+
+async def test_redis_tracker_store_retrieve_full_tracker(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    tracker_store = MockedRedisTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == tracker_with_restarted_event
+
+
+async def test_redis_tracker_store_retrieve(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+) -> None:
+    tracker_store = MockedRedisTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await tracker_store.retrieve(sender_id)
+    assert list(tracker.events) == events_after_restart
+
+
+async def test_redis_tracker_store_merge_trackers_same_session() -> None:
+    start_session_sequence = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+    events: List[Event] = start_session_sequence + [UserUttered("hello")]
+    prior_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+
+    events += [BotUttered("Hey! How can I help you?")]
+
+    new_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+
+    actual_tracker = RedisTrackerStore._merge_trackers(prior_tracker, new_tracker)
+
+    assert actual_tracker == new_tracker
+
+
+def test_redis_tracker_store_merge_trackers_overlapping_session() -> None:
+    prior_tracker_events: List[Event] = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+        SessionStarted(timestamp=2),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+        UserUttered("hello", timestamp=4),
+        BotUttered("Hey! How can I help you?", timestamp=5),
+        UserUttered("/restart", timestamp=6),
+        ActionExecuted(ACTION_RESTART_NAME, timestamp=7),
+    ]
+
+    new_start_session = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=8),
+        SessionStarted(timestamp=9),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=10),
+    ]
+
+    prior_tracker_events += new_start_session
+    prior_tracker = DialogueStateTracker.from_events(
+        "overlapping-session",
+        evts=prior_tracker_events,
+    )
+
+    after_restart_event = [UserUttered("hi again", timestamp=11)]
+    new_tracker_events = new_start_session + after_restart_event
+
+    new_tracker = DialogueStateTracker.from_events(
+        "overlapping-session",
+        evts=new_tracker_events,
+    )
+
+    actual_tracker = RedisTrackerStore._merge_trackers(prior_tracker, new_tracker)
+
+    expected_events = prior_tracker_events + after_restart_event
+
+    assert list(actual_tracker.events) == expected_events
+
+
+def test_redis_tracker_store_merge_trackers_different_session() -> None:
+    prior_tracker_events: List[Event] = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+        SessionStarted(timestamp=2),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+        UserUttered("hello", timestamp=4),
+        BotUttered("Hey! How can I help you?", timestamp=5),
+    ]
+    prior_tracker = DialogueStateTracker.from_events(
+        "different-session",
+        evts=prior_tracker_events,
+    )
+
+    new_session = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=8),
+        SessionStarted(timestamp=9),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=10),
+        UserUttered("I need help.", timestamp=11),
+    ]
+
+    new_tracker = DialogueStateTracker.from_events(
+        "different-session",
+        evts=new_session,
+    )
+
+    actual_tracker = RedisTrackerStore._merge_trackers(prior_tracker, new_tracker)
+
+    expected_events = prior_tracker_events + new_session
+    assert list(actual_tracker.events) == expected_events
+
+
+async def test_tracker_event_diff_engine_event_difference() -> None:
+    start_session_sequence = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+    events: List[Event] = start_session_sequence + [UserUttered("hello")]
+    prior_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+    new_events = [BotUttered("Hey! How can I help you?")]
+    events += new_events
+
+    new_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+
+    event_diff = TrackerEventDiffEngine.event_difference(prior_tracker, new_tracker)
+
+    assert new_events == event_diff

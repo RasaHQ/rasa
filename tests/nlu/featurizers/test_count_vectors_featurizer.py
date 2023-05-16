@@ -806,3 +806,38 @@ def test_use_shared_vocab_exception(
         )
     else:
         new_cvf.train(data)
+
+
+@pytest.mark.parametrize("min_df, throws_error", [(1, False), (0.2, False), (5, True)])
+def test_create_independent_vocab_vectorizers_min_df(
+    min_df: int,
+    throws_error: bool,
+    load_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
+):
+    config = {
+        "min_df": min_df,
+        "analyzer": "word",
+        "strip_accents": None,
+        "lowercase": True,
+        "stop_words": None,
+        "min_ngram": 1,
+        "max_ngram": 1,
+        "max_df": 1,
+        "max_features": None,
+        "use_shared_vocab": False,
+        "finetune_mode": False,
+    }
+    cvf = load_featurizer(config)
+    result = cvf._create_independent_vocab_vectorizers(config)
+    assert result["action_name"].min_df == 1
+    assert result["text"].min_df == min_df
+
+    train_message = Message(data={TEXT: "am I the coolest person?"})
+    data = TrainingData([train_message])
+    whitespace_tokenizer.process_training_data(data)
+    if throws_error:
+        with pytest.raises(Exception):
+            cvf.train(data)
+    else:
+        cvf.train(data)

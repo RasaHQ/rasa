@@ -5,7 +5,7 @@ from typing import Dict, Text, Type
 # because otherwise it logs tensorflow/pytorch versions
 logging.getLogger("transformers.file_utils").setLevel(logging.WARNING)
 
-from transformers import (  # noqa: F401, E402
+from transformers import (  # noqa: E402
     TFPreTrainedModel,
     TFBertModel,
     TFOpenAIGPTModel,
@@ -25,7 +25,7 @@ from transformers import (  # noqa: F401, E402
     RobertaTokenizer,
     CamembertTokenizer,
 )
-from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (  # noqa: F401, E402, E501
+from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (  # noqa: E402, E501
     bert_tokens_pre_processor,
     gpt_tokens_pre_processor,
     xlnet_tokens_pre_processor,

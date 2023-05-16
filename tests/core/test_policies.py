@@ -151,7 +151,6 @@ class PolicyTestCollection:
         assert isinstance(
             trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
-
         loaded = trained_policy.__class__.load(
             self._config(trained_policy.config),
             model_storage,

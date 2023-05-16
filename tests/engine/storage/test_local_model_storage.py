@@ -96,7 +96,7 @@ def test_read_long_resource_names_windows(
     domain: Domain,
 ):
     model_dir = tmp_path_factory.mktemp("model_dir")
-    version = "3.3.0"
+    version = "3.5.0"
 
     # full path length > 260 chars
     # but each component of the path needs to be below 255 chars

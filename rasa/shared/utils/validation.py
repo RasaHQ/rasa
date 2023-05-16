@@ -220,7 +220,6 @@ def validate_training_data_format_version(
         `True` if the file can be processed by current version of Rasa Open Source,
         `False` otherwise.
     """
-
     if filename:
         filename = os.path.abspath(filename)
 

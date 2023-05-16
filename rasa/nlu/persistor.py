@@ -74,7 +74,7 @@ class Persistor(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _persist_tar(self, filekey: Text, tarname: Text) -> None:  # noqa: F841
+    def _persist_tar(self, filekey: Text, tarname: Text) -> None:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
         raise NotImplementedError
 
@@ -107,7 +107,8 @@ class Persistor(abc.ABC):
 class AWSPersistor(Persistor):
     """Store models on S3.
 
-    Fetches them when needed, instead of storing them on the local disk."""
+    Fetches them when needed, instead of storing them on the local disk.
+    """
 
     def __init__(
         self,
@@ -145,7 +146,6 @@ class AWSPersistor(Persistor):
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to s3."""
-
         with open(tar_path, "rb") as f:
             self.s3.Object(self.bucket_name, file_key).put(Body=f)
 
@@ -159,7 +159,8 @@ class AWSPersistor(Persistor):
 class GCSPersistor(Persistor):
     """Store models on Google Cloud Storage.
 
-    Fetches them when needed, instead of storing them on the local disk."""
+    Fetches them when needed, instead of storing them on the local disk.
+    """
 
     def __init__(self, bucket_name: Text) -> None:
         """Initialise class with client and bucket."""
@@ -186,19 +187,17 @@ class GCSPersistor(Persistor):
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to GCS."""
-
         blob = self.bucket.blob(file_key)
         blob.upload_from_filename(tar_path)
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to GCS."""
-
         blob = self.bucket.blob(target_filename)
         blob.download_to_filename(target_filename)
 
 
 class AzurePersistor(Persistor):
-    """Store models on Azure"""
+    """Store models on Azure."""
 
     def __init__(
         self, azure_container: Text, azure_account_name: Text, azure_account_key: Text

@@ -105,6 +105,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     SOFTMAX,
+    RUN_EAGERLY,
 )
 
 logger = logging.getLogger(__name__)
@@ -282,6 +283,11 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # Note that renormalization only makes sense if confidences are generated
             # via `softmax`.
             RENORMALIZE_CONFIDENCES: False,
+            # Determines whether to construct the model graph or not.
+            # This is advantageous when the model is only trained or inferred for
+            # a few steps, as the compilation of the graph tends to take more time than
+            # running it. It is recommended to not adjust the optimization parameter.
+            RUN_EAGERLY: False,
         }
 
     def __init__(
@@ -412,7 +418,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         training_data: TrainingData, attribute: Text
     ) -> Dict[Text, int]:
         """Create label_id dictionary."""
-
         distinct_label_ids = {
             example.get(attribute) for example in training_data.intent_examples
         } - {None}
@@ -428,7 +433,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self, training_data: TrainingData
     ) -> List[EntityTagSpec]:
         """Create entity tag specifications with their respective tag id mappings."""
-
         _tag_specs = []
 
         for tag_name in POSSIBLE_TAGS:
@@ -492,7 +496,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self, labels_example: List[Message], attribute: Text
     ) -> bool:
         """Checks if all labels have features set."""
-
         return all(
             label_example.features_present(
                 attribute, self.component_config[FEATURIZERS]
@@ -905,7 +908,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
             self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
+                optimizer=tf.keras.optimizers.Adam(
+                    self.component_config[LEARNING_RATE]
+                ),
+                run_eagerly=self.component_config[RUN_EAGERLY],
             )
         else:
             if self.model is None:
