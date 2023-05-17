@@ -57,11 +57,6 @@ def handle_space_args(args: argparse.Namespace) -> Dict[Text, Any]:
 
 
 @hookspec  # type: ignore[misc]
-def check_invalid_args_with_spaces(args: argparse.Namespace) -> None:
-    """Check if the CLI arguments are valid when using spaces."""
-
-
-@hookspec  # type: ignore[misc]
 def modify_default_recipe_graph_train_nodes(
     train_config: Dict[Text, Any],
     train_nodes: Dict[Text, "SchemaNode"],

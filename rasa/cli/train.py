@@ -77,7 +77,6 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     """
     from rasa import train as train_all
 
-    plugin_manager().hook.check_invalid_args_with_spaces(args=args)
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
@@ -143,7 +142,6 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
     """
     from rasa.model_training import train_core
 
-    plugin_manager().hook.check_invalid_args_with_spaces(args=args)
     args.domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
@@ -191,7 +189,6 @@ def run_nlu_training(args: argparse.Namespace) -> Optional[Text]:
     """
     from rasa.model_training import train_nlu
 
-    plugin_manager().hook.check_invalid_args_with_spaces(args=args)
     config = rasa.cli.utils.get_validated_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
     nlu_data = rasa.cli.utils.get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
