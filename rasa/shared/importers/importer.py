@@ -98,11 +98,12 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
         config = rasa.shared.utils.io.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
-            config, config_path, domain_path, training_data_paths
+            config, config_path, domain_path, training_data_paths, args
         )
 
     @staticmethod
@@ -110,13 +111,14 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> "TrainingDataImporter":
         """Loads core `TrainingDataImporter` instance.
 
         Instance loaded from configuration file will only read Core training data.
         """
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths
+            config_path, domain_path, training_data_paths, args
         )
         return importer
 
@@ -125,13 +127,14 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> "TrainingDataImporter":
         """Loads nlu `TrainingDataImporter` instance.
 
         Instance loaded from configuration file will only read NLU training data.
         """
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths
+            config_path, domain_path, training_data_paths, args
         )
 
         if isinstance(importer, E2EImporter):
@@ -147,6 +150,7 @@ class TrainingDataImporter(ABC):
         config_path: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
         from rasa.shared.importers.rasa import RasaFileImporter
@@ -155,7 +159,7 @@ class TrainingDataImporter(ABC):
         importers = config.get("importers", [])
         importers = [
             TrainingDataImporter._importer_from_dict(
-                importer, config_path, domain_path, training_data_paths
+                importer, config_path, domain_path, training_data_paths, args
             )
             for importer in importers
         ]
@@ -173,6 +177,7 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        args: Optional[Dict[Text, Any]] = {},
     ) -> Optional["TrainingDataImporter"]:
         from rasa.shared.importers.multi_project import MultiProjectImporter
         from rasa.shared.importers.rasa import RasaFileImporter
@@ -192,11 +197,14 @@ class TrainingDataImporter(ABC):
                 return None
 
         constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
-            importer_config, importer_class
+            {**importer_config, **(args or {})}, importer_class
         )
 
         return importer_class(
-            config_path, domain_path, training_data_paths, **constructor_arguments
+            config_path,
+            domain_path,
+            training_data_paths,
+            **constructor_arguments,
         )
 
     def fingerprint(self) -> Text:
