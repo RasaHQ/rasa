@@ -1,7 +1,6 @@
 import argparse
 import functools
 import sys
-
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import pluggy
@@ -11,11 +10,10 @@ from rasa.engine.storage.storage import ModelMetadata
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
 
-
 if TYPE_CHECKING:
-    from rasa.engine.graph import SchemaNode
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
+    from rasa.engine.graph import SchemaNode
     from rasa.shared.core.domain import Domain
     from rasa.utils.endpoints import EndpointConfig
 
@@ -52,9 +50,17 @@ def refine_cli(
     """Customizable hook for adding CLI commands."""
 
 
+@hookspec(firstresult=True)  # type: ignore[misc]
+def handle_space_args(args: argparse.Namespace) -> Dict[Text, Any]:
+    """Extracts space from the command line arguments."""
+    return {}
+
+
 @hookspec  # type: ignore[misc]
 def modify_default_recipe_graph_train_nodes(
-    train_nodes: Dict[Text, "SchemaNode"]
+    train_config: Dict[Text, Any],
+    train_nodes: Dict[Text, "SchemaNode"],
+    cli_parameters: Dict[Text, Any],
 ) -> None:
     """Hook specification to modify the default recipe graph for training.
 
