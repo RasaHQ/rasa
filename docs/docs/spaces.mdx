@@ -3,7 +3,9 @@ id: spaces
 sidebar_label: Spaces
 title: Spaces
 description: Learn about Spaces for Rasa.
-abstract: Spaces are a way to modularize your assistant.
+abstract: Spaces are a way to modularize your assistant that increases isolation between
+subparts, and classification performance for intents and entities that are only
+relevant in specific contexts.
 ---
 
 import RasaProLabel from "@theme/RasaProLabel";
@@ -14,7 +16,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 <RasaProBanner />
 
-:::caution New in 3.6
+:::caution New in 3.6.0a1
 This feature is experimental.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
@@ -23,14 +25,15 @@ If you have feedback (positive or negative) please share it with us on the [Rasa
 :::
 
 Spaces are a way to modularize your assistant. Oftentimes, when assistants grow, the
-potential for conflicts between intents, entities, and other primitives grows alongside.
+potential for conflicts between intents, entities, and other [primitives](./glossary.mdx#rasa-primitive) grows alongside.
 That is because in a regular rasa assistant all intents, entities, and actions are
 available at any time, so every new capability has to play nicely with all existing
 ones. Spaces introduce a basic separation between parts of the bot based on activation
-and deactivation of groups of rasa primitives. Every of these groups is called a space.
+and deactivation of groups of [rasa primitives](./glossary.mdx#rasa-primitive).
+Every of these groups is called a space.
 Spaces are activated when certain designated intents, also called entry intents, have
 been predicted. With the space activation, all the primitives in the space become
-available for subsequent interactions with the user. Good ways to think about spaces are
+available for subsequent interactions with the user. Good ways to think about Spaces are
 
 * that they allow you to specify follow-up primitives, which only become accessible after another intent has come beforehand
 * that they are like multiple sub-bots merged into one with the possibility of sharing primitives
@@ -39,7 +42,7 @@ available for subsequent interactions with the user. Good ways to think about sp
 ## When to use Spaces
 
 Spaces can be helpful when you are dealing with multiple domains of your business in
-a single assistant. Oftentimes, this leads to multitude of forms, entities, and inform
+a single assistant. Oftentimes, this leads to a multitude of forms, entities, and inform
 intents that start to overlap at some point. Form filling and inform intents are a
 typical case of having this follow-up structure mentioned above. Another good case is
 when you want to be able to define different behavior for help- or clarification
@@ -49,29 +52,27 @@ for every interaction route.
 
 ## When not to use Spaces / Limitations
 
-Because spaces split a rasa bot into multiple parts, it is interacting with almost
+Because the Spaces feature splits a rasa bot into multiple parts, it is interacting with almost
 every of the existing features of rasa. We made it work with almost all of them, but
-there are some exceptions. This means, however, if you have created
-customization beyond components that are aligned with the way rasa normally
-works, spaces might not work for you.
+there are some exceptions:
 
-Another important limitation is that spaces currently do not support stories. We know
-this is a big limitations for many existing bots. However, because stories and their
-existing policies work with a fixed event horizon (`max_history`), they are at this
-point not compatible with the idea of being able to describe encapsulated units of logic
-well.
-
-Currently, the only entity extractor that is works with the boundaries that spaces
-create, is an adapted version of the `CRFEntityExtractor`. You can find more on this
+* if you have created extensive customization and introduced your own data hierarchies
+or post-processing steps, these might not be compatible with Spaces.
+* Spaces currently do not support stories. This is a big limitations for many
+existing bots. However, because stories and their existing policies work with a fixed
+event horizon (`max_history`), they are at this point not compatible with the idea of
+being able to describe encapsulated units of logic well.
+* Entity extraction is currently limited to an adapted version of
+the `CRFEntityExtractor` which works with Spaces boundaries. You can find more on this
 in the following sections.
 
 
-## An example spaces bot
-We have created a bot using spaces for you to look at, learn from and experiment with.
-It features three different spaces in the financial domain. [Here is the repository](https://github.com/RasaHQ/financial-spaces-bot)
+## An example Spaces bot
+We have created a bot using Spaces for you to look at, learn from and experiment with.
+It features three different spaces in the financial domain. [Here is the repository](https://github.com/RasaHQ/financial-spaces-bot).
 
 
-## How to use spaces
+## How to use Spaces
 
 Spaces are defined by separate sets of domain, nlu, and rule files. These separate
 sets are then assembled to create a unified assistant. The assembly plan needs to be
@@ -80,7 +81,7 @@ to use a special data importer that reads and enacts the assembly plan. Third, y
 to add some specific space-aware components to your NLU pipeline. The following is the
 `config.yml` of the financial spaces bot linked above:
 
-```yaml
+```yaml {8-35,37-39,50,57}
 # https://rasa.com/docs/rasa/model-configuration/
 recipe: default.v1
 
@@ -146,20 +147,20 @@ policies:
 
 ```
 
-In the above config file, you can see the spaces definition with the main space, which
-is a designated name for a space for shared primitives, and the three specialized
-spaces for transferring money, investment, and credit card payments. Each path value
+In the above config file, you can see the Spaces definition with the main space, which
+is a designated name for a space for shared primitives, and the three
+subspaces for transferring money, investment, and credit card payments. Each path value
 can either point to a single file or a directory.
 
 Second, you can also see the importer
 `rasa_plus.spaces.space_data_importer.SpaceDataImporter` being used. This importer
-reads the above spaces definition and assembles the bot. The results can be seen in the
-temporary working directory.
+reads the above Spaces definition and assembles the bot. The results can be seen in the
+configurable temporary working directory.
 
-Third, you can see the specific NLU components that are necessary to make spaces work.
-The most important is the `FilterAndRerank` component which is central to make spaces
+Third, you can see the specific NLU components that are necessary to make Spaces work.
+The most important is the `FilterAndRerank` component which is central to make Spaces
 work by post-processing intent rankings and entity extractions. If you also need entity
-extraction you need to use the `SpacesCRFEntityExtractor` to make that work with spaces.
+extraction you need to use the `SpacesCRFEntityExtractor` to make that work with Spaces.
 
 Finally, you can see that we are only using the `RulePolicy` here.
 
@@ -168,9 +169,9 @@ train your new assistant using `rasa train -c config.yml` and start it afterward
 `rasa shell`.
 
 
-## How do spaces work?
-In the following we'll look at how things work under the hood in spaces to give you a
-better understanding of what is happening in case you should need it.
+## How do Spaces work?
+In the following we'll look at how things work under the hood in Spaces to give you a
+better understanding of what is happening.
 
 One of the most aspects is that spaces form a hierarchy with two layers. At the top
 is the main space which contains shared primitives that should be usable by all spaces.
@@ -183,27 +184,34 @@ only be used by that space and not by other subspaces or the main space.
 
 The most important step during the assembly is the prefixing. During this step every
 intent, entity, slot, action, form, utterance that is defined in a space's domain file
-is prefixed (infixed for utterances) with this space's name. For example, an intent
-`ask_transfer_charge` in the `transfer_money` domain would become
+is prefixed with this space's name. For example, an intent
+`ask_transfer_charge` in the `transfer_money` space would become
 `transfer_money.ask_transfer_charge` and every reference of this intent would be
 adjusted. The final assistant then works on the prefixed data.
+For responses, we use infixing, because their name has to start with the `utter_`
+prefix. `utter_transfer_charge` in the `transfer_money` space would become
+`utter_transfer_money.transfer_charge`, introducing the space name inside the original name.
 
 An exception to this is the main space. Anything in the main space and all its
 primitives that are used in other spaces, will not be prefixed.
 
-Another exception are rules. They don't have a name that can be prefixed. Instead,
+Another exception are [rules](./rules.mdx). They don't have a name that can be prefixed. Instead,
 we add a condition to each rule that it is only applicable while it's space is active.
 
-### How is space activation tracked?
+### How does space activation work?
 
-Space activation is currently tracked through boolean slots that are automatically
-generated during assembly for each space.
+A space is activated when any of their entry intents is predicted. Only a single space
+can be active at a given time. So when space A is active and an entry intent of space B
+is predicted, space A will be deactivated and space B is active from now on.
+
+Space activation is tracked through slots that are automatically
+generated during assembly.
 
 ### How does filter and rerank work?
 
-The filter and rerank component post-processes the intent ranking of the intent
-classification components. It accesses the tracker and checks which space are active
-or would be activated, in case an entry intent is at the top.
+The filter and rerank component post-processes the intent ranking of the [intent
+classification components](./components.mdx#intent-classifiers). It accesses the [tracker](./sdk-tracker.mdx)
+and checks which space are active or would be activated, in case an entry intent is at the top.
 
 It then removes any intents from the ranking that are not possible. Further it also
 removes any entities that are not possible given the space activation status or
@@ -213,8 +221,8 @@ about to be predicted entry intents.
 
 Usually, entity recognizers in Rasa only return a single label per token in a message.
 Thus, there is no ranking, that could be post-processed as in the case of intents. We
-have built our `SpacesCRFEntityExtractor` in a way that it creates multiple extractors.
-One for each space. Now, during the post-processing step, we can filter out the
+have built our `SpacesCRFEntityExtractor` in a way that it creates multiple extractors;
+one for each space. Now, during the post-processing step, we can filter out the
 extractor of the spaces that are not activated.
 
 ### Custom Actions
@@ -222,14 +230,15 @@ extractor of the spaces that are not activated.
 Custom actions work as before. However, the tracker, the domain, and slots
 will be stripped of any information from other spaces before being handed to your
 action. Additionally, every event such as slot sets, will be prefixed after they are
-returned by your action. All of this ensures that from the view point of your custom
+returned by your action. All of this ensures that from the viewpoint of your custom
 action, you don't need to worry about the other spaces and accidentally leaking
-or altering information. It is as if the other spaces and prefixing does not exist.
+or altering information. This warrants isolation between your Spaces. Note that
+custom actions from the main spaces are not inherited by specialised spaces.
 
 ### Response Selection
 
 Response selection works as before. The only small difference is that in your
-`config.yaml` you'll need to specify the retrieval intent including it's final prefix.
+`config.yml` you'll need to specify the retrieval intent including its final prefix.
 If your retrieval intent is `investment_faq` in the `investment` space, then in your
 config you'll need to set `investment.investment_faq` as the retrieval intent. If the
 retrieval intent belongs to the main space, no prefix is added. That's why
