@@ -32,7 +32,9 @@ Create The Error.
 #### validate\_yaml\_schema
 
 ```python
-def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None
+def validate_yaml_schema(yaml_file_content: Text,
+                         schema_path: Text,
+                         package_name: Text = PACKAGE_NAME) -> None
 ```
 
 Validate yaml content.
@@ -41,6 +43,8 @@ Validate yaml content.
 
 - `yaml_file_content` - the content of the yaml file to be validated
 - `schema_path` - the schema of the yaml file
+- `package_name` - the name of the package the schema is located in. defaults
+  to `rasa`.
 
 #### validate\_training\_data
 

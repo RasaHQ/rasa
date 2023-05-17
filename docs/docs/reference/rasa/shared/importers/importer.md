@@ -110,10 +110,10 @@ Retrieves the NLU training data that should be used for training.
 ```python
 @staticmethod
 def load_from_config(
-    config_path: Text,
-    domain_path: Optional[Text] = None,
-    training_data_paths: Optional[List[Text]] = None
-) -> "TrainingDataImporter"
+        config_path: Text,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
+        args: Optional[Dict[Text, Any]] = {}) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a configuration file.
@@ -123,10 +123,10 @@ Loads a `TrainingDataImporter` instance from a configuration file.
 ```python
 @staticmethod
 def load_core_importer_from_config(
-    config_path: Text,
-    domain_path: Optional[Text] = None,
-    training_data_paths: Optional[List[Text]] = None
-) -> "TrainingDataImporter"
+        config_path: Text,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
+        args: Optional[Dict[Text, Any]] = {}) -> "TrainingDataImporter"
 ```
 
 Loads core `TrainingDataImporter` instance.
@@ -138,10 +138,10 @@ Instance loaded from configuration file will only read Core training data.
 ```python
 @staticmethod
 def load_nlu_importer_from_config(
-    config_path: Text,
-    domain_path: Optional[Text] = None,
-    training_data_paths: Optional[List[Text]] = None
-) -> "TrainingDataImporter"
+        config_path: Text,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
+        args: Optional[Dict[Text, Any]] = {}) -> "TrainingDataImporter"
 ```
 
 Loads nlu `TrainingDataImporter` instance.
@@ -153,11 +153,11 @@ Instance loaded from configuration file will only read NLU training data.
 ```python
 @staticmethod
 def load_from_dict(
-    config: Optional[Dict] = None,
-    config_path: Optional[Text] = None,
-    domain_path: Optional[Text] = None,
-    training_data_paths: Optional[List[Text]] = None
-) -> "TrainingDataImporter"
+        config: Optional[Dict] = None,
+        config_path: Optional[Text] = None,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
+        args: Optional[Dict[Text, Any]] = {}) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a dictionary.

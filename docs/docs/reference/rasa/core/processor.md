@@ -321,6 +321,7 @@ used, e.g., by a reminder or the trigger_intent endpoint).
 ```python
 async def parse_message(
         message: UserMessage,
+        tracker: Optional[DialogueStateTracker] = None,
         only_output_properties: bool = True) -> Dict[Text, Any]
 ```
 
@@ -329,6 +330,7 @@ Interprets the passed message.
 **Arguments**:
 
 - `message` - Message to handle.
+- `tracker` - Tracker to use.
 - `only_output_properties` - If `True`, restrict the output to
   Message.only_output_properties.
   
