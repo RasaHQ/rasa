@@ -272,7 +272,7 @@ async def load_agent(
         return agent
 
     except Exception as e:
-        logger.error(f"Could not load model due to {e}.")
+        logger.error(f"Could not load model due to {e}.", exc_info=True)
         return agent
 
 

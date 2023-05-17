@@ -102,6 +102,7 @@ fbmessenger = "~6.0.0"
 pykwalify = ">=1.7,<1.9"
 coloredlogs = ">=10,<16"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
+pyyaml = ">=5.3.1,<6.0"
 twilio = ">=6.26,<8.2"
 webexteamssdk = ">=1.1.1,<1.7.0"
 mattermostwrapper = "~2.2"
@@ -274,6 +275,10 @@ markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 
 [tool.poetry.dependencies.tensorflow-intel]
 version = "2.11.0"
+markers = "sys_platform == 'win32'"
+
+[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]
+version = ">=0.23.1,<0.32"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-cpu-aws]

@@ -418,7 +418,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         training_data: TrainingData, attribute: Text
     ) -> Dict[Text, int]:
         """Create label_id dictionary."""
-
         distinct_label_ids = {
             example.get(attribute) for example in training_data.intent_examples
         } - {None}
@@ -434,7 +433,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self, training_data: TrainingData
     ) -> List[EntityTagSpec]:
         """Create entity tag specifications with their respective tag id mappings."""
-
         _tag_specs = []
 
         for tag_name in POSSIBLE_TAGS:
@@ -498,7 +496,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self, labels_example: List[Message], attribute: Text
     ) -> bool:
         """Checks if all labels have features set."""
-
         return all(
             label_example.features_present(
                 attribute, self.component_config[FEATURIZERS]
