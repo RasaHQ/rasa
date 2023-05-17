@@ -503,7 +503,9 @@ class ActionBack(ActionBotResponse):
 
 class ActionListen(Action):
     """The first action in any turn - bot waits for a user message.
-    The bot should stop taking further actions and wait for the user to say something.
+
+    The bot should stop taking further actions and wait for the user to say
+    something.
     """
 
     def name(self) -> Text:
@@ -830,7 +832,9 @@ class RemoteAction(Action):
 
 
 class ActionExecutionRejection(RasaException):
-    """Raising this exception will let other policies to predict a different action."""
+    """Raising this exception will allow other policies
+    to predict a different action.
+    """
 
     def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
         self.action_name = action_name
@@ -1098,8 +1102,7 @@ class ActionExtractSlots(Action):
             )
             for event in custom_events:
                 if isinstance(event, SlotSet):
-                    if tracker.get_slot(event.key) != event.value:
-                        slot_events.append(event)
+                    slot_events.append(event)
                 elif isinstance(event, BotUttered):
                     slot_events.append(event)
                 else:
