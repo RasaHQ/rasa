@@ -14,6 +14,7 @@ from rasa.core import jobs
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
+from rasa.plugin import plugin_manager
 from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -219,6 +220,7 @@ async def load_agent(
     generator = None
     action_endpoint = None
     http_interpreter = None
+    anonymization_pipeline = None
 
     if endpoints:
         broker = await EventBroker.create(endpoints.event_broker, loop=loop)
@@ -232,6 +234,11 @@ async def load_agent(
         if endpoints.nlu:
             http_interpreter = RasaNLUHttpInterpreter(endpoints.nlu)
 
+        anonymization_pipeline = plugin_manager().hook.create_anonymization_pipeline(
+            anonymization_rules=endpoints.anonymization_rules,
+            event_broker_config=endpoints.event_broker,
+        )
+
     agent = Agent(
         generator=generator,
         tracker_store=tracker_store,
@@ -240,6 +247,7 @@ async def load_agent(
         model_server=model_server,
         remote_storage=remote_storage,
         http_interpreter=http_interpreter,
+        anonymization_pipeline=anonymization_pipeline,
     )
 
     try:
@@ -264,7 +272,7 @@ async def load_agent(
         return agent
 
     except Exception as e:
-        logger.error(f"Could not load model due to {e}.")
+        logger.error(f"Could not load model due to {e}.", exc_info=True)
         return agent
 
 
@@ -301,6 +309,7 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
+        anonymization_pipeline: Optional[Any] = None,
     ):
         """Initializes an `Agent`."""
         self.domain = domain
@@ -315,6 +324,7 @@ class Agent:
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
         self.remote_storage = remote_storage
+        self.anonymization_pipeline = anonymization_pipeline
 
     @classmethod
     def load(
@@ -356,6 +366,7 @@ class Agent:
             action_endpoint=self.action_endpoint,
             generator=self.nlg,
             http_interpreter=self.http_interpreter,
+            anonymization_pipeline=self.anonymization_pipeline,
         )
         self.domain = self.processor.domain
 
