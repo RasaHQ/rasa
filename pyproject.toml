@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.5.8"
+version = "3.6.0a1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -201,9 +201,8 @@ markers = "sys_platform != 'linux' or (platform_machine != 'arm64' and platform_
 
 [[tool.poetry.dependencies.tensorflow-addons]]
 git = "https://github.com/tensorflow/addons.git"
-tag="v0.19.0"
+tag = "v0.19.0"
 markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
-
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^4.0.0"
