@@ -178,7 +178,7 @@ def get_rasa_sdk_version() -> Text:
     try:
         sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
         if isinstance(sdk_version, str):
-            return sdk_version[1:].strip('a1')
+            return sdk_version[1:].strip()
         else:
             return sdk_version["version"][1:].strip()
     except AttributeError:
