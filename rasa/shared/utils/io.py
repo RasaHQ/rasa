@@ -353,8 +353,8 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
         )
 
     yaml_parser = yaml.YAML(typ=reader_type)
-    yaml_parser.version = YAML_VERSION  # type: ignore[assignment]
-    yaml_parser.preserve_quotes = True  # type: ignore[assignment]
+    yaml_parser.version = YAML_VERSION
+    yaml_parser.preserve_quotes = True
 
     return yaml_parser.load(content) or {}
 
@@ -402,7 +402,7 @@ def write_yaml(
 
     dumper = yaml.YAML()
     # no wrap lines
-    dumper.width = YAML_LINE_MAX_WIDTH  # type: ignore[assignment]
+    dumper.width = YAML_LINE_MAX_WIDTH
 
     # use `null` to represent `None`
     dumper.representer.add_representer(
