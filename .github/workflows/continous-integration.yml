@@ -846,11 +846,11 @@ jobs:
           # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
           IS_NEWEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$CURRENT_TAG" \
             | sort -V -C && echo true || echo false) || true)
-          # Avoid that the script gets released for alphas or release candidates
+          # Temporarily the script gets released for all release candidates
           if [[ "${IS_NEWEST_VERSION}" == "true" && "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
             echo "is_newest_version=true" >> $GITHUB_OUTPUT
           else
-            echo "is_newest_version=false" >> $GITHUB_OUTPUT
+            echo "is_newest_version=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Check if a base image exists
