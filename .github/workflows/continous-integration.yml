@@ -302,7 +302,8 @@ jobs:
       # this workflow step is only relevant for poetry version 1.1.13
       - name:  Pin poetry's urllib3 version
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        run: C:\Users\runneradmin\AppData\Roaming\pypoetry\venv\pip install urllib3==1.26.15
+        run: C:/Users/runneradmin/AppData/Roaming/pypoetry/venv/Scripts/pip.exe install urllib3==1.26.15
+        shell: bash
 
       - name: Install Dependencies (Linux) 📦
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-20.04'
