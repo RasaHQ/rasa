@@ -160,7 +160,7 @@ def train(
         An instance of `TrainingResult`.
     """
     file_importer = TrainingDataImporter.load_from_config(
-        config, domain, training_files
+        config, domain, training_files, core_additional_arguments
     )
 
     stories = file_importer.get_stories()
@@ -357,7 +357,7 @@ def train_core(
 
     """
     file_importer = TrainingDataImporter.load_core_importer_from_config(
-        config, domain, [stories]
+        config, domain, [stories], additional_arguments
     )
     stories_data = file_importer.get_stories()
     nlu_data = file_importer.get_nlu_data()
@@ -438,7 +438,7 @@ def train_nlu(
 
     # training NLU only hence the training files still have to be selected
     file_importer = TrainingDataImporter.load_nlu_importer_from_config(
-        config, domain, training_data_paths=[nlu_data]
+        config, domain, training_data_paths=[nlu_data], args=additional_arguments
     )
 
     training_data = file_importer.get_nlu_data()
