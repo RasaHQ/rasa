@@ -142,6 +142,12 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: poetry config virtualenvs.in-project true
 
+      # WARNING: do not port this code to `main` or other release branches that use latest versions of poetry
+      # this workflow step is only relevant for poetry version 1.1.13
+      - name:  Pin poetry's urllib3 version
+        if: needs.changes.outputs.backend == 'true'
+        run: ~/.local/share/pypoetry/venv/bin/pip install urllib3==1.26.15
+
       - name: Install Dependencies 📦
         if: needs.changes.outputs.backend == 'true'
         run: |
@@ -285,6 +291,18 @@ jobs:
         # the project itself, which also makes it easier for us to determine the correct directory
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
+
+      # WARNING: do not port this code to `main` or other release branches that use latest versions of poetry
+      # this workflow step is only relevant for poetry version 1.1.13
+      - name:  Pin poetry's urllib3 version
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-20.04'
+        run: ~/.local/share/pypoetry/venv/bin/pip install urllib3==1.26.15
+
+      # WARNING: do not port this code to `main` or other release branches that use latest versions of poetry
+      # this workflow step is only relevant for poetry version 1.1.13
+      - name:  Pin poetry's urllib3 version
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        run: C:\Users\runneradmin\AppData\Roaming\pypoetry\venv\pip install urllib3==1.26.15
 
       - name: Install Dependencies (Linux) 📦
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-20.04'
@@ -520,6 +538,13 @@ jobs:
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
 
+
+      # WARNING: do not port this code to `main` or other release branches that use latest versions of poetry
+      # this workflow step is only relevant for poetry version 1.1.13
+      - name:  Pin poetry's urllib3 version
+        if: needs.changes.outputs.backend == 'true'
+        run: ~/.local/share/pypoetry/venv/bin/pip install urllib3==1.26.15
+
       - name: Install Dependencies (Linux) 📦
         if: needs.changes.outputs.backend == 'true'
         run: |
@@ -614,6 +639,12 @@ jobs:
         # the project itself, which also makes it easier for us to determine the correct directory
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
+
+      # WARNING: do not port this code to `main` or other release branches that use latest versions of poetry
+      # this workflow step is only relevant for poetry version 1.1.13
+      - name:  Pin poetry's urllib3 version
+        if: needs.changes.outputs.backend == 'true'
+        run: ~/.local/share/pypoetry/venv/bin/pip install urllib3==1.26.15
 
       - name: Install Dependencies (Linux) 📦
         if: needs.changes.outputs.backend == 'true'
