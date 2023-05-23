@@ -62,18 +62,23 @@ def test_plugin_read_anonymization_rules(
 
 
 @pytest.mark.parametrize(
-    "anonymization_rules, event_broker_config",
+    "anonymization_rules, event_broker_config, logging_config",
     [
-        (None, None),
-        (None, EndpointConfig()),
-        ([], None),
-        ([], EndpointConfig()),
+        (None, None, None),
+        (None, EndpointConfig(), None),
+        (None, None, EndpointConfig()),
+        (None, EndpointConfig(), EndpointConfig()),
+        ([], None, None),
+        ([], EndpointConfig(), None),
+        ([], None, EndpointConfig()),
+        ([], EndpointConfig(), EndpointConfig()),
     ],
 )
 def test_plugin_create_anonymization_pipeline(
     monkeypatch: MonkeyPatch,
     anonymization_rules: Optional[List[Any]],
     event_broker_config: Optional[EndpointConfig],
+    logging_config: Optional["EndpointConfig"],
 ) -> None:
     manager = plugin_manager()
     monkeypatch.setattr(
@@ -83,8 +88,10 @@ def test_plugin_create_anonymization_pipeline(
     manager.hook.create_anonymization_pipeline(
         anonymization_rules=anonymization_rules,
         event_broker_config=event_broker_config,
+        logging_config=logging_config,
     )
     manager.hook.create_anonymization_pipeline.assert_called_once_with(
         anonymization_rules=anonymization_rules,
         event_broker_config=event_broker_config,
+        logging_config=logging_config,
     )
