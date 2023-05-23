@@ -33,6 +33,26 @@ def test_validate_yaml_schema(file, schema):
     validation_utils.validate_yaml_schema(rasa.shared.utils.io.read_file(file), schema)
 
 
+def test_validate_yaml_schema_with_package_name():
+    # should raise no exception
+    file = "data/test_moodbot/domain.yml"
+    schema = DOMAIN_SCHEMA_FILE
+    validation_utils.validate_yaml_schema(
+        rasa.shared.utils.io.read_file(file), schema, package_name="rasa"
+    )
+
+
+def test_validate_yaml_schema_with_random_package_name_fails():
+    # should raise no exception
+    file = "data/test_moodbot/domain.yml"
+    schema = DOMAIN_SCHEMA_FILE
+
+    with pytest.raises(ModuleNotFoundError):
+        validation_utils.validate_yaml_schema(
+            rasa.shared.utils.io.read_file(file), schema, package_name="rasa_foo_bar_42"
+        )
+
+
 @pytest.mark.parametrize(
     "file, schema",
     [

@@ -30,6 +30,7 @@ import RasaProBanner from "@theme/RasaProBanner";
 |`rasa data validate`      |Checks the domain, NLU and conversation data for inconsistencies.                                                                         |
 |`rasa export`             |Exports conversations from a tracker store to an event broker.                                                                            |
 |`rasa evaluate markers`   |Extracts markers from an existing tracker store.                                                                                          |
+|`rasa license`            |Display licensing information.                                                                                                            |
 |`rasa -h`                 |Shows all available commands.                                                                                                             |
 
 :::note
@@ -658,4 +659,38 @@ Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
   -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default: None)
+```
+
+## rasa license
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+:::info New in 3.3
+
+This command was introduced.
+:::
+
+Use `rasa license` to display information about licensing in Rasa Pro, especially information about
+3rd party dependencies licenses.
+
+Here is the list of all possible arguments:
+
+```
+usage: rasa license [-h] [-v] [-vv] [--quiet] [--logging-config-file LOGGING_CONFIG_FILE]
+
+Display licensing information.
+
+options:
+  -h, --help            show this help message and exit
+
+Python Logging Options:
+  You can control level of log messages printed. In addition to these arguments, a more fine grained configuration can be achieved with environment variables. See online documentation for more info.
+
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default: None)
+  --logging-config-file LOGGING_CONFIG_FILE
+                        If set, the name of the logging configuration file will be set to the given name. (default: None)
 ```
