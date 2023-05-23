@@ -4429,23 +4429,25 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.5.0"
+version = "3.6.0a1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
-python-versions = ">=3.7,<3.11"
+python-versions = ">=3.8,<3.11"
 files = [
-    {file = "rasa_sdk-3.5.0-py3-none-any.whl", hash = "sha256:d2b1455f7e8587ddaa5611c617c0a3555c3080b0a2f934206a9609149cbdbb75"},
-    {file = "rasa_sdk-3.5.0.tar.gz", hash = "sha256:6de94b5dfa778a2910b690a0046f266d79e09c32a0cbbdd1b6fb58e7c9cf2b10"},
+    {file = "rasa_sdk-3.6.0a1-py3-none-any.whl", hash = "sha256:3fee6646067ad136f0bab9f8919345f9ae7a703cb4ee0eb4d2387e8c81ab7138"},
+    {file = "rasa_sdk-3.6.0a1.tar.gz", hash = "sha256:8a1adb9ded0099f3dd0eecf42aef6754647e92f73885bf27ab3f14955269bebb"},
 ]
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
+pluggy = ">=1.0.0,<2.0.0"
 prompt-toolkit = ">=3.0,<3.0.29"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
 sanic = ">=21.12.0,<22.0.0"
 Sanic-Cors = ">=2.0.0,<3.0.0"
 typing-extensions = ">=4.1.1,<5.0.0"
+websockets = ">=10.0,<11.0"
 
 [[package]]
 name = "redis"
@@ -5702,31 +5704,6 @@ typeguard = ">=2.7"
 tensorflow = ["tensorflow (>=2.9.0,<2.12.0)"]
 tensorflow-cpu = ["tensorflow-cpu (>=2.9.0,<2.12.0)"]
 tensorflow-gpu = ["tensorflow-gpu (>=2.9.0,<2.12.0)"]
-
-[[package]]
-name = "tensorflow-addons"
-version = "0.19.0"
-description = "TensorFlow Addons."
-category = "main"
-optional = false
-python-versions = "*"
-files = []
-develop = false
-
-[package.dependencies]
-packaging = "*"
-typeguard = ">=2.7"
-
-[package.extras]
-tensorflow = ["tensorflow (>=2.9.0,<2.12.0)"]
-tensorflow-cpu = ["tensorflow-cpu (>=2.9.0,<2.12.0)"]
-tensorflow-gpu = ["tensorflow-gpu (>=2.9.0,<2.12.0)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/tensorflow/addons.git"
-reference = "v0.19.0"
-resolved_reference = "8f191c726c37931e34b98b5843e5918e9f1a5e49"
 
 [[package]]
 name = "tensorflow-cpu-aws"
@@ -7099,4 +7076,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "abba70cc68cf4c853ce4f173b10bfd8900fd77b69ada7e287d99ee05313a4efe"
+content-hash = "56a8e3ea83fc5f952be7a05d1e32bf82a1dbea582e3774b762e898d1d216ce15"
