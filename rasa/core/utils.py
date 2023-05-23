@@ -187,6 +187,7 @@ class AvailableEndpoints:
         anonymization_rules = plugin_manager().hook.read_anonymization_rules(
             endpoints_file=endpoint_file
         )
+        logging_config = read_endpoint_config(endpoint_file, endpoint_type="logging")
 
         # explicitly set to `None` if the list is empty
         if not anonymization_rules:
@@ -201,6 +202,7 @@ class AvailableEndpoints:
             lock_store,
             event_broker,
             anonymization_rules,
+            logging_config,
         )
 
     def __init__(
@@ -213,6 +215,7 @@ class AvailableEndpoints:
         lock_store: Optional[EndpointConfig] = None,
         event_broker: Optional[EndpointConfig] = None,
         anonymization_rules: Optional[List[Any]] = None,
+        logging_config: Optional[EndpointConfig] = None,
     ) -> None:
         """Create an `AvailableEndpoints` object."""
         self.model = model
@@ -223,6 +226,7 @@ class AvailableEndpoints:
         self.lock_store = lock_store
         self.event_broker = event_broker
         self.anonymization_rules = anonymization_rules
+        self.logging_config = logging_config
 
 
 def read_endpoints_from_path(

@@ -237,6 +237,7 @@ async def load_agent(
         anonymization_pipeline = plugin_manager().hook.create_anonymization_pipeline(
             anonymization_rules=endpoints.anonymization_rules,
             event_broker_config=endpoints.event_broker,
+            logging_config=endpoints.logging_config,
         )
 
     agent = Agent(
