@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from os import stat
 from typing import Any, Dict, Text, List, Optional, Tuple, Union
 import logging
 
@@ -14,12 +13,10 @@ from pypred import Predicate
 from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.core.constants import (
-    ACTION_LISTEN_NAME,
     FLOW_STACK_SLOT,
     FLOW_STATE_SLOT,
-    REQUESTED_SLOT,
 )
-from rasa.shared.core.events import Event, FollowupAction, SlotSet
+from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import (
     ActionFlowStep,
     ElseFlowLink,
@@ -41,7 +38,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.slots import Slot, TextSlot
+from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
@@ -273,17 +270,21 @@ class FlowExecutor:
         self.flow_state = flow_state
         self.all_flows = all_flows
 
-    def _is_condition_satisfied(
-        self, predicate: Text, domain: Domain, tracker: "DialogueStateTracker"
+    @staticmethod
+    def is_condition_satisfied(
+        predicate: Text, domain: Domain, tracker: "DialogueStateTracker"
     ) -> bool:
         """Evaluate a predicate condition."""
 
         def get_value(
             initial_value: Union[Text, None]
         ) -> Union[Text, float, bool, None]:
-            if not initial_value:
-                return None
+            if initial_value is None or isinstance(initial_value, (bool, float)):
+                return initial_value
 
+            # if this isn't a bool or float, it's something else
+            # the below is a best effort to convert it to something we can
+            # use for the predicate evaluation
             initial_value = str(initial_value)  # make sure it's a string
 
             if initial_value.lower() in ["true", "false"]:
@@ -295,11 +296,7 @@ class FlowExecutor:
             return initial_value
 
         text_slots = dict(
-            {
-                slot.name: get_value(tracker.get_slot(slot.name))
-                for slot in domain.slots
-                if isinstance(slot, TextSlot)
-            }
+            {slot.name: get_value(tracker.get_slot(slot.name)) for slot in domain.slots}
         )
         p = Predicate(predicate)
         evaluation, _ = p.analyze(text_slots)
@@ -314,8 +311,8 @@ class FlowExecutor:
 
         # evaluate if conditions
         for link in next.links:
-            if isinstance(link, IfFlowLink):
-                if self._is_condition_satisfied(link.condition, domain, tracker):
+            if isinstance(link, IfFlowLink) and link.condition:
+                if self.is_condition_satisfied(link.condition, domain, tracker):
                     return link.target
 
         # evaluate else condition
