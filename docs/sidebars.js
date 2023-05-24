@@ -121,6 +121,7 @@ module.exports = {
                         'training-data-importers',
                         'language-support',
                         'graph-recipe',
+                        'spaces',
                     ],
                 },
                 {
