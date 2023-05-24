@@ -124,5 +124,8 @@
   },
   "telemetryReference": {
     "outputPath": "./docs/telemetry/reference.mdx"
+  },
+  "engines": {
+    "node": "^12"
   }
 }

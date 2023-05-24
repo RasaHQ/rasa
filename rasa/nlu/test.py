@@ -1,7 +1,6 @@
 import itertools
 import os
 import logging
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -26,11 +25,12 @@ from rasa import telemetry
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.processor import MessageProcessor
+from rasa.plugin import plugin_manager
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
-import rasa.utils.common
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
 import rasa.nlu.classifiers.fallback_classifier
@@ -152,9 +152,9 @@ def remove_empty_response_examples(
     Args:
         response_results: response selection evaluation results
 
-    Returns: response selection evaluation results
+    Returns:
+        Response selection evaluation results
     """
-
     filtered = []
     for r in response_results:
         # substitute None values with empty string
@@ -267,7 +267,6 @@ def write_response_successes(
         response_results: response selection evaluation result
         successes_filename: filename of file to save successful predictions to
     """
-
     successes = [
         {
             "text": r.message,
@@ -704,9 +703,9 @@ def merge_labels(
         aligned_predictions: aligned predictions
         extractor: entity extractor name
 
-    Returns: concatenated predictions
+    Returns:
+        Concatenated predictions
     """
-
     if extractor:
         label_lists = [ap["extractor_labels"][extractor] for ap in aligned_predictions]
     else:
@@ -727,9 +726,9 @@ def merge_confidences(
         aligned_predictions: aligned predictions
         extractor: entity extractor name
 
-    Returns: concatenated confidences
+    Returns:
+        Concatenated confidences
     """
-
     label_lists = [ap["confidences"][extractor] for ap in aligned_predictions]
     return list(itertools.chain(*label_lists))
 
@@ -877,11 +876,19 @@ def evaluate_entities(
             merged_predictions, NO_ENTITY_TAG, NO_ENTITY
         )
 
+        cleaned_targets = plugin_manager().hook.clean_entity_targets_for_evaluation(
+            merged_targets=merged_targets, extractor=extractor
+        )
+        if len(cleaned_targets) > 0:
+            cleaned_targets = cleaned_targets[0]
+        else:
+            cleaned_targets = merged_targets
+
         logger.info(f"Evaluation for entity extractor: {extractor} ")
 
         report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
             output_directory,
-            merged_targets,
+            cleaned_targets,
             merged_predictions,
             report_as_dict,
             exclude_label=NO_ENTITY,
@@ -896,11 +903,11 @@ def evaluate_entities(
                 successes_filename = os.path.join(output_directory, successes_filename)
             # save classified samples to file for debugging
             write_successful_entity_predictions(
-                entity_results, merged_targets, merged_predictions, successes_filename
+                entity_results, cleaned_targets, merged_predictions, successes_filename
             )
 
         entity_errors = collect_incorrect_entity_predictions(
-            entity_results, merged_predictions, merged_targets
+            entity_results, merged_predictions, cleaned_targets
         )
         if errors and output_directory:
             errors_filename = os.path.join(output_directory, f"{extractor}_errors.json")
@@ -928,7 +935,7 @@ def evaluate_entities(
                         output_directory, histogram_filename
                     )
                 plot_entity_confidences(
-                    merged_targets,
+                    cleaned_targets,
                     merged_predictions,
                     merged_confidences,
                     title="Entity Prediction Confidence Distribution",
@@ -953,14 +960,12 @@ def is_token_within_entity(token: Token, entity: Dict) -> bool:
 
 def does_token_cross_borders(token: Token, entity: Dict) -> bool:
     """Checks if a token crosses the boundaries of an entity."""
-
     num_intersect = determine_intersection(token, entity)
     return 0 < num_intersect < len(token.text)
 
 
 def determine_intersection(token: Token, entity: Dict) -> int:
     """Calculates how many characters a given token and entity share."""
-
     pos_token = set(range(token.start, token.end))
     pos_entity = set(range(entity["start"], entity["end"]))
     return len(pos_token.intersection(pos_entity))
@@ -1016,8 +1021,7 @@ def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
 def pick_best_entity_fit(
     token: Token, candidates: List[Dict[Text, Any]]
 ) -> Optional[Dict[Text, Any]]:
-    """
-    Determines the best fitting entity given intersecting entities.
+    """Determines the best fitting entity given intersecting entities.
 
     Args:
         token: a single token
@@ -1042,8 +1046,7 @@ def determine_token_labels(
     extractors: Optional[Set[Text]] = None,
     attribute_key: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> Text:
-    """
-    Determines the token label for the provided attribute key given entities that do
+    """Determines the token label for the provided attribute key given entities that do
     not overlap.
 
     Args:
@@ -1072,8 +1075,7 @@ def determine_entity_for_token(
     entities: List[Dict[Text, Any]],
     extractors: Optional[Set[Text]] = None,
 ) -> Optional[Dict[Text, Any]]:
-    """
-    Determines the best fitting entity for the given token, given entities that do
+    """Determines the best fitting entity for the given token, given entities that do
     not overlap.
 
     Args:
@@ -1278,8 +1280,19 @@ async def get_eval_data(
     should_eval_entities = len(test_data.entity_examples) > 0
 
     for example in tqdm(test_data.nlu_examples):
+        tracker = plugin_manager().hook.mock_tracker_for_evaluation(
+            example=example, model_metadata=processor.model_metadata
+        )
+        # if the user overwrites the default implementation take the last tracker
+        if isinstance(tracker, list):
+            if len(tracker) > 0:
+                tracker = tracker[-1]
+            else:
+                tracker = None
         result = await processor.parse_message(
-            UserMessage(text=example.get(TEXT)), only_output_properties=False
+            UserMessage(text=example.get(TEXT)),
+            tracker=tracker,
+            only_output_properties=False,
         )
         _remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)
         if should_eval_intents:
@@ -1458,7 +1471,6 @@ def generate_folds(
     n: int, training_data: TrainingData
 ) -> Iterator[Tuple[TrainingData, TrainingData]]:
     """Generates n cross validation folds for given training data."""
-
     from sklearn.model_selection import StratifiedKFold
 
     skf = StratifiedKFold(n_splits=n, shuffle=True)
@@ -1590,7 +1602,7 @@ async def cross_validate(
     """
     import rasa.model_training
 
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
         tmp_path = Path(temp_dir)
 
         if isinstance(nlu_config, Dict):
@@ -1642,6 +1654,7 @@ async def cross_validate(
                 response_selection_test_results,
             )
 
+        intent_evaluation = {}
         if intent_test_results:
             logger.info("Accumulated test folds intent evaluation results:")
             intent_evaluation = evaluate_intents(
@@ -1770,8 +1783,7 @@ async def compare_nlu(
     output: Text,
     runs: int,
 ) -> List[int]:
-    """
-    Trains and compares multiple NLU models.
+    """Trains and compares multiple NLU models.
     For each run and exclusion percentage a model per config file is trained.
     Thereby, the model is trained only on the current percentage of training data.
     Afterwards, the model is tested on the complete test data of that run.
