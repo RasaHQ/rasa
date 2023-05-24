@@ -20,7 +20,9 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Python module
-        run: python3 -m pip install pluggy
+        run: |
+          python3 -m pip install pluggy
+          python3 -m pip install ruamel.yaml
 
       - name: Compose tag name
         id: set_tagname
