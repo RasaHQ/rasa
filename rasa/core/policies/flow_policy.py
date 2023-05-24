@@ -13,6 +13,7 @@ from pypred import Predicate
 from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
     FLOW_STACK_SLOT,
     FLOW_STATE_SLOT,
 )
@@ -428,8 +429,10 @@ class FlowExecutor:
         # and if there is, we go one level up the stack
         if not (current_stack := tracker.get_slot(FLOW_STACK_SLOT)):
             # If there is no stack, we assume that the flow is done
-            # and there is nothing to do
-            return (None, [SlotSet(FLOW_STATE_SLOT, None)])
+            # and there is nothing to do. We reset the flow state
+            # and return action listen. The assumption here is that every
+            # flow ends with an action listen.
+            return (ACTION_LISTEN_NAME, [SlotSet(FLOW_STATE_SLOT, None)])
         else:
             # If there is a stack, we pop the last item and return it
             stack_step_dump = current_stack.pop()
