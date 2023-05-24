@@ -255,6 +255,10 @@
             {
               "type": "doc",
               "id": "version-3.x/graph-recipe"
+            },
+            {
+              "type": "doc",
+              "id": "version-3.x/spaces"
             }
           ]
         },
