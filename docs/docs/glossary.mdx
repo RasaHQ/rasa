@@ -8,15 +8,15 @@ description: Glossary for all Rasa-related terms
 ## [Action](./actions.mdx)
 
   A single step that a bot takes in a conversation (e.g. calling an API or sending a response back to the user).
-  
+
 ## [Action Server](https://rasa.com/docs/action-server/)
 
-  The server that runs custom action code, separate from Rasa. Rasa maintains the Rasa SDK in Python for implementing custom actions, although it's also possible to write custom actions in other languages. 
-  
+  The server that runs custom action code, separate from Rasa. Rasa maintains the Rasa SDK in Python for implementing custom actions, although it's also possible to write custom actions in other languages.
+
 ## Annotation
 
   Adding labels to messages and conversations so that they can be used to train a model.
-  
+
 ## [Business Logic](./business-logic.mdx)
 
   Conditions that need to be fulfilled due to business requirements. For example: requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based actions like [forms](./forms.mdx).
@@ -30,11 +30,11 @@ description: Glossary for all Rasa-related terms
 ## CMS
 
   A way to store bot responses externally instead of including them directly in the domain. Content Management Systems decouple response text from training data. For more information, see [NLG Servers](./nlg.mdx).
-  
+
 ## [Conversation-Driven Development (CDD)](./conversation-driven-development.mdx)
 
   The process of using user messages and conversation data to influence the design of an assistant and train the model, combined with engineering best practices. There are 6 steps that make up CDD: Share, Review, Annotate, Fix, Track, and Test.
-  
+
 ## [Conversation Tests](./testing-your-assistant.mdx)
 
   Modified story format that includes the full text of the user message in addition to the intent label. Test conversations are saved to a test set file (conversation_tests.md), which is used to evaluate the model’s predictions across an entire conversation.
@@ -98,7 +98,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa, w
 ## [Interactive Learning](./writing-stories.mdx#using-interactive-learning)
 
   In the Rasa CLI, a training mode where the developer corrects and validates the assistant’s predictions at every step of the conversation. The conversation can be saved to the story format and added to the assistant’s training data.
-  
+
 ## [Knowledge Base / Knowledge Graph](https://rasa.com/docs/action-server/knowledge-bases)
 
   A queryable database that represents complex relationships and hierarchies between objects. Knowledge Base Actions allow Rasa to fetch information from a knowledge base and use it in responses.
@@ -120,10 +120,10 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa, w
   Natural Language Generation (NLG) is the process of generating natural language messages to send to a user.
 
   Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.
-  
+
 ## [NLU](./nlu-training-data.mdx)
 
-  Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.  
+  Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.
 
 ## [Pipeline](./tuning-your-model.mdx)
 
@@ -136,27 +136,27 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa, w
 ## Rasa Core
 
   (Outdated - Rasa Core and Rasa NLU were merged into one package in 1.x. The functionality of Core is now referred to as dialogue management)
-  
+
   The dialogue engine that decides what to do next in a conversation based on the context. Part of the Rasa library.
 
 ## Rasa NLU
 
   (Outdated - Rasa Core and Rasa NLU were merged into one package in 1.x. The functionality of Rasa NLU is now referred to as NLU)
-  
+
   Rasa NLU is the part of Rasa that performs Natural Language Understanding ([NLU](#nlu)), including intent classification and entity extraction.
 
 ## [NLU Component](./components.mdx)
 
   An element in the Rasa NLU pipeline (see [Pipeline](#pipeline)) that processes incoming messages. Components perform tasks ranging from entity extraction to intent classification to pre-processing.
-  
+
 ## [Rasa X/Enterprise](https://rasa.com/docs/rasa-enterprise/)
 
   A tool for [conversation-driven development](./conversation-driven-development.mdx). Rasa X/Enterprise helps teams share and test an assistant built with Rasa, annotate user messages, and view conversations.
-  
+
 ## [Retrieval Intent](./chitchat-faqs.mdx)
 
   A special type of intent that can be divided into smaller sub-intents. For example, an FAQ retrieval intent has sub-intents that represent each individual question the assistant knows how to answer.
-  
+
 ## [REST Channel](./connectors/your-own-website.mdx)
 
   A messaging channel used to build custom connectors. Includes an input channel, where user  messages can be posted to Rasa, and the ability to specify a callback URL, where the bot’s response actions will be sent.
@@ -177,12 +177,12 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa, w
 
 ## [Story](./stories.mdx)
 
-  Training data format for the dialogue model, consisting of a conversation between a user and a bot. The user's messages are represented as annotated intents and entities, and the bot’s responses are represented as a sequence of actions. 
-  
+  Training data format for the dialogue model, consisting of a conversation between a user and a bot. The user's messages are represented as annotated intents and entities, and the bot’s responses are represented as a sequence of actions.
+
 ## [TED Policy](./policies.mdx#ted-policy)
 
-  Transformer Embedding Dialogue Policy. TED is the default machine learning-based dialogue policy used by Rasa. TED complements rule-based policies by handling previously unseen situations, where no rule exists to determine the next action. 
-  
+  Transformer Embedding Dialogue Policy. TED is the default machine learning-based dialogue policy used by Rasa. TED complements rule-based policies by handling previously unseen situations, where no rule exists to determine the next action.
+
 ## [Template / Response / Utterance](./responses.mdx)
 
   A message template used to respond to a user. Can include text, buttons, images, and other attachments.
@@ -200,3 +200,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa, w
 ## Word embedding / Word vector
 
   A vector of floating point numbers that represent the meaning of a word. Words that have similar meanings tend to have similar vectors. Word embeddings are often used as an input to machine learning algorithms.
+
+## Rasa Primitive
+
+A foundational component used for structuring conversations within Rasa, such as an intent, entity, slot, form, response, action, rule, or story.
