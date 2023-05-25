@@ -146,9 +146,11 @@ jobs:
 
       - name: Install Dependencies 📦
         if: needs.changes.outputs.backend == 'true'
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full
+          make install-full || make install-full || make install-full
 
       - name: Checkout target branch to be able to diff
         if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
@@ -291,9 +293,11 @@ jobs:
 
       - name: Install Dependencies (Linux) 📦
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output
+          make install-full | tee .output  || make install-full | tee .output || make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -303,6 +307,8 @@ jobs:
         # We create symlinks for spacy models, that's why we need to clean them up
         # before caching the dependencies directory.
         # More information: https://github.com/actions/cache/issues/120
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
         run: |
           $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
           if (Test-Path $spacy_data_dir) {
@@ -310,7 +316,7 @@ jobs:
             Remove-Item -Force -Recurse $spacy_data_dir
             New-Item -Path $spacy_data_dir -Type Directory
           }
-          make install-full
+          make install-full  || make install-full || make install-full
           make prepare-tests-windows-gha
 
       - name: Add github workflow problem matchers
