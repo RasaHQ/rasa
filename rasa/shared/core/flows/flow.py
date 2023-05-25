@@ -28,7 +28,7 @@ class FlowsList:
 
     @classmethod
     def from_json(
-        cls, flows_configs: Optional[Dict[Text, Dict[Text, Any]]]
+            cls, flows_configs: Optional[Dict[Text, Dict[Text, Any]]]
     ) -> FlowsList:
         """Used to read flows from parsed YAML.
 
@@ -162,6 +162,8 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         return QuestionFlowStep.from_json(flow_step_config)
     if "link" in flow_step_config:
         return LinkFlowStep.from_json(flow_step_config)
+    if "set_slots" in flow_step_config:
+        return SetSlotsFlowStep.from_json(flow_step_config)
     else:
         raise ValueError(f"Flow step is missing a type. {flow_step_config}")
 
@@ -377,6 +379,40 @@ class UserFlowStep(FlowStep):
         """
         dump = super().as_json()
         dump["user"] = self.user
+        return dump
+
+
+@dataclass
+class SetSlotsFlowStep(FlowStep):
+    """Represents the configuration of a set_slots flow step."""
+    slots: List[Dict[str, Any]]
+    """Slots to set of the flow step."""
+
+    @classmethod
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> SetSlotsFlowStep:
+        """Used to read flow steps from parsed YAML.
+
+        Args:
+            flow_step_config: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed flow step.
+        """
+        base = super()._from_json(flow_step_config)
+        slots = [{"key": k, "value": v} for slot in flow_step_config.get("set_slots") for k, v in slot.items()]
+        return SetSlotsFlowStep(
+            slots=slots,
+            **base.__dict__,
+        )
+
+    def as_json(self) -> Dict[Text, Any]:
+        """Returns the flow step as a dictionary.
+
+        Returns:
+            The flow step as a dictionary.
+        """
+        dump = super().as_json()
+        dump["set_slots"] = [{slot["key"]: slot["value"]} for slot in self.slots]
         return dump
 
 
