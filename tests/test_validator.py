@@ -1,10 +1,17 @@
+from unittest.mock import MagicMock
+
 import textwrap
 import warnings
-from typing import Text
+from typing import Text, Callable, Optional
 
 import pytest
 from _pytest.logging import LogCaptureFixture
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.core.domain import Domain
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from rasa.shared.nlu.training_data.loading import RASA_YAML
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 from rasa.validator import Validator
 
@@ -72,21 +79,276 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
         )
 
 
-def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
-    importer = RasaFileImporter(
-        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path]
+@pytest.fixture
+def create_nlu_training_data() -> Callable[[Text], TrainingData]:
+    def _create_nlu_training_data(
+        nlu_data: Text, language: Text = "en"
+    ) -> TrainingData:
+        return RasaYAMLReader().reads(nlu_data, language=language, fformat=RASA_YAML)
+
+    return _create_nlu_training_data
+
+
+@pytest.fixture
+def create_domain() -> Callable[[Text], Domain]:
+    def _create_domain(domain_data: Text) -> Domain:
+        return Domain.from_yaml(domain_data)
+
+    return _create_domain
+
+
+# "data/test_moodbot/data/nlu.yml"
+@pytest.fixture
+def valid_bot1_nlu_data() -> Text:
+    return """
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - moin
+    - hey there
+    - let's go
+    - hey dude
+    - goodmorning
+    - goodevening
+    - good afternoon
+
+- intent: goodbye
+  examples: |
+    - good afternoon
+    - cu
+    - good by
+    - cee you later
+    - good night
+    - bye
+    - goodbye
+    - have a nice day
+    - see you around
+    - bye bye
+    - see you later
+
+- intent: affirm
+  examples: |
+    - yes
+    - y
+    - indeed
+    - of course
+    - that sounds good
+    - correct
+
+- intent: deny
+  examples: |
+    - no
+    - n
+    - never
+    - I don't think so
+    - don't like that
+    - no way
+
+- intent: mood_great
+  examples: |
+    - perfect
+    - great
+    - amazing
+    - feeling like a king
+    - wonderful
+    - I am feeling very good
+    - I am great
+    - I am amazing
+    - I am going to save the world
+    - super stoked
+    - extremely good
+    - so so perfect
+    - so good
+    - so perfect
+
+- intent: mood_unhappy
+  examples: |
+    - my day was horrible
+    - I am sad
+    - I don't feel very well
+    - I am disappointed
+    - super sad
+    - I'm so sad
+    - sad
+    - very sad
+    - unhappy
+    - not good
+    - not very good
+    - extremly sad
+    - so saad
+    - so sad
+
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you a human?
+    - am I talking to a bot?
+    - am I talking to a human?
+"""
+
+
+# "data/test_moodbot/domain.yml"
+@pytest.fixture
+def valid_bot1_domain_data() -> Text:
+    return """
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+
+responses:
+  utter_greet:
+  - text: "Hey! How are you?"
+    buttons:
+    - title: "great"
+      payload: "/mood_great"
+    - title: "super sad"
+      payload: "/mood_unhappy"
+
+  utter_cheer_up:
+  - text: "Here is something to cheer you up:"
+    image: "https://i.imgur.com/nGF1K8f.jpg"
+
+  utter_did_that_help:
+  - text: "Did that help you?"
+
+  utter_happy:
+  - text: "Great, carry on!"
+
+  utter_goodbye:
+  - text: "Bye"
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true
+"""
+
+
+# "data/test_domains/default.yml
+@pytest.fixture
+def valid_bot2_domain_data() -> Text:
+    return """
+intents:
+ - greet
+ - default
+ - goodbye
+
+slots:
+  cuisine:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: cuisine
+  location:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: location
+
+entities:
+ - name
+ - cuisine
+ - location
+
+responses:
+  utter_greet:
+    - text: hey there!
+  utter_goodbye:
+    - text: goodbye :(
+  utter_default:
+    - text: default message
+"""
+
+
+@pytest.fixture
+def valid_bot1_nlu(
+    valid_bot1_nlu_data: Text, create_nlu_training_data: Callable[[Text], TrainingData]
+) -> TrainingData:
+    return create_nlu_training_data(valid_bot1_nlu_data)
+
+
+@pytest.fixture
+def valid_bot1_domain(
+    valid_bot1_domain_data: Text, create_domain: Callable[[Text], Domain]
+) -> Domain:
+    return create_domain(valid_bot1_domain_data)
+
+
+@pytest.fixture
+def valid_bot2_domain(
+    valid_bot2_domain_data: Text, create_domain: Callable[[Text], Domain]
+) -> Domain:
+    return create_domain(valid_bot2_domain_data)
+
+
+@pytest.fixture
+def mock_rasa_file_importer() -> RasaFileImporter:
+    mock = MagicMock(spec=TrainingDataImporter)
+    return mock
+
+
+CreateMockRasaFileImporter = (
+    Callable[[Optional[Domain], Optional[TrainingData]], RasaFileImporter],
+)
+
+
+@pytest.fixture
+def create_mock_rasa_file_importer(
+    mock_rasa_file_importer: MagicMock,
+) -> CreateMockRasaFileImporter:
+    def _create_mock_rasa_file_importer(
+        domain: Optional[Domain] = None,
+        nlu: Optional[TrainingData] = None,
+    ) -> RasaFileImporter:
+        mock_rasa_file_importer.get_domain.return_value = domain
+        mock_rasa_file_importer.get_nlu_data.return_value = nlu
+        return mock_rasa_file_importer
+
+    return _create_mock_rasa_file_importer
+
+
+def test_verify_intents_does_not_fail_on_valid_data(
+    create_mock_rasa_file_importer: CreateMockRasaFileImporter,
+    valid_bot1_domain: Domain,
+    valid_bot1_nlu: TrainingData,
+):
+    mock_rasa_file_importer = create_mock_rasa_file_importer(
+        domain=valid_bot1_domain, nlu=valid_bot1_nlu
     )
-    validator = Validator.from_importer(importer)
+
+    validator = Validator.from_importer(mock_rasa_file_importer)
     # force validator to not ignore warnings (default is True)
     assert validator.verify_intents(ignore_warnings=False)
 
 
-def test_verify_intents_does_fail_on_invalid_data(nlu_data_path: Text):
+def test_verify_intents_does_fail_on_invalid_data(
+    create_mock_rasa_file_importer: CreateMockRasaFileImporter,
+    valid_bot2_domain: Domain,
+    valid_bot1_nlu: TrainingData,
+):
     # domain and nlu data are from different domain and should produce warnings
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml", training_data_paths=[nlu_data_path]
+    mock_rasa_file_importer = create_mock_rasa_file_importer(
+        domain=valid_bot2_domain, nlu=valid_bot1_nlu
     )
-    validator = Validator.from_importer(importer)
+
+    validator = Validator.from_importer(mock_rasa_file_importer)
     # force validator to not ignore warnings (default is True)
     assert not validator.verify_intents(ignore_warnings=False)
 
@@ -96,7 +358,6 @@ def test_verify_valid_responses():
         domain_path="data/test_domains/selectors.yml",
         training_data_paths=[
             "data/test_selectors/nlu.yml",
-            "data/test_selectors/stories.yml",
         ],
     )
     validator = Validator.from_importer(importer)

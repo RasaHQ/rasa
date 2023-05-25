@@ -153,7 +153,7 @@ async def form_bot_agent(trained_formbot: Text) -> Agent:
 
 @pytest.fixture
 def moodbot_features(
-    request: Request, moodbot_domain: Domain
+    request: Request, valid_bot1_domain
 ) -> Dict[Text, Dict[Text, Features]]:
     """Makes intent and action features for the moodbot domain to faciliate
     making expected state features.
@@ -162,18 +162,18 @@ def moodbot_features(
       A dict containing dicts for mapping action and intent names to features.
     """
     origin = getattr(request, "param", "SingleStateFeaturizer")
-    action_shape = (1, len(moodbot_domain.action_names_or_texts))
+    action_shape = (1, len(valid_bot1_domain.action_names_or_texts))
     actions = {}
-    for index, action in enumerate(moodbot_domain.action_names_or_texts):
+    for index, action in enumerate(valid_bot1_domain.action_names_or_texts):
         actions[action] = Features(
             sparse.coo_matrix(([1.0], [[0], [index]]), shape=action_shape),
             FEATURE_TYPE_SENTENCE,
             ACTION_NAME,
             origin,
         )
-    intent_shape = (1, len(moodbot_domain.intents))
+    intent_shape = (1, len(valid_bot1_domain.intents))
     intents = {}
-    for index, intent in enumerate(moodbot_domain.intents):
+    for index, intent in enumerate(valid_bot1_domain.intents):
         intents[intent] = Features(
             sparse.coo_matrix(([1.0], [[0], [index]]), shape=intent_shape),
             FEATURE_TYPE_SENTENCE,
@@ -184,5 +184,5 @@ def moodbot_features(
 
 
 @pytest.fixture
-def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
-    return tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
+def moodbot_tracker(valid_bot1_domain) -> DialogueStateTracker:
+    return tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, valid_bot1_domain)

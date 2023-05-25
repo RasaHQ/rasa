@@ -189,7 +189,7 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent, tmp_path
 
 @pytest.fixture()
 async def _train_rule_based_agent(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     tmp_path: Path,
     trained_async: Callable,
     monkeypatch: MonkeyPatch,

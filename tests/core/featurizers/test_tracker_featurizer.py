@@ -34,9 +34,9 @@ def test_fail_to_load_non_existent_featurizer():
     assert TrackerFeaturizer.load("non_existent_class") is None
 
 
-def test_persist_and_load_tracker_featurizer(tmp_path: Text, moodbot_domain: Domain):
+def test_persist_and_load_tracker_featurizer(tmp_path: Text, valid_bot1_domain):
     state_featurizer = SingleStateFeaturizer()
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     tracker_featurizer = MaxHistoryTrackerFeaturizer(state_featurizer)
 
     tracker_featurizer.persist(tmp_path)
@@ -149,14 +149,14 @@ def compare_featurized_states(
 
 def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
 ):
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
-        [moodbot_tracker], moodbot_domain, precomputations=None
+        [moodbot_tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -197,7 +197,7 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
 
 
 def test_trackers_ignore_action_unlikely_intent_with_full_dialogue_tracker_featurizer(
-    moodbot_domain: Domain, moodbot_features: Dict[Text, Dict[Text, Features]]
+    valid_bot1_domain, moodbot_features: Dict[Text, Dict[Text, Features]]
 ):
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -216,14 +216,14 @@ def test_trackers_ignore_action_unlikely_intent_with_full_dialogue_tracker_featu
             ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
             ActionExecuted("utter_goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
         [tracker],
-        moodbot_domain,
+        valid_bot1_domain,
         precomputations=None,
         ignore_action_unlikely_intent=True,
     )
@@ -266,7 +266,7 @@ def test_trackers_ignore_action_unlikely_intent_with_full_dialogue_tracker_featu
 
 
 def test_trackers_keep_action_unlikely_intent_with_full_dialogue_tracker_featurizer(
-    moodbot_domain: Domain, moodbot_features: Dict[Text, Dict[Text, Features]]
+    valid_bot1_domain, moodbot_features: Dict[Text, Dict[Text, Features]]
 ):
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -285,13 +285,13 @@ def test_trackers_keep_action_unlikely_intent_with_full_dialogue_tracker_featuri
             ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
             ActionExecuted("utter_goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
-        [tracker], moodbot_domain, precomputations=None
+        [tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -336,14 +336,14 @@ def test_trackers_keep_action_unlikely_intent_with_full_dialogue_tracker_featuri
 
 def test_create_state_features_full_dialogue_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
 ):
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     actual_features = tracker_featurizer.create_state_features(
-        [moodbot_tracker], moodbot_domain, precomputations=None
+        [moodbot_tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -376,7 +376,7 @@ def test_create_state_features_full_dialogue_tracker_featurizer(
 
 
 def test_state_features_ignore_action_unlikely_intent_full_dialogue_tracker_featurizer(
-    moodbot_domain: Domain, moodbot_features: Dict[Text, Dict[Text, Features]]
+    valid_bot1_domain, moodbot_features: Dict[Text, Dict[Text, Features]]
 ):
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -392,15 +392,15 @@ def test_state_features_ignore_action_unlikely_intent_full_dialogue_tracker_feat
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     actual_features = tracker_featurizer.create_state_features(
         [tracker],
-        moodbot_domain,
+        valid_bot1_domain,
         precomputations=None,
         ignore_action_unlikely_intent=True,
     )
@@ -433,7 +433,7 @@ def test_state_features_ignore_action_unlikely_intent_full_dialogue_tracker_feat
 
 
 def test_state_features_keep_action_unlikely_intent_full_dialogue_tracker_featurizer(
-    moodbot_domain: Domain, moodbot_features: Dict[Text, Dict[Text, Features]]
+    valid_bot1_domain, moodbot_features: Dict[Text, Dict[Text, Features]]
 ):
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -449,14 +449,14 @@ def test_state_features_keep_action_unlikely_intent_full_dialogue_tracker_featur
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     actual_features = tracker_featurizer.create_state_features(
-        [tracker], moodbot_domain, precomputations=None
+        [tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -489,12 +489,12 @@ def test_state_features_keep_action_unlikely_intent_full_dialogue_tracker_featur
 
 
 def test_prediction_states_with_full_dialogue_tracker_featurizer(
-    moodbot_tracker: DialogueStateTracker, moodbot_domain: Domain
+    moodbot_tracker: DialogueStateTracker, valid_bot1_domain
 ):
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
     actual_states = tracker_featurizer.prediction_states(
-        [moodbot_tracker], moodbot_domain
+        [moodbot_tracker], valid_bot1_domain
     )
 
     expected_states = [
@@ -533,7 +533,7 @@ def test_prediction_states_with_full_dialogue_tracker_featurizer(
 
 
 def test_prediction_states_hide_rule_states_with_full_dialogue_tracker_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
 ):
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
@@ -546,11 +546,11 @@ def test_prediction_states_hide_rule_states_with_full_dialogue_tracker_featurize
             ActionExecuted("utter_greet", hide_rule_turn=True),
             ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=True),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     actual_states = tracker_featurizer.prediction_states(
-        [rule_tracker], moodbot_domain, ignore_rule_only_turns=True
+        [rule_tracker], valid_bot1_domain, ignore_rule_only_turns=True
     )
 
     expected_states = [
@@ -580,11 +580,11 @@ def test_prediction_states_hide_rule_states_with_full_dialogue_tracker_featurize
             ActionExecuted("utter_happy"),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     actual_states = tracker_featurizer.prediction_states(
-        [embedded_rule_tracker], moodbot_domain, ignore_rule_only_turns=True
+        [embedded_rule_tracker], valid_bot1_domain, ignore_rule_only_turns=True
     )
 
     expected_states = [
@@ -613,7 +613,7 @@ def test_prediction_states_hide_rule_states_with_full_dialogue_tracker_featurize
 
 
 def test_prediction_states_ignore_action_intent_unlikely_full_dialogue_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
 ):
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
@@ -632,11 +632,11 @@ def test_prediction_states_ignore_action_intent_unlikely_full_dialogue_featurize
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     actual_states = tracker_featurizer.prediction_states(
-        [tracker], moodbot_domain, ignore_action_unlikely_intent=True
+        [tracker], valid_bot1_domain, ignore_action_unlikely_intent=True
     )
 
     expected_states = [
@@ -670,7 +670,7 @@ def test_prediction_states_ignore_action_intent_unlikely_full_dialogue_featurize
 
 
 def test_prediction_states_keeps_action_intent_unlikely_full_dialogue_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
 ):
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
@@ -689,10 +689,10 @@ def test_prediction_states_keeps_action_intent_unlikely_full_dialogue_featurizer
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
-    actual_states = tracker_featurizer.prediction_states([tracker], moodbot_domain)
+    actual_states = tracker_featurizer.prediction_states([tracker], valid_bot1_domain)
 
     expected_states = [
         [
@@ -735,7 +735,7 @@ def test_prediction_states_keeps_action_intent_unlikely_full_dialogue_featurizer
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_featurize_trackers_with_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -745,7 +745,7 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(
     )
 
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
-        [moodbot_tracker], moodbot_domain, precomputations=None
+        [moodbot_tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -844,7 +844,7 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(
 
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_featurize_trackers_ignore_action_unlikely_intent_max_history_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -858,7 +858,7 @@ def test_featurize_trackers_ignore_action_unlikely_intent_max_history_featurizer
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("mood_unhappy"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = MaxHistoryTrackerFeaturizer(
@@ -867,7 +867,7 @@ def test_featurize_trackers_ignore_action_unlikely_intent_max_history_featurizer
 
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
         [tracker],
-        moodbot_domain,
+        valid_bot1_domain,
         precomputations=None,
         ignore_action_unlikely_intent=True,
     )
@@ -910,7 +910,7 @@ def test_featurize_trackers_ignore_action_unlikely_intent_max_history_featurizer
 
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_featurize_trackers_keep_action_unlikely_intent_max_history_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -924,7 +924,7 @@ def test_featurize_trackers_keep_action_unlikely_intent_max_history_featurizer(
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("mood_unhappy"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = MaxHistoryTrackerFeaturizer(
@@ -932,7 +932,7 @@ def test_featurize_trackers_keep_action_unlikely_intent_max_history_featurizer(
     )
 
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
-        [tracker], moodbot_domain, precomputations=None
+        [tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -987,7 +987,7 @@ def test_featurize_trackers_keep_action_unlikely_intent_max_history_featurizer(
 )
 def test_deduplicate_featurize_trackers_with_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     remove_duplicates: bool,
     max_history: Optional[int],
@@ -999,7 +999,7 @@ def test_deduplicate_featurize_trackers_with_max_history_tracker_featurizer(
 
     # Add Duplicate moodbot_tracker states should get removed.
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
-        [moodbot_tracker, moodbot_tracker], moodbot_domain, precomputations=None
+        [moodbot_tracker, moodbot_tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -1103,7 +1103,7 @@ def test_deduplicate_featurize_trackers_with_max_history_tracker_featurizer(
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_create_state_features_with_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -1111,9 +1111,9 @@ def test_create_state_features_with_max_history_tracker_featurizer(
     tracker_featurizer = MaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     actual_features = tracker_featurizer.create_state_features(
-        [moodbot_tracker], moodbot_domain, precomputations=None
+        [moodbot_tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -1149,7 +1149,7 @@ def test_create_state_features_with_max_history_tracker_featurizer(
 
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_create_state_features_ignore_action_unlikely_intent_max_history_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -1167,17 +1167,17 @@ def test_create_state_features_ignore_action_unlikely_intent_max_history_featuri
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = MaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     actual_features = tracker_featurizer.create_state_features(
         [tracker],
-        moodbot_domain,
+        valid_bot1_domain,
         precomputations=None,
         ignore_action_unlikely_intent=True,
     )
@@ -1213,7 +1213,7 @@ def test_create_state_features_ignore_action_unlikely_intent_max_history_featuri
 
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_create_state_features_keep_action_unlikely_intent_max_history_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -1231,16 +1231,16 @@ def test_create_state_features_keep_action_unlikely_intent_max_history_featurize
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     state_featurizer = SingleStateFeaturizer()
     tracker_featurizer = MaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     actual_features = tracker_featurizer.create_state_features(
-        [tracker], moodbot_domain, precomputations=None
+        [tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -1277,7 +1277,7 @@ def test_create_state_features_keep_action_unlikely_intent_max_history_featurize
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_prediction_states_with_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     max_history: Optional[int],
 ):
     state_featurizer = SingleStateFeaturizer()
@@ -1285,7 +1285,7 @@ def test_prediction_states_with_max_history_tracker_featurizer(
         state_featurizer, max_history=max_history
     )
     actual_states = tracker_featurizer.prediction_states(
-        [moodbot_tracker], moodbot_domain
+        [moodbot_tracker], valid_bot1_domain
     )
 
     expected_states = [
@@ -1328,7 +1328,7 @@ def test_prediction_states_with_max_history_tracker_featurizer(
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     max_history: Optional[int],
 ):
     state_featurizer = SingleStateFeaturizer()
@@ -1344,11 +1344,11 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
             ActionExecuted("utter_greet", hide_rule_turn=True),
             ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=True),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     actual_states = tracker_featurizer.prediction_states(
-        [rule_tracker], moodbot_domain, ignore_rule_only_turns=True
+        [rule_tracker], valid_bot1_domain, ignore_rule_only_turns=True
     )
 
     expected_states = [
@@ -1378,11 +1378,11 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
             ActionExecuted("utter_happy"),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     actual_states = tracker_featurizer.prediction_states(
-        [embedded_rule_tracker], moodbot_domain, ignore_rule_only_turns=True
+        [embedded_rule_tracker], valid_bot1_domain, ignore_rule_only_turns=True
     )
 
     expected_states = [
@@ -1416,7 +1416,7 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
 @pytest.mark.parametrize("max_history", [None, 3])
 def test_prediction_states_ignores_action_intent_unlikely_max_history_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     max_history: Optional[int],
 ):
     state_featurizer = SingleStateFeaturizer()
@@ -1438,11 +1438,11 @@ def test_prediction_states_ignores_action_intent_unlikely_max_history_featurizer
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     actual_states = tracker_featurizer.prediction_states(
-        [tracker], moodbot_domain, ignore_action_unlikely_intent=True
+        [tracker], valid_bot1_domain, ignore_action_unlikely_intent=True
     )
 
     expected_states = [
@@ -1481,7 +1481,7 @@ def test_prediction_states_ignores_action_intent_unlikely_max_history_featurizer
 @pytest.mark.parametrize("max_history", [None, 3])
 def test_prediction_states_keeps_action_intent_unlikely_max_history_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     max_history: Optional[int],
 ):
     state_featurizer = SingleStateFeaturizer()
@@ -1503,10 +1503,10 @@ def test_prediction_states_keeps_action_intent_unlikely_max_history_featurizer(
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
-    actual_states = tracker_featurizer.prediction_states([tracker], moodbot_domain)
+    actual_states = tracker_featurizer.prediction_states([tracker], valid_bot1_domain)
 
     expected_states = [
         [
@@ -1559,7 +1559,7 @@ def test_prediction_states_keeps_action_intent_unlikely_max_history_featurizer(
 )
 def test_featurize_trackers_with_intent_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -1569,7 +1569,7 @@ def test_featurize_trackers_with_intent_max_history_tracker_featurizer(
     )
 
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
-        [moodbot_tracker], moodbot_domain, precomputations=None
+        [moodbot_tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -1625,7 +1625,7 @@ def test_featurize_trackers_with_intent_max_history_tracker_featurizer(
     indirect=["moodbot_features"],
 )
 def test_trackers_ignore_action_unlikely_intent_intent_max_history_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -1639,7 +1639,7 @@ def test_trackers_ignore_action_unlikely_intent_intent_max_history_featurizer(
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("mood_unhappy"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
@@ -1648,7 +1648,7 @@ def test_trackers_ignore_action_unlikely_intent_intent_max_history_featurizer(
 
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
         [tracker],
-        moodbot_domain,
+        valid_bot1_domain,
         precomputations=None,
         ignore_action_unlikely_intent=True,
     )
@@ -1692,7 +1692,7 @@ def test_trackers_ignore_action_unlikely_intent_intent_max_history_featurizer(
     indirect=["moodbot_features"],
 )
 def test_trackers_keep_action_unlikely_intent_intent_max_history_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -1706,7 +1706,7 @@ def test_trackers_keep_action_unlikely_intent_intent_max_history_featurizer(
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("mood_unhappy"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
@@ -1714,7 +1714,7 @@ def test_trackers_keep_action_unlikely_intent_intent_max_history_featurizer(
     )
 
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
-        [tracker], moodbot_domain, precomputations=None
+        [tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -1761,7 +1761,7 @@ def test_trackers_keep_action_unlikely_intent_intent_max_history_featurizer(
 )
 def test_deduplicate_featurize_trackers_with_intent_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     remove_duplicates: bool,
     max_history: Optional[int],
@@ -1773,7 +1773,7 @@ def test_deduplicate_featurize_trackers_with_intent_max_history_tracker_featuriz
 
     # Add Duplicate moodbot_tracker states should get removed.
     actual_features, actual_labels, entity_tags = tracker_featurizer.featurize_trackers(
-        [moodbot_tracker, moodbot_tracker], moodbot_domain, precomputations=None
+        [moodbot_tracker, moodbot_tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -1835,7 +1835,7 @@ def test_deduplicate_featurize_trackers_with_intent_max_history_tracker_featuriz
 )
 def test_create_state_features_with_intent_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -1850,9 +1850,9 @@ def test_create_state_features_with_intent_max_history_tracker_featurizer(
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     actual_features = tracker_featurizer.create_state_features(
-        [moodbot_tracker], moodbot_domain, precomputations=None
+        [moodbot_tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -1890,7 +1890,7 @@ def test_create_state_features_with_intent_max_history_tracker_featurizer(
     indirect=["moodbot_features"],
 )
 def test_state_features_ignore_action_unlikely_intent_intent_max_history_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -1908,16 +1908,16 @@ def test_state_features_ignore_action_unlikely_intent_intent_max_history_featuri
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     actual_features = tracker_featurizer.create_state_features(
         [tracker],
-        moodbot_domain,
+        valid_bot1_domain,
         precomputations=None,
         ignore_action_unlikely_intent=True,
     )
@@ -1956,7 +1956,7 @@ def test_state_features_ignore_action_unlikely_intent_intent_max_history_featuri
     indirect=["moodbot_features"],
 )
 def test_state_features_keep_action_unlikely_intent_intent_max_history_featurizer(
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
@@ -1974,15 +1974,15 @@ def test_state_features_keep_action_unlikely_intent_intent_max_history_featurize
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
-    state_featurizer.prepare_for_training(moodbot_domain)
+    state_featurizer.prepare_for_training(valid_bot1_domain)
     actual_features = tracker_featurizer.create_state_features(
-        [tracker], moodbot_domain, precomputations=None
+        [tracker], valid_bot1_domain, precomputations=None
     )
 
     expected_features = [
@@ -2016,7 +2016,7 @@ def test_state_features_keep_action_unlikely_intent_intent_max_history_featurize
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_prediction_states_with_intent_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     max_history: Optional[int],
 ):
     # IntentMaxHistoryTrackerFeaturizer prediction is only done after
@@ -2031,7 +2031,7 @@ def test_prediction_states_with_intent_max_history_tracker_featurizer(
         state_featurizer, max_history=max_history
     )
     actual_states = tracker_featurizer.prediction_states(
-        [moodbot_tracker], moodbot_domain
+        [moodbot_tracker], valid_bot1_domain
     )
 
     expected_states = [
@@ -2069,7 +2069,7 @@ def test_prediction_states_with_intent_max_history_tracker_featurizer(
 @pytest.mark.parametrize("max_history", [None, 2])
 def test_prediction_states_hide_rule_states_intent_max_history_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     max_history: Optional[int],
 ):
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
@@ -2085,11 +2085,11 @@ def test_prediction_states_hide_rule_states_intent_max_history_featurizer(
             ActionExecuted("utter_greet", hide_rule_turn=True),
             ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=True),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     actual_states = tracker_featurizer.prediction_states(
-        [rule_tracker], moodbot_domain, ignore_rule_only_turns=True
+        [rule_tracker], valid_bot1_domain, ignore_rule_only_turns=True
     )
 
     expected_states = [[{}]]
@@ -2109,11 +2109,11 @@ def test_prediction_states_hide_rule_states_intent_max_history_featurizer(
             ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=True),
             user_uttered("mood_great"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     actual_states = tracker_featurizer.prediction_states(
-        [embedded_rule_tracker], moodbot_domain, ignore_rule_only_turns=True
+        [embedded_rule_tracker], valid_bot1_domain, ignore_rule_only_turns=True
     )
 
     expected_states = [[{}]]
@@ -2128,7 +2128,7 @@ def test_prediction_states_hide_rule_states_intent_max_history_featurizer(
 @pytest.mark.parametrize("max_history", [None, 3])
 def test_prediction_states_ignores_action_intent_unlikely_intent_max_history_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     max_history: Optional[int],
 ):
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
@@ -2150,11 +2150,11 @@ def test_prediction_states_ignores_action_intent_unlikely_intent_max_history_fea
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
     actual_states = tracker_featurizer.prediction_states(
-        [tracker], moodbot_domain, ignore_action_unlikely_intent=True
+        [tracker], valid_bot1_domain, ignore_action_unlikely_intent=True
     )
 
     expected_states = [
@@ -2189,7 +2189,7 @@ def test_prediction_states_ignores_action_intent_unlikely_intent_max_history_fea
 @pytest.mark.parametrize("max_history", [None, 3])
 def test_prediction_states_keeps_action_intent_unlikely_intent_max_history_featurizer(
     moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
+    valid_bot1_domain,
     max_history: Optional[int],
 ):
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
@@ -2211,10 +2211,10 @@ def test_prediction_states_keeps_action_intent_unlikely_intent_max_history_featu
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("goodbye"),
         ],
-        domain=moodbot_domain,
+        domain=valid_bot1_domain,
     )
 
-    actual_states = tracker_featurizer.prediction_states([tracker], moodbot_domain)
+    actual_states = tracker_featurizer.prediction_states([tracker], valid_bot1_domain)
 
     expected_states = [
         [
@@ -2258,7 +2258,7 @@ def test_prediction_states_keeps_action_intent_unlikely_intent_max_history_featu
     [[True, None], [True, 2], [False, None], [False, 2]],
 )
 def test_multilabels_with_intent_max_history_tracker_featurizer(
-    moodbot_domain: Domain, max_history: Optional[int], remove_duplicates: bool
+    valid_bot1_domain, max_history: Optional[int], remove_duplicates: bool
 ):
     state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
@@ -2273,7 +2273,7 @@ def test_multilabels_with_intent_max_history_tracker_featurizer(
         user_uttered("mood_great"),
     ]
     tracker1 = DialogueStateTracker.from_events(
-        "default", event_list1, domain=moodbot_domain
+        "default", event_list1, domain=valid_bot1_domain
     )
     event_list2 = [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -2283,11 +2283,11 @@ def test_multilabels_with_intent_max_history_tracker_featurizer(
         user_uttered("mood_unhappy"),
     ]
     tracker2 = DialogueStateTracker.from_events(
-        "default", event_list2, domain=moodbot_domain
+        "default", event_list2, domain=valid_bot1_domain
     )
 
     _1, actual_labels, _2 = tracker_featurizer.featurize_trackers(
-        [tracker1, tracker2], moodbot_domain, precomputations=None
+        [tracker1, tracker2], valid_bot1_domain, precomputations=None
     )
 
     greet_index = 5

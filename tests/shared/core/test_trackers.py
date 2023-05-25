@@ -118,8 +118,8 @@ def stores_to_be_tested_ids():
     return ["redis-tracker", "in-memory-tracker", "SQL-tracker", "mongo-tracker"]
 
 
-def test_tracker_duplicate(moodbot_domain: Domain):
-    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
+def test_tracker_duplicate(valid_bot1_domain):
+    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, valid_bot1_domain)
     num_actions = len(
         [
             event
@@ -172,13 +172,13 @@ async def test_tracker_store(store, pair):
     assert restored == tracker
 
 
-def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
-    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
+def test_tracker_write_to_story(tmp_path: Path, valid_bot1_domain):
+    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, valid_bot1_domain)
     p = tmp_path / "export.yml"
     tracker.export_stories_to_file(str(p))
     trackers = training.load_data(
         str(p),
-        moodbot_domain,
+        valid_bot1_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
