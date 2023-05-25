@@ -394,12 +394,11 @@ class FlowExecutor:
             return (None, [])
 
         if isinstance(first_step, IntentFlowStep):
-            next_step = self._get_next_step(
+            return self._get_next_step(
                 tracker, domain, first_step, self.flow_state.flow_id
             )
-            return self._get_action_for_next_step(next_step, tracker, domain)
         else:
-            return self._get_action_for_next_step(first_step, tracker, domain)
+            return first_step
 
     def select_next_action(
         self,
@@ -410,16 +409,16 @@ class FlowExecutor:
         if not (current_step := self._get_current_step()):
             # If the next step is not set, we return the first step
             # if there is one
-            return self.start_flow(tracker, domain)
+            next_step = self.start_flow(tracker, domain)
 
-        if not self._is_step_completed(current_step, tracker):
+        elif not self._is_step_completed(current_step, tracker):
             # TODO: figure out
             raise Exception("Not quite sure what to do here yet.")
-
-        # If the step is completed, we get the next step
-        next_step = self._get_next_step(
-            tracker, domain, current_step, self.flow_state.flow_id
-        )
+        else:
+            # If the step is completed, we get the next step
+            next_step = self._get_next_step(
+                tracker, domain, current_step, self.flow_state.flow_id
+            )
 
         if next_step:
             action, events = self._get_action_for_next_step(next_step, tracker, domain)
