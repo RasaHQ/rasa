@@ -300,12 +300,12 @@ class PikaEventBroker(EventBroker):
 
             logger.debug(
                 f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-                f"'{self.host}':\n{event}"
+                f"'{self.host}':\n{event}"  # PII?
             )
         except Exception as e:
             logger.error(
                 f"Failed to publish Pika event on host '{self.host}' due to "
-                f"error '{e}'. The message was: \n{event}"
+                f"error '{e}'. The message was: \n{event}"  # PII?
             )
             if self.should_keep_unpublished_messages:
                 self._unpublished_events.append(event)

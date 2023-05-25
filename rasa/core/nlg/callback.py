@@ -68,7 +68,9 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         logger.debug(
             "Requesting NLG for {} from {}."
-            "".format(utter_action, self.nlg_endpoint.url)
+            "".format(
+                utter_action, self.nlg_endpoint.url
+            )  # PII? can this contain slot value?
         )
 
         response = await self.nlg_endpoint.request(

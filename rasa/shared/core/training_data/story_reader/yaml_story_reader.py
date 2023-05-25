@@ -628,7 +628,9 @@ class YAMLStoryReader(StoryReader):
         # message text did start with the special prefix -- however, a user might
         # just have decided to start their text this way.
         if not match:
-            logger.warning(f"Failed to parse intent end entities from '{user_text}'.")
+            logger.warning(
+                f"Failed to parse intent end entities from '{user_text}'."
+            )  # PII?
             return message
 
         # Extract attributes from the match - and validate it via the domain.

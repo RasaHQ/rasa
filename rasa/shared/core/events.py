@@ -116,7 +116,7 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
                 deserialised.append(event)
             else:
                 logger.warning(
-                    f"Unable to parse event '{event}' while deserialising. The event"
+                    f"Unable to parse event '{event}' while deserialising. The event"  # PII?
                     " will be ignored."
                 )
 

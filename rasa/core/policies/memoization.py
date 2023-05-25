@@ -251,7 +251,9 @@ class MemoizationPolicy(Policy):
         result = self._default_predictions(domain)
 
         states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
-        logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
+        logger.debug(
+            f"Current tracker state:{self.format_tracker_states(states)}"
+        )  # PII?
         predicted_action_name = self.recall(
             states, tracker, domain, rule_only_data=rule_only_data
         )
@@ -426,7 +428,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 # check if we like new futures
                 memorised = self._recall_states(states)
                 if memorised is not None:
-                    logger.debug(f"Current tracker state {states}")
+                    logger.debug(f"Current tracker state {states}")  # PII?
                     return memorised
                 old_states = states
 
@@ -436,7 +438,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             )
 
         # No match found
-        logger.debug(f"Current tracker state {old_states}")
+        logger.debug(f"Current tracker state {old_states}")  # PII?
         return None
 
     def recall(

@@ -320,12 +320,13 @@ class HangoutsInput(InputChannel):
                 )
             except CancelledError:
                 logger.error(
-                    "Message handling timed out for " "user message '{}'.".format(text)
+                    "Message handling timed out for "
+                    "user message '{}'.".format(text)  # PII?
                 )
             except Exception as e:
                 logger.exception(
                     f"An exception occurred while handling user message: {e}, "
-                    f"text: {text}"
+                    f"text: {text}"  # PII?
                 )
 
             return response.json(collector.messages)

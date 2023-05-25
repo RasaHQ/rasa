@@ -127,7 +127,7 @@ class Messenger:
         else:
             logger.warning(
                 "Received a message from facebook that we can not "
-                f"handle. Message: {message}"
+                f"handle. Message: {message}"  # PII?
             )
             return
 
