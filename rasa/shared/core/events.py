@@ -549,6 +549,10 @@ class UserUttered(Event):
             f", use_text_for_featurization: {self.use_text_for_featurization})"
         )
 
+    def __repr__(self) -> Text:
+        """Returns text representation of event for debugging."""
+        return f"UserUttered('{self.text}', '{self.intent_name}', {json.dumps(self.entities)})"
+
     @staticmethod
     def empty() -> "UserUttered":
         return UserUttered(None)
