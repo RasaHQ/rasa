@@ -166,13 +166,13 @@ class RestInput(InputChannel):
                     )
                 except CancelledError:
                     logger.error(
-                        f"Message handling timed out for user message '{text}'.",
+                        f"Message handling timed out for user message '{text}'.",  # PII?
                         exc_info=True,
                     )
                 except Exception:
                     logger.exception(
                         f"An exception occured while handling "
-                        f"user message '{text}'."
+                        f"user message '{text}'."  # PII?
                     )
                 return response.json(collector.messages)
 

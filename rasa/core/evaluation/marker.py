@@ -177,7 +177,7 @@ class ActionExecutedMarker(ConditionMarker):
 
         if not valid:
             logger.error(
-                f"Referenced action '{self.text}' does not exist in the domain"
+                f"Referenced action '{self.text}' does not exist in the domain"  # PII? no
             )
 
         return valid
@@ -215,7 +215,7 @@ class IntentDetectedMarker(ConditionMarker):
 
         if not valid:
             logger.error(
-                f"Referenced intent '{self.text}' does not exist in the domain"
+                f"Referenced intent '{self.text}' does not exist in the domain"  # PII? no
             )
 
         return valid
@@ -253,7 +253,9 @@ class SlotSetMarker(ConditionMarker):
         valid = any(self.text == slot.name for slot in domain.slots)
 
         if not valid:
-            logger.error(f"Referenced slot '{self.text}' does not exist in the domain")
+            logger.error(
+                f"Referenced slot '{self.text}' does not exist in the domain"
+            )  # PII?
 
         return valid
 

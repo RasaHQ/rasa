@@ -197,7 +197,7 @@ class MessageProcessor:
         events_as_str = ", ".join([repr(e) or str(e) for e in extraction_events])
         logger.debug(
             f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
-            f"resulting in {len(extraction_events)} events: {events_as_str}"
+            f"resulting in {len(extraction_events)} events: {events_as_str}"  # PII?
         )
 
         return tracker
@@ -646,7 +646,7 @@ class MessageProcessor:
             [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
         )
         if slot_values.strip():
-            logger.debug(f"Current slot values: \n{slot_values}")
+            logger.debug(f"Current slot values: \n{slot_values}")  # PII?
 
     def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
         """Warns the user if the NLU parse data contains unrecognized features.
@@ -716,7 +716,7 @@ class MessageProcessor:
             )
 
         logger.debug(
-            "Received user message '{}' with intent '{}' "
+            "Received user message '{}' with intent '{}' "  # PII?
             "and entities '{}'".format(
                 parse_data["text"], parse_data["intent"], parse_data["entities"]
             )
@@ -1007,13 +1007,15 @@ class MessageProcessor:
             isinstance(event, ActionExecutionRejected) for event in events
         )
         if not action_was_rejected_manually:
-            logger.debug(f"Policy prediction ended with events '{prediction.events}'.")
+            logger.debug(
+                f"Policy prediction ended with events '{prediction.events}'."
+            )  # PII?
             tracker.update_with_events(prediction.events, self.domain)
 
             # log the action and its produced events
             tracker.update(action.event_for_successful_execution(prediction))
 
-        logger.debug(f"Action '{action.name()}' ended with events '{events}'.")
+        logger.debug(f"Action '{action.name()}' ended with events '{events}'.")  # PII?
         tracker.update_with_events(events, self.domain)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:

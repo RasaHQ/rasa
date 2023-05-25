@@ -254,7 +254,7 @@ class FormAction(LoopAction):
             Otherwise, returns empty list since the extracted slots already have
             corresponding `SlotSet` events in the tracker.
         """
-        logger.debug(f"Validating extracted slots: {slot_candidates}")
+        logger.debug(f"Validating extracted slots: {slot_candidates}")  # PII?
         events: List[Union[SlotSet, Event]] = [
             SlotSet(slot_name, value) for slot_name, value in slot_candidates.items()
         ]
@@ -499,13 +499,13 @@ class FormAction(LoopAction):
         slot_name: Text,
         tracker: DialogueStateTracker,
     ) -> List[Event]:
-        logger.debug(f"Request next slot '{slot_name}'")
+        logger.debug(f"Request next slot '{slot_name}'")  # PII? no
 
         action_name_to_ask_for_next_slot = self._name_of_utterance(domain, slot_name)
         if not action_name_to_ask_for_next_slot:
             # Use a debug log as the user might have asked as part of a custom action
             logger.debug(
-                f"There was no action found to ask for slot '{slot_name}' "
+                f"There was no action found to ask for slot '{slot_name}' "  # PII? no
                 f"name to be filled."
             )
             return []
@@ -538,7 +538,7 @@ class FormAction(LoopAction):
         )
 
         if needs_validation:
-            logger.debug(f"Validating user input '{tracker.latest_message}'.")
+            logger.debug(f"Validating user input '{tracker.latest_message}'.")  # PII?
             return await self.validate(tracker, domain, output_channel, nlg)
         else:
             # Needed to determine which slots to request although there are no slots
@@ -594,7 +594,7 @@ class FormAction(LoopAction):
         events_as_str = "\n".join(str(e) for e in extraction_events)
         logger.debug(
             f"The execution of '{ACTION_EXTRACT_SLOTS}' resulted in "
-            f"these events: {events_as_str}."
+            f"these events: {events_as_str}."  # PII?
         )
 
         tracker.update_with_events(extraction_events, domain)
@@ -607,7 +607,9 @@ class FormAction(LoopAction):
             logger.debug("No pre-filled required slots to validate.")
             return [e for e in extraction_events if isinstance(e, SlotSet)]
 
-        logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
+        logger.debug(
+            f"Validating pre-filled required slots: {prefilled_slots}"
+        )  # PII? no
 
         validated_events = await self.validate_slots(
             prefilled_slots, tracker, domain, output_channel, nlg

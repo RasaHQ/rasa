@@ -36,7 +36,7 @@ def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text:
         return text
     except KeyError as e:
         logger.exception(
-            f"Failed to replace placeholders in response '{response}'. "
+            f"Failed to replace placeholders in response '{response}'. "  # PII?
             f"Tried to replace '{e.args[0]}' but could not find "
             f"a value for it. There is no slot with this "
             f"name nor did you pass the value explicitly "

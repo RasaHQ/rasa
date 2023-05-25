@@ -1020,7 +1020,7 @@ class RulePolicy(MemoizationPolicy):
         )
 
         current_states = self.format_tracker_states(states)
-        logger.debug(f"Current tracker state:{current_states}")
+        logger.debug(f"Current tracker state:{current_states}")  # PII?
 
         # Tracks if we are returning after an unhappy loop path. If this becomes `True`
         # the policy returns an event which notifies the loop action that it

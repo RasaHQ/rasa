@@ -284,7 +284,7 @@ def write_response_successes(
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
         logger.debug(
-            f"\n\nSuccessfully predicted the following responses: \n{successes}"
+            f"\n\nSuccessfully predicted the following responses: \n{successes}"  # PII?
         )
     else:
         logger.info("No successful response predictions found.")
@@ -798,7 +798,7 @@ def write_successful_entity_predictions(
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
         logger.debug(
-            f"\n\nSuccessfully predicted the following entities: \n{successes}"
+            f"\n\nSuccessfully predicted the following entities: \n{successes}"  # PII?
         )
     else:
         logger.info("No successful entity prediction found.")
@@ -989,7 +989,7 @@ def do_entities_overlap(entities: List[Dict]) -> bool:
             next_ent["start"] < curr_ent["end"]
             and next_ent["entity"] != curr_ent["entity"]
         ):
-            logger.warning(f"Overlapping entity {curr_ent} with {next_ent}")
+            logger.warning(f"Overlapping entity {curr_ent} with {next_ent}")  # PII?
             return True
 
     return False
@@ -1012,7 +1012,7 @@ def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
             candidates.append(e)
             logger.debug(
                 "Token boundary error for token {}({}, {}) "
-                "and entity {}"
+                "and entity {}"  # PII?
                 "".format(token.text, token.start, token.end, e)
             )
     return candidates
