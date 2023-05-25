@@ -81,12 +81,12 @@ class FlowPolicy(Policy):
         return SupportedData.ML_DATA
 
     def __init__(
-            self,
-            config: Dict[Text, Any],
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
-            featurizer: Optional[TrackerFeaturizer] = None,
+        self,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        featurizer: Optional[TrackerFeaturizer] = None,
     ) -> None:
         """Constructs a new Policy object."""
         super().__init__(config, model_storage, resource, execution_context, featurizer)
@@ -95,10 +95,10 @@ class FlowPolicy(Policy):
         self.resource = resource
 
     def train(
-            self,
-            training_trackers: List[TrackerWithCachedStates],
-            domain: Domain,
-            **kwargs: Any,
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        **kwargs: Any,
     ) -> Resource:
         """Trains a policy.
 
@@ -118,12 +118,12 @@ class FlowPolicy(Policy):
         return self.resource
 
     def predict_action_probabilities(
-            self,
-            tracker: DialogueStateTracker,
-            domain: Domain,
-            rule_only_data: Optional[Dict[Text, Any]] = None,
-            flows: Optional[FlowsList] = None,
-            **kwargs: Any,
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        flows: Optional[FlowsList] = None,
+        **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
@@ -174,7 +174,7 @@ class FlowPolicy(Policy):
         return self._prediction(result, optional_events=events)
 
     def find_startable_flow(
-            self, tracker: DialogueStateTracker, flows: FlowsList
+        self, tracker: DialogueStateTracker, flows: FlowsList
     ) -> Optional[Flow]:
         """Finds a flow which can be started.
 
@@ -191,7 +191,7 @@ class FlowPolicy(Policy):
                 continue
             first_step = flow.steps[0]
             if isinstance(
-                    first_step, IntentFlowStep
+                first_step, IntentFlowStep
             ) and first_step.intent == tracker.latest_message.intent.get(
                 INTENT_NAME_KEY
             ):
@@ -199,7 +199,7 @@ class FlowPolicy(Policy):
         return None
 
     def _prediction_result(
-            self, action_name: Optional[Text], domain: Domain, score: Optional[float] = 1.0
+        self, action_name: Optional[Text], domain: Domain, score: Optional[float] = 1.0
     ) -> List[float]:
         """Creates a prediction result.
 
@@ -274,12 +274,12 @@ class FlowExecutor:
 
     @staticmethod
     def is_condition_satisfied(
-            predicate: Text, domain: Domain, tracker: "DialogueStateTracker"
+        predicate: Text, domain: Domain, tracker: "DialogueStateTracker"
     ) -> bool:
         """Evaluate a predicate condition."""
 
         def get_value(
-                initial_value: Union[Text, None]
+            initial_value: Union[Text, None]
         ) -> Union[Text, float, bool, None]:
             if initial_value is None or isinstance(initial_value, (bool, float)):
                 return initial_value
@@ -305,7 +305,7 @@ class FlowExecutor:
         return evaluation
 
     def _evaluate_flow_links(
-            self, next: FlowLinks, domain: Domain, tracker: "DialogueStateTracker"
+        self, next: FlowLinks, domain: Domain, tracker: "DialogueStateTracker"
     ) -> Optional[Text]:
         """Evaluate the flow links of a step."""
         if len(next.links) == 1 and isinstance(next.links[0], StaticFlowLink):
@@ -330,7 +330,7 @@ class FlowExecutor:
         return None
 
     def _get_next_step_from_link(
-            self, step: LinkFlowStep, tracker: "DialogueStateTracker", domain: Domain
+        self, step: LinkFlowStep, tracker: "DialogueStateTracker", domain: Domain
     ) -> Optional[FlowStep]:
         """Get the next step from a link."""
         if next_step_id := self._evaluate_flow_links(step.next, domain, tracker):
@@ -339,11 +339,11 @@ class FlowExecutor:
             return None
 
     def _get_next_step(
-            self,
-            tracker: "DialogueStateTracker",
-            domain: Domain,
-            current_step: FlowStep,
-            flow_id: Text,
+        self,
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        current_step: FlowStep,
+        flow_id: Text,
     ) -> Optional[FlowStep]:
         """Get the next step to execute."""
         # If the next step is not specified, we assume that the flow is done
@@ -364,7 +364,7 @@ class FlowExecutor:
             raise Exception(f"Question '{question}' does not map to an existing slot.")
 
     def _is_step_completed(
-            self, step: FlowStep, tracker: "DialogueStateTracker"
+        self, step: FlowStep, tracker: "DialogueStateTracker"
     ) -> bool:
         """Check if a step is completed."""
         if isinstance(step, QuestionFlowStep):
@@ -386,7 +386,7 @@ class FlowExecutor:
         )
 
     def start_flow(
-            self, tracker: DialogueStateTracker, domain: Domain
+        self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[Text], List[Event]]:
         """Start the flow."""
         first_step = self.all_flows.first_step(self.flow_state.flow_id)
@@ -403,9 +403,9 @@ class FlowExecutor:
             return self._get_action_for_next_step(first_step, tracker, domain)
 
     def select_next_action(
-            self,
-            tracker: "DialogueStateTracker",
-            domain: Domain,
+        self,
+        tracker: "DialogueStateTracker",
+        domain: Domain,
     ) -> Tuple[Optional[Text], List[Event]]:
         """Request the next slot and response if needed, else return `None`."""
         if not (current_step := self._get_current_step()):
@@ -455,10 +455,10 @@ class FlowExecutor:
             return (action, events)
 
     def _get_action_for_next_step(
-            self,
-            next_step: FlowStep,
-            tracker: DialogueStateTracker,
-            domain: Domain,
+        self,
+        next_step: FlowStep,
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> Tuple[Optional[Text], List[Event]]:
         """Get the action for the next step."""
         if isinstance(next_step, QuestionFlowStep):
@@ -502,6 +502,8 @@ class FlowExecutor:
             ).select_next_action(tracker, domain)
             return (sub_flow_action, events + sub_flow_events)
         elif isinstance(next_step, SetSlotsFlowStep):
-            return None, [SlotSet(slot["key"], slot["value"]) for slot in next_step.slots]
+            return None, [
+                SlotSet(slot["key"], slot["value"]) for slot in next_step.slots
+            ]
         else:
             raise Exception(f"Unknown flow step type {type(next_step)}")

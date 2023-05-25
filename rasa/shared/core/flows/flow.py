@@ -28,7 +28,7 @@ class FlowsList:
 
     @classmethod
     def from_json(
-            cls, flows_configs: Optional[Dict[Text, Dict[Text, Any]]]
+        cls, flows_configs: Optional[Dict[Text, Dict[Text, Any]]]
     ) -> FlowsList:
         """Used to read flows from parsed YAML.
 
@@ -385,6 +385,7 @@ class UserFlowStep(FlowStep):
 @dataclass
 class SetSlotsFlowStep(FlowStep):
     """Represents the configuration of a set_slots flow step."""
+
     slots: List[Dict[str, Any]]
     """Slots to set of the flow step."""
 
@@ -399,7 +400,11 @@ class SetSlotsFlowStep(FlowStep):
             The parsed flow step.
         """
         base = super()._from_json(flow_step_config)
-        slots = [{"key": k, "value": v} for slot in flow_step_config.get("set_slots") for k, v in slot.items()]
+        slots = [
+            {"key": k, "value": v}
+            for slot in flow_step_config.get("set_slots")
+            for k, v in slot.items()
+        ]
         return SetSlotsFlowStep(
             slots=slots,
             **base.__dict__,
