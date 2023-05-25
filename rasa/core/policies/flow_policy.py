@@ -186,9 +186,10 @@ class FlowPolicy(Policy):
             The predicted action and the events to run.
         """
         for flow in flows.underlying_flows:
-            if not flow.steps:
+            first_step = flow.start_step()
+            if not first_step:
                 continue
-            first_step = flow.steps[0]
+
             if isinstance(
                 first_step, IntentFlowStep
             ) and first_step.intent == tracker.latest_message.intent.get(

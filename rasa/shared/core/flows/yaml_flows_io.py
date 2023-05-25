@@ -56,7 +56,10 @@ class YAMLFlowsReader:
 
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
-        return FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}))
+        flows = FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}))
+        if not skip_validation:
+            flows.validate()
+        return flows
 
 
 class YamlFlowsWriter:
