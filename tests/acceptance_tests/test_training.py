@@ -3,7 +3,6 @@ import secrets
 
 from typing import Text
 
-import pytest
 import rasa
 
 
@@ -11,7 +10,6 @@ def _new_model_path_in_same_dir(old_model_path: Text) -> Text:
     return str(Path(old_model_path).parent / (secrets.token_hex(8) + ".tar.gz"))
 
 
-@pytest.mark.acceptance
 def test_models_not_retrained_if_no_new_data(
     trained_e2e_model: Text,
     moodbot_domain_path: Path,
