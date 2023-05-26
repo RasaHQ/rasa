@@ -279,7 +279,7 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
     if "action" in flow_step_config:
         return ActionFlowStep.from_json(flow_step_config)
     if "intent" in flow_step_config:
-        return IntentFlowStep.from_json(flow_step_config)
+        return UserMessageStep.from_json(flow_step_config)
     if "user" in flow_step_config:
         return UserFlowStep.from_json(flow_step_config)
     if "question" in flow_step_config:
@@ -296,6 +296,10 @@ class FlowStep:
 
     id: Text
     """The id of the flow step."""
+    description: Optional[Text]
+    """The description of the flow step."""
+    metadata: Dict[Text, Any]
+    """Additional, unstructured information about this flow step."""
     next: "FlowLinks"
     """The next steps of the flow step."""
 
@@ -311,6 +315,8 @@ class FlowStep:
         """
         return FlowStep(
             id=flow_step_config["id"],
+            description=flow_step_config.get("description"),
+            metadata=flow_step_config.get("metadata", {}),
             next=FlowLinks.from_json(flow_step_config.get("next", [])),
         )
 
@@ -320,10 +326,15 @@ class FlowStep:
         Returns:
             The flow step as a dictionary.
         """
-        return {
+        dump = {
             "id": self.id,
             "next": self.next.as_json(),
         }
+        if self.description:
+            dump["description"] = self.description
+        if self.metadata:
+            dump["metadata"] = self.metadata
+        return dump
 
     def has_next(self) -> bool:
         """Returns whether the flow step has a next steps."""
@@ -399,14 +410,14 @@ class LinkFlowStep(FlowStep):
 
 
 @dataclass
-class IntentFlowStep(FlowStep):
+class UserMessageStep(FlowStep):
     """Represents the configuration of an intent flow step."""
 
     intent: Text
     """The intent of the flow step."""
 
     @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> IntentFlowStep:
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> UserMessageStep:
         """Used to read flow steps from parsed YAML.
 
         Args:
@@ -416,7 +427,7 @@ class IntentFlowStep(FlowStep):
             The parsed flow step.
         """
         base = super()._from_json(flow_step_config)
-        return IntentFlowStep(
+        return UserMessageStep(
             intent=flow_step_config.get("intent"),
             **base.__dict__,
         )
