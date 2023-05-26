@@ -587,18 +587,18 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.26.126"
+version = "1.26.141"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 files = [
-    {file = "boto3-1.26.126-py3-none-any.whl", hash = "sha256:a0a049d16dabf559bd86d4622a985549154c6918f779f373fb7588bd3cf1272d"},
-    {file = "boto3-1.26.126.tar.gz", hash = "sha256:ea7dc518399106ee300b867596c92d2b7b498ee7721db935915cdd53339a9f92"},
+    {file = "boto3-1.26.141-py3-none-any.whl", hash = "sha256:a5d6fdcaec863bc7ad2f8133ff9a926d6f06468b83b5fb631cd90bd33b709c45"},
+    {file = "boto3-1.26.141.tar.gz", hash = "sha256:152def2fcc9854dcc42383d2b53e2ed2c9ccb5ff6cc0f3ada20f1ab54418ede4"},
 ]
 
 [package.dependencies]
-botocore = ">=1.29.126,<1.30.0"
+botocore = ">=1.29.141,<1.30.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -607,14 +607,14 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.29.126"
+version = "1.29.141"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 files = [
-    {file = "botocore-1.29.126-py3-none-any.whl", hash = "sha256:a2c5cedb26b364386d02f9ed0a3492da6a322a82e539e54600fbc7190a49660d"},
-    {file = "botocore-1.29.126.tar.gz", hash = "sha256:e7549da5d69b37e8e1f63fcc18fbb9b23f05db8dcb4118019497eee4dad57ff7"},
+    {file = "botocore-1.29.141-py3-none-any.whl", hash = "sha256:b01d156c42765f3f437959e01a8c7f3cb0e29b24aa0b8f373498133408b2e3c7"},
+    {file = "botocore-1.29.141.tar.gz", hash = "sha256:e86e1633f98838317b9e1b5c874c4d85339b77f6b7e55c2a4d83913f6166f9ad"},
 ]
 
 [package.dependencies]
@@ -4084,18 +4084,17 @@ files = [
 
 [[package]]
 name = "pytest"
-version = "7.2.2"
+version = "7.3.1"
 description = "pytest: simple powerful testing with Python"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pytest-7.2.2-py3-none-any.whl", hash = "sha256:130328f552dcfac0b1cec75c12e3f005619dc5f874f0a06e8ff7263f0ee6225e"},
-    {file = "pytest-7.2.2.tar.gz", hash = "sha256:c99ab0c73aceb050f68929bc93af19ab6db0558791c6a0715723abe9d0ade9d4"},
+    {file = "pytest-7.3.1-py3-none-any.whl", hash = "sha256:3799fa815351fea3a5e96ac7e503a96fa51cc9942c3753cda7651b93c1cfa362"},
+    {file = "pytest-7.3.1.tar.gz", hash = "sha256:434afafd78b1d78ed0addf160ad2b77a30d35d4bdf8af234fe621919d9ed15e3"},
 ]
 
 [package.dependencies]
-attrs = ">=19.2.0"
 colorama = {version = "*", markers = "sys_platform == \"win32\""}
 exceptiongroup = {version = ">=1.0.0rc8", markers = "python_version < \"3.11\""}
 iniconfig = "*"
@@ -4104,7 +4103,7 @@ pluggy = ">=0.12,<2.0"
 tomli = {version = ">=1.0.0", markers = "python_version < \"3.11\""}
 
 [package.extras]
-testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
+testing = ["argcomplete", "attrs (>=19.2.0)", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
 
 [[package]]
 name = "pytest-asyncio"
@@ -5706,31 +5705,6 @@ tensorflow-cpu = ["tensorflow-cpu (>=2.9.0,<2.12.0)"]
 tensorflow-gpu = ["tensorflow-gpu (>=2.9.0,<2.12.0)"]
 
 [[package]]
-name = "tensorflow-addons"
-version = "0.19.0"
-description = "TensorFlow Addons."
-category = "main"
-optional = false
-python-versions = "*"
-files = []
-develop = false
-
-[package.dependencies]
-packaging = "*"
-typeguard = ">=2.7"
-
-[package.extras]
-tensorflow = ["tensorflow (>=2.9.0,<2.12.0)"]
-tensorflow-cpu = ["tensorflow-cpu (>=2.9.0,<2.12.0)"]
-tensorflow-gpu = ["tensorflow-gpu (>=2.9.0,<2.12.0)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/tensorflow/addons.git"
-reference = "v0.19.0"
-resolved_reference = "8f191c726c37931e34b98b5843e5918e9f1a5e49"
-
-[[package]]
 name = "tensorflow-cpu-aws"
 version = "2.11.0"
 description = "TensorFlow is an open source machine learning framework for everyone."
@@ -7101,4 +7075,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "cbc30712d78199c6c8d3af7bd4b3b13e2d5d02b516b0d1313ff6c288cabe0815"
+content-hash = "b86945034d37f21b5b10d61e985486fe344331b3b9e1e3c4aea867a7488423d4"
