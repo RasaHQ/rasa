@@ -50,6 +50,7 @@ jobs:
       backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
+      is_pre_release_version: ${{ steps.rasa_check_version_type.outputs.is_pre_release_version }}
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
@@ -68,6 +69,18 @@ jobs:
           echo "backend=true" >> $GITHUB_OUTPUT
           echo "docker=true" >> $GITHUB_OUTPUT
           echo "docs=true" >> $GITHUB_OUTPUT
+
+      - name: Check if tag version is a pre release version
+        id: rasa_check_version_type
+        if: env.IS_TAG_BUILD == 'true'
+        run: |
+          # Get current tagged Rasa version
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          if [[ "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
+            echo "is_pre_release_version=false" >> $GITHUB_OUTPUT
+          else
+            echo "is_pre_release_version=true" >> $GITHUB_OUTPUT
+          fi
 
   wait_for_docs_tests:
     # Looks for doc test workflows and waits for it to complete successfully
@@ -200,7 +213,7 @@ jobs:
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release')
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release') && needs.changes.outputs.is_pre_release_version == 'false'
         working-directory: changelog
         run: |
           # List all unexpected files in changelog/
