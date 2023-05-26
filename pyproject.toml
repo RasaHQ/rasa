@@ -88,7 +88,7 @@ select = [ "D", "E", "F", "W", "RUF",]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-boto3 = "^1.26.124"
+boto3 = "^1.26.136"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.6"
 attrs = ">=19.3,<22.2"
