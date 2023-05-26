@@ -171,6 +171,8 @@ class Flow:
 
     id: Text
     """The id of the flow."""
+    name: Text
+    """The name of the flow."""
     description: Optional[Text]
     """The description of the flow."""
     steps: List[FlowStep]
@@ -188,6 +190,7 @@ class Flow:
         """
         return Flow(
             id=flow_id,
+            name=flow_config.get("name"),
             description=flow_config.get("description"),
             steps=[
                 step_from_json(step_config)
@@ -203,6 +206,7 @@ class Flow:
         """
         return {
             "id": self.id,
+            "name": self.name,
             "description": self.description,
             "steps": [step.as_json() for step in self.steps],
         }
