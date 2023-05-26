@@ -14,7 +14,7 @@ from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
-    ACTION_EXTRACT_SLOTS,
+    ACTION_NOOP,
     FLOW_STACK_SLOT,
     FLOW_STATE_SLOT,
 )
@@ -502,8 +502,13 @@ class FlowExecutor:
             ).select_next_action(tracker, domain)
             return (sub_flow_action, events + sub_flow_events)
         elif isinstance(next_step, SetSlotsFlowStep):
-            return None, [
-                SlotSet(slot["key"], slot["value"]) for slot in next_step.slots
-            ]
+            events = [SlotSet(slot["key"], slot["value"]) for slot in next_step.slots]
+            events.append(
+                SlotSet(
+                    FLOW_STATE_SLOT,
+                    self.flow_state.with_updated_id(next_step.id).as_dict(),
+                )
+            )
+            return ACTION_NOOP, events
         else:
             raise Exception(f"Unknown flow step type {type(next_step)}")

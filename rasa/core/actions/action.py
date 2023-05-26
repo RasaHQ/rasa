@@ -40,6 +40,7 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_SEND_TEXT,
+    ACTION_NOOP,
     ACTION_SESSION_START_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_DEACTIVATE_LOOP_NAME,
@@ -111,6 +112,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionSendText(),
         ActionBack(),
         ActionExtractSlots(action_endpoint),
+        ActionNoOp(),
     ]
 
 
@@ -519,6 +521,23 @@ class ActionListen(Action):
 
     def name(self) -> Text:
         return ACTION_LISTEN_NAME
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
+        return []
+
+
+class ActionNoOp(Action):
+    """NoOperation produces no action."""
+
+    def name(self) -> Text:
+        return ACTION_NOOP
 
     async def run(
         self,

@@ -25,6 +25,7 @@ LOOP_NAME = "name"
 ACTION_LISTEN_NAME = "action_listen"
 ACTION_RESTART_NAME = "action_restart"
 ACTION_SEND_TEXT = "action_send_text"
+ACTION_NOOP = "action_noop"
 ACTION_SESSION_START_NAME = "action_session_start"
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 ACTION_DEACTIVATE_LOOP_NAME = "action_deactivate_loop"
@@ -54,6 +55,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_SEND_TEXT,
     RULE_SNIPPET_ACTION_NAME,
     ACTION_EXTRACT_SLOTS,
+    ACTION_NOOP,
 ]
 
 ACTION_SHOULD_SEND_DOMAIN = "send_domain"
