@@ -1,12 +1,10 @@
 from __future__ import annotations
-
 import logging
-import shutil
 import typing
-import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Text
+import uuid
 
 import rasa.utils.common
 import rasa.utils.io
@@ -69,7 +67,7 @@ class Resource:
 
         try:
             with model_storage.write_to(resource) as resource_directory:
-                shutil.copytree(directory, resource_directory, dirs_exist_ok=True)
+                rasa.utils.common.copy_directory(directory, resource_directory)
         except ValueError:
             # This might happen during finetuning as in this case the model storage
             # is already filled
@@ -92,7 +90,7 @@ class Resource:
         """
         try:
             with model_storage.read_from(self) as resource_directory:
-                shutil.copytree(resource_directory, directory, dirs_exist_ok=True)
+                rasa.utils.common.copy_directory(resource_directory, directory)
         except ValueError:
             logger.debug(
                 f"Skipped caching resource '{self.name}' as no persisted "

@@ -7,7 +7,6 @@ from pathlib import Path
 from pytest import MonkeyPatch
 from typing import Any, Text, Type
 from unittest import mock
-import shutil
 
 import pytest
 from pytest import LogCaptureFixture
@@ -133,7 +132,7 @@ def test_copy_directory_with_created_destination(
     if create_destination:
         destination.mkdir()
 
-    shutil.copytree(source, destination, dirs_exist_ok=True)
+    rasa.utils.common.copy_directory(source, destination)
 
     assert destination.is_dir()
     assert (destination / test_file_name).is_file()
@@ -147,7 +146,7 @@ def test_copy_directory_with_non_empty_destination(tmp_path: Path):
     (destination / "some_file.json").touch()
 
     with pytest.raises(ValueError):
-        shutil.copytree(tmp_path, destination, dirs_exist_ok=True)
+        rasa.utils.common.copy_directory(tmp_path, destination)
 
 
 def test_find_unavailable_packages():
