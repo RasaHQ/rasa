@@ -11,7 +11,7 @@ from rasa.core.constants import (
 )
 from pypred import Predicate
 from rasa.shared.constants import FLOW_PREFIX
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     FLOW_STACK_SLOT,
@@ -26,7 +26,7 @@ from rasa.shared.core.flows.flow import (
     FlowStep,
     FlowsList,
     IfFlowLink,
-    IntentFlowStep,
+    UserMessageStep,
     LinkFlowStep,
     QuestionFlowStep,
     StaticFlowLink,
@@ -185,16 +185,17 @@ class FlowPolicy(Policy):
         Returns:
             The predicted action and the events to run.
         """
+        latest_intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        latest_entities = [
+            e.get(ENTITY_ATTRIBUTE_TYPE) for e in tracker.latest_message.entities
+        ]
+
         for flow in flows.underlying_flows:
             first_step = flow.start_step()
-            if not first_step:
+            if not first_step or not isinstance(first_step, UserMessageStep):
                 continue
 
-            if isinstance(
-                first_step, IntentFlowStep
-            ) and first_step.intent == tracker.latest_message.intent.get(
-                INTENT_NAME_KEY
-            ):
+            if first_step.is_triggered(latest_intent, latest_entities):
                 return flow
         return None
 
@@ -376,14 +377,19 @@ class FlowExecutor:
         else:
             return True
 
-    def _get_current_step(self) -> Optional[FlowStep]:
-        """Get the current step."""
+    def _get_current_flow(self) -> Optional[Flow]:
         if self.flow_state.step_id is None:
             return None
 
-        return self.all_flows.step_by_id(
-            self.flow_state.step_id, self.flow_state.flow_id
-        )
+        return self.all_flows.flow_by_id(self.flow_state.flow_id)
+
+    def _get_current_step(self) -> Optional[FlowStep]:
+        """Get the current step."""
+        current_flow = self._get_current_flow()
+        if not current_flow:
+            return None
+
+        return current_flow.step_for_id(self.flow_state.step_id)
 
     def start_flow(
         self, tracker: DialogueStateTracker, domain: Domain
@@ -394,7 +400,7 @@ class FlowExecutor:
         if not first_step:
             return (None, [])
 
-        if isinstance(first_step, IntentFlowStep):
+        if isinstance(first_step, UserMessageStep):
             return self._get_next_step(
                 tracker, domain, first_step, self.flow_state.flow_id
             )
@@ -425,6 +431,16 @@ class FlowExecutor:
             action, events = self._get_action_for_next_step(next_step, tracker, domain)
             return (action, events)
 
+        if not (current_flow := self._get_current_flow()):
+            raise Exception(
+                "No current flow, but no next step either. "
+                "This should not happen. If there wouldn't be a flow, "
+                "the current step should be None."
+            )
+
+        # this flow is finished. let's clean up
+        events = self._reset_ephemeral_slots(current_flow, tracker)
+
         # there is no immediate next step, so we check if there is a stack
         # and if there is, we go one level up the stack
         if not (current_stack := tracker.get_slot(FLOW_STACK_SLOT)):
@@ -432,7 +448,8 @@ class FlowExecutor:
             # and there is nothing to do. We reset the flow state
             # and return action listen. The assumption here is that every
             # flow ends with an action listen.
-            return (ACTION_LISTEN_NAME, [SlotSet(FLOW_STATE_SLOT, None)])
+            events.append(SlotSet(FLOW_STATE_SLOT, None))
+            return (ACTION_LISTEN_NAME, events)
         else:
             # If there is a stack, we pop the last item and return it
             stack_step_dump = current_stack.pop()
@@ -443,15 +460,30 @@ class FlowExecutor:
             next_step = self._get_next_step(
                 tracker, domain, stack_step, stack_step_info.flow_id
             )
-            action, events = self._get_action_for_next_step(next_step, tracker, domain)
+            action, action_events = self._get_action_for_next_step(
+                next_step, tracker, domain
+            )
             updated_state = FlowState(
                 stack_step_info.flow_id,
                 next_step.id if next_step else None,
             )
-
+            events.extend(action_events)
             events.append(SlotSet(FLOW_STACK_SLOT, current_stack))
             events.append(SlotSet(FLOW_STATE_SLOT, updated_state.as_dict()))
             return (action, events)
+
+    def _reset_ephemeral_slots(
+        self, current_flow: Flow, tracker: DialogueStateTracker
+    ) -> List[Event]:
+        """Reset all ephemeral slots."""
+        events = []
+        for step in current_flow.steps:
+            # reset all ephemeral slots
+            if isinstance(step, QuestionFlowStep) and step.ephemeral:
+                slot = tracker.slots.get(step.question, None)
+                initial_value = slot.initial_value if slot else None
+                events.append(SlotSet(step.question, initial_value))
+        return events
 
     def _get_action_for_next_step(
         self,
@@ -461,12 +493,19 @@ class FlowExecutor:
     ) -> Tuple[Optional[Text], List[Event]]:
         """Get the action for the next step."""
         if isinstance(next_step, QuestionFlowStep):
-            if next_step.reset_on_reentry:
-                slot = tracker.slots.get(next_step.question, None)
-                initial_value = slot.initial_value if slot else None
-                events = [SlotSet(next_step.question, initial_value)]
-            else:
-                events = []
+            events = []
+            slot = tracker.slots.get(next_step.question, None)
+            initial_value = slot.initial_value if slot else None
+            if next_step.skip_if_filled:
+                if slot != initial_value:
+                    # TODO this needs more thought. we can't predict an action
+                    # here as we need to go to the next step instead as we should
+                    # skip this one
+
+                    # this might currently actually work due to forms
+                    pass
+            elif slot != initial_value:
+                events.append(SlotSet(next_step.question, initial_value))
 
             events.append(
                 SlotSet(

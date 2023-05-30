@@ -49,7 +49,7 @@ class UnresolvedFlowStepIdException(RasaException):
             )
 
         return exception_message + (
-            f"Please make sure that the step is defined in the same flow."
+            "Please make sure that the step is defined in the same flow."
         )
 
 
@@ -216,14 +216,13 @@ class Flow:
 
         This ensures that the flow semantically makes sense. E.g. it
         checks:
-        -"""
-
+        -
+        """
         self._validate_all_next_ids_are_availble_steps()
         self._validate_all_steps_can_be_reached()
 
     def _validate_all_next_ids_are_availble_steps(self) -> None:
         """Validates that all next links point to existing steps."""
-
         available_steps = {step.id for step in self.steps}
         for step in self.steps:
             for link in step.next.links:
@@ -410,11 +409,37 @@ class LinkFlowStep(FlowStep):
 
 
 @dataclass
+class TriggerCondition:
+    """Represents the configuration of a trigger condition."""
+
+    intent: Text
+    """The intent to trigger the flow."""
+    entities: List[Text]
+    """The entities to trigger the flow."""
+
+    def is_triggered(self, intent: Text, entities: List[Text]) -> bool:
+        """Returns whether the trigger condition is triggered by the given intent and entities.
+
+        Args:
+            intent: The intent to check.
+            entities: The entities to check.
+
+        Returns:
+            Whether the trigger condition is triggered by the given intent and entities.
+        """
+        if self.intent != intent:
+            return False
+        if len(self.entities) == 0:
+            return True
+        return all(entity in entities for entity in self.entities)
+
+
+@dataclass
 class UserMessageStep(FlowStep):
     """Represents the configuration of an intent flow step."""
 
-    intent: Text
-    """The intent of the flow step."""
+    trigger_conditions: List[TriggerCondition]
+    """The trigger conditions of the flow step."""
 
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> UserMessageStep:
@@ -427,8 +452,26 @@ class UserMessageStep(FlowStep):
             The parsed flow step.
         """
         base = super()._from_json(flow_step_config)
+
+        trigger_conditions = []
+        if "intent" in flow_step_config:
+            trigger_conditions.append(
+                TriggerCondition(
+                    intent=flow_step_config["intent"],
+                    entities=flow_step_config.get("entities", []),
+                )
+            )
+        elif "or" in flow_step_config:
+            for trigger_condition in flow_step_config["or"]:
+                trigger_conditions.append(
+                    TriggerCondition(
+                        intent=trigger_condition.get("intent", ""),
+                        entities=trigger_condition.get("entities", []),
+                    )
+                )
+
         return UserMessageStep(
-            intent=flow_step_config.get("intent"),
+            trigger_conditions=trigger_conditions,
             **base.__dict__,
         )
 
@@ -439,8 +482,36 @@ class UserMessageStep(FlowStep):
             The flow step as a dictionary.
         """
         dump = super().as_json()
-        dump["intent"] = self.intent
+
+        if len(self.trigger_conditions) == 1:
+            dump["intent"] = self.trigger_conditions[0].intent
+            if self.trigger_conditions[0].entities:
+                dump["entities"] = self.trigger_conditions[0].entities
+        elif len(self.trigger_conditions) > 1:
+            dump["or"] = [
+                {
+                    "intent": trigger_condition.intent,
+                    "entities": trigger_condition.entities,
+                }
+                for trigger_condition in self.trigger_conditions
+            ]
+
         return dump
+
+    def is_triggered(self, intent: Text, entities: List[Text]) -> bool:
+        """Returns whether the flow step is triggered by the given intent and entities.
+
+        Args:
+            intent: The intent to check.
+            entities: The entities to check.
+
+        Returns:
+            Whether the flow step is triggered by the given intent and entities.
+        """
+        return any(
+            trigger_condition.is_triggered(intent, entities)
+            for trigger_condition in self.trigger_conditions
+        )
 
 
 @dataclass
@@ -449,8 +520,10 @@ class QuestionFlowStep(FlowStep):
 
     question: Text
     """The question of the flow step."""
-    reset_on_reentry: bool = False
-    """Whether the question should be reset on reentry."""
+    skip_if_filled: bool = False
+    """Whether to skip the question if the slot is already filled."""
+    ephemeral: bool = False
+    """Whether the question is ephemeral."""
 
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> QuestionFlowStep:
@@ -465,7 +538,8 @@ class QuestionFlowStep(FlowStep):
         base = super()._from_json(flow_step_config)
         return QuestionFlowStep(
             question=flow_step_config.get("question"),
-            reset_on_reentry=flow_step_config.get("reset_on_reentry", False),
+            skip_if_filled=flow_step_config.get("skip_if_filled", False),
+            ephemeral=flow_step_config.get("ephemeral", False),
             **base.__dict__,
         )
 
@@ -477,7 +551,9 @@ class QuestionFlowStep(FlowStep):
         """
         dump = super().as_json()
         dump["question"] = self.question
-        dump["reset_on_reentry"] = self.reset_on_reentry
+        dump["skip_if_filled"] = self.skip_if_filled
+        dump["ephemeral"] = self.ephemeral
+
         return dump
 
 
