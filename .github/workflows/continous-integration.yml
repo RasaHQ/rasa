@@ -73,6 +73,7 @@ jobs:
     # Looks for doc test workflows and waits for it to complete successfully
     # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
     name: Wait for docs tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
 
