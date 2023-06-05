@@ -37,7 +37,6 @@ class FlowTriggerAction(action.Action):
         """Return the flow name."""
         return self._flow_action_name
 
-
     async def run(
         self,
         output_channel: "OutputChannel",
