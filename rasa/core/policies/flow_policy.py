@@ -146,21 +146,25 @@ class FlowPolicy(Policy):
         if tracker.active_loop:
             # we are in a loop - we don't want to handle flows in this case
             logger.debug("We are in a loop. Skipping prediction.")
-            predicted_action = None
-            predicted_score = 0.0
-            events = []
-        else:
-            executor = FlowExecutor.from_tracker(tracker, flows)
-            predicted_action, events, predicted_score = executor.select_next_action(
-                tracker, domain
+            return self._create_prediction_result(
+                action_name=None, domain=domain, score=0.0, events=[]
             )
 
-        result = self._prediction_result(predicted_action, domain, predicted_score)
+        # create executor and predict next action
+        executor = FlowExecutor.from_tracker(tracker, flows)
+        predicted_action, events, predicted_score = executor.select_next_action(
+            tracker, domain
+        )
+        return self._create_prediction_result(
+            predicted_action, domain, predicted_score, events
+        )
 
-        return self._prediction(result, optional_events=events)
-
-    def _prediction_result(
-        self, action_name: Optional[Text], domain: Domain, score: float = 1.0
+    def _create_prediction_result(
+        self,
+        action_name: Optional[Text],
+        domain: Domain,
+        score: float = 1.0,
+        events: Optional[List[Event]] = None,
     ) -> List[float]:
         """Creates a prediction result.
 
@@ -175,7 +179,7 @@ class FlowPolicy(Policy):
         result = self._default_predictions(domain)
         if action_name:
             result[domain.index_for_action(action_name)] = score
-        return result
+        return self._prediction(result, optional_events=events)
 
 
 @dataclass
