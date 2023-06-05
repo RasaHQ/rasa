@@ -48,6 +48,12 @@ from rasa.shared.core.trackers import (
 logger = logging.getLogger(__name__)
 
 
+class FlowException(Exception):
+    """Exception that is raised when there is a problem with a flow."""
+
+    pass
+
+
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=False
 )
@@ -149,58 +155,18 @@ class FlowPolicy(Policy):
             predicted_action = None
             predicted_score = 0.0
             events = []
-        elif current_state_dump := tracker.get_slot(FLOW_STATE_SLOT):
-            flow_state = FlowState.from_dict(current_state_dump)
-            logger.debug(f"Found flow state: {flow_state}")
-            executor = FlowExecutor(flow_state, flows)
-            predicted_action, events = executor.select_next_action(tracker, domain)
-            predicted_score = 1.0
-        elif new_flow := self.find_startable_flow(tracker, flows):
-            # there are flows available, but we are not in a flow
-            # it looks like we can start a flow, so we'll predict the trigger action
-            logger.debug(f"Found startable flow: {new_flow.id}")
-            predicted_action = FLOW_PREFIX + new_flow.id
-            predicted_score = 1.0
-            events = []
         else:
-            logger.debug("No startable flow found. Skipping prediction.")
-            predicted_action = None
-            predicted_score = 0.0
-            events = []
+            executor = FlowExecutor.from_tracker(tracker, flows)
+            predicted_action, events, predicted_score = executor.select_next_action(
+                tracker, domain
+            )
 
         result = self._prediction_result(predicted_action, domain, predicted_score)
 
         return self._prediction(result, optional_events=events)
 
-    def find_startable_flow(
-        self, tracker: DialogueStateTracker, flows: FlowsList
-    ) -> Optional[Flow]:
-        """Finds a flow which can be started.
-
-        Args:
-            tracker: The tracker containing the conversation history up to now.
-            domain: The model's domain.
-            flows: The flows to use.
-
-        Returns:
-            The predicted action and the events to run.
-        """
-        latest_intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
-        latest_entities = [
-            e.get(ENTITY_ATTRIBUTE_TYPE) for e in tracker.latest_message.entities
-        ]
-
-        for flow in flows.underlying_flows:
-            first_step = flow.start_step()
-            if not first_step or not isinstance(first_step, UserMessageStep):
-                continue
-
-            if first_step.is_triggered(latest_intent, latest_entities):
-                return flow
-        return None
-
     def _prediction_result(
-        self, action_name: Optional[Text], domain: Domain, score: Optional[float] = 1.0
+        self, action_name: Optional[Text], domain: Domain, score: float = 1.0
     ) -> List[float]:
         """Creates a prediction result.
 
@@ -263,7 +229,7 @@ class FlowState:
 class FlowExecutor:
     """Executes a flow."""
 
-    def __init__(self, flow_state: FlowState, all_flows: FlowsList) -> None:
+    def __init__(self, flow_state: Optional[FlowState], all_flows: FlowsList) -> None:
         """Initializes the `FlowExecutor`.
 
         Args:
@@ -272,6 +238,49 @@ class FlowExecutor:
         """
         self.flow_state = flow_state
         self.all_flows = all_flows
+
+    @staticmethod
+    def from_tracker(tracker: DialogueStateTracker, flows: FlowsList) -> FlowExecutor:
+        """Creates a `FlowExecutor` from a tracker.
+
+        Args:
+            tracker: The tracker to create the `FlowExecutor` from.
+
+        Returns:
+            The created `FlowExecutor`."""
+        flow_state = tracker.get_slot(FLOW_STATE_SLOT)
+        return FlowExecutor(
+            FlowState.from_dict(flow_state) if flow_state else None,
+            flows,
+        )
+
+    def find_startable_flow(self, tracker: DialogueStateTracker) -> Optional[Flow]:
+        """Finds a flow which can be started.
+
+        Args:
+            tracker: The tracker containing the conversation history up to now.
+            domain: The model's domain.
+            flows: The flows to use.
+
+        Returns:
+            The predicted action and the events to run.
+        """
+        if not tracker.latest_message:
+            # apperently, there is no message in the tracker
+            return None
+        latest_intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        latest_entities = [
+            e.get(ENTITY_ATTRIBUTE_TYPE) for e in tracker.latest_message.entities
+        ]
+
+        for flow in self.all_flows.underlying_flows:
+            first_step = flow.start_step()
+            if not first_step or not isinstance(first_step, UserMessageStep):
+                continue
+
+            if first_step.is_triggered(latest_intent, latest_entities):
+                return flow
+        return None
 
     @staticmethod
     def is_condition_satisfied(
@@ -330,15 +339,6 @@ class FlowExecutor:
             )
         return None
 
-    def _get_next_step_from_link(
-        self, step: LinkFlowStep, tracker: "DialogueStateTracker", domain: Domain
-    ) -> Optional[FlowStep]:
-        """Get the next step from a link."""
-        if next_step_id := self._evaluate_flow_links(step.next, domain, tracker):
-            return self.all_flows.step_by_id(next_step_id, self.flow_state.flow_id)
-        else:
-            return None
-
     def _get_next_step(
         self,
         tracker: "DialogueStateTracker",
@@ -362,7 +362,9 @@ class FlowExecutor:
             if slot.name == question:
                 return slot
         else:
-            raise Exception(f"Question '{question}' does not map to an existing slot.")
+            raise FlowException(
+                f"Question '{question}' does not map to an existing slot."
+            )
 
     def _is_step_completed(
         self, step: FlowStep, tracker: "DialogueStateTracker"
@@ -378,27 +380,33 @@ class FlowExecutor:
             return True
 
     def _get_current_flow(self) -> Optional[Flow]:
-        if self.flow_state.step_id is None:
+        """Get the current flow.
+
+        Returns:
+            The current flow or `None` if no flow is active."""
+        if not self.flow_state:
             return None
 
         return self.all_flows.flow_by_id(self.flow_state.flow_id)
 
     def _get_current_step(self) -> Optional[FlowStep]:
         """Get the current step."""
-        current_flow = self._get_current_flow()
-        if not current_flow:
+        if not (current_flow := self._get_current_flow()) or not self.flow_state:
             return None
 
         return current_flow.step_for_id(self.flow_state.step_id)
 
     def start_flow(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[Optional[Text], List[Event]]:
+    ) -> Optional[FlowStep]:
         """Start the flow."""
+        if not self.flow_state:
+            return None
+
         first_step = self.all_flows.first_step(self.flow_state.flow_id)
 
         if not first_step:
-            return (None, [])
+            return None
 
         if isinstance(first_step, UserMessageStep):
             return self._get_next_step(
@@ -411,16 +419,29 @@ class FlowExecutor:
         self,
         tracker: "DialogueStateTracker",
         domain: Domain,
-    ) -> Tuple[Optional[Text], List[Event]]:
+    ) -> Tuple[Optional[Text], List[Event], float]:
         """Request the next slot and response if needed, else return `None`."""
-        if not (current_step := self._get_current_step()):
+        if not self._get_current_flow():
+            if new_flow := self.find_startable_flow(tracker):
+                # there are flows available, but we are not in a flow
+                # it looks like we can start a flow, so we'll predict the trigger action
+                logger.debug(f"Found startable flow: {new_flow.id}")
+                return (FLOW_PREFIX + new_flow.id, [], 1.0)
+            else:
+                logger.debug("No startable flow found. Skipping prediction.")
+                return (None, [], 0.0)
+
+        # TODO: convert this to a proper step and transition model. right now
+        #  this is a bit of a mess with the flow state and the tracker state
+
+        if not (current_step := self._get_current_step()) or not self.flow_state:
             # If the next step is not set, we return the first step
             # if there is one
             next_step = self.start_flow(tracker, domain)
 
         elif not self._is_step_completed(current_step, tracker):
             # TODO: figure out
-            raise Exception("Not quite sure what to do here yet.")
+            raise FlowException("Not quite sure what to do here yet.")
         else:
             # If the step is completed, we get the next step
             next_step = self._get_next_step(
@@ -429,10 +450,10 @@ class FlowExecutor:
 
         if next_step:
             action, events = self._get_action_for_next_step(next_step, tracker, domain)
-            return (action, events)
+            return (action, events, 1.0)
 
         if not (current_flow := self._get_current_flow()):
-            raise Exception(
+            raise FlowException(
                 "No current flow, but no next step either. "
                 "This should not happen. If there wouldn't be a flow, "
                 "the current step should be None."
@@ -449,7 +470,7 @@ class FlowExecutor:
             # and return action listen. The assumption here is that every
             # flow ends with an action listen.
             events.append(SlotSet(FLOW_STATE_SLOT, None))
-            return (ACTION_LISTEN_NAME, events)
+            return (ACTION_LISTEN_NAME, events, 1.0)
         else:
             # If there is a stack, we pop the last item and return it
             stack_step_dump = current_stack.pop()
@@ -470,13 +491,13 @@ class FlowExecutor:
             events.extend(action_events)
             events.append(SlotSet(FLOW_STACK_SLOT, current_stack))
             events.append(SlotSet(FLOW_STATE_SLOT, updated_state.as_dict()))
-            return (action, events)
+            return (action, events, 1.0)
 
     def _reset_ephemeral_slots(
         self, current_flow: Flow, tracker: DialogueStateTracker
     ) -> List[Event]:
         """Reset all ephemeral slots."""
-        events = []
+        events: List[Event] = []
         for step in current_flow.steps:
             # reset all ephemeral slots
             if isinstance(step, QuestionFlowStep) and step.ephemeral:
@@ -492,8 +513,16 @@ class FlowExecutor:
         domain: Domain,
     ) -> Tuple[Optional[Text], List[Event]]:
         """Get the action for the next step."""
+        if not self.flow_state:
+            raise FlowException(
+                "Trying to get the action for the next step, but there is no "
+                "flow state. This should not happen."
+            )
+
+        events: List[Event] = []
+        action_name = None
+
         if isinstance(next_step, QuestionFlowStep):
-            events = []
             slot = tracker.slots.get(next_step.question, None)
             initial_value = slot.initial_value if slot else None
             if next_step.skip_if_filled:
@@ -513,19 +542,17 @@ class FlowExecutor:
                     self.flow_state.with_updated_id(next_step.id).as_dict(),
                 )
             )
-            return ("question_" + next_step.question, events)
+            action_name = "question_" + next_step.question
         elif isinstance(next_step, ActionFlowStep):
             if not (action_name := next_step.action):
-                raise Exception(f"Action not specified for step {next_step}")
-            return (
-                action_name,
-                [
-                    SlotSet(
-                        FLOW_STATE_SLOT,
-                        self.flow_state.with_updated_id(next_step.id).as_dict(),
-                    )
-                ],
+                raise FlowException(f"Action not specified for step {next_step}")
+            events.append(
+                SlotSet(
+                    FLOW_STATE_SLOT,
+                    self.flow_state.with_updated_id(next_step.id).as_dict(),
+                )
             )
+
         elif isinstance(next_step, LinkFlowStep):
             link_id = next_step.link
             current_stack = tracker.get_slot(FLOW_STACK_SLOT) or []
@@ -534,10 +561,13 @@ class FlowExecutor:
             current_stack.append(
                 self.flow_state.with_updated_id(next_step.id).as_dict()
             )
-            events = [SlotSet(FLOW_STACK_SLOT, current_stack)]
-            sub_flow_action, sub_flow_events = FlowExecutor(
+            events.append(SlotSet(FLOW_STACK_SLOT, current_stack))
+            action_name, sub_flow_events, _ = FlowExecutor(
                 FlowState(flow_id=link_id), self.all_flows
             ).select_next_action(tracker, domain)
-            return (sub_flow_action, events + sub_flow_events)
+
+            events.extend(sub_flow_events)
         else:
-            raise Exception(f"Unknown flow step type {type(next_step)}")
+            raise FlowException(f"Unknown flow step type {type(next_step)}")
+
+        return (action_name, events)
