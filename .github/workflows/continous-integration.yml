@@ -230,6 +230,7 @@ jobs:
     name: Run Tests
     if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     needs: [changes]
     strategy:
       fail-fast: false
@@ -382,6 +383,7 @@ jobs:
     name: Run Flaky Tests
     if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     needs: [changes]
     strategy:
       fail-fast: false
@@ -573,6 +575,7 @@ jobs:
     name: Run Non-Sequential Integration Tests
     if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     needs: [changes]
     env:
       REDIS_HOST: localhost
@@ -708,6 +711,7 @@ jobs:
   sequential_integration_test:
     name: Run Sequential Integration Tests
     runs-on: ubuntu-20.04
+    timeout-minutes: 60
     needs: [changes]
     env:
       POSTGRES_HOST: localhost
