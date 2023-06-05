@@ -50,6 +50,7 @@ jobs:
       backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
+      is_pre_release_version: ${{ steps.rasa_check_version_type.outputs.is_pre_release_version }}
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
@@ -68,6 +69,18 @@ jobs:
           echo "backend=true" >> $GITHUB_OUTPUT
           echo "docker=true" >> $GITHUB_OUTPUT
           echo "docs=true" >> $GITHUB_OUTPUT
+
+      - name: Check if tag version is a pre release version
+        id: rasa_check_version_type
+        if: env.IS_TAG_BUILD == 'true'
+        run: |
+          # Get current tagged Rasa version
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          if [[ "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
+            echo "is_pre_release_version=false" >> $GITHUB_OUTPUT
+          else
+            echo "is_pre_release_version=true" >> $GITHUB_OUTPUT
+          fi
 
   wait_for_docs_tests:
     # Looks for doc test workflows and waits for it to complete successfully
@@ -198,7 +211,7 @@ jobs:
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release')
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release') && needs.changes.outputs.is_pre_release_version == 'false'
         working-directory: changelog
         run: |
           # List all unexpected files in changelog/
@@ -846,11 +859,11 @@ jobs:
           # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
           IS_NEWEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$CURRENT_TAG" \
             | sort -V -C && echo true || echo false) || true)
-          # Temporarily the script gets released for all release candidates
+          # Avoid that the script gets released for alphas or release candidates
           if [[ "${IS_NEWEST_VERSION}" == "true" && "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
             echo "is_newest_version=true" >> $GITHUB_OUTPUT
           else
-            echo "is_newest_version=true" >> $GITHUB_OUTPUT
+            echo "is_newest_version=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Check if a base image exists
@@ -1009,6 +1022,7 @@ jobs:
         uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18
 
       - name: Free disk space
+        if: needs.changes.outputs.docker == 'true'
         # tries to make sure we do not run out of disk space, see
         # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
         run: |
@@ -1034,10 +1048,11 @@ jobs:
         run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Login to DockerHub Registry 🔢
+        if: needs.changes.outputs.docker == 'true'
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
       - name: Copy Segment write key to the package
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
         env:
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
           RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
@@ -1045,16 +1060,17 @@ jobs:
           ./scripts/write_keys_file.sh
 
       - name: Build Docker image
+        if: needs.changes.outputs.docker == 'true'
         run: |
           docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }}
 
       - name: Push image with main tag 📦
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
         run: |
           docker buildx bake --set *.platform=${{ matrix.arch }} -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
       - name: Push image with ${{github.ref}} tag 📦
-        if: github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
         run: |
           IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
