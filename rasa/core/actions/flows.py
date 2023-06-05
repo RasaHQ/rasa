@@ -1,4 +1,4 @@
-from typing import Text, List
+from typing import Any, Dict, Optional, Text, List
 import logging
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
@@ -37,12 +37,14 @@ class FlowTriggerAction(action.Action):
         """Return the flow name."""
         return self._flow_action_name
 
+
     async def run(
         self,
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Trigger the flow."""
         return [

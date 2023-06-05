@@ -155,7 +155,7 @@ class FlowsList:
 
         step = flow.step_for_id(step_id)
         if not step:
-            raise UnresolvedFlowStepIdException(step_id, flow)
+            raise UnresolvedFlowStepIdException(step_id, flow, referenced_from=None)
 
         return step
 
@@ -234,7 +234,7 @@ class Flow:
 
         def _reachable_steps(
             step: Optional[FlowStep], reached_steps: Set[Text]
-        ) -> Set[FlowStep]:
+        ) -> Set[Text]:
             """Validates that the given step can be reached from the start step."""
             if step is None or step.id in reached_steps:
                 return reached_steps
@@ -252,11 +252,15 @@ class Flow:
             if step.id not in reached_steps:
                 raise UnreachableFlowStepException(step, self)
 
-    def step_for_id(self, step_id: Text) -> Optional[FlowStep]:
+    def step_for_id(self, step_id: Optional[Text]) -> Optional[FlowStep]:
         """Returns the step with the given id."""
+        if not step_id:
+            return None
+
         for step in self.steps:
             if step.id == step_id:
                 return step
+
         return None
 
     def start_step(self) -> Optional[FlowStep]:
