@@ -143,13 +143,7 @@ class FlowPolicy(Policy):
         Returns:
              The prediction.
         """
-        if not flows:
-            # there are no flows available
-            logger.debug("No flows available. Skipping prediction.")
-            predicted_action = None
-            predicted_score = 0.0
-            events: List[Event] = []
-        elif tracker.active_loop:
+        if tracker.active_loop:
             # we are in a loop - we don't want to handle flows in this case
             logger.debug("We are in a loop. Skipping prediction.")
             predicted_action = None
@@ -240,7 +234,9 @@ class FlowExecutor:
         self.all_flows = all_flows
 
     @staticmethod
-    def from_tracker(tracker: DialogueStateTracker, flows: FlowsList) -> FlowExecutor:
+    def from_tracker(
+        tracker: DialogueStateTracker, flows: Optional[FlowsList]
+    ) -> FlowExecutor:
         """Creates a `FlowExecutor` from a tracker.
 
         Args:
@@ -251,7 +247,7 @@ class FlowExecutor:
         flow_state = tracker.get_slot(FLOW_STATE_SLOT)
         return FlowExecutor(
             FlowState.from_dict(flow_state) if flow_state else None,
-            flows,
+            flows or FlowsList([]),
         )
 
     def find_startable_flow(self, tracker: DialogueStateTracker) -> Optional[Flow]:
