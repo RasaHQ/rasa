@@ -20,7 +20,7 @@ class SensitiveTopicDetector:
             openai.api_key = key
         pass
 
-    def infer(self, user_msg: Text) -> bool:
+    def check(self, user_msg: Text) -> bool:
         if not self._enabled:
             return False
         try:
