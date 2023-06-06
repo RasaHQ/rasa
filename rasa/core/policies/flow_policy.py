@@ -43,6 +43,7 @@ from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
+from rasa.core.policies.dm2.sensitive_topic import SensitiveTopicDetector
 
 
 logger = logging.getLogger(__name__)
@@ -98,6 +99,7 @@ class FlowPolicy(Policy):
 
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
         self.resource = resource
+        self._sensitive_topic_detector = SensitiveTopicDetector()
 
     def train(
         self,
@@ -149,6 +151,11 @@ class FlowPolicy(Policy):
             return self._create_prediction_result(
                 action_name=None, domain=domain, score=0.0, events=[]
             )
+
+        if self._sensitive_topic_detector.infer(tracker.latest_message.text):
+            logger.info("Sensitive topic detected, redirect to the special flow")
+        else:
+            logger.info("No sensitive topic detected: %s", tracker.latest_message.text)
 
         # create executor and predict next action
         executor = FlowExecutor.from_tracker(tracker, flows)
