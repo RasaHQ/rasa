@@ -160,6 +160,18 @@ class FlowPolicy(Policy):
         Returns:
              The prediction.
         """
+        predicted_action = None
+        if self._is_first_prediction_after_user_message(tracker):
+            if not self._sensitive_topic_detector.check(tracker.latest_message.text):
+                logger.info("No sensitive topic detected: %s", tracker.latest_message.text)
+            else:
+                logger.info("Sensitive topic detected, redirect to the special flow")
+                predicted_action = self._sensitive_topic_detector.action()
+
+        # if DM2 stepped in, return predicted action
+        if predicted_action is not None:
+            return self._create_prediction_result(predicted_action, domain, 1.0, [])
+
         if tracker.active_loop:
             # we are in a loop - we don't want to handle flows in this case
             logger.debug("We are in a loop. Skipping prediction.")
@@ -167,21 +179,11 @@ class FlowPolicy(Policy):
                 action_name=None, domain=domain, score=0.0, events=[]
             )
 
-        predicted_action, events, predicted_score = None, [], None
-        if self._is_first_prediction_after_user_message(tracker):
-            if not self._sensitive_topic_detector.check(tracker.latest_message.text):
-                logger.info("No sensitive topic detected: %s", tracker.latest_message.text)
-            else:
-                logger.info("Sensitive topic detected, redirect to the special flow")
-                predicted_action = self._sensitive_topic_detector.action()
-                predicted_score = 1.0
-
-        if predicted_action is None:
-            # create executor and predict next action
-            executor = FlowExecutor.from_tracker(tracker, flows)
-            predicted_action, events, predicted_score = executor.select_next_action(
-                tracker, domain
-            )
+        # create executor and predict next action
+        executor = FlowExecutor.from_tracker(tracker, flows)
+        predicted_action, events, predicted_score = executor.select_next_action(
+            tracker, domain
+        )
         return self._create_prediction_result(
             predicted_action, domain, predicted_score, events
         )
