@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Text
 
-import dask
+import dask.threaded
 
 from rasa.engine.exceptions import GraphRunError
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphNodeHook, GraphSchema
@@ -98,7 +98,7 @@ class DaskGraphRunner(GraphRunner):
         )
 
         try:
-            dask_result = dask.get(run_graph, run_targets)
+            dask_result = dask.threaded.get(run_graph, run_targets)
             return dict(dask_result)
         except RuntimeError as e:
             raise GraphRunError("Error running runner.") from e
