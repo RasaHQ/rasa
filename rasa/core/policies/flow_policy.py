@@ -123,6 +123,21 @@ class FlowPolicy(Policy):
         # prediction. we might want to store the flows in the future
         # or do some preprocessing here.
         return self.resource
+    
+    def _is_first_prediction_after_user_message(self, tracker: DialogueStateTracker) -> bool:
+        """Checks whether the tracker ends with an action listen.
+
+        If the tracker ends with an action listen, it means that we've just received
+        a user message.
+
+        Args:
+            tracker: The tracker.
+
+        Returns:
+            `True` if the tracker is the first one after a user message, `False`
+            otherwise.
+        """
+        return tracker.latest_action_name == ACTION_LISTEN_NAME
 
     def predict_action_probabilities(
         self,
@@ -153,7 +168,7 @@ class FlowPolicy(Policy):
             )
 
         predicted_action, events, predicted_score = None, [], None
-        if tracker.latest_action_name != self._sensitive_topic_detector.action():
+        if self._is_first_prediction_after_user_message(tracker):
             if not self._sensitive_topic_detector.check(tracker.latest_message.text):
                 logger.info("No sensitive topic detected: %s", tracker.latest_message.text)
             else:
