@@ -5706,31 +5706,6 @@ tensorflow-cpu = ["tensorflow-cpu (>=2.9.0,<2.12.0)"]
 tensorflow-gpu = ["tensorflow-gpu (>=2.9.0,<2.12.0)"]
 
 [[package]]
-name = "tensorflow-addons"
-version = "0.19.0"
-description = "TensorFlow Addons."
-category = "main"
-optional = false
-python-versions = "*"
-files = []
-develop = false
-
-[package.dependencies]
-packaging = "*"
-typeguard = ">=2.7"
-
-[package.extras]
-tensorflow = ["tensorflow (>=2.9.0,<2.12.0)"]
-tensorflow-cpu = ["tensorflow-cpu (>=2.9.0,<2.12.0)"]
-tensorflow-gpu = ["tensorflow-gpu (>=2.9.0,<2.12.0)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/tensorflow/addons.git"
-reference = "v0.19.0"
-resolved_reference = "8f191c726c37931e34b98b5843e5918e9f1a5e49"
-
-[[package]]
 name = "tensorflow-cpu-aws"
 version = "2.11.0"
 description = "TensorFlow is an open source machine learning framework for everyone."
@@ -7101,4 +7076,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "cbc30712d78199c6c8d3af7bd4b3b13e2d5d02b516b0d1313ff6c288cabe0815"
+content-hash = "56a8e3ea83fc5f952be7a05d1e32bf82a1dbea582e3774b762e898d1d216ce15"

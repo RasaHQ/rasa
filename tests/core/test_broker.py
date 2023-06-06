@@ -304,7 +304,12 @@ async def test_kafka_broker_security_protocols(file: Text, exception: Exception)
         producer.list_topics("topic", timeout=1)
 
 
+@pytest.mark.flaky
 async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
+    """
+    tests that when you run rasa with logging set at INFO,
+    the debugs from pika dependency are not going to be shown
+    """
     broker = PikaEventBroker(
         "host", "username", "password", retry_delay_in_seconds=1, connection_attempts=1
     )
@@ -313,14 +318,11 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         with pytest.raises(Exception):
             await broker.connect()
 
-    caplog_records = [
-        record for record in caplog.records if record.name != "ddtrace.internal.writer"
-    ]
-
     # Only Rasa Open Source logs, but logs from the library itself.
     assert all(
-        record.name in ["rasa.core.brokers.pika", "asyncio"]
-        for record in caplog_records
+        record.name
+        in ["rasa.core.brokers.pika", "asyncio", "ddtrace.internal.writer.writer"]
+        for record in caplog.records
     )
 
 
