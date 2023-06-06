@@ -239,6 +239,7 @@ class Domain:
             warn_about_duplicates_found_during_domain_merging(duplicates)
 
         responses = data.get(KEY_RESPONSES, {})
+        cls._validate_response_ids(responses)
 
         domain_slots = data.get(KEY_SLOTS, {})
         if domain_slots:
@@ -1915,6 +1916,25 @@ class Domain:
                 action_names += [action]
 
         return action_names
+
+    @staticmethod
+    def _validate_response_ids(responses: Dict[Text, List[Dict[Text, Any]]]) -> None:
+        """Validates that all response ids are unique.
+
+        Raises:
+            ValueError: if there are any non-unique response ids.
+        """
+        response_ids = set()
+        for _, response_variations in responses.items():
+            for response_variation in response_variations:
+                response_variation_id = response_variation.get("id")
+                if response_variation_id:
+                    if response_variation_id in response_ids:
+                        raise RasaException(
+                            f"Duplicate response id "
+                            f"'{response_variation_id}' defined in domain."
+                        )
+                    response_ids.add(response_variation_id)
 
 
 def warn_about_duplicates_found_during_domain_merging(

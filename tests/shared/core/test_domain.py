@@ -9,7 +9,7 @@ from typing import Dict, List, Text, Any, Union, Set, Optional
 import pytest
 from pytest import WarningsRecorder
 
-from rasa.shared.exceptions import YamlSyntaxException, YamlException
+from rasa.shared.exceptions import YamlSyntaxException, YamlException, RasaException
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
@@ -2283,3 +2283,86 @@ def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
     assert sorted(domain._actions_which_explicitly_need_domain) == sorted(
         expected_actions_that_need_domain
     )
+
+
+@pytest.mark.parametrize(
+    "domain_yaml, expected",
+    [
+        (
+            """
+            responses:
+                utter_greet:
+                - text: hey there!
+                  id: '1233'
+                - text: hey ho!
+                  id: '1234'
+            """,
+            {
+                "utter_greet": [
+                    {
+                        "text": "hey there!",
+                        "id": "1233",
+                    },
+                    {
+                        "text": "hey ho!",
+                        "id": "1234",
+                    },
+                ],
+            },
+        ),
+        (
+            """
+            responses:
+                utter_greet:
+                - text: hey there!
+                - text: hey ho!
+                  id: '1234'
+            """,
+            {
+                "utter_greet": [
+                    {
+                        "text": "hey there!",
+                    },
+                    {
+                        "text": "hey ho!",
+                        "id": "1234",
+                    },
+                ],
+            },
+        ),
+        (
+            """
+            responses:
+                utter_greet:
+                - text: hey there!
+                - text: hey ho!
+            """,
+            {
+                "utter_greet": [
+                    {
+                        "text": "hey there!",
+                    },
+                    {
+                        "text": "hey ho!",
+                    },
+                ],
+            },
+        ),
+    ],
+)
+def test_domain_responses_with_ids(domain_yaml, expected) -> None:
+    domain = Domain.from_yaml(domain_yaml)
+    assert domain.responses == expected
+
+
+def test_domain_responses_with_same_ids_are_not_allowed() -> None:
+    domain_yaml = """
+            responses:
+                utter_greet:
+                - text: hey there!
+                  id: '1234'
+                - text: hey ho!
+                  id: '1234'
+            """
+    with pytest.raises(RasaException):
+        Domain.from_yaml(domain_yaml)
