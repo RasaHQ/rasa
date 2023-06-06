@@ -23,7 +23,6 @@ class SensitiveTopicDetector:
     def infer(self, user_msg: Text) -> bool:
         if not self._enabled:
             return False
-        result = False
         try:
             resp = openai.Completion.create(
                 model=self.MODEL_NAME,
