@@ -37,6 +37,10 @@ class SensitiveTopicDetector:
             result = False
         return result
 
+    @classmethod
+    def action(cls) -> Text:
+        return "flow_sensitive-topic"
+
     def _make_prompt(self, user_msg: Text) -> Text:
         return f"""Below is the message from the user to the specialized financial chatbot. 
         Can you detect the sensitive topic, not related to the scope of the bot? 

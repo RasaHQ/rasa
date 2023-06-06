@@ -152,16 +152,20 @@ class FlowPolicy(Policy):
                 action_name=None, domain=domain, score=0.0, events=[]
             )
 
-        if self._sensitive_topic_detector.infer(tracker.latest_message.text):
-            logger.info("Sensitive topic detected, redirect to the special flow")
-        else:
+        predicted_action, events, predicted_score = None, [], None
+        if not self._sensitive_topic_detector.infer(tracker.latest_message.text):
             logger.info("No sensitive topic detected: %s", tracker.latest_message.text)
+        else:
+            logger.info("Sensitive topic detected, redirect to the special flow")
+            predicted_action = self._sensitive_topic_detector.action()
+            predicted_score = 1.0
 
-        # create executor and predict next action
-        executor = FlowExecutor.from_tracker(tracker, flows)
-        predicted_action, events, predicted_score = executor.select_next_action(
-            tracker, domain
-        )
+        if predicted_action is None:
+            # create executor and predict next action
+            executor = FlowExecutor.from_tracker(tracker, flows)
+            predicted_action, events, predicted_score = executor.select_next_action(
+                tracker, domain
+            )
         return self._create_prediction_result(
             predicted_action, domain, predicted_score, events
         )
