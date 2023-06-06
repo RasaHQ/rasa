@@ -294,7 +294,7 @@ git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix_signal_issue"
 
 [tool.poetry.group.dev.dependencies]
-ruff = ">=0.0.255,<0.0.270"
+ruff = ">=0.0.255,<0.0.271"
 docker = "^6.0.1"
 pytest-cov = "^4.0.0"
 pytest-asyncio = "^0.20.0"
