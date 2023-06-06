@@ -409,16 +409,15 @@ def _add_message_edge(
 
     if message and message.get("intent", {}).get("name", None):
         # get the entities as \n separated values
-        ent_list_of_dicts = message.get("entities")
-        if ent_names := [
-            v for e in ent_list_of_dicts for k, v in e.items() if k == "entity"
-        ]:
+        entities: List[Dict[Text,Any]] = message.get("entities")
+        entity_values = [value for entity in entities for key, value in entity.items() if key == "entity"]
+        if entity_values:
             newline = ",\n"
-            ent_str = f"{newline}({newline.join(ent_names)})"
+            entity_values_as_str = f"{newline}({newline.join(entity_values)})"
         else:
-            ent_str = ""
+            entity_values_as_str = ""
 
-        message_key = message.get("intent", {}).get("name", None) + ent_str
+        message_key = message.get("intent", {}).get("name", None) + entity_values_as_str
         message_label = message_key  # message.get("text", None)
     elif message and message.get("text"):
 
@@ -458,9 +457,9 @@ def visualize_neighborhood(
     path_ellipsis_ends = set()
 
     if domain:
-        slot_defs = domain.as_dict()["slots"]
+        domain_slots = domain.as_dict()["slots"]
     else:
-        slot_defs = {}
+        domain_slots = {}
 
     for events in event_sequences:
         if current and max_distance:
@@ -485,7 +484,7 @@ def visualize_neighborhood(
             elif isinstance(el, SlotSet):
                 slot = el.as_dict()
 
-                slot_def = slot_defs.get(slot["name"], {})
+                slot_def = domain_slots.get(slot["name"], {})
                 slot_ic = slot_def.get("influence_conversation", True)
                 if slot_ic:
                     # ignore non conversation relevant slots
