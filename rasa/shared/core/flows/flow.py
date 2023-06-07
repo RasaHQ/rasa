@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, Set, Text
 from rasa.shared.exceptions import RasaException
 
@@ -18,9 +19,9 @@ class UnreachableFlowStepException(RasaException):
     def __str__(self) -> Text:
         """Return a string representation of the exception."""
         return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' can not be reached from the start step. "
-            f"Please make sure that all steps can be reached from the start step, e.g. by "
-            f"checking that another step points to this step."
+            f"Step '{self.step.id}' in flow '{self.flow.id}' can not be reached from "
+            f"the start step. Please make sure that all steps can be reached from the "
+            f"start step, e.g. by checking that another step points to this step."
         )
 
 
@@ -142,11 +143,6 @@ class FlowsList:
         else:
             return None
 
-    def first_step(self, flow_id: Text) -> Optional[FlowStep]:
-        """Return the first step of the flow."""
-        flow = self.flow_by_id(flow_id)
-        return flow.start_step() if flow else None
-
     def step_by_id(self, step_id: Text, flow_id: Text) -> FlowStep:
         """Return the step with the given id."""
         flow = self.flow_by_id(flow_id)
@@ -190,7 +186,7 @@ class Flow:
         """
         return Flow(
             id=flow_id,
-            name=flow_config.get("name"),
+            name=flow_config.get("name", ""),
             description=flow_config.get("description"),
             steps=[
                 step_from_json(step_config)
@@ -216,7 +212,8 @@ class Flow:
 
         This ensures that the flow semantically makes sense. E.g. it
         checks:
-        -
+            - whether all next links point to existing steps
+            - whether all steps can be reached from the start step
         """
         self._validate_all_next_ids_are_availble_steps()
         self._validate_all_steps_can_be_reached()
@@ -246,7 +243,7 @@ class Flow:
                 )
             return reached_steps
 
-        reached_steps = _reachable_steps(self.start_step(), set())
+        reached_steps = _reachable_steps(self.first_step_in_flow(), set())
 
         for step in self.steps:
             if step.id not in reached_steps:
@@ -257,13 +254,20 @@ class Flow:
         if not step_id:
             return None
 
+        if step_id == START_STEP:
+            first_step_in_flow = self.first_step_in_flow()
+            return StartFlowStep(first_step_in_flow.id if first_step_in_flow else None)
+
+        if step_id == END_STEP:
+            return EndFlowStep()
+
         for step in self.steps:
             if step.id == step_id:
                 return step
 
         return None
 
-    def start_step(self) -> Optional[FlowStep]:
+    def first_step_in_flow(self) -> Optional[FlowStep]:
         """Returns the start step of this flow."""
         if len(self.steps) == 0:
             return None
@@ -289,6 +293,8 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         return QuestionFlowStep.from_json(flow_step_config)
     if "link" in flow_step_config:
         return LinkFlowStep.from_json(flow_step_config)
+    if "set_slots" in flow_step_config:
+        return SetSlotsFlowStep.from_json(flow_step_config)
     else:
         raise ValueError(f"Flow step is missing a type. {flow_step_config}")
 
@@ -339,9 +345,92 @@ class FlowStep:
             dump["metadata"] = self.metadata
         return dump
 
-    def has_next(self) -> bool:
-        """Returns whether the flow step has a next steps."""
-        return bool(self.next.links)
+
+START_STEP = "__start__"
+
+
+@dataclass
+class StartFlowStep(FlowStep):
+    """Represents the configuration of a start flow step."""
+
+    def __init__(self, start_step_id: Optional[Text]) -> None:
+        """Initializes a start flow step.
+
+        Args:
+            start_step: The step to start the flow from.
+        """
+        if start_step_id is not None:
+            links: List[FlowLink] = [StaticFlowLink(target=start_step_id)]
+        else:
+            links = []
+
+        super().__init__(
+            id=START_STEP,
+            description=None,
+            metadata={},
+            next=FlowLinks(links=links),
+        )
+
+    @classmethod
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> ActionFlowStep:
+        """Used to read flow steps from parsed YAML.
+
+        Args:
+            flow_step_config: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed flow step.
+        """
+        raise ValueError("Start steps cannot be parsed from YAML.")
+
+    def as_json(self) -> Dict[Text, Any]:
+        """Returns the flow step as a dictionary.
+
+        Returns:
+            The flow step as a dictionary.
+        """
+        raise ValueError("Start steps cannot be dumped to YAML.")
+
+
+END_STEP = "__end__"
+
+
+@dataclass
+class EndFlowStep(FlowStep):
+    """Represents the configuration of an end to a flow."""
+
+    def __init__(self) -> None:
+        """Initializes a start flow step.
+
+        Args:
+            start_step: The step to start the flow from.
+        """
+        super().__init__(
+            id=END_STEP,
+            description=None,
+            metadata={},
+            next=FlowLinks(links=[]),
+        )
+
+    @classmethod
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> ActionFlowStep:
+        """Used to read flow steps from parsed YAML.
+
+        Args:
+            flow_step_config: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed flow step.
+        """
+        raise ValueError("End steps cannot be parsed from YAML.")
+
+    def as_json(self) -> Dict[Text, Any]:
+        """Returns the flow step as a dictionary.
+
+        Returns:
+            The flow step as a dictionary.
+        """
+        raise ValueError("End steps cannot be dumped to YAML.")
 
 
 @dataclass
@@ -363,7 +452,7 @@ class ActionFlowStep(FlowStep):
         """
         base = super()._from_json(flow_step_config)
         return ActionFlowStep(
-            action=flow_step_config.get("action"),
+            action=flow_step_config.get("action", ""),
             **base.__dict__,
         )
 
@@ -397,7 +486,7 @@ class LinkFlowStep(FlowStep):
         """
         base = super()._from_json(flow_step_config)
         return LinkFlowStep(
-            link=flow_step_config.get("link"),
+            link=flow_step_config.get("link", ""),
             **base.__dict__,
         )
 
@@ -422,7 +511,7 @@ class TriggerCondition:
     """The entities to trigger the flow."""
 
     def is_triggered(self, intent: Text, entities: List[Text]) -> bool:
-        """Returns whether the trigger condition is triggered by the given intent and entities.
+        """Check if condition is triggered by the given intent and entities.
 
         Args:
             intent: The intent to check.
@@ -518,6 +607,23 @@ class UserMessageStep(FlowStep):
         )
 
 
+# enumeration of question scopes. scope can either be flow or global
+class QuestionScope(str, Enum):
+    FLOW = "flow"
+    GLOBAL = "global"
+
+    @staticmethod
+    def from_str(label):
+        if label is None:
+            return QuestionScope.FLOW
+        elif label.lower() == "flow":
+            return QuestionScope.FLOW
+        elif label.lower() == "global":
+            return QuestionScope.GLOBAL
+        else:
+            raise NotImplementedError
+
+
 @dataclass
 class QuestionFlowStep(FlowStep):
     """Represents the configuration of a question flow step."""
@@ -526,8 +632,8 @@ class QuestionFlowStep(FlowStep):
     """The question of the flow step."""
     skip_if_filled: bool = False
     """Whether to skip the question if the slot is already filled."""
-    ephemeral: bool = False
-    """Whether the question is ephemeral."""
+    scope: QuestionScope = QuestionScope.FLOW
+    """how the question is scoped, determins when to reset its value."""
 
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> QuestionFlowStep:
@@ -541,9 +647,9 @@ class QuestionFlowStep(FlowStep):
         """
         base = super()._from_json(flow_step_config)
         return QuestionFlowStep(
-            question=flow_step_config.get("question"),
+            question=flow_step_config.get("question", ""),
             skip_if_filled=flow_step_config.get("skip_if_filled", False),
-            ephemeral=flow_step_config.get("ephemeral", False),
+            scope=QuestionScope.from_str(flow_step_config.get("scope")),
             **base.__dict__,
         )
 
@@ -556,7 +662,7 @@ class QuestionFlowStep(FlowStep):
         dump = super().as_json()
         dump["question"] = self.question
         dump["skip_if_filled"] = self.skip_if_filled
-        dump["ephemeral"] = self.ephemeral
+        dump["scope"] = self.scope.value
 
         return dump
 
@@ -580,7 +686,7 @@ class UserFlowStep(FlowStep):
         """
         base = super()._from_json(flow_step_config)
         return UserFlowStep(
-            user=flow_step_config.get("user"),
+            user=flow_step_config.get("user", ""),
             **base.__dict__,
         )
 
@@ -592,6 +698,42 @@ class UserFlowStep(FlowStep):
         """
         dump = super().as_json()
         dump["user"] = self.user
+        return dump
+
+
+@dataclass
+class SetSlotsFlowStep(FlowStep):
+    """Represents the configuration of a set_slots flow step."""
+
+    slots: List[Dict[str, Any]]
+    """Slots to set of the flow step."""
+
+    @classmethod
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> SetSlotsFlowStep:
+        """Used to read flow steps from parsed YAML.
+        Args:
+            flow_step_config: The parsed YAML as a dictionary.
+        Returns:
+            The parsed flow step.
+        """
+        base = super()._from_json(flow_step_config)
+        slots = [
+            {"key": k, "value": v}
+            for slot in flow_step_config.get("set_slots", [])
+            for k, v in slot.items()
+        ]
+        return SetSlotsFlowStep(
+            slots=slots,
+            **base.__dict__,
+        )
+
+    def as_json(self) -> Dict[Text, Any]:
+        """Returns the flow step as a dictionary.
+        Returns:
+            The flow step as a dictionary.
+        """
+        dump = super().as_json()
+        dump["set_slots"] = [{slot["key"]: slot["value"]} for slot in self.slots]
         return dump
 
 
@@ -678,7 +820,7 @@ class FlowLink(Protocol):
         ...
 
     @staticmethod
-    def from_json(link_config: Dict[Text, Any]) -> FlowLink:
+    def from_json(link_config: Any) -> FlowLink:
         """Used to read flow links from parsed YAML.
 
         Args:

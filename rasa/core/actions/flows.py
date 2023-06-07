@@ -2,12 +2,11 @@ from typing import Any, Dict, Optional, Text, List
 import logging
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
-from rasa.core.policies.flow_policy import FlowState
+from rasa.core.policies.flow_policy import FlowStack, FlowStackFrame
 from rasa.shared.constants import FLOW_PREFIX
 
 from rasa.shared.core.constants import (
     FLOW_STACK_SLOT,
-    FLOW_STATE_SLOT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -46,7 +45,7 @@ class FlowTriggerAction(action.Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Trigger the flow."""
-        return [
-            SlotSet(FLOW_STACK_SLOT, None),
-            SlotSet(FLOW_STATE_SLOT, FlowState(flow_id=self._flow_name).as_dict()),
-        ]
+
+        stack = FlowStack.from_tracker(tracker)
+        stack.push(FlowStackFrame(flow_id=self._flow_name))
+        return [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]

@@ -79,7 +79,6 @@ IS_EXTERNAL = "is_external"
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 REQUESTED_SLOT = "requested_slot"
-FLOW_STATE_SLOT = "flow_state"
 FLOW_STACK_SLOT = "flow_stack"
 
 # slots for knowledge base
@@ -90,7 +89,6 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
 DEFAULT_SLOT_NAMES = {
     REQUESTED_SLOT,
-    FLOW_STATE_SLOT,
     FLOW_STACK_SLOT,
     SESSION_START_METADATA_SLOT,
     SLOT_LISTED_ITEMS,
