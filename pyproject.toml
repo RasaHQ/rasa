@@ -232,11 +232,11 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.tensorflow]
-version = "2.11.0"
+version = "2.11.1"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 
 [tool.poetry.dependencies.tensorflow-intel]
-version = "2.11.0"
+version = "2.11.1"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-io-gcs-filesystem]
@@ -244,10 +244,11 @@ version = ">=0.23.1,<0.32"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-cpu-aws]
-version = "2.11.0"
+version = "2.11.1"
 markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
 
 [tool.poetry.dependencies.tensorflow-macos]
+# Updated tensorflow to 2.11.1 for other platforms except Apple Silicon - 2.11.1 is not available there
 version = "2.11.0"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 
