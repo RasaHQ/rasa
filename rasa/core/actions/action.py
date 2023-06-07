@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import structlog
 from typing import (
     List,
     Text,
@@ -90,6 +91,7 @@ if TYPE_CHECKING:
     from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
@@ -1160,7 +1162,7 @@ class ActionExtractSlots(Action):
         ]
 
         slot_candidates = "\n".join([e.key for e in slot_events])
-        logger.debug(f"Validating extracted slots: {slot_candidates}")  # PII?
+        structlogger.debug(f"Validating extracted slots: {slot_candidates}")  # PII?
 
         if ACTION_VALIDATE_SLOT_MAPPINGS not in domain.user_actions:
             return cast(List[Event], slot_events)

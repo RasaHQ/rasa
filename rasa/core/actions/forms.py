@@ -1,6 +1,7 @@
 from typing import Text, List, Optional, Union, Any, Dict, Set
 import itertools
 import logging
+import structlog
 import json
 
 from rasa.core.actions import action
@@ -31,6 +32,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class FormAction(LoopAction):
@@ -254,7 +256,7 @@ class FormAction(LoopAction):
             Otherwise, returns empty list since the extracted slots already have
             corresponding `SlotSet` events in the tracker.
         """
-        logger.debug(f"Validating extracted slots: {slot_candidates}")  # PII?
+        structlogger.debug(f"Validating extracted slots: {slot_candidates}")  # PII?
         events: List[Union[SlotSet, Event]] = [
             SlotSet(slot_name, value) for slot_name, value in slot_candidates.items()
         ]
@@ -538,7 +540,9 @@ class FormAction(LoopAction):
         )
 
         if needs_validation:
-            logger.debug(f"Validating user input '{tracker.latest_message}'.")  # PII?
+            structlogger.debug(
+                f"Validating user input '{tracker.latest_message}'."
+            )  # PII?
             return await self.validate(tracker, domain, output_channel, nlg)
         else:
             # Needed to determine which slots to request although there are no slots
@@ -592,7 +596,7 @@ class FormAction(LoopAction):
         )
 
         events_as_str = "\n".join(str(e) for e in extraction_events)
-        logger.debug(
+        structlogger.debug(
             f"The execution of '{ACTION_EXTRACT_SLOTS}' resulted in "
             f"these events: {events_as_str}."  # PII?
         )
