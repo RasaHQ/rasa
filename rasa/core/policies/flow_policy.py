@@ -69,10 +69,12 @@ class FlowPolicy(Policy):
     def get_default_config() -> Dict[Text, Any]:
         """Returns the default config (see parent class for full docstring)."""
         # please make sure to update the docs when changing a default parameter
-        return {
+        res = {
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
             POLICY_MAX_HISTORY: None,
         }
+        res.update(SensitiveTopicDetector.get_default_config())
+        return res
 
     @staticmethod
     def supported_data() -> SupportedData:
@@ -99,7 +101,7 @@ class FlowPolicy(Policy):
 
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
         self.resource = resource
-        self._sensitive_topic_detector = SensitiveTopicDetector()
+        self._sensitive_topic_detector = SensitiveTopicDetector(config)
 
     def train(
         self,
@@ -165,8 +167,8 @@ class FlowPolicy(Policy):
             if not self._sensitive_topic_detector.check(tracker.latest_message.text):
                 logger.info("No sensitive topic detected: %s", tracker.latest_message.text)
             else:
-                logger.info("Sensitive topic detected, redirect to the special flow")
                 predicted_action = self._sensitive_topic_detector.action()
+                logger.info("Sensitive topic detected, predicting action %s", predicted_action)
 
         # if DM2 stepped in, return predicted action
         if predicted_action is not None:
