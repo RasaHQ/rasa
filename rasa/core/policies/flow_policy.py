@@ -125,8 +125,9 @@ class FlowPolicy(Policy):
         # prediction. we might want to store the flows in the future
         # or do some preprocessing here.
         return self.resource
-    
-    def _is_first_prediction_after_user_message(self, tracker: DialogueStateTracker) -> bool:
+
+    @staticmethod
+    def _is_first_prediction_after_user_message(tracker: DialogueStateTracker) -> bool:
         """Checks whether the tracker ends with an action listen.
 
         If the tracker ends with an action listen, it means that we've just received
@@ -165,10 +166,12 @@ class FlowPolicy(Policy):
         predicted_action = None
         if self._is_first_prediction_after_user_message(tracker):
             if not self._sensitive_topic_detector.check(tracker.latest_message.text):
-                logger.info("No sensitive topic detected: %s", tracker.latest_message.text)
+                logger.info("No sensitive topic detected: %s",
+                            tracker.latest_message.text)
             else:
                 predicted_action = self._sensitive_topic_detector.action()
-                logger.info("Sensitive topic detected, predicting action %s", predicted_action)
+                logger.info("Sensitive topic detected, predicting action %s",
+                            predicted_action)
 
         # if DM2 stepped in, return predicted action
         if predicted_action is not None:
