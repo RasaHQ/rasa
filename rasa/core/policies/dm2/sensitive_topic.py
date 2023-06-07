@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 CONFIG_KEY_MODEL_NAME = "sensitive_model_name"
 CONFIG_KEY_ACTION = "sensitive_action"
+CONFIG_KEY_USE_STUB = "sensitive_use_stub"
 
 
 class SensitiveTopicDetectorBase(ABC):
@@ -33,18 +34,22 @@ class SensitiveTopicDetectorBase(ABC):
 
 class SensitiveTopicDetector(SensitiveTopicDetectorBase):
     DEFAULT_MODEL_NAME = "text-davinci-003"
+    DEFAULT_USE_STUB = False
 
     def __init__(self, config: Dict[Text, Any]):
         super().__init__(config)
 
+        # used as a fallback on RateLimit error or OpenAI misconfiguration
+        self._stub = SensitiveTopicDetectorStub(config)
+
         # TODO: move the key in more appropriate config (global DM2 config?)
         key = os.getenv("OPENAI_API_KEY")
-        self._enabled = True
         self._model_name = config.get(CONFIG_KEY_MODEL_NAME, self.DEFAULT_MODEL_NAME)
         self._action = config.get(CONFIG_KEY_ACTION, self.DEFAULT_ACTION)
+        self._use_stub = config.get(CONFIG_KEY_USE_STUB, self.DEFAULT_USE_STUB)
         if key is None:
-            logger.warning(f"No OPENAI_API_KEY found in environment, {self.__class__.__name__} is disabled")
-            self._enabled = False
+            logger.warning(f"No OPENAI_API_KEY found in environment, {self.__class__.__name__} uses stub detector")
+            self._use_stub = True
         else:
             openai.api_key = key
 
@@ -53,11 +58,12 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
         return {
             CONFIG_KEY_MODEL_NAME: cls.DEFAULT_MODEL_NAME,
             CONFIG_KEY_ACTION: cls.DEFAULT_ACTION,
+            CONFIG_KEY_USE_STUB: cls.DEFAULT_USE_STUB,
         }
 
     def check(self, user_msg: Text) -> bool:
-        if not self._enabled:
-            return False
+        if not self._use_stub:
+            return self._stub.check(user_msg)
         try:
             resp = openai.Completion.create(
                 model=self._model_name,
@@ -68,14 +74,15 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
             result = self._parse_response(resp_text)
             logger.warning("Response: %s -> %s", resp_text.strip(), result)
         except openai.error.RateLimitError:
-            logger.warning("RateLimitError from openai, returning False")
-            result = False
+            logger.warning("RateLimitError from openai, fall back to stub")
+            result = self._stub.check(user_msg)
         return result
 
     def action(self) -> Text:
         return self._action
 
-    def _make_prompt(self, user_msg: Text) -> Text:
+    @staticmethod
+    def _make_prompt(user_msg: Text) -> Text:
         return f"""Below is the message from the user to the specialized financial chatbot. 
         Can you detect the sensitive topic, not related to the scope of the bot? 
         Reply "YES" or "NO" and nothing else.
@@ -83,7 +90,8 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
         {user_msg}
         """
 
-    def _parse_response(self, text: Text) -> bool:
+    @staticmethod
+    def _parse_response(text: Text) -> bool:
         return "YES" in text.upper()
 
 

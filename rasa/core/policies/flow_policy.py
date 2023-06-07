@@ -43,7 +43,7 @@ from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
-from rasa.core.policies.dm2.sensitive_topic import SensitiveTopicDetector, SensitiveTopicDetectorStub
+from rasa.core.policies.dm2.sensitive_topic import SensitiveTopicDetector
 
 
 logger = logging.getLogger(__name__)
@@ -101,7 +101,7 @@ class FlowPolicy(Policy):
 
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
         self.resource = resource
-        self._sensitive_topic_detector = SensitiveTopicDetectorStub(config) #SensitiveTopicDetector(config)
+        self._sensitive_topic_detector = SensitiveTopicDetector(config)
 
     def train(
         self,
