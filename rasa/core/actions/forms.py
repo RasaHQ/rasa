@@ -615,7 +615,7 @@ class FormAction(LoopAction):
                 f"There is no validation action '{validate_name}' "
                 f"to execute at form activation."
             )
-            return [e for e in extraction_events if isinstance(e, SlotSet)]
+            return [event for event in extraction_events if isinstance(event, SlotSet)]
 
         logger.debug(
             f"Executing validation action '{validate_name}' at form activation."
