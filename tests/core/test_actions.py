@@ -1722,7 +1722,6 @@ async def test_action_extract_slots_from_entity(
     expected_slot_events: List[SlotSet],
 ):
     """Test extraction of a slot value from entity with the different restrictions."""
-
     form_name = "some form"
     form = FormAction(form_name, None)
 
@@ -2883,3 +2882,100 @@ async def test_action_extract_slots_allows_slotset_for_same_value(
         )
         assert len(caplog_info_records) == 0
         assert events == [SlotSet("custom_slot_a", "test_A")]
+
+
+async def test_action_extract_slots_active_loop_none_in_mapping_condition():
+    entity = "name"
+    entity_value = "Julia"
+    slot = "user_name"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        intents:
+        - greet
+
+        entities:
+        - {entity}
+
+        slots:
+          {slot}:
+            type: text
+            mappings:
+            - type: from_entity
+              entity: {entity}
+              conditions:
+              - active_loop: null
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        UserUttered(
+            "Hi, I'm Julia.",
+            intent={"name": "greet"},
+            entities=[{"entity": entity, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [SlotSet(slot, entity_value)]
+
+
+async def test_action_extract_slots_active_loop_none_does_not_set_slot_in_form():
+    entity = "name"
+    entity_value = "Julia"
+    slot = "user_name"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+            intents:
+            - greet
+
+            entities:
+            - {entity}
+
+            slots:
+              {slot}:
+                type: text
+                mappings:
+                - type: from_entity
+                  entity: {entity}
+                  conditions:
+                  - active_loop: null
+
+            forms:
+              my_form:
+                required_slots: []
+            """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        ActiveLoop("my_form"),
+        UserUttered(
+            "Hi, I'm Julia.",
+            intent={"name": "greet"},
+            entities=[{"entity": entity, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == []

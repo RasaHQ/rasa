@@ -1068,6 +1068,9 @@ class ActionExtractSlots(Action):
                 if condition_requested_slot == tracker.get_slot(REQUESTED_SLOT):
                     return True
 
+            if active_loop is None and tracker.active_loop_name is None:
+                return True
+
         return False
 
     @staticmethod
