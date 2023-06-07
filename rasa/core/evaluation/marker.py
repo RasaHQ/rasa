@@ -8,8 +8,10 @@ from rasa.core.evaluation.marker_base import (
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 import logging
+import structlog
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 @MarkerRegistry.configurable_marker
@@ -255,7 +257,7 @@ class SlotSetMarker(ConditionMarker):
         if not valid:
             logger.error(
                 f"Referenced slot '{self.text}' does not exist in the domain"
-            )  # PII?
+            )  # PII? no
 
         return valid
 
