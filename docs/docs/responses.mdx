@@ -62,7 +62,7 @@ filled with `None`.
 Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
 In your custom action code, you can supply values to a response to fill in specific variables. 
 If you're using the Rasa SDK for your action server,
-you can pass a value for the variable as a keyword argument to [`dispatcher.utter_message`](https://rasa.com/docs/action-server/sdk-dispatcher):
+you can pass a value for the variable as a keyword argument to [`dispatcher.utter_message`](./action-server/sdk-dispatcher.mdx):
 
 ```python {3}
 dispatcher.utter_message(
@@ -71,7 +71,7 @@ dispatcher.utter_message(
 )
 ```
 
-If you use a [different custom action server](https://rasa.com/docs/action-server#other-action-servers), 
+If you use a [different custom action server](./action-server/index.mdx#other-action-servers),
 supply the values by adding extra parameters to the responses your server returns:
 
 ```json {8}
@@ -430,7 +430,7 @@ class ActionGreet(Action):
 ```
 
 If you use a
-[different custom action server](https://rasa.com/docs/action-server#other-action-servers),
+[different custom action server](./action-server/index.mdx#other-action-servers),
 your server should return the following JSON to call the `utter_greet` response:
 
 ```json {5}
