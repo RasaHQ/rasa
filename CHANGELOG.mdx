@@ -16,9 +16,58 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.5.10] - 2023-05-23
+
+Rasa 3.5.10 (2023-05-23)
+### Improved Documentation
+- [#12437](https://github.com/rasahq/rasa/issues/12437): Added documentation for spaces alpha
+
+
+## [3.5.9] - 2023-05-19
+
+Rasa 3.5.9 (2023-05-19)
+
+No significant changes.
+
+
+## [3.5.8] - 2023-05-12
+
+Rasa 3.5.8 (2023-05-12)
+### Bugfixes
+- [#12361](https://github.com/rasahq/rasa/issues/12361): Explicitly handled `BufferError exception - Local: Queue full` in Kafka producer.
+
+
+## [3.5.7] - 2023-05-09
+
+Rasa 3.5.7 (2023-05-09)
+### Bugfixes
+- [#12314](https://github.com/rasahq/rasa/issues/12314): `SlotSet` events will be emitted when the value set by the custom action is the same as the existing value of the slot. This was fixed for `AugmentedMemoizationPolicy` to work properly with truncated trackers.
+
+  To restore the previous behaviour, the custom action can return a SlotSet only if the slot value has changed. For example,
+
+  ```
+  class CustomAction(Action):
+      def name(self) -> Text:
+          return "custom_action"
+
+      def run(self, dispatcher: CollectingDispatcher,
+              tracker: Tracker,
+              domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+          # current value of the slot
+          slot_value = tracker.get_slot('my_slot')
+
+          # value of the entity
+          # this is parsed from the user utterance
+          entity_value = next(tracker.get_latest_entity_values("entity_name"), None)
+
+          if slot_value != entity_value:
+            return[SlotSet("my_slot", entity_value)]
+  ```
+
+
 ## [3.5.6] - 2023-04-28
-                       
-Rasa 3.5.6 (2023-04-28)                        
+
+Rasa 3.5.6 (2023-04-28)
 ### Bugfixes
 - [#12280](https://github.com/rasahq/rasa/issues/12280): Addresses Regular Expression Denial of Service vulnerability in slack connector (https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS)
 - [#12325](https://github.com/rasahq/rasa/issues/12325): Fix parsing of RabbitMQ URL provided in `endpoints.yml` file to include vhost path and query parameters.
@@ -26,8 +75,8 @@ Rasa 3.5.6 (2023-04-28)
 
 
 ## [3.5.5] - 2023-04-20
-                       
-Rasa 3.5.5 (2023-04-20)                        
+
+Rasa 3.5.5 (2023-04-20)
 ### Bugfixes
 - [#12268](https://github.com/rasahq/rasa/issues/12268): Allow slot mapping parameter `intent` to accept a list of intent names (as strings), in addition to accepting an intent name as a single string.
 - [#12271](https://github.com/rasahq/rasa/issues/12271): Fix `BlockingIOError` when running `rasa shell` on utterances with more than 5KB of text.
@@ -520,19 +569,19 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#11197](https://github.com/rasahq/rasa/issues/11197): Backports fix for failed check in `rasa data validate` that verifies forms in rules or stories are consistent with the domain when the rule or story contains a default action as `active_loop` step.
 
 
-## [3.1.2] - 2022-06-08                         
+## [3.1.2] - 2022-06-08
 ### Miscellaneous internal changes
 - [#11156](https://github.com/rasahq/rasa/issues/11156), [#11173](https://github.com/rasahq/rasa/issues/11173)
 
 
-## [3.1.1] - 2022-06-03                         
+## [3.1.1] - 2022-06-03
 ### Bugfixes
 - [#10480](https://github.com/rasahq/rasa/issues/10480): Remove warning for Rasa X localmode not being supported when the `--production` flag is present.
 - [#10908](https://github.com/rasahq/rasa/issues/10908): Pin requirement for `scipy<1.8.0` since `scipy>=1.8.0` is not backward compatible with `scipy<1.8.0` and additionally requires Python>=3.8, while Rasa supports Python 3.7 as well.
 - [#11149](https://github.com/rasahq/rasa/issues/11149): Fix the extraction of values for slots with mapping conditions from trigger intents that activate a form, which was possible in `2.x`.
 
 
-## [3.1.0] - 2022-03-25                         
+## [3.1.0] - 2022-03-25
 ### Features
 - [#10203](https://github.com/rasahq/rasa/issues/10203): Add configuration options (via env variables) for library logging.
 - [#10473](https://github.com/rasahq/rasa/issues/10473): Support other recipe types.
@@ -552,21 +601,21 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#10378](https://github.com/rasahq/rasa/issues/10378): Bump TensorFlow version to 2.7.
 
   :::caution
-  We can't guarantee the exact same output and hence model performance if your 
-  configuration uses `LanguageModelFeaturizer`. This applies to the case where the 
-  model is re-trained with the new rasa open source version without changing the 
-  configuration, random seeds, and data as well as to the case where a model trained with 
+  We can't guarantee the exact same output and hence model performance if your
+  configuration uses `LanguageModelFeaturizer`. This applies to the case where the
+  model is re-trained with the new rasa open source version without changing the
+  configuration, random seeds, and data as well as to the case where a model trained with
   a previous version of rasa open source is loaded with this new version for inference.
 
   We suggest training a new model if you are upgrading to this version of Rasa Open Source.
-- [#10444](https://github.com/rasahq/rasa/issues/10444): Make `rasa data validate` check for duplicated intents, forms, responses 
+- [#10444](https://github.com/rasahq/rasa/issues/10444): Make `rasa data validate` check for duplicated intents, forms, responses
   and slots when using domains split between multiple files.
 - [#10899](https://github.com/rasahq/rasa/issues/10899): Add an `influence_conversation` flag to entites to provide a shorthand for ignoring an entity for all intents.
 - [#9789](https://github.com/rasahq/rasa/issues/9789): Add `--request-timeout` command line argument to `rasa shell`, allowing users to configure the time a request can take before it's terminated.
 
 ### Bugfixes
 - [#10376](https://github.com/rasahq/rasa/issues/10376): Validate regular expressions in nlu training data configuration.
-- [#10409](https://github.com/rasahq/rasa/issues/10409): Unset the default values for `num_threads` and `finetuning_epoch_fraction` to `None` in order 
+- [#10409](https://github.com/rasahq/rasa/issues/10409): Unset the default values for `num_threads` and `finetuning_epoch_fraction` to `None` in order
   to fix cases when CLI defaults override the data from config.
 - [#10447](https://github.com/rasahq/rasa/issues/10447): Update `rasa data validate` to not fail when `active_loop` is `null`
 - [#10570](https://github.com/rasahq/rasa/issues/10570): Fixes Domain loading when domain config uses multiple yml files.
@@ -585,14 +634,14 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#10143](https://github.com/rasahq/rasa/issues/10143), [#10507](https://github.com/rasahq/rasa/issues/10507), [#10568](https://github.com/rasahq/rasa/issues/10568), [#10601](https://github.com/rasahq/rasa/issues/10601), [#10658](https://github.com/rasahq/rasa/issues/10658), [#10746](https://github.com/rasahq/rasa/issues/10746), [#10807](https://github.com/rasahq/rasa/issues/10807), [#9094](https://github.com/rasahq/rasa/issues/9094), [#9096](https://github.com/rasahq/rasa/issues/9096), [#9097](https://github.com/rasahq/rasa/issues/9097), [#9098](https://github.com/rasahq/rasa/issues/9098)
 
 
-## [3.0.10] - 2022-03-15## [3.0.10] - 2022-03-15                          
+## [3.0.10] - 2022-03-15## [3.0.10] - 2022-03-15
 ### Bugfixes
 - [#10675](https://github.com/rasahq/rasa/issues/10675): Fix broken conversion from Rasa JSON NLU data to Rasa YAML NLU data.
 
 
-## [3.0.9] - 2022-03-11                         
+## [3.0.9] - 2022-03-11
 ### Bugfixes
-- [#10412](https://github.com/rasahq/rasa/issues/10412): Fix Socket IO connection issues by upgrading sanic to v21.12. 
+- [#10412](https://github.com/rasahq/rasa/issues/10412): Fix Socket IO connection issues by upgrading sanic to v21.12.
 
   The bug is caused by [an invalid function signature](https://github.com/sanic-org/sanic/issues/2272) and is fixed in [v21.12](https://sanic.readthedocs.io/en/v21.12.1/sanic/changelog.html#version-21-12-0).
 
@@ -611,7 +660,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Improved Documentation
 - [#10798](https://github.com/rasahq/rasa/issues/10798): Updated the `model_confidence` parameter in `TEDPolicy` and `DIETClassifier`. The `linear_norm` is removed
   as it is no longer supported.
-- [#10940](https://github.com/rasahq/rasa/issues/10940): Added an additional step to `Receiving Messages` section in slack.mdx documentation. After a slack update this 
+- [#10940](https://github.com/rasahq/rasa/issues/10940): Added an additional step to `Receiving Messages` section in slack.mdx documentation. After a slack update this
   additional step is needed to allow direct messages to the bot.
 - [#10957](https://github.com/rasahq/rasa/issues/10957): Backport the updated deployment docs to 3.0.x.
 
@@ -640,7 +689,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Bugfixes
 - [#10516](https://github.com/rasahq/rasa/issues/10516): Checkpoint weights were never loaded before. Implements overwriting checkpoint weights to the final model weights after training of `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
 - [#10782](https://github.com/rasahq/rasa/issues/10782): Allow arbitrary keys under each slot in the domain to allow for custom slot types.
-- [#10840](https://github.com/rasahq/rasa/issues/10840): Fix issue with missing running event loop in `MainThread` when starting Rasa Open 
+- [#10840](https://github.com/rasahq/rasa/issues/10840): Fix issue with missing running event loop in `MainThread` when starting Rasa Open
   Source for Rasa X with JWT secrets.
 
 
@@ -668,7 +717,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ## [3.0.4] - 2021-12-22
-                       
+
 
 ### Miscellaneous internal changes
 - [#10572](https://github.com/rasahq/rasa/issues/10572)
@@ -677,7 +726,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ## [3.0.3] - 2021-12-16
 ### Bugfixes
 - [#10448](https://github.com/rasahq/rasa/issues/10448): Copy lookup tables to train and test folds in cross validation. Before, the generated folds did not have a copy of
-  the lookup tables from the original NLU data, so that `RegexEntityExtractor` could not recognize any entities during 
+  the lookup tables from the original NLU data, so that `RegexEntityExtractor` could not recognize any entities during
   the evaluation.
 - [#7645](https://github.com/rasahq/rasa/issues/7645): Do not print warning when subintent actions have response.
 
@@ -690,7 +739,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#10374](https://github.com/rasahq/rasa/issues/10374): Update SQLAlchemy version to a compatible one in case other dependencies force
   a lower version.
 - [#10391](https://github.com/rasahq/rasa/issues/10391): Fix overriding of default config with custom config containing nested dictionaries. Before,
-   the keys of a nested dictionary in the default config that were not specified in the 
+   the keys of a nested dictionary in the default config that were not specified in the
   custom config got lost.
 - [#10401](https://github.com/rasahq/rasa/issues/10401): Add `UserWarning` to alert users trying to run `rasa x` CLI command with rasa version 3.0 or higher that rasa-x currently doesn't support rasa 3.x.
 
@@ -3650,7 +3699,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   `1.8.0`. Since version `1.8.0` the Rasa SDK Docker images does not longer run as
   `root` user by default. For commands which require `root` user usage, you have to
   switch back to the `root` user in your Docker image as described in
-  [Building an Action Server Image](https://rasa.com/docs/action-server/deploy-action-server#building-an-action-server-image).
+  [Building an Action Server Image](./deploy/deploy-action-server.mdx#building-an-action-server-image).
 
 * [#5402](https://github.com/RasaHQ/rasa/issues/5402): Made improvements to Building Assistants tutorial
 

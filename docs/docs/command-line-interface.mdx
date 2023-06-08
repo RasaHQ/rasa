@@ -30,6 +30,7 @@ import RasaProBanner from "@theme/RasaProBanner";
 |`rasa data validate`      |Checks the domain, NLU and conversation data for inconsistencies.                                                                         |
 |`rasa export`             |Exports conversations from a tracker store to an event broker.                                                                            |
 |`rasa evaluate markers`   |Extracts markers from an existing tracker store.                                                                                          |
+|`rasa license`            |Display licensing information.                                                                                                            |
 |`rasa -h`                 |Shows all available commands.                                                                                                             |
 
 :::note
@@ -134,6 +135,10 @@ these, `rasa train` will fall back to one of these commands by default.
 `rasa train` will store the trained model in the directory defined by `--out`, `models/` by default.
 The name of the model by default is `<timestamp>.tar.gz`. If you want to name your model differently,
 you can specify the name using the `--fixed-model-name` flag.
+
+By default validation is run before training the model. If you want to skip validation, you can use the `--skip-validation` flag.
+If you want to fail on validation warnings, you can use the `--fail-on-validation-warnings` flag.
+The `--validation-max-history` is analogous to the `--max-history` argument of `rasa data validate`. 
 
 The following arguments can be used to configure the training process:
 
@@ -654,4 +659,38 @@ Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
   -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default: None)
+```
+
+## rasa license
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+:::info New in 3.3
+
+This command was introduced.
+:::
+
+Use `rasa license` to display information about licensing in Rasa Pro, especially information about
+3rd party dependencies licenses.
+
+Here is the list of all possible arguments:
+
+```
+usage: rasa license [-h] [-v] [-vv] [--quiet] [--logging-config-file LOGGING_CONFIG_FILE]
+
+Display licensing information.
+
+options:
+  -h, --help            show this help message and exit
+
+Python Logging Options:
+  You can control level of log messages printed. In addition to these arguments, a more fine grained configuration can be achieved with environment variables. See online documentation for more info.
+
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default: None)
+  --logging-config-file LOGGING_CONFIG_FILE
+                        If set, the name of the logging configuration file will be set to the given name. (default: None)
 ```

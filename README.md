@@ -126,8 +126,8 @@ The official [Poetry guide](https://python-poetry.org/docs/managing-environments
 This is how it can be done:
 
 ```bash
-pyenv install 3.7.9
-pyenv local 3.7.9  # Activate Python 3.7.9 for the current project
+pyenv install 3.10.10
+pyenv local 3.10.10  # Activate Python 3.10.10 for the current project
 ```
 *Note*: If you have trouble installing a specific version of python on your system
 it might be worth trying other supported versions.
