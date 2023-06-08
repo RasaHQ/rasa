@@ -235,9 +235,7 @@ async def load_agent(
             http_interpreter = RasaNLUHttpInterpreter(endpoints.nlu)
 
         anonymization_pipeline = plugin_manager().hook.create_anonymization_pipeline(
-            anonymization_rules=endpoints.anonymization_rules,
-            event_broker_config=endpoints.event_broker,
-            logging_config=endpoints.logging_config,
+            anonymization_rules=endpoints.anonymization_rules, endpoints=endpoints
         )
 
     agent = Agent(

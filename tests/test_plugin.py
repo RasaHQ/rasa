@@ -8,6 +8,7 @@ from pytest import MonkeyPatch
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.tracker_store import TrackerStore
+from rasa.core.utils import AvailableEndpoints
 from rasa.plugin import plugin_manager
 from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
@@ -62,23 +63,18 @@ def test_plugin_read_anonymization_rules(
 
 
 @pytest.mark.parametrize(
-    "anonymization_rules, event_broker_config, logging_config",
+    "anonymization_rules, endpoints",
     [
-        (None, None, None),
-        (None, EndpointConfig(), None),
-        (None, None, EndpointConfig()),
-        (None, EndpointConfig(), EndpointConfig()),
-        ([], None, None),
-        ([], EndpointConfig(), None),
-        ([], None, EndpointConfig()),
-        ([], EndpointConfig(), EndpointConfig()),
+        (None, None),
+        (None, AvailableEndpoints()),
+        ([], None),
+        ([], AvailableEndpoints()),
     ],
 )
 def test_plugin_create_anonymization_pipeline(
     monkeypatch: MonkeyPatch,
     anonymization_rules: Optional[List[Any]],
-    event_broker_config: Optional[EndpointConfig],
-    logging_config: Optional["EndpointConfig"],
+    endpoints: Optional[AvailableEndpoints],
 ) -> None:
     manager = plugin_manager()
     monkeypatch.setattr(
@@ -87,11 +83,9 @@ def test_plugin_create_anonymization_pipeline(
 
     manager.hook.create_anonymization_pipeline(
         anonymization_rules=anonymization_rules,
-        event_broker_config=event_broker_config,
-        logging_config=logging_config,
+        endpoints=endpoints,
     )
     manager.hook.create_anonymization_pipeline.assert_called_once_with(
         anonymization_rules=anonymization_rules,
-        event_broker_config=event_broker_config,
-        logging_config=logging_config,
+        endpoints=endpoints,
     )
