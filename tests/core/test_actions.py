@@ -92,7 +92,6 @@ from rasa.shared.core.constants import (
     SESSION_START_METADATA_SLOT,
     ACTION_EXTRACT_SLOTS,
 )
-from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -803,133 +802,22 @@ async def test_response_channel_specific(default_nlg, default_tracker, domain: D
 
 
 @pytest.fixture
-def default_tracker_with_slots(
-    default_tracker: DialogueStateTracker,
-) -> DialogueStateTracker:
-    return DialogueStateTracker(
-        "my-sender",
-        [
-            TextSlot(name="name", mappings=[], initial_value="rasa"),
-            TextSlot(name="last_name", mappings=[], initial_value="rasic"),
-        ],
-    )
-
-
-@pytest.fixture
-def domain_with_response_ids(domain: Domain) -> Domain:
-    domain.responses = {
-        "utter_one_id": [{"text": "this is a default channel", "id": "1"}],
-        "utter_multiple_ids": [
-            {
-                "text": "button message",
-                "id": "2",
-            },
-            {
-                "text": "another button message",
-                "id": "3",
-            },
-        ],
-        "utter_no_ids": [{"text": "I am a bot."}],
-        "utter_ids_with_one_condition": [
-            {
-                "text": "I am a bot.",
-                "id": "4",
-                "condition": [
-                    {
-                        "type": "slot",
-                        "name": "name",
-                        "value": "rasa",
-                    }
-                ],
-            }
-        ],
-        "utter_ids_with_multiple_conditions": [
-            {
-                "text": "I am a bot bot.",
-                "id": "5",
-                "condition": [
-                    {
-                        "type": "slot",
-                        "name": "name",
-                        "value": "rasa",
-                    },
-                    {
-                        "type": "slot",
-                        "name": "last_name",
-                        "value": "rasic",
-                    },
-                ],
-            }
-        ],
-        "utter_ids_with_unsatisfied_conditions": [
-            {
-                "text": "I am a bot bot.",
-                "id": "5",
-                "condition": [
-                    {
-                        "type": "slot",
-                        "name": "name",
-                        "value": "not_satisfied",
-                    },
-                ],
-            }
-        ],
-    }
+def domain_with_response_ids() -> Domain:
+    domain_yaml = """
+    responses:
+        utter_one_id:
+            - text: test
+              id: '1'
+        utter_multiple_ids:
+            - text: test
+              id: '2'
+            - text: test
+              id: '3'
+        utter_no_id:
+            - text: test
+    """
+    domain = Domain.from_yaml(domain_yaml)
     return domain
-
-
-def test_action_bot_response_ids(
-    domain_with_response_ids: Domain, default_tracker: DialogueStateTracker
-) -> None:
-    response_ids = ActionBotResponse("utter_one_id")._extract_response_ids(
-        domain_with_response_ids, default_tracker
-    )
-    assert response_ids == ["1"]
-
-
-def test_action_bot_with_multiple_response_ids(
-    domain_with_response_ids: Domain, default_tracker: DialogueStateTracker
-) -> None:
-    response_ids = ActionBotResponse("utter_multiple_ids")._extract_response_ids(
-        domain_with_response_ids, default_tracker
-    )
-    assert response_ids == ["2", "3"]
-
-
-def test_action_bot_with_no_response_ids(
-    domain_with_response_ids: Domain, default_tracker: DialogueStateTracker
-) -> None:
-    response_ids = ActionBotResponse("utter_no_ids")._extract_response_ids(
-        domain_with_response_ids, default_tracker
-    )
-    assert response_ids == []
-
-
-def test_action_bot_with_response_ids_and_one_condition(
-    domain_with_response_ids: Domain, default_tracker_with_slots: DialogueStateTracker
-) -> None:
-    response_ids = ActionBotResponse(
-        "utter_ids_with_one_condition"
-    )._extract_response_ids(domain_with_response_ids, default_tracker_with_slots)
-    assert response_ids == ["4"]
-
-
-def test_action_bot_with_response_ids_and_multiple_conditions(
-    domain_with_response_ids: Domain, default_tracker_with_slots: DialogueStateTracker
-) -> None:
-    response_ids = ActionBotResponse(
-        "utter_ids_with_multiple_conditions"
-    )._extract_response_ids(domain_with_response_ids, default_tracker_with_slots)
-    assert response_ids == ["5"]
-
-
-def test_action_bot_with_response_ids_and_unsatisfied_conditions(
-    domain_with_response_ids: Domain, default_tracker_with_slots: DialogueStateTracker
-) -> None:
-    response_ids = ActionBotResponse(
-        "utter_ids_with_unsatisfied_conditions"
-    )._extract_response_ids(domain_with_response_ids, default_tracker_with_slots)
-    assert response_ids == []
 
 
 @pytest.fixture
@@ -949,7 +837,7 @@ def mock_nlg(mock_message, monkeypatch: MonkeyPatch) -> MagicMock:
     return _mock_nlg
 
 
-async def test_action_bot_response_with_response_ids(
+async def test_action_bot_response_with_one_response_id(
     mock_message: Dict[Text, Any],
     mock_nlg: MagicMock,
     default_channel,
@@ -963,7 +851,79 @@ async def test_action_bot_response_with_response_ids(
     )
 
     mock_nlg.generate.assert_called_once_with(
-        "utter_one_id", default_tracker, output_channel.name(), response_ids=["1"]
+        "utter_one_id", default_tracker, output_channel.name(), response_ids={"1"}
+    )
+
+    assert len(events) == 1
+    assert events[0].metadata == mock_message
+
+
+async def test_action_bot_response_with_multiple_response_id(
+    mock_message: Dict[Text, Any],
+    mock_nlg: MagicMock,
+    default_channel,
+    default_tracker,
+    domain_with_response_ids: Domain,
+) -> None:
+    output_channel = SlackBot("DummyToken", "General")
+
+    events = await ActionBotResponse("utter_multiple_ids").run(
+        output_channel, mock_nlg, default_tracker, domain_with_response_ids
+    )
+
+    mock_nlg.generate.assert_called_once_with(
+        "utter_multiple_ids",
+        default_tracker,
+        output_channel.name(),
+        response_ids={"2", "3"},
+    )
+
+    assert len(events) == 1
+    assert events[0].metadata == mock_message
+
+
+async def test_action_bot_response_with_empty_response_id_set(
+    mock_message: Dict[Text, Any],
+    mock_nlg: MagicMock,
+    default_channel,
+    default_tracker,
+    domain_with_response_ids: Domain,
+) -> None:
+    output_channel = SlackBot("DummyToken", "General")
+
+    events = await ActionBotResponse("utter_no_id").run(
+        output_channel, mock_nlg, default_tracker, domain_with_response_ids
+    )
+
+    mock_nlg.generate.assert_called_once_with(
+        "utter_no_id",
+        default_tracker,
+        output_channel.name(),
+        response_ids=set(),
+    )
+
+    assert len(events) == 1
+    assert events[0].metadata == mock_message
+
+
+async def test_action_bot_response_with_non_existing_id_mapping(
+    mock_message: Dict[Text, Any],
+    mock_nlg: MagicMock,
+    default_channel,
+    default_tracker,
+    domain_with_response_ids: Domain,
+) -> None:
+    output_channel = SlackBot("DummyToken", "General")
+
+    events = await ActionBotResponse("utter_non_existing").run(
+        output_channel, mock_nlg, default_tracker, domain_with_response_ids
+    )
+
+    mock_nlg.generate.assert_called_once_with(
+        "utter_non_existing",
+        default_tracker,
+        output_channel.name(),
+        response_ids=set(),
     )
 
     assert len(events) == 1

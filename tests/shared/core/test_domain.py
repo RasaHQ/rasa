@@ -2350,19 +2350,79 @@ def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
         ),
     ],
 )
-def test_domain_responses_with_ids(domain_yaml, expected) -> None:
+def test_domain_responses_with_ids_are_loaded(domain_yaml, expected) -> None:
     domain = Domain.from_yaml(domain_yaml)
     assert domain.responses == expected
 
 
-def test_domain_responses_with_same_ids_are_not_allowed() -> None:
-    domain_yaml = """
+@pytest.mark.parametrize(
+    "domain_yaml, expected",
+    [
+        (
+            """
             responses:
                 utter_greet:
                 - text: hey there!
-                  id: '1234'
+                  id: '1233'
                 - text: hey ho!
                   id: '1234'
+            """,
+            {
+                "utter_greet": {"1233", "1234"},
+            },
+        ),
+        (
             """
+            responses:
+                utter_greet:
+                - text: hey there!
+                - text: hey ho!
+                  id: '1234'
+            """,
+            {
+                "utter_greet": {"1234"},
+            },
+        ),
+        (
+            """
+            responses:
+                utter_greet:
+                - text: hey there!
+                - text: hey ho!
+            """,
+            {
+                "utter_greet": set(),
+            },
+        ),
+    ],
+)
+def test_domain_responses_ids_per_response_is_collected(domain_yaml, expected) -> None:
+    domain = Domain.from_yaml(domain_yaml)
+    assert domain.response_ids_per_response == expected
+
+
+@pytest.mark.parametrize(
+    "domain_yaml",
+    [
+        """
+        responses:
+            utter_greet:
+            - text: hey there!
+              id: '1234'
+            - text: hey ho!
+              id: '1234'
+        """,
+        """
+        responses:
+            utter_greet:
+            - text: hey there!
+              id: '1234'
+            utter_goodbye:
+            - text: bye!
+              id: '1234'
+        """,
+    ],
+)
+def test_domain_responses_with_same_ids_are_not_allowed(domain_yaml: Text) -> None:
     with pytest.raises(RasaException):
         Domain.from_yaml(domain_yaml)

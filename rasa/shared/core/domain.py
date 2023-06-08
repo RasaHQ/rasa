@@ -239,7 +239,7 @@ class Domain:
             warn_about_duplicates_found_during_domain_merging(duplicates)
 
         responses = data.get(KEY_RESPONSES, {})
-        cls._validate_response_ids(responses)
+        response_ids_per_response = cls._collect_response_ids(responses)
 
         domain_slots = data.get(KEY_SLOTS, {})
         if domain_slots:
@@ -270,6 +270,7 @@ class Domain:
             data=Domain._cleaned_data(data),
             action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
+            response_ids_per_response=response_ids_per_response,
             **additional_arguments,
         )
 
@@ -769,6 +770,7 @@ class Domain:
         action_names += overridden_form_actions
 
         self.responses = responses
+        self.response_ids_per_response = kwargs.get("response_ids_per_response", {})
 
         self.action_texts = action_texts if action_texts is not None else []
 
@@ -1918,23 +1920,64 @@ class Domain:
         return action_names
 
     @staticmethod
-    def _validate_response_ids(responses: Dict[Text, List[Dict[Text, Any]]]) -> None:
-        """Validates that all response ids are unique.
+    def _collect_response_ids(
+        responses: Dict[Text, List[Dict[Text, Any]]]
+    ) -> Dict[Text, Set[Text]]:
+        """Collects all response ids.
 
-        Raises:
-            ValueError: if there are any non-unique response ids.
+        Args:
+            responses: The responses to collect the ids from.
+
+        Returns:
+            A dictionary mapping the response names to the set of response ids.
         """
         response_ids = set()
-        for _, response_variations in responses.items():
-            for response_variation in response_variations:
-                response_variation_id = response_variation.get("id")
-                if response_variation_id:
-                    if response_variation_id in response_ids:
-                        raise RasaException(
-                            f"Duplicate response id "
-                            f"'{response_variation_id}' defined in domain."
-                        )
-                    response_ids.add(response_variation_id)
+        response_ids_per_response: Dict[Text, Set[Text]] = {}
+        for response_name, response_variations in responses.items():
+            response_ids_for_response = (
+                Domain._collect_response_ids_for_response_variations(
+                    response_variations
+                )
+            )
+
+            already_present_response_ids = response_ids_for_response.intersection(
+                response_ids
+            )
+
+            if len(already_present_response_ids) > 0:
+                raise RasaException(
+                    f"Duplicate response ids "
+                    f"'{already_present_response_ids}' "
+                    f"defined in domain."
+                )
+
+            response_ids.update(response_ids_for_response)
+            response_ids_per_response[response_name] = response_ids_for_response
+        return response_ids_per_response
+
+    @staticmethod
+    def _collect_response_ids_for_response_variations(
+        response_variations: List[Dict[Text, Any]]
+    ) -> Set[Text]:
+        """Collects all response ids for response variations.
+
+        Args:
+            response_variations: The responses variations to collect the ids from.
+
+        Returns:
+            A set of response ids.
+        """
+        response_ids = set()
+        for response_variation in response_variations:
+            response_variation_id = response_variation.get("id")
+            if response_variation_id:
+                if response_variation_id in response_ids:
+                    raise RasaException(
+                        f"Duplicate response id '{response_variation_id}' "
+                        f"defined in domain."
+                    )
+                response_ids.add(response_variation_id)
+        return response_ids
 
 
 def warn_about_duplicates_found_during_domain_merging(

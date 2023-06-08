@@ -305,12 +305,14 @@ class ActionBotResponse(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) response."""
-        utter_action_response_ids = self._extract_response_ids(domain, tracker)
+        response_ids_for_response = domain.response_ids_per_response.get(
+            self.utter_action, set()
+        )
         message = await nlg.generate(
             self.utter_action,
             tracker,
             output_channel.name(),
-            response_ids=utter_action_response_ids,
+            response_ids=response_ids_for_response,
         )
         if message is None:
             if not self.silent_fail:
@@ -326,36 +328,6 @@ class ActionBotResponse(Action):
     def name(self) -> Text:
         """Returns action name."""
         return self.utter_action
-
-    @staticmethod
-    def _is_response_condition_satisfied(
-        conditions: List[Dict[Text, Text]], tracker: "DialogueStateTracker"
-    ) -> bool:
-
-        if len(conditions) > 0:
-            for condition in conditions:
-                if condition.get("type") == "slot":
-                    slot_name = condition.get("name")
-                    value = condition.get("value")
-                    if slot_name and tracker.get_slot(slot_name) != value:
-                        return False
-
-        return True
-
-    def _extract_response_ids(
-        self, domain: "Domain", tracker: "DialogueStateTracker"
-    ) -> List[Text]:
-        response_collection = domain.responses.get(self.utter_action, [])
-
-        utter_action_response_ids: List[Text] = []
-        for response in response_collection:
-            if response.get("id"):
-                conditions = response.get("condition") or []
-
-                if self._is_response_condition_satisfied(conditions, tracker):
-                    utter_action_response_ids.append(response["id"])
-
-        return utter_action_response_ids
 
 
 class ActionEndToEndResponse(Action):
