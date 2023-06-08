@@ -10,13 +10,13 @@ from rasa.core.constants import (
     POLICY_PRIORITY,
 )
 from pypred import Predicate
-from rasa.shared.constants import FLOW_PREFIX
+from rasa.shared.constants import FLOW_INTERRUPT_RETURN_PREFIX, FLOW_PREFIX
 from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     FLOW_STACK_SLOT,
 )
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import ActiveLoop, Event, SlotSet
 from rasa.shared.core.flows.flow import (
     END_STEP,
     START_STEP,
@@ -150,16 +150,11 @@ class FlowPolicy(Policy):
         executor = FlowExecutor.from_tracker(tracker, flows)
         if tracker.active_loop:
             # we are in a loop - we don't want to handle flows in this case
-            logger.debug("We are in a loop. Skipping prediction.")
+            prediction, events = executor.start_flow_if_possible(tracker)
             return self._create_prediction_result(
-                action_name=None, domain=domain, score=0.0, events=[]
+                action_name=prediction.action_name, domain=domain,
+                score=prediction.score, events=[]
             )
-            # TODO: below code is needed to start a flow while we are in an active loop
-            # prediction, events = executor.start_flow_if_possible(tracker)
-            # return self._create_prediction_result(
-            #     action_name=prediction.action_name, domain=domain,
-            #     score=prediction.score, events=[]
-            # )
 
         # create executor and predict next action
         predicted_action, events, predicted_score = executor.advance_flows(
@@ -329,6 +324,8 @@ class FlowStackFrame:
     """The ID of the current flow."""
     step_id: Text = START_STEP
     """The ID of the current step."""
+    return_to_loop: Optional[Text] = None
+    """The name of the loop that should be actived when this stack frame ends."""
 
     @staticmethod
     def from_dict(data: Dict[Text, Any]) -> FlowStackFrame:
@@ -340,7 +337,7 @@ class FlowStackFrame:
         Returns:
             The created `CurrentFlowStep`.
         """
-        return FlowStackFrame(data["flow_id"], data["step_id"])
+        return FlowStackFrame(data["flow_id"], data["step_id"], data.get("return_to_loop"))
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the `CurrentFlowStep` as a dictionary.
@@ -348,7 +345,7 @@ class FlowStackFrame:
         Returns:
             The `CurrentFlowStep` as a dictionary.
         """
-        return {"flow_id": self.flow_id, "step_id": self.step_id}
+        return {"flow_id": self.flow_id, "step_id": self.step_id, "return_to_loop": self.return_to_loop}
 
     def with_updated_id(self, step_id: Text) -> FlowStackFrame:
         """Creates a copy of the `CurrentFlowStep` with the given step id.
@@ -359,10 +356,10 @@ class FlowStackFrame:
         Returns:
             The copy of the `CurrentFlowStep` with the given step id.
         """
-        return FlowStackFrame(self.flow_id, step_id)
+        return FlowStackFrame(self.flow_id, step_id, self.return_to_loop)
 
     def __repr__(self) -> Text:
-        return f"FlowState(flow_id: {self.flow_id}, step_id: {self.step_id})"
+        return f"FlowState(flow_id: {self.flow_id}, step_id: {self.step_id}, return_to_loop: {self.return_to_loop})"
 
 
 class FlowExecutor:
@@ -456,9 +453,10 @@ class FlowExecutor:
         return evaluation
 
     def _select_next_step_id(
-        self, next: FlowLinks, domain: Domain, tracker: "DialogueStateTracker"
-    ) -> Text:
+        self, current: FlowStep, domain: Domain, tracker: "DialogueStateTracker"
+    ) -> Optional[Text]:
         """Evaluate the flow links of a step."""
+        next = current.next
         if len(next.links) == 1 and isinstance(next.links[0], StaticFlowLink):
             return next.links[0].target
 
@@ -478,9 +476,13 @@ class FlowExecutor:
                 "No link was selected, but links are present. Links "
                 "must cover all possible cases."
             )
-        # no links were selected. This means that the step is the last step in the flow
-        # and the flow should end.
-        return END_STEP
+        if current.id != END_STEP:
+            # no links were selected. This means that the step is the last step in the flow
+            # and the flow should end.
+            return END_STEP
+        else:
+            # we are already at the very end of the flow. There is no next step.
+            return None
 
     def _select_next_step(
         self,
@@ -488,9 +490,12 @@ class FlowExecutor:
         domain: Domain,
         current_step: FlowStep,
         flow_id: Text,
-    ) -> FlowStep:
+    ) -> Optional[FlowStep]:
         """Get the next step to execute."""
-        next_id = self._select_next_step_id(current_step.next, domain, tracker)
+        next_id = self._select_next_step_id(current_step, domain, tracker)
+        if next_id is None:
+            return None
+
         return self.all_flows.step_by_id(next_id, flow_id)
 
     def _slot_for_question(self, question: Text, domain: Domain) -> Slot:
@@ -610,12 +615,19 @@ class FlowExecutor:
             current_step = self._select_next_step(
                 tracker, domain, previous_step, current_flow.id
             )
-            self.flow_stack.advance_top_flow(current_step.id)
+            if current_step is None:
+                frame = self.flow_stack.pop()
+                if frame.return_to_loop and self.flow_stack.top_flow_step(self.all_flows):
+                    current_step = self.flow_stack.top_flow_step(self.all_flows)
+            
+            if current_step:
+                # this can't be an else, because the previous if might change this to "not None"
+                self.flow_stack.advance_top_flow(current_step.id)
 
-            predicted_action, events = self._run_step(
-                current_flow, current_step, tracker
-            )
-            gathered_events.extend(events)
+                predicted_action, events = self._run_step(
+                    current_flow, current_step, tracker
+                )
+                gathered_events.extend(events)
 
         return (predicted_action, gathered_events)
 
@@ -670,8 +682,11 @@ class FlowExecutor:
                 raise FlowException(f"Action not specified for step {step}")
             return (ActionPrediction(step.action, 1.0), [])
         elif isinstance(step, LinkFlowStep):
-            self.flow_stack.push(FlowStackFrame(flow_id=step.link, step_id=START_STEP))
-            return (None, [])
+            self.flow_stack.push(FlowStackFrame(flow_id=step.link, step_id=START_STEP, return_to_loop=tracker.active_loop_name))
+            if tracker.active_loop_name:
+                return (None, [ActiveLoop(None)])
+            else:
+                return (None, [])
         elif isinstance(step, SetSlotsFlowStep):
             return (None, [SlotSet(slot["key"], slot["value"]) for slot in step.slots])
         elif isinstance(step, UserMessageStep):
@@ -679,7 +694,9 @@ class FlowExecutor:
         elif isinstance(step, EndFlowStep):
             # this is the end of the flow, so we'll pop it from the stack
             events = self._reset_scoped_slots(flow, tracker)
-            self.flow_stack.pop()
-            return (None, events)
+            if (stack_frame := self.flow_stack.top()) and stack_frame.return_to_loop:
+                return (ActionPrediction(FLOW_INTERRUPT_RETURN_PREFIX + stack_frame.flow_id, 1.0), events)
+            else:
+                return (None, events)
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")

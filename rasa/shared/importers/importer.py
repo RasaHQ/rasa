@@ -380,7 +380,9 @@ class FlowSyncImporter(PassThroughImporter):
 
         flows = self.get_flows()
 
-        flow_names = ["flow_" + flow.id for flow in flows.underlying_flows]
+        flow_names = [rasa.shared.constants.FLOW_PREFIX + flow.id for flow in flows.underlying_flows]
+
+        flow_interrupts = [rasa.shared.constants.FLOW_INTERRUPT_RETURN_PREFIX+ flow.id for flow in flows.underlying_flows]
 
         all_question_steps = [
             step
@@ -396,7 +398,7 @@ class FlowSyncImporter(PassThroughImporter):
             }
 
         return domain.merge(
-            Domain.from_dict({KEY_ACTIONS: flow_names, KEY_FORMS: forms})
+            Domain.from_dict({KEY_ACTIONS: flow_names + flow_interrupts, KEY_FORMS: forms})
         )
 
 

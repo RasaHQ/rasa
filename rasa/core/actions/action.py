@@ -31,6 +31,7 @@ from rasa.nlu.constants import (
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
+    FLOW_INTERRUPT_RETURN_PREFIX,
     UTTER_PREFIX,
     FLOW_PREFIX,
 )
@@ -212,6 +213,10 @@ def action_for_name_or_text(
         from rasa.core.actions.flows import FlowTriggerAction
 
         return FlowTriggerAction(action_name_or_text)
+    if action_name_or_text.startswith(FLOW_INTERRUPT_RETURN_PREFIX):
+        from rasa.core.actions.flows import FlowInterruptReturnAction
+
+        return FlowInterruptReturnAction(action_name_or_text)
     return RemoteAction(action_name_or_text, action_endpoint)
 
 
