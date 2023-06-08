@@ -373,15 +373,15 @@ class StartFlowStep(FlowStep):
 
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> ActionFlowStep:
-        """Used to read flow steps from parsed YAML.
+        """Used to read flow steps from parsed JSON.
 
         Args:
-            flow_step_config: The parsed YAML as a dictionary.
+            flow_step_config: The parsed JSON as a dictionary.
 
         Returns:
             The parsed flow step.
         """
-        raise ValueError("Start steps cannot be parsed from YAML.")
+        raise ValueError("A start step cannot be parsed.")
 
     def as_json(self) -> Dict[Text, Any]:
         """Returns the flow step as a dictionary.
@@ -389,7 +389,7 @@ class StartFlowStep(FlowStep):
         Returns:
             The flow step as a dictionary.
         """
-        raise ValueError("Start steps cannot be dumped to YAML.")
+        raise ValueError("A start step cannot be dumped.")
 
 
 END_STEP = "__end__"
@@ -414,15 +414,15 @@ class EndFlowStep(FlowStep):
 
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> ActionFlowStep:
-        """Used to read flow steps from parsed YAML.
+        """Used to read flow steps from parsed JSON.
 
         Args:
-            flow_step_config: The parsed YAML as a dictionary.
+            flow_step_config: The parsed JSON as a dictionary.
 
         Returns:
             The parsed flow step.
         """
-        raise ValueError("End steps cannot be parsed from YAML.")
+        raise ValueError("An end step cannot be parsed.")
 
     def as_json(self) -> Dict[Text, Any]:
         """Returns the flow step as a dictionary.
@@ -430,7 +430,7 @@ class EndFlowStep(FlowStep):
         Returns:
             The flow step as a dictionary.
         """
-        raise ValueError("End steps cannot be dumped to YAML.")
+        raise ValueError("An end step cannot be dumped.")
 
 
 @dataclass
