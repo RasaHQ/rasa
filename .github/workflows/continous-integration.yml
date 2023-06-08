@@ -73,6 +73,7 @@ jobs:
     # Looks for doc test workflows and waits for it to complete successfully
     # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
     name: Wait for docs tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
 
@@ -95,6 +96,7 @@ jobs:
 
   quality:
     name: Code Quality
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     needs: [changes]
 
@@ -211,7 +213,9 @@ jobs:
 
   test:
     name: Run Tests
+    if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     needs: [changes]
     strategy:
       fail-fast: false
@@ -358,7 +362,9 @@ jobs:
 
   test-flaky:
     name: Run Flaky Tests
+    if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     needs: [changes]
     strategy:
       fail-fast: false
@@ -496,6 +502,7 @@ jobs:
 
   upload_coverage_reports:
     name: Upload coverage reports to codeclimate
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     # Always upload results even if tests failed
     needs:
@@ -547,7 +554,9 @@ jobs:
 
   integration_test:
     name: Run Non-Sequential Integration Tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     needs: [changes]
     env:
       REDIS_HOST: localhost
@@ -682,7 +691,9 @@ jobs:
 
   sequential_integration_test:
     name: Run Sequential Integration Tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-20.04
+    timeout-minutes: 60
     needs: [changes]
     env:
       POSTGRES_HOST: localhost
