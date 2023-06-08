@@ -2,6 +2,7 @@ from __future__ import annotations
 from asyncio import AbstractEventLoop, CancelledError
 import functools
 import logging
+import structlog
 import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Union
@@ -193,6 +194,26 @@ async def _schedule_model_pulling(
     )
 
 
+def create_anonymization_pipeline(anonymization_rules, endpoints) -> Any:
+    """Creates the anonymization pipeline and configures anonymizing logs."""
+    anonymization_pipeline = plugin_manager().hook.create_anonymization_pipeline(
+        anonymization_rules=anonymization_rules, endpoints=endpoints
+    )
+
+    def _anonymizer(_, __, event_dict):
+        """Anonymizes log messages."""
+        text = event_dict["event"]
+        event_dict["event"] = anonymization_pipeline.log_run(text)
+        return event_dict
+
+    # configure structlog to use the _anonymizer processor
+    structlog.configure(
+        processors=[_anonymizer, structlog.processors.KeyValueRenderer()]
+    )
+
+    return anonymization_pipeline
+
+
 async def load_agent(
     model_path: Optional[Text] = None,
     model_server: Optional[EndpointConfig] = None,
@@ -234,7 +255,7 @@ async def load_agent(
         if endpoints.nlu:
             http_interpreter = RasaNLUHttpInterpreter(endpoints.nlu)
 
-        anonymization_pipeline = plugin_manager().hook.create_anonymization_pipeline(
+        anonymization_pipeline = create_anonymization_pipeline(
             anonymization_rules=endpoints.anonymization_rules, endpoints=endpoints
         )
 
