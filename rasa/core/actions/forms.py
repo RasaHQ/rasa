@@ -605,9 +605,21 @@ class FormAction(LoopAction):
 
         if not prefilled_slots:
             logger.debug("No pre-filled required slots to validate.")
-            return [e for e in extraction_events if isinstance(e, SlotSet)]
+        else:
+            logger.debug(f"Validating pre-filled required slots: {prefilled_slots}.")
 
-        logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
+        validate_name = f"validate_{self.name()}"
+
+        if validate_name not in domain.action_names_or_texts:
+            logger.debug(
+                f"There is no validation action '{validate_name}' "
+                f"to execute at form activation."
+            )
+            return [event for event in extraction_events if isinstance(event, SlotSet)]
+
+        logger.debug(
+            f"Executing validation action '{validate_name}' at form activation."
+        )
 
         validated_events = await self.validate_slots(
             prefilled_slots, tracker, domain, output_channel, nlg
