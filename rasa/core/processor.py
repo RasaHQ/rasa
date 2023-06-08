@@ -59,6 +59,9 @@ import rasa.core.tracker_store
 import rasa.core.actions.action
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.nlu.constants import (
     ENTITIES,
     INTENT,
@@ -66,6 +69,7 @@ from rasa.shared.nlu.constants import (
     PREDICTED_CONFIDENCE_KEY,
     TEXT,
 )
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -682,8 +686,23 @@ class MessageProcessor:
         if self.http_interpreter:
             parse_data = await self.http_interpreter.parse(message)
         else:
-            parse_data = self._parse_message_with_graph(message, only_output_properties)
-
+            msg = YAMLStoryReader.unpack_regex_message(
+                message=Message({TEXT: message.text})
+            )
+            # Intent is not explicitly present. Pass message to graph.
+            if msg.data.get(INTENT) is None:
+                parse_data = self._parse_message_with_graph(
+                    message, only_output_properties
+                )
+            else:
+                parse_data = {
+                    TEXT: "",
+                    INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
+                    ENTITIES: [],
+                }
+                parse_data.update(
+                    msg.as_dict(only_output_properties=only_output_properties)
+                )
         logger.debug(
             "Received user message '{}' with intent '{}' "
             "and entities '{}'".format(
