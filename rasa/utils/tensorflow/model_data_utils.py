@@ -6,7 +6,7 @@ from collections import defaultdict, OrderedDict
 from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict, cast
 
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.utils.tensorflow.model_data import Data, FeatureArray
+from rasa.utils.tensorflow.model_data import Data, FeatureArray, ragged_array_to_ndarray
 from rasa.utils.tensorflow.constants import MASK, IDS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
@@ -385,23 +385,28 @@ def _feature_arrays_for_attribute(
     for key, values in _sparse_features.items():
         if consider_dialogue_dimension:
             sparse_features[key] = FeatureArray(
-                np.array(values), number_of_dimensions=4
+                ragged_array_to_ndarray(values), number_of_dimensions=4
             )
         else:
             sparse_features[key] = FeatureArray(
-                np.array([v[0] for v in values]), number_of_dimensions=3
+                ragged_array_to_ndarray([v[0] for v in values]), number_of_dimensions=3
             )
 
     for key, values in _dense_features.items():
         if consider_dialogue_dimension:
-            dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
+            dense_features[key] = FeatureArray(
+                ragged_array_to_ndarray(values), number_of_dimensions=4
+            )
         else:
             dense_features[key] = FeatureArray(
-                np.array([v[0] for v in values]), number_of_dimensions=3
+                ragged_array_to_ndarray([v[0] for v in values]), number_of_dimensions=3
             )
-
     attribute_to_feature_arrays = {
-        MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=3)]
+        MASK: [
+            FeatureArray(
+                ragged_array_to_ndarray(attribute_masks), number_of_dimensions=3
+            )
+        ]
     }
 
     feature_types = set()

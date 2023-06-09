@@ -28,6 +28,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
@@ -225,7 +226,6 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
         },
         metadata=message,
     )
-
     return bot_message
 
 
@@ -765,13 +765,19 @@ class RemoteAction(Action):
                 DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
             )
 
+            modified_json = plugin_manager().hook.prefix_stripping_for_custom_actions(
+                json_body=json_body
+            )
             response: Any = await self.action_endpoint.request(
-                json=json_body,
+                json=modified_json if modified_json else json_body,
                 method="post",
                 timeout=DEFAULT_REQUEST_TIMEOUT,
                 compress=should_compress,
             )
-
+            if modified_json:
+                plugin_manager().hook.prefixing_custom_actions_response(
+                    json_body=json_body, response=response
+                )
             self._validate_action_result(response)
 
             events_json = response.get("events", [])
@@ -827,11 +833,8 @@ class RemoteAction(Action):
 
 
 class ActionExecutionRejection(RasaException):
-    """Raising this exception will allow other policies to predict a different action.
-
-    Args:
-        action_name: The name of the rejected action.
-        message: Optional. A custom message to include in the exception.
+    """Raising this exception will allow other policies
+    to predict a different action.
     """
 
     def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
@@ -1067,6 +1070,9 @@ class ActionExtractSlots(Action):
                 if condition_requested_slot == tracker.get_slot(REQUESTED_SLOT):
                     return True
 
+            if active_loop is None and tracker.active_loop_name is None:
+                return True
+
         return False
 
     @staticmethod
@@ -1291,7 +1297,6 @@ class ActionExtractSlots(Action):
         validated_events = await self._execute_validation_action(
             slot_events, output_channel, nlg, tracker, domain
         )
-
         return validated_events
 
 

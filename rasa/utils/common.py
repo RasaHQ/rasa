@@ -42,14 +42,12 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-
 EXPECTED_PILLOW_DEPRECATION_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # Keras uses deprecated Pillow features
     # cf. https://github.com/keras-team/keras/issues/16639
     (DeprecationWarning, f"{method} is deprecated and will be removed in Pillow 10 .*")
     for method in ["BICUBIC", "NEAREST", "BILINEAR", "HAMMING", "BOX", "LANCZOS"]
 ]
-
 
 EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # TODO (issue #9932)
@@ -78,6 +76,13 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     (ImportWarning, "_SixMetaPathImporter.find_spec*"),
     # 3.10 specific warning: https://github.com/pytest-dev/pytest-asyncio/issues/212
     (DeprecationWarning, "There is no current event loop"),
+    # UserWarning which is always issued if the default value for
+    # assistant_id key in config file is not changed
+    (UserWarning, "is missing a unique value for the 'assistant_id' mandatory key.*"),
+    (
+        DeprecationWarning,
+        "non-integer arguments to randrange\\(\\) have been deprecated since",
+    ),
 ]
 
 EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)
@@ -514,11 +519,6 @@ def directory_size_in_mb(
 def copy_directory(source: Path, destination: Path) -> None:
     """Copies the content of one directory into another.
 
-    Unlike `shutil.copytree` this doesn't raise if `destination` already exists.
-
-    # TODO: Drop this in favor of `shutil.copytree(..., dirs_exist_ok=True)` when
-    # dropping Python 3.7.
-
     Args:
         source: The directory whose contents should be copied to `destination`.
         destination: The directory which should contain the content `source` in the end.
@@ -535,11 +535,7 @@ def copy_directory(source: Path, destination: Path) -> None:
             f"can only be copied to empty directories."
         )
 
-    for item in source.glob("*"):
-        if item.is_dir():
-            shutil.copytree(item, destination / item.name)
-        else:
-            shutil.copy2(item, destination / item.name)
+    shutil.copytree(source, destination, dirs_exist_ok=True)
 
 
 def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:

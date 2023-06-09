@@ -27,7 +27,7 @@ def test_rasa_validate_debug_no_errors(
     test_config_dir = Path(request.config.rootdir, "data", "test_config")
     source_file = (test_data_dir).absolute()
     domain_file = (test_data_dir / "domain.yml").absolute()
-    config_file = (test_config_dir / "config_defaults.yml").absolute()
+    config_file = (test_config_dir / "config_unique_assistant_id.yml").absolute()
     result = run(
         "data",
         "validate",
@@ -66,7 +66,7 @@ def test_rasa_validate_debug_with_errors(
     test_config_dir = Path(request.config.rootdir, "data", "test_config")
     source_file = (test_data_dir).absolute()
     domain_file = (test_data_dir / "domain.yml").absolute()
-    config_file = (test_config_dir / "config_defaults.yml").absolute()
+    config_file = (test_config_dir / "config_unique_assistant_id.yml").absolute()
     result = run(
         "data",
         "validate",
@@ -76,6 +76,7 @@ def test_rasa_validate_debug_with_errors(
         str(domain_file),
         "-c",
         str(config_file),
+        "--fail-on-warnings",
         "--debug",
     )
     assert result.ret == 1
@@ -92,7 +93,7 @@ def test_rasa_validate_verbose_no_errors(
     test_config_dir = Path(request.config.rootdir, "data", "test_config")
     source_file = (test_data_dir).absolute()
     domain_file = (test_data_dir / "domain.yml").absolute()
-    config_file = (test_config_dir / "config_defaults.yml").absolute()
+    config_file = (test_config_dir / "config_unique_assistant_id.yml").absolute()
     result = run(
         "data",
         "validate",
@@ -126,7 +127,7 @@ def test_rasa_validate_quiet_no_errors(
     test_config_dir = Path(request.config.rootdir, "data", "test_config")
     source_file = (test_data_dir).absolute()
     domain_file = (test_data_dir / "domain.yml").absolute()
-    config_file = (test_config_dir / "config_defaults.yml").absolute()
+    config_file = (test_config_dir / "config_unique_assistant_id.yml").absolute()
     result = run(
         "data",
         "validate",

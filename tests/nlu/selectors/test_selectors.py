@@ -35,6 +35,7 @@ from rasa.utils.tensorflow.constants import (
     LABEL,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
+    RUN_EAGERLY,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -156,8 +157,14 @@ def train_persist_load_with_different_settings(
 @pytest.mark.parametrize(
     "config_params",
     [
-        {EPOCHS: 1},
-        {EPOCHS: 1, MASKED_LM: True, TRANSFORMER_SIZE: 256, NUM_TRANSFORMER_LAYERS: 1},
+        {EPOCHS: 1, RUN_EAGERLY: True},
+        {
+            EPOCHS: 1,
+            MASKED_LM: True,
+            TRANSFORMER_SIZE: 256,
+            NUM_TRANSFORMER_LAYERS: 1,
+            RUN_EAGERLY: True,
+        },
     ],
 )
 def test_train_selector(
@@ -321,6 +328,7 @@ def test_train_model_checkpointing(
         CHECKPOINT_MODEL: True,
         EVAL_NUM_EPOCHS: 1,
         EVAL_NUM_EXAMPLES: 10,
+        RUN_EAGERLY: True,
     }
 
     response_selector = create_response_selector(config_params)
@@ -345,7 +353,7 @@ def test_train_persist_load(
         {"component": WhitespaceTokenizer},
         {"component": CountVectorsFeaturizer},
     ]
-    config_params = {EPOCHS: 1}
+    config_params = {EPOCHS: 1, RUN_EAGERLY: True}
 
     train_persist_load_with_different_settings(pipeline, config_params, False)
 
@@ -363,7 +371,7 @@ async def test_process_gives_diagnostic_data(
         {"component": WhitespaceTokenizer},
         {"component": CountVectorsFeaturizer},
     ]
-    config_params = {EPOCHS: 1}
+    config_params = {EPOCHS: 1, RUN_EAGERLY: True}
 
     importer = RasaFileImporter(
         config_file="data/test_response_selector_bot/config.yml",
@@ -402,7 +410,8 @@ async def test_process_gives_diagnostic_data(
 
 
 @pytest.mark.parametrize(
-    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})]
+    "classifier_params",
+    [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, RUN_EAGERLY: True})],
 )
 async def test_margin_loss_is_not_normalized(
     classifier_params: Dict[Text, int],
@@ -441,7 +450,7 @@ async def test_margin_loss_is_not_normalized(
     "classifier_params, output_length, sums_up_to_1",
     [
         ({}, 9, True),
-        ({EPOCHS: 1}, 9, True),
+        ({EPOCHS: 1, RUN_EAGERLY: True}, 9, True),
         ({RANKING_LENGTH: 2}, 2, False),
         ({RANKING_LENGTH: 2, RENORMALIZE_CONFIDENCES: True}, 2, True),
     ],
@@ -456,6 +465,7 @@ async def test_softmax_ranking(
 ):
     classifier_params[RANDOM_SEED] = 42
     classifier_params[EPOCHS] = 1
+    classifier_params[RUN_EAGERLY] = True
 
     pipeline = [
         {"component": WhitespaceTokenizer},
@@ -603,7 +613,7 @@ def test_transformer_size_gets_corrected(train_persist_load_with_different_setti
         {"component": WhitespaceTokenizer},
         {"component": CountVectorsFeaturizer},
     ]
-    config_params = {EPOCHS: 1, NUM_TRANSFORMER_LAYERS: 1}
+    config_params = {EPOCHS: 1, NUM_TRANSFORMER_LAYERS: 1, RUN_EAGERLY: True}
 
     selector = train_persist_load_with_different_settings(
         pipeline, config_params, False
@@ -623,7 +633,7 @@ async def test_process_unfeaturized_input(
     training_data, loaded_pipeline = train_and_preprocess(
         pipeline, "data/test_selectors"
     )
-    response_selector = create_response_selector({EPOCHS: 1})
+    response_selector = create_response_selector({EPOCHS: 1, RUN_EAGERLY: True})
     response_selector.train(training_data=training_data)
 
     message_text = "message text"
@@ -671,7 +681,7 @@ async def test_adjusting_layers_incremental_training(
         },
     ]
     training_data, loaded_pipeline = train_and_preprocess(pipeline, iter1_data_path)
-    response_selector = create_response_selector({EPOCHS: 1})
+    response_selector = create_response_selector({EPOCHS: 1, RUN_EAGERLY: True})
     response_selector.train(training_data=training_data)
 
     old_data_signature = response_selector.model.data_signature
@@ -707,7 +717,7 @@ async def test_adjusting_layers_incremental_training(
         old_sparse_feature_sizes[FEATURE_TYPE_SENTENCE]
     )
 
-    loaded_selector = load_response_selector({EPOCHS: 1})
+    loaded_selector = load_response_selector({EPOCHS: 1, RUN_EAGERLY: True})
 
     classified_message2 = loaded_selector.process([message2])[0]
 
@@ -842,7 +852,7 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     ]
     training_data, loaded_pipeline = train_and_preprocess(pipeline, iter1_path)
 
-    response_selector = create_response_selector({EPOCHS: 1})
+    response_selector = create_response_selector({EPOCHS: 1, RUN_EAGERLY: True})
     response_selector.train(training_data=training_data)
 
     message = Message(data={TEXT: "Rasa is great!"})
@@ -854,7 +864,7 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
 
     default_execution_context.is_finetuning = True
 
-    loaded_selector = load_response_selector({EPOCHS: 1})
+    loaded_selector = load_response_selector({EPOCHS: 1, RUN_EAGERLY: True})
 
     classified_message2 = loaded_selector.process([message2])[0]
 

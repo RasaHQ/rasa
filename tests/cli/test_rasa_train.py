@@ -1,5 +1,4 @@
 import os
-import tempfile
 import sys
 from pathlib import Path
 
@@ -17,12 +16,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
 from rasa.model_training import CODE_NEEDS_TO_BE_RETRAINED, CODE_FORCED_TRAINING
 
-# noinspection PyProtectedMember
-from rasa.cli.train import _get_valid_config
 from rasa.shared.constants import (
-    CONFIG_MANDATORY_KEYS_CORE,
-    CONFIG_MANDATORY_KEYS_NLU,
-    CONFIG_MANDATORY_KEYS,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.nlu.training_data.training_data import (
@@ -129,6 +123,7 @@ def test_train_no_domain_exists(
     os.remove("domain.yml")
     run_in_simple_project(
         "train",
+        "--skip-validation",
         "-c",
         "config.yml",
         "--data",
@@ -433,12 +428,15 @@ def test_train_help(run: Callable[..., RunResult]):
     help_text = f"""usage: {RASA_EXE} train [-h] [-v] [-vv] [--quiet]
                   [--logging-config-file LOGGING_CONFIG_FILE]
                   [--data DATA [DATA ...]] [-c CONFIG] [-d DOMAIN] [--out OUT]
-                  [--dry-run] [--augmentation AUGMENTATION] [--debug-plots]
+                  [--dry-run] [--skip-validation]
+                  [--fail-on-validation-warnings]
+                  [--validation-max-history VALIDATION_MAX_HISTORY]
+                  [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
                   [--force] [--finetune [FINETUNE]]
                   [--epoch-fraction EPOCH_FRACTION] [--endpoints ENDPOINTS]
-                  {{core,nlu}} ..."""  # noqa: E501
+                  {{core,nlu}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -456,7 +454,7 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
                       [--num-threads NUM_THREADS]
                       [--fixed-model-name FIXED_MODEL_NAME]
                       [--persist-nlu-data] [--finetune [FINETUNE]]
-                      [--epoch-fraction EPOCH_FRACTION]"""  # noqa: E501
+                      [--epoch-fraction EPOCH_FRACTION]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -480,7 +478,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES ...]] [--runs RUNS]
                        [--finetune [FINETUNE]]
-                       [--epoch-fraction EPOCH_FRACTION]"""  # noqa: E501
+                       [--epoch-fraction EPOCH_FRACTION]"""
     else:
         help_text = f"""usage: {RASA_EXE} train core [-h] [-v] [-vv] [--quiet]
                        [--logging-config-file LOGGING_CONFIG_FILE]
@@ -490,129 +488,13 @@ def test_train_core_help(run: Callable[..., RunResult]):
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
                        [--runs RUNS] [--finetune [FINETUNE]]
-                       [--epoch-fraction EPOCH_FRACTION]"""  # noqa: E501
+                       [--epoch-fraction EPOCH_FRACTION]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
     printed_help = {line.strip() for line in output.outlines}
     for line in lines:
         assert line.strip() in printed_help
-
-
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        {
-            "config_data": {"language": "en", "pipeline": "supervised"},
-            "default_config": {
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
-            },
-            "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": False,
-        },
-        {
-            "config_data": {
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": None,
-            },
-            "default_config": {
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
-            },
-            "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": False,
-        },
-        {
-            "config_data": {},
-            "default_config": {
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
-            },
-            "mandatory_keys": CONFIG_MANDATORY_KEYS,
-            "error": True,
-        },
-        {
-            "config_data": {
-                "policies": ["TEDPolicy", "FallbackPolicy"],
-                "imports": "other-folder",
-            },
-            "default_config": {
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
-            },
-            "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
-            "error": True,
-        },
-        {
-            "config_data": None,
-            "default_config": {
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
-            },
-            "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
-            "error": True,
-        },
-        {
-            "config_data": None,
-            "default_config": {
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
-            },
-            "mandatory_keys": CONFIG_MANDATORY_KEYS,
-            "error": False,
-        },
-        {
-            "config_data": None,
-            "default_config": {"language": "en", "pipeline": "supervised"},
-            "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": False,
-        },
-        {
-            "config_data": None,
-            "default_config": None,
-            "mandatory_keys": CONFIG_MANDATORY_KEYS,
-            "error": True,
-        },
-    ],
-)
-def test_get_valid_config(parameters):
-    config_path = None
-    if parameters["config_data"] is not None:
-        config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
-        rasa.shared.utils.io.write_yaml(parameters["config_data"], config_path)
-
-    default_config_path = None
-    if parameters["default_config"] is not None:
-        default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
-        rasa.shared.utils.io.write_yaml(
-            parameters["default_config"], default_config_path
-        )
-
-    if parameters["error"]:
-        with pytest.raises(SystemExit):
-            _get_valid_config(config_path, parameters["mandatory_keys"])
-
-    else:
-        config_path = _get_valid_config(
-            config_path, parameters["mandatory_keys"], default_config_path
-        )
-
-        config_data = rasa.shared.utils.io.read_yaml_file(config_path)
-
-        for k in parameters["mandatory_keys"]:
-            assert k in config_data
-
-
-def test_get_valid_config_with_non_existing_file():
-    with pytest.raises(SystemExit):
-        _get_valid_config("non-existing-file.yml", CONFIG_MANDATORY_KEYS)
 
 
 def test_train_nlu_finetune_with_model(
@@ -628,3 +510,105 @@ def test_train_nlu_finetune_with_model(
     assert any(
         "Your Rasa model is trained and saved at" in line for line in output.outlines
     )
+
+
+def test_train_validation_warnings(
+    run_in_simple_project: Callable[..., RunResult], request: pytest.FixtureRequest
+):
+    test_data_dir = Path(request.config.rootdir, "data", "test_validation", "data")
+    test_domain = Path(request.config.rootdir, "data", "test_validation", "domain.yml")
+
+    result = run_in_simple_project(
+        "train",
+        "--data",
+        str(test_data_dir),
+        "--domain",
+        str(test_domain),
+        "-c",
+        "config.yml",
+    )
+
+    assert result.ret == 0
+    for warning in [
+        "The intent 'goodbye' is not used in any story or rule.",
+        "The utterance 'utter_chatter' is not used in any story or rule.",
+    ]:
+        assert warning in str(result.stderr)
+
+
+def test_train_validation_fail_on_warnings(
+    run_in_simple_project_with_warnings: Callable[..., RunResult],
+    request: pytest.FixtureRequest,
+):
+    test_data_dir = Path(request.config.rootdir, "data", "test_moodbot", "data")
+    test_domain = Path(request.config.rootdir, "data", "test_domains", "domain.yml")
+
+    result = run_in_simple_project_with_warnings(
+        "train",
+        "--fail-on-validation-warnings",
+        "--data",
+        str(test_data_dir),
+        "--domain",
+        str(test_domain),
+        "-c",
+        "config.yml",
+    )
+
+    assert "Project validation completed with errors." in str(result.outlines)
+    assert result.ret == 1
+
+
+def test_train_validation_max_history_1(
+    run_in_simple_project_with_warnings: Callable[..., RunResult],
+    request: pytest.FixtureRequest,
+):
+    test_data_dir = Path(
+        request.config.rootdir,
+        "data",
+        "test_yaml_stories",
+        "stories_conflicting_at_1.yml",
+    )
+    test_domain = Path(request.config.rootdir, "data", "test_domains", "default.yml")
+
+    result = run_in_simple_project_with_warnings(
+        "train",
+        "--validation-max-history",
+        "1",
+        "--data",
+        str(test_data_dir),
+        "--domain",
+        str(test_domain),
+        "-c",
+        "config.yml",
+    )
+
+    assert "Story structure conflict" in str(result.errlines)
+    assert result.ret == 0
+
+
+def test_train_validation_max_history_2(
+    run_in_simple_project_with_warnings: Callable[..., RunResult],
+    request: pytest.FixtureRequest,
+):
+    test_data_dir = Path(
+        request.config.rootdir,
+        "data",
+        "test_yaml_stories",
+        "stories_conflicting_at_1.yml",
+    )
+    test_domain = Path(request.config.rootdir, "data", "test_domains", "default.yml")
+
+    result = run_in_simple_project_with_warnings(
+        "train",
+        "--validation-max-history",
+        "2",
+        "--data",
+        str(test_data_dir),
+        "--domain",
+        str(test_domain),
+        "-c",
+        "config.yml",
+    )
+
+    assert "Story structure conflict" not in str(result.errlines)
+    assert result.ret == 0

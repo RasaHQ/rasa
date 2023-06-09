@@ -4,13 +4,15 @@ import logging
 import logging.config
 import sys
 from pathlib import Path
+from pytest import MonkeyPatch
 from typing import Any, Text, Type
 from unittest import mock
 
 import pytest
-from pytest import LogCaptureFixture, MonkeyPatch
+from pytest import LogCaptureFixture
 
 from rasa.core.agent import Agent
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.exceptions import RasaException
 import rasa.utils.common
@@ -215,6 +217,7 @@ def test_cli_missing_log_level_env_var_used():
     rasa_logger = logging.getLogger("rasa")
     assert rasa_logger.level == logging.WARNING
     matplotlib_logger = logging.getLogger("matplotlib")
+
     assert matplotlib_logger.level == logging.INFO
 
 

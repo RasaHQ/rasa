@@ -83,7 +83,7 @@ These different services need to be run and configured to be able to communicate
     Pull the Rasa Pro Services image to your machine:
 
     ```shell
-    docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
+    docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro
     ```
 
     :::note
@@ -102,7 +102,7 @@ These different services need to be run and configured to be able to communicate
         -e RASA_PRO_LICENSE=<your_license> \
         -e KAFKA_BROKER_ADDRESS=<BROKER_URL> \
         -e KAFKA_TOPIC=rasa-events \
-        europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro-services
+        europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro
     ```
 
     For production deployments, we recommend to us
@@ -124,6 +124,7 @@ environment variables:
 | `KAFKA_SASL_USERNAME`     | The username for SASL authentication.                                                                                 |                    |
 | `KAFKA_SASL_PASSWORD`     | The password for SASL authentication.                                                                                 |                    |
 | `KAFKA_SECURITY_PROTOCOL` | The security protocol to use for communication with Kafka. Supported mechanisms are `PLAINTEXT` and `SASL_PLAINTEXT`. | `PLAINTEXT`        |
+| `KAFKA_SSL_CA_LOCATION`   | The filepath for SSL CA Certificate that will be used to connect with Kafka                                           |                    |
 
 ### Healthcheck Endpoint
 

@@ -1,0 +1,34 @@
+version: "3.1"
+nlu:
+- intent: request_restaurant
+  examples: |
+    - how about [indian](cuisine) type of cuisine
+    - today is [greek](cuisine) food day
+    - i am looking for [indian](cuisine) cuisine
+    - im looking for [greek](cuisine) cuisine for [4](number) people
+    - look for [italian](cuisine) for [4](number) persons
+    - looking for [greek](cuisine) food in the center of Athens
+    - [greek](cuisine) food for [4](number) people
+    - i will order some [greek](cuisine) feta
+    - we could eat [andalusian](cuisine) tapas and some cerveza
+    - i want [vegetarian](cuisine) food
+    - i am up for [portuguese](cuisine) food
+    - i would like to eat [greek](cuisine) delicacies
+    - are there any [greek](cuisine) tapas around here
+    - [indonesian](cuisine) food is the best
+    - im in for [greek](cuisine) cuisine
+    - i am hungry for [french](cuisine) fries
+    - [outside](seating)
+    - prefer sitting [outside](seating)
+    - prefer sitting [indoors](seating)
+    - I would like to seat [inside](seating) please
+    - I prefer sitting [outside](seating)
+    - i want to seat [outside](seating)
+    - i would like to seat [inside](seating)
+    - kean on sitting [outside](seating)
+    - i prefer to seat [outside](seating)
+    - i want to seat in the [outside](seating) space
+    - let's go [outside](seating)
+    - [inside](seating)
+    - with [outside](seating) seats
+    - to seat [outside](seating) is a great idea

@@ -24,7 +24,6 @@ import rasa.model_training
 import rasa.core
 import rasa.core.train
 import rasa.nlu
-from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import GraphModelConfiguration
@@ -967,6 +966,7 @@ def test_invalid_graph_schema(
         """
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
+    assistant_id: placeholder_default
 
     pipeline:
     - name: WhitespaceTokenizer
@@ -979,13 +979,14 @@ def test_invalid_graph_schema(
         rasa.shared.utils.io.read_yaml(config), new_config_path
     )
 
-    with pytest.raises(GraphSchemaValidationException):
+    with pytest.raises(InvalidConfigException) as captured_exception:
         rasa.train(
             domain_path,
             str(new_config_path),
             [stories_path, nlu_data_path],
             output=str(tmp_path),
         )
+    assert "Found policy 'TEDPolicy1' in NLU pipeline." in str(captured_exception)
 
 
 def test_fingerprint_changes_if_module_changes(
@@ -1007,6 +1008,7 @@ def test_fingerprint_changes_if_module_changes(
         f"""
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
+    assistant_id: placeholder_default
 
     policies:
     - name: RulePolicy

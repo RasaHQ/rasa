@@ -181,7 +181,6 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     @staticmethod
     def _attributes_for(analyzer: Text) -> List[Text]:
         """Create a list of attributes that should be featurized."""
-
         # intents should be featurized only by word level count vectorizer
         return (
             MESSAGE_ATTRIBUTES if analyzer == "word" else DENSE_FEATURIZABLE_ATTRIBUTES
@@ -238,7 +237,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     def _get_message_tokens_by_attribute(
         self, message: "Message", attribute: Text
     ) -> List[Text]:
-        """Get text tokens of an attribute of a message"""
+        """Get text tokens of an attribute of a message."""
         if message.get(TOKENS_NAMES[attribute]):
             return [
                 t.lemma if self.use_lemma else t.text
@@ -248,8 +247,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
             return []
 
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
-        """Apply processing and cleaning steps to text"""
-
+        """Apply processing and cleaning steps to text."""
         if attribute in [INTENT, ACTION_NAME, INTENT_RESPONSE_KEY]:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
@@ -285,8 +283,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     def _get_processed_message_tokens_by_attribute(
         self, message: Message, attribute: Text = TEXT
     ) -> List[Text]:
-        """Get processed text of attribute of a message"""
-
+        """Get processed text of attribute of a message."""
         if message.get(attribute) is None:
             # return empty list since sklearn countvectorizer does not like None
             # object while training and predicting
@@ -300,7 +297,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
 
     # noinspection PyPep8Naming
     def _check_OOV_present(self, all_tokens: List[List[Text]], attribute: Text) -> None:
-        """Check if an OOV word is present"""
+        """Check if an OOV word is present."""
         if not self.OOV_token or self.OOV_words or not all_tokens:
             return
 
@@ -326,8 +323,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     def _get_all_attributes_processed_tokens(
         self, training_data: TrainingData
     ) -> Dict[Text, List[List[Text]]]:
-        """Get processed text for all attributes of examples in training data"""
-
+        """Get processed text for all attributes of examples in training data."""
         processed_attribute_tokens = {}
         for attribute in self._attributes:
             all_tokens = [
@@ -687,8 +683,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     def _is_any_model_trained(
         attribute_vocabularies: Dict[Text, Optional[Dict[Text, int]]]
     ) -> bool:
-        """Check if any model got trained"""
-
+        """Check if any model got trained."""
         return any(value is not None for value in attribute_vocabularies.values())
 
     def persist(self) -> None:
@@ -726,8 +721,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     def _create_shared_vocab_vectorizers(
         cls, parameters: Dict[Text, Any], vocabulary: Optional[Any] = None
     ) -> Dict[Text, CountVectorizer]:
-        """Create vectorizers for all attributes with shared vocabulary"""
-
+        """Create vectorizers for all attributes with shared vocabulary."""
         shared_vectorizer = CountVectorizer(
             token_pattern=r"(?u)\b\w+\b" if parameters["analyzer"] == "word" else None,
             strip_accents=parameters["strip_accents"],
@@ -752,8 +746,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     def _create_independent_vocab_vectorizers(
         cls, parameters: Dict[Text, Any], vocabulary: Optional[Any] = None
     ) -> Dict[Text, CountVectorizer]:
-        """Create vectorizers for all attributes with independent vocabulary"""
-
+        """Create vectorizers for all attributes with independent vocabulary."""
         attribute_vectorizers = {}
 
         for attribute in cls._attributes_for(parameters["analyzer"]):

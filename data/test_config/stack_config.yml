@@ -1,6 +1,8 @@
 # Configuration for Rasa NLU.
 # https://rasa.com/docs/rasa/components
 recipe: default.v1
+# The assistant project unique identifier
+assistant_id: unique_stack_assistant_test_name
 language: en
 pipeline:
   - name: KeywordIntentClassifier

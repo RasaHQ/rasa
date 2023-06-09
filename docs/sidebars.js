@@ -1,8 +1,8 @@
 module.exports = {
     default: [
         'introduction',
+        'rasa-pro',
         'playground',
-
         {
             type: 'category',
             label: 'Installation',
@@ -15,7 +15,7 @@ module.exports = {
                     collapsed: true,
                     type: 'category',
                     items: [
-                        'installation/rasa-pro/architecture-overview',
+                        'installation/rasa-pro/rasa-pro-artifacts',
                         'installation/rasa-pro/installation',
                     ],
                 },
@@ -121,6 +121,7 @@ module.exports = {
                         'training-data-importers',
                         'language-support',
                         'graph-recipe',
+                        'spaces',
                     ],
                 },
                 {
@@ -176,6 +177,7 @@ module.exports = {
                         'event-brokers',
                         'model-storage',
                         'lock-stores',
+                        'secrets-managers',
                         'nlu-only',
                         'nlg',
                     ],

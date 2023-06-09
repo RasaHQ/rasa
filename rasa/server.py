@@ -3,7 +3,6 @@ import concurrent.futures
 import logging
 import multiprocessing
 import os
-import tempfile
 import traceback
 from collections import defaultdict
 from functools import reduce, wraps
@@ -66,6 +65,7 @@ from rasa.core.channels.channel import (
 import rasa.shared.core.events
 from rasa.shared.core.events import Event
 from rasa.core.test import test
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
@@ -78,7 +78,7 @@ from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
-    from ssl import SSLContext  # noqa: F401
+    from ssl import SSLContext
     from rasa.core.processor import MessageProcessor
     from mypy_extensions import Arg, VarArg, KwArg
 
@@ -86,7 +86,7 @@ if TYPE_CHECKING:
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
     ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        [Arg(Request, "request"), VarArg(), KwArg()],
         Coroutine[Any, Any, SanicResponse],
     ]
 
@@ -427,7 +427,6 @@ def create_ssl_context(
         SSL context if a valid certificate chain can be loaded, `None` otherwise.
 
     """
-
     if ssl_certificate:
         import ssl
 
@@ -507,7 +506,6 @@ def configure_cors(
     app: Sanic, cors_origins: Union[Text, List[Text], None] = ""
 ) -> None:
     """Configure CORS origins for the given app."""
-
     # Workaround so that socketio works with requests from other origins.
     # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
     app.config.CORS_AUTOMATIC_OPTIONS = True
@@ -632,7 +630,7 @@ def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
 
     @wraps(f)
     async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
-        with tempfile.TemporaryDirectory() as directory:
+        with TempDirectoryPath(get_temp_dir_name()) as directory:
             # Decorated request handles need to have a parameter `temporary_directory`
             return await f(*args, temporary_directory=Path(directory), **kwargs)
 
@@ -694,7 +692,6 @@ def create_app(
     @app.get("/version")
     async def version(request: Request) -> HTTPResponse:
         """Respond with the version number of the installed Rasa."""
-
         return response.json(
             {
                 "version": rasa.__version__,
@@ -724,7 +721,8 @@ def create_app(
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
         tracker = await app.ctx.agent.processor.fetch_full_tracker_with_initial_session(
-            conversation_id
+            conversation_id,
+            output_channel=CollectingOutputChannel(),
         )
 
         try:

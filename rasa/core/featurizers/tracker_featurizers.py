@@ -38,6 +38,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
+from rasa.utils.tensorflow.model_data import ragged_array_to_ndarray
 
 FEATURIZER_FILE = "featurizer.json"
 
@@ -142,7 +143,7 @@ class TrackerFeaturizer:
         """
         # store labels in numpy arrays so that it corresponds to np arrays of input
         # features
-        return np.array(
+        return ragged_array_to_ndarray(
             [
                 np.array(
                     [domain.index_for_action(action) for action in tracker_actions]

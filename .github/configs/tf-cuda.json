@@ -16,6 +16,10 @@
     {
       "TF": "2.7",
       "IMAGE_TAG": "cuda-11.2.0-cudnn8"
+    },
+    {
+      "TF": "2.11",
+      "IMAGE_TAG": "cuda-11.2.0-cudnn8"
     }
   ]
 }

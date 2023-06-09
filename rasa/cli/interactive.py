@@ -10,7 +10,12 @@ from rasa.cli.arguments import interactive as arguments
 import rasa.cli.train as train
 import rasa.cli.utils
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
+from rasa.shared.constants import (
+    ASSISTANT_ID_DEFAULT_VALUE,
+    ASSISTANT_ID_KEY,
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_MODELS_PATH,
+)
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.cli
@@ -81,6 +86,8 @@ def interactive(args: argparse.Namespace) -> None:
                 "or use 'rasa train' to train a model."
             )
     else:
+        validate_assistant_id_key_in_config(file_importer)
+
         zipped_model = get_provided_model(args.model)
         if not (zipped_model and os.path.exists(zipped_model)):
             rasa.shared.utils.cli.print_error_and_exit(
@@ -98,6 +105,9 @@ def _set_not_required_args(args: argparse.Namespace) -> None:
     args.fixed_model_name = None
     args.store_uncompressed = False
     args.dry_run = False
+    args.skip_validation = True
+    args.fail_on_validation_warnings = False
+    args.validation_max_history = None
 
 
 def perform_interactive_learning(
@@ -138,3 +148,17 @@ def get_provided_model(arg_model: Text) -> Optional[Union[Text, Path]]:
     return (
         model.get_latest_model(model_path) if os.path.isdir(model_path) else model_path
     )
+
+
+def validate_assistant_id_key_in_config(file_importer: TrainingDataImporter) -> None:
+    """Verifies that config contains a unique value for assistant identifier."""
+    config_data = file_importer.get_config()
+    assistant_id = config_data.get(ASSISTANT_ID_KEY)
+
+    if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The '{ASSISTANT_ID_KEY}' key in the config file is either missing or "
+            f"is set to the default value. Please replace the placeholder default "
+            f"value and re-train the model."
+        )
+    return None

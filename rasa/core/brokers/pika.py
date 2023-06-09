@@ -5,7 +5,7 @@ import os
 import ssl
 from asyncio import AbstractEventLoop
 from collections import deque
-from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple, cast
+from typing import Deque, Dict, Optional, Text, Union, Any, List, Set, Tuple, cast
 from urllib.parse import urlparse
 
 import aio_pika
@@ -85,6 +85,7 @@ class PikaEventBroker(EventBroker):
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
 
         self._loop = event_loop or asyncio.get_event_loop()
+        self._background_tasks: Set[asyncio.Task] = set()
 
         self._connection: Optional[aio_pika.abc.AbstractRobustConnection] = None
         self._exchange: Optional[aio_pika.RobustExchange] = None
@@ -281,7 +282,12 @@ class PikaEventBroker(EventBroker):
                 can be retrieved in the consumer from the `headers` attribute of the
                 message's `BasicProperties`.
         """
-        self._loop.create_task(self._publish(event, headers))
+        # We need to save a reference to this background task to
+        # make sure it doesn't disappear. See:
+        # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
+        task: asyncio.Task = self._loop.create_task(self._publish(event, headers))
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     async def _publish(
         self, event: Dict[Text, Any], headers: Optional[Dict[Text, Text]] = None

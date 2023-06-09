@@ -86,7 +86,7 @@ class KafkaEventBroker(EventBroker):
         self.ssl_check_hostname = "https" if ssl_check_hostname else None
 
         # Async producer implementation followed from confluent-kafka asyncio example:
-        # https://github.com/confluentinc/confluent-kafka-python/blob/master/examples/asyncio_example.py#L88  # noqa: W505, E501
+        # https://github.com/confluentinc/confluent-kafka-python/blob/master/examples/asyncio_example.py#L88  # noqa: E501
         self._loop = asyncio.get_event_loop()
         self._cancelled = False
         self._poll_thread = threading.Thread(target=self._poll_loop)

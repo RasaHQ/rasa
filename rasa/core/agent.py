@@ -3,7 +3,6 @@ from asyncio import AbstractEventLoop, CancelledError
 import functools
 import logging
 import os
-import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
@@ -15,6 +14,7 @@ from rasa.core import jobs
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
+from rasa.plugin import plugin_manager
 from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -28,6 +28,7 @@ from rasa.exceptions import ModelNotFound
 from rasa.nlu.utils import is_url
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.tracker_store import TrackerStore
@@ -76,7 +77,7 @@ async def _update_model_from_server(model_server: EndpointConfig, agent: Agent) 
     if not is_url(model_server.url):
         raise aiohttp.InvalidURL(model_server.url)
 
-    with tempfile.TemporaryDirectory() as temporary_directory:
+    with TempDirectoryPath(get_temp_dir_name()) as temporary_directory:
         try:
             new_fingerprint = await _pull_model_and_fingerprint(
                 model_server, agent.fingerprint, temporary_directory
@@ -219,6 +220,7 @@ async def load_agent(
     generator = None
     action_endpoint = None
     http_interpreter = None
+    anonymization_pipeline = None
 
     if endpoints:
         broker = await EventBroker.create(endpoints.event_broker, loop=loop)
@@ -232,6 +234,11 @@ async def load_agent(
         if endpoints.nlu:
             http_interpreter = RasaNLUHttpInterpreter(endpoints.nlu)
 
+        anonymization_pipeline = plugin_manager().hook.create_anonymization_pipeline(
+            anonymization_rules=endpoints.anonymization_rules,
+            event_broker_config=endpoints.event_broker,
+        )
+
     agent = Agent(
         generator=generator,
         tracker_store=tracker_store,
@@ -240,6 +247,7 @@ async def load_agent(
         model_server=model_server,
         remote_storage=remote_storage,
         http_interpreter=http_interpreter,
+        anonymization_pipeline=anonymization_pipeline,
     )
 
     try:
@@ -264,7 +272,7 @@ async def load_agent(
         return agent
 
     except Exception as e:
-        logger.error(f"Could not load model due to {e}.")
+        logger.error(f"Could not load model due to {e}.", exc_info=True)
         return agent
 
 
@@ -301,6 +309,7 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
+        anonymization_pipeline: Optional[Any] = None,
     ):
         """Initializes an `Agent`."""
         self.domain = domain
@@ -315,6 +324,7 @@ class Agent:
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
         self.remote_storage = remote_storage
+        self.anonymization_pipeline = anonymization_pipeline
 
     @classmethod
     def load(
@@ -356,6 +366,7 @@ class Agent:
             action_endpoint=self.action_endpoint,
             generator=self.nlg,
             http_interpreter=self.http_interpreter,
+            anonymization_pipeline=self.anonymization_pipeline,
         )
         self.domain = self.processor.domain
 
@@ -393,8 +404,7 @@ class Agent:
         Returns:
             The parsed message.
 
-            Example:
-
+        Example:
                 {\
                     "text": '/greet{"name":"Rasa"}',\
                     "intent": {"name": "greet", "confidence": 1.0},\
@@ -542,7 +552,7 @@ class Agent:
         persistor = get_persistor(self.remote_storage)
 
         if persistor is not None:
-            with tempfile.TemporaryDirectory() as temporary_directory:
+            with TempDirectoryPath(get_temp_dir_name()) as temporary_directory:
                 persistor.retrieve(model_name, temporary_directory)
                 self.load_model(temporary_directory)
 

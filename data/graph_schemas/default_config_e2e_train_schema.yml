@@ -204,6 +204,28 @@ nodes:
     is_target: false
     is_input: true
     resource: null
+  forms_provider:
+    needs:
+      domain: domain_provider
+    uses: rasa.graph_components.providers.forms_provider.FormsProvider
+    constructor_name: create
+    fn: provide
+    config: {}
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  responses_provider:
+    needs:
+      domain: domain_provider
+    uses: rasa.graph_components.providers.responses_provider.ResponsesProvider
+    constructor_name: create
+    fn: provide
+    config: {}
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
   story_graph_provider:
     needs:
       importer: finetuning_validator

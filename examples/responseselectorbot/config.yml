@@ -1,4 +1,5 @@
 recipe: default.v1
+assistant_id: response_selector_bot
 language: en
 
 pipeline:

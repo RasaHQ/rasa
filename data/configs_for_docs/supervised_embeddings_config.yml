@@ -1,3 +1,4 @@
+assistant_id: example_supervised_bot
 language: "en"
 
 pipeline:

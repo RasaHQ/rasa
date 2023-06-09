@@ -169,6 +169,12 @@ def _walk_and_check_for_cycles(
             f"'{node_name}' specified in 'needs'."
         )
 
+    if node_name not in schema.nodes:
+        raise GraphSchemaValidationException(
+            f"Node '{node_name}' is not part of the graph. Node was expected to be "
+            f"present in the graph as it is used by another component."
+        )
+
     parents = schema.nodes[node_name].needs.values()
     for parent_name in parents:
         if not _is_placeholder_input(parent_name):
@@ -430,8 +436,9 @@ def _validate_needs(
 
         if not _is_placeholder_input(parent_name) and parent_name not in graph.nodes:
             raise GraphSchemaValidationException(
+                f"Missing graph component '{parent_name}'."
                 f"Your model uses a component '{node.uses.__name__}' which expects "
-                f"input from a previous component but this component is not part of "
+                f"input from the missing component. The component is missing from "
                 f"your model configuration. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."

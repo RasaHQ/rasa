@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import os
@@ -25,11 +26,22 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.constants import DEFAULT_SENDER_ID, LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    DEFAULT_SENDER_ID,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    AgentUttered,
+    AllSlotsReset,
+    ConversationPaused,
+    ConversationResumed,
+    FollowupAction,
+    ReminderScheduled,
     SlotSet,
+    StoryExported,
     UserUttered,
     ActionExecuted,
     Restarted,
@@ -1559,3 +1571,48 @@ def test_model_id_is_not_added_to_events_with_id():
         ActionExecuted(action_name="test", metadata={METADATA_MODEL_ID: "old_id"})
     )
     assert tracker.events[-1].metadata[METADATA_MODEL_ID] == "old_id"
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        ActionExecuted(action_name="action_listen"),
+        UserUttered(),
+        SessionStarted(),
+        SlotSet("my_slot", 1),
+        Restarted(),
+        AllSlotsReset(),
+        ConversationPaused(),
+        ConversationResumed(),
+        StoryExported(),
+        ActionReverted(),
+        UserUtteranceReverted(),
+        FollowupAction("my_action"),
+        BotUttered("my_text", {"my_data": 1}),
+        AgentUttered("my_text", "my_data"),
+        ReminderScheduled("my_intent", datetime.datetime.now()),
+        DefinePrevUserUtteredFeaturization(False),
+        EntitiesAdded([{"entity": "entity1", "value": "value1"}]),
+        ActionExecutionRejected("test_action"),
+        ActiveLoop("my_form"),
+        LoopInterrupted(True),
+    ],
+)
+def test_assistant_id_is_added_to_events(event):
+    assistant_id = "some_unique_assistant_name"
+    tracker = DialogueStateTracker("123abcd", [])
+    tracker.assistant_id = assistant_id
+    tracker.update(event)
+    assert all(
+        event.metadata[ASSISTANT_ID_KEY] == assistant_id for event in tracker.events
+    )
+
+
+def test_assistant_id_is_not_added_to_events_with_assistant_id():
+    assistant_id = "some_unique_assistant_name"
+    tracker = DialogueStateTracker("123abcd", [])
+    tracker.assistant_id = assistant_id
+    tracker.update(
+        ActionExecuted(action_name="test", metadata={ASSISTANT_ID_KEY: "old_name"})
+    )
+    assert tracker.events[-1].metadata[ASSISTANT_ID_KEY] == "old_name"

@@ -81,7 +81,7 @@ jobs:
           echo "help_description=$OUTPUT" >> $GITHUB_OUTPUT
 
       - name: Create a comment with help description
-        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
         with:
           mode: "delete-previous"
           id: comment_help_description
@@ -109,7 +109,7 @@ jobs:
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
       - name: Update the comment with the configuration
-        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d
+        uses: peter-evans/create-or-update-comment@3383acd359705b10cb1eeef05c0e88c056ea4666
         if: steps.fc_config.outputs.comment-id != ''
         with:
           comment-id: ${{ steps.fc_config.outputs.comment-id }}
@@ -118,7 +118,7 @@ jobs:
           reactions: eyes
 
       - name: Re-create the comment with the configuration
-        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
         if: steps.fc_config.outputs.comment-id != '' && steps.fc_config.outputs.comment-body != ''
         with:
           mode: "delete-previous"
@@ -135,7 +135,7 @@ jobs:
           body-includes: "^/modeltest"
 
       - name: Add reaction
-        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d
+        uses: peter-evans/create-or-update-comment@3383acd359705b10cb1eeef05c0e88c056ea4666
         if: steps.fc_config_update.outputs.comment-id != ''
         with:
           edit-mode: "replace"
@@ -143,7 +143,7 @@ jobs:
           reactions: heart, hooray, rocket
 
       - name: Add a comment that the tests are in progress
-        uses: RasaHQ/create-comment@92ba126e8d110ef087528bf8d181c6e95827c95e
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
         if: steps.fc_config_update.outputs.comment-id != ''
         with:
           mode: "delete-previous"
@@ -207,7 +207,7 @@ jobs:
         if: env.GH_RUNNER_IMAGE_TAG == 'latest'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
+        uses: voxmedia/github-action-slack-notify-build@3665186a8c1a022b28a1dbe0954e73aa9081ea9e
         with:
           channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
           status: WARNING
@@ -219,16 +219,19 @@ jobs:
           export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
+      # Setup gcloud auth
+      - uses: google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf
         with:
-          version: "${{ env.GCLOUD_VERSION }}"
-          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
 
-      # Get the GKE credentials so we can deploy to the cluster
-      - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}"
+      # Get the GKE credentials for the cluster
+      - name: Get GKE Cluster Credentials
+        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
+        with:
+          cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}
 
       - name: Deploy Github Runner
         run: |-
@@ -364,7 +367,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: '3.10'
@@ -382,7 +385,7 @@ jobs:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
-        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
@@ -609,7 +612,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: '3.10'
@@ -627,7 +630,7 @@ jobs:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
-        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
@@ -757,7 +760,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: '3.10'
 
@@ -862,7 +865,7 @@ jobs:
           echo "to_ts=$TIME_UNIX_NOW" >> $GITHUB_OUTPUT
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@fcf6fe9e4a0409cd9316a5011435be0f3327f1e1 # v2.3.1
+        uses: marocchino/sticky-pull-request-comment@f61b6cf21ef2fcc468f4345cdfcc9bda741d2343 # v2.6.2
         if: ${{ always() }}
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -902,16 +905,19 @@ jobs:
     if: ${{ always() && needs.deploy_runner_gpu.result != 'skipped' && contains(github.event.pull_request.labels.*.name, 'runner:gpu') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') }}
 
     steps:
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
+      # Setup gcloud auth
+      - uses: google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf
         with:
-          version: "${{ env.GCLOUD_VERSION }}"
-          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
+          credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
 
-      # Get the GKE credentials so we can deploy to the cluster
-      - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}"
+      # Get the GKE credentials for the cluster
+      - name: Get GKE Cluster Credentials
+        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
+        with:
+          cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}
 
       - name: Remove Github Runner
         run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30

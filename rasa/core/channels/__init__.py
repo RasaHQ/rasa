@@ -10,20 +10,20 @@ from rasa.core.channels.channel import (  # noqa: F401
 # this prevents IDE's from optimizing the imports - we need to import the
 # above first, otherwise we will run into import cycles
 from rasa.core.channels.socketio import SocketIOInput
-from rasa.core.channels.botframework import BotFrameworkInput  # noqa: F401
-from rasa.core.channels.callback import CallbackInput  # noqa: F401
-from rasa.core.channels.console import CmdlineInput  # noqa: F401
-from rasa.core.channels.facebook import FacebookInput  # noqa: F401
-from rasa.core.channels.mattermost import MattermostInput  # noqa: F401
-from rasa.core.channels.rasa_chat import RasaChatInput  # noqa: F401
-from rasa.core.channels.rest import RestInput  # noqa: F401
-from rasa.core.channels.rocketchat import RocketChatInput  # noqa: F401
-from rasa.core.channels.slack import SlackInput  # noqa: F401
-from rasa.core.channels.telegram import TelegramInput  # noqa: F401
-from rasa.core.channels.twilio import TwilioInput  # noqa: F401
-from rasa.core.channels.twilio_voice import TwilioVoiceInput  # noqa: F401
-from rasa.core.channels.webexteams import WebexTeamsInput  # noqa: F401
-from rasa.core.channels.hangouts import HangoutsInput  # noqa: F401
+from rasa.core.channels.botframework import BotFrameworkInput
+from rasa.core.channels.callback import CallbackInput
+from rasa.core.channels.console import CmdlineInput
+from rasa.core.channels.facebook import FacebookInput
+from rasa.core.channels.mattermost import MattermostInput
+from rasa.core.channels.rasa_chat import RasaChatInput
+from rasa.core.channels.rest import RestInput
+from rasa.core.channels.rocketchat import RocketChatInput
+from rasa.core.channels.slack import SlackInput
+from rasa.core.channels.telegram import TelegramInput
+from rasa.core.channels.twilio import TwilioInput
+from rasa.core.channels.twilio_voice import TwilioVoiceInput
+from rasa.core.channels.webexteams import WebexTeamsInput
+from rasa.core.channels.hangouts import HangoutsInput
 
 input_channel_classes: List[Type[InputChannel]] = [
     CmdlineInput,

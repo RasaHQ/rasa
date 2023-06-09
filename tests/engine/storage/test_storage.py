@@ -47,10 +47,12 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
     trained_at = datetime.utcnow()
     rasa_version = rasa.__version__
     model_id = "some unique model id"
+    assistant_id = "test_assistant"
     metadata = ModelMetadata(
         trained_at,
         rasa_version,
         model_id,
+        assistant_id,
         domain,
         train_schema,
         predict_schema,
@@ -72,6 +74,7 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
 
     assert loaded_metadata.domain.as_dict() == domain.as_dict()
     assert loaded_metadata.model_id == model_id
+    assert loaded_metadata.assistant_id == assistant_id
     assert loaded_metadata.rasa_open_source_version == rasa_version
     assert loaded_metadata.trained_at == trained_at
     assert loaded_metadata.train_schema == train_schema
@@ -96,6 +99,7 @@ def test_metadata_version_check():
             trained_at,
             old_version,
             "some id",
+            "test_assistant",
             Domain.empty(),
             GraphSchema(nodes={}),
             GraphSchema(nodes={}),

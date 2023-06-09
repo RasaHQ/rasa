@@ -1,4 +1,5 @@
 import logging
+import warnings
 from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
@@ -21,7 +22,7 @@ from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.engine.url import URL
-from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
+from typing import Any, Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
 from unittest.mock import MagicMock, Mock
 
 import rasa.core.tracker_store
@@ -52,7 +53,7 @@ from rasa.core.tracker_store import (
     FailSafeTrackerStore,
     AwaitableTrackerStore,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, TrackerEventDiffEngine
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.conftest import AsyncMock
@@ -276,7 +277,8 @@ def test_tracker_store_with_host_argument_from_string(domain: Domain):
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.HostExampleTrackerStore"
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("error")
         tracker_store = TrackerStore.create(store_config, domain)
 
     assert len(record) == 0
@@ -984,6 +986,26 @@ def test_create_awaitable_tracker_store_with_endpoint_config():
     assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
 
 
+@pytest.mark.parametrize(
+    "endpoints_file, expected_type",
+    [
+        (None, InMemoryTrackerStore),
+        ("data/test_endpoints/endpoints_sql.yml", SQLTrackerStore),
+        ("data/test_endpoints/endpoints_redis.yml", RedisTrackerStore),
+    ],
+)
+def test_create_tracker_store_from_endpoints_file(
+    endpoints_file: Optional[Text], expected_type: Any, domain: Domain
+) -> None:
+    endpoint_config = read_endpoint_config(endpoints_file, "tracker_store")
+    tracker_store = rasa.core.tracker_store.create_tracker_store(
+        endpoint_config, domain
+    )
+
+    assert rasa.core.tracker_store.check_if_tracker_store_async(tracker_store) is True
+    assert isinstance(tracker_store, expected_type)
+
+
 async def test_fail_safe_tracker_store_retrieve_full_tracker(
     domain: Domain, tracker_with_restarted_event: DialogueStateTracker
 ) -> None:
@@ -1264,3 +1286,27 @@ def test_redis_tracker_store_merge_trackers_different_session() -> None:
 
     expected_events = prior_tracker_events + new_session
     assert list(actual_tracker.events) == expected_events
+
+
+async def test_tracker_event_diff_engine_event_difference() -> None:
+    start_session_sequence = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+    events: List[Event] = start_session_sequence + [UserUttered("hello")]
+    prior_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+    new_events = [BotUttered("Hey! How can I help you?")]
+    events += new_events
+
+    new_tracker = DialogueStateTracker.from_events(
+        "same-session",
+        evts=events,
+    )
+
+    event_diff = TrackerEventDiffEngine.event_difference(prior_tracker, new_tracker)
+
+    assert new_events == event_diff

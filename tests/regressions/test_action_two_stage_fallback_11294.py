@@ -18,6 +18,7 @@ async def test_action_two_stage_fallback_does_not_return_key_error(
         textwrap.dedent(
             """
             recipe: default.v1
+            assistant_id: placeholder_default
 
             language: en
 

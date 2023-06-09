@@ -42,6 +42,24 @@ def create_simple_project(path: Path):
     # fast to train
     write_yaml(
         {
+            "assistant_id": "placeholder_default",
+            "language": "en",
+            "pipeline": [{"name": "KeywordIntentClassifier"}],
+            "policies": [
+                {"name": "RulePolicy"},
+                {"name": "MemoizationPolicy", "max_history": 3},
+            ],
+        },
+        path / "config.yml",
+    )
+    return path
+
+
+def create_simple_project_with_missing_assistant_id(path: Path):
+    scaffold.create_initial_project(str(path))
+
+    write_yaml(
+        {
             "language": "en",
             "pipeline": [{"name": "KeywordIntentClassifier"}],
             "policies": [
@@ -69,6 +87,19 @@ def trained_simple_project(tmpdir_factory: TempdirFactory) -> Text:
 @pytest.fixture
 def run_in_simple_project(testdir: Testdir) -> Callable[..., RunResult]:
     os.environ["LOG_LEVEL"] = "ERROR"
+
+    create_simple_project(testdir.tmpdir)
+
+    def do_run(*args):
+        args = [shutil.which(RASA_EXE)] + list(args)
+        return testdir.run(*args)
+
+    return do_run
+
+
+@pytest.fixture
+def run_in_simple_project_with_warnings(testdir: Testdir) -> Callable[..., RunResult]:
+    os.environ["LOG_LEVEL"] = "WARNING"
 
     create_simple_project(testdir.tmpdir)
 

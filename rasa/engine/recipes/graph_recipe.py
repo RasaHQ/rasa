@@ -2,7 +2,7 @@ import logging
 
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.graph import GraphModelConfiguration
-from rasa.shared.constants import DOCS_URL_GRAPH_RECIPE
+from rasa.shared.constants import DOCS_URL_GRAPH_RECIPE, ASSISTANT_ID_KEY
 from rasa.shared.data import TrainingType
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.utils.common import mark_as_experimental_feature
@@ -71,7 +71,9 @@ class GraphV1Recipe(Recipe):
             train_schema=GraphSchema.from_dict(config.get("train_schema")),
             predict_schema=GraphSchema.from_dict(config.get("predict_schema")),
             training_type=training_type,
+            assistant_id=config.get(ASSISTANT_ID_KEY),
             language=config.get("language"),
+            spaces=config.get("spaces"),
             core_target=core_target,
             nlu_target=nlu_target,
         )

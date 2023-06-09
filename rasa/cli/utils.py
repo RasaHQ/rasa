@@ -1,18 +1,31 @@
 import json
+import argparse
 import logging
 import os
 import sys
+import time
 from types import FrameType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union, overload
 
+import randomname
+
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.constants import (
+    ASSISTANT_ID_DEFAULT_VALUE,
+    ASSISTANT_ID_KEY,
+    DEFAULT_CONFIG_PATH,
+)
+from rasa.shared.utils.cli import print_error
+from rasa import telemetry
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from questionary import Question
     from typing_extensions import Literal
+    from rasa.validator import Validator
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +112,168 @@ def missing_config_keys(
     config_data = rasa.shared.utils.io.read_config_file(path)
 
     return [k for k in mandatory_keys if k not in config_data or config_data[k] is None]
+
+
+def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
+    """Verifies that the assistant_id key exists and has a unique value in config.
+
+    Issues a warning if the key does not exist or has the default value and replaces it
+    with a pseudo-random string value.
+    """
+    config_data = rasa.shared.utils.io.read_config_file(
+        config_file, reader_type=["safe", "rt"]
+    )
+    assistant_id = config_data.get(ASSISTANT_ID_KEY)
+
+    if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
+        rasa.shared.utils.io.raise_warning(
+            f"The config file '{str(config_file)}' is missing a unique value for the "
+            f"'{ASSISTANT_ID_KEY}' mandatory key. Proceeding with generating a random "
+            f"value and overwriting the '{ASSISTANT_ID_KEY}' in the config file."
+        )
+
+        # add random value for assistant id, overwrite config file
+        time_format = "%Y%m%d-%H%M%S"
+        config_data[
+            ASSISTANT_ID_KEY
+        ] = f"{time.strftime(time_format)}-{randomname.get_name()}"
+
+        rasa.shared.utils.io.write_yaml(
+            data=config_data, target=config_file, should_preserve_key_order=True
+        )
+
+    return
+
+
+def validate_config_path(
+    config: Optional[Union[Text, "Path"]],
+    default_config: Text = DEFAULT_CONFIG_PATH,
+) -> Text:
+    """Verifies that the config path exists.
+
+    Exit if the config file does not exist.
+
+    Args:
+        config: Path to the config file.
+        default_config: default config to use if the file at `config` doesn't exist.
+
+    Returns: The path to the config file.
+    """
+    config = rasa.cli.utils.get_validated_path(config, "config", default_config)
+
+    if not config or not os.path.exists(config):
+        print_error(
+            "The config file '{}' does not exist. Use '--config' to specify a "
+            "valid config file."
+            "".format(config)
+        )
+        sys.exit(1)
+
+    return str(config)
+
+
+def validate_mandatory_config_keys(
+    config: Union[Text, "Path"],
+    mandatory_keys: List[Text],
+) -> Text:
+    """Get a config from a config file and check if it is valid.
+
+    Exit if the config isn't valid.
+
+    Args:
+        config: Path to the config file.
+        mandatory_keys: The keys that have to be specified in the config file.
+
+    Returns: The path to the config file if the config is valid.
+    """
+    missing_keys = set(rasa.cli.utils.missing_config_keys(config, mandatory_keys))
+    if missing_keys:
+        print_error(
+            "The config file '{}' is missing mandatory parameters: "
+            "'{}'. Add missing parameters to config file and try again."
+            "".format(config, "', '".join(missing_keys))
+        )
+        sys.exit(1)
+
+    return str(config)
+
+
+def get_validated_config(
+    config: Optional[Union[Text, "Path"]],
+    mandatory_keys: List[Text],
+    default_config: Text = DEFAULT_CONFIG_PATH,
+) -> Text:
+    """Validates config and returns path to validated config file."""
+    config = validate_config_path(config, default_config)
+    validate_assistant_id_in_config(config)
+
+    config = validate_mandatory_config_keys(config, mandatory_keys)
+
+    return config
+
+
+def validate_files(
+    fail_on_warnings: bool,
+    max_history: Optional[int],
+    importer: TrainingDataImporter,
+    stories_only: bool = False,
+) -> None:
+    """Validates either the story structure or the entire project.
+
+    Args:
+        fail_on_warnings: `True` if the process should exit with a non-zero status
+        max_history: The max history to use when validating the story structure.
+        importer: The `TrainingDataImporter` to use to load the training data.
+        stories_only: If `True`, only the story structure is validated.
+    """
+    from rasa.validator import Validator
+
+    validator = Validator.from_importer(importer)
+
+    if stories_only:
+        all_good = _validate_story_structure(validator, max_history, fail_on_warnings)
+    else:
+        all_good = (
+            _validate_domain(validator)
+            and _validate_nlu(validator, fail_on_warnings)
+            and _validate_story_structure(validator, max_history, fail_on_warnings)
+        )
+
+    validator.warn_if_config_mandatory_keys_are_not_set()
+
+    telemetry.track_validate_files(all_good)
+    if not all_good:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Project validation completed with errors."
+        )
+
+
+def _validate_domain(validator: "Validator") -> bool:
+    return (
+        validator.verify_domain_validity()
+        and validator.verify_actions_in_stories_rules()
+        and validator.verify_forms_in_stories_rules()
+        and validator.verify_form_slots()
+        and validator.verify_slot_mappings()
+    )
+
+
+def _validate_nlu(validator: "Validator", fail_on_warnings: bool) -> bool:
+    return validator.verify_nlu(not fail_on_warnings)
+
+
+def _validate_story_structure(
+    validator: "Validator", max_history: Optional[int], fail_on_warnings: bool
+) -> bool:
+    # Check if a valid setting for `max_history` was given
+    if isinstance(max_history, int) and max_history < 1:
+        raise argparse.ArgumentTypeError(
+            f"The value of `--max-history {max_history}` " f"is not a positive integer."
+        )
+
+    return validator.verify_story_structure(
+        not fail_on_warnings, max_history=max_history
+    )
 
 
 def cancel_cause_not_found(

@@ -1,0 +1,21 @@
+recipe: default.v1
+language: en
+
+pipeline:
+  - name: WhitespaceTokenizer
+    intent_tokenization_flag: True
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: LogisticRegressionClassifier
+
+policies:
+#  - name: TEDPolicy
+#    max_history: 5
+#    epochs: 1
+  - name: MemoizationPolicy
+  - name: RulePolicy

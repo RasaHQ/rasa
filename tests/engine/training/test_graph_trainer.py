@@ -90,6 +90,7 @@ def test_graph_trainer_returns_model_metadata(
         GraphModelConfiguration(
             train_schema=train_schema,
             predict_schema=predict_schema,
+            assistant_id="test_assistant_id",
             language=None,
             core_target=None,
             nlu_target="nlu",
@@ -99,6 +100,7 @@ def test_graph_trainer_returns_model_metadata(
         output_filename=output_filename,
     )
     assert model_metadata.model_id
+    assert model_metadata.assistant_id == "test_assistant_id"
     assert model_metadata.domain.as_dict() == Domain.from_path(domain_path).as_dict()
     assert model_metadata.train_schema == train_schema
     assert model_metadata.predict_schema == predict_schema
@@ -339,6 +341,7 @@ def train_with_schema(
             GraphModelConfiguration(
                 train_schema=train_schema,
                 predict_schema=GraphSchema({}),
+                assistant_id="test_assistant",
                 language=None,
                 core_target=None,
                 nlu_target="nlu",

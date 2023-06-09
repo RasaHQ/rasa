@@ -335,14 +335,18 @@ class TestShapeValuesTrainAndProcess:
 
             # Look at the value of first dimension for a few starting timesteps
             assert np.allclose(
-                computed_sequence_vec[: len(expected_sequence_vec[index]), 0],
+                computed_sequence_vec[: len(expected_sequence_vec[index]), 0].astype(
+                    float
+                ),
                 expected_sequence_vec[index],
                 atol=1e-4,
             )
 
             # Look at the first value of first five dimensions
             assert np.allclose(
-                computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-4
+                computed_sentence_vec[0][:5].astype(float),
+                expected_cls_vec[index],
+                atol=1e-4,
             )
 
             (intent_sequence_vec, intent_sentence_vec) = messages[

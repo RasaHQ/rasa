@@ -3,6 +3,7 @@ from typing import (
     Optional,
     DefaultDict,
     Dict,
+    Iterable,
     Text,
     List,
     Tuple,
@@ -19,8 +20,21 @@ import numpy as np
 import scipy.sparse
 from sklearn.model_selection import train_test_split
 
-
 logger = logging.getLogger(__name__)
+
+
+def ragged_array_to_ndarray(ragged_array: Iterable[np.ndarray]) -> np.ndarray:
+    """Converts ragged array to numpy array.
+
+    Ragged array, also known as a jagged array, irregular array is an array of
+    arrays of which the member arrays can be of different lengths.
+    Try to convert as is (preserves type), if it fails because not all numpy arrays have
+    the same shape, then creates numpy array of objects.
+    """
+    try:
+        return np.array(ragged_array)
+    except ValueError:
+        return np.array(ragged_array, dtype=object)
 
 
 class FeatureArray(np.ndarray):
@@ -530,7 +544,7 @@ class RasaModelData:
 
             if features.number_of_dimensions == 4:
                 lengths = FeatureArray(
-                    np.array(
+                    ragged_array_to_ndarray(
                         [
                             # add one more dim so that dialogue dim
                             # would be a sequence
@@ -623,7 +637,7 @@ class RasaModelData:
             # this operation can be performed only for labels
             # that contain several data points
             multi_values = [
-                f[counts > 1]
+                f[counts > 1].view(FeatureArray)
                 for attribute_data in self.data.values()
                 for features in attribute_data.values()
                 for f in features
@@ -771,7 +785,7 @@ class RasaModelData:
                 for f in features:
                     final_data[key][sub_key].append(
                         FeatureArray(
-                            np.concatenate(np.array(f)),
+                            np.concatenate(f),
                             number_of_dimensions=f[0].number_of_dimensions,
                         )
                     )

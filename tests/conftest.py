@@ -43,7 +43,7 @@ from rasa.core.channels import channel, RestInput
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -174,6 +174,7 @@ def simple_config_path(tmp_path_factory: TempPathFactory) -> Text:
     config = textwrap.dedent(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        assistant_id: placeholder_default
         pipeline:
         - name: WhitespaceTokenizer
         - name: KeywordIntentClassifier
@@ -208,25 +209,24 @@ def endpoints_path() -> Text:
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
+# update: implement fix to RuntimeError Event loop is closed issue described
+# here: https://github.com/pytest-dev/pytest-asyncio/issues/371
 @pytest.fixture(scope="session")
 def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-# override loop fixture to prevent ScopeMismatch pytest error and
-# implement fix to RuntimeError Event loop is closed issue described
-# here: https://github.com/pytest-dev/pytest-asyncio/issues/371
-@pytest.fixture(scope="session")
-def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
     loop._close = loop.close
     loop.close = lambda: None
     yield loop
     loop._close()
+
+
+# override loop fixture to prevent ScopeMismatch pytest error and
+# align the result of the loop fixture with that of the event_loop fixture
+@pytest.fixture(scope="session")
+def loop(
+    event_loop: asyncio.AbstractEventLoop,
+) -> Generator[asyncio.AbstractEventLoop, None, None]:
+    yield event_loop
 
 
 @pytest.fixture(scope="session")
@@ -866,6 +866,15 @@ def with_model_id(event: Event, model_id: Text) -> Event:
     new_event = copy.deepcopy(event)
     new_event.metadata[METADATA_MODEL_ID] = model_id
     return new_event
+
+
+def with_assistant_id(event: Event, assistant_id: Text) -> Event:
+    event.metadata[ASSISTANT_ID_KEY] = assistant_id
+    return event
+
+
+def with_assistant_ids(events: List[Event], assistant_id: Text) -> List[Event]:
+    return [with_assistant_id(event, assistant_id) for event in events]
 
 
 @pytest.fixture(autouse=True)
