@@ -613,7 +613,8 @@ class QuestionScope(str, Enum):
     GLOBAL = "global"
 
     @staticmethod
-    def from_str(label):
+    def from_str(label: Optional[Text]) -> "QuestionScope":
+        """Converts a string to a QuestionScope."""
         if label is None:
             return QuestionScope.FLOW
         elif label.lower() == "flow":

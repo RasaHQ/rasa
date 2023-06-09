@@ -8,13 +8,13 @@ from rasa.core.channels import OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
 
 
-def test_name():
+def test_name() -> None:
     action = FlowTriggerAction("flow_name")
     assert action.name() == "flow_name"
     assert action._flow_name == "name"
 
 
-async def test_run_flow_action():
+async def test_run_flow_action() -> None:
     action = FlowTriggerAction("flow_foobar")
     output_channel = OutputChannel()
     nlg = NaturalLanguageGenerator()

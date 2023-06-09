@@ -31,7 +31,6 @@ from rasa.nlu.constants import (
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
-    FLOW_INTERRUPT_RETURN_PREFIX,
     UTTER_PREFIX,
     FLOW_PREFIX,
 )
@@ -97,6 +96,7 @@ logger = logging.getLogger(__name__)
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
     from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
+    from rasa.core.actions.flows import ActionFlowContinueInterupted
 
     return [
         ActionListen(),
@@ -112,6 +112,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionSendText(),
         ActionBack(),
         ActionExtractSlots(action_endpoint),
+        ActionFlowContinueInterupted(),
     ]
 
 
@@ -213,10 +214,6 @@ def action_for_name_or_text(
         from rasa.core.actions.flows import FlowTriggerAction
 
         return FlowTriggerAction(action_name_or_text)
-    if action_name_or_text.startswith(FLOW_INTERRUPT_RETURN_PREFIX):
-        from rasa.core.actions.flows import FlowInterruptReturnAction
-
-        return FlowInterruptReturnAction(action_name_or_text)
     return RemoteAction(action_name_or_text, action_endpoint)
 
 
@@ -1049,7 +1046,7 @@ class ActionSendText(Action):
         """Runs action. Please see parent class for the full docstring."""
 
         fallback = {"text": ""}
-        message = metadata.get("message", fallback)
+        message = metadata.get("message", fallback) if metadata else fallback
         return [create_bot_utterance(message)]
 
 

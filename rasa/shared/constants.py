@@ -63,7 +63,6 @@ TCP_PROTOCOL = "TCP"
 DEFAULT_SENDER_ID = "default"
 UTTER_PREFIX = "utter_"
 FLOW_PREFIX = "flow_"
-FLOW_INTERRUPT_RETURN_PREFIX = "interrupt_return_"
 
 ASSISTANT_ID_KEY = "assistant_id"
 ASSISTANT_ID_DEFAULT_VALUE = "placeholder_default"
