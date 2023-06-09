@@ -7,9 +7,10 @@ import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from pytest import WarningsRecorder
 
-from rasa.shared.exceptions import YamlSyntaxException, YamlException, RasaException
+from rasa.shared.exceptions import YamlSyntaxException, YamlException
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
@@ -2402,9 +2403,10 @@ def test_domain_responses_ids_per_response_is_collected(domain_yaml, expected) -
 
 
 @pytest.mark.parametrize(
-    "domain_yaml",
+    "domain_yaml, expected_message",
     [
-        """
+        (
+            """
         responses:
             utter_greet:
             - text: hey there!
@@ -2412,7 +2414,10 @@ def test_domain_responses_ids_per_response_is_collected(domain_yaml, expected) -
             - text: hey ho!
               id: '1234'
         """,
-        """
+            "Duplicate response id '1234' defined in domain.",
+        ),
+        (
+            """
         responses:
             utter_greet:
             - text: hey there!
@@ -2421,8 +2426,17 @@ def test_domain_responses_ids_per_response_is_collected(domain_yaml, expected) -
             - text: bye!
               id: '1234'
         """,
+            "Duplicate response ids '{'1234'}' defined in domain.",
+        ),
     ],
 )
-def test_domain_responses_with_same_ids_are_not_allowed(domain_yaml: Text) -> None:
-    with pytest.raises(RasaException):
+def test_domain_responses_with_same_ids_are_not_allowed(
+    domain_yaml: Text,
+    expected_message: Text,
+    caplog: LogCaptureFixture,
+) -> None:
+    caplog.clear()
+    with pytest.warns(UserWarning) as record:
         Domain.from_yaml(domain_yaml)
+    assert len(record) == 1
+    assert record[0].message.args[0] == expected_message

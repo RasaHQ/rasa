@@ -1945,7 +1945,7 @@ class Domain:
             )
 
             if len(already_present_response_ids) > 0:
-                raise RasaException(
+                rasa.shared.utils.io.raise_warning(
                     f"Duplicate response ids "
                     f"'{already_present_response_ids}' "
                     f"defined in domain."
@@ -1972,7 +1972,7 @@ class Domain:
             response_variation_id = response_variation.get("id")
             if response_variation_id:
                 if response_variation_id in response_ids:
-                    raise RasaException(
+                    rasa.shared.utils.io.raise_warning(
                         f"Duplicate response id '{response_variation_id}' "
                         f"defined in domain."
                     )
