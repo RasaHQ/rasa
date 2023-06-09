@@ -161,7 +161,12 @@ class Marker(ABC):
     # from a dictionary of configs. For more details, see `from_config_dict`.
     ANY_MARKER = "<any_marker>"
 
-    def __init__(self, name: Optional[Text] = None, negated: bool = False, description: Optional[Text] = None) -> None:
+    def __init__(
+        self,
+        name: Optional[Text] = None,
+        negated: bool = False,
+        description: Optional[Text] = None,
+    ) -> None:
         """Instantiates a marker.
 
         Args:
@@ -568,11 +573,17 @@ class Marker(ABC):
         tag, _ = MarkerRegistry.get_non_negated_tag(tag_or_negated_tag=tag)
         if tag in MarkerRegistry.operator_tag_to_marker_class:
             return OperatorMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name, description=description
+                tag=tag,
+                sub_config=sub_marker_config,
+                name=name,
+                description=description,
             )
         elif tag in MarkerRegistry.condition_tag_to_marker_class:
             return ConditionMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name, description=description
+                tag=tag,
+                sub_config=sub_marker_config,
+                name=name,
+                description=description,
             )
 
         raise InvalidMarkerConfig(
@@ -774,7 +785,10 @@ class OperatorMarker(Marker, ABC):
 
     @staticmethod
     def from_tag_and_sub_config(
-        tag: Text, sub_config: Any, name: Optional[Text] = None, description: Optional[Text] = None,
+        tag: Text,
+        sub_config: Any,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None,
     ) -> OperatorMarker:
         """Creates an operator marker from the given config.
 
@@ -861,7 +875,10 @@ class ConditionMarker(Marker, ABC):
 
     @staticmethod
     def from_tag_and_sub_config(
-        tag: Text, sub_config: Any, name: Optional[Text] = None, description: Optional[Text] = None,
+        tag: Text,
+        sub_config: Any,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None,
     ) -> ConditionMarker:
         """Creates an atomic marker from the given config.
 
