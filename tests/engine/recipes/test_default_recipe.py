@@ -1,9 +1,12 @@
-from typing import Text, Dict, Any, Set
+from typing import Text, Dict, Any, Set, List
 import shutil
 
 import pytest
 from _pytest.capture import CaptureFixture
 from pathlib import Path
+from rasa.engine.constants import PLACEHOLDER_TRACKER
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.message import Message
 
 import rasa.shared.utils.io
 from rasa.shared.constants import ASSISTANT_ID_KEY, CONFIG_AUTOCONFIGURABLE_KEYS
@@ -26,7 +29,6 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.data import TrainingType
 import rasa.engine.validation
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.engine.constants import PLACEHOLDER_TRACKER
 
 
 CONFIG_FOLDER = Path("data/test_config")
@@ -399,6 +401,36 @@ def test_register_component():
         "Herman",
     )
     assert MyClassGraphComponent()
+
+
+def test_register_component_using_tracker():
+    @DefaultV1Recipe.register(
+        DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+        is_trainable=True,
+        model_from="Herman",
+    )
+    class MyClassGraphComponent(GraphComponent):
+        def process(
+            self, messages: List[Message], tracker: DialogueStateTracker
+        ) -> List[Message]:
+            ...
+
+    config = rasa.shared.utils.io.read_yaml(
+        """
+        language: "xy"
+        version: '2.0'
+        pipeline:
+        - name: MyClassGraphComponent
+        """
+    )
+
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
+    model_config = recipe.graph_config_for_recipe(config, {})
+
+    node_in_graph = model_config.predict_schema.nodes.get("run_MyClassGraphComponent0")
+    assert node_in_graph is not None
+    # check that the node was configured to require the tracker as an input
+    assert node_in_graph.needs.get("tracker") == PLACEHOLDER_TRACKER
 
 
 def test_register_component_with_multiple_types():
