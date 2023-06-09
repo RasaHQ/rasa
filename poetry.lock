@@ -5563,6 +5563,23 @@ tests = ["coverage[toml]", "freezegun (>=0.2.8)", "pretend", "pytest (>=6.0)", "
 typing = ["mypy", "rich", "twisted"]
 
 [[package]]
+name = "structlog-sentry"
+version = "2.0.2"
+description = "Sentry integration for structlog"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "structlog_sentry-2.0.2-py3-none-any.whl", hash = "sha256:a56e8ea4cf193558ba8a600fe4d8932642c186193e4a20bf720b0ac8ebc8ad2b"},
+    {file = "structlog_sentry-2.0.2.tar.gz", hash = "sha256:9790227e2284586b1202c066cec962c4f42c46ee9a3e0159c8c459a30384494c"},
+]
+
+[package.dependencies]
+packaging = "*"
+sentry-sdk = "*"
+structlog = "*"
+
+[[package]]
 name = "tabulate"
 version = "0.9.0"
 description = "Pretty-print tabular data"
@@ -7086,4 +7103,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "328bb7ca543c53df058bd7ab02b2f940985d9e131fc1d8788fde19ea118b2aef"
+content-hash = "1f18a57db232b1a905116117ed04327db8f9ed22253b579a066d67b512e1baf9"

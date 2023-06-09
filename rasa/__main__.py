@@ -6,6 +6,7 @@ import sys
 
 from rasa_sdk import __version__ as rasa_sdk_version
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.utils.log_utils import configure_logging
 
 import rasa.telemetry
 import rasa.utils.io
@@ -103,6 +104,8 @@ def main() -> None:
     configure_logging_and_warnings(
         log_level, logging_config_file, warn_only_once=True, filter_repeated_logs=True
     )
+    # configure structlog
+    configure_logging()
 
     tf_env.setup_tf_environment()
     tf_env.check_deterministic_ops()
