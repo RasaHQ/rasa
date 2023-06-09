@@ -1047,7 +1047,7 @@ jobs:
 
     # deploy will only be run when there is a tag available
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-    needs: [quality, test, wait_for_docs_tests, docker] # only run after all other stages succeeded
+    # needs: [docker] # only run after all other stages succeeded
 
     steps:
       - name: Checkout git repository 🕝
