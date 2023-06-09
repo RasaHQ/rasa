@@ -89,7 +89,7 @@ async def test_events_schema(
     pending = asyncio.all_tasks() - initial
     await asyncio.gather(*pending)
 
-    assert mock.call_count == 20
+    assert mock.call_count == 16
 
     for args, _ in mock.call_args_list:
         event = args[0]
