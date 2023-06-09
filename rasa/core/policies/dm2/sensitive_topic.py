@@ -47,12 +47,13 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
         self._model_name = config.get(CONFIG_KEY_MODEL_NAME, self.DEFAULT_MODEL_NAME)
         self._action = config.get(CONFIG_KEY_ACTION, self.DEFAULT_ACTION)
         self._use_stub = config.get(CONFIG_KEY_USE_STUB, self.DEFAULT_USE_STUB)
-        if key is None:
-            logger.warning(f"No OPENAI_API_KEY found in environment, "
-                           f"{self.__class__.__name__} uses stub detector")
-            self._use_stub = True
-        else:
-            openai.api_key = key
+        if not self._use_stub:
+            if key is None:
+                logger.warning(f"No OPENAI_API_KEY found in environment, "
+                               f"{self.__class__.__name__} uses stub detector")
+                self._use_stub = True
+            else:
+                openai.api_key = key
 
     @classmethod
     def get_default_config(cls) -> Dict[Text, Any]:
@@ -63,7 +64,7 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
         }
 
     def check(self, user_msg: Text) -> bool:
-        if not self._use_stub:
+        if self._use_stub:
             return self._stub.check(user_msg)
         try:
             resp = openai.Completion.create(
@@ -109,7 +110,7 @@ class SensitiveTopicDetectorStub(SensitiveTopicDetectorBase):
     def __init__(self, config: Dict[Text, Any],
                  positive: Iterable[Text] = DEFAULT_POSITIVE):
         super().__init__(config)
-        self._positive = list(positive)
+        self._positive = list(map(str.lower, positive))
 
     def check(self, user_msg: Text) -> bool:
         user_msg = user_msg.lower()
