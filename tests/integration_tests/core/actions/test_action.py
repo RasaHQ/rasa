@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from rasa.core.actions.action import ActionBotResponse
-from rasa.core.channels.slack import SlackBot
+from rasa.core.channels import CollectingOutputChannel
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg import CallbackNaturalLanguageGenerator
 from rasa.core.nlg.callback import nlg_request_format
@@ -32,7 +32,7 @@ async def test_action_bot_response_callback_nlg(
     """Test the response returned by the callback NLG endpoint."""
     callback_nlg = CallbackNaturalLanguageGenerator(mock_nlg_endpoint)
 
-    output_channel = SlackBot("DummyToken", "General")
+    output_channel = CollectingOutputChannel()
 
     events = await ActionBotResponse("utter_one_id").run(
         output_channel, callback_nlg, default_tracker, domain_with_response_ids

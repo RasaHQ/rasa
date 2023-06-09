@@ -844,7 +844,7 @@ async def test_action_bot_response_with_one_response_id(
     default_tracker,
     domain_with_response_ids: Domain,
 ) -> None:
-    output_channel = SlackBot("DummyToken", "General")
+    output_channel = CollectingOutputChannel()
 
     events = await ActionBotResponse("utter_one_id").run(
         output_channel, mock_nlg, default_tracker, domain_with_response_ids
@@ -865,7 +865,7 @@ async def test_action_bot_response_with_multiple_response_id(
     default_tracker,
     domain_with_response_ids: Domain,
 ) -> None:
-    output_channel = SlackBot("DummyToken", "General")
+    output_channel = CollectingOutputChannel()
 
     events = await ActionBotResponse("utter_multiple_ids").run(
         output_channel, mock_nlg, default_tracker, domain_with_response_ids
@@ -889,7 +889,7 @@ async def test_action_bot_response_with_empty_response_id_set(
     default_tracker,
     domain_with_response_ids: Domain,
 ) -> None:
-    output_channel = SlackBot("DummyToken", "General")
+    output_channel = CollectingOutputChannel()
 
     events = await ActionBotResponse("utter_no_id").run(
         output_channel, mock_nlg, default_tracker, domain_with_response_ids
@@ -913,7 +913,7 @@ async def test_action_bot_response_with_non_existing_id_mapping(
     default_tracker,
     domain_with_response_ids: Domain,
 ) -> None:
-    output_channel = SlackBot("DummyToken", "General")
+    output_channel = CollectingOutputChannel()
 
     events = await ActionBotResponse("utter_non_existing").run(
         output_channel, mock_nlg, default_tracker, domain_with_response_ids
