@@ -851,7 +851,7 @@ async def test_action_bot_response_with_one_response_id(
     )
 
     mock_nlg.generate.assert_called_once_with(
-        "utter_one_id", default_tracker, output_channel.name(), response_ids={"1"}
+        "utter_one_id", default_tracker, output_channel.name(), response_ids=["1"]
     )
 
     assert len(events) == 1
@@ -875,7 +875,7 @@ async def test_action_bot_response_with_multiple_response_id(
         "utter_multiple_ids",
         default_tracker,
         output_channel.name(),
-        response_ids={"2", "3"},
+        response_ids=["2", "3"],
     )
 
     assert len(events) == 1
@@ -899,7 +899,7 @@ async def test_action_bot_response_with_empty_response_id_set(
         "utter_no_id",
         default_tracker,
         output_channel.name(),
-        response_ids=set(),
+        response_ids=[],
     )
 
     assert len(events) == 1
@@ -923,7 +923,7 @@ async def test_action_bot_response_with_non_existing_id_mapping(
         "utter_non_existing",
         default_tracker,
         output_channel.name(),
-        response_ids=set(),
+        response_ids=[],
     )
 
     assert len(events) == 1

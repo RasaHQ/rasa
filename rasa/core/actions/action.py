@@ -312,7 +312,7 @@ class ActionBotResponse(Action):
             self.utter_action,
             tracker,
             output_channel.name(),
-            response_ids=response_ids_for_response,
+            response_ids=list(response_ids_for_response),
         )
         if message is None:
             if not self.silent_fail:

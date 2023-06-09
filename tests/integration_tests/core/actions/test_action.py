@@ -39,7 +39,7 @@ async def test_action_bot_response_callback_nlg(
     )
 
     body = nlg_request_format(
-        "utter_one_id", default_tracker, output_channel.name(), response_ids={"1"}
+        "utter_one_id", default_tracker, output_channel.name(), response_ids=["1"]
     )
 
     mock_nlg_endpoint.request.assert_called_once_with(
