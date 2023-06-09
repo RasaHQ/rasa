@@ -1,6 +1,11 @@
 import os
 from unittest import mock
-from rasa.core.policies.dm2.sensitive_topic import SensitiveTopicDetector, SensitiveTopicDetectorStub, CONFIG_KEY_USE_STUB, CONFIG_KEY_ACTION
+from rasa.core.policies.dm2.sensitive_topic import (
+    SensitiveTopicDetector,
+    SensitiveTopicDetectorStub,
+    CONFIG_KEY_USE_STUB,
+    CONFIG_KEY_ACTION
+)
 import logging
 
 logger = logging.getLogger("test")
@@ -32,6 +37,7 @@ def test_detector_stub():
     assert not detector.check("Normal message")
     assert detector.check("I hear voices in my head")
 
-    detector = SensitiveTopicDetectorStub({CONFIG_KEY_USE_STUB: True}, positive=("suspicious Message",))
+    detector = SensitiveTopicDetectorStub({CONFIG_KEY_USE_STUB: True},
+                                          positive=("suspicious Message",))
     assert detector.check("suspicious message")
     assert not detector.check("normal message")
