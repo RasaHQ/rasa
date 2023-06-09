@@ -1959,7 +1959,7 @@ class Domain:
     def _collect_response_ids_for_response_variations(
         response_variations: List[Dict[Text, Any]]
     ) -> Set[Text]:
-        """Collects all response ids for response variations.
+        """Collects all response ids of a particular response key name
 
         Args:
             response_variations: The responses variations to collect the ids from.
