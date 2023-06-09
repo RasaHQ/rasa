@@ -138,11 +138,6 @@ module.exports = {
                 },
                 {
                     type: 'category',
-                    label: 'Evaluation',
-                    items: ['markers'],
-                },
-                {
-                    type: 'category',
                     label: 'Channel Connectors',
                     items: [
                         {
