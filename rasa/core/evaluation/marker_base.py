@@ -844,7 +844,11 @@ class ConditionMarker(Marker, ABC):
     """A marker that does not contain any sub-markers."""
 
     def __init__(
-        self, text: Text, negated: bool = False, name: Optional[Text] = None
+        self,
+        text: Text,
+        negated: bool = False,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None,
     ) -> None:
         """Instantiates an atomic marker.
 
@@ -857,6 +861,7 @@ class ConditionMarker(Marker, ABC):
         """
         super().__init__(name=name, negated=negated)
         self.text = text
+        self.description = description
 
     def _to_str_with(self, tag: Text) -> Text:
         return f"({tag}: {self.text})"
