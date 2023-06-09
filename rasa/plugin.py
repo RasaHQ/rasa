@@ -146,3 +146,13 @@ def read_anonymization_rules(  # type: ignore[empty-body]
 @hookspec(firstresult=True)  # type: ignore[misc]
 def create_anonymization_pipeline(endpoints_file: Optional[Text]) -> Optional[Any]:
     """Hook specification for creating the anonymization pipeline."""
+
+
+@hookspec  # type: ignore[misc]
+def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
+    """Hook specification for initialising the anonymization pipeline."""
+
+
+@hookspec  # type: ignore[misc]
+def get_anonymization_pipeline() -> Optional[Any]:
+    """Hook specification for getting the anonymization pipeline."""
