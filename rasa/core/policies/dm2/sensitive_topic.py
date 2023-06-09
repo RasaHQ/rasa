@@ -100,8 +100,7 @@ the scope of the bot? Reply "YES" or "NO" and nothing else.
 
 
 class SensitiveTopicDetectorStub(SensitiveTopicDetectorBase):
-    """
-    Stub class for testing and debugging. Instead of using
+    """Stub class for testing and debugging. Instead of using
     ChatGPT, uses fixed substrings for detection.
     """
 
