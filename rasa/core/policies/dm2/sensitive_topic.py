@@ -49,8 +49,10 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
         self._use_stub = config.get(CONFIG_KEY_USE_STUB, self.DEFAULT_USE_STUB)
         if not self._use_stub:
             if key is None:
-                logger.warning(f"No OPENAI_API_KEY found in environment, "
-                               f"{self.__class__.__name__} uses stub detector")
+                logger.warning(
+                    f"No OPENAI_API_KEY found in environment, "
+                    f"{self.__class__.__name__} uses stub detector"
+                )
                 self._use_stub = True
             else:
                 openai.api_key = key
@@ -102,13 +104,12 @@ class SensitiveTopicDetectorStub(SensitiveTopicDetectorBase):
     Stub class for testing and debugging. Instead of using
     ChatGPT, uses fixed substrings for detection.
     """
-    DEFAULT_POSITIVE = (
-        "voices in my head",
-        "health problems"
-    )
 
-    def __init__(self, config: Dict[Text, Any],
-                 positive: Iterable[Text] = DEFAULT_POSITIVE):
+    DEFAULT_POSITIVE = ("voices in my head", "health problems")
+
+    def __init__(
+        self, config: Dict[Text, Any], positive: Iterable[Text] = DEFAULT_POSITIVE
+    ):
         super().__init__(config)
         self._positive = list(map(str.lower, positive))
 
