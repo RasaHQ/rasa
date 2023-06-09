@@ -373,13 +373,13 @@ class FlowStackFrame:
 
     @staticmethod
     def from_dict(data: Dict[Text, Any]) -> FlowStackFrame:
-        """Creates a `CurrentFlowStep` from a dictionary.
+        """Creates a `FlowStackFrame` from a dictionary.
 
         Args:
-            data: The dictionary to create the `CurrentFlowStep` from.
+            data: The dictionary to create the `FlowStackFrame` from.
 
         Returns:
-            The created `CurrentFlowStep`.
+            The created `FlowStackFrame`.
         """
         return FlowStackFrame(
             data["flow_id"],
@@ -388,10 +388,10 @@ class FlowStackFrame:
         )
 
     def as_dict(self) -> Dict[Text, Any]:
-        """Returns the `CurrentFlowStep` as a dictionary.
+        """Returns the `FlowStackFrame` as a dictionary.
 
         Returns:
-            The `CurrentFlowStep` as a dictionary.
+            The `FlowStackFrame` as a dictionary.
         """
         return {
             "flow_id": self.flow_id,
@@ -400,20 +400,22 @@ class FlowStackFrame:
         }
 
     def with_updated_id(self, step_id: Text) -> FlowStackFrame:
-        """Creates a copy of the `CurrentFlowStep` with the given step id.
+        """Creates a copy of the `FlowStackFrame` with the given step id.
 
         Args:
             step_id: The step id to use for the copy.
 
         Returns:
-            The copy of the `CurrentFlowStep` with the given step id.
+            The copy of the `FlowStackFrame` with the given step id.
         """
         return FlowStackFrame(self.flow_id, step_id, self.frame_type)
 
     def __repr__(self) -> Text:
-        return (f"FlowState(flow_id: {self.flow_id}, "
-                f"step_id: {self.step_id}, "
-                f"frame_type: {self.frame_type.value})")
+        return (
+            f"FlowState(flow_id: {self.flow_id}, "
+            f"step_id: {self.step_id}, "
+            f"frame_type: {self.frame_type.value})"
+        )
 
 
 class FlowExecutor:
@@ -431,12 +433,13 @@ class FlowExecutor:
 
     @staticmethod
     def from_tracker(
-        tracker: DialogueStateTracker, flows: Optional[FlowsList]
+        tracker: DialogueStateTracker, flows: FlowsList
     ) -> FlowExecutor:
         """Creates a `FlowExecutor` from a tracker.
 
         Args:
             tracker: The tracker to create the `FlowExecutor` from.
+            flows: The flows to use.
 
         Returns:
             The created `FlowExecutor`."""
@@ -509,7 +512,7 @@ class FlowExecutor:
     def _select_next_step_id(
         self, current: FlowStep, domain: Domain, tracker: "DialogueStateTracker"
     ) -> Optional[Text]:
-        """Evaluate the flow links of a step."""
+        """Selects the next step id based on the current step."""
         next = current.next
         if len(next.links) == 1 and isinstance(next.links[0], StaticFlowLink):
             return next.links[0].target
@@ -531,8 +534,8 @@ class FlowExecutor:
                 "must cover all possible cases."
             )
         if current.id != END_STEP:
-            # no links were selected. This means that the step is the last
-            # step in the flow and the flow should end.
+            # we've reached the end of the user defined steps in the flow.
+            # every flow should end with an end step, so we add it here.
             return END_STEP
         else:
             # we are already at the very end of the flow. There is no next step.
