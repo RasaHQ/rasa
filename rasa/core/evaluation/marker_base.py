@@ -556,9 +556,8 @@ class Marker(ABC):
         # Triggers the import of all modules containing marker classes in order to
         # register all configurable markers.
         MarkerRegistry.register_builtin_markers()
-        description = config.pop("description", None)
 
-        if not isinstance(config, dict) or len(config) != 1:
+        if not isinstance(config, dict) or len(config) not in [1, 2]:
             raise InvalidMarkerConfig(
                 "To configure a marker, please define a dictionary that maps a "
                 "single operator tag or a single condition tag to the "
@@ -567,6 +566,7 @@ class Marker(ABC):
                 f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
             )
 
+        description = config.pop("description", None)
         tag = next(iter(config))
         sub_marker_config = config[tag]
 
