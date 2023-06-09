@@ -720,7 +720,7 @@ class OperatorMarker(Marker, ABC):
             `InvalidMarkerConfig` if the given number of sub-markers does not match
             the expected number of sub-markers
         """
-        super().__init__(name=name, negated=negated)
+        super().__init__(name=name, negated=negated, description=description)
         self.sub_markers: List[Marker] = markers
         expected_num = self.expected_number_of_sub_markers()
         if expected_num is not None and len(markers) != expected_num:
