@@ -4,14 +4,17 @@ from typing import Any, Dict
 
 import structlog
 from structlog_sentry import SentryProcessor
+from rasa.plugin import plugin_manager
 
 
 def _anonymizer(
     logger: structlog.BoundLogger, name: str, event_dict: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Anonymizes event dict."""
-    # TODO: Replace "anonymised text" with pipeline.log_run()
-    event_dict["event"] = "anonymised text"
+    anonymization_pipeline = plugin_manager().hook.get_anonymization_pipeline()
+
+    if anonymization_pipeline:
+        event_dict["event"] = anonymization_pipeline.log_run()
     return event_dict
 
 
@@ -23,7 +26,8 @@ def configure_logging() -> None:
         level=logging.DEBUG,
     )
 
-    shared_processors = [
+    processors = [
+        _anonymizer,
         # Processors that have nothing to do with output,
         # e.g., add timestamps or log level names.
         # If log level is too low, abort pipeline and throw away log entry.
@@ -48,9 +52,6 @@ def configure_logging() -> None:
         structlog.processors.dict_tracebacks,
         structlog.processors.JSONRenderer(),
     ]
-
-    # TODO: put in an if pipeline block
-    processors = shared_processors + [_anonymizer]
 
     structlog.configure(
         processors=processors,  # type: ignore

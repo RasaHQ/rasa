@@ -104,8 +104,6 @@ def main() -> None:
     configure_logging_and_warnings(
         log_level, logging_config_file, warn_only_once=True, filter_repeated_logs=True
     )
-    # configure structlog
-    configure_logging()
 
     tf_env.setup_tf_environment()
     tf_env.check_deterministic_ops()
@@ -129,6 +127,8 @@ def main() -> None:
             plugin_manager().hook.init_anonymization_pipeline(
                 endpoints_file=endpoints_file
             )
+            # configure structlog
+            configure_logging()
 
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
