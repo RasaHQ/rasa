@@ -161,7 +161,7 @@ class Marker(ABC):
     # from a dictionary of configs. For more details, see `from_config_dict`.
     ANY_MARKER = "<any_marker>"
 
-    def __init__(self, name: Optional[Text] = None, negated: bool = False) -> None:
+    def __init__(self, name: Optional[Text] = None, negated: bool = False, description: Optional[Text] = None) -> None:
         """Instantiates a marker.
 
         Args:
@@ -169,6 +169,8 @@ class Marker(ABC):
                 conversion of this marker
             negated: whether this marker should be negated (i.e. a negated marker
                 applies if and only if the non-negated marker does not apply)
+            description: an optional description of the marker. It is not used
+                internally but can be used to document the marker.
         Raises:
             `InvalidMarkerConfig` if the chosen *name* of the marker is the tag of
             a predefined marker.
@@ -187,6 +189,7 @@ class Marker(ABC):
         # for 2 reasons: testing and the fact that the `MarkerRegistry`+`from_config`
         # won't allow to create a negated marker if there is no negated tag.
         self.negated: bool = negated
+        self.description = description
 
     def __str__(self) -> Text:
         return self.name or repr(self)
@@ -548,6 +551,7 @@ class Marker(ABC):
         # Triggers the import of all modules containing marker classes in order to
         # register all configurable markers.
         MarkerRegistry.register_builtin_markers()
+        description = config.pop("description", None)
 
         if not isinstance(config, dict) or len(config) != 1:
             raise InvalidMarkerConfig(
@@ -564,11 +568,11 @@ class Marker(ABC):
         tag, _ = MarkerRegistry.get_non_negated_tag(tag_or_negated_tag=tag)
         if tag in MarkerRegistry.operator_tag_to_marker_class:
             return OperatorMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name
+                tag=tag, sub_config=sub_marker_config, name=name, description=description
             )
         elif tag in MarkerRegistry.condition_tag_to_marker_class:
             return ConditionMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name
+                tag=tag, sub_config=sub_marker_config, name=name, description=description
             )
 
         raise InvalidMarkerConfig(
@@ -770,7 +774,7 @@ class OperatorMarker(Marker, ABC):
 
     @staticmethod
     def from_tag_and_sub_config(
-        tag: Text, sub_config: Any, name: Optional[Text] = None
+        tag: Text, sub_config: Any, name: Optional[Text] = None, description: Optional[Text] = None,
     ) -> OperatorMarker:
         """Creates an operator marker from the given config.
 
@@ -781,6 +785,7 @@ class OperatorMarker(Marker, ABC):
             tag: the tag identifying an operator
             sub_config: a list of marker configs
             name: an optional custom name to be attached to the resulting marker
+            description: an optional description of the marker
         Returns:
            the configured operator marker
         Raises:
@@ -817,6 +822,7 @@ class OperatorMarker(Marker, ABC):
                 f"{collected_sub_markers}. Reason: {str(e)}"
             )
         marker.name = name
+        marker.description = description
         return marker
 
 
@@ -855,7 +861,7 @@ class ConditionMarker(Marker, ABC):
 
     @staticmethod
     def from_tag_and_sub_config(
-        tag: Text, sub_config: Any, name: Optional[Text] = None
+        tag: Text, sub_config: Any, name: Optional[Text] = None, description: Optional[Text] = None,
     ) -> ConditionMarker:
         """Creates an atomic marker from the given config.
 
@@ -881,4 +887,5 @@ class ConditionMarker(Marker, ABC):
             )
         marker = marker_class(sub_config, negated=is_negation)
         marker.name = name
+        marker.description = description
         return marker
