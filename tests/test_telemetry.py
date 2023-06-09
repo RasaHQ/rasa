@@ -79,14 +79,6 @@ async def test_events_schema(
 
     telemetry.track_nlu_model_test(TrainingData())
 
-    telemetry.track_markers_extraction_initiated("all", False, False, None)
-
-    telemetry.track_markers_extracted(1)
-
-    telemetry.track_markers_stats_computed(1)
-
-    telemetry.track_markers_parsed_count(1, 1, 1)
-
     # Also track train started for a graph config
     training_data = TrainingDataImporter.load_from_config(
         "data/test_config/graph_config.yml"
