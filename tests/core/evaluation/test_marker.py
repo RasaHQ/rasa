@@ -737,7 +737,15 @@ def test_split_sessions(tmp_path):
     assert len(sessions[0][0]) == len(events)
 
 
-def test_marker_with_description():
+def test_condition_marker_with_description():
     marker = SlotSetMarker("s1", description="This is a description")
+    assert marker.description == "This is a description"
+    assert marker.negated_tag() is None
+
+
+def test_operator_marker_with_description():
+    marker = AndMarker(
+        markers=[SlotSetMarker("s1")], description="This is a description"
+    )
     assert marker.description == "This is a description"
     assert marker.negated_tag() is None

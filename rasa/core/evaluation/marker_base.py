@@ -700,7 +700,11 @@ class OperatorMarker(Marker, ABC):
     """Combines several markers into one."""
 
     def __init__(
-        self, markers: List[Marker], negated: bool = False, name: Optional[Text] = None
+        self,
+        markers: List[Marker],
+        negated: bool = False,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None,
     ) -> None:
         """Instantiates a marker.
 
@@ -710,6 +714,8 @@ class OperatorMarker(Marker, ABC):
                 applies if and only if the non-negated marker does not apply)
             name: a custom name that can be used to replace the default string
                 conversion of this marker
+            description: an optional description of the marker. It is not used
+                internally but can be used to document the marker.
         Raises:
             `InvalidMarkerConfig` if the given number of sub-markers does not match
             the expected number of sub-markers
@@ -858,6 +864,8 @@ class ConditionMarker(Marker, ABC):
                 applies if and only if the non-negated marker does not apply)
             name: a custom name that can be used to replace the default string
                 conversion of this marker
+            description: an optional description of the marker. It is not used
+                internally but can be used to document the marker.
         """
         super().__init__(name=name, negated=negated)
         self.text = text
