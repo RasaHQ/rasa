@@ -90,6 +90,9 @@
         })
         .then(data => {
           let storyBlock = document.getElementById("json-data");
+          if (storyBlock.textContent === data) {
+            return;
+          }
           storyBlock.textContent = data;
           if (window.hljs) {
             hljs.highlightElement(storyBlock);
@@ -131,6 +134,9 @@
           }
           let trackerUpdate = JSON.stringify(trackerUpdates, null, 2);
           let updateBlock = document.getElementById("tracker-update");
+          if(updateBlock.textContent === trackerUpdate){
+            return;
+          }
           updateBlock.textContent = trackerUpdate;
           if (window.hljs) {
             hljs.highlightElement(updateBlock);
