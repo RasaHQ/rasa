@@ -87,7 +87,6 @@ class MessageProcessor:
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         on_circuit_break: Optional[LambdaType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
-        anonymization_pipeline: Optional[Any] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
@@ -113,7 +112,6 @@ class MessageProcessor:
         self.model_path = Path(model_path)
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter
-        self.anonymization_pipeline = anonymization_pipeline
 
     @staticmethod
     def _load_model(

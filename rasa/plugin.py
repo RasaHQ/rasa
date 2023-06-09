@@ -136,18 +136,6 @@ def create_tracker_store(  # type: ignore[empty-body]
     """Hook specification for wrapping with AuthRetryTrackerStore."""
 
 
-@hookspec(firstresult=True)  # type: ignore[misc]
-def read_anonymization_rules(  # type: ignore[empty-body]
-    endpoints_file: Optional[Text],
-) -> List[Any]:
-    """Hook specification for reading anonymization rules."""
-
-
-@hookspec(firstresult=True)  # type: ignore[misc]
-def create_anonymization_pipeline(endpoints_file: Optional[Text]) -> Optional[Any]:
-    """Hook specification for creating the anonymization pipeline."""
-
-
 @hookspec  # type: ignore[misc]
 def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising the anonymization pipeline."""
