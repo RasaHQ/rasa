@@ -148,7 +148,7 @@ class FlowPolicy(Policy):
         Returns:
              The prediction.
         """
-        executor = FlowExecutor.from_tracker(tracker, flows)
+        executor = FlowExecutor.from_tracker(tracker, flows or FlowsList([]))
         if tracker.active_loop:
             # we are in a loop - likely answering a question - we need to check
             # if the user responded with a trigger intent for another flow rather
@@ -432,9 +432,7 @@ class FlowExecutor:
         self.all_flows = all_flows
 
     @staticmethod
-    def from_tracker(
-        tracker: DialogueStateTracker, flows: FlowsList
-    ) -> FlowExecutor:
+    def from_tracker(tracker: DialogueStateTracker, flows: FlowsList) -> FlowExecutor:
         """Creates a `FlowExecutor` from a tracker.
 
         Args:
