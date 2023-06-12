@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional
+from typing import Optional, Text
 from unittest.mock import MagicMock
 
 import pytest
@@ -45,33 +45,27 @@ def test_plugin_create_tracker_store(
     )
 
 
-# @pytest.mark.parametrize("endpoints_file", [None, "test_endpoints.yml"])
-# def test_plugin_read_anonymization_rules(
-#     endpoints_file: Optional[Text],
-#     monkeypatch: MonkeyPatch,
-# ) -> None:
-#     manager = plugin_manager()
-#     monkeypatch.setattr(
-#         manager.hook, "read_anonymization_rules", MagicMock(return_value=[])
-#     )
+@pytest.mark.parametrize("endpoints_file", [None, "test_endpoints.yml"])
+def test_init_anonymization_pipeline(
+    endpoints_file: Optional[Text],
+    monkeypatch: MonkeyPatch,
+) -> None:
+    manager = plugin_manager()
+    monkeypatch.setattr(
+        manager.hook, "init_anonymization_pipeline", MagicMock(return_value=None)
+    )
 
-#     manager.hook.read_anonymization_rules(endpoints_file=endpoints_file)
-#     manager.hook.read_anonymization_rules.assert_called_once_with(
-#         endpoints_file=endpoints_file
-#     )
+    manager.hook.init_anonymization_pipeline(endpoints_file=endpoints_file)
+    manager.hook.init_anonymization_pipeline.assert_called_once_with(
+        endpoints_file=endpoints_file
+    )
 
 
-# @pytest.mark.parametrize("endpoints_file", [None, "test_endpoints.yml"])
-# def test_plugin_create_anonymization_pipeline(
-#     monkeypatch: MonkeyPatch,
-#     endpoints_file: Optional[Text],
-# ) -> None:
-#     manager = plugin_manager()
-#     monkeypatch.setattr(
-#         manager.hook, "create_anonymization_pipeline", MagicMock(return_value=None)
-#     )
+def test_get_anonymization_pipeline(monkeypatch: MonkeyPatch) -> None:
+    manager = plugin_manager()
+    monkeypatch.setattr(
+        manager.hook, "get_anonymization_pipeline", MagicMock(return_value=None)
+    )
 
-#     manager.hook.create_anonymization_pipeline(endpoints_file=endpoints_file)
-#     manager.hook.create_anonymization_pipeline.assert_called_once_with(
-#         endpoints_file=endpoints_file
-#     )
+    manager.hook.get_anonymization_pipeline()
+    manager.hook.get_anonymization_pipeline.assert_called_once()
