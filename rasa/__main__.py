@@ -6,7 +6,7 @@ import sys
 
 from rasa_sdk import __version__ as rasa_sdk_version
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.utils.log_utils import configure_logging
+from rasa.utils.log_utils import configure_structlog
 
 import rasa.telemetry
 import rasa.utils.io
@@ -128,7 +128,7 @@ def main() -> None:
                 endpoints_file=endpoints_file
             )
             # configure structlog
-            configure_logging()
+            configure_structlog()
 
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):

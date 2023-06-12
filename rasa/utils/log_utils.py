@@ -1,3 +1,4 @@
+import os
 import logging
 import sys
 from typing import Any, Dict
@@ -5,6 +6,9 @@ from typing import Any, Dict
 import structlog
 from structlog_sentry import SentryProcessor
 from rasa.plugin import plugin_manager
+
+
+FORCE_JSON_LOGGING = os.environ.get("FORCE_JSON_LOGGING")
 
 
 def _anonymizer(
@@ -18,7 +22,7 @@ def _anonymizer(
     return event_dict
 
 
-def configure_logging() -> None:
+def configure_structlog() -> None:
     """Configure logging of the server."""
     logging.basicConfig(
         format="%(message)s",
@@ -26,7 +30,7 @@ def configure_logging() -> None:
         level=logging.DEBUG,
     )
 
-    processors = [
+    shared_processors = [
         _anonymizer,
         # Processors that have nothing to do with output,
         # e.g., add timestamps or log level names.
@@ -47,11 +51,21 @@ def configure_logging() -> None:
         # add structlog sentry integration. only log fatal log entries
         # as events as we are tracking exceptions anyways
         SentryProcessor(event_level=logging.FATAL),
+    ]
+
+    if not FORCE_JSON_LOGGING and sys.stderr.isatty():
+        # Pretty printing when we run in a terminal session.
+        # Automatically prints pretty tracebacks when "rich" is installed
+        processors = shared_processors + [
+            structlog.dev.ConsoleRenderer(),
+        ]
+    else:
         # Print JSON when we run, e.g., in a Docker container.
         # Also print structured tracebacks.
-        structlog.processors.dict_tracebacks,
-        structlog.processors.JSONRenderer(),
-    ]
+        processors = shared_processors + [
+            structlog.processors.dict_tracebacks,
+            structlog.processors.JSONRenderer(),
+        ]
 
     structlog.configure(
         processors=processors,  # type: ignore

@@ -1,7 +1,6 @@
 import logging
 import os
 from pathlib import Path
-import structlog
 import tarfile
 import time
 from types import LambdaType
@@ -71,7 +70,6 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-structlogger = structlog.get_logger()
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
 
@@ -217,9 +215,6 @@ class MessageProcessor:
         new_events = rasa.shared.core.trackers.TrackerEventDiffEngine.event_difference(
             old_tracker, tracker
         )
-
-        structlogger.debug("Test log: My name is Tawakalt Olaniyi")
-        logger.debug(anonymization_pipeline.log_run("My name is Taiwo Olaniyi"))
 
         for event in new_events:
             body = {"sender_id": tracker.sender_id}
