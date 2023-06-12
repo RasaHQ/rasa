@@ -688,6 +688,7 @@ jobs:
 
   sequential_integration_test:
     name: Run Sequential Integration Tests
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-20.04
     needs: [changes]
     env:
