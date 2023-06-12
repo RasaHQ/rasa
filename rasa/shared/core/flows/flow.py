@@ -273,6 +273,14 @@ class Flow:
             return None
         return self.steps[0]
 
+    def slots(self) -> List[str]:
+        """Return the names of the slots used in this flow."""
+        result = []
+        for step in self.steps:
+            if isinstance(step, QuestionFlowStep) and step.question not in result:
+                result.append(step.question)
+        return result
+
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
     """Used to read flow steps from parsed YAML.
