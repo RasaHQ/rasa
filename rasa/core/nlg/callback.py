@@ -27,6 +27,9 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
     }
 
 
+RESPONSE_ID_KEY = "response_ids"
+
+
 def nlg_request_format(
     utter_action: Text,
     tracker: DialogueStateTracker,
@@ -35,9 +38,11 @@ def nlg_request_format(
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
     tracker_state = tracker.current_state(EventVerbosity.ALL)
+    response_ids = kwargs.pop(RESPONSE_ID_KEY, [])
 
     return {
         "response": utter_action,
+        "ids": response_ids,
         "arguments": kwargs,
         "tracker": tracker_state,
         "channel": {"name": output_channel},

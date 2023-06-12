@@ -21,6 +21,7 @@ from rasa.core.constants import (
     COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
     DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
 )
+from rasa.core.nlg.callback import RESPONSE_ID_KEY
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -308,11 +309,19 @@ class ActionBotResponse(Action):
         response_ids_for_response = domain.response_ids_per_response.get(
             self.utter_action, set()
         )
+
+        response_id_list = list(response_ids_for_response)
+        response_id_list.sort()
+
+        kwargs = {
+            RESPONSE_ID_KEY: response_id_list,
+        }
+
         message = await nlg.generate(
             self.utter_action,
             tracker,
             output_channel.name(),
-            response_ids=list(response_ids_for_response),
+            **kwargs,
         )
         if message is None:
             if not self.silent_fail:

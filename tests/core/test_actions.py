@@ -838,96 +838,72 @@ def mock_nlg(mock_message, monkeypatch: MonkeyPatch) -> MagicMock:
 
 
 async def test_action_bot_response_with_one_response_id(
-    mock_message: Dict[Text, Any],
     mock_nlg: MagicMock,
     default_channel,
     default_tracker,
     domain_with_response_ids: Domain,
 ) -> None:
-    output_channel = CollectingOutputChannel()
-
-    events = await ActionBotResponse("utter_one_id").run(
-        output_channel, mock_nlg, default_tracker, domain_with_response_ids
+    await ActionBotResponse("utter_one_id").run(
+        default_channel, mock_nlg, default_tracker, domain_with_response_ids
     )
 
     mock_nlg.generate.assert_called_once_with(
-        "utter_one_id", default_tracker, output_channel.name(), response_ids=["1"]
+        "utter_one_id", default_tracker, default_channel.name(), response_ids=["1"]
     )
-
-    assert len(events) == 1
-    assert events[0].metadata == mock_message
 
 
 async def test_action_bot_response_with_multiple_response_id(
-    mock_message: Dict[Text, Any],
     mock_nlg: MagicMock,
     default_channel,
     default_tracker,
     domain_with_response_ids: Domain,
 ) -> None:
-    output_channel = CollectingOutputChannel()
-
-    events = await ActionBotResponse("utter_multiple_ids").run(
-        output_channel, mock_nlg, default_tracker, domain_with_response_ids
+    await ActionBotResponse("utter_multiple_ids").run(
+        default_channel, mock_nlg, default_tracker, domain_with_response_ids
     )
 
     mock_nlg.generate.assert_called_once_with(
         "utter_multiple_ids",
         default_tracker,
-        output_channel.name(),
+        default_channel.name(),
         response_ids=["2", "3"],
     )
 
-    assert len(events) == 1
-    assert events[0].metadata == mock_message
-
 
 async def test_action_bot_response_with_empty_response_id_set(
-    mock_message: Dict[Text, Any],
     mock_nlg: MagicMock,
     default_channel,
     default_tracker,
     domain_with_response_ids: Domain,
 ) -> None:
-    output_channel = CollectingOutputChannel()
-
-    events = await ActionBotResponse("utter_no_id").run(
-        output_channel, mock_nlg, default_tracker, domain_with_response_ids
+    await ActionBotResponse("utter_no_id").run(
+        default_channel, mock_nlg, default_tracker, domain_with_response_ids
     )
 
     mock_nlg.generate.assert_called_once_with(
         "utter_no_id",
         default_tracker,
-        output_channel.name(),
+        default_channel.name(),
         response_ids=[],
     )
 
-    assert len(events) == 1
-    assert events[0].metadata == mock_message
-
 
 async def test_action_bot_response_with_non_existing_id_mapping(
-    mock_message: Dict[Text, Any],
     mock_nlg: MagicMock,
     default_channel,
     default_tracker,
     domain_with_response_ids: Domain,
 ) -> None:
-    output_channel = CollectingOutputChannel()
-
-    events = await ActionBotResponse("utter_non_existing").run(
-        output_channel, mock_nlg, default_tracker, domain_with_response_ids
+    await ActionBotResponse("utter_non_existing").run(
+        default_channel, mock_nlg, default_tracker, domain_with_response_ids
     )
 
     mock_nlg.generate.assert_called_once_with(
         "utter_non_existing",
         default_tracker,
-        output_channel.name(),
+        default_channel.name(),
         response_ids=[],
     )
-
-    assert len(events) == 1
-    assert events[0].metadata == mock_message
 
 
 async def test_action_back(
