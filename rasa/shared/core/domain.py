@@ -1931,7 +1931,7 @@ class Domain:
         Returns:
             A dictionary mapping the response names to the set of response ids.
         """
-        response_ids = set()
+        response_ids: Set[Text] = set()
         response_ids_per_response: Dict[Text, Set[Text]] = {}
         for response_name, response_variations in responses.items():
             response_ids_for_response = (
@@ -1959,7 +1959,7 @@ class Domain:
     def _collect_response_ids_for_response_variations(
         response_variations: List[Dict[Text, Any]]
     ) -> Set[Text]:
-        """Collects all response ids of a particular response key name
+        """Collects all response ids of a particular response key name.
 
         Args:
             response_variations: The responses variations to collect the ids from.
