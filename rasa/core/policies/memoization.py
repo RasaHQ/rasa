@@ -4,6 +4,7 @@ import zlib
 import base64
 import json
 import logging
+import structlog
 
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
@@ -34,6 +35,7 @@ from rasa.core.constants import (
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 @DefaultV1Recipe.register(
@@ -251,7 +253,9 @@ class MemoizationPolicy(Policy):
         result = self._default_predictions(domain)
 
         states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
-        logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
+        structlogger.debug(
+            f"Current tracker state:{self.format_tracker_states(states)}"
+        )
         predicted_action_name = self.recall(
             states, tracker, domain, rule_only_data=rule_only_data
         )
@@ -426,7 +430,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 # check if we like new futures
                 memorised = self._recall_states(states)
                 if memorised is not None:
-                    logger.debug(f"Current tracker state {states}")
+                    structlogger.debug(f"Current tracker state {states}")
                     return memorised
                 old_states = states
 
@@ -436,7 +440,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             )
 
         # No match found
-        logger.debug(f"Current tracker state {old_states}")
+        structlogger.debug(f"Current tracker state {old_states}")
         return None
 
     def recall(

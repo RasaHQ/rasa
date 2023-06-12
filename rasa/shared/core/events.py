@@ -1,6 +1,7 @@
 import abc
 import json
 import logging
+import structlog
 import re
 from abc import ABC
 
@@ -98,6 +99,7 @@ if TYPE_CHECKING:
         total=False,
     )
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"]:
@@ -106,7 +108,6 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
     Example format:
         [{"event": "slot", "value": 5, "name": "my_slot"}]
     """
-
     deserialised = []
 
     for e in serialized_events:
@@ -115,7 +116,7 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
             if event:
                 deserialised.append(event)
             else:
-                logger.warning(
+                structlogger.warning(
                     f"Unable to parse event '{event}' while deserialising. The event"
                     " will be ignored."
                 )
@@ -358,7 +359,6 @@ class Event(ABC):
         type_name: Text, default: Optional[Type["Event"]] = None
     ) -> Optional[Type["Event"]]:
         """Returns a slots class by its type name."""
-
         for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls

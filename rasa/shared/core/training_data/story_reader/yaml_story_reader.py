@@ -2,6 +2,7 @@ import functools
 import json
 from json import JSONDecodeError
 import logging
+import structlog
 from pathlib import Path
 import re
 from re import Match, Pattern
@@ -46,6 +47,7 @@ from rasa.shared.core.training_data.structures import StoryStep
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 KEY_STORIES = "stories"
 KEY_STORY_NAME = "story"
@@ -144,7 +146,6 @@ class YAMLStoryReader(StoryReader):
         Returns:
             The parsed stories or rules.
         """
-
         if not rasa.shared.utils.validation.validate_training_data_format_version(
             parsed_content, self.source_name
         ):
@@ -202,7 +203,6 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `True` if it's a conversation test file, otherwise `False`.
         """
-
         return cls._has_test_prefix(file_path) and cls.is_stories_file(file_path)
 
     def get_steps(self) -> List[StoryStep]:
@@ -628,7 +628,9 @@ class YAMLStoryReader(StoryReader):
         # message text did start with the special prefix -- however, a user might
         # just have decided to start their text this way.
         if not match:
-            logger.warning(f"Failed to parse intent end entities from '{user_text}'.")
+            structlogger.warning(
+                f"Failed to parse intent end entities from '{user_text}'."
+            )
             return message
 
         # Extract attributes from the match - and validate it via the domain.
