@@ -8,13 +8,13 @@ from rasa.plugin import plugin_manager
 
 
 def _anonymizer(
-    logger: structlog.BoundLogger, name: str, event_dict: Dict[str, Any]
+    _: structlog.BoundLogger, __: str, event_dict: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Anonymizes event dict."""
     anonymization_pipeline = plugin_manager().hook.get_anonymization_pipeline()
 
     if anonymization_pipeline:
-        event_dict["event"] = anonymization_pipeline.log_run()
+        event_dict["event"] = anonymization_pipeline.log_run(event_dict["event"])
     return event_dict
 
 
