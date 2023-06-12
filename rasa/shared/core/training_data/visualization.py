@@ -54,10 +54,9 @@ class UserMessageGenerator:
     def _create_reverse_mapping(
         data: "TrainingData",
     ) -> Dict[Dict[Text, Any], List["Message"]]:
-        """Create a mapping from intent to messages
-
-        This allows a faster intent lookup."""
-
+        """Create a mapping from intent to messages.
+        This allows a faster intent lookup.
+        """
         d = defaultdict(list)
         for example in data.training_examples:
             if example.get(INTENT, {}) is not None:
@@ -99,7 +98,6 @@ def _fingerprint_node(
     nodes we have visited, we can never remember if we have visited node A or
     node B if both have the same fingerprint.
     """
-
     # the candidate list contains all node paths that haven't been
     # extended till `max_history` length yet.
     candidates: Deque = deque()
@@ -145,7 +143,6 @@ def _outgoing_edges_are_similar(
     As your path will be the same because the outgoing edges will lead you to
     the same nodes anyways.
     """
-
     ignored = {node_b, node_a}
     a_edges = {
         (target, k)
@@ -181,8 +178,8 @@ def _add_edge(
     **kwargs: Any,
 ) -> None:
     """Adds an edge to the graph if the edge is not already present. Uses the
-    label as the key."""
-
+    label as the key.
+    """
     if key is None:
         key = EDGE_NONE_LABEL
 
@@ -201,8 +198,8 @@ def _transfer_style(
 ) -> Dict[Text, Any]:
     """Copy over class names from source to target for all special classes.
 
-    Used if a node is highlighted and merged with another node."""
-
+    Used if a node is highlighted and merged with another node.
+    """
     clazzes = source.get("class", "")
 
     special_classes = {"dashed", "active"}
@@ -220,7 +217,6 @@ def _transfer_style(
 
 def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) -> None:
     """Searches for equivalent nodes in the graph and merges them."""
-
     changed = True
     # every node merge changes the graph and can trigger previously
     # impossible node merges - we need to repeat until
@@ -368,7 +364,6 @@ def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> in
 
 def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> None:
     """Add the standard nodes we need."""
-
     graph.add_node(
         START_NODE_ID,
         label="START",
@@ -390,7 +385,6 @@ def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> No
 
 def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
     """Create a graph and adds the default nodes."""
-
     import networkx as nx
 
     graph = nx.MultiDiGraph()
@@ -406,18 +400,23 @@ def _add_message_edge(
     is_current: bool,
 ) -> None:
     """Create an edge based on the user message."""
-
-    if message and message.get("intent", {}).get("name", None):
+    message_intent = message.get("intent", {}).get("name", None)
+    if message and message_intent:
         # get the entities as \n separated values
-        entities: List[Dict[Text,Any]] = message.get("entities")
-        entity_values = [value for entity in entities for key, value in entity.items() if key == "entity"]
+        entities: List[Dict[Text, Any]] = message.get("entities")
+        entity_values = [
+            value
+            for entity in entities
+            for key, value in entity.items()
+            if key == "entity"
+        ]
         if entity_values:
             newline = ",\n"
             entity_values_as_str = f"{newline}({newline.join(entity_values)})"
         else:
             entity_values_as_str = ""
 
-        message_key = message.get("intent", {}).get("name", None) + entity_values_as_str
+        message_key = message_intent + entity_values_as_str
         message_label = message_key  # message.get("text", None)
     elif message and message.get("text"):
 
@@ -514,7 +513,7 @@ def visualize_neighborhood(
                 next_node_idx += 1
                 graph.add_node(
                     next_node_idx,
-                    label=el.action_name or "Oops. Missing Action here",
+                    label=el.action_name,
                     fontsize=fontsize,
                     **{"class": "active" if is_current else ""},
                 )
@@ -584,7 +583,6 @@ def _remove_auxiliary_nodes(
     graph: "networkx.MultiDiGraph", special_node_idx: int
 ) -> None:
     """Remove any temporary or unused nodes."""
-
     graph.remove_node(TMP_NODE_ID)
 
     if not graph.predecessors(END_NODE_ID):
