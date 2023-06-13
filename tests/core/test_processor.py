@@ -111,25 +111,26 @@ async def test_message_id_logging(default_processor: MessageProcessor):
 
 
 async def test_parsing(default_processor: MessageProcessor):
-    MessageProcessor._parse_message_with_graph = mock.Mock()
+    with mock.patch(
+        "rasa.core.processor.MessageProcessor._parse_message_with_graph"
+    ) as mocked_function:
+        # Case1: message has intent and entities explicitly set.
+        message = UserMessage('/greet{"name": "boy"}')
+        parsed = await default_processor.parse_message(message)
+        assert parsed["intent"][INTENT_NAME_KEY] == "greet"
+        assert parsed["entities"][0]["entity"] == "name"
+        mocked_function.assert_not_called()
 
-    # Case1: message has intent and entities explicitly set.
-    message = UserMessage('/greet{"name": "boy"}')
-    parsed = await default_processor.parse_message(message)
-    assert parsed["intent"][INTENT_NAME_KEY] == "greet"
-    assert parsed["entities"][0]["entity"] == "name"
-    MessageProcessor._parse_message_with_graph.assert_not_called()
-
-    # Case2: Normal user message.
-    parse_data = {
-        "text": "mocked",
-        "intent": {"name": None, "confidence": 0.0},
-        "entities": [],
-    }
-    MessageProcessor._parse_message_with_graph.return_value = parse_data
-    message = UserMessage("hi hello how are you?")
-    parsed = await default_processor.parse_message(message)
-    MessageProcessor._parse_message_with_graph.assert_called()
+        # Case2: Normal user message.
+        parse_data = {
+            "text": "mocked",
+            "intent": {"name": None, "confidence": 0.0},
+            "entities": [],
+        }
+        mocked_function.return_value = parse_data
+        message = UserMessage("hi hello how are you?")
+        parsed = await default_processor.parse_message(message)
+        mocked_function.assert_called()
 
 
 async def test_check_for_unseen_feature(default_processor: MessageProcessor):
