@@ -130,7 +130,7 @@ jobs:
 
       # Get the GKE credentials for the cluster
       - name: Get GKE Cluster Credentials
-        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
+        uses: google-github-actions/get-gke-credentials@35ab0d2b2d48792c19f09325413bd185c8d44394
         with:
           cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
           location: ${{ env.GKE_ZONE }}
@@ -714,7 +714,7 @@ jobs:
 
       # Get the GKE credentials for the cluster
       - name: Get GKE Cluster Credentials
-        uses: google-github-actions/get-gke-credentials@894c221960ab1bc16a69902f29f090638cca753f
+        uses: google-github-actions/get-gke-credentials@35ab0d2b2d48792c19f09325413bd185c8d44394
         with:
           cluster_name: ${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}
           location: ${{ env.GKE_ZONE }}
