@@ -26,6 +26,13 @@ required to select or generate a response.
 The body of the `POST` request sent to your NLG endpoint will be structured
 like this:
 
+:::info New in 3.6
+We have added an `ids` field to the request body.
+This field contains a list of response variation IDs.
+You can use this information to compose/select a proper response variation on you NLG server.
+
+:::
+
 ```json
 {
   "response":"utter_what_can_do",
