@@ -2,7 +2,6 @@ import copy
 import dataclasses
 import itertools
 import logging
-import structlog
 import os
 import time
 from collections import deque
@@ -84,7 +83,6 @@ class TrackerActiveLoop:
 
 
 logger = logging.getLogger(__name__)
-structlogger = structlog.get_logger()
 
 # same as State but with Dict[...] substituted with FrozenSet[Tuple[...]]
 FrozenState = FrozenSet[Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text]]]]]]
@@ -895,8 +893,6 @@ class TrackerEventDiffEngine:
         Args:
             tracker: Tracker containing events from the current conversation session.
         """
-        slot_candidates = ["Tawakalt Olaniyi", "Taiwo Olaniyi"]
-        structlogger.debug("forms.slots.validate", slot_candidates=slot_candidates)
         offset = len(original.events) if original else 0
         events = tracker.events
         return list(itertools.islice(events, offset, len(events)))

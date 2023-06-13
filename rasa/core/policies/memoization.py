@@ -254,7 +254,7 @@ class MemoizationPolicy(Policy):
 
         states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
         structlogger.debug(
-            f"Current tracker state:{self.format_tracker_states(states)}"
+            "Current tracker state", state=self.format_tracker_states(states)
         )
         predicted_action_name = self.recall(
             states, tracker, domain, rule_only_data=rule_only_data

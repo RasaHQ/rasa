@@ -648,7 +648,7 @@ class MessageProcessor:
             [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
         )
         if slot_values.strip():
-            structlogger.debug(f"Current slot values: \n{slot_values}")
+            structlogger.debug("Current slot values", slot_values=slot_values)
 
     def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
         """Warns the user if the NLU parse data contains unrecognized features.
@@ -1010,7 +1010,7 @@ class MessageProcessor:
         )
         if not action_was_rejected_manually:
             structlogger.debug(
-                f"Policy prediction ended with events '{prediction.events}'."
+                "processor.events.prediction", prediction_events=prediction.events
             )
             tracker.update_with_events(prediction.events, self.domain)
 
