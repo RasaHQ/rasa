@@ -665,7 +665,9 @@ class FlowExecutor:
 
             if not self._is_step_completed(previous_step, tracker):
                 # TODO: figure out
-                raise FlowException(f"Not quite sure what to do here yet. {previous_step}")
+                raise FlowException(
+                    f"Not quite sure what to do here yet. {previous_step}"
+                )
 
             current_step = self._select_next_step(
                 tracker, domain, previous_step, current_flow.id
