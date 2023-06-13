@@ -14,6 +14,7 @@ from rasa.core.constants import (
     POLICY_PRIORITY,
 )
 from pypred import Predicate
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
 from rasa.shared.core.constants import (
@@ -56,7 +57,9 @@ from rasa.utils.llm import tracker_as_readable_transcript, generate_text_openai_
 logger = logging.getLogger(__name__)
 
 PROMPT_TEMPLATE = Template(
-    importlib.resources.read_text("rasa.core.policies", "flow_prompt_template.jinja2"))
+    importlib.resources.read_text("rasa.core.policies", "flow_prompt_template.jinja2")
+)
+
 
 def parse_action_list(actions: str, flows: FlowsList) -> ActionPrediction:
     start_flow_actions = []
@@ -66,23 +69,27 @@ def parse_action_list(actions: str, flows: FlowsList) -> ActionPrediction:
     for action in actions.strip().splitlines():
         if m := slot_set_re.search(action):
             slot_sets.append(SlotSet(m.group(1).strip(), m.group(2).strip()))
-        elif m:= start_flow_re.search(action):
+        elif m := start_flow_re.search(action):
             start_flow_actions.append(m.group(1).strip())
 
     if len(start_flow_actions) > 0:
-        return ActionPrediction(FLOW_PREFIX + start_flow_actions[0],
-                                1.0, events=slot_sets)
+        return ActionPrediction(
+            FLOW_PREFIX + start_flow_actions[0], 1.0, events=slot_sets
+        )
     else:
         return ActionPrediction(None, 1.0, events=slot_sets)
+
 
 def create_flow_inputs(flows: FlowsList) -> List[dict[str, str]]:
     result = []
     for flow in flows.underlying_flows:
-        result.append({
-            "name": flow.id,
-            "description": flow.description,
-            "slots": ", ".join(flow.slots())
-        })
+        result.append(
+            {
+                "name": flow.id,
+                "description": flow.description,
+                "slots": ", ".join(flow.slots()),
+            }
+        )
     return result
 
 
@@ -91,24 +98,29 @@ def render_template(tracker: DialogueStateTracker, flows: FlowsList) -> str:
     top_flow = flow_stack.top_flow(flows) if flow_stack is not None else None
     current_step = flow_stack.top_flow_step(flows) if flow_stack is not None else None
     if top_flow is not None:
-        flow_slots = [{
-            "name": k,
-            "value": (tracker.get_slot(k) or "undefined"),
-            "type": tracker.slots[k].type_name
-        } for k in top_flow.slots()]
+        flow_slots = [
+            {
+                "name": k,
+                "value": (tracker.get_slot(k) or "undefined"),
+                "type": tracker.slots[k].type_name,
+            }
+            for k in top_flow.slots()
+        ]
     else:
         flow_slots = []
 
-    question = current_step.question \
-        if current_step is not None and isinstance(current_step, QuestionFlowStep) \
+    question = (
+        current_step.question
+        if current_step is not None and isinstance(current_step, QuestionFlowStep)
         else None
+    )
 
     inputs = {
         "available_flows": create_flow_inputs(flows),
         "current_conversation": tracker_as_readable_transcript(tracker),
         "flow_slots": flow_slots,
         "current_flow": top_flow.id if top_flow is not None else None,
-        "question": question
+        "question": question,
     }
 
     return PROMPT_TEMPLATE.render(**inputs)
@@ -188,6 +200,34 @@ class FlowPolicy(Policy):
         # or do some preprocessing here.
         return self.resource
 
+    @staticmethod
+    def _is_first_prediction_after_user_message(tracker: DialogueStateTracker) -> bool:
+        """Checks whether the tracker ends with an action listen.
+        If the tracker ends with an action listen, it means that we've just received
+        a user message.
+        Args:
+            tracker: The tracker.
+        Returns:
+            `True` if the tracker is the first one after a user message, `False`
+            otherwise.
+        """
+        return tracker.latest_action_name == ACTION_LISTEN_NAME
+
+    def _llm_state_update(
+        self, tracker: DialogueStateTracker, flows: Optional[FlowsList]
+    ) -> ActionPrediction:
+        if self._is_first_prediction_after_user_message(tracker):
+            logger.info(flows)
+            flow_prompt = render_template(tracker, flows or FlowsList([]))
+            logger.info(flow_prompt)
+            action_list = generate_text_openai_chat(flow_prompt)
+            logger.info(action_list)
+            prediction = parse_action_list(action_list, flows or FlowsList([]))
+            logger.info(prediction)
+            return prediction
+        else:
+            return ActionPrediction(None, 0.0)
+
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
@@ -210,14 +250,11 @@ class FlowPolicy(Policy):
              The prediction.
         """
         executor = FlowExecutor.from_tracker(tracker, flows or FlowsList([]))
-        if len(tracker.events) > 0 and tracker.events[-1].type_name == "user":
-            logger.info(flows)
-            flow_prompt = render_template(tracker, flows or FlowsList([]))
-            logger.info(flow_prompt)
-            action_list = generate_text_openai_chat(flow_prompt)
-            logger.info(action_list)
-            prediction = parse_action_list(action_list, flows or FlowsList([]))
-            logger.info(prediction)
+
+        collected_events = []
+
+        prediction = self._llm_state_update(tracker, flows)
+        if prediction.action_name is not None:
             return self._create_prediction_result(
                 prediction.action_name,
                 domain,
@@ -225,26 +262,17 @@ class FlowPolicy(Policy):
                 prediction.events,
                 prediction.metadata,
             )
-        if tracker.active_loop:
-            # we are in a loop - likely answering a question - we need to check
-            # if the user responded with a trigger intent for another flow rather
-            # than answering the question
-            prediction = executor.consider_flow_switch(tracker)
-            return self._create_prediction_result(
-                action_name=prediction.action_name,
-                domain=domain,
-                score=prediction.score,
-                events=[],
-                action_metadata=prediction.metadata,
-            )
+        else:
+            collected_events.extend(prediction.events or [])
 
         # create executor and predict next action
         prediction = executor.advance_flows(tracker, domain)
+        collected_events.extend(prediction.events or [])
         return self._create_prediction_result(
             prediction.action_name,
             domain,
             prediction.score,
-            prediction.events,
+            collected_events,
             prediction.metadata,
         )
 
@@ -269,9 +297,7 @@ class FlowPolicy(Policy):
         result = self._default_predictions(domain)
         if action_name:
             result[domain.index_for_action(action_name)] = score
-        return self._prediction(
-            result, events=events, action_metadata=action_metadata
-        )
+        return self._prediction(result, events=events, action_metadata=action_metadata)
 
 
 @dataclass
@@ -740,9 +766,17 @@ class FlowExecutor:
                 )
 
             logger.info(previous_step)
-            if not self._is_step_completed(previous_step, tracker):
-                # TODO: figure out
-                raise FlowException(f"Not quite sure what to do here yet. {previous_step}")
+            predicted_action = self._wrap_up_previous_step(
+                current_flow, previous_step, tracker
+            )
+            gathered_events.extend(predicted_action.events or [])
+
+            if predicted_action.action_name:
+                # if the previous step predicted an action, we'll stop here
+                # the step is not completed yet and we need to predict the
+                # action first before we can try again to wrap up this step and
+                # advance to the next one
+                break
 
             current_step = self._select_next_step(
                 tracker, domain, previous_step, current_flow.id
@@ -777,6 +811,33 @@ class FlowExecutor:
                 initial_value = slot.initial_value if slot else None
                 events.append(SlotSet(step.question, initial_value))
         return events
+
+    def _wrap_up_previous_step(
+        self,
+        flow: Flow,
+        step: FlowStep,
+        tracker: DialogueStateTracker,
+    ) -> ActionPrediction:
+        """Try to wrap up the previous step.
+
+        Args:
+            current_flow: The current flow.
+            step: The previous step.
+            tracker: The tracker to run the step on.
+
+        Returns:
+            The predicted action and the events to run."""
+        if isinstance(step, QuestionFlowStep):
+            # the question is only finished once the slot is set and the loop
+            # is finished
+            active_loop_name, _ = RulePolicy._find_action_from_loop_happy_path(tracker)
+            if active_loop_name:
+                # loop is not yet done
+                return ActionPrediction(active_loop_name, 1.0)
+            else:
+                return ActionPrediction(None, 0.0)
+        else:
+            return ActionPrediction(None, 0.0)
 
     def _run_step(
         self,
