@@ -198,5 +198,8 @@ excluded_words:
   - rustc
   - conftest
   - winpty
+  - pii-management
+  - anonymization
+  - anonymized
 
 spellcheck_filenames: false
