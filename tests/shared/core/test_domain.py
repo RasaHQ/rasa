@@ -2433,10 +2433,6 @@ def test_domain_responses_ids_per_response_is_collected(domain_yaml, expected) -
 def test_domain_responses_with_same_ids_are_not_allowed(
     domain_yaml: Text,
     expected_message: Text,
-    caplog: LogCaptureFixture,
 ) -> None:
-    caplog.clear()
-    with pytest.warns(UserWarning) as record:
+    with pytest.warns(UserWarning, match=expected_message):
         Domain.from_yaml(domain_yaml)
-    assert len(record) == 1
-    assert record[0].message.args[0] == expected_message
