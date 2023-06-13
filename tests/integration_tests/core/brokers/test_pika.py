@@ -76,8 +76,8 @@ async def test_pika_event_broker_publish_after_restart(
         await broker._publish(event)
 
         assert cap_logs[-1]["log_level"] == "error"
-        assert "Failed to publish Pika event" in cap_logs[-1]["event"]
-        assert f"The message was: \n{event}" in cap_logs[-1]["event"]
+        assert "pika.events.publish" in cap_logs[-1]["event"]
+        assert cap_logs[-1]["rasa_event"] == event
 
     # reconnect with the same broker
     rabbitmq_container.restart()
