@@ -36,15 +36,8 @@ def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text:
             return response.format({})
 
         return text
-    except KeyError as e:
-        structlogger.exception(
-            f"Failed to replace placeholders in response '{response}'. "
-            f"Tried to replace '{e.args[0]}' but could not find "
-            f"a value for it. There is no slot with this "
-            f"name nor did you pass the value explicitly "
-            f"when calling the response. Return response "
-            f"without filling the response. "
-        )
+    except KeyError:
+        structlogger.exception("interpolator.interpolate.text", response=response)
         return response
 
 

@@ -322,10 +322,8 @@ class HangoutsInput(InputChannel):
                 )
             except CancelledError:
                 structlogger.error("hangouts.message.blueprint", text=text)
-            except Exception as e:
-                structlogger.exception(
-                    "hangouts.message.blueprint", text=text, exception=e
-                )
+            except Exception:
+                structlogger.exception("hangouts.message.blueprint.failure", text=text)
 
             return response.json(collector.messages)
 

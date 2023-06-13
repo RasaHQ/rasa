@@ -72,7 +72,7 @@ class RasaNLUHttpInterpreter:
                     else:
                         response_text = await resp.text()
                         structlogger.error(
-                            "http.parse.text",
+                            "http.parse.text.failure",
                             text=text,
                             response_text=response_text,
                         )
@@ -80,8 +80,5 @@ class RasaNLUHttpInterpreter:
         except Exception:  # skipcq: PYL-W0703
             # need to catch all possible exceptions when doing http requests
             # (timeouts, value errors, parser errors, ...)
-            structlogger.exception(
-                "http.parse.text",
-                text=text,
-            )
+            structlogger.exception("http.parse.text.exception", text=text)
             return None

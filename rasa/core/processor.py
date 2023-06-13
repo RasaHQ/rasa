@@ -1012,7 +1012,8 @@ class MessageProcessor:
         )
         if not action_was_rejected_manually:
             structlogger.debug(
-                "processor.actions.log", prediction_events=prediction.events
+                "processor.actions.policy_prediction",
+                prediction_events=prediction.events,
             )
             tracker.update_with_events(prediction.events, self.domain)
 
@@ -1020,7 +1021,7 @@ class MessageProcessor:
             tracker.update(action.event_for_successful_execution(prediction))
 
         structlogger.debug(
-            "processor.actions.log", action_name=action.name(), events=events
+            "processor.actions.log", action_name=action.name(), rasa_events=events
         )
         tracker.update_with_events(events, self.domain)
 

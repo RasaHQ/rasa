@@ -308,7 +308,7 @@ class PikaEventBroker(EventBroker):
             )
         except Exception as e:
             structlogger.error(
-                "pika.events.publish",
+                "pika.events.publish.failed",
                 host=self.host,
                 error=e,
                 rasa_event=event,

@@ -285,7 +285,7 @@ def write_response_successes(
     if successes:
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
-        structlogger.debug("test.write.respnse", successes=successes)
+        structlogger.debug("test.write.response", successes=successes)
     else:
         logger.info("No successful response predictions found.")
 
