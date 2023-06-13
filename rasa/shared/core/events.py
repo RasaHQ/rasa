@@ -116,10 +116,7 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
             if event:
                 deserialised.append(event)
             else:
-                structlogger.warning(
-                    f"Unable to parse event '{event}' while deserialising. The event"
-                    " will be ignored."
-                )
+                structlogger.warning("event.deserialization.failed", event=event)
 
     return deserialised
 
