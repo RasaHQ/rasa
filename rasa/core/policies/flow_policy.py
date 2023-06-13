@@ -665,7 +665,7 @@ class FlowExecutor:
 
             if not self._is_step_completed(previous_step, tracker):
                 # TODO: figure out
-                raise FlowException("Not quite sure what to do here yet.")
+                raise FlowException(f"Not quite sure what to do here yet. {previous_step}")
 
             current_step = self._select_next_step(
                 tracker, domain, previous_step, current_flow.id
@@ -726,11 +726,11 @@ class FlowExecutor:
         if isinstance(step, QuestionFlowStep):
             slot = tracker.slots.get(step.question, None)
             initial_value = slot.initial_value if slot else None
-            if step.skip_if_filled and slot != initial_value:
+            if step.skip_if_filled and slot.value != initial_value:
                 return ActionPrediction(None, 0.0)
 
             question_action = ActionPrediction("question_" + step.question, 1.0)
-            if slot != initial_value:
+            if slot.value != initial_value:
                 question_action.events = [SlotSet(step.question, initial_value)]
             return question_action
 
