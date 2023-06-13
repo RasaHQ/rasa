@@ -304,14 +304,14 @@ class PikaEventBroker(EventBroker):
                 "pika.events.publish",
                 rabbitmq_exchange=RABBITMQ_EXCHANGE,
                 host=self.host,
-                event=event,
+                rasa_event=event,
             )
         except Exception as e:
             structlogger.error(
                 "pika.events.publish",
                 host=self.host,
                 error=e,
-                event=event,
+                rasa_event=event,
             )
             if self.should_keep_unpublished_messages:
                 self._unpublished_events.append(event)

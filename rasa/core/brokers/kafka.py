@@ -242,7 +242,7 @@ class KafkaEventBroker(EventBroker):
         structlogger.debug(
             "kafka.event.publish",
             topic=self.topic,
-            event=event,
+            rasa_event=event,
             partition_key=partition_key,
             headers=headers,
         )
