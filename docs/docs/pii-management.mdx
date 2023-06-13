@@ -1,0 +1,47 @@
+---
+id: pii-management
+sidebar_label: PII Management
+title: PII Management
+hide_table_of_contents: false
+---
+import RasaProLabel from "@theme/RasaProLabel";
+
+import RasaProBanner from "@theme/RasaProBanner";
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+:::info New in 3.6
+
+You can now anonymize personally identifiable information (PII) data in your logs and events streamed via Kafka event
+broker only. Continue reading to learn how to enable the anonymization of PII data.
+
+:::
+
+Management of sensitive customer data collected by assistants is a critical requirement for complying with regulations
+and managing the data securely while making it available for analysis.
+Rasa Pro 3.6 introduces the ability to anonymize PII data in your logs and events streamed via the Kafka event broker.
+Note that the tracker store continues to store conversation data which is not anonymized because the tracker store data
+plays a vital role in the assistant's dialogue management.
+
+## Architecture Overview
+
+The anonymization of the Rasa event is run through an anonymization pipeline at the end of the dialogue management
+action prediction and execution. The Rasa agent will invoke the anonymization pipeline during each user message
+handling before saving the un-anonymized new events to the tracker store. The anonymization pipeline will first run
+through a sequence of anonymization rules that are applied to the new events. Then the pipeline will publish the events to
+the Kafka topic that is mapped to the anonymization rule list.
+
+The anonymization pipeline uses [Microsoft Presidio](https://microsoft.github.io/presidio/text_anonymization/) as both entity analyzer and
+anonymizer. Presidio is an open-source library that supports a wide range of entity types and anonymization methods.
+
+### Supported PII entity types
+
+## How to write anonymization rules
+
+You can now write anonymization rules in `endpoints.yml` to explicitly declare which entities should be anonymized.
+The anonymization pipeline is configurable via the `anonymization` section in the `endpoints.yml` file.
+
+## How to update the Kafka event broker configuration
+
