@@ -78,8 +78,8 @@ def modify_default_recipe_graph_predict_nodes(
     """
 
 
-@hookspec  # type: ignore[misc, empty-body]
-def get_version_info() -> Tuple[Text, Text]:
+@hookspec  # type: ignore[misc]
+def get_version_info() -> Tuple[Text, Text]:  # type: ignore[empty-body]
     """Hook specification for getting plugin version info."""
 
 
