@@ -15,6 +15,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable, Type, Any
+from unittest import mock
 
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
@@ -110,10 +111,25 @@ async def test_message_id_logging(default_processor: MessageProcessor):
 
 
 async def test_parsing(default_processor: MessageProcessor):
+    MessageProcessor._parse_message_with_graph = mock.Mock()
+
+    # Case1: message has intent and entities explicitly set.
     message = UserMessage('/greet{"name": "boy"}')
     parsed = await default_processor.parse_message(message)
     assert parsed["intent"][INTENT_NAME_KEY] == "greet"
     assert parsed["entities"][0]["entity"] == "name"
+    MessageProcessor._parse_message_with_graph.assert_not_called()
+
+    # Case2: Normal user message.
+    parse_data = {
+        "text": "mocked",
+        "intent": {"name": None, "confidence": 0.0},
+        "entities": [],
+    }
+    MessageProcessor._parse_message_with_graph.return_value = parse_data
+    message = UserMessage("hi hello how are you?")
+    parsed = await default_processor.parse_message(message)
+    MessageProcessor._parse_message_with_graph.assert_called()
 
 
 async def test_check_for_unseen_feature(default_processor: MessageProcessor):
@@ -871,7 +887,7 @@ async def test_handle_message_with_session_start(
     # make sure the sequence of events is as expected
     with_model_ids_expected = with_model_ids(
         [
-            ActionExecuted(ACTION_SESSION_START_NAME),
+            ActionExecuted(ACTION_SESSION_START_NAME, confidence=1.0),
             SessionStarted(),
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered(
@@ -883,15 +899,18 @@ async def test_handle_message_with_session_start(
                         "start": 6,
                         "end": 22,
                         "value": "Core",
-                        "extractor": "RegexMessageHandler",
                     }
                 ],
             ),
             SlotSet(entity, slot_1[entity]),
             DefinePrevUserUtteredFeaturization(False),
-            ActionExecuted("utter_greet"),
-            BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"}),
-            ActionExecuted(ACTION_LISTEN_NAME),
+            ActionExecuted(
+                "utter_greet", policy="AugmentedMemoizationPolicy", confidence=1.0
+            ),
+            BotUttered(
+                "hey there Core!", data={}, metadata={"utter_action": "utter_greet"}
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME, confidence=1.0),
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
             # the initial SlotSet is reapplied after the SessionStarted sequence
@@ -906,15 +925,17 @@ async def test_handle_message_with_session_start(
                         "start": 6,
                         "end": 42,
                         "value": "post-session start hello",
-                        "extractor": "RegexMessageHandler",
                     }
                 ],
             ),
             SlotSet(entity, slot_2[entity]),
             DefinePrevUserUtteredFeaturization(False),
-            ActionExecuted("utter_greet"),
+            ActionExecuted(
+                "utter_greet", policy="AugmentedMemoizationPolicy", confidence=1.0
+            ),
             BotUttered(
                 "hey there post-session start hello!",
+                data={},
                 metadata={"utter_action": "utter_greet"},
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -922,6 +943,8 @@ async def test_handle_message_with_session_start(
         model_id,
     )
     expected = with_assistant_ids(with_model_ids_expected, assistant_id=assistant_id)
+    print("tracker.events", list(tracker.events))
+    print("expected", expected)
     assert list(tracker.events) == expected
 
 
