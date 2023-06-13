@@ -540,7 +540,10 @@ class FormAction(LoopAction):
         )
 
         if needs_validation:
-            structlogger.debug(f"Validating user input '{tracker.latest_message}'.")
+            structlogger.debug(
+                "forms.validation.required",
+                tracker_latest_message=tracker.latest_message,
+            )
             return await self.validate(tracker, domain, output_channel, nlg)
         else:
             # Needed to determine which slots to request although there are no slots
@@ -608,9 +611,7 @@ class FormAction(LoopAction):
         if not prefilled_slots:
             logger.debug("No pre-filled required slots to validate.")
         else:
-            structlogger.debug(
-                f"Validating pre-filled required slots: {prefilled_slots}."
-            )
+            structlogger.debug("forms.activate.form", prefilled_slots=prefilled_slots)
 
         validate_name = f"validate_{self.name()}"
 
