@@ -364,6 +364,14 @@ The first action in any turn - bot waits for a user message.
 The bot should stop taking further actions and wait for the user to say
 something.
 
+#### name
+
+```python
+def name() -> Text
+```
+
+Returns action listen name.
+
 #### run
 
 ```python
@@ -527,6 +535,14 @@ class ActionExecutionRejection(RasaException)
 
 Raising this exception will allow other policies
 to predict a different action.
+
+#### \_\_init\_\_
+
+```python
+def __init__(action_name: Text, message: Optional[Text] = None) -> None
+```
+
+Create a new ActionExecutionRejection exception.
 
 ## ActionRevertFallbackEvents Objects
 
