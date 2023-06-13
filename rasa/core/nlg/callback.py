@@ -71,8 +71,9 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         body = nlg_request_format(utter_action, tracker, output_channel, **kwargs)
 
         structlogger.debug(
-            "Requesting NLG for {} from {}."
-            "".format(utter_action, self.nlg_endpoint.url)
+            "callback.generate.nlg",
+            utter_action=utter_action,
+            nlg_endpoint_url=self.nlg_endpoint.url,
         )
 
         response = await self.nlg_endpoint.request(

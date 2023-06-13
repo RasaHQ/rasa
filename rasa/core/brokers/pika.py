@@ -301,13 +301,17 @@ class PikaEventBroker(EventBroker):
             await self._exchange.publish(self._message(event, headers), "")
 
             structlogger.debug(
-                f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-                f"'{self.host}':\n{event}"
+                "pika.events.publish",
+                rabbitmq_exchange=RABBITMQ_EXCHANGE,
+                host=self.host,
+                event=event,
             )
         except Exception as e:
             structlogger.error(
-                f"Failed to publish Pika event on host '{self.host}' due to "
-                f"error '{e}'. The message was: \n{event}"
+                "pika.events.publish",
+                host=self.host,
+                error=e,
+                event=event,
             )
             if self.should_keep_unpublished_messages:
                 self._unpublished_events.append(event)

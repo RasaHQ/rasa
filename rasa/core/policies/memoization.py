@@ -254,7 +254,7 @@ class MemoizationPolicy(Policy):
 
         states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
         structlogger.debug(
-            "Current tracker state", state=self.format_tracker_states(states)
+            "memoization.actions.prediction", state=self.format_tracker_states(states)
         )
         predicted_action_name = self.recall(
             states, tracker, domain, rule_only_data=rule_only_data
@@ -430,7 +430,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 # check if we like new futures
                 memorised = self._recall_states(states)
                 if memorised is not None:
-                    structlogger.debug(f"Current tracker state {states}")
+                    structlogger.debug("memoization.states_recall", states=states)
                     return memorised
                 old_states = states
 
@@ -440,7 +440,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             )
 
         # No match found
-        structlogger.debug(f"Current tracker state {old_states}")
+        structlogger.debug("memoization.states_recall", old_states=old_states)
         return None
 
     def recall(

@@ -169,14 +169,12 @@ class RestInput(InputChannel):
                     )
                 except CancelledError:
                     structlogger.error(
-                        f"Message handling timed out for user message '{text}'.",
+                        "rest.message.received",
+                        text=text,
                         exc_info=True,
                     )
                 except Exception:
-                    structlogger.exception(
-                        f"An exception occured while handling "
-                        f"user message '{text}'."
-                    )
+                    structlogger.exception("rest.message.received", text=text)
                 return response.json(collector.messages)
 
         return custom_webhook

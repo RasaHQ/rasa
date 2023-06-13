@@ -47,8 +47,8 @@ class RasaNLUHttpInterpreter:
         """
         if not self.endpoint_config or self.endpoint_config.url is None:
             structlogger.error(
-                f"Failed to parse text '{text}' using rasa NLU over http. "
-                f"No rasa NLU server specified!"
+                "http.parse.text",
+                text=text,
             )
             return None
 
@@ -72,14 +72,16 @@ class RasaNLUHttpInterpreter:
                     else:
                         response_text = await resp.text()
                         structlogger.error(
-                            f"Failed to parse text '{text}' using rasa NLU over "
-                            f"http. Error: {response_text}"
+                            "http.parse.text",
+                            text=text,
+                            response_text=response_text,
                         )
                         return None
         except Exception:  # skipcq: PYL-W0703
             # need to catch all possible exceptions when doing http requests
             # (timeouts, value errors, parser errors, ...)
             structlogger.exception(
-                f"Failed to parse text '{text}' using rasa NLU over http."
+                "http.parse.text",
+                text=text,
             )
             return None

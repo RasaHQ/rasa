@@ -321,13 +321,10 @@ class HangoutsInput(InputChannel):
                     )
                 )
             except CancelledError:
-                structlogger.error(
-                    "Message handling timed out for " "user message '{}'.".format(text)
-                )
+                structlogger.error("hangouts.message.blueprint", text=text)
             except Exception as e:
                 structlogger.exception(
-                    f"An exception occurred while handling user message: {e}, "
-                    f"text: {text}"
+                    "hangouts.message.blueprint", text=text, exception=e
                 )
 
             return response.json(collector.messages)

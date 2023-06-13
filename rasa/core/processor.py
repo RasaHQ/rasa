@@ -197,8 +197,10 @@ class MessageProcessor:
 
         events_as_str = ", ".join([repr(e) or str(e) for e in extraction_events])
         structlogger.debug(
-            f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
-            f"resulting in {len(extraction_events)} events: {events_as_str}"
+            "processor.extract.slots",
+            action_extract_slot=ACTION_EXTRACT_SLOTS,
+            len_extraction_events=len(extraction_events),
+            events_as_str=events_as_str,
         )
 
         return tracker
@@ -648,7 +650,7 @@ class MessageProcessor:
             [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
         )
         if slot_values.strip():
-            structlogger.debug("Current slot values", slot_values=slot_values)
+            structlogger.debug("processor.slots.log", slot_values=slot_values)
 
     def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
         """Warns the user if the NLU parse data contains unrecognized features.
@@ -718,10 +720,10 @@ class MessageProcessor:
             )
 
         structlogger.debug(
-            "Received user message '{}' with intent '{}' "
-            "and entities '{}'".format(
-                parse_data["text"], parse_data["intent"], parse_data["entities"]
-            )
+            "processor.message.parse",
+            parse_data_text=parse_data["text"],
+            parse_data_intent=parse_data["intent"],
+            parse_data_entities=parse_data["entities"],
         )
 
         self._check_for_unseen_features(parse_data)
@@ -1010,14 +1012,16 @@ class MessageProcessor:
         )
         if not action_was_rejected_manually:
             structlogger.debug(
-                "processor.events.prediction", prediction_events=prediction.events
+                "processor.actions.log", prediction_events=prediction.events
             )
             tracker.update_with_events(prediction.events, self.domain)
 
             # log the action and its produced events
             tracker.update(action.event_for_successful_execution(prediction))
 
-        structlogger.debug(f"Action '{action.name()}' ended with events '{events}'.")
+        structlogger.debug(
+            "processor.actions.log", action_name=action.name(), events=events
+        )
         tracker.update_with_events(events, self.domain)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:

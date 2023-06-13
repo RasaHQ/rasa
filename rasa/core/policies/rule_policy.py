@@ -1022,7 +1022,7 @@ class RulePolicy(MemoizationPolicy):
         )
 
         current_states = self.format_tracker_states(states)
-        structlogger.debug("Current tracker state", state=current_states)
+        structlogger.debug("rule_policy.actions.find", state=current_states)
 
         # Tracks if we are returning after an unhappy loop path. If this becomes `True`
         # the policy returns an event which notifies the loop action that it

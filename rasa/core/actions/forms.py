@@ -256,7 +256,7 @@ class FormAction(LoopAction):
             Otherwise, returns empty list since the extracted slots already have
             corresponding `SlotSet` events in the tracker.
         """
-        structlogger.debug(f"Validating extracted slots: {slot_candidates}")
+        structlogger.debug("forms.slots.validate", slot_candidates=slot_candidates)
         events: List[Union[SlotSet, Event]] = [
             SlotSet(slot_name, value) for slot_name, value in slot_candidates.items()
         ]

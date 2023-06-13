@@ -126,10 +126,7 @@ class Messenger:
             attachment = message["message"]["attachments"][0]
             text = attachment["payload"]["url"]
         else:
-            structlogger.warning(
-                "Received a message from facebook that we can not "
-                f"handle. Message: {message}"
-            )
+            structlogger.warning("facebook.message.handle", message=message)
             return
 
         await self._handle_user_message(text, self.get_user_id(), metadata)

@@ -285,9 +285,7 @@ def write_response_successes(
     if successes:
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
-        structlogger.debug(
-            f"\n\nSuccessfully predicted the following responses: \n{successes}"
-        )
+        structlogger.debug("test.write.respnse", successes=successes)
     else:
         logger.info("No successful response predictions found.")
 
@@ -799,9 +797,7 @@ def write_successful_entity_predictions(
     if successes:
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
-        structlogger.debug(
-            f"\n\nSuccessfully predicted the following entities: \n{successes}"
-        )
+        structlogger.debug("test.write.entities", successes=successes)
     else:
         logger.info("No successful entity prediction found.")
 
@@ -991,7 +987,9 @@ def do_entities_overlap(entities: List[Dict]) -> bool:
             next_ent["start"] < curr_ent["end"]
             and next_ent["entity"] != curr_ent["entity"]
         ):
-            structlogger.warning(f"Overlapping entity {curr_ent} with {next_ent}")
+            structlogger.warning(
+                "test.overlaping.entities", curr_ent=curr_ent, next_ent=next_ent
+            )
             return True
 
     return False
@@ -1013,9 +1011,11 @@ def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
         elif does_token_cross_borders(token, e):
             candidates.append(e)
             structlogger.debug(
-                "Token boundary error for token {}({}, {}) "
-                "and entity {}"
-                "".format(token.text, token.start, token.end, e)
+                "test.intersecting.entities",
+                token_text=token.text,
+                token_start=token.start,
+                token_end=token.end,
+                entity=e,
             )
     return candidates
 
