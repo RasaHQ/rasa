@@ -1,5 +1,5 @@
 import logging
-from typing import Text, Any, Dict, Optional
+from typing import Text, Any, Dict, Optional, List
 
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg.generator import NaturalLanguageGenerator
@@ -31,6 +31,7 @@ def nlg_request_format(
     utter_action: Text,
     tracker: DialogueStateTracker,
     output_channel: Text,
+    message: Text,
     **kwargs: Any,
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
@@ -38,6 +39,7 @@ def nlg_request_format(
 
     return {
         "response": utter_action,
+        "message": message,
         "arguments": kwargs,
         "tracker": tracker_state,
         "channel": {"name": output_channel},
@@ -52,9 +54,18 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
     json. The generator will use this message to create a response for
     the bot."""
 
-    def __init__(self, endpoint_config: EndpointConfig) -> None:
+    def __init__(
+        self,
+        endpoint_config: EndpointConfig,
+        responses: Dict[Text, List[Dict[Text, Any]]],
+    ) -> None:
+        from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
         self.nlg_endpoint = endpoint_config
+        self.nlg_templated = None
+        if responses is not None:
+            self.responses = responses
+            self.nlg_templated = TemplatedNaturalLanguageGenerator(self.responses)
 
     async def generate(
         self,
@@ -63,8 +74,17 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         output_channel: Text,
         **kwargs: Any,
     ) -> Dict[Text, Any]:
+        message = None
+        if self.nlg_templated:
+            message = await self.nlg_templated.generate(
+                utter_action, tracker, output_channel
+            )
+            print(f"message: {message}")
+
         """Retrieve a named response from the domain using an endpoint."""
-        body = nlg_request_format(utter_action, tracker, output_channel, **kwargs)
+        body = nlg_request_format(
+            utter_action, tracker, output_channel, message, **kwargs
+        )
 
         logger.debug(
             "Requesting NLG for {} from {}."

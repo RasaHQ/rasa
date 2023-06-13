@@ -234,3 +234,12 @@ nlg:
   #   username: user
   #   password: pass
 ```
+
+If you want the Rasa generated message text to be included in the `POST` request
+json sent to your NLG endpoint, enable the `include_message` option:
+
+```yaml-rasa title="endpoints.yml"
+nlg:
+  url: http://localhost:5055/nlg
+  include_message: true
+```

@@ -83,6 +83,7 @@ class EndpointConfig:
         token: Optional[Text] = None,
         token_name: Text = "token",
         cafile: Optional[Text] = None,
+        include_message: Optional[Text] = None,
         **kwargs: Any,
     ) -> None:
         """Creates an `EndpointConfig` instance."""
@@ -94,6 +95,7 @@ class EndpointConfig:
         self.token_name = token_name
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
         self.cafile = cafile
+        self.include_message = include_message
         self.kwargs = kwargs
 
     def session(self) -> aiohttp.ClientSession:
@@ -192,6 +194,7 @@ class EndpointConfig:
             self.basic_auth,
             self.token,
             self.token_name,
+            self.include_message,
             **self.kwargs,
         )
 
@@ -204,6 +207,7 @@ class EndpointConfig:
                 and other.basic_auth == self.basic_auth
                 and other.token == self.token
                 and other.token_name == self.token_name
+                and other.include_message == self.include_message
             )
         else:
             return False
