@@ -944,8 +944,6 @@ async def test_handle_message_with_session_start(
         model_id,
     )
     expected = with_assistant_ids(with_model_ids_expected, assistant_id=assistant_id)
-    print("tracker.events", list(tracker.events))
-    print("expected", expected)
     assert list(tracker.events) == expected
 
 
