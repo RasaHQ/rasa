@@ -628,9 +628,7 @@ class YAMLStoryReader(StoryReader):
         # message text did start with the special prefix -- however, a user might
         # just have decided to start their text this way.
         if not match:
-            structlogger.warning(
-                f"Failed to parse intent end entities from '{user_text}'."
-            )
+            structlogger.warning("message.parsing.failed", user_text=user_text)
             return message
 
         # Extract attributes from the match - and validate it via the domain.
