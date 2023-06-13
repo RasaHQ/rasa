@@ -165,6 +165,13 @@ python = "~=3.7.0"
 version = ">=1.19.2,<1.25.0"
 python = ">=3.8,<3.11"
 
+# Pinning numpy version for windows because of the issue mentioned below:
+#https://github.com/scipy/scipy/blob/c58b608c83d30800aceee6a4dab5c3464cb1de7d/pyproject.toml#L38-L41
+[[tool.poetry.dependencies.numpy]]
+version = "1.22.3"
+markers = "sys_platform =='Windows' and platform_python_implementation != 'PyPy'"
+python = "3.10"
+
 [[tool.poetry.dependencies.scipy]]
 version = ">=1.4.1,<1.7.3"
 python = "~=3.7.0"
