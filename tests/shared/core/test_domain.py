@@ -7,7 +7,6 @@ import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 from pytest import WarningsRecorder
 
 from rasa.shared.exceptions import YamlSyntaxException, YamlException

@@ -32,6 +32,7 @@ like this:
   "arguments":{
     
   },
+  "ids": ["<response_variation_id_1>", "<response_variation_id_2>"],
   "tracker":{
     "sender_id":"user_0",
     "slots":{
@@ -171,6 +172,7 @@ Here is an overview of the high-level keys in the post request:
 Key | Description
 ---|---
 `response` | The name of the response predicted by Rasa.
+`ids` | A list of response variation IDs.
 `arguments` | Optional keyword arguments that can be provided by custom actions.
 `tracker` | A dictionary containing the entire conversation history.
 `channel` | The output channel this message will be sent to.
