@@ -43,10 +43,12 @@ from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
-from rasa.core.policies.dm2.sensitive_topic import SensitiveTopicDetector
+from rasa.core.policies.detectors import SensitiveTopicDetector
 
 
 logger = logging.getLogger(__name__)
+
+SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY = "sensitive_topic_detector"
 
 
 class FlowException(Exception):
@@ -69,12 +71,11 @@ class FlowPolicy(Policy):
     def get_default_config() -> Dict[Text, Any]:
         """Returns the default config (see parent class for full docstring)."""
         # please make sure to update the docs when changing a default parameter
-        res = {
+        return {
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
             POLICY_MAX_HISTORY: None,
+            SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY: None,
         }
-        res.update(SensitiveTopicDetector.get_default_config())
-        return res
 
     @staticmethod
     def supported_data() -> SupportedData:
@@ -101,7 +102,14 @@ class FlowPolicy(Policy):
 
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
         self.resource = resource
-        self._sensitive_topic_detector = SensitiveTopicDetector(config)
+
+        if detector_config := self.config.get(SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY):
+            # if the detector is configured, we need to load it
+            full_config = SensitiveTopicDetector.get_default_config()
+            full_config.update(detector_config)
+            self._sensitive_topic_detector = SensitiveTopicDetector(full_config)
+        else:
+            self._sensitive_topic_detector = None
 
     def train(
         self,
@@ -164,18 +172,24 @@ class FlowPolicy(Policy):
              The prediction.
         """
         predicted_action = None
-        if self._is_first_prediction_after_user_message(tracker):
-            if not self._sensitive_topic_detector.check(tracker.latest_message.text):
-                logger.info(
-                    "No sensitive topic detected: %s", tracker.latest_message.text
-                )
-            else:
+        if (
+            self._sensitive_topic_detector
+            and self._is_first_prediction_after_user_message(tracker)
+            and (latest_message := tracker.latest_message)
+        ):
+            if self._sensitive_topic_detector.check(latest_message.text):
                 predicted_action = self._sensitive_topic_detector.action()
+                # TODO: in addition to predicting an action, we need to make
+                #   sure that the input isn't used in any following flow
+                #   steps. At the same time, we can't completely skip flows
+                #   as we want to guide the user to the next step of the flow.
                 logger.info(
                     "Sensitive topic detected, predicting action %s", predicted_action
                 )
+            else:
+                logger.info("No sensitive topic detected: %s", latest_message.text)
 
-        # if DM2 stepped in, return predicted action
+        # if detector predicted an action, we don't want to predict a flow
         if predicted_action is not None:
             return self._create_prediction_result(predicted_action, domain, 1.0, [])
 
@@ -201,7 +215,7 @@ class FlowPolicy(Policy):
         domain: Domain,
         score: float = 1.0,
         events: Optional[List[Event]] = None,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         """Creates a prediction result.
 
         Args:

@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-import importlib
-from typing import Text, Dict, Any, Iterable
+import importlib.resources
+from typing import Optional, Text, Dict, Any, Iterable
 import os
 import openai
+import openai.error
 import logging
 from jinja2 import Template
 
@@ -63,7 +64,7 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
         # used as a fallback on RateLimit error or OpenAI misconfiguration
         self._stub = SensitiveTopicDetectorStub(config)
 
-        # TODO: move the key in more appropriate config (global DM2 config?)
+        # TODO: move the key in more appropriate config (global detector config?)
         key = os.getenv("OPENAI_API_KEY")
 
         self._model_name = config.get(CONFIG_KEY_MODEL_NAME, self.DEFAULT_MODEL_NAME)
@@ -96,7 +97,10 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
 
         return default_config
 
-    def check(self, user_msg: Text) -> bool:
+    def check(self, user_msg: Optional[Text]) -> bool:
+        if not user_msg:
+            return False
+
         if self._use_stub:
             return self._stub.check(user_msg)
         try:

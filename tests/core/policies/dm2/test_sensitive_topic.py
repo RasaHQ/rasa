@@ -1,6 +1,6 @@
 import os
 from unittest import mock
-from rasa.core.policies.dm2.sensitive_topic import (
+from rasa.core.policies.detectors.sensitive_topic import (
     SensitiveTopicDetector,
     SensitiveTopicDetectorStub,
     CONFIG_KEY_USE_STUB,
