@@ -1020,7 +1020,10 @@ class RulePolicy(MemoizationPolicy):
         )
 
         current_states = self.format_tracker_states(states)
-        logger.debug(f"Current tracker state:{current_states}")
+        logger.debug(
+            f"Current tracker state:{current_states}. "
+            f"sender_id: {tracker.sender_id}"
+        )
 
         # Tracks if we are returning after an unhappy loop path. If this becomes `True`
         # the policy returns an event which notifies the loop action that it
@@ -1084,10 +1087,13 @@ class RulePolicy(MemoizationPolicy):
 
         if predicted_action_name is not None:
             logger.debug(
-                f"There is a rule for the next action '{predicted_action_name}'."
+                f"There is a rule for the next action '{predicted_action_name}'. "
+                f"sender_id: {tracker.sender_id}"
             )
         else:
-            logger.debug("There is no applicable rule.")
+            logger.debug(
+                "There is no applicable rule. " f"sender_id: {tracker.sender_id}"
+            )
 
         # if we didn't predict anything from the rules, then the feature key created
         # from states can be used as an indicator that this state will lead to fallback

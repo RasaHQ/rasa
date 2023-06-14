@@ -251,12 +251,18 @@ class MemoizationPolicy(Policy):
         result = self._default_predictions(domain)
 
         states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
-        logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
+        logger.debug(
+            f"Current tracker state:{self.format_tracker_states(states)} "
+            f"sender_id: {tracker.sender_id}"
+        )
         predicted_action_name = self.recall(
             states, tracker, domain, rule_only_data=rule_only_data
         )
         if predicted_action_name is not None:
-            logger.debug(f"There is a memorised next action '{predicted_action_name}'")
+            logger.debug(
+                f"There is a memorised next action '{predicted_action_name}' "
+                f"sender_id: {tracker.sender_id}"
+            )
             result = self._prediction_result(predicted_action_name, tracker, domain)
         else:
             logger.debug("There is no memorised next action")
@@ -426,7 +432,10 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 # check if we like new futures
                 memorised = self._recall_states(states)
                 if memorised is not None:
-                    logger.debug(f"Current tracker state {states}")
+                    logger.debug(
+                        f"Current tracker state {states}. "
+                        f"sender_id: {tracker.sender_id}"
+                    )
                     return memorised
                 old_states = states
 
@@ -436,7 +445,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             )
 
         # No match found
-        logger.debug(f"Current tracker state {old_states}")
+        logger.debug(
+            f"Current tracker state {old_states}. " f"sender_id: {tracker.sender_id}"
+        )
         return None
 
     def recall(
