@@ -1,5 +1,4 @@
 import logging
-import structlog
 from typing import Text, Any, Dict, Optional
 
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -9,7 +8,6 @@ from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-structlogger = structlog.get_logger()
 
 
 def nlg_response_format_spec() -> Dict[Text, Any]:
@@ -70,10 +68,9 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         """Retrieve a named response from the domain using an endpoint."""
         body = nlg_request_format(utter_action, tracker, output_channel, **kwargs)
 
-        structlogger.debug(
-            "callback.generate.nlg",
-            utter_action=utter_action,
-            nlg_endpoint_url=self.nlg_endpoint.url,
+        logger.debug(
+            "Requesting NLG for {} from {}."
+            "".format(utter_action, self.nlg_endpoint.url)
         )
 
         response = await self.nlg_endpoint.request(

@@ -36,8 +36,12 @@ def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text:
             return response.format({})
 
         return text
-    except KeyError:
-        structlogger.exception("interpolator.interpolate.text", response=response)
+    except KeyError as e:
+        structlogger.exception(
+            "interpolator.interpolate.text",
+            response=response,
+            placeholder_key=e.args[0],
+        )
         return response
 
 

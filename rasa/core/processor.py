@@ -195,12 +195,11 @@ class MessageProcessor:
 
         tracker.update_with_events(extraction_events, self.domain)
 
-        events_as_str = ", ".join([repr(e) or str(e) for e in extraction_events])
         structlogger.debug(
             "processor.extract.slots",
             action_extract_slot=ACTION_EXTRACT_SLOTS,
             len_extraction_events=len(extraction_events),
-            events_as_str=events_as_str,
+            rasa_events=extraction_events,
         )
 
         return tracker

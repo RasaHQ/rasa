@@ -12,12 +12,42 @@ from rasa.plugin import plugin_manager
 FORCE_JSON_LOGGING = os.environ.get("FORCE_JSON_LOGGING")
 
 
-def _anonymizer(_: structlog.BoundLogger, __: str, event_dict: Any) -> Dict[str, Any]:
+def _anonymizer(
+    _: structlog.BoundLogger, __: str, event_dict: Dict[str, Any]
+) -> Dict[str, Any]:
     """Anonymizes event dict."""
+    anonymizable_keys = [
+        "text",
+        "response_text",
+        "user_text",
+        "slot_values",
+        "parse_data_text",
+        "parse_data_entities",
+        "prediction_events",
+        "tracker_latest_message",
+        "prefilled_slots",
+        "message",
+        "response",
+        "slot_candidates",
+        "rasa_event",
+        "tracker_states",
+        "current_states",
+        "old_states",
+        "current_states",
+        "successes",
+        "curr_ent",
+        "next_ent",
+        "states",
+        "entity",
+        "token_text",
+    ]
     anonymization_pipeline = plugin_manager().hook.get_anonymization_pipeline()
 
     if anonymization_pipeline:
-        event_dict = anonymization_pipeline.log_run(event_dict)
+        for key in anonymizable_keys:
+            if key in event_dict:
+                anonymized_value = anonymization_pipeline.log_run(event_dict[key])
+                event_dict[key] = anonymized_value
     return event_dict
 
 
@@ -38,6 +68,7 @@ def configure_structlog(
     )
 
     shared_processors = [
+        _anonymizer,
         # Processors that have nothing to do with output,
         # e.g., add timestamps or log level names.
         # If log level is too low, abort pipeline and throw away log entry.
@@ -71,9 +102,6 @@ def configure_structlog(
             structlog.processors.dict_tracebacks,
             structlog.processors.JSONRenderer(),
         ]
-    processors += [
-        _anonymizer,
-    ]
 
     structlog.configure(
         processors=processors,  # type: ignore

@@ -310,7 +310,6 @@ class PikaEventBroker(EventBroker):
             structlogger.error(
                 "pika.events.publish.failed",
                 host=self.host,
-                error=e,
                 rasa_event=event,
             )
             if self.should_keep_unpublished_messages:
