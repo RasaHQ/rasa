@@ -1,30 +1,29 @@
 ---
 id: llm-nlg
 sidebar_label: NLG using LLMs
-title: LLMS for Natural Language Generation
+title: LLMs for Natural Language Generation
 abstract: |
-    Enhancing your chatbot's responses using the
-    advanced features of Large Language Models (LLMs). Instead of relying only on
-    static response templates you can use an LLM to generate dynamic, 
-    context-aware responses based on templates.
+  Enhancing your chatbot's responses using the
+  advanced features of Large Language Models (LLMs). Instead of relying only on
+  static response templates you can use an LLM to generate dynamic, 
+  context-aware responses based on templates.
 ---
-import RasaProLabel from '@theme/RasaProLabel';
-import RasaProBanner from '@theme/RasaProBanner';
+
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaProBanner from "@theme/RasaProBanner";
+import llmNlgExample from "./llm-nlg-example.png";
 
 <RasaProLabel />
 
-<RasaProBanner/>
+<RasaProBanner />
 
-:::info Rasa Labs
-This feature is **experimental**.
-We introduce experimental features to co-create with our customers. If you are 
-interested in using this feature, please contact us at
-[rasa.com/contact](https://rasa.com/contact).
+:::info Rasa Labs This feature is **experimental**. We introduce experimental
+features to co-create with our customers. If you are interested in using this
+feature, please contact us at [rasa.com/contact](https://rasa.com/contact).
 
-The functionality might be changed or removed in the future.
+The functionality might be changed or removed in the future. 
+
 :::
-
-
 
 ## Key Features
 
@@ -43,13 +42,31 @@ The functionality might be changed or removed in the future.
 ## Demo
 
 The following example shows a demo of a chatbot using the LLM to rephrase static
-response templates. Both, the right and left hand side of the conversation
-show the same bot, the only difference is that the left hand side uses the LLM
-to rephrase the response templates.
+response templates. Both, the right and left hand side of the conversation show
+the same bot, the only difference is that the left hand side uses the LLM to
+rephrase the response templates.
 
-import llmNlgExample from './llm-nlg-example.png';
+<Image
+  img={llmNlgExample}
+  caption="Bot response with and without rephrasing enabled"
+  alt=""
+/>
 
-<Image img={llmNlgExample} caption="Bot response with and without rephrasing enabled" alt="" />
+A classic: “can you order me a pizza?” can be responded to in many different
+ways. The following table shows a few examples of how a bot might respond to
+this question.
+
+| response                                                                                                        | comment                                                |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| I'm sorry, I can't help with that                                                                               | stilted, generic, and unimaginative                    |
+| I'm sorry, I can't help you order a pizza                                                                       | makes the user feel as though they were at least heard |
+| I can't help you order a pizza, delicious though it is. Do you have any questions related to your bank account? | provides a chance reinforce an assistant's personality |
+| Peter, that's not the first time you've asked me for a pizza! I'll let you know if I ever learn how to do that. | personal, specific                                     |
+
+The third and fourth examples go beyond what we could achieve with simple 
+templates. This is entirely achievable with a retrieval-augmented generation 
+approach - providing information about the user in the prompt to 
+help steer the LLMs generation.
 
 :::info
 
@@ -70,15 +87,15 @@ nlg:
 ```
 
 By default, rephrasing is only enabled for responses that specify
-`allow_rephrasing: true` in the response template. To enable rephrasing
-for a response, add this property to the responses metadata:
+`allow_rephrasing: true` in the response template. To enable rephrasing for a
+response, add this property to the responses metadata:
 
 ```yaml-rasa title="domain.yml"
 responses:
   utter_greet:
     - text: "Hey! How can I help you?"
       metadata:
-        allow_rephrasing: true
+        rephrase: true
 ```
 
 If you want to enable rephrasing for all responses, you can set the
@@ -100,10 +117,10 @@ then returned as the response instead of the predicted template response.
 You can customize the LLM by modifying the following parameters in the
 `endpoints.yml` file.
 
-### Rephrasing all responses 
-Instead of enabling rephrasing per response, you can enable it for all
-responses by setting the `rephrase_all` property to `true` in the
-`endpoints.yml` file:
+### Rephrasing all responses
+
+Instead of enabling rephrasing per response, you can enable it for all responses
+by setting the `rephrase_all` property to `true` in the `endpoints.yml` file:
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
@@ -112,11 +129,12 @@ nlg:
 ```
 
 Defaults to `false`. Setting this property to `true` will enable rephrasing for
-all responses, even if they don't specify `allow_rephrasing: true` in the
-response metadata. If you want to disable rephrasing for a specific response,
-you can set `allow_rephrasing: false` in the response metadata.
+all responses, even if they don't specify `rephrase: true` in the response
+metadata. If you want to disable rephrasing for a specific response, you can set
+`rephrase: false` in the response metadata.
 
 ### OpenAI Model
+
 You can specify the openai model to use for rephrasing by setting the
 `model_name` property in the `endpoints.yml` file:
 
@@ -126,10 +144,12 @@ nlg:
     model_name: text-davinci-003
 ```
 
-Defaults to `text-davinci-003`. The model name needs to be set to a generative 
-model using the completions API of [OpenAI](https://platform.openai.com/docs/guides/gpt/completions-api).
+Defaults to `text-davinci-003`. The model name needs to be set to a generative
+model using the completions API of
+[OpenAI](https://platform.openai.com/docs/guides/gpt/completions-api).
 
 ### Temperature
+
 The temperature allows you to control the diversity of the generated responses.
 You can specify the temperature to use for rephrasing by setting the
 `temperature` property in the `endpoints.yml` file:
@@ -146,8 +166,9 @@ predictable responses, while higher temperatures result in more surprising
 responses.
 
 ### Prompt
-You can change the prompt used to rephrase the response by setting the
-`prompt` property in the `endpoints.yml` file:
+
+You can change the prompt used to rephrase the response by setting the `prompt`
+property in the `endpoints.yml` file:
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
@@ -171,18 +192,43 @@ The prompt is a [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) template
 that can be used to customize the prompt. The following variables are available
 in the prompt:
 
-- `history`: The conversation history as a summary of the prior conversation, e.g.
-    ```
-    User greeted the assistant.
-    ```
+- `history`: The conversation history as a summary of the prior conversation,
+  e.g.
+  ```
+  User greeted the assistant.
+  ```
 - `current_input`: The current user input, e.g.
-    ```
-    HUMAN: I want to open a bank account
-    ```
-- `suggested_response`: The suggested response from the LLM. e.g. 
-    ```
-    What type of account would you like to open?
-    ```
+  ```
+  HUMAN: I want to open a bank account
+  ```
+- `suggested_response`: The suggested response from the LLM. e.g.
+  ```
+  What type of account would you like to open?
+  ```
+
+You can also customize the prompt for a single response by setting the
+`rephrase_prompt` property in the response metadata:
+
+```yaml-rasa title="domain.yml"
+responses:
+  utter_greet:
+    - text: "Hey! How can I help you?"
+      metadata:
+        rephrase: true
+        rephrase_prompt: |
+            The following is a conversation with
+            an AI assistant. The assistant is helpful, creative, clever, and very friendly.
+            Rephrase the AI response staying close to the original message and retaining
+            its meaning. Use simple english.
+
+            Summary of the conversation:
+            {{history}}
+
+            {{current_input}}
+            AI Response: {{suggested_response}}
+
+            Rephrased Response:
+```
 
 ## Observations
 

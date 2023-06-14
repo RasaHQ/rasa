@@ -1,10 +1,64 @@
 ---
 id: large-language-models
-sidebar_label: Using LLMs in Rasa
-title: Using LLMs
-abstract: 
+sidebar_label: LLMs in Rasa
+title: Using LLMs with Rasa
+className: hide
+abstract:
 ---
 
-import llmUsageArchitecture from './llm-usage-architecture.png';
+import llmUsageArchitecture from "./llm-usage-architecture.png";
 
-<Image img={llmUsageArchitecture} caption="LLM Component usage in Rasa" alt="" />
+Large Language Models (LLMs), pretrained models using retrieval-augmented
+generation, can be utilized with Rasa in several ways. This document offers an
+overview of those usage patterns and how to handle them.
+
+## A future proof approach using generative models
+
+The recent advances in large language models (LLMs) have opened up new
+possibilities for conversational AI. LLMs are pretrained models that can be
+fine-tuned to perform a variety of tasks, including intent classification,
+dialogue handling, and natural language generation (NLG).
+
+### An adjustable risk profile
+
+The potential and risks of LLMs vary per use case, with more tolerance for error
+internally than for customer-facing applications. As your organization becomes
+more familiar with the technology, you may be more open to its uses, such as
+enhancing the NLU pipeline, managing long-tail topics, or subtly altering bot
+responses in low-risk situations. 
+
+It's essential that your system provides full
+control over these processes. You need to understand how LLMs and other elements
+are managed and have the power to override any decision.
+
+### Orchestration at the center
+
+An anti-fragile, future-proof architecture, leverages multiple LLMs for multiple
+jobs. And it puts the orchestration of components at the centre, with the LLMs
+as exchangeable utilities / components in various places.
+
+<Image
+  img={llmUsageArchitecture}
+  caption="LLM Component usage in Rasa"
+  alt=""
+/>
+
+LLMs are a key component of a future-proof architecture. But even more important
+is that we have the flexibility to use different LLMs for different purposes,
+and can plug and play the models of our choice as the technology evolves.
+
+# Where to go from here
+
+This section of the documentation guides you through the diverse ways you can
+integrate LLMs into Rasa. We will delve into the following topics:
+
+1. [Setting up LLMs](./llm-setup)
+2. [Intent Classification with LLMs](./llm-intent)
+3. [Dialogue Handling using LLMs](./llm-intentless)
+4. [NLG using LLMs](./llm-nlg)
+5. [Custom usage of LLMs](./llm-custom)
+
+Each link will direct you to a detailed guide on the respective topic, offering
+further depth and information about using LLMs with Rasa. By the end of this
+series, you'll be equipped to effectively use LLMs to augment your Rasa
+applications.

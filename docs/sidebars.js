@@ -39,6 +39,7 @@ module.exports = {
                         'llms/llm-intent',
                         'llms/llm-intentless',
                         'llms/llm-nlg',
+                        'llms/llm-custom',
                     ],
                 },
                 {
