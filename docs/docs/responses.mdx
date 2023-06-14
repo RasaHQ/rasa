@@ -21,7 +21,6 @@ responses:
   - text: "See you!"
 ```
 
-
 If you are using [retrieval intents](glossary.mdx#retrieval-intent) in your assistant, you also need to add responses
 for your assistant's replies to these intents:
 
@@ -102,6 +101,25 @@ responses:
 In this example, when `utter_greet` gets predicted as the next action, Rasa will randomly pick one 
 of the two response variations to use.
 
+#### IDs for Responses
+
+:::note New in Rasa 3.6
+You can now set an ID for any response.
+This is useful when you want to use the [NLG server](./nlg.mdx) to generate the response.
+
+Type for ID is string.
+
+:::
+
+Example of response variations with ID:
+```yaml-rasa {3-4} title="domain.yml"
+responses:
+  utter_greet:
+  - id: "greet_1"
+    text: "Hey, {name}. How are you?"
+  - id: "greet_2"
+    text: "Hey, {name}. How is your day going?"
+```
 
 ### Channel-Specific Response Variations
 

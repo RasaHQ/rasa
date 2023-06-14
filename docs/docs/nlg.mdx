@@ -26,12 +26,23 @@ required to select or generate a response.
 The body of the `POST` request sent to your NLG endpoint will be structured
 like this:
 
+:::info New in 3.6
+We have added an `ids` field to the request body.
+This field contains a list of response variation IDs.
+You can use this information to compose/select a proper response variation on your NLG server.
+In case you are using responses with Conditional Response Variations,
+on the NLG server side, you must implement the logic which will use content of the slots from
+`tracker['slots']` along side the IDs from `ids` field to select the proper response variation.
+
+:::
+
 ```json
 {
   "response":"utter_what_can_do",
   "arguments":{
     
   },
+  "ids": ["<response_variation_id_1>", "<response_variation_id_2>"],
   "tracker":{
     "sender_id":"user_0",
     "slots":{
@@ -171,6 +182,7 @@ Here is an overview of the high-level keys in the post request:
 Key | Description
 ---|---
 `response` | The name of the response predicted by Rasa.
+`ids` | A list of response variation IDs.
 `arguments` | Optional keyword arguments that can be provided by custom actions.
 `tracker` | A dictionary containing the entire conversation history.
 `channel` | The output channel this message will be sent to.
