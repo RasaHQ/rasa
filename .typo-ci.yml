@@ -201,5 +201,6 @@ excluded_words:
   - pii-management
   - anonymization
   - anonymized
+  - dslim
 
 spellcheck_filenames: false

@@ -80,6 +80,14 @@ The `language` field specifies the language of the text to be anonymized. The `m
 specify the name and provider of the Presidio model to be used for anonymization.
 The available model providers are `spacy`, `stanza` and `transformers`.
 
+If you want to use `spacy`, we strongly recommend to use the available large models, such as `en_core_web_lg` or `es_core_news_lg`.
+This is to ensure more accurate entity recognition.
+
+:::caution
+When using large models, you must ensure that your Rasa Pro environment has enough memory to load the model.
+
+:::
+
 If you opt for using the `transformers` model provider, you must specify two model names in the `model_name` field:
 the HuggingFace model name and the spaCy model name, where the spacy model would wrap the transformers NER model.
 For example:
@@ -114,11 +122,26 @@ or [huggingface](https://huggingface.co/docs/transformers/training) model and in
 
 The `rule_lists` section contains a list of anonymization rule lists. Each rule list must have a unique `id` and a list
 of `rules`. Each rule must have an `entity` field and a `substitution` field. The `entity` field specifies the Presidio
-entity type to be anonymized. The `substitution` field specifies the anonymization method to be used. Currently, the
-following anonymization methods are supported: `text`, `mask`, and `faker`. The `value` field is only required for the
-`text` anonymization method. It specifies the text to be used as the anonymized value.
+entity type to be anonymized and must be in uppercase.
+
+The `substitution` field specifies the anonymization method to be used. Currently, the
+following anonymization methods are supported: `text`, `mask`, and `faker`. If no substitution method is specified,
+the default substitution method is `mask`.
+
+The `value` field is only required for the `text` anonymization method. It specifies the text to be used as the anonymized value.
 If the `value` field is not specified, the original entity value to be anonymized will be replaced with a null value.
 
+The `faker` anonymization method uses the [Faker](https://faker.readthedocs.io/en/master/) library to generate fake data.
+The `faker` substitution method does not support the following Presidio entity types:
+- `CRYPTO`, `NRP`, `MEDICAL_LICENSE`
+- `US_BANK_NUMBER`, `US_DRIVER_LICENSE`
+- `UK_NHS`
+- `IT_FISCAL_CODE`, `IT_DRIVER_LICENSE`, `IT_PASSPORT`, `IT_IDENTITY_CARD`
+- `SG_NRIC_FIN`
+- `AU_ABN`, `AU_ACN`, `AU_TFN`, `AU_MEDICARE`
+
+If any of the above entities is used together with the `faker` substitution method, the anonymization pipeline will default
+to the `mask` substitution method.
 
 ## How to update the Kafka event broker configuration
 
