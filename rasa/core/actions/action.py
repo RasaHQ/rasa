@@ -21,6 +21,7 @@ from rasa.core.constants import (
     COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
     DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
 )
+from rasa.core.nlg.callback import RESPONSE_ID_KEY
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -305,7 +306,23 @@ class ActionBotResponse(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) response."""
-        message = await nlg.generate(self.utter_action, tracker, output_channel.name())
+        response_ids_for_response = domain.response_ids_per_response.get(
+            self.utter_action, set()
+        )
+
+        response_id_list = list(response_ids_for_response)
+        response_id_list.sort()
+
+        kwargs = {
+            RESPONSE_ID_KEY: response_id_list,
+        }
+
+        message = await nlg.generate(
+            self.utter_action,
+            tracker,
+            output_channel.name(),
+            **kwargs,
+        )
         if message is None:
             if not self.silent_fail:
                 logger.error(
@@ -509,6 +526,7 @@ class ActionListen(Action):
     """
 
     def name(self) -> Text:
+        """Returns action listen name."""
         return ACTION_LISTEN_NAME
 
     async def run(
@@ -837,6 +855,7 @@ class ActionExecutionRejection(RasaException):
     """
 
     def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
+        """Create a new ActionExecutionRejection exception."""
         self.action_name = action_name
         self.message = message or "Custom action '{}' rejected to run".format(
             action_name
