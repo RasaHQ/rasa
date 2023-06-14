@@ -145,3 +145,25 @@ to the `mask` substitution method.
 
 ## How to update the Kafka event broker configuration
 
+The anonymization pipeline uses Kafka to publish the anonymized events to the Kafka topic that is mapped to the
+anonymization rule list. You can configure the Kafka event broker in the `endpoints.yml` file. The Kafka event broker
+must contain the `anonymization_topics` section, which must have the following structure:
+
+```yaml
+event_broker:
+  type: kafka
+  partition_by_sender: True
+  security_protocol: PLAINTEXT
+  url: localhost
+  anonymization_topics:
+    - name: topic_1
+      anonymization_rules: rules_1
+    - name: topic_2
+      anonymization_rules: rules_2
+  client_id: kafka-python-rasa
+```
+
+The `anonymization_topics` section contains a list of Kafka topics to which the anonymized events will be published.
+Each Kafka topic must have a `name` field and an `anonymization_rules` field. The `name` field specifies the name of the
+Kafka topic. The `anonymization_rules` field specifies the `id` of the anonymization rule list to be used for the Kafka topic.
+
