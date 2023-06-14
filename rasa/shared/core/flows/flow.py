@@ -18,8 +18,9 @@ class UnreachableFlowStepException(RasaException):
     def __str__(self) -> Text:
         """Return a string representation of the exception."""
         return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' can not be reached from the start step. "
-            f"Please make sure that all steps can be reached from the start step, e.g. by "
+            f"Step '{self.step.id}' in flow '{self.flow.id}' can not be reached "
+            f"from the start step. Please make sure that all steps can be reached "
+            f"from the start step, e.g. by "
             f"checking that another step points to this step."
         )
 
@@ -422,7 +423,8 @@ class TriggerCondition:
     """The entities to trigger the flow."""
 
     def is_triggered(self, intent: Text, entities: List[Text]) -> bool:
-        """Returns whether the trigger condition is triggered by the given intent and entities.
+        """Returns whether the trigger condition is triggered by the
+        given intent and entities.
 
         Args:
             intent: The intent to check.

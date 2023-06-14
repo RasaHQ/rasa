@@ -43,9 +43,12 @@ from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
+from rasa.core.policies.detectors import SensitiveTopicDetector
 
 
 logger = logging.getLogger(__name__)
+
+SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY = "sensitive_topic_detector"
 
 
 class FlowException(Exception):
@@ -71,6 +74,7 @@ class FlowPolicy(Policy):
         return {
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
             POLICY_MAX_HISTORY: None,
+            SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY: None,
         }
 
     @staticmethod
@@ -99,6 +103,14 @@ class FlowPolicy(Policy):
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
         self.resource = resource
 
+        if detector_config := self.config.get(SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY):
+            # if the detector is configured, we need to load it
+            full_config = SensitiveTopicDetector.get_default_config()
+            full_config.update(detector_config)
+            self._sensitive_topic_detector = SensitiveTopicDetector(full_config)
+        else:
+            self._sensitive_topic_detector = None
+
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
@@ -122,6 +134,22 @@ class FlowPolicy(Policy):
         # or do some preprocessing here.
         return self.resource
 
+    @staticmethod
+    def _is_first_prediction_after_user_message(tracker: DialogueStateTracker) -> bool:
+        """Checks whether the tracker ends with an action listen.
+
+        If the tracker ends with an action listen, it means that we've just received
+        a user message.
+
+        Args:
+            tracker: The tracker.
+
+        Returns:
+            `True` if the tracker is the first one after a user message, `False`
+            otherwise.
+        """
+        return tracker.latest_action_name == ACTION_LISTEN_NAME
+
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
@@ -143,6 +171,28 @@ class FlowPolicy(Policy):
         Returns:
              The prediction.
         """
+        predicted_action = None
+        if (
+            self._sensitive_topic_detector
+            and self._is_first_prediction_after_user_message(tracker)
+            and (latest_message := tracker.latest_message)
+        ):
+            if self._sensitive_topic_detector.check(latest_message.text):
+                predicted_action = self._sensitive_topic_detector.action()
+                # TODO: in addition to predicting an action, we need to make
+                #   sure that the input isn't used in any following flow
+                #   steps. At the same time, we can't completely skip flows
+                #   as we want to guide the user to the next step of the flow.
+                logger.info(
+                    "Sensitive topic detected, predicting action %s", predicted_action
+                )
+            else:
+                logger.info("No sensitive topic detected: %s", latest_message.text)
+
+        # if detector predicted an action, we don't want to predict a flow
+        if predicted_action is not None:
+            return self._create_prediction_result(predicted_action, domain, 1.0, [])
+
         if tracker.active_loop:
             # we are in a loop - we don't want to handle flows in this case
             logger.debug("We are in a loop. Skipping prediction.")
@@ -165,7 +215,7 @@ class FlowPolicy(Policy):
         domain: Domain,
         score: float = 1.0,
         events: Optional[List[Event]] = None,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         """Creates a prediction result.
 
         Args:
