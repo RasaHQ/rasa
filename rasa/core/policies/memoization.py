@@ -253,7 +253,7 @@ class MemoizationPolicy(Policy):
         result = self._default_predictions(domain)
 
         states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
-        structlogger.debug("memoization.actions.prediction", states=states)
+        structlogger.debug("memoization.predict.actions", tracker_states=states)
         predicted_action_name = self.recall(
             states, tracker, domain, rule_only_data=rule_only_data
         )
