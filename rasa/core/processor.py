@@ -1,4 +1,5 @@
 import logging
+import structlog
 import os
 from pathlib import Path
 import tarfile
@@ -13,6 +14,7 @@ from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
+from rasa.plugin import plugin_manager
 from rasa.shared.data import TrainingType
 import rasa.shared.utils.io
 import rasa.core.actions.action
@@ -69,6 +71,7 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
 
@@ -86,7 +89,6 @@ class MessageProcessor:
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         on_circuit_break: Optional[LambdaType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
-        anonymization_pipeline: Optional[Any] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
@@ -112,7 +114,6 @@ class MessageProcessor:
         self.model_path = Path(model_path)
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter
-        self.anonymization_pipeline = anonymization_pipeline
 
     @staticmethod
     def _load_model(
@@ -194,10 +195,11 @@ class MessageProcessor:
 
         tracker.update_with_events(extraction_events, self.domain)
 
-        events_as_str = ", ".join([repr(e) or str(e) for e in extraction_events])
-        logger.debug(
-            f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
-            f"resulting in {len(extraction_events)} events: {events_as_str}"
+        structlogger.debug(
+            "processor.extract.slots",
+            action_extract_slot=ACTION_EXTRACT_SLOTS,
+            len_extraction_events=len(extraction_events),
+            rasa_events=extraction_events,
         )
 
         return tracker
@@ -208,7 +210,8 @@ class MessageProcessor:
         Args:
             tracker: A tracker representing a conversation state.
         """
-        if self.anonymization_pipeline is None:
+        anonymization_pipeline = plugin_manager().hook.get_anonymization_pipeline()
+        if anonymization_pipeline is None:
             return None
 
         old_tracker = await self.tracker_store.retrieve(tracker.sender_id)
@@ -219,7 +222,7 @@ class MessageProcessor:
         for event in new_events:
             body = {"sender_id": tracker.sender_id}
             body.update(event.as_dict())
-            self.anonymization_pipeline.run(body)
+            anonymization_pipeline.run(body)
 
     async def predict_next_for_sender_id(
         self, sender_id: Text
@@ -646,7 +649,7 @@ class MessageProcessor:
             [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
         )
         if slot_values.strip():
-            logger.debug(f"Current slot values: \n{slot_values}")
+            structlogger.debug("processor.slots.log", slot_values=slot_values)
 
     def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
         """Warns the user if the NLU parse data contains unrecognized features.
@@ -715,11 +718,11 @@ class MessageProcessor:
                 message, tracker, only_output_properties
             )
 
-        logger.debug(
-            "Received user message '{}' with intent '{}' "
-            "and entities '{}'".format(
-                parse_data["text"], parse_data["intent"], parse_data["entities"]
-            )
+        structlogger.debug(
+            "processor.message.parse",
+            parse_data_text=parse_data["text"],
+            parse_data_intent=parse_data["intent"],
+            parse_data_entities=parse_data["entities"],
         )
 
         self._check_for_unseen_features(parse_data)
@@ -1007,13 +1010,18 @@ class MessageProcessor:
             isinstance(event, ActionExecutionRejected) for event in events
         )
         if not action_was_rejected_manually:
-            logger.debug(f"Policy prediction ended with events '{prediction.events}'.")
+            structlogger.debug(
+                "processor.actions.policy_prediction",
+                prediction_events=prediction.events,
+            )
             tracker.update_with_events(prediction.events, self.domain)
 
             # log the action and its produced events
             tracker.update(action.event_for_successful_execution(prediction))
 
-        logger.debug(f"Action '{action.name()}' ended with events '{events}'.")
+        structlogger.debug(
+            "processor.actions.log", action_name=action.name(), rasa_events=events
+        )
         tracker.update_with_events(events, self.domain)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:

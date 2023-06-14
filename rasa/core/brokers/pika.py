@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import structlog
 import os
 import ssl
 from asyncio import AbstractEventLoop
@@ -19,6 +20,7 @@ from rasa.shared.utils.io import DEFAULT_ENCODING
 import rasa.shared.utils.common
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 RABBITMQ_EXCHANGE = "rasa-exchange"
 DEFAULT_QUEUE_NAME = "rasa_core_events"
@@ -298,14 +300,17 @@ class PikaEventBroker(EventBroker):
         try:
             await self._exchange.publish(self._message(event, headers), "")
 
-            logger.debug(
-                f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-                f"'{self.host}':\n{event}"
+            structlogger.debug(
+                "pika.events.publish",
+                rabbitmq_exchange=RABBITMQ_EXCHANGE,
+                host=self.host,
+                rasa_event=event,
             )
         except Exception as e:
-            logger.error(
-                f"Failed to publish Pika event on host '{self.host}' due to "
-                f"error '{e}'. The message was: \n{event}"
+            structlogger.error(
+                "pika.events.publish.failed",
+                host=self.host,
+                rasa_event=event,
             )
             if self.should_keep_unpublished_messages:
                 self._unpublished_events.append(event)

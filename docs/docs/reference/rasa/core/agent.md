@@ -67,8 +67,7 @@ def __init__(domain: Optional[Domain] = None,
              fingerprint: Optional[Text] = None,
              model_server: Optional[EndpointConfig] = None,
              remote_storage: Optional[Text] = None,
-             http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
-             anonymization_pipeline: Optional[Any] = None)
+             http_interpreter: Optional[RasaNLUHttpInterpreter] = None)
 ```
 
 Initializes an `Agent`.

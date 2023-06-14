@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 def nlg_response_format_spec() -> Dict[Text, Any]:
     """Expected response schema for an NLG endpoint.
 
-    Used for validation of the response returned from the NLG endpoint."""
+    Used for validation of the response returned from the NLG endpoint.
+    """
     return {
         "type": "object",
         "properties": {
@@ -55,7 +56,8 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
     The generator will call the endpoint for each message it wants to
     generate. The endpoint needs to respond with a properly formatted
     json. The generator will use this message to create a response for
-    the bot."""
+    the bot.
+    """
 
     def __init__(self, endpoint_config: EndpointConfig) -> None:
 

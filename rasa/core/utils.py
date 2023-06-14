@@ -3,13 +3,12 @@ import logging
 import os
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
+from typing import Any, Dict, Optional, Set, Text, Tuple, Union
 
 import numpy as np
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
-from rasa.plugin import plugin_manager
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
 
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
@@ -184,14 +183,6 @@ class AvailableEndpoints:
         lock_store = read_endpoint_config(endpoint_file, endpoint_type="lock_store")
         event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
 
-        anonymization_rules = plugin_manager().hook.read_anonymization_rules(
-            endpoints_file=endpoint_file
-        )
-
-        # explicitly set to `None` if the list is empty
-        if not anonymization_rules:
-            anonymization_rules = None
-
         return cls(
             nlg,
             nlu,
@@ -200,7 +191,6 @@ class AvailableEndpoints:
             tracker_store,
             lock_store,
             event_broker,
-            anonymization_rules,
         )
 
     def __init__(
@@ -212,7 +202,6 @@ class AvailableEndpoints:
         tracker_store: Optional[EndpointConfig] = None,
         lock_store: Optional[EndpointConfig] = None,
         event_broker: Optional[EndpointConfig] = None,
-        anonymization_rules: Optional[List[Any]] = None,
     ) -> None:
         """Create an `AvailableEndpoints` object."""
         self.model = model
@@ -222,7 +211,6 @@ class AvailableEndpoints:
         self.tracker_store = tracker_store
         self.lock_store = lock_store
         self.event_broker = event_broker
-        self.anonymization_rules = anonymization_rules
 
 
 def read_endpoints_from_path(

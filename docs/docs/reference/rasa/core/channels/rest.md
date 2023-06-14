@@ -78,7 +78,7 @@ Groups the collection of endpoints used by rest channel.
 class QueueOutputChannel(CollectingOutputChannel)
 ```
 
-Output channel that collects send messages in a list
+Output channel that collects send messages in a list.
 
 (doesn&#x27;t send them anywhere, just collects them).
 

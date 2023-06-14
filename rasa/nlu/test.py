@@ -1,6 +1,7 @@
 import itertools
 import os
 import logging
+import structlog
 from pathlib import Path
 
 import numpy as np
@@ -75,6 +76,7 @@ if TYPE_CHECKING:
         },
     )
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 # Exclude 'EntitySynonymMapper' and 'ResponseSelector' as their super class
 # performs entity extraction but those two classifiers don't
@@ -283,9 +285,7 @@ def write_response_successes(
     if successes:
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
-        logger.debug(
-            f"\n\nSuccessfully predicted the following responses: \n{successes}"
-        )
+        structlogger.debug("test.write.response", successes=successes)
     else:
         logger.info("No successful response predictions found.")
 
@@ -797,9 +797,7 @@ def write_successful_entity_predictions(
     if successes:
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
-        logger.debug(
-            f"\n\nSuccessfully predicted the following entities: \n{successes}"
-        )
+        structlogger.debug("test.write.entities", successes=successes)
     else:
         logger.info("No successful entity prediction found.")
 
@@ -989,7 +987,9 @@ def do_entities_overlap(entities: List[Dict]) -> bool:
             next_ent["start"] < curr_ent["end"]
             and next_ent["entity"] != curr_ent["entity"]
         ):
-            logger.warning(f"Overlapping entity {curr_ent} with {next_ent}")
+            structlogger.warning(
+                "test.overlaping.entities", curr_ent=curr_ent, next_ent=next_ent
+            )
             return True
 
     return False
@@ -1010,10 +1010,12 @@ def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
             candidates.append(e)
         elif does_token_cross_borders(token, e):
             candidates.append(e)
-            logger.debug(
-                "Token boundary error for token {}({}, {}) "
-                "and entity {}"
-                "".format(token.text, token.start, token.end, e)
+            structlogger.debug(
+                "test.intersecting.entities",
+                token_text=token.text,
+                token_start=token.start,
+                token_end=token.end,
+                entity=e,
             )
     return candidates
 

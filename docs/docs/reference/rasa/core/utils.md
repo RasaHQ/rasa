@@ -133,8 +133,7 @@ def __init__(nlg: Optional[EndpointConfig] = None,
              model: Optional[EndpointConfig] = None,
              tracker_store: Optional[EndpointConfig] = None,
              lock_store: Optional[EndpointConfig] = None,
-             event_broker: Optional[EndpointConfig] = None,
-             anonymization_rules: Optional[List[Any]] = None) -> None
+             event_broker: Optional[EndpointConfig] = None) -> None
 ```
 
 Create an `AvailableEndpoints` object.

@@ -5575,6 +5575,41 @@ files = [
 pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 
 [[package]]
+name = "structlog"
+version = "23.1.0"
+description = "Structured Logging for Python"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "structlog-23.1.0-py3-none-any.whl", hash = "sha256:79b9e68e48b54e373441e130fa447944e6f87a05b35de23138e475c05d0f7e0e"},
+    {file = "structlog-23.1.0.tar.gz", hash = "sha256:270d681dd7d163c11ba500bc914b2472d2b50a8ef00faa999ded5ff83a2f906b"},
+]
+
+[package.extras]
+dev = ["structlog[docs,tests,typing]"]
+docs = ["furo", "myst-parser", "sphinx", "sphinx-notfound-page", "sphinxcontrib-mermaid", "twisted"]
+tests = ["coverage[toml]", "freezegun (>=0.2.8)", "pretend", "pytest (>=6.0)", "pytest-asyncio (>=0.17)", "simplejson"]
+typing = ["mypy", "rich", "twisted"]
+
+[[package]]
+name = "structlog-sentry"
+version = "2.0.2"
+description = "Sentry integration for structlog"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "structlog_sentry-2.0.2-py3-none-any.whl", hash = "sha256:a56e8ea4cf193558ba8a600fe4d8932642c186193e4a20bf720b0ac8ebc8ad2b"},
+    {file = "structlog_sentry-2.0.2.tar.gz", hash = "sha256:9790227e2284586b1202c066cec962c4f42c46ee9a3e0159c8c459a30384494c"},
+]
+
+[package.dependencies]
+packaging = "*"
+sentry-sdk = "*"
+structlog = "*"
+
+[[package]]
 name = "tabulate"
 version = "0.9.0"
 description = "Pretty-print tabular data"
@@ -7098,4 +7133,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "51dbbfa84035b8c607c103d6f4c61c1e72768e7ffc863758860d194437644c1c"
+content-hash = "e4b97cd91ec0a1b7651946e30943dc69daaf6449a2e47312dc254bf1d57a1fab"
