@@ -22,8 +22,11 @@ broker only. Continue reading to learn how to enable the anonymization of PII da
 Management of sensitive customer data collected by assistants is a critical requirement for complying with regulations
 and managing the data securely while making it available for analysis.
 Rasa Pro 3.6 introduces the ability to anonymize PII data in your logs and events streamed via the Kafka event broker.
-Note that the tracker store continues to store conversation data which is not anonymized because the tracker store data
-plays a vital role in the assistant's dialogue management.
+
+Note that the tracker store continues to store conversation data which is not anonymized. This is required so that we
+retain a source of truth for pristine data required for non-repudiation purposes. In addition, because the tracker store
+data plays a vital role in the assistant's dialogue management at inference time, anonymizing data in flight could have
+undesirable consequences for the assistant's action predictions.
 
 ## Architecture Overview
 
@@ -167,3 +170,15 @@ The `anonymization_topics` section contains a list of Kafka topics to which the 
 Each Kafka topic must have a `name` field and an `anonymization_rules` field. The `name` field specifies the name of the
 Kafka topic. The `anonymization_rules` field specifies the `id` of the anonymization rule list to be used for the Kafka topic.
 
+## How to enable anonymization of PII in logs
+
+You can enable anonymization of PII in logs by filling the `logger` section in the `endpoints.yml` file.
+The `logger` section must have the following structure:
+
+```yaml
+logger:
+  formatter:
+    anonymization_rules: rules_1
+```
+
+The `anonymization_rules` field specifies the `id` of the anonymization rule list to be used for the logs.
