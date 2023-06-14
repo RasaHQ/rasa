@@ -115,6 +115,29 @@ class AvailableEndpoints()
 
 Collection of configured endpoints.
 
+#### read\_endpoints
+
+```python
+@classmethod
+def read_endpoints(cls, endpoint_file: Text) -> "AvailableEndpoints"
+```
+
+Read the different endpoints from a yaml file.
+
+#### \_\_init\_\_
+
+```python
+def __init__(nlg: Optional[EndpointConfig] = None,
+             nlu: Optional[EndpointConfig] = None,
+             action: Optional[EndpointConfig] = None,
+             model: Optional[EndpointConfig] = None,
+             tracker_store: Optional[EndpointConfig] = None,
+             lock_store: Optional[EndpointConfig] = None,
+             event_broker: Optional[EndpointConfig] = None) -> None
+```
+
+Create an `AvailableEndpoints` object.
+
 #### read\_endpoints\_from\_path
 
 ```python

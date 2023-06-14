@@ -482,6 +482,7 @@
         "reference/rasa/utils/converter",
         "reference/rasa/utils/endpoints",
         "reference/rasa/utils/io",
+        "reference/rasa/utils/log_utils",
         "reference/rasa/utils/plotting",
         "reference/rasa/utils/train_utils"
       ],

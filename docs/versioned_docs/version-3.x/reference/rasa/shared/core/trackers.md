@@ -540,6 +540,29 @@ Returns a unique hash for the tracker which is stable across python runs.
 
   fingerprint of the tracker
 
+## TrackerEventDiffEngine Objects
+
+```python
+class TrackerEventDiffEngine()
+```
+
+Computes event difference of two trackers.
+
+#### event\_difference
+
+```python
+@staticmethod
+def event_difference(original: DialogueStateTracker,
+                     tracker: DialogueStateTracker) -> List[Event]
+```
+
+Returns all events from the new tracker which are not present
+in the original tracker.
+
+**Arguments**:
+
+- `tracker` - Tracker containing events from the current conversation session.
+
 #### get\_active\_loop\_name
 
 ```python

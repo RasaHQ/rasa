@@ -86,7 +86,9 @@ does not apply to the conversation so far.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Optional[Text] = None, negated: bool = False) -> None
+def __init__(name: Optional[Text] = None,
+             negated: bool = False,
+             description: Optional[Text] = None) -> None
 ```
 
 Instantiates a marker.
@@ -97,6 +99,8 @@ Instantiates a marker.
   conversion of this marker
 - `negated` - whether this marker should be negated (i.e. a negated marker
   applies if and only if the non-negated marker does not apply)
+- `description` - an optional description of the marker. It is not used
+  internally but can be used to document the marker.
 
 **Raises**:
 
@@ -333,7 +337,8 @@ Combines several markers into one.
 ```python
 def __init__(markers: List[Marker],
              negated: bool = False,
-             name: Optional[Text] = None) -> None
+             name: Optional[Text] = None,
+             description: Optional[Text] = None) -> None
 ```
 
 Instantiates a marker.
@@ -345,6 +350,8 @@ Instantiates a marker.
   applies if and only if the non-negated marker does not apply)
 - `name` - a custom name that can be used to replace the default string
   conversion of this marker
+- `description` - an optional description of the marker. It is not used
+  internally but can be used to document the marker.
 
 **Raises**:
 
@@ -418,9 +425,11 @@ Gets the maximum depth from this point in the marker tree.
 
 ```python
 @staticmethod
-def from_tag_and_sub_config(tag: Text,
-                            sub_config: Any,
-                            name: Optional[Text] = None) -> OperatorMarker
+def from_tag_and_sub_config(
+        tag: Text,
+        sub_config: Any,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None) -> OperatorMarker
 ```
 
 Creates an operator marker from the given config.
@@ -433,6 +442,7 @@ See `Marker.from_config` for more details.
 - `tag` - the tag identifying an operator
 - `sub_config` - a list of marker configs
 - `name` - an optional custom name to be attached to the resulting marker
+- `description` - an optional description of the marker
 
 **Returns**:
 
@@ -455,7 +465,8 @@ A marker that does not contain any sub-markers.
 ```python
 def __init__(text: Text,
              negated: bool = False,
-             name: Optional[Text] = None) -> None
+             name: Optional[Text] = None,
+             description: Optional[Text] = None) -> None
 ```
 
 Instantiates an atomic marker.
@@ -467,6 +478,8 @@ Instantiates an atomic marker.
   applies if and only if the non-negated marker does not apply)
 - `name` - a custom name that can be used to replace the default string
   conversion of this marker
+- `description` - an optional description of the marker. It is not used
+  internally but can be used to document the marker.
 
 #### flatten
 
@@ -492,9 +505,11 @@ Gets the maximum depth from this point in the marker tree.
 
 ```python
 @staticmethod
-def from_tag_and_sub_config(tag: Text,
-                            sub_config: Any,
-                            name: Optional[Text] = None) -> ConditionMarker
+def from_tag_and_sub_config(
+        tag: Text,
+        sub_config: Any,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None) -> ConditionMarker
 ```
 
 Creates an atomic marker from the given config.

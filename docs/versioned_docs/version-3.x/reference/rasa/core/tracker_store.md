@@ -256,14 +256,6 @@ async def stream_events(tracker: DialogueStateTracker) -> None
 
 Streams events to a message broker.
 
-#### number\_of\_existing\_events
-
-```python
-async def number_of_existing_events(sender_id: Text) -> int
-```
-
-Return number of stored events for a given sender id.
-
 #### keys
 
 ```python

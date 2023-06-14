@@ -104,6 +104,24 @@ def get_validated_config(config: Optional[Union[Text, "Path"]],
 
 Validates config and returns path to validated config file.
 
+#### validate\_files
+
+```python
+def validate_files(fail_on_warnings: bool,
+                   max_history: Optional[int],
+                   importer: TrainingDataImporter,
+                   stories_only: bool = False) -> None
+```
+
+Validates either the story structure or the entire project.
+
+**Arguments**:
+
+- `fail_on_warnings` - `True` if the process should exit with a non-zero status
+- `max_history` - The max history to use when validating the story structure.
+- `importer` - The `TrainingDataImporter` to use to load the training data.
+- `stories_only` - If `True`, only the story structure is validated.
+
 #### cancel\_cause\_not\_found
 
 ```python

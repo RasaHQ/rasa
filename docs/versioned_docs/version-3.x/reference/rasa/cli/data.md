@@ -28,27 +28,13 @@ Load data from a file path and split the NLU data into test and train examples.
 
 - `args` - Commandline arguments
 
-#### validate\_files
+#### split\_stories\_data
 
 ```python
-def validate_files(args: argparse.Namespace,
-                   stories_only: bool = False) -> None
+def split_stories_data(args: argparse.Namespace) -> None
 ```
 
-Validates either the story structure or the entire project.
-
-**Arguments**:
-
-- `args` - Commandline arguments
-- `stories_only` - If `True`, only the story structure is validated.
-
-#### validate\_stories
-
-```python
-def validate_stories(args: argparse.Namespace) -> None
-```
-
-Validates that training data file content conforms to training data spec.
+Load data from a file path and split stories into test and train examples.
 
 **Arguments**:
 

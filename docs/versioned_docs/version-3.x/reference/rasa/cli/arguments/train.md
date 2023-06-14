@@ -60,6 +60,20 @@ Adds `--dry-run` argument to a specified `parser`.
 
 - `parser` - An instance of `ArgumentParser` or `_ActionsContainer`.
 
+#### add\_validate\_before\_train
+
+```python
+def add_validate_before_train(
+    parser: Union[argparse.ArgumentParser,
+                  argparse._ActionsContainer]) -> None
+```
+
+Adds parameters for validating the domain and data files before training.
+
+**Arguments**:
+
+- `parser` - An instance of `ArgumentParser` or `_ActionsContainer`.
+
 #### add\_augmentation\_param
 
 ```python

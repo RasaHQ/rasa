@@ -294,11 +294,6 @@ def copy_directory(source: Path, destination: Path) -> None
 
 Copies the content of one directory into another.
 
-Unlike `shutil.copytree` this doesn&#x27;t raise if `destination` already exists.
-
-# TODO: Drop this in favor of `shutil.copytree(..., dirs_exist_ok=True)` when
-# dropping Python 3.7.
-
 **Arguments**:
 
 - `source` - The directory whose contents should be copied to `destination`.

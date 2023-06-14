@@ -179,7 +179,7 @@ class ActionCheckTermination(Action):
         if should_terminate:
             return [FollowupAction("action_listen")]
 
-        return [];
+        return []
 ```
 
 utter_greet is never executed when termination is done, even after user input, because it causes a new intent prediction.
