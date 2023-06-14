@@ -28,6 +28,19 @@ module.exports = {
             items: [
                 'migrate-from',
                 'command-line-interface',
+                
+                {
+                    type: 'category',
+                    label: 'Using LLMs',
+                    collapsed: true,
+                    items: [
+                        'llms/large-language-models',
+                        'llms/llm-setup',
+                        'llms/llm-intent',
+                        'llms/llm-intentless',
+                        'llms/llm-nlg',
+                    ],
+                },
                 {
                     type: 'category',
                     label: 'Best Practices',
