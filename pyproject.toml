@@ -167,6 +167,8 @@ python = "~=3.7.0"
 version = ">=1.19.2,<1.25.0"
 python = ">=3.8,<3.11"
 
+# Pinning numpy version for windows because of the issue mentioned below:
+#https://github.com/scipy/scipy/blob/c58b608c83d30800aceee6a4dab5c3464cb1de7d/pyproject.toml#L38-L41
 [[tool.poetry.dependencies.numpy]]
 version = "1.22.3"
 markers = "sys_platform =='Windows' and platform_python_implementation != 'PyPy'"
@@ -255,6 +257,7 @@ version = "2.11.1"
 markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
 
 [tool.poetry.dependencies.tensorflow-macos]
+# Updated tensorflow to 2.11.1 for other platforms except Apple Silicon - 2.11.1 is not available there
 version = "2.11.0"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 
