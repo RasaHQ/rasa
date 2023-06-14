@@ -33,15 +33,92 @@ handling before saving the un-anonymized new events to the tracker store. The an
 through a sequence of anonymization rules that are applied to the new events. Then the pipeline will publish the events to
 the Kafka topic that is mapped to the anonymization rule list.
 
-The anonymization pipeline uses [Microsoft Presidio](https://microsoft.github.io/presidio/text_anonymization/) as both entity analyzer and
+### Supported PII entity types
+
+The anonymization pipeline uses [Microsoft Presidio](https://microsoft.github.io/presidio/text_anonymization/) as both entity recognizer and
 anonymizer. Presidio is an open-source library that supports a wide range of entity types and anonymization methods.
 
-### Supported PII entity types
+You can specify any of the out-of-the-box [supported Presidio entity types](https://microsoft.github.io/presidio/supported_entities/) in the anonymization rules.
+Note that it is currently not possible to add custom entity types for the Rasa Pro anonymization pipeline.
 
 ## How to write anonymization rules
 
-You can now write anonymization rules in `endpoints.yml` to explicitly declare which entities should be anonymized.
+You can now write anonymization rules in `endpoints.yml` to explicitly declare which Presidio entities should be anonymized.
 The anonymization pipeline is configurable via the `anonymization` section in the `endpoints.yml` file.
+This section must have the structure given in the following example:
+
+```yaml
+anonymization:
+  metadata:
+    language: en
+    model_name: en_core_web_lg
+    model_provider: spacy
+  rule_lists:
+    - id: rules_1
+      rules:
+        - entity: PERSON
+          substitution: text
+          value: John Doe
+        - entity: LOCATION
+          substitution: faker
+        - entity: CREDIT_CARD
+          substitution: faker
+        - entity: IBAN_CODE
+          substitution: faker
+    - id: rules_2
+      rules:
+        - entity: CREDIT_CARD
+          substitution: mask
+        - entity: IBAN_CODE
+          substitution: mask
+```
+
+### How to populate the metadata section
+
+The metadata section contains the following fields: `language`, `model_name`, and `model_provider`.
+The `language` field specifies the language of the text to be anonymized. The `model_name` and `model_provider` fields
+specify the name and provider of the Presidio model to be used for anonymization.
+The available model providers are `spacy`, `stanza` and `transformers`.
+
+If you opt for using the `transformers` model provider, you must specify two model names in the `model_name` field:
+the HuggingFace model name and the spaCy model name, where the spacy model would wrap the transformers NER model.
+For example:
+
+```yaml
+anonymization:
+  metadata:
+    language: en
+    model_name:
+       spacy: en_core_web_lg
+       transformers: dslim/bert-base-NER
+    model_provider: transformers
+```
+#### How to install the language  model
+
+You must install the model name you declare to the `model_name` field in your Rasa Pro environment.
+For example, if you declare `model_name: en_core_web_lg`, you must install the spaCy `en_core_web_lg` model in your Rasa Pro environment.
+You can follow model installation instructions for spaCy and stanza models in the [Presidio official documentation](https://microsoft.github.io/presidio/analyzer/nlp_engines/spacy_stanza/).
+
+In the case of the `transformers` model provider, you must install the model name you declare to the `model_name` field
+in your Rasa Pro environment. For example, if you declare `model_name: dslim/bert-base-NER` in `endpoints.yml`, you must
+install the `dslim/bert-base-NER` model in your Rasa Pro environment. You can find model installation instructions for
+`HuggingFace` in the [Presidio official documentation](https://microsoft.github.io/presidio/analyzer/nlp_engines/transformers/).
+
+:::note
+Not all languages have a pre-trained language model available. If you want to use a language that does not have
+a pre-trained language model available, you must train your own [spaCy](https://spacy.io/usage/training), [stanza](https://stanfordnlp.github.io/stanza/training.html)
+or [huggingface](https://huggingface.co/docs/transformers/training) model and install it in your Rasa Pro environment.
+:::
+
+### How to populate the rule_lists section
+
+The `rule_lists` section contains a list of anonymization rule lists. Each rule list must have a unique `id` and a list
+of `rules`. Each rule must have an `entity` field and a `substitution` field. The `entity` field specifies the Presidio
+entity type to be anonymized. The `substitution` field specifies the anonymization method to be used. Currently, the
+following anonymization methods are supported: `text`, `mask`, and `faker`. The `value` field is only required for the
+`text` anonymization method. It specifies the text to be used as the anonymized value.
+If the `value` field is not specified, the original entity value to be anonymized will be replaced with a null value.
+
 
 ## How to update the Kafka event broker configuration
 
