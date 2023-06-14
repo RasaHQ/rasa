@@ -1,8 +1,10 @@
 import re
 import logging
+import structlog
 from typing import Text, Dict, Union, Any, List
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text:
@@ -35,13 +37,10 @@ def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text:
 
         return text
     except KeyError as e:
-        logger.exception(
-            f"Failed to replace placeholders in response '{response}'. "
-            f"Tried to replace '{e.args[0]}' but could not find "
-            f"a value for it. There is no slot with this "
-            f"name nor did you pass the value explicitly "
-            f"when calling the response. Return response "
-            f"without filling the response. "
+        structlogger.exception(
+            "interpolator.interpolate.text",
+            response=response,
+            placeholder_key=e.args[0],
         )
         return response
 
