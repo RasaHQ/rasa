@@ -16,6 +16,53 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.6.0] - 2023-06-14
+                       
+Rasa 3.6.0 (2023-06-14)                        
+### Deprecations and Removals
+- [#12355](https://github.com/rasahq/rasa/issues/12355): Removed Python 3.7 support as [it reaches its end of life in June 2023](https://devguide.python.org/versions/)
+
+### Improvements
+- [#11222](https://github.com/rasahq/rasa/issues/11222): Add optional property `ids` to the nlg server request body.
+  IDs will be transmitted to the NLG server and can be used to identify the response variation that should be used.
+- [#11775](https://github.com/rasahq/rasa/issues/11775): Add building Docker container for arm64 (e.g. to allow running Rasa inside docker on M1/M2).
+- [#12162](https://github.com/rasahq/rasa/issues/12162): Add support for Location data from Whatsapp on Twilio Channel
+- [#12324](https://github.com/rasahq/rasa/issues/12324): Add validation to `rasa train` to align validation expectations with `rasa data validate`.
+  Add `--skip-validation` flag to disable validation and `--fail-on-validation-warnings`, `--validation-max-history` to `rasa train` to have the same options as `rasa data validate`.
+- [#12453](https://github.com/rasahq/rasa/issues/12453): Updated tensorflow to version 2.11.1 for all platforms except Apple Silicon which stays on 2.11.0 as 2.11.1 is not available yet
+- [#12454](https://github.com/rasahq/rasa/issues/12454): Slot mapping conditions accept `active_loop` specified as `null` in those cases when slots with this mapping condition
+  should be filled only outside form contexts.
+- [#12487](https://github.com/rasahq/rasa/issues/12487): Add an optional `description` key to the Markers Configuration format. This can be used to add documentation and context about marker's usage. For example, a `markers.yml` can look like
+
+  ``` yaml
+  marker_name_provided:
+    description: “Name slot has been set”
+    slot_was_set: name
+
+  marker_mood_expressed:
+    description: “Unhappy or Great Mood was expressed”
+    or:
+      - intent: mood_unhappy
+      - intent: mood_great
+  ```
+
+### Bugfixes
+- [#12467](https://github.com/rasahq/rasa/issues/12467): Fix running custom form validation to update required slots at form activation when prefilled slots consist only of slots
+  that are not requested by the form.
+
+### Improved Documentation
+- [#12145](https://github.com/rasahq/rasa/issues/12145): Explicitly set Node.js version to 12.x in order to run Docusaurus.
+- [#12160](https://github.com/rasahq/rasa/issues/12160): Update obselete commands in docs README.
+- [#12168](https://github.com/rasahq/rasa/issues/12168): Correct docker image name for `deploy-rasa-pro-services` in docs.
+- [#12169](https://github.com/rasahq/rasa/issues/12169): Update Compatibility Matrix.
+- [#12266](https://github.com/rasahq/rasa/issues/12266): Implement `rasa data split stories` to split stories data into train/test parts.
+- [#12362](https://github.com/rasahq/rasa/issues/12362): Updated [knowledge base action docs](./action-server/knowledge-base-actions.mdx) to reflect the improvements made in `knowledge base actions` in Rasa 3.6 version. This enhancement now allows users to query for the `object` attribute without the need for users to request a list of `objects` of a particular `object type` beforehand. The docs update mentions this under `:::info New in 3.6` section.
+- [#12504](https://github.com/rasahq/rasa/issues/12504): Fix dead link in Analytics documentation.
+
+### Miscellaneous internal changes
+- [#12291](https://github.com/rasahq/rasa/issues/12291), [#12329](https://github.com/rasahq/rasa/issues/12329), [#12332](https://github.com/rasahq/rasa/issues/12332), [#12365](https://github.com/rasahq/rasa/issues/12365), [#12372](https://github.com/rasahq/rasa/issues/12372), [#12386](https://github.com/rasahq/rasa/issues/12386), [#12492](https://github.com/rasahq/rasa/issues/12492)
+
+
 ## [3.5.11] - 2023-06-08
 
 Rasa 3.5.11 (2023-06-08)
