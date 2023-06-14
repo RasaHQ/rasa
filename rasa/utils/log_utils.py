@@ -53,7 +53,6 @@ def configure_structlog(
         # If some value is in bytes, decode it to a unicode str.
         structlog.processors.UnicodeDecoder(),
         structlog.dev.set_exc_info,
-        structlog.processors.TimeStamper(fmt="iso"),
         # add structlog sentry integration. only log fatal log entries
         # as events as we are tracking exceptions anyways
         SentryProcessor(event_level=logging.FATAL),
