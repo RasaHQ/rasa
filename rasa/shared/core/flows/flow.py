@@ -19,9 +19,10 @@ class UnreachableFlowStepException(RasaException):
     def __str__(self) -> Text:
         """Return a string representation of the exception."""
         return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' can not be reached from "
-            f"the start step. Please make sure that all steps can be reached from the "
-            f"start step, e.g. by checking that another step points to this step."
+            f"Step '{self.step.id}' in flow '{self.flow.id}' can not be reached "
+            f"from the start step. Please make sure that all steps can be reached "
+            f"from the start step, e.g. by "
+            f"checking that another step points to this step."
         )
 
 

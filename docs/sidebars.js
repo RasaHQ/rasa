@@ -109,6 +109,7 @@ module.exports = {
                         'rules',
                     ],
                 },
+                'flows',
                 'domain',
                 {
                     type: 'category',
