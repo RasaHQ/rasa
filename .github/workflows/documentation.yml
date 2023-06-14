@@ -219,7 +219,7 @@ jobs:
 
       - name: Install poetry 🦄
         if: needs.changes.outputs.docs == 'true'
-        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 

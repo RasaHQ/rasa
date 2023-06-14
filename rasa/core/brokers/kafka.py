@@ -2,6 +2,7 @@ import asyncio
 import os
 import json
 import logging
+import structlog
 import threading
 from asyncio import AbstractEventLoop
 from typing import Any, Text, List, Optional, Union, Dict, TYPE_CHECKING
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
     from confluent_kafka import KafkaError, Producer, Message
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class KafkaEventBroker(EventBroker):
@@ -82,6 +84,7 @@ class KafkaEventBroker(EventBroker):
         self.ssl_cafile = ssl_cafile
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
+        self.queue_size = kwargs.get("queue_size")
         self.ssl_check_hostname = "https" if ssl_check_hostname else None
 
         # Async producer implementation followed from confluent-kafka asyncio example:
@@ -112,6 +115,9 @@ class KafkaEventBroker(EventBroker):
         """Publishes events."""
         from confluent_kafka import KafkaException
 
+        if retries == 1:
+            retries = 2
+
         if self.producer is None:
             self.producer = self._create_producer()
             try:
@@ -124,6 +130,13 @@ class KafkaEventBroker(EventBroker):
             try:
                 self._publish(event)
                 return
+            except BufferError as e:
+                logger.error(
+                    f"Could not publish message to kafka url '{self.url}'. "
+                    f"Failed with error: {e}"
+                )
+                self.producer.poll(1)
+                retries -= 1
             except Exception as e:
                 logger.error(
                     f"Could not publish message to kafka url '{self.url}'. "
@@ -161,6 +174,8 @@ class KafkaEventBroker(EventBroker):
             "bootstrap.servers": self.url,
             "error_cb": kafka_error_callback,
         }
+        if self.queue_size:
+            config["queue.buffering.max.messages"] = self.queue_size
 
         if self.security_protocol == "PLAINTEXT":
             authentication_params: Dict[Text, Any] = {
@@ -224,9 +239,12 @@ class KafkaEventBroker(EventBroker):
                 )
             ]
 
-        logger.debug(
-            f"Calling kafka send({self.topic}, value={event},"
-            f" key={partition_key!s}, headers={headers})"
+        structlogger.debug(
+            "kafka.publish.event",
+            topic=self.topic,
+            rasa_event=event,
+            partition_key=partition_key,
+            headers=headers,
         )
 
         serialized_event = json.dumps(event).encode(DEFAULT_ENCODING)

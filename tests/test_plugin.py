@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional
+from typing import Optional, Text
 from unittest.mock import MagicMock
 
 import pytest
@@ -43,3 +43,29 @@ def test_plugin_create_tracker_store(
     manager.hook.create_tracker_store.assert_called_once_with(
         endpoint_config=endpoint_config, domain=domain, event_broker=event_broker
     )
+
+
+@pytest.mark.parametrize("endpoints_file", [None, "test_endpoints.yml"])
+def test_init_anonymization_pipeline(
+    endpoints_file: Optional[Text],
+    monkeypatch: MonkeyPatch,
+) -> None:
+    manager = plugin_manager()
+    monkeypatch.setattr(
+        manager.hook, "init_anonymization_pipeline", MagicMock(return_value=None)
+    )
+
+    manager.hook.init_anonymization_pipeline(endpoints_file=endpoints_file)
+    manager.hook.init_anonymization_pipeline.assert_called_once_with(
+        endpoints_file=endpoints_file
+    )
+
+
+def test_get_anonymization_pipeline(monkeypatch: MonkeyPatch) -> None:
+    manager = plugin_manager()
+    monkeypatch.setattr(
+        manager.hook, "get_anonymization_pipeline", MagicMock(return_value=None)
+    )
+
+    manager.hook.get_anonymization_pipeline()
+    manager.hook.get_anonymization_pipeline.assert_called_once()

@@ -1,10 +1,10 @@
-import logging
 from typing import Text
 
 import docker
 import pytest
 import randomname
 from pytest import LogCaptureFixture
+from structlog.testing import capture_logs
 
 from rasa.core.brokers.pika import PikaEventBroker, RABBITMQ_EXCHANGE
 from .conftest import (
@@ -71,30 +71,30 @@ async def test_pika_event_broker_publish_after_restart(
 
     assert rabbitmq_container.status == "exited"
 
-    with caplog.at_level(logging.ERROR):
+    with capture_logs() as cap_logs:
         event = {"event": "test_while_closed"}
         await broker._publish(event)
-        assert "Failed to publish Pika event" in caplog.text
-        assert f"The message was: \n{event}" in caplog.text
 
-    caplog.clear()
+        assert cap_logs[-1]["log_level"] == "error"
+        assert "pika.events.publish" in cap_logs[-1]["event"]
+        assert cap_logs[-1]["rasa_event"] == event
 
     # reconnect with the same broker
     rabbitmq_container.restart()
     rabbitmq_container.reload()
     assert rabbitmq_container.status == "running"
 
-    with caplog.at_level(logging.DEBUG):
+    with capture_logs() as cap_logs:
         await broker.connect()
         assert broker.is_ready()
 
         after_restart_event = {"event": "test_after_restart"}
         await broker._publish(after_restart_event)
 
-        assert (
-            f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-            f"'localhost':\n{after_restart_event}" in caplog.text
-        )
+        assert cap_logs[-1]["log_level"] == "debug"
+        assert "pika.events.publish" in cap_logs[-1]["event"]
+        assert cap_logs[-1]["rasa_event"] == after_restart_event
+        assert cap_logs[-1]["rabbitmq_exchange"] == RABBITMQ_EXCHANGE
 
     await broker.close()
 
