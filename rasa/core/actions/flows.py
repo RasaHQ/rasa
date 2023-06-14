@@ -72,7 +72,7 @@ UTTER_FLOW_CONTINUE_INTERRUPTED = "utter_flow_continue_interrupted"
 
 
 class ActionFlowContinueInterupted(action.Action):
-    """Action which implements and executes the form logic."""
+    """Action triggered when an interrupted flow is continued."""
 
     def name(self) -> Text:
         """Return the flow name."""
