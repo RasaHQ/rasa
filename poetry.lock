@@ -4507,14 +4507,14 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.6.0a1"
+version = "3.6.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
 python-versions = ">=3.8,<3.11"
 files = [
-    {file = "rasa_sdk-3.6.0a1-py3-none-any.whl", hash = "sha256:3fee6646067ad136f0bab9f8919345f9ae7a703cb4ee0eb4d2387e8c81ab7138"},
-    {file = "rasa_sdk-3.6.0a1.tar.gz", hash = "sha256:8a1adb9ded0099f3dd0eecf42aef6754647e92f73885bf27ab3f14955269bebb"},
+    {file = "rasa_sdk-3.6.0-py3-none-any.whl", hash = "sha256:0802fac50d86f399299d369a571b7eaf2bdb0177ad7b0bc10ab5af24c196351e"},
+    {file = "rasa_sdk-3.6.0.tar.gz", hash = "sha256:2e4f799fb0c1abc45c1b873181332faed40f0de58205fbf9940ba961f4f0f728"},
 ]
 
 [package.dependencies]
@@ -5622,6 +5622,41 @@ files = [
 
 [package.dependencies]
 pbr = ">=2.0.0,<2.1.0 || >2.1.0"
+
+[[package]]
+name = "structlog"
+version = "23.1.0"
+description = "Structured Logging for Python"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "structlog-23.1.0-py3-none-any.whl", hash = "sha256:79b9e68e48b54e373441e130fa447944e6f87a05b35de23138e475c05d0f7e0e"},
+    {file = "structlog-23.1.0.tar.gz", hash = "sha256:270d681dd7d163c11ba500bc914b2472d2b50a8ef00faa999ded5ff83a2f906b"},
+]
+
+[package.extras]
+dev = ["structlog[docs,tests,typing]"]
+docs = ["furo", "myst-parser", "sphinx", "sphinx-notfound-page", "sphinxcontrib-mermaid", "twisted"]
+tests = ["coverage[toml]", "freezegun (>=0.2.8)", "pretend", "pytest (>=6.0)", "pytest-asyncio (>=0.17)", "simplejson"]
+typing = ["mypy", "rich", "twisted"]
+
+[[package]]
+name = "structlog-sentry"
+version = "2.0.2"
+description = "Sentry integration for structlog"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "structlog_sentry-2.0.2-py3-none-any.whl", hash = "sha256:a56e8ea4cf193558ba8a600fe4d8932642c186193e4a20bf720b0ac8ebc8ad2b"},
+    {file = "structlog_sentry-2.0.2.tar.gz", hash = "sha256:9790227e2284586b1202c066cec962c4f42c46ee9a3e0159c8c459a30384494c"},
+]
+
+[package.dependencies]
+packaging = "*"
+sentry-sdk = "*"
+structlog = "*"
 
 [[package]]
 name = "tabulate"
@@ -7147,4 +7182,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "174f160c9d0e6be5f88688c2681d6561b2e0387c9b5850ae6c256f13f30eb731"
+content-hash = "f4cbc7cc772acdf21c18230247ba77e2c7b03e197a93e36f3c2a1f7e447f2973"
