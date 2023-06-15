@@ -34,6 +34,7 @@ ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 ACTION_BACK_NAME = "action_back"
 ACTION_TWO_STAGE_FALLBACK_NAME = "action_two_stage_fallback"
 ACTION_UNLIKELY_INTENT_NAME = "action_unlikely_intent"
+ACTION_DISAMBIGUATE_FLOWS = "action_disambiguate_flows"
 RULE_SNIPPET_ACTION_NAME = "..."
 ACTION_EXTRACT_SLOTS = "action_extract_slots"
 ACTION_VALIDATE_SLOT_MAPPINGS = "action_validate_slot_mappings"
@@ -56,6 +57,7 @@ DEFAULT_ACTION_NAMES = [
     RULE_SNIPPET_ACTION_NAME,
     ACTION_EXTRACT_SLOTS,
     ACTION_FLOW_CONTINUE_INERRUPTED_NAME,
+    ACTION_DISAMBIGUATE_FLOWS,
 ]
 
 ACTION_SHOULD_SEND_DOMAIN = "send_domain"

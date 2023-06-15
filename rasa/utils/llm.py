@@ -1,7 +1,7 @@
 from typing import Optional
 import os
 import json
-import requests
+import openai
 import logging
 
 from rasa_sdk import Tracker
@@ -14,21 +14,10 @@ logger = logging.getLogger(__name__)
 
 def generate_text_openai_chat(prompt: str,
                               model: str = "gpt-3.5-turbo") -> Optional[str]:
-    api_key = os.getenv(OPENAI_API_KEY_ENV_VAR)
-    response = requests.post("https://api.openai.com/v1/chat/completions",
-                             headers={"Content-Type": "application/json",
-                                      "Authorization": f"Bearer {api_key}"},
-                             json={
-                                 "model": model,
-                                 "messages": [
-                                     {"role": "user", "content": prompt}
-                                 ]})
-    if response.status_code == 200:
-        return response.json()["choices"][0]["message"]["content"]
-    else:
-        # TODO: better error handling, depending on the case, retry connection
-        logger.error(json.dumps(response.json(), ensure_ascii=False, indent=2))
-        return None
+    # openai.api_key = os.getenv(OPENAI_API_KEY_ENV_VAR)
+    chat_completion = openai.ChatCompletion.create(model=model, messages=[
+        {"role": "user", "content": prompt}])
+    return chat_completion.choices[0].message.content
 
 
 def tracker_as_readable_transcript(

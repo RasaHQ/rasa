@@ -274,13 +274,29 @@ class Flow:
             return None
         return self.steps[0]
 
-    def slots(self) -> List[str]:
-        """Return the names of the slots used in this flow."""
+    @staticmethod
+    def slots_from_steps(steps: List[FlowStep]) -> List[str]:
+        """Return the names of the slots used in the given steps."""
         result = []
-        for step in self.steps:
+        for step in steps:
             if isinstance(step, QuestionFlowStep) and step.question not in result:
                 result.append(step.question)
         return result
+
+    def slots(self):
+        """Return the names of the slots used in the flow."""
+        return self.slots_from_steps(self.steps)
+
+    def slots_up_to_step(self, id: str):
+        """Returns the names of the slots used in this flow up to a step."""
+        step_ids = [step.id for step in self.steps]
+        try:
+            idx = step_ids.index(id)
+        except ValueError:
+            idx = -1
+        steps = self.steps[:idx+1]
+        return self.slots_from_steps(steps)
+
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:

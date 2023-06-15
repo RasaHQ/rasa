@@ -10,25 +10,24 @@ These are the flows that can be started and their description:
 Here is the current conversation:
 {{ current_conversation }}
 
-{% if flow_slots|length > 0 %}
-Here are the currently stored slots with their names and values:
-{% for slot in flow_slots %}
-- {{ slot.name }}: {{ slot.value }} (type: {{ slot.type }})
-{% endfor %}
-{% else %}
-There are currently no active slots, however if you start a flow you can already fill
-that flow's slots with any information the user provided after starting the flow.
-{% endif %}
-
 {% if current_flow != None %}
 You are currently in the flow {{ current_flow }}.
 You have just asked the user for {{ question }}.
+
+{% if flow_slots|length > 0 %}
+Here are the slots of the currently active flow with their names and values:
+{% for slot in flow_slots %}
+- {{ slot.name }}: {{ slot.value }}
+{% endfor %}
+{% endif %}
 {% else %}
-You are currently not in any flow.
+You are currently not in any flow and so no active slots. If you start a flow you can already fill
+that flow's slots with any information the user provided after starting the flow.
 {% endif %}
 
-Based on this information generate a list of actions you want to take. Your job is to fill slots, start flows, or resolve ambiguities. Any logic of what happens next afterwards is handled by the underlying flow. These are your available actions:
+The user replied """{{ user_message }}""".
+
+Based on this information generate a list of actions you want to take. Your job is to start flows and to fill slots where appropriate. Any logic of what happens next afterwards is handled by the underlying flow. These are your available actions:
 * Slot setting, described by "SetSlot(slot_name, slot_value)". An example would be "SetSlot(recipient, Freddy)"
 * Starting another flow, described by "StartFlow(flow_name)". An example would be "StartFlow(transfer_money)"
-
-The list of actions you would take, with one per line. Strictly adhere to the provided action types above:
+Write out the actions you want to take with respect to the last user message, one per line. Strictly adhere to the provided action types above:

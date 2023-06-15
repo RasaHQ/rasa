@@ -55,7 +55,7 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
-    SlotMappingType,
+    SlotMappingType, ACTION_DISAMBIGUATE_FLOWS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -905,6 +905,34 @@ class ActionUnlikelyIntent(Action):
         """Runs action. Please see parent class for the full docstring."""
         return []
 
+
+class ActionDisambiguateFlows(Action):
+    """An action that asks the user to make a choice as to which flow to start."""
+
+    def name(self) -> Text:
+        """Returns the name of the action."""
+        return ACTION_DISAMBIGUATE_FLOWS
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
+        ambiguous_flows = tracker.get_slot("ambiguous_flows")
+        if ambiguous_flows is None:
+            return []
+        return []
+        # buttons = []
+        # buttons.append(
+        #     {
+        #         "title": button_title,
+        #         "payload": f'/alternative_answer{{"topic": "{topic.name}_{topic.topicTemplate.id}"}}',
+        #     })
+        
 
 def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
     """Indicates if the last executed action is `action_default_ask_affirmation`."""

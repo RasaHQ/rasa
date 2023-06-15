@@ -667,8 +667,10 @@ class MessageProcessor:
             action_name, self.domain, self.action_endpoint
         )
 
-    async def parse_message(
-        self, message: UserMessage, only_output_properties: bool = True
+    async def parse_message(self,
+                            message: UserMessage,
+                            tracker: Optional[DialogueStateTracker] = None,
+                            only_output_properties: bool = True
     ) -> Dict[Text, Any]:
         """Interprets the passed message.
 
@@ -683,7 +685,8 @@ class MessageProcessor:
         if self.http_interpreter:
             parse_data = await self.http_interpreter.parse(message)
         else:
-            parse_data = self._parse_message_with_graph(message, only_output_properties)
+            parse_data = self._parse_message_with_graph(
+                message, tracker, only_output_properties)
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
@@ -696,9 +699,10 @@ class MessageProcessor:
 
         return parse_data
 
-    def _parse_message_with_graph(
-        self, message: UserMessage, only_output_properties: bool = True
-    ) -> Dict[Text, Any]:
+    def _parse_message_with_graph(self,
+                                  message: UserMessage,
+                                  tracker: Optional[DialogueStateTracker] = None,
+                                  only_output_properties: bool = True) -> Dict[Text, Any]:
         """Interprets the passed message.
 
         Arguments:
@@ -708,7 +712,7 @@ class MessageProcessor:
             Parsed data extracted from the message.
         """
         results = self.graph_runner.run(
-            inputs={PLACEHOLDER_MESSAGE: [message]},
+            inputs={PLACEHOLDER_MESSAGE: [message], PLACEHOLDER_TRACKER: tracker},
             targets=[self.model_metadata.nlu_target],
         )
         parsed_messages = results[self.model_metadata.nlu_target]
@@ -730,7 +734,7 @@ class MessageProcessor:
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            parse_data = await self.parse_message(message)
+            parse_data = await self.parse_message(message, tracker)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
