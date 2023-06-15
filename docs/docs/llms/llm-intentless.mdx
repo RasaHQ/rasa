@@ -56,6 +56,9 @@ policies:
   - name: rasa_plus.ml.IntentlessPolicy
 ```
 
+## Configuration
+
+### Policy Parameters
 The `IntentlessPolicy` can be configured with the following parameters:
 
 - `max_history`: The maximum number of turns to take into account when
@@ -74,7 +77,7 @@ policies:
     nlu_abstention_threshold: 0.9
 ```
 
-## Configuring other policies to work together with the Intentless Policy
+### Other Policies
 
 For any rule-based policies in your pipeline, set
 `use_nlu_confidence_as_score: True`. Otherwise, the rule-based policies will
@@ -173,8 +176,12 @@ The stories and utterances in combination are used to steer the LLM. The
 difference here to the existing policies is, that you don't need to add a lot of
 intent examples to get this system going.
 
-## Testing the Intentless Policy
+## Testing
 
+The policy is a usual Rasa Policy and can be tested in the same way as any other
+policy.
+
+### Testing interactively
 Once trained, you can test your assistant interactively by running the following
 command:
 
@@ -188,7 +195,7 @@ can also add and edit the traditional Rasa primitives like intents, entities,
 slots, rules, etc. as you normally would. The `IntentlessPolicy` will kick in
 only when the traditional primitives have low confidence.
 
-### Testing with End-to-End stories
+### End-to-End stories
 
 As part of the beta, we're also releasing a beta version of a new End-To-End
 testing framework. The `rasa test e2e` command allows you to test your bot
@@ -227,14 +234,3 @@ be dealt with using the traditional NLU approaches and slots.
 At this point, the intentless policy can only predict utterances but not custom
 actions. Triggering custom actions needs to be done by traditional policies,
 such as the rule- or memoization policy.
-
-## We want to hear from you
-
-At Rasa we're keen to improve our products and hear from users' experience. We'd
-love to hear from you, especially:
-
-- How many use cases did you implement?
-- How many intents did you define?
-- How many stories did you write?
-- How was the success rate of your test stories impacted by the
-  `IntentlessPolicy`?
