@@ -26,6 +26,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
@@ -488,6 +489,7 @@ def _default_context_fields() -> Dict[Text, Any]:
             "python": sys.version.split(" ")[0],
             "rasa_open_source": rasa.__version__,
             "cpu": multiprocessing.cpu_count(),
+            "license_hash": plugin_manager().hook.get_license_hash(),
             "docker": _is_docker(),
         }
 
