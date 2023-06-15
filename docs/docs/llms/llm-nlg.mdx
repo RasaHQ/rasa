@@ -48,19 +48,19 @@ A classic: “can you order me a pizza?” can be responded to in many different
 ways. The following table shows a few examples of how a bot might respond to
 this question.
 
-| response                                                                                                        | comment                                                |
-| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| I'm sorry, I can't help with that                                                                               | stilted, generic, and unimaginative                    |
-| I'm sorry, I can't help you order a pizza                                                                       | makes the user feel as though they were at least heard |
-| I can't help you order a pizza, delicious though it is. Do you have any questions related to your bank account? | provides a chance reinforce an assistant's personality |
-| Peter, that's not the first time you've asked me for a pizza! I'll let you know if I ever learn how to do that. | personal, specific                                     |
+| response                                                                                                        | comment                                                   |
+| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------|
+| I'm sorry, I can't help with that                                                                               | stilted, generic, and unimaginative                       |
+| I'm sorry, I can't help you order a pizza                                                                       | makes the user feel as though they were at least heard    |
+| I can't help you order a pizza, delicious though it is. Do you have any questions related to your bank account? | provides a chance to reinforce an assistant's personality |
+| Peter, that's not the first time you've asked me for a pizza! I'll let you know if I ever learn how to do that. | personal, specific                                        |
 
 The third and fourth examples go beyond what we could achieve with simple
 templates. This is entirely achievable with a retrieval-augmented generation
 approach - providing information about the user in the prompt to help steer the
 LLMs generation.
 
-:::info
+:::note Unchanged interaction flow
 
 The interaction flow, such as intents, slots, and actions, remains the same
 whether the LLM is used or not. The LLM only modifies the responses sent back to
@@ -69,6 +69,8 @@ the user.
 :::
 
 ## How to Use Rephrasing in Your Bot
+
+The following assumes that you have already [configured your NLG server](../nlg.mdx).
 
 Using rephrasing in your assistant requires a modification to your
 `endpoints.yml` file as follows:
@@ -79,7 +81,7 @@ nlg:
 ```
 
 By default, rephrasing is only enabled for responses that specify
-`allow_rephrasing: true` in the response template. To enable rephrasing for a
+`rephrase: true` in the response template's metadata. To enable rephrasing for a
 response, add this property to the responses metadata:
 
 ```yaml-rasa title="domain.yml"
@@ -125,7 +127,7 @@ all responses, even if they don't specify `rephrase: true` in the response
 metadata. If you want to disable rephrasing for a specific response, you can set
 `rephrase: false` in the response metadata.
 
-### OpenAI Model
+### Specify an OpenAI Model
 
 You can specify the openai model to use for rephrasing by setting the
 `model_name` property in the `endpoints.yml` file:
