@@ -18,11 +18,15 @@ function RasaLabsBanner({isLoading, ...props}) {
           </h5>
         </div>
       <div class="mdx-box admonition-content">
-        <p>You'll need access to the Rasa Labs program to use this feature
-        {' '}
-          <a href="https://rasa.com/connect-with-rasa/" target="_blank" rel="noopener noreferrer">
-            Connect with a Rasa expert
-          </a>
+        <p>
+          Rasa Labs features are **experimental**. We introduce experimental
+          features to co-create with our customers. If you are interested in using this feature,
+          {' '}
+          <a href="https://rasa.com/contact" target="_blank" rel="noopener noreferrer">
+            please contact us
+          </a>.
+
+          These features might be changed or removed in the future.
         </p>
       </div>
       </div>
