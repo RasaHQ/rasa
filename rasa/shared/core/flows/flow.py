@@ -294,9 +294,39 @@ class Flow:
             idx = step_ids.index(id)
         except ValueError:
             idx = -1
-        steps = self.steps[:idx+1]
+        steps = self.steps[: idx + 1]
         return self.slots_from_steps(steps)
 
+    def previously_asked_questions(self, step_id: Text) -> List[QuestionFlowStep]:
+        """Returns the questions asked before the given step.
+
+        Questions are returned roughly in reverse order, i.e. the first
+        question in the list is the one asked last. But due to circles
+        in the flow the order is not guaranteed to be exactly reverse."""
+
+        def _previously_asked_questions(
+            current_step_id: Text, visited_steps: Set[Text]
+        ) -> List[QuestionFlowStep]:
+            """Returns the questions asked before the given step.
+
+            Keeps track of the steps that have been visited to avoid circles."""
+            current_step = self.step_for_id(current_step_id)
+
+            questions = []
+
+            if isinstance(current_step, QuestionFlowStep):
+                questions.append(current_step.question)
+
+            visited_steps.add(current_step)
+
+            for previous_step in self.steps:
+                for next_link in previous_step.next.links:
+                    if next_link.target != current_step_id:
+                        continue
+                    questions.extend(self._previously_asked_questions(previous_step.id))
+            return questions
+
+        return _previously_asked_questions(step_id, set())
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:

@@ -55,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY = "sensitive_topic_detector"
 
+
 class FlowException(Exception):
     """Exception that is raised when there is a problem with a flow."""
 
@@ -618,6 +619,17 @@ class FlowExecutor:
             return tracker.get_slot(step.question) is not None
         else:
             return True
+
+    def _find_updated_question(
+        self, current_step: FlowStep, flow: Flow, updated_slot_name: Text
+    ) -> Optional[FlowStep]:
+        """Find the question that was updated."""
+        asked_question_steps = flow.previously_asked_questions(current_step.id)
+
+        for question_step in asked_question_steps:
+            if question_step.question == updated_slot_name:
+                return question_step
+        return None
 
     def consider_flow_switch(self, tracker: DialogueStateTracker) -> ActionPrediction:
         """Consider switching to a new flow.

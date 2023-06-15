@@ -12,16 +12,18 @@ from rasa.shared.core.trackers import DialogueStateTracker
 logger = logging.getLogger(__name__)
 
 
-def generate_text_openai_chat(prompt: str,
-                              model: str = "gpt-3.5-turbo") -> Optional[str]:
+def generate_text_openai_chat(
+    prompt: str, model: str = "gpt-3.5-turbo"
+) -> Optional[str]:
     # openai.api_key = os.getenv(OPENAI_API_KEY_ENV_VAR)
-    chat_completion = openai.ChatCompletion.create(model=model, messages=[
-        {"role": "user", "content": prompt}])
+    chat_completion = openai.ChatCompletion.create(
+        model=model, messages=[{"role": "user", "content": prompt}]
+    )
     return chat_completion.choices[0].message.content
 
 
 def tracker_as_readable_transcript(
-        tracker: DialogueStateTracker, human_prefix: str = "USER", ai_prefix: str = "AI"
+    tracker: DialogueStateTracker, human_prefix: str = "USER", ai_prefix: str = "AI"
 ) -> str:
     """Creates a readable dialogue from a tracker.
 

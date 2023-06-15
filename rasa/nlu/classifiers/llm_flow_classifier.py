@@ -14,19 +14,32 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import INTENT, EXTRACTOR, ENTITY_ATTRIBUTE_TYPE, \
-    ENTITY_ATTRIBUTE_VALUE, ENTITIES, TEXT, ENTITY_ATTRIBUTE_START, \
-    ENTITY_ATTRIBUTE_END, ENTITY_ATTRIBUTE_TEXT, ENTITY_ATTRIBUTE_CONFIDENCE
+from rasa.shared.nlu.constants import (
+    INTENT,
+    EXTRACTOR,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITIES,
+    TEXT,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_TEXT,
+    ENTITY_ATTRIBUTE_CONFIDENCE,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.utils.llm import tracker_as_readable_transcript, generate_text_openai_chat, \
-    sanitize_message_for_prompt
+from rasa.utils.llm import (
+    tracker_as_readable_transcript,
+    generate_text_openai_chat,
+    sanitize_message_for_prompt,
+)
 
 PROMPT_TEMPLATE = Template(
-    importlib.resources.read_text("rasa.nlu.classifiers",
-                                  "flow_prompt_template.jinja2"))
+    importlib.resources.read_text("rasa.nlu.classifiers", "flow_prompt_template.jinja2")
+)
 
 logger = logging.getLogger(__name__)
+
 
 @DefaultV1Recipe.register(
     [
@@ -36,17 +49,16 @@ logger = logging.getLogger(__name__)
     is_trainable=True,
 )
 class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
-
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {}
 
     def __init__(
-            self,
-            config: Dict[str, Any],
-            model_storage: ModelStorage,
-            resource: Resource,
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
     ) -> None:
         self.config = {**self.get_default_config(), **config}
         self._model_storage = model_storage
@@ -68,12 +80,12 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     @classmethod
     def load(
-            cls,
-            config: Dict[str, Any],
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
-            **kwargs: Any,
+        cls,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
     ) -> "LLMFlowClassifier":
         """Loads trained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
@@ -83,16 +95,21 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self.persist()
         return self._resource
 
-
-    def process(self, messages: List[Message],
-                tracker: DialogueStateTracker,
-                flows: Optional[FlowsList] = None) -> List[Message]:
+    def process(
+        self,
+        messages: List[Message],
+        tracker: DialogueStateTracker,
+        flows: Optional[FlowsList] = None,
+    ) -> List[Message]:
         """Return the most likely intent and its probability for a message."""
         return [self.process_single(msg, tracker, flows) for msg in messages]
 
-    def process_single(self, message: Message,
-                       tracker: DialogueStateTracker,
-                       flows: Optional[FlowsList] = None) -> Message:
+    def process_single(
+        self,
+        message: Message,
+        tracker: DialogueStateTracker,
+        flows: Optional[FlowsList] = None,
+    ) -> Message:
         if flows is None:
             # cannot do anything if there are no flows
             return message
@@ -104,23 +121,25 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         intent = {"name": intent_name, "confidence": 0.90}
         message.set(INTENT, intent, add_to_output=True)
         if len(entities) > 0:
-            formatted_entities = [{
-                ENTITY_ATTRIBUTE_START: 0,
-                ENTITY_ATTRIBUTE_END: 0,
-                ENTITY_ATTRIBUTE_TYPE: e[0],
-                ENTITY_ATTRIBUTE_VALUE: e[1],
-                ENTITY_ATTRIBUTE_TEXT: e[1],
-                ENTITY_ATTRIBUTE_CONFIDENCE: 0.9,
-                EXTRACTOR: self.__class__.__name__
-            } for e in entities]
+            formatted_entities = [
+                {
+                    ENTITY_ATTRIBUTE_START: 0,
+                    ENTITY_ATTRIBUTE_END: 0,
+                    ENTITY_ATTRIBUTE_TYPE: e[0],
+                    ENTITY_ATTRIBUTE_VALUE: e[1],
+                    ENTITY_ATTRIBUTE_TEXT: e[1],
+                    ENTITY_ATTRIBUTE_CONFIDENCE: 0.9,
+                    EXTRACTOR: self.__class__.__name__,
+                }
+                for e in entities
+            ]
             message.set(ENTITIES, formatted_entities, add_to_output=True)
         return message
 
-
     @classmethod
-    def parse_action_list(cls, actions: str,
-                          tracker: DialogueStateTracker,
-                          flows: FlowsList) -> Tuple[str, List[Tuple[str, str]]]:
+    def parse_action_list(
+        cls, actions: str, tracker: DialogueStateTracker, flows: FlowsList
+    ) -> Tuple[str, List[Tuple[str, str]]]:
         """Parse the actions returned by the llm into intent and entities."""
         start_flow_actions = []
         slot_sets = []
@@ -131,7 +150,6 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 slot_sets.append((m.group(1).strip(), m.group(2).strip()))
             elif m := start_flow_re.search(action):
                 start_flow_actions.append(m.group(1).strip())
-
 
         # case 1
         # "I want to send some money"
@@ -162,8 +180,9 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         top_flow_step = flow_stack.top_flow_step(flows)
         if top_flow_step is not None:
             slots_so_far = top_flow.slots_up_to_step(top_flow_step.id)
-            other_slots = [slot_set for slot_set in slot_sets
-                           if slot_set[0] not in slots_so_far]
+            other_slots = [
+                slot_set for slot_set in slot_sets if slot_set[0] not in slots_so_far
+            ]
         else:
             slots_so_far = []
             other_slots = slot_sets
@@ -171,15 +190,24 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         if len(start_flow_actions) == 0:
             if len(slot_sets) == 0:
                 return "comment", []
-            elif len(slot_sets) == 1 and isinstance(top_flow_step, QuestionFlowStep) \
-                and top_flow_step.question == slot_sets[0][0]:
+            elif (
+                len(slot_sets) == 1
+                and isinstance(top_flow_step, QuestionFlowStep)
+                and top_flow_step.question == slot_sets[0][0]
+            ):
                 return "inform", slot_sets
-            elif len(slot_sets) == 1 and isinstance(top_flow_step, QuestionFlowStep) \
-                and top_flow_step.question != slot_sets[0][0] and \
-                slot_sets[0][0] in slots_so_far:
+            elif (
+                len(slot_sets) == 1
+                and isinstance(top_flow_step, QuestionFlowStep)
+                and top_flow_step.question != slot_sets[0][0]
+                and slot_sets[0][0] in slots_so_far
+            ):
                 return "correction", slot_sets
-            elif len(slot_sets) == 1 and top_flow_step is not None and \
-                    slot_sets[0][0] in other_slots:
+            elif (
+                len(slot_sets) == 1
+                and top_flow_step is not None
+                and slot_sets[0][0] in other_slots
+            ):
                 # trying to set a slot from another flow
                 return "too_complex", []
             elif len(slot_sets) > 1:
@@ -188,8 +216,11 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             new_flow_id = start_flow_actions[0]
             potential_new_flow = flows.flow_by_id(new_flow_id)
             if potential_new_flow is not None:
-                valid_slot_sets = [slot_set for slot_set in slot_sets
-                                   if slot_set[0] in potential_new_flow.slots()]
+                valid_slot_sets = [
+                    slot_set
+                    for slot_set in slot_sets
+                    if slot_set[0] in potential_new_flow.slots()
+                ]
                 return start_flow_actions[0], valid_slot_sets
             else:
                 return "mistake", []
@@ -199,40 +230,45 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         return "too_complex", []
 
-
     @classmethod
     def create_template_inputs(cls, flows: FlowsList) -> List[Dict[str, str]]:
         result = []
         for flow in flows.underlying_flows:
-            result.append({
-                "name": flow.id,
-                "description": flow.description,
-                "slots": ", ".join(flow.slots())
-            })
+            result.append(
+                {
+                    "name": flow.id,
+                    "description": flow.description,
+                    "slots": ", ".join(flow.slots()),
+                }
+            )
         return result
 
     @classmethod
     def render_template(
-            cls,
-            message: Message,
-            tracker: DialogueStateTracker,
-            flows: FlowsList) -> str:
+        cls, message: Message, tracker: DialogueStateTracker, flows: FlowsList
+    ) -> str:
         flow_stack = FlowStack.from_tracker(tracker)
         top_flow = flow_stack.top_flow(flows) if flow_stack is not None else None
-        current_step = flow_stack.top_flow_step(
-            flows) if flow_stack is not None else None
+        current_step = (
+            flow_stack.top_flow_step(flows) if flow_stack is not None else None
+        )
         if top_flow is not None:
-            flow_slots = [{
-                "name": k,
-                "value": (tracker.get_slot(k) or "undefined"),
-                "type": tracker.slots[k].type_name
-            } for k in top_flow.slots()]
+            flow_slots = [
+                {
+                    "name": k,
+                    "value": (tracker.get_slot(k) or "undefined"),
+                    "type": tracker.slots[k].type_name,
+                }
+                for k in top_flow.slots()
+            ]
         else:
             flow_slots = []
 
-        question = current_step.question \
-            if current_step is not None and isinstance(current_step, QuestionFlowStep) \
+        question = (
+            current_step.question
+            if current_step is not None and isinstance(current_step, QuestionFlowStep)
             else None
+        )
         current_conversation = tracker_as_readable_transcript(tracker)
         latest_user_message = sanitize_message_for_prompt(message.get(TEXT))
         current_conversation += f"\nUSER: {latest_user_message}"
