@@ -485,3 +485,13 @@ def test_context_contains_os():
     context.pop("os")
 
     assert "os" in telemetry._default_context_fields()
+
+
+def test_context_contains_license_hash():
+    context = telemetry._default_context_fields()
+
+    assert "license_hash" in context
+
+    context.pop("license_hash")
+
+    assert "license_hash" in telemetry._default_context_fields()
