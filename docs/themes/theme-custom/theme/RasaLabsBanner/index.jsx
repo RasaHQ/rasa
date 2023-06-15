@@ -19,7 +19,7 @@ function RasaLabsBanner({isLoading, ...props}) {
         </div>
       <div class="mdx-box admonition-content">
         <p>
-          Rasa Labs features are **experimental**. We introduce experimental
+          Rasa Labs features are <strong>experimental</strong>. We introduce experimental
           features to co-create with our customers. If you are interested in using this feature,
           {' '}
           <a href="https://rasa.com/contact" target="_blank" rel="noopener noreferrer">
