@@ -112,14 +112,6 @@
         })
         .then(data => {
           let slots = data.slots;
-          var root = document.getElementById('slots');
-          root.innerHTML = '';
-          var sortedSlotNames = Object.keys(slots).sort()
-          for (var i = 0; i < sortedSlotNames.length; i++) {
-            var name = sortedSlotNames[i];
-            let slotValue = JSON.stringify(slots[name], null, 2);
-            root.insertAdjacentHTML('afterbegin', `<tr><td>${name}</td><td>${slotValue}</td></tr>`);
-          }
 
           //loop through events and display all events that happend after the
           // event that has type user message
@@ -140,6 +132,15 @@
           updateBlock.textContent = trackerUpdate;
           if (window.hljs) {
             hljs.highlightElement(updateBlock);
+          }
+
+          var root = document.getElementById('slots');
+          root.innerHTML = '';
+          var sortedSlotNames = Object.keys(slots).sort()
+          for (var i = 0; i < sortedSlotNames.length; i++) {
+            var name = sortedSlotNames[i];
+            let slotValue = JSON.stringify(slots[name], null, 2);
+            root.insertAdjacentHTML('afterbegin', `<tr><td>${name}</td><td>${slotValue}</td></tr>`);
           }
         });
     }

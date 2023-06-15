@@ -14,6 +14,7 @@ from rasa.core.featurizers.precomputation import (
     CoreFeaturizationCollector,
 )
 from rasa.graph_components.providers.flows_provider import FlowsProvider
+from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 
@@ -226,6 +227,7 @@ class DefaultV1Recipe(Recipe):
             training_type=training_type,
             assistant_id=config.get(ASSISTANT_ID_KEY),
             language=config.get("language"),
+            spaces=config.get("spaces"),
             core_target=core_target,
             nlu_target=f"run_{RegexMessageHandler.__name__}",
         )
@@ -281,6 +283,12 @@ class DefaultV1Recipe(Recipe):
         train_nodes: Dict[Text, SchemaNode],
         cli_parameters: Dict[Text, Any],
     ) -> List[Text]:
+        plugin_manager().hook.modify_default_recipe_graph_train_nodes(
+            train_config=train_config,
+            train_nodes=train_nodes,
+            cli_parameters=cli_parameters,
+        )
+
         persist_nlu_data = bool(cli_parameters.get("persist_nlu_training_data"))
         train_nodes["nlu_training_data_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
@@ -528,6 +536,11 @@ class DefaultV1Recipe(Recipe):
         preprocessors: List[Text],
         cli_parameters: Dict[Text, Any],
     ) -> None:
+        plugin_manager().hook.modify_default_recipe_graph_train_nodes(
+            train_config=train_config,
+            train_nodes=train_nodes,
+            cli_parameters=cli_parameters,
+        )
         train_nodes["domain_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
             uses=DomainProvider,
@@ -716,6 +729,9 @@ class DefaultV1Recipe(Recipe):
         predict_nodes: Dict[Text, SchemaNode],
         train_nodes: Dict[Text, SchemaNode],
     ) -> Text:
+        plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
+            predict_nodes=predict_nodes
+        )
         for idx, config in enumerate(predict_config["pipeline"]):
             component_name = config.pop("name")
             component = self._from_registry(component_name)
@@ -825,6 +841,9 @@ class DefaultV1Recipe(Recipe):
         train_nodes: Dict[Text, SchemaNode],
         preprocessors: List[Text],
     ) -> None:
+        plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
+            predict_nodes=predict_nodes
+        )
         predict_nodes["domain_provider"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
             needs={},
