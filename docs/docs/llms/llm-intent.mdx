@@ -3,37 +3,29 @@ id: llm-intent
 sidebar_label: Intent Classification with LLMs
 title: Using LLMs for Intent Classification
 abstract: |
-  Intent classification using Large Language Models (LLM) and 
+  Intent classification using Large Language Models (LLM) and
   a method called retrieval augmented generation (RAG).
 ---
 
-import RasaProLabel from "@theme/RasaProLabel";
-import RasaProBanner from "@theme/RasaProBanner";
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
 
-<RasaProLabel />
+<RasaLabsLabel />
 
-<RasaProBanner />
-
-:::info Rasa Labs
-
-This feature is **experimental**. We introduce experimental features to
-co-create with our customers. If you are interested in using this feature,
-please contact us at [rasa.com/contact](https://rasa.com/contact).
-
-The functionality might be changed or removed in the future.
-
-:::
+<RasaLabsBanner />
 
 ## Key Features
 
 1. **Few shot learning**: The intent classifier can be trained with only a few
    examples per intent. New intents can be bootstrapped and integrated even if
-   there are only a handfull of training examples available.
+   there are only a handful of training examples available.
 2. **Fast Training**: The intent classifier is very quick to train.
 3. **Multilingual**: The intent classifier can be trained on multilingual data
    and can classify messages in any language depending on the chosen LLM.
 
 ## Demo
+
+TODO
 
 ## Using the LLM-based Intent Classifier in Your Bot
 
@@ -185,3 +177,11 @@ The LLM-based intent classifier has the following limitations:
    performance.
 4. Compare the latency of the LLM-based pipeline with that of the current
    pipeline to see if there are any significant differences in speed.
+
+## Other documentation on LLMs
+
+1. [Using LLMs with Rasa](./large-language-models.mdx)
+2. [Setting up LLMs](./llm-setup.mdx)
+3. [Dialogue Handling using LLMs](./llm-intentless.mdx)
+4. [NLG using LLMs](./llm-nlg.mdx)
+5. [Custom usage of LLMs](./llm-custom.mdx)
