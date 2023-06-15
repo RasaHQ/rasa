@@ -50,7 +50,7 @@ defined in this repo (`tests/e2e_test_stories.yml`).
 The `IntentlessPolicy` is part of the `rasa_plus` package. To add it to your
 bot, add it to your `config.yml`:
 
-```yaml title="config.yml"
+```yaml-rasa title="config.yml"
 policies:
   # ... any other policies you have
   - name: rasa_plus.ml.IntentlessPolicy
@@ -69,7 +69,7 @@ The `IntentlessPolicy` can be configured with the following parameters:
 
 The following example shows the default configuration in the `config.yml`:
 
-```yaml
+```yaml-rasa title="config.yml"
 policies:
   # ... any other policies you have
   - name: rasa_plus.ml.IntentlessPolicy
@@ -84,7 +84,7 @@ For any rule-based policies in your pipeline, set
 always make predictions with confidence value 1.0, ignoring any uncertainty from
 the NLU prediction:
 
-```yaml
+```yaml-rasa title="config.yml"
 policies:
   - name: MemoizationPolicy
     max_history: 5
@@ -130,7 +130,7 @@ in the domain file. Any response in the domain file can be chosen as an response
 by the intentless policy. This whitelisting ensures that your assistant can
 never utter any inappropriate responses.
 
-```yaml
+```yaml-rasa title="domain.yml"
 utter_faq_4:
   - text:
       We currently offer 24 currencies, including USD, EUR, GBP, JPY, CAD, AUD,
@@ -149,11 +149,11 @@ utter_faq_6:
 Beyond having the `utter_` prefix, the naming of the utterances is not relevant.
 
 The second step is to add
-[end-to-end stories](https://rasa.com/docs/rasa/training-data-format/#end-to-end-training)
+[end-to-end stories](../training-data-format.mdx#end-to-end-training)
 to `data/e2e_stories.yml`. These stories teach the LLM about your domain, so it
 can figure out when to say what.
 
-```yaml
+```yaml title="data/e2e_stories.yml"
 - story: currencies
   steps:
     - user: How many different currencies can I hold money in?
@@ -207,7 +207,7 @@ test folder, e.g. `tests/e2e_test_stories.yml`. The test cases are defined in a
 similar format as stories are, but contain the user's messages and the bot's
 responses. Here's an example:
 
-```yaml
+```yaml title="tests/e2e_test_stories.yml"
 test_cases:
   - test_case: transfer charge
     steps:
