@@ -202,3 +202,7 @@ to = "/docs/rasa/deploy/deploy-rasa/"
 [[redirects]]
 from = "/docs/rasa/action-server/deploy-action-server"
 to = "/docs/rasa/deploy/deploy-action-server/"
+
+[[redirects]]
+from = "/docs/rasa/llms"
+to = "/docs/rasa/llms/large-language-models"
