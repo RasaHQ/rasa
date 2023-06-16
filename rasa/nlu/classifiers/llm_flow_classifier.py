@@ -147,7 +147,17 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
-                slot_sets.append((m.group(1).strip(), m.group(2).strip()))
+                slot_name = m.group(1).strip()
+                slot_value = m.group(2).strip()
+                if slot_value == "undefined":
+                    continue
+                if slot_name == "flow_name":
+                    start_flow_actions.append(slot_value)
+                else:
+                    # most likely some hallucinated variable
+                    if "_" in slot_value:
+                        continue
+                    slot_sets.append((slot_name, slot_value))
             elif m := start_flow_re.search(action):
                 start_flow_actions.append(m.group(1).strip())
 
@@ -238,9 +248,8 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 {
                     "name": flow.id,
                     "description": flow.description,
-                    "slots": ", ".join(flow.slots()),
-                }
-            )
+                    "slots": flow.slots()
+                })
         return result
 
     @classmethod
