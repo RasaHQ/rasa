@@ -204,14 +204,6 @@ optional = true
 version = "<1.10.3"
 optional = true
 
-[[tool.poetry.dependencies.tensorflow-addons]]
-version = ">=0.18,<0.20"
-markers = "sys_platform != 'linux' or (platform_machine != 'arm64' and platform_machine != 'aarch64')"
-
-[[tool.poetry.dependencies.tensorflow-addons]]
-version = "0.19.0"
-markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
-
 [tool.poetry.extras]
 spacy = [ "spacy",]
 jieba = [ "jieba",]
