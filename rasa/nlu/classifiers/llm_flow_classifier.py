@@ -98,20 +98,20 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     def process(
         self,
         messages: List[Message],
-        tracker: DialogueStateTracker,
+        tracker: Optional[DialogueStateTracker] = None,
         flows: Optional[FlowsList] = None,
     ) -> List[Message]:
-        """Return the most likely intent and its probability for a message."""
+        """Return intent and entities for a message."""
         return [self.process_single(msg, tracker, flows) for msg in messages]
 
     def process_single(
         self,
         message: Message,
-        tracker: DialogueStateTracker,
+        tracker: Optional[DialogueStateTracker] = None,
         flows: Optional[FlowsList] = None,
     ) -> Message:
-        if flows is None:
-            # cannot do anything if there are no flows
+        if flows is None or tracker is None:
+            # cannot do anything if there are no flows or no tracker
             return message
         flow_prompt = self.render_template(message, tracker, flows)
         logger.info(flow_prompt)
