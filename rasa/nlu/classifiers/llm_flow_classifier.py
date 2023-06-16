@@ -24,7 +24,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_TEXT,
-    ENTITY_ATTRIBUTE_CONFIDENCE,
+    ENTITY_ATTRIBUTE_CONFIDENCE, CORRECTION_INTENT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -37,8 +37,6 @@ from rasa.utils.llm import (
 PROMPT_TEMPLATE = Template(
     importlib.resources.read_text("rasa.nlu.classifiers", "flow_prompt_template.jinja2")
 )
-
-CORRECTION_INTENT = "correction"
 
 logger = logging.getLogger(__name__)
 

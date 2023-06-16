@@ -12,9 +12,9 @@ from rasa.core.constants import (
 )
 from pypred import Predicate
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.nlu.classifiers.llm_flow_classifier import CORRECTION_INTENT
 from rasa.shared.constants import FLOW_PREFIX
-from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY, \
+    CORRECTION_INTENT
 from rasa.shared.core.constants import (
     ACTION_FLOW_CONTINUE_INERRUPTED_NAME,
     ACTION_LISTEN_NAME,
