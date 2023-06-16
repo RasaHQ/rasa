@@ -21,7 +21,7 @@ import RasaLabsBanner from "@theme/RasaLabsBanner";
    there are only a handful of training examples available.
 2. **Fast Training**: The intent classifier is very quick to train.
 3. **Multilingual**: The intent classifier can be trained on multilingual data
-   and can classify messages in any language depending on the chosen LLM.
+   and can classify messages in many languages, though performance will vary across LLMs.
 
 ## Demo
 
@@ -39,8 +39,9 @@ pipeline:
 # - ...
 ```
 
-The LLM-based intent classifier requires a trained LLM model. You can use any
-LLM generative OpenAI model. We are working on expanding the list of supported
+The LLM-based intent classifier requires access to an LLM model API. You can use any
+OpenAI model that supports the `/completions` endpoint. 
+We are working on expanding the list of supported
 models and model providers.
 
 ## How does the classification work
@@ -146,24 +147,6 @@ in the prompt:
   example is a dictionary with the keys `text` and `intent`.
 - `message`: The message that needs to be classified.
 
-## Observations
-
-Using the LLM-based intent classifier can be a great way to improve the NLU
-performance of your assistant. However, there are some things to keep in mind
-when using this approach.
-
-### Success Cases
-
-The LLM-based intent classifier works well in the following cases:
-
-- **Bootstrapping**: Building new assistants or new skills for an existing
-  assistant is much easier with the LLM-based intent classifier. It is possible
-  to train the classifier with only a few examples per intent, which makes it
-  much easier to get started.
-
-### Limitations
-
-The LLM-based intent classifier has the following limitations:
 
 ## Evaulating Performance
 
