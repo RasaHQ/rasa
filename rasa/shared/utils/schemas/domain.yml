@@ -106,7 +106,7 @@ mapping:
                         mapping:
                           active_loop:
                             type: "str"
-                            required: True
+                            nullable: True
                           requested_slot:
                             type: "str"
   forms:

@@ -135,8 +135,8 @@ def extract_args(
 ) -> Tuple[Dict[Text, Any], Dict[Text, Any]]:
     """Go through the kwargs and filter out the specified keys.
 
-    Return both, the filtered kwargs as well as the remaining kwargs."""
-
+    Return both, the filtered kwargs as well as the remaining kwargs.
+    """
     remaining = {}
     extracted = {}
     for k, v in kwargs.items():
@@ -172,6 +172,7 @@ class AvailableEndpoints:
 
     @classmethod
     def read_endpoints(cls, endpoint_file: Text) -> "AvailableEndpoints":
+        """Read the different endpoints from a yaml file."""
         nlg = read_endpoint_config(endpoint_file, endpoint_type="nlg")
         nlu = read_endpoint_config(endpoint_file, endpoint_type="nlu")
         action = read_endpoint_config(endpoint_file, endpoint_type="action_endpoint")
@@ -182,7 +183,15 @@ class AvailableEndpoints:
         lock_store = read_endpoint_config(endpoint_file, endpoint_type="lock_store")
         event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
 
-        return cls(nlg, nlu, action, model, tracker_store, lock_store, event_broker)
+        return cls(
+            nlg,
+            nlu,
+            action,
+            model,
+            tracker_store,
+            lock_store,
+            event_broker,
+        )
 
     def __init__(
         self,
@@ -194,6 +203,7 @@ class AvailableEndpoints:
         lock_store: Optional[EndpointConfig] = None,
         event_broker: Optional[EndpointConfig] = None,
     ) -> None:
+        """Create an `AvailableEndpoints` object."""
         self.model = model
         self.action = action
         self.nlu = nlu
