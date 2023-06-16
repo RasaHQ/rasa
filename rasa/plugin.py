@@ -54,6 +54,6 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec(firstresult=True)  # type: ignore[misc]
 def get_license_hash() -> Optional[Text]:
     """Hook specification for getting the license hash."""
