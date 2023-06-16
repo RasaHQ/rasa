@@ -1,24 +1,18 @@
 from typing import Optional
-import os
-import json
 import openai
 import logging
 
 from rasa_sdk import Tracker
 
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
 
-def generate_text_openai_chat(
-    prompt: str, model: str = "gpt-3.5-turbo"
-) -> Optional[str]:
-    # openai.api_key = os.getenv(OPENAI_API_KEY_ENV_VAR)
+def generate_text_openai_chat(prompt: str,
+                              model: str = "gpt-3.5-turbo") -> Optional[str]:
     chat_completion = openai.ChatCompletion.create(
-        model=model, messages=[{"role": "user", "content": prompt}]
-    )
+        model=model, messages=[{"role": "user", "content": prompt}], temperature=0.0)
     return chat_completion.choices[0].message.content
 
 
