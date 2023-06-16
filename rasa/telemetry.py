@@ -489,9 +489,11 @@ def _default_context_fields() -> Dict[Text, Any]:
             "python": sys.version.split(" ")[0],
             "rasa_open_source": rasa.__version__,
             "cpu": multiprocessing.cpu_count(),
-            "license_hash": plugin_manager().hook.get_license_hash(),
             "docker": _is_docker(),
         }
+        license_hash = plugin_manager().hook.get_license_hash()
+        if license_hash:
+            TELEMETRY_CONTEXT["license_hash"] = license_hash
 
     # avoid returning the cached dict --> caller could modify the dictionary...
     # usually we would use `lru_cache`, but that doesn't return a dict copy and

@@ -6,7 +6,7 @@ from typing import Any, Dict, Generator, Text
 
 from _pytest.monkeypatch import MonkeyPatch
 import jsonschema
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 import pytest
 import responses
 
@@ -487,11 +487,26 @@ def test_context_contains_os():
     assert "os" in telemetry._default_context_fields()
 
 
-def test_context_contains_license_hash():
+def test_context_contains_license_hash(monkeypatch: MonkeyPatch):
+    mock = MagicMock()
+    mock.return_value.hook.get_license_hash.return_value = "1234567890"
+    monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
     context = telemetry._default_context_fields()
 
     assert "license_hash" in context
+    assert mock.return_value.hook.get_license_hash.called
+    assert context["license_hash"] == "1234567890"
 
+    # make sure it is still there after removing it
     context.pop("license_hash")
-
     assert "license_hash" in telemetry._default_context_fields()
+
+
+def test_context_does_not_contain_license_hash(monkeypatch: MonkeyPatch):
+    mock = MagicMock()
+    mock.return_value.hook.get_license_hash.return_value = None
+    monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
+    context = telemetry._default_context_fields()
+
+    assert "license_hash" not in context
+    assert mock.return_value.hook.get_license_hash.called
