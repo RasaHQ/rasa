@@ -23,10 +23,12 @@ Management of sensitive customer data collected by assistants is a critical requ
 and managing the data securely while making it available for analysis.
 Rasa Pro 3.6 introduces the ability to anonymize PII data in your logs and events streamed via the Kafka event broker.
 
-Note that the tracker store continues to store conversation data which is not anonymized. This is required so that we
-retain a source of truth for pristine data required for non-repudiation purposes. In addition, because the tracker store
-data plays a vital role in the assistant's dialogue management at inference time, anonymizing data in flight could have
-undesirable consequences for the assistant's action predictions.
+Note that the Tracker Store continues to store conversation data which is not anonymized. This is required so that we
+retain a source of truth for pristine data required for non-repudiation purposes. Learn how to secure your Tracker Store
+using [Vault secrets manager](./secrets-managers.mdx) to protect the source of truth with rotating credentials.
+
+In addition, because the tracker store data plays a vital role in the assistant's dialogue management at inference time,
+anonymizing data in flight could have undesirable consequences for the assistant's action predictions.
 
 ## Architecture Overview
 
