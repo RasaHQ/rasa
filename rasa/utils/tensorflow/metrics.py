@@ -1,9 +1,9 @@
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from typeguard import typechecked
 
-from tensorflow_addons.utils.types import AcceptableDTypes, FloatTensorLike
-from typing import Optional
+from typing import Any, Optional
+
+TensorLike = tf.types.experimental.TensorLike
 
 
 # original code taken from
@@ -19,7 +19,8 @@ class FBetaScore(tf.keras.metrics.Metric):
     both multi-class and multi-label classification.
 
     $$
-    F_{\beta} = (1 + \beta^2) * \frac{\textrm{precision} * \textrm{recall}}{(\beta^2 \cdot \textrm{precision}) + \textrm{recall}}
+    F_{\beta} = (1 + \beta^2) * \frac{\textrm{precision} * \textrm{recall}}
+                                  {(\beta^2 \cdot \textrm{precision}) + \textrm{recall}}
     $$
 
     Args:
@@ -76,15 +77,14 @@ class FBetaScore(tf.keras.metrics.Metric):
     array([0.3846154 , 0.90909094, 0.8333334 ], dtype=float32)
     """
 
-    @typechecked
     def __init__(
         self,
-        num_classes: FloatTensorLike,
+        num_classes: TensorLike,
         average: Optional[str] = None,
-        beta: FloatTensorLike = 1.0,
-        threshold: Optional[FloatTensorLike] = None,
+        beta: TensorLike = 1.0,
+        threshold: Optional[TensorLike] = None,
         name: str = "fbeta_score",
-        dtype: AcceptableDTypes = None,
+        dtype: Any = None,
         **kwargs,
     ):
         super().__init__(name=name, dtype=dtype)
@@ -210,7 +210,8 @@ class F1Score(FBetaScore):
     and multi-label classification.
 
     $$
-    F_1 = 2 \cdot \frac{\textrm{precision} \cdot \textrm{recall}}{\textrm{precision} + \textrm{recall}}
+    F_1 = 2 \cdot \frac{\textrm{precision} \cdot \textrm{recall}}{\textrm{precision}
+          + \textrm{recall}}
     $$
 
     Args:
@@ -260,14 +261,13 @@ class F1Score(FBetaScore):
     array([0.5      , 0.8      , 0.6666667], dtype=float32)
     """
 
-    @typechecked
     def __init__(
         self,
-        num_classes: FloatTensorLike,
+        num_classes: TensorLike,
         average: str = None,
-        threshold: Optional[FloatTensorLike] = None,
+        threshold: Optional[TensorLike] = None,
         name: str = "f1_score",
-        dtype: AcceptableDTypes = None,
+        dtype: Any = None,
     ):
         super().__init__(num_classes, average, 1.0, threshold, name=name, dtype=dtype)
 

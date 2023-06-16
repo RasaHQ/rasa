@@ -1,7 +1,6 @@
 import tensorflow as tf
 from tensorflow import TensorShape
 
-from typeguard import typechecked
 from typing import Tuple, Any, List, Union, Optional
 
 TensorLike = tf.types.experimental.TensorLike
@@ -15,7 +14,6 @@ TensorLike = tf.types.experimental.TensorLike
 class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
     """Computes the forward decoding in a linear-chain CRF."""
 
-    @typechecked
     def __init__(self, transition_params: TensorLike, **kwargs: Any) -> None:
         """Initialize the CrfDecodeForwardRnnCell.
 
