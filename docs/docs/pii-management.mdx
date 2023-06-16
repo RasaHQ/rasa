@@ -36,6 +36,14 @@ handling before saving the un-anonymized new events to the tracker store. The an
 through a sequence of anonymization rules that are applied to the new events. Then the pipeline will publish the events to
 the Kafka topic that is mapped to the anonymization rule list.
 
+### Supported Rasa Events
+
+The Rasa events that are anonymized include the following:
+- `user`
+- `bot`
+- `slot`
+- `entities`
+
 ### Supported PII entity types
 
 The anonymization pipeline uses [Microsoft Presidio](https://microsoft.github.io/presidio/text_anonymization/) as both entity recognizer and
@@ -79,9 +87,12 @@ anonymization:
 ### How to populate the metadata section
 
 The metadata section contains the following fields: `language`, `model_name`, and `model_provider`.
-The `language` field specifies the language of the text to be anonymized. The `model_name` and `model_provider` fields
-specify the name and provider of the Presidio model to be used for anonymization.
-The available model providers are `spacy`, `stanza` and `transformers`.
+
+The `language` field specifies the language of the text to be anonymized. Note that you can only specify one language
+per anonymization pipeline because the assumption made was that an assistant will be developed for a single language.
+
+The `model_name` and `model_provider` fields specify the name and provider of the Presidio model to be used for
+anonymization. The available model providers are `spacy`, `stanza` and `transformers`.
 
 If you want to use `spacy`, we strongly recommend to use the available large models, such as `en_core_web_lg` or `es_core_news_lg`.
 This is to ensure more accurate entity recognition.
@@ -135,6 +146,10 @@ The `value` field is only required for the `text` anonymization method. It speci
 If the `value` field is not specified, the original entity value to be anonymized will be replaced with a null value.
 
 The `faker` anonymization method uses the [Faker](https://faker.readthedocs.io/en/master/) library to generate fake data.
+By default, the `faker` anonymization method will generate fake data in English unless a localized Presidio
+entity type is used. For example, if you use the `faker` substitution method for the `ES_NIF` entity type, the generated
+fake data will match the format of a Spanish NIF.
+
 The `faker` substitution method does not support the following Presidio entity types:
 - `CRYPTO`, `NRP`, `MEDICAL_LICENSE`
 - `US_BANK_NUMBER`, `US_DRIVER_LICENSE`
