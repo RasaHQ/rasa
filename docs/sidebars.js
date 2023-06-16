@@ -28,20 +28,6 @@ module.exports = {
             items: [
                 'migrate-from',
                 'command-line-interface',
-                
-                {
-                    type: 'category',
-                    label: 'Using LLMs',
-                    collapsed: true,
-                    items: [
-                        'llms/large-language-models',
-                        'llms/llm-setup',
-                        'llms/llm-intent',
-                        'llms/llm-intentless',
-                        'llms/llm-nlg',
-                        'llms/llm-custom',
-                    ],
-                },
                 {
                     type: 'category',
                     label: 'Best Practices',
@@ -275,4 +261,12 @@ module.exports = {
             ],
         },
     ],
+    "llms": [
+        'llms/large-language-models',
+        'llms/llm-setup',
+        'llms/llm-intent',
+        'llms/llm-intentless',
+        'llms/llm-nlg',
+        'llms/llm-custom',
+    ]
 };

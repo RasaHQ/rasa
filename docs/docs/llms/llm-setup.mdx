@@ -8,6 +8,13 @@ abstract: |
   efficiently with your specific use case.
 ---
 
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
+
+<RasaLabsLabel />
+
+<RasaLabsBanner />
+
 ## Overview
 
 This guide will walk you through the process of configuring Rasa to use OpenAI
@@ -34,7 +41,7 @@ sub-sections outline each of these steps and what you need to do.
 
 ### API Token
 
-The API token is a key element that allows your Rasa instance to connect and 
+The API token is a key element that allows your Rasa instance to connect and
 communicate with OpenAI. This needs to be configured correctly to ensure seamless
 interaction between the two.
 
@@ -48,11 +55,11 @@ To configure the API token, follow these steps:
 Rasa allow you to use different models for different components. For example,
 you might use one model for intent classification and another for rephrasing.
 
-To configure models per component, follow these steps described on the 
+To configure models per component, follow these steps described on the
 pages for each component:
 
-1. [Instructions to configure models for intent classification](./llm-intent)
-2. [Instructions to configure models for rephrasing](./llm-nlg)
+1. [Instructions to configure models for intent classification](./llm-intent.mdx)
+2. [Instructions to configure models for rephrasing](./llm-nlg.mdx)
 
 ### Additional Configuration for Azure OpenAI Service
 

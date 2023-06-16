@@ -3,37 +3,29 @@ id: llm-intent
 sidebar_label: Intent Classification with LLMs
 title: Using LLMs for Intent Classification
 abstract: |
-  Intent classification using Large Language Models (LLM) and 
+  Intent classification using Large Language Models (LLM) and
   a method called retrieval augmented generation (RAG).
 ---
 
-import RasaProLabel from "@theme/RasaProLabel";
-import RasaProBanner from "@theme/RasaProBanner";
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
 
-<RasaProLabel />
+<RasaLabsLabel />
 
-<RasaProBanner />
-
-:::info Rasa Labs
-
-This feature is **experimental**. We introduce experimental features to
-co-create with our customers. If you are interested in using this feature,
-please contact us at [rasa.com/contact](https://rasa.com/contact).
-
-The functionality might be changed or removed in the future.
-
-:::
+<RasaLabsBanner />
 
 ## Key Features
 
 1. **Few shot learning**: The intent classifier can be trained with only a few
    examples per intent. New intents can be bootstrapped and integrated even if
-   there are only a handfull of training examples available.
+   there are only a handful of training examples available.
 2. **Fast Training**: The intent classifier is very quick to train.
 3. **Multilingual**: The intent classifier can be trained on multilingual data
-   and can classify messages in any language depending on the chosen LLM.
+   and can classify messages in many languages, though performance will vary across LLMs.
 
 ## Demo
+
+TODO
 
 ## Using the LLM-based Intent Classifier in Your Bot
 
@@ -47,8 +39,9 @@ pipeline:
 # - ...
 ```
 
-The LLM-based intent classifier requires a trained LLM model. You can use any
-LLM generative OpenAI model. We are working on expanding the list of supported
+The LLM-based intent classifier requires access to an LLM model API. You can use any
+OpenAI model that supports the `/completions` endpoint. 
+We are working on expanding the list of supported
 models and model providers.
 
 ## How does the classification work
@@ -154,24 +147,6 @@ in the prompt:
   example is a dictionary with the keys `text` and `intent`.
 - `message`: The message that needs to be classified.
 
-## Observations
-
-Using the LLM-based intent classifier can be a great way to improve the NLU
-performance of your assistant. However, there are some things to keep in mind
-when using this approach.
-
-### Success Cases
-
-The LLM-based intent classifier works well in the following cases:
-
-- **Bootstrapping**: Building new assistants or new skills for an existing
-  assistant is much easier with the LLM-based intent classifier. It is possible
-  to train the classifier with only a few examples per intent, which makes it
-  much easier to get started.
-
-### Limitations
-
-The LLM-based intent classifier has the following limitations:
 
 ## Evaulating Performance
 
