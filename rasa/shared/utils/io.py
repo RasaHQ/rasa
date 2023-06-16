@@ -53,10 +53,10 @@ def wrap_with_color(*args: Any, color: Text) -> Text:
 
 
 def raise_warning(
-        message: Text,
-        category: Optional[Type[Warning]] = None,
-        docs: Optional[Text] = None,
-        **kwargs: Any,
+    message: Text,
+    category: Optional[Type[Warning]] = None,
+    docs: Optional[Text] = None,
+    **kwargs: Any,
 ) -> None:
     """Emit a `warnings.warn` with sensible defaults and a colored warning msg."""
     original_formatter = warnings.formatwarning
@@ -70,11 +70,11 @@ def raise_warning(
         return True
 
     def formatwarning(
-            message: Union[Warning, Text],
-            category: Type[Warning],
-            filename: Text,
-            lineno: int,
-            line: Optional[Text] = None,
+        message: Union[Warning, Text],
+        category: Type[Warning],
+        filename: Text,
+        lineno: int,
+        line: Optional[Text] = None,
     ) -> Text:
         """Function to format a warning the standard way."""
         if not should_show_source_line():
@@ -101,10 +101,10 @@ def raise_warning(
 
 
 def write_text_file(
-        content: Text,
-        file_path: Union[Text, Path],
-        encoding: Text = DEFAULT_ENCODING,
-        append: bool = False,
+    content: Text,
+    file_path: Union[Text, Path],
+    encoding: Text = DEFAULT_ENCODING,
+    append: bool = False,
 ) -> None:
     """Writes text to a file.
 
@@ -200,7 +200,7 @@ def list_subdirectories(path: Text) -> List[Text]:
 
 
 def deep_container_fingerprint(
-        obj: Union[List[Any], Dict[Any, Any], Any], encoding: Text = DEFAULT_ENCODING
+    obj: Union[List[Any], Dict[Any, Any], Any], encoding: Text = DEFAULT_ENCODING
 ) -> Text:
     """Calculate a hash which is stable.
 
@@ -227,7 +227,7 @@ def deep_container_fingerprint(
 
 
 def get_dictionary_fingerprint(
-        dictionary: Dict[Any, Any], encoding: Text = DEFAULT_ENCODING
+    dictionary: Dict[Any, Any], encoding: Text = DEFAULT_ENCODING
 ) -> Text:
     """Calculate the fingerprint for a dictionary.
 
@@ -254,7 +254,7 @@ def get_dictionary_fingerprint(
 
 
 def get_list_fingerprint(
-        elements: List[Any], encoding: Text = DEFAULT_ENCODING
+    elements: List[Any], encoding: Text = DEFAULT_ENCODING
 ) -> Text:
     """Calculate a fingerprint for an unordered list.
 
@@ -353,8 +353,8 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
         )
 
     yaml_parser = yaml.YAML(typ=reader_type)
-    yaml_parser.version = YAML_VERSION
-    yaml_parser.preserve_quotes = True
+    yaml_parser.version = YAML_VERSION  # type: ignore[assignment]
+    yaml_parser.preserve_quotes = True  # type: ignore[assignment]
 
     return yaml_parser.load(content) or {}
 
@@ -364,7 +364,7 @@ def _is_ascii(text: Text) -> bool:
 
 
 def read_yaml_file(
-        filename: Union[Text, Path], reader_type: Union[Text, List[Text]] = "safe"
+    filename: Union[Text, Path], reader_type: Union[Text, List[Text]] = "safe"
 ) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
@@ -384,9 +384,9 @@ def read_yaml_file(
 
 
 def write_yaml(
-        data: Any,
-        target: Union[Text, Path, StringIO],
-        should_preserve_key_order: bool = False,
+    data: Any,
+    target: Union[Text, Path, StringIO],
+    should_preserve_key_order: bool = False,
 ) -> None:
     """Writes a yaml to the file or to the stream.
 
@@ -402,7 +402,7 @@ def write_yaml(
 
     dumper = yaml.YAML()
     # no wrap lines
-    dumper.width = YAML_LINE_MAX_WIDTH 
+    dumper.width = YAML_LINE_MAX_WIDTH  # type: ignore[assignment]
 
     # use `null` to represent `None`
     dumper.representer.add_representer(
@@ -501,7 +501,7 @@ def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
 
 
 def dump_obj_as_yaml_to_string(
-        obj: Any, should_preserve_key_order: bool = False
+    obj: Any, should_preserve_key_order: bool = False
 ) -> Text:
     """Writes data (python dict) to a yaml string.
 
@@ -533,10 +533,10 @@ def create_directory(directory_path: Text) -> None:
 
 
 def raise_deprecation_warning(
-        message: Text,
-        warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-        docs: Optional[Text] = None,
-        **kwargs: Any,
+    message: Text,
+    warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+    docs: Optional[Text] = None,
+    **kwargs: Any,
 ) -> None:
     """Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
     a version until which we'll warn, and after which the support for the feature will
@@ -554,9 +554,9 @@ def raise_deprecation_warning(
 
 
 def read_validated_yaml(
-        filename: Union[Text, Path],
-        schema: Text,
-        reader_type: Union[Text, List[Text]] = "safe",
+    filename: Union[Text, Path],
+    schema: Text,
+    reader_type: Union[Text, List[Text]] = "safe",
 ) -> Any:
     """Validates YAML file content and returns parsed content.
 
@@ -580,7 +580,7 @@ def read_validated_yaml(
 
 
 def read_config_file(
-        filename: Union[Path, Text], reader_type: Union[Text, List[Text]] = "safe"
+    filename: Union[Path, Text], reader_type: Union[Text, List[Text]] = "safe"
 ) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary.
 

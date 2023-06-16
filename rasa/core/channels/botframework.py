@@ -41,12 +41,12 @@ class BotFramework(OutputChannel):
         return "botframework"
 
     def __init__(
-            self,
-            app_id: Text,
-            app_password: Text,
-            conversation: Dict[Text, Any],
-            bot: Text,
-            service_url: Text,
+        self,
+        app_id: Text,
+        app_password: Text,
+        conversation: Dict[Text, Any],
+        bot: Text,
+        service_url: Text,
     ) -> None:
 
         service_url = (
@@ -93,7 +93,7 @@ class BotFramework(OutputChannel):
             return BotFramework.headers
 
     def prepare_message(
-            self, recipient_id: Text, message_data: Dict[Text, Any]
+        self, recipient_id: Text, message_data: Dict[Text, Any]
     ) -> Dict[Text, Any]:
         data = {
             "type": "message",
@@ -121,7 +121,7 @@ class BotFramework(OutputChannel):
             )
 
     async def send_text_message(
-            self, recipient_id: Text, text: Text, **kwargs: Any
+        self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         for message_part in text.strip().split("\n\n"):
             text_message = {"text": message_part}
@@ -129,7 +129,7 @@ class BotFramework(OutputChannel):
             await self.send(message)
 
     async def send_image_url(
-            self, recipient_id: Text, image: Text, **kwargs: Any
+        self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         hero_content = {
             "contentType": "application/vnd.microsoft.card.hero",
@@ -141,11 +141,11 @@ class BotFramework(OutputChannel):
         await self.send(message)
 
     async def send_text_with_buttons(
-            self,
-            recipient_id: Text,
-            text: Text,
-            buttons: List[Dict[Text, Any]],
-            **kwargs: Any,
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        **kwargs: Any,
     ) -> None:
         hero_content = {
             "contentType": "application/vnd.microsoft.card.hero",
@@ -157,14 +157,14 @@ class BotFramework(OutputChannel):
         await self.send(message)
 
     async def send_elements(
-            self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
+        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         for e in elements:
             message = self.prepare_message(recipient_id, e)
             await self.send(message)
 
     async def send_custom_json(
-            self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         json_message.setdefault("type", "message")
         json_message.setdefault("recipient", {}).setdefault("id", recipient_id)
@@ -226,7 +226,7 @@ class BotFrameworkInput(InputChannel):
             raise InvalidKeyError(f"JWT Key with ID {key_id} not found.")
 
         key_json = self.jwt_keys[key_id]
-        public_key = RSAAlgorithm.from_jwk(key_json)
+        public_key = RSAAlgorithm.from_jwk(key_json)  # type: ignore
         jwt.decode(
             jwt_token,
             key=public_key,
@@ -272,7 +272,7 @@ class BotFrameworkInput(InputChannel):
 
     @staticmethod
     def add_attachments_to_metadata(
-            postdata: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
+        postdata: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
     ) -> Optional[Dict[Text, Any]]:
         """Merge the values of `postdata['attachments']` with `metadata`."""
         if postdata.get("attachments"):
@@ -284,7 +284,7 @@ class BotFrameworkInput(InputChannel):
         return metadata
 
     def blueprint(
-            self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
         """Defines the Sanic blueprint for the bot framework integration."""
         botframework_webhook = Blueprint("botframework_webhook", __name__)
