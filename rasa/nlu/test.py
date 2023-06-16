@@ -988,7 +988,9 @@ def do_entities_overlap(entities: List[Dict]) -> bool:
             and next_ent["entity"] != curr_ent["entity"]
         ):
             structlogger.warning(
-                "test.overlaping.entities", curr_ent=curr_ent, next_ent=next_ent
+                "test.overlaping.entities",
+                current_entity=curr_ent,
+                next_entity=next_ent,
             )
             return True
 
