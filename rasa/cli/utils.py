@@ -233,6 +233,11 @@ def validate_files(
     if stories_only:
         all_good = _validate_story_structure(validator, max_history, fail_on_warnings)
     else:
+        if importer.get_domain().is_empty():
+            rasa.shared.utils.cli.print_error_and_exit(
+                "Failed to load the domain fail."
+            )
+
         all_good = (
             _validate_domain(validator)
             and _validate_nlu(validator, fail_on_warnings)
