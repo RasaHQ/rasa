@@ -150,7 +150,7 @@ class FlowsList:
         if not flow:
             raise UnresolvedFlowException(flow_id)
 
-        step = flow.step_for_id(step_id)
+        step = flow.step_by_id(step_id)
         if not step:
             raise UnresolvedFlowStepIdException(step_id, flow, referenced_from=None)
 
@@ -240,7 +240,7 @@ class Flow:
             reached_steps.add(step.id)
             for link in step.next.links:
                 reached_steps = _reachable_steps(
-                    self.step_for_id(link.target), reached_steps
+                    self.step_by_id(link.target), reached_steps
                 )
             return reached_steps
 
@@ -250,7 +250,7 @@ class Flow:
             if step.id not in reached_steps:
                 raise UnreachableFlowStepException(step, self)
 
-    def step_for_id(self, step_id: Optional[Text]) -> Optional[FlowStep]:
+    def step_by_id(self, step_id: Optional[Text]) -> Optional[FlowStep]:
         """Returns the step with the given id."""
         if not step_id:
             return None
@@ -310,20 +310,24 @@ class Flow:
             """Returns the questions asked before the given step.
 
             Keeps track of the steps that have been visited to avoid circles."""
-            current_step = self.step_for_id(current_step_id)
+            current_step = self.step_by_id(current_step_id)
 
             questions = []
 
             if isinstance(current_step, QuestionFlowStep):
-                questions.append(current_step.question)
+                questions.append(current_step)
 
-            visited_steps.add(current_step)
+            visited_steps.add(current_step.id)
 
             for previous_step in self.steps:
                 for next_link in previous_step.next.links:
                     if next_link.target != current_step_id:
                         continue
-                    questions.extend(self._previously_asked_questions(previous_step.id))
+                    if previous_step.id in visited_steps:
+                        continue
+                    questions.extend(
+                        _previously_asked_questions(previous_step.id, visited_steps)
+                    )
             return questions
 
         return _previously_asked_questions(step_id, set())

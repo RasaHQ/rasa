@@ -38,6 +38,8 @@ PROMPT_TEMPLATE = Template(
     importlib.resources.read_text("rasa.nlu.classifiers", "flow_prompt_template.jinja2")
 )
 
+CORRECTION_INTENT = "correction"
+
 logger = logging.getLogger(__name__)
 
 
@@ -212,7 +214,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 and top_flow_step.question != slot_sets[0][0]
                 and slot_sets[0][0] in slots_so_far
             ):
-                return "correction", slot_sets
+                return CORRECTION_INTENT, slot_sets
             elif (
                 len(slot_sets) == 1
                 and top_flow_step is not None
@@ -248,8 +250,9 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 {
                     "name": flow.id,
                     "description": flow.description,
-                    "slots": flow.slots()
-                })
+                    "slots": flow.slots(),
+                }
+            )
         return result
 
     @classmethod
