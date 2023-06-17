@@ -5,12 +5,12 @@ These are the flows that can be started, with their description and slots:
 - {{ flow.name }}: {{ flow.description }} (slots: {{ flow.slots }})
 {%- endfor %}
 
-Here is the current conversation:
+Here is what happened previously in the conversation:
 {{ current_conversation }}
 
 {% if current_flow != None %}
-You are currently in the flow {{ current_flow }}.
-You have just asked the user for {{ question }}.
+You are currently in the flow "{{ current_flow }}".
+You have just asked the user for the slot "{{ question }}".
 
 {% if flow_slots|length > 0 %}
 Here are the slots of the currently active flow with their names and values:
@@ -23,9 +23,17 @@ You are currently not in any flow and so there are no active slots.
 {% endif %}
 If you start a flow, you can already fill that flow's slots with information the user provided for starting the flow.
 
-The user replied """{{ user_message }}""".
+The user just said """{{ user_message }}""".
 
-Based on this information generate a list of actions you want to take. Your job is to start flows and to fill slots where appropriate. Any logic of what happens next afterwards is handled by the underlying flow. These are your available actions:
+Based on this information generate a list of actions you want to take. Your job is to start flows and to fill slots where appropriate. Any logic of what happens afterwards is handled by the flow engine. These are your available actions:
 * Slot setting, described by "SetSlot(slot_name, slot_value)". An example would be "SetSlot(recipient, Freddy)"
 * Starting another flow, described by "StartFlow(flow_name)". An example would be "StartFlow(transfer_money)"
-Write out the actions you want to take with respect to the last user message, one per line. Strictly adhere to the provided action types above for starting flows and setting slots:
+* Cancelling the current flow, describe by "CancelFlow()"
+
+Write out the actions you want to take for the last user message, one per line.
+Do not prematurely fill slots with abstract values.
+Only use information provided by the user.
+Strictly adhere to the provided action types above for starting flows and setting slots.
+Focus on the last message and take it one step at a time.
+Use the previous conversation steps only to aid understanding.
+The action list:
