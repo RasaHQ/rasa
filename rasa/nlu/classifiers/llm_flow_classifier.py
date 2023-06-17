@@ -144,8 +144,10 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         """Parse the actions returned by the llm into intent and entities."""
         start_flow_actions = []
         slot_sets = []
-        slot_set_re = re.compile(r"SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?),([^)]*)\)")
+        cancel_flow = False
+        slot_set_re = re.compile(r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)""")
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
+        cancel_flow_re = re.compile(r"CancelFlow")
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
                 slot_name = m.group(1).strip()
@@ -161,6 +163,8 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                     slot_sets.append((slot_name, slot_value))
             elif m := start_flow_re.search(action):
                 start_flow_actions.append(m.group(1).strip())
+            elif cancel_flow_re.search(action):
+                cancel_flow = True
 
         # case 1
         # "I want to send some money"
@@ -199,8 +203,10 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             other_slots = slot_sets
 
         if len(start_flow_actions) == 0:
-            if len(slot_sets) == 0:
+            if len(slot_sets) == 0 and not cancel_flow:
                 return "comment", []
+            elif len(slot_sets) == 0 and cancel_flow:
+                return "cancel_flow", []
             elif (
                 len(slot_sets) == 1
                 and isinstance(top_flow_step, QuestionFlowStep)
@@ -224,6 +230,8 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             elif len(slot_sets) > 1:
                 return "too_complex", []
         elif len(start_flow_actions) == 1:
+            if cancel_flow:
+                return "too_complex", []
             new_flow_id = start_flow_actions[0]
             potential_new_flow = flows.flow_by_id(new_flow_id)
             if potential_new_flow is not None:
