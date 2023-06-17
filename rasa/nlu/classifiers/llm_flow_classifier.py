@@ -24,7 +24,8 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_TEXT,
-    ENTITY_ATTRIBUTE_CONFIDENCE, CORRECTION_INTENT,
+    ENTITY_ATTRIBUTE_CONFIDENCE,
+    CORRECTION_INTENT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -75,7 +76,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
-    def persist(self):
+    def persist(self) -> None:
         pass
 
     @classmethod
@@ -188,7 +189,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         flow_stack = FlowStack.from_tracker(tracker)
         top_flow = flow_stack.top_flow(flows)
         top_flow_step = flow_stack.top_flow_step(flows)
-        if top_flow_step is not None:
+        if top_flow_step is not None and top_flow is not None:
             slots_so_far = top_flow.slots_up_to_step(top_flow_step.id)
             other_slots = [
                 slot_set for slot_set in slot_sets if slot_set[0] not in slots_so_far
@@ -241,7 +242,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         return "too_complex", []
 
     @classmethod
-    def create_template_inputs(cls, flows: FlowsList) -> List[Dict[str, str]]:
+    def create_template_inputs(cls, flows: FlowsList) -> List[Dict[str, Any]]:
         result = []
         for flow in flows.underlying_flows:
             result.append(

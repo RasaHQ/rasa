@@ -38,7 +38,6 @@ ACTION_DISAMBIGUATE_FLOWS = "action_disambiguate_flows"
 RULE_SNIPPET_ACTION_NAME = "..."
 ACTION_EXTRACT_SLOTS = "action_extract_slots"
 ACTION_VALIDATE_SLOT_MAPPINGS = "action_validate_slot_mappings"
-ACTION_FLOW_CONTINUE_INERRUPTED_NAME = "action_flow_continue_interrupted"
 
 
 DEFAULT_ACTION_NAMES = [
@@ -56,7 +55,6 @@ DEFAULT_ACTION_NAMES = [
     ACTION_SEND_TEXT,
     RULE_SNIPPET_ACTION_NAME,
     ACTION_EXTRACT_SLOTS,
-    ACTION_FLOW_CONTINUE_INERRUPTED_NAME,
     ACTION_DISAMBIGUATE_FLOWS,
 ]
 
@@ -84,6 +82,14 @@ ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 REQUESTED_SLOT = "requested_slot"
 FLOW_STACK_SLOT = "flow_stack"
+PREVIOUS_FLOW_SLOT = "rasa_previous_flow"
+CORRECTED_SLOTS_SLOT = "rasa_corrected_slots"
+
+FLOW_SLOT_NAMES = [
+    FLOW_STACK_SLOT,
+    PREVIOUS_FLOW_SLOT,
+    CORRECTED_SLOTS_SLOT,
+]
 
 # slots for knowledge base
 SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
@@ -94,6 +100,8 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 DEFAULT_SLOT_NAMES = {
     REQUESTED_SLOT,
     FLOW_STACK_SLOT,
+    PREVIOUS_FLOW_SLOT,
+    CORRECTED_SLOTS_SLOT,
     SESSION_START_METADATA_SLOT,
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,

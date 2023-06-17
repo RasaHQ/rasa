@@ -104,7 +104,7 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
         if self._use_stub:
             return self._stub.check(user_msg)
         try:
-            resp = openai.Completion.create(
+            resp = openai.Completion.create(  # type: ignore[no-untyped-call]
                 model=self._model_name,
                 prompt=self._make_prompt(user_msg),
                 temperature=0.0,

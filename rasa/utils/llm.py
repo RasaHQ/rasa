@@ -3,6 +3,7 @@ import openai
 import logging
 
 from rasa_sdk import Tracker
+from rasa.shared.core.events import BotUttered, UserUttered
 
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 def generate_text_openai_chat(
     prompt: str, model: str = "gpt-3.5-turbo"
 ) -> Optional[str]:
-    chat_completion = openai.ChatCompletion.create(
+    chat_completion = openai.ChatCompletion.create(  # type: ignore[no-untyped-call]
         model=model, messages=[{"role": "user", "content": prompt}], temperature=0.0
     )
     return chat_completion.choices[0].message.content
@@ -46,11 +47,11 @@ def tracker_as_readable_transcript(
     transcript = []
 
     for event in tracker.events:
-        if event.type_name == "user":
+        if isinstance(event, UserUttered):
             transcript.append(
                 f"{human_prefix}: {sanitize_message_for_prompt(event.text)}"
             )
-        if event.type_name == "bot":
+        if isinstance(event, BotUttered):
             transcript.append(f"{ai_prefix}: {sanitize_message_for_prompt(event.text)}")
     return "\n".join(transcript)
 

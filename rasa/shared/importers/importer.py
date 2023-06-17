@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from functools import reduce
 from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, Union, cast
 import logging
 
+import pkg_resources
+
 import rasa.shared.constants
-from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
+from rasa.shared.core.flows.flow import Flow, FlowsList, QuestionFlowStep
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
@@ -379,38 +382,60 @@ class PassThroughImporter(TrainingDataImporter):
         return self._importer.get_nlu_data(language)
 
 
+DEFAULT_FLOW_FILE_NAME = "default_flows.yml"
+
+
+def load_default_flows() -> FlowsList:
+    """Loads the default flows from the file system."""
+    from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
+
+    default_flows_file = pkg_resources.resource_filename(
+        "rasa.core.policies", DEFAULT_FLOW_FILE_NAME
+    )
+
+    return YAMLFlowsReader.read_from_file(default_flows_file)
+
+
+def load_default_flows_domain() -> Domain:
+    """Loads the default flows from the file system."""
+    default_flows_file = pkg_resources.resource_filename(
+        "rasa.core.policies", DEFAULT_FLOW_FILE_NAME
+    )
+
+    return Domain.from_path(default_flows_file)
+
+
 class FlowSyncImporter(PassThroughImporter):
     """Importer that syncs `flows` between Domain and flow training data."""
 
     @rasa.shared.utils.common.cached_method
+    def get_flows(self) -> FlowsList:
+        flows = self._importer.get_flows()
+        default_flows = load_default_flows()
+
+        user_flow_ids = [flow.id for flow in flows.underlying_flows]
+        missing_default_flows = [
+            default_flow
+            for default_flow in default_flows.underlying_flows
+            if default_flow.id not in user_flow_ids
+        ]
+
+        return flows.merge(FlowsList(missing_default_flows))
+
+    @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of flows."""
-        from rasa.core.actions.flows import UTTER_FLOW_CONTINUE_INTERRUPTED
-        from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-            KEY_METADATA,
-        )
 
         domain = self._importer.get_domain()
 
         flows = self.get_flows()
 
+        default_flows_domain = load_default_flows_domain()
+
         flow_names = [
             rasa.shared.constants.FLOW_PREFIX + flow.id
             for flow in flows.underlying_flows
         ]
-
-        if UTTER_FLOW_CONTINUE_INTERRUPTED not in domain.responses:
-            text = "Let's continue with the previous topic off {flow_name}."
-            responses = {
-                UTTER_FLOW_CONTINUE_INTERRUPTED: [
-                    {
-                        KEY_RESPONSES_TEXT: text,
-                        KEY_METADATA: {"allow_variation": True},
-                    }
-                ]
-            }
-        else:
-            responses = {}
 
         all_question_steps = [
             step
@@ -425,11 +450,8 @@ class FlowSyncImporter(PassThroughImporter):
                 rasa.shared.constants.REQUIRED_SLOTS_KEY: [step.question]
             }
 
-        return domain.merge(
-            Domain.from_dict(
-                {KEY_ACTIONS: flow_names, KEY_FORMS: forms, KEY_RESPONSES: responses}
-            )
-        )
+        flow_domain = Domain.from_dict({KEY_ACTIONS: flow_names, KEY_FORMS: forms})
+        return domain.merge(flow_domain.merge(default_flows_domain))
 
 
 class ResponsesSyncImporter(PassThroughImporter):

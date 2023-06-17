@@ -283,11 +283,11 @@ class Flow:
                 result.append(step.question)
         return result
 
-    def slots(self):
+    def slots(self) -> List[str]:
         """Return the names of the slots used in the flow."""
         return self.slots_from_steps(self.steps)
 
-    def slots_up_to_step(self, id: str):
+    def slots_up_to_step(self, id: str) -> List[str]:
         """Returns the names of the slots used in this flow up to a step."""
         step_ids = [step.id for step in self.steps]
         try:
@@ -312,7 +312,10 @@ class Flow:
             Keeps track of the steps that have been visited to avoid circles."""
             current_step = self.step_by_id(current_step_id)
 
-            questions = []
+            questions: List[QuestionFlowStep] = []
+
+            if not current_step:
+                return questions
 
             if isinstance(current_step, QuestionFlowStep):
                 questions.append(current_step)
