@@ -12,7 +12,6 @@ import rasa.shared.core.constants
 import rasa.shared.utils.io
 from rasa.shared.core.domain import (
     KEY_FORMS,
-    KEY_RESPONSES_TEXT,
     Domain,
     KEY_E2E_ACTIONS,
     KEY_INTENTS,

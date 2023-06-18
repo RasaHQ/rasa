@@ -18,7 +18,6 @@ from rasa.shared.nlu.constants import (
     CORRECTION_INTENT,
 )
 from rasa.shared.core.constants import (
-    ACTION_FLOW_CONTINUE_INERRUPTED_NAME,
     ACTION_LISTEN_NAME,
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
