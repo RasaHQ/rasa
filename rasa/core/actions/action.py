@@ -941,36 +941,6 @@ class ActionUnlikelyIntent(Action):
         return []
 
 
-class ActionDisambiguateFlows(Action):
-    """An action that asks the user to make a choice as to which flow to start."""
-
-    def name(self) -> Text:
-        """Returns the name of the action."""
-        return ACTION_DISAMBIGUATE_FLOWS
-
-    async def run(
-        self,
-        output_channel: "OutputChannel",
-        nlg: "NaturalLanguageGenerator",
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-        metadata: Optional[Dict[Text, Any]] = None,
-    ) -> List[Event]:
-        """Runs action. Please see parent class for the full docstring."""
-        ambiguous_flows = tracker.get_slot("ambiguous_flows")
-        if ambiguous_flows is None:
-            return []
-        return []
-        # buttons = []
-        # button_topic = {topic.name}_{topic.topicTemplate.id}
-        # payload = f'/alternative_answer{{"topic": "{button_topic}"}}'
-        # buttons.append(
-        #     {
-        #         "title": button_title,
-        #         "payload": payload,
-        #     })
-
-
 def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
     """Indicates if the last executed action is `action_default_ask_affirmation`."""
     return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
