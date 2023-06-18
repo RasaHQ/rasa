@@ -18,7 +18,7 @@ repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
 classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Topic :: Software Development :: Libraries",]
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
-include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys", "rasa/core/channels/chat.html", "rasa/core/policies/detectors/prompt_sensitive_topic.jinja2"]
+include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys", "rasa/core/channels/chat.html", "rasa/core/policies/detectors/prompt_sensitive_topic.jinja2", "rasa/nlu/classifiers/flow_prompt_template.jinja2"]
 readme = "README.md"
 license = "Apache-2.0"
 [[tool.poetry.source]]
