@@ -109,6 +109,7 @@ module.exports = {
                         'rules',
                     ],
                 },
+                'flows',
                 'domain',
                 {
                     type: 'category',
@@ -260,4 +261,12 @@ module.exports = {
             ],
         },
     ],
+    "llms": [
+        'llms/large-language-models',
+        'llms/llm-setup',
+        'llms/llm-intent',
+        'llms/llm-intentless',
+        'llms/llm-nlg',
+        'llms/llm-custom',
+    ]
 };

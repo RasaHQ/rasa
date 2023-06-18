@@ -978,22 +978,20 @@ class Domain:
         Add a slot called `flow_stack_slot` to the list of slots. The value of
         this slot will be a call stack of the flow ids.
         """
-        from rasa.shared.core.constants import FLOW_STATE_SLOT, FLOW_STACK_SLOT
+        from rasa.shared.core.constants import FLOW_STACK_SLOT
 
         slot_names = [slot.name for slot in self.slots]
-        flow_slots = [FLOW_STATE_SLOT, FLOW_STACK_SLOT]
 
-        for slot in flow_slots:
-            if slot not in slot_names:
-                self.slots.append(
-                    AnySlot(slot, mappings=[], influence_conversation=False)
-                )
-            else:
-                # TODO: figure out what to do here.
-                logger.warning(
-                    f"Slot {slot} is reserved for the next step slot, "
-                    f"but it already exists. 🤔"
-                )
+        if FLOW_STACK_SLOT not in slot_names:
+            self.slots.append(
+                AnySlot(FLOW_STACK_SLOT, mappings=[], influence_conversation=False)
+            )
+        else:
+            # TODO: figure out what to do here.
+            logger.warning(
+                f"Slot {FLOW_STACK_SLOT} is reserved for the next step slot, "
+                f"but it already exists. 🤔"
+            )
 
     def _add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.

@@ -10,6 +10,7 @@ import rasa.shared.core.constants
 import rasa.shared.utils.io
 from rasa.shared.core.domain import (
     KEY_FORMS,
+    KEY_RESPONSES_TEXT,
     Domain,
     KEY_E2E_ACTIONS,
     KEY_INTENTS,
@@ -384,11 +385,32 @@ class FlowSyncImporter(PassThroughImporter):
     @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of flows."""
+        from rasa.core.actions.flows import UTTER_FLOW_CONTINUE_INTERRUPTED
+        from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+            KEY_METADATA,
+        )
+
         domain = self._importer.get_domain()
 
         flows = self.get_flows()
 
-        flow_names = ["flow_" + flow.id for flow in flows.underlying_flows]
+        flow_names = [
+            rasa.shared.constants.FLOW_PREFIX + flow.id
+            for flow in flows.underlying_flows
+        ]
+
+        if UTTER_FLOW_CONTINUE_INTERRUPTED not in domain.responses:
+            text = "Let's continue with the previous topic off {flow_name}."
+            responses = {
+                UTTER_FLOW_CONTINUE_INTERRUPTED: [
+                    {
+                        KEY_RESPONSES_TEXT: text,
+                        KEY_METADATA: {"allow_variation": True},
+                    }
+                ]
+            }
+        else:
+            responses = {}
 
         all_question_steps = [
             step
@@ -404,7 +426,9 @@ class FlowSyncImporter(PassThroughImporter):
             }
 
         return domain.merge(
-            Domain.from_dict({KEY_ACTIONS: flow_names, KEY_FORMS: forms})
+            Domain.from_dict(
+                {KEY_ACTIONS: flow_names, KEY_FORMS: forms, KEY_RESPONSES: responses}
+            )
         )
 
 

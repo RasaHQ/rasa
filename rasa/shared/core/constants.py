@@ -37,6 +37,7 @@ ACTION_UNLIKELY_INTENT_NAME = "action_unlikely_intent"
 RULE_SNIPPET_ACTION_NAME = "..."
 ACTION_EXTRACT_SLOTS = "action_extract_slots"
 ACTION_VALIDATE_SLOT_MAPPINGS = "action_validate_slot_mappings"
+ACTION_FLOW_CONTINUE_INERRUPTED_NAME = "action_flow_continue_interrupted"
 
 
 DEFAULT_ACTION_NAMES = [
@@ -54,6 +55,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_SEND_TEXT,
     RULE_SNIPPET_ACTION_NAME,
     ACTION_EXTRACT_SLOTS,
+    ACTION_FLOW_CONTINUE_INERRUPTED_NAME,
 ]
 
 ACTION_SHOULD_SEND_DOMAIN = "send_domain"
@@ -79,7 +81,6 @@ IS_EXTERNAL = "is_external"
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 REQUESTED_SLOT = "requested_slot"
-FLOW_STATE_SLOT = "flow_state"
 FLOW_STACK_SLOT = "flow_stack"
 
 # slots for knowledge base
@@ -90,7 +91,6 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
 DEFAULT_SLOT_NAMES = {
     REQUESTED_SLOT,
-    FLOW_STATE_SLOT,
     FLOW_STACK_SLOT,
     SESSION_START_METADATA_SLOT,
     SLOT_LISTED_ITEMS,

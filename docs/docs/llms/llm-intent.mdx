@@ -1,0 +1,162 @@
+---
+id: llm-intent
+sidebar_label: Intent Classification with LLMs
+title: Using LLMs for Intent Classification
+abstract: |
+  Intent classification using Large Language Models (LLM) and
+  a method called retrieval augmented generation (RAG).
+---
+
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
+
+<RasaLabsLabel />
+
+<RasaLabsBanner />
+
+## Key Features
+
+1. **Few shot learning**: The intent classifier can be trained with only a few
+   examples per intent. New intents can be bootstrapped and integrated even if
+   there are only a handful of training examples available.
+2. **Fast Training**: The intent classifier is very quick to train.
+3. **Multilingual**: The intent classifier can be trained on multilingual data
+   and can classify messages in many languages, though performance will vary across LLMs.
+
+## Demo
+
+TODO
+
+## Using the LLM-based Intent Classifier in Your Bot
+
+To use the LLM-based intent classifier in your bot, you need to add the
+`LLMIntentClassifier` to your NLU pipeline in the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+# - ...
+```
+
+The LLM-based intent classifier requires access to an LLM model API. You can use any
+OpenAI model that supports the `/completions` endpoint. 
+We are working on expanding the list of supported
+models and model providers.
+
+## How does the classification work
+
+The intent classification relies on retrieval augmented generation, which is a
+method that combines the benefits of retrieval-based and generation-based
+approaches. The steps are:
+
+1. Embed all intent examples and store their embeddings during the training
+   phase.
+2. During the prediction phase, find the three intent examples from the training
+   data that are closest to the message that needs to be classified.
+3. Create an LLM prompt using these three examples, which guides the LLM to
+   predict the intent of the message.
+4. If the LLM predicts an intent that wasn't part of the training data, the
+   system will use a fallback intent instead of the predicted intent.
+
+## Customizing
+
+You can customize the LLM by modifying the following parameters in the
+`config.yml` file. **All of the parameters are optional.**
+
+### Fallback Intent
+
+The fallback intent is used when the LLM predicts an intent that wasn't part of
+the training data. You can set the fallback intent by adding the following
+parameter to the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    fallback_intent: "out_of_scope"
+# - ...
+```
+
+Defaults to `out_of_scope`.
+
+### OpenAI Model
+
+You can choose the OpenAI model that is used for the LLM by adding the following
+parameter to the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    model: "text-davinci-003"
+# - ...
+```
+
+Defaults to `text-davinci-003`. The model name needs to be set to a generative
+model using the completions API of
+[OpenAI](https://platform.openai.com/docs/guides/gpt/completions-api).
+
+### Temperature
+
+The temperature parameter controls the randomness of the LLM predictions. You
+can set the temperature by adding the following parameter to the `config.yml`
+file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    temperature: 0.7
+# - ...
+```
+
+Defaults to `0.7`. The temperature needs to be a float between 0 and 1. The
+higher the temperature, the more random the predictions will be. The lower the
+temperature, the more likely the LLM will predict the same intent for the same
+message.
+
+### Prompt
+
+The prompt is the text that is used to guide the LLM to predict the intent of
+the message. You can customize the prompt by adding the following parameter to
+the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    prompt: |
+        Label the last message from a human
+        with a category.
+
+        {% for example in examples %}
+        Message: {{example['text']}}
+        Category: {{example['intent']}}
+
+        {% endfor %}
+        Message: {{message}}
+        Category:
+```
+
+The prompt is a [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) template
+that can be used to customize the prompt. The following variables are available
+in the prompt:
+
+- `examples`: A list of the closest examples from the training data. Each
+  example is a dictionary with the keys `text` and `intent`.
+- `message`: The message that needs to be classified.
+
+
+## Evaulating Performance
+
+1. Run an evaluation by splitting the NLU data into training and testing sets
+   and comparing the performance of the current pipeline with the LLM-based
+   pipeline.
+2. Run cross-validation on all of the data to get a more robust estimate of the
+   performance of the LLM-based pipeline.
+3. Use the `rasa test nlu` command with multiple configurations (e.g., one with
+   the current pipeline and one with the LLM-based pipeline) to compare their
+   performance.
+4. Compare the latency of the LLM-based pipeline with that of the current
+   pipeline to see if there are any significant differences in speed.
