@@ -58,7 +58,6 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     SlotMappingType,
-    ACTION_DISAMBIGUATE_FLOWS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
