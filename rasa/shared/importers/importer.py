@@ -409,6 +409,11 @@ class FlowSyncImporter(PassThroughImporter):
     @rasa.shared.utils.common.cached_method
     def get_flows(self) -> FlowsList:
         flows = self._importer.get_flows()
+
+        if flows.is_empty():
+            # if there are no flows, we don't need to add the default flows either
+            return flows
+
         default_flows = load_default_flows()
 
         user_flow_ids = [flow.id for flow in flows.underlying_flows]
@@ -427,6 +432,10 @@ class FlowSyncImporter(PassThroughImporter):
         domain = self._importer.get_domain()
 
         flows = self.get_flows()
+
+        if flows.is_empty():
+            # if there are no flows, we don't need to add the default flows either
+            return domain
 
         default_flows_domain = load_default_flows_domain()
 
