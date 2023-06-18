@@ -1381,6 +1381,16 @@ def extract_slot_value_from_predefined_mapping(
     tracker: "DialogueStateTracker",
 ) -> List[Any]:
     """Extracts slot value if slot has an applicable predefined mapping."""
+
+    if tracker.has_bot_message_after_latest_user_message():
+        # TODO: this needs further validation - not sure if this breaks something!!!
+
+        # If the bot sent a message after the user sent a message, we can't
+        # extract any slots from the user message. We assume that the user
+        # message was already processed by the bot and the slot value was
+        # already extracted (e.g. for a prior form slot).
+        return []
+
     should_fill_entity_slot = (
         mapping_type == SlotMappingType.FROM_ENTITY
         and SlotMapping.entity_is_desired(mapping, tracker)

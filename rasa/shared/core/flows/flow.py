@@ -7,6 +7,8 @@ from rasa.shared.exceptions import RasaException
 
 import rasa.shared.utils.io
 
+HANDLING_PATTERN_PREFIX = "pattern_"
+
 
 class UnreachableFlowStepException(RasaException):
     """Raised when a flow step is unreachable."""
@@ -334,6 +336,10 @@ class Flow:
             return questions
 
         return _previously_asked_questions(step_id, set())
+
+    def is_handling_pattern(self) -> bool:
+        """Returns whether the flow is handling a pattern."""
+        return self.id.startswith(HANDLING_PATTERN_PREFIX)
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:

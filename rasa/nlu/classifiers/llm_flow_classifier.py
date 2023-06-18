@@ -114,11 +114,16 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         if flows is None or tracker is None:
             # cannot do anything if there are no flows or no tracker
             return message
-        flow_prompt = self.render_template(message, tracker, flows)
+        flows_without_patterns = FlowsList(
+            [f for f in flows.underlying_flows if not f.is_handling_pattern()]
+        )
+        flow_prompt = self.render_template(message, tracker, flows_without_patterns)
         logger.info(flow_prompt)
         action_list = generate_text_openai_chat(flow_prompt)
         logger.info(action_list)
-        intent_name, entities = self.parse_action_list(action_list, tracker, flows)
+        intent_name, entities = self.parse_action_list(
+            action_list, tracker, flows_without_patterns
+        )
         intent = {"name": intent_name, "confidence": 0.90}
         message.set(INTENT, intent, add_to_output=True)
         if len(entities) > 0:
@@ -145,7 +150,9 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         start_flow_actions = []
         slot_sets = []
         cancel_flow = False
-        slot_set_re = re.compile(r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)""")
+        slot_set_re = re.compile(
+            r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)"""
+        )
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
         cancel_flow_re = re.compile(r"CancelFlow")
         for action in actions.strip().splitlines():

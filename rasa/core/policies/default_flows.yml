@@ -2,7 +2,7 @@ responses:
   utter_flow_continue_interrupted: 
     - text: Let's continue with the topic {rasa_previous_flow}.
       metadata: 
-        allow_variation: True
+        rephrase: True
 
   utter_ask_confirm_correction:
     - text: "Do you want to update your information?"
@@ -12,17 +12,17 @@ responses:
         - payload: /deny
           title: No, please keep the previous information
       metadata: 
-        allow_variation: True
+        rephrase: True
   
   utter_corrected_previous_input:
     - text: "Ok, I corrected the previous input."
       metadata: 
-        allow_variation: True
+        rephrase: True
   
   utter_not_corrected_previous_input:
     - text: "Ok, I did not correct the previous input."
       metadata: 
-        allow_variation: True
+        rephrase: True
 
 slots:
   confirm_correction:
@@ -40,14 +40,14 @@ slots:
           - active_loop: question_confirm_correction
 
 flows:  
-  continue_interrupted_flow:
+  pattern_continue_interrupted:
     description: A meta flow that should be started to continue an interrupted flow. 
 
     steps:
       - id: "0"
         action: utter_flow_continue_interrupted
   
-  correction_flow:
+  pattern_correction:
     description: A meta flow that should be started to correct a previous user input.
 
     steps:

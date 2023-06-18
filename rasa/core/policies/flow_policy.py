@@ -147,22 +147,6 @@ class FlowPolicy(Policy):
         # or do some preprocessing here.
         return self.resource
 
-    @staticmethod
-    def _is_first_prediction_after_user_message(tracker: DialogueStateTracker) -> bool:
-        """Checks whether the tracker ends with an action listen.
-
-        If the tracker ends with an action listen, it means that we've just received
-        a user message.
-
-        Args:
-            tracker: The tracker.
-
-        Returns:
-            `True` if the tracker is the first one after a user message, `False`
-            otherwise.
-        """
-        return tracker.latest_action_name == ACTION_LISTEN_NAME
-
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
@@ -187,7 +171,7 @@ class FlowPolicy(Policy):
         predicted_action = None
         if (
             self._sensitive_topic_detector
-            and self._is_first_prediction_after_user_message(tracker)
+            and not tracker.has_action_after_latest_user_message()
             and (latest_message := tracker.latest_message)
         ):
             if self._sensitive_topic_detector.check(latest_message.text):
@@ -758,7 +742,10 @@ class FlowExecutor:
             tracker and the confidence of the prediction."""
 
         predicted_action: Optional[ActionPrediction] = None
-        gathered_events = []
+
+        tracker = tracker.copy()
+
+        number_of_initial_events = len(tracker.events)
 
         while not predicted_action or predicted_action.score == 0.0:
             if not (current_flow := self.flow_stack.top_flow(self.all_flows)):
@@ -779,7 +766,7 @@ class FlowExecutor:
             predicted_action = self._wrap_up_previous_step(
                 current_flow, previous_step, tracker
             )
-            gathered_events.extend(predicted_action.events or [])
+            tracker.update_with_events(predicted_action.events or [], self.domain)
 
             if predicted_action.action_name:
                 # if the previous step predicted an action, we'll stop here
@@ -796,8 +783,9 @@ class FlowExecutor:
                 self.flow_stack.advance_top_flow(current_step.id)
 
                 predicted_action = self._run_step(current_flow, current_step, tracker)
-                gathered_events.extend(predicted_action.events or [])
+                tracker.update_with_events(predicted_action.events or [], self.domain)
 
+        gathered_events = list(tracker.events)[number_of_initial_events:]
         predicted_action.events = gathered_events
         return predicted_action
 
@@ -862,7 +850,7 @@ class FlowExecutor:
             if self._is_correction(tracker):
                 updated_slots = self._slot_sets_after_latest_message(tracker)
                 return ActionPrediction(
-                    FLOW_PREFIX + "correction_flow",
+                    FLOW_PREFIX + "pattern_correction",
                     1.0,
                     metadata={
                         "slots": {
@@ -962,7 +950,7 @@ class FlowExecutor:
                     )
 
                     return ActionPrediction(
-                        FLOW_PREFIX + "continue_interrupted_flow",
+                        FLOW_PREFIX + "pattern_continue_interrupted",
                         1.0,
                         metadata={"slots": {PREVIOUS_FLOW_SLOT: previous_flow_name}},
                         events=events,
