@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from functools import reduce
 from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, Union, cast
 import logging
@@ -7,13 +6,12 @@ import logging
 import pkg_resources
 
 import rasa.shared.constants
-from rasa.shared.core.flows.flow import Flow, FlowsList, QuestionFlowStep
+from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
 from rasa.shared.core.domain import (
     KEY_FORMS,
-    KEY_RESPONSES_TEXT,
     Domain,
     KEY_E2E_ACTIONS,
     KEY_INTENTS,

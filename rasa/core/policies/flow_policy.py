@@ -666,7 +666,7 @@ class FlowExecutor:
         if prediction.action_name:
             # if a flow can be started, we'll start it
             return prediction
-        if not (top_flow := self.flow_stack.top()):
+        if self.flow_stack.is_empty():
             # if there are no flows, there is nothing to do
             return ActionPrediction(None, 0.0)
         else:
@@ -964,7 +964,8 @@ class FlowExecutor:
                     and previous_flow_step
                     and current_frame.frame_type == StackFrameType.CORRECTION
                 ):
-                    # TODO: we need to figure out how to actually "undo" the changed slots
+                    # TODO: we need to figure out how to actually
+                    #    "undo" the changed slots
                     corrected_slots = tracker.get_slot(CORRECTED_SLOTS_SLOT)
                     if corrected_slots:
                         self._correct_flow_position(

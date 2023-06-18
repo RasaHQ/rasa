@@ -31,7 +31,7 @@ from rasa.shared.constants import (
     DOCS_URL_POLICIES,
     DOCS_URL_RULES,
 )
-from rasa.shared.core.domain import Domain, InvalidDomain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     ACTION_RESTART_NAME,

@@ -950,10 +950,12 @@ class ActionDisambiguateFlows(Action):
             return []
         return []
         # buttons = []
+        # button_topic = {topic.name}_{topic.topicTemplate.id}
+        # payload = f'/alternative_answer{{"topic": "{button_topic}"}}'
         # buttons.append(
         #     {
         #         "title": button_title,
-        #         "payload": f'/alternative_answer{{"topic": "{topic.name}_{topic.topicTemplate.id}"}}',
+        #         "payload": payload,
         #     })
 
 

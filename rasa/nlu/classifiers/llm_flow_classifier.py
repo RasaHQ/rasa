@@ -189,20 +189,24 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         # case 2
         # "I want to send some money to Joe"
-        # starting a flow with entities mentioned -> intent = flow name, entities only those that are valid for the flow
+        # starting a flow with entities mentioned -> intent = flow name,
+        # entities only those that are valid for the flow
 
         # case 3
         # "50$"
-        # giving information for the current slot -> intent = inform, entity only that of the current slot
+        # giving information for the current slot -> intent = inform,
+        # entity only that of the current slot
 
         # case 4
         # "Sorry I meant, Joe, not John"
-        # correcting a previous slot from the flow -> intent = correction, entity of the previous slot
+        # correcting a previous slot from the flow -> intent = correction,
+        # entity of the previous slot
 
         # everything else is too complex for now:
         # case 5
         # "50$, how much money do I still have btw?"
-        # giving information about current flow and starting new flow right away -> intent = complex
+        # giving information about current flow and starting new flow
+        # right away -> intent = complex
 
         # TODO: check that we have a valid flow name if any, reprompt if mistake?
         # TODO: assign slot sets to current flow, new flow if any, and other
