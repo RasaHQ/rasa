@@ -30,13 +30,14 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.llm import (
+    DEFAULT_OPENAI_CHAT_MODEL_NAME,
     tracker_as_readable_transcript,
     generate_text_openai_chat,
     sanitize_message_for_prompt,
 )
 
-PROMPT_TEMPLATE = Template(
-    importlib.resources.read_text("rasa.nlu.classifiers", "flow_prompt_template.jinja2")
+DEFAULT_FLOW_PROMPT_TEMPLATE = importlib.resources.read_text(
+    "rasa.nlu.classifiers", "flow_prompt_template.jinja2"
 )
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,11 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
-        return {}
+        return {
+            "prompt": DEFAULT_FLOW_PROMPT_TEMPLATE,
+            "temperature": 0.0,
+            "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
+        }
 
     def __init__(
         self,
@@ -62,6 +67,9 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         resource: Resource,
     ) -> None:
         self.config = {**self.get_default_config(), **config}
+        self.model = self.config["model_name"]
+        self.prompt_template = self.config["prompt"]
+        self.temperature = self.config["temperature"]
         self._model_storage = model_storage
         self._resource = resource
 
@@ -119,7 +127,9 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         )
         flow_prompt = self.render_template(message, tracker, flows_without_patterns)
         logger.info(flow_prompt)
-        action_list = generate_text_openai_chat(flow_prompt)
+        action_list = generate_text_openai_chat(
+            flow_prompt, self.model, self.temperature
+        )
         logger.info(action_list)
         intent_name, entities = self.parse_action_list(
             action_list, tracker, flows_without_patterns
@@ -269,9 +279,8 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             )
         return result
 
-    @classmethod
     def render_template(
-        cls, message: Message, tracker: DialogueStateTracker, flows: FlowsList
+        self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
     ) -> str:
         flow_stack = FlowStack.from_tracker(tracker)
         top_flow = flow_stack.top_flow(flows) if flow_stack is not None else None
@@ -300,7 +309,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         current_conversation += f"\nUSER: {latest_user_message}"
 
         inputs = {
-            "available_flows": cls.create_template_inputs(flows),
+            "available_flows": self.create_template_inputs(flows),
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
             "current_flow": top_flow.id if top_flow is not None else None,
@@ -308,4 +317,4 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             "user_message": latest_user_message,
         }
 
-        return PROMPT_TEMPLATE.render(**inputs)
+        return Template(self.prompt_template).render(**inputs)

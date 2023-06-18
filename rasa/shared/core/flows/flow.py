@@ -304,14 +304,16 @@ class Flow:
 
         Questions are returned roughly in reverse order, i.e. the first
         question in the list is the one asked last. But due to circles
-        in the flow the order is not guaranteed to be exactly reverse."""
+        in the flow the order is not guaranteed to be exactly reverse.
+        """
 
         def _previously_asked_questions(
             current_step_id: Text, visited_steps: Set[Text]
         ) -> List[QuestionFlowStep]:
             """Returns the questions asked before the given step.
 
-            Keeps track of the steps that have been visited to avoid circles."""
+            Keeps track of the steps that have been visited to avoid circles.
+            """
             current_step = self.step_by_id(current_step_id)
 
             questions: List[QuestionFlowStep] = []
@@ -780,8 +782,10 @@ class SetSlotsFlowStep(FlowStep):
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> SetSlotsFlowStep:
         """Used to read flow steps from parsed YAML.
+
         Args:
             flow_step_config: The parsed YAML as a dictionary.
+
         Returns:
             The parsed flow step.
         """
@@ -798,6 +802,7 @@ class SetSlotsFlowStep(FlowStep):
 
     def as_json(self) -> Dict[Text, Any]:
         """Returns the flow step as a dictionary.
+
         Returns:
             The flow step as a dictionary.
         """

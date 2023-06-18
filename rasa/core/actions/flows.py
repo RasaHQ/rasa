@@ -44,7 +44,6 @@ class FlowTriggerAction(action.Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Trigger the flow."""
-
         stack = FlowStack.from_tracker(tracker)
         if tracker.active_loop_name and not stack.is_empty():
             frame_type = StackFrameType.INTERRUPT

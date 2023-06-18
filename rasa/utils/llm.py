@@ -2,25 +2,49 @@ from typing import Optional
 import openai
 import logging
 
-from rasa_sdk import Tracker
 from rasa.shared.core.events import BotUttered, UserUttered
 
 from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
+USER = "USER"
+
+AI = "AI"
+
+DEFAULT_OPENAI_GENERATE_MODEL_NAME = "text-davinci-003"
+
+DEFAULT_OPENAI_CHAT_MODEL_NAME = "gpt-3.5-turbo"
+
+DEFAULT_OPENAI_TEMPERATURE = 0.7
+
 
 def generate_text_openai_chat(
-    prompt: str, model: str = "gpt-3.5-turbo"
+    prompt: str,
+    model: str = DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    temperature: float = DEFAULT_OPENAI_TEMPERATURE,
 ) -> Optional[str]:
+    """Generates text using the OpenAI chat API.
+
+    Args:
+        prompt: the prompt to send to the API
+        model: the model to use for generation
+        temperature: the temperature to use for generation
+
+    Returns:
+        The generated text.
+    """
+    # TODO: exception handling
     chat_completion = openai.ChatCompletion.create(  # type: ignore[no-untyped-call]
-        model=model, messages=[{"role": "user", "content": prompt}], temperature=0.0
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=temperature,
     )
     return chat_completion.choices[0].message.content
 
 
 def tracker_as_readable_transcript(
-    tracker: DialogueStateTracker, human_prefix: str = "USER", ai_prefix: str = "AI"
+    tracker: DialogueStateTracker, human_prefix: str = USER, ai_prefix: str = AI
 ) -> str:
     """Creates a readable dialogue from a tracker.
 
@@ -39,11 +63,12 @@ def tracker_as_readable_transcript(
         ...     ],
         ... )
         >>> tracker_as_readable_transcript(tracker)
-        HUMAN: hello
+        USER: hello
         AI: hi
 
     Returns:
-        A string representing the transcript of the tracker"""
+    A string representing the transcript of the tracker
+    """
     transcript = []
 
     for event in tracker.events:
@@ -63,5 +88,6 @@ def sanitize_message_for_prompt(text: Optional[str]) -> str:
         text: the text to sanitize
 
     Returns:
-        A string with new lines removed."""
+    A string with new lines removed.
+    """
     return text.replace("\n", " ") if text else ""

@@ -43,7 +43,8 @@ class SensitiveTopicDetectorBase(ABC):
             user_msg: user message to check
 
         Returns:
-            True if the message contains sensitive topic, False otherwise"""
+        True if the message contains sensitive topic, False otherwise
+        """
         ...
 
     def action(self) -> Text:
@@ -125,7 +126,8 @@ class SensitiveTopicDetector(SensitiveTopicDetectorBase):
     def _parse_response(text: Text) -> bool:
         """Parse response from OpenAI ChatGPT model.
 
-        Expected responses are "YES" and "NO" (case-insensitive)."""
+        Expected responses are "YES" and "NO" (case-insensitive).
+        """
         return "YES" in text.upper()
 
 

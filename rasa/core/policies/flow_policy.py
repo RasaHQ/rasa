@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Text, List, Optional, Tuple, Union
+from typing import Any, Dict, Text, List, Optional, Union
 
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
@@ -10,7 +10,6 @@ from rasa.core.constants import (
     POLICY_PRIORITY,
 )
 from pypred import Predicate
-from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
@@ -319,7 +318,8 @@ class FlowStack:
         """Get the current flow step.
 
         Returns:
-            The current flow step or `None` if no flow is active."""
+        The current flow step or `None` if no flow is active.
+        """
         if not (top := self.top()) or not (top_flow := self.top_flow(flows)):
             return None
 
@@ -377,7 +377,7 @@ class StackFrameType(str, Enum):
     This means that the previous flow was resumed by this flow."""
     CORRECTION = "correction"
     """The frame is a correction frame.
-    
+
     This means that the previous flow was corrected by this flow."""
     REGULAR = "regular"
     """The frame is a regular frame.
@@ -488,7 +488,8 @@ class FlowExecutor:
             flows: The flows to use.
 
         Returns:
-            The created `FlowExecutor`."""
+        The created `FlowExecutor`.
+        """
         flow_stack = FlowStack.from_tracker(tracker)
         return FlowExecutor(flow_stack, flows or FlowsList([]), domain)
 
@@ -637,7 +638,8 @@ class FlowExecutor:
             tracker: The tracker to get the next action for.
 
         Returns:
-            The predicted action and the events to run."""
+        The predicted action and the events to run.
+        """
         if new_flow := self.find_startable_flow(tracker):
             # there are flows available, but we are not in a flow
             # it looks like we can start a flow, so we'll predict the trigger action
@@ -657,8 +659,8 @@ class FlowExecutor:
             domain: The domain to get the next action for.
 
         Returns:
-            The predicted action and the events to run."""
-
+        The predicted action and the events to run.
+        """
         prediction = self.consider_flow_switch(tracker)
 
         if prediction.action_name:
@@ -739,8 +741,8 @@ class FlowExecutor:
 
         Returns:
             The next action to execute, the events that should be applied to the
-            tracker and the confidence of the prediction."""
-
+        tracker and the confidence of the prediction.
+        """
         predicted_action: Optional[ActionPrediction] = None
 
         tracker = tracker.copy()
@@ -844,7 +846,8 @@ class FlowExecutor:
             tracker: The tracker to run the step on.
 
         Returns:
-            The predicted action and the events to run."""
+        The predicted action and the events to run.
+        """
         structlogger.debug("flow.step.wrapup", step=step, flow=flow)
         if isinstance(step, QuestionFlowStep):
             if self._is_correction(tracker):
@@ -892,7 +895,8 @@ class FlowExecutor:
             tracker: The tracker to run the step on.
 
         Returns:
-            A tuple of the predicted action and a list of events."""
+        A tuple of the predicted action and a list of events.
+        """
         if isinstance(step, QuestionFlowStep):
             structlogger.debug("flow.step.run.question", step=step, flow=flow)
             slot = tracker.slots.get(step.question, None)
