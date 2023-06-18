@@ -38,6 +38,7 @@ ACTION_DISAMBIGUATE_FLOWS = "action_disambiguate_flows"
 RULE_SNIPPET_ACTION_NAME = "..."
 ACTION_EXTRACT_SLOTS = "action_extract_slots"
 ACTION_VALIDATE_SLOT_MAPPINGS = "action_validate_slot_mappings"
+ACTION_FLOW_CONTINUE_INERRUPTED_NAME = "action_flow_continue_interrupted"
 
 
 DEFAULT_ACTION_NAMES = [

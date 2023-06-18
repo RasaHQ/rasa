@@ -18,6 +18,7 @@ from rasa.shared.nlu.constants import (
     CORRECTION_INTENT,
 )
 from rasa.shared.core.constants import (
+    ACTION_FLOW_CONTINUE_INERRUPTED_NAME,
     ACTION_LISTEN_NAME,
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
@@ -224,7 +225,9 @@ class FlowPolicy(Policy):
         result = self._default_predictions(domain)
         if action_name:
             result[domain.index_for_action(action_name)] = score
-        return self._prediction(result, events=events, action_metadata=action_metadata)
+        return self._prediction(
+            result, optional_events=events, action_metadata=action_metadata
+        )
 
 
 @dataclass

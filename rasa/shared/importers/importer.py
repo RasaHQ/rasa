@@ -12,6 +12,7 @@ import rasa.shared.core.constants
 import rasa.shared.utils.io
 from rasa.shared.core.domain import (
     KEY_FORMS,
+    KEY_RESPONSES_TEXT,
     Domain,
     KEY_E2E_ACTIONS,
     KEY_INTENTS,
@@ -428,7 +429,6 @@ class FlowSyncImporter(PassThroughImporter):
     @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of flows."""
-
         domain = self._importer.get_domain()
 
         flows = self.get_flows()
