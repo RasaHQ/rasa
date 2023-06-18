@@ -263,8 +263,17 @@ module.exports = {
     "llms": [
         'llms/large-language-models',
         'llms/llm-setup',
-        'llms/llm-dialogue',
-        'llms/handling-patterns',
+        {
+            type: 'category',
+            label: 'Dialogue Handling',
+            collapsed: false,
+
+            items: [
+                'llms/llm-dialogue',
+                'flows',
+                'llms/unhappy-paths',
+            ]
+        },      
         {
             type: 'category',
             label: 'LLM Components',
@@ -277,7 +286,6 @@ module.exports = {
                 'llms/flow-policy',
             ],
         },
-        'flows',
         'llms/llm-custom',
     ]
 };
