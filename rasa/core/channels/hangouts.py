@@ -1,3 +1,4 @@
+import copy
 import logging
 import structlog
 import google.auth.transport.requests
@@ -321,9 +322,13 @@ class HangoutsInput(InputChannel):
                     )
                 )
             except CancelledError:
-                structlogger.error("hangouts.message.blueprint", text=text)
+                structlogger.error(
+                    "hangouts.message.blueprint", text=copy.deepcopy(text)
+                )
             except Exception:
-                structlogger.exception("hangouts.message.blueprint.failure", text=text)
+                structlogger.exception(
+                    "hangouts.message.blueprint.failure", text=copy.deepcopy(text)
+                )
 
             return response.json(collector.messages)
 
