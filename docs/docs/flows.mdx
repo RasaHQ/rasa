@@ -185,15 +185,14 @@ The `next` field in steps allows for branching logic. For instance:
 
 ```yaml
 - id: "2"
-  question: Do you have any other questions?
+  question: age 
   next:
-    - intent: affirm
-      id: "3"
-    - intent: deny
-      id: "4"
+    - if: age < 18
+      then: "3"
+    - else: "4"
 ```
 
-In this example, depending on whether the user's intent is "affirm" or "deny",
+In this example, depending on the user's input value for age,
 the flow will proceed to step "3" or "4", respectively. This allows you to
 create complex and dynamic conversational flows that adapt to user inputs.
 
@@ -288,7 +287,7 @@ flows:
       action: utter_something_specific_to_credit_card
       next: "11"
     - id: "11"
-	    action: action_open_account
+      action: action_open_account
 ```
 
 ### Multiple Flows with links
