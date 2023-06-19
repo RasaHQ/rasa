@@ -1740,6 +1740,10 @@ class ActiveLoop(Event):
         """Returns text representation of event."""
         return f"Loop({self.name})"
 
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"ActiveLoop({self.name}, {self.timestamp}, {self.metadata})"
+
     def __hash__(self) -> int:
         """Returns unique hash for event."""
         return hash(self.name)

@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Text, List, Optional, Union
-import logging
 
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
@@ -12,13 +11,19 @@ from rasa.core.constants import (
 )
 from pypred import Predicate
 from rasa.shared.constants import FLOW_PREFIX
-from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
-from rasa.shared.core.constants import (
-    ACTION_FLOW_CONTINUE_INERRUPTED_NAME,
-    ACTION_LISTEN_NAME,
-    FLOW_STACK_SLOT,
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    ENTITY_ATTRIBUTE_TYPE,
+    INTENT_NAME_KEY,
+    CORRECTION_INTENT,
 )
-from rasa.shared.core.events import ActiveLoop, Event, SlotSet
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    CORRECTED_SLOTS_SLOT,
+    FLOW_STACK_SLOT,
+    PREVIOUS_FLOW_SLOT,
+)
+from rasa.shared.core.events import ActiveLoop, Event, SlotSet, UserUttered
 from rasa.shared.core.flows.flow import (
     END_STEP,
     START_STEP,
@@ -49,9 +54,9 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
 from rasa.core.policies.detectors import SensitiveTopicDetector
+import structlog
 
-
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY = "sensitive_topic_detector"
 
@@ -112,7 +117,9 @@ class FlowPolicy(Policy):
             # if the detector is configured, we need to load it
             full_config = SensitiveTopicDetector.get_default_config()
             full_config.update(detector_config)
-            self._sensitive_topic_detector = SensitiveTopicDetector(full_config)
+            self._sensitive_topic_detector: Optional[
+                SensitiveTopicDetector
+            ] = SensitiveTopicDetector(full_config)
         else:
             self._sensitive_topic_detector = None
 
@@ -139,22 +146,6 @@ class FlowPolicy(Policy):
         # or do some preprocessing here.
         return self.resource
 
-    @staticmethod
-    def _is_first_prediction_after_user_message(tracker: DialogueStateTracker) -> bool:
-        """Checks whether the tracker ends with an action listen.
-
-        If the tracker ends with an action listen, it means that we've just received
-        a user message.
-
-        Args:
-            tracker: The tracker.
-
-        Returns:
-            `True` if the tracker is the first one after a user message, `False`
-            otherwise.
-        """
-        return tracker.latest_action_name == ACTION_LISTEN_NAME
-
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
@@ -179,7 +170,7 @@ class FlowPolicy(Policy):
         predicted_action = None
         if (
             self._sensitive_topic_detector
-            and self._is_first_prediction_after_user_message(tracker)
+            and not tracker.has_action_after_latest_user_message()
             and (latest_message := tracker.latest_message)
         ):
             if self._sensitive_topic_detector.check(latest_message.text):
@@ -188,32 +179,22 @@ class FlowPolicy(Policy):
                 #   sure that the input isn't used in any following flow
                 #   steps. At the same time, we can't completely skip flows
                 #   as we want to guide the user to the next step of the flow.
-                logger.info(
-                    "Sensitive topic detected, predicting action %s", predicted_action
+                structlogger.info(
+                    "sensitive.topic.detected", predicted_action=predicted_action
                 )
             else:
-                logger.info("No sensitive topic detected: %s", latest_message.text)
+                structlogger.debug(
+                    "sensitive.topic.notdetected", message=latest_message.text
+                )
 
         # if detector predicted an action, we don't want to predict a flow
         if predicted_action is not None:
             return self._create_prediction_result(predicted_action, domain, 1.0, [])
 
-        executor = FlowExecutor.from_tracker(tracker, flows or FlowsList([]))
-        if tracker.active_loop:
-            # we are in a loop - likely answering a question - we need to check
-            # if the user responded with a trigger intent for another flow rather
-            # than answering the question
-            prediction = executor.consider_flow_switch(tracker)
-            return self._create_prediction_result(
-                action_name=prediction.action_name,
-                domain=domain,
-                score=prediction.score,
-                events=[],
-                action_metadata=prediction.metadata,
-            )
+        executor = FlowExecutor.from_tracker(tracker, flows or FlowsList([]), domain)
 
         # create executor and predict next action
-        prediction = executor.advance_flows(tracker, domain)
+        prediction = executor.advance_flows(tracker)
         return self._create_prediction_result(
             prediction.action_name,
             domain,
@@ -339,11 +320,12 @@ class FlowStack:
         """Get the current flow step.
 
         Returns:
-            The current flow step or `None` if no flow is active."""
+        The current flow step or `None` if no flow is active.
+        """
         if not (top := self.top()) or not (top_flow := self.top_flow(flows)):
             return None
 
-        return top_flow.step_for_id(top.step_id)
+        return top_flow.step_by_id(top.step_id)
 
     def is_empty(self) -> bool:
         """Checks if the stack is empty.
@@ -389,7 +371,16 @@ class StackFrameType(str, Enum):
     LINK = "link"
     """The frame is a link frame.
 
+
     This means that the previous flow linked to this flow."""
+    RESUME = "resume"
+    """The frame is a resume frame.
+
+    This means that the previous flow was resumed by this flow."""
+    CORRECTION = "correction"
+    """The frame is a correction frame.
+
+    This means that the previous flow was corrected by this flow."""
     REGULAR = "regular"
     """The frame is a regular frame.
 
@@ -406,6 +397,10 @@ class StackFrameType(str, Enum):
             return StackFrameType.LINK
         elif typ == StackFrameType.REGULAR.value:
             return StackFrameType.REGULAR
+        elif typ == StackFrameType.RESUME.value:
+            return StackFrameType.RESUME
+        elif typ == StackFrameType.CORRECTION.value:
+            return StackFrameType.CORRECTION
         else:
             raise NotImplementedError
 
@@ -471,7 +466,9 @@ class FlowStackFrame:
 class FlowExecutor:
     """Executes a flow."""
 
-    def __init__(self, flow_stack: FlowStack, all_flows: FlowsList) -> None:
+    def __init__(
+        self, flow_stack: FlowStack, all_flows: FlowsList, domain: Domain
+    ) -> None:
         """Initializes the `FlowExecutor`.
 
         Args:
@@ -480,9 +477,12 @@ class FlowExecutor:
         """
         self.flow_stack = flow_stack
         self.all_flows = all_flows
+        self.domain = domain
 
     @staticmethod
-    def from_tracker(tracker: DialogueStateTracker, flows: FlowsList) -> FlowExecutor:
+    def from_tracker(
+        tracker: DialogueStateTracker, flows: FlowsList, domain: Domain
+    ) -> FlowExecutor:
         """Creates a `FlowExecutor` from a tracker.
 
         Args:
@@ -490,16 +490,16 @@ class FlowExecutor:
             flows: The flows to use.
 
         Returns:
-            The created `FlowExecutor`."""
+        The created `FlowExecutor`.
+        """
         flow_stack = FlowStack.from_tracker(tracker)
-        return FlowExecutor(flow_stack, flows or FlowsList([]))
+        return FlowExecutor(flow_stack, flows or FlowsList([]), domain)
 
     def find_startable_flow(self, tracker: DialogueStateTracker) -> Optional[Flow]:
         """Finds a flow which can be started.
 
         Args:
             tracker: The tracker containing the conversation history up to now.
-            domain: The model's domain.
             flows: The flows to use.
 
         Returns:
@@ -525,9 +525,8 @@ class FlowExecutor:
                 return flow
         return None
 
-    @staticmethod
     def is_condition_satisfied(
-        predicate: Text, domain: Domain, tracker: "DialogueStateTracker"
+        self, predicate: Text, tracker: "DialogueStateTracker"
     ) -> bool:
         """Evaluate a predicate condition."""
 
@@ -551,14 +550,17 @@ class FlowExecutor:
             return initial_value
 
         text_slots = dict(
-            {slot.name: get_value(tracker.get_slot(slot.name)) for slot in domain.slots}
+            {
+                slot.name: get_value(tracker.get_slot(slot.name))
+                for slot in self.domain.slots
+            }
         )
         p = Predicate(predicate)
         evaluation, _ = p.analyze(text_slots)
         return evaluation
 
     def _select_next_step_id(
-        self, current: FlowStep, domain: Domain, tracker: "DialogueStateTracker"
+        self, current: FlowStep, tracker: "DialogueStateTracker"
     ) -> Optional[Text]:
         """Selects the next step id based on the current step."""
         next = current.next
@@ -568,7 +570,7 @@ class FlowExecutor:
         # evaluate if conditions
         for link in next.links:
             if isinstance(link, IfFlowLink) and link.condition:
-                if self.is_condition_satisfied(link.condition, domain, tracker):
+                if self.is_condition_satisfied(link.condition, tracker):
                     return link.target
 
         # evaluate else condition
@@ -592,20 +594,18 @@ class FlowExecutor:
     def _select_next_step(
         self,
         tracker: "DialogueStateTracker",
-        domain: Domain,
         current_step: FlowStep,
-        flow_id: Text,
+        flow: Flow,
     ) -> Optional[FlowStep]:
         """Get the next step to execute."""
-        next_id = self._select_next_step_id(current_step, domain, tracker)
-        if next_id is None:
-            return None
+        next_id = self._select_next_step_id(current_step, tracker)
+        step = flow.step_by_id(next_id)
+        structlogger.debug("flow.step.next", next=step, current=current_step, flow=flow)
+        return step
 
-        return self.all_flows.step_by_id(next_id, flow_id)
-
-    def _slot_for_question(self, question: Text, domain: Domain) -> Slot:
+    def _slot_for_question(self, question: Text) -> Slot:
         """Find the slot for a question."""
-        for slot in domain.slots:
+        for slot in self.domain.slots:
             if slot.name == question:
                 return slot
         else:
@@ -622,6 +622,17 @@ class FlowExecutor:
         else:
             return True
 
+    def _find_earliest_updated_question(
+        self, current_step: FlowStep, flow: Flow, updated_slots: List[Text]
+    ) -> Optional[FlowStep]:
+        """Find the question that was updated."""
+        asked_question_steps = flow.previously_asked_questions(current_step.id)
+
+        for question_step in reversed(asked_question_steps):
+            if question_step.question in updated_slots:
+                return question_step
+        return None
+
     def consider_flow_switch(self, tracker: DialogueStateTracker) -> ActionPrediction:
         """Consider switching to a new flow.
 
@@ -629,19 +640,18 @@ class FlowExecutor:
             tracker: The tracker to get the next action for.
 
         Returns:
-            The predicted action and the events to run."""
+        The predicted action and the events to run.
+        """
         if new_flow := self.find_startable_flow(tracker):
             # there are flows available, but we are not in a flow
             # it looks like we can start a flow, so we'll predict the trigger action
-            logger.debug(f"Found startable flow: {new_flow.id}")
+            structlogger.debug("flow.startable", flow_id=new_flow.id)
             return ActionPrediction(FLOW_PREFIX + new_flow.id, 1.0)
         else:
-            logger.debug("No startable flow found.")
+            structlogger.debug("flow.nostartable")
             return ActionPrediction(None, 0.0)
 
-    def advance_flows(
-        self, tracker: DialogueStateTracker, domain: Domain
-    ) -> ActionPrediction:
+    def advance_flows(self, tracker: DialogueStateTracker) -> ActionPrediction:
         """Advance the flows.
 
         Either start a new flow or advance the current flow.
@@ -651,8 +661,8 @@ class FlowExecutor:
             domain: The domain to get the next action for.
 
         Returns:
-            The predicted action and the events to run."""
-
+        The predicted action and the events to run.
+        """
         prediction = self.consider_flow_switch(tracker)
 
         if prediction.action_name:
@@ -662,7 +672,7 @@ class FlowExecutor:
             # if there are no flows, there is nothing to do
             return ActionPrediction(None, 0.0)
         else:
-            prediction = self._select_next_action(tracker, domain)
+            prediction = self._select_next_action(tracker)
             if FlowStack.from_tracker(tracker).as_dict() != self.flow_stack.as_dict():
                 # we need to update the flow stack to persist the state of the executor
                 if not prediction.events:
@@ -675,10 +685,50 @@ class FlowExecutor:
                 )
             return prediction
 
+    def _slot_sets_after_latest_message(
+        self, tracker: DialogueStateTracker
+    ) -> List[SlotSet]:
+        """Get all slot sets after the latest message."""
+        if not tracker.latest_message:
+            return []
+
+        slot_sets = []
+
+        for event in reversed(tracker.applied_events()):
+            if isinstance(event, UserUttered):
+                break
+            elif isinstance(event, SlotSet):
+                slot_sets.append(event)
+        return slot_sets
+
+    def _is_correction(self, tracker: DialogueStateTracker) -> bool:
+        return (
+            tracker.latest_action_name == ACTION_LISTEN_NAME
+            and tracker.latest_message is not None
+            and tracker.latest_message.intent.get("name") == CORRECTION_INTENT
+        )
+
+    def _correct_flow_position(
+        self,
+        newly_set_slots: List[Text],
+        step: FlowStep,
+        flow: Flow,
+        tracker: DialogueStateTracker,
+    ) -> None:
+        reset_point = self._find_earliest_updated_question(step, flow, newly_set_slots)
+
+        if reset_point:
+            structlogger.info(
+                "flow.reset.slotupdate",
+                step=step,
+                flow=flow,
+                reset_point=reset_point.id,
+            )
+            self.flow_stack.advance_top_flow(reset_point.id)
+
     def _select_next_action(
         self,
         tracker: DialogueStateTracker,
-        domain: Domain,
     ) -> ActionPrediction:
         """Select the next action to execute.
 
@@ -693,10 +743,13 @@ class FlowExecutor:
 
         Returns:
             The next action to execute, the events that should be applied to the
-            tracker and the confidence of the prediction."""
-
+        tracker and the confidence of the prediction.
+        """
         predicted_action: Optional[ActionPrediction] = None
-        gathered_events = []
+
+        tracker = tracker.copy()
+
+        number_of_initial_events = len(tracker.events)
 
         while not predicted_action or predicted_action.score == 0.0:
             if not (current_flow := self.flow_stack.top_flow(self.all_flows)):
@@ -713,21 +766,20 @@ class FlowExecutor:
                     "to __start__ if it ended it should be popped from the stack."
                 )
 
-            if not self._is_step_completed(previous_step, tracker):
-                # TODO: figure out
-                raise FlowException(
-                    f"Not quite sure what to do here yet. {previous_step}"
-                )
-
-            current_step = self._select_next_step(
-                tracker, domain, previous_step, current_flow.id
+            structlogger.debug("flow.action.loop", previous_step)
+            predicted_action = self._wrap_up_previous_step(
+                current_flow, previous_step, tracker
             )
-            if current_step is None:
-                frame = self.flow_stack.pop()
-                if frame.frame_type == StackFrameType.INTERRUPT:
-                    # if the previous frame got interrupted, we need to run the step
-                    # that got interrupted again
-                    current_step = self.flow_stack.top_flow_step(self.all_flows)
+            tracker.update_with_events(predicted_action.events or [], self.domain)
+
+            if predicted_action.action_name:
+                # if the previous step predicted an action, we'll stop here
+                # the step is not completed yet and we need to predict the
+                # action first before we can try again to wrap up this step and
+                # advance to the next one
+                break
+
+            current_step = self._select_next_step(tracker, previous_step, current_flow)
 
             if current_step:
                 # this can't be an else, because the previous if might change
@@ -735,8 +787,9 @@ class FlowExecutor:
                 self.flow_stack.advance_top_flow(current_step.id)
 
                 predicted_action = self._run_step(current_flow, current_step, tracker)
-                gathered_events.extend(predicted_action.events or [])
+                tracker.update_with_events(predicted_action.events or [], self.domain)
 
+        gathered_events = list(tracker.events)[number_of_initial_events:]
         predicted_action.events = gathered_events
         return predicted_action
 
@@ -752,6 +805,76 @@ class FlowExecutor:
                 initial_value = slot.initial_value if slot else None
                 events.append(SlotSet(step.question, initial_value))
         return events
+
+    @staticmethod
+    def _predict_question_loop(
+        tracker: DialogueStateTracker, loop_name: Text
+    ) -> Optional[Text]:
+
+        is_finished = (
+            tracker.latest_action
+            and tracker.latest_action.get(ACTION_NAME) == loop_name
+            and not tracker.active_loop
+        )
+
+        if is_finished:
+            return None
+
+        active_loop_rejected = tracker.is_active_loop_rejected
+        should_predict_loop = (
+            not active_loop_rejected
+            and tracker.latest_action
+            and tracker.latest_action.get(ACTION_NAME) != loop_name
+        )
+
+        if should_predict_loop:
+            structlogger.debug("flow.question.loop", loop=loop_name)
+            return loop_name
+        else:
+            structlogger.debug("flow.question.noloop")
+            return ACTION_LISTEN_NAME
+
+    def _wrap_up_previous_step(
+        self,
+        flow: Flow,
+        step: FlowStep,
+        tracker: DialogueStateTracker,
+    ) -> ActionPrediction:
+        """Try to wrap up the previous step.
+
+        Args:
+            current_flow: The current flow.
+            step: The previous step.
+            tracker: The tracker to run the step on.
+
+        Returns:
+        The predicted action and the events to run.
+        """
+        structlogger.debug("flow.step.wrapup", step=step, flow=flow)
+        if isinstance(step, QuestionFlowStep):
+            if self._is_correction(tracker):
+                updated_slots = self._slot_sets_after_latest_message(tracker)
+                return ActionPrediction(
+                    FLOW_PREFIX + "pattern_correction",
+                    1.0,
+                    metadata={
+                        "slots": {
+                            CORRECTED_SLOTS_SLOT: [s.as_dict() for s in updated_slots]
+                        }
+                    },
+                )
+            # the question is only finished once the slot is set and the loop
+            # is finished
+            loop_name = "question_" + step.question
+            action_name = self._predict_question_loop(tracker, loop_name)
+
+            if action_name:
+                # loop is not yet done
+                return ActionPrediction(action_name, 1.0)
+            else:
+                return ActionPrediction(None, 0.0)
+        else:
+            return ActionPrediction(None, 0.0)
 
     def _run_step(
         self,
@@ -774,23 +897,28 @@ class FlowExecutor:
             tracker: The tracker to run the step on.
 
         Returns:
-            A tuple of the predicted action and a list of events."""
+        A tuple of the predicted action and a list of events.
+        """
         if isinstance(step, QuestionFlowStep):
+            structlogger.debug("flow.step.run.question", step=step, flow=flow)
             slot = tracker.slots.get(step.question, None)
             initial_value = slot.initial_value if slot else None
-            if step.skip_if_filled and slot.value != initial_value:
+            slot_value = slot.value if slot else None
+            if step.skip_if_filled and slot_value != initial_value:
                 return ActionPrediction(None, 0.0)
 
             question_action = ActionPrediction("question_" + step.question, 1.0)
-            if slot.value != initial_value:
+            if slot_value != initial_value:
                 question_action.events = [SlotSet(step.question, initial_value)]
             return question_action
 
         elif isinstance(step, ActionFlowStep):
+            structlogger.debug("flow.step.run.action", step=step, flow=flow)
             if not step.action:
                 raise FlowException(f"Action not specified for step {step}")
             return ActionPrediction(step.action, 1.0)
         elif isinstance(step, LinkFlowStep):
+            structlogger.debug("flow.step.run.link", step=step, flow=flow)
             self.flow_stack.push(
                 FlowStackFrame(
                     flow_id=step.link,
@@ -803,6 +931,7 @@ class FlowExecutor:
             else:
                 return ActionPrediction(None, 0.0)
         elif isinstance(step, SetSlotsFlowStep):
+            structlogger.debug("flow.step.run.slot", step=step, flow=flow)
             return ActionPrediction(
                 None,
                 0.0,
@@ -813,21 +942,41 @@ class FlowExecutor:
         elif isinstance(step, EndFlowStep):
             # this is the end of the flow, so we'll pop it from the stack
             events = self._reset_scoped_slots(flow, tracker)
-            if len(self.flow_stack.frames) >= 2:
-                previous_frame = self.flow_stack.frames[-2]
-                current_frame = self.flow_stack.frames[-1]
-
+            structlogger.debug("flow.step.run.flowend", flow=flow)
+            if current_frame := self.flow_stack.pop():
+                previous_flow = self.flow_stack.top_flow(self.all_flows)
+                previous_flow_step = self.flow_stack.top_flow_step(self.all_flows)
                 if current_frame.frame_type == StackFrameType.INTERRUPT:
                     # get stack frame that is below the current one and which will
                     # be continued now that this one has ended.
-                    previous_flow = self.all_flows.flow_by_id(previous_frame.flow_id)
-                    previous_flow_name = previous_flow.name if previous_flow else None
+                    previous_flow_name = (
+                        previous_flow.name or previous_flow.id
+                        if previous_flow
+                        else None
+                    )
+
                     return ActionPrediction(
-                        ACTION_FLOW_CONTINUE_INERRUPTED_NAME,
+                        FLOW_PREFIX + "pattern_continue_interrupted",
                         1.0,
-                        metadata={"flow_name": previous_flow_name},
+                        metadata={"slots": {PREVIOUS_FLOW_SLOT: previous_flow_name}},
                         events=events,
                     )
+                elif (
+                    previous_flow
+                    and previous_flow_step
+                    and current_frame.frame_type == StackFrameType.CORRECTION
+                ):
+                    # TODO: we need to figure out how to actually
+                    #    "undo" the changed slots
+                    corrected_slots = tracker.get_slot(CORRECTED_SLOTS_SLOT)
+                    if corrected_slots:
+                        self._correct_flow_position(
+                            corrected_slots, previous_flow_step, previous_flow, tracker
+                        )
+                    else:
+                        # TODO: we need to figure out how to actually "undo" the
+                        #    changed slots
+                        pass
             return ActionPrediction(None, 0.0, events=events)
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")

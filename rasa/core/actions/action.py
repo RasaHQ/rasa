@@ -98,7 +98,6 @@ logger = logging.getLogger(__name__)
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
     from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
-    from rasa.core.actions.flows import ActionFlowContinueInterupted
 
     return [
         ActionListen(),
@@ -114,7 +113,6 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionSendText(),
         ActionBack(),
         ActionExtractSlots(action_endpoint),
-        ActionFlowContinueInterupted(),
     ]
 
 
@@ -314,6 +312,7 @@ class ActionBotResponse(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) response."""
         response_ids_for_response = domain.response_ids_per_response.get(
@@ -372,6 +371,7 @@ class ActionEndToEndResponse(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action (see parent class for full docstring)."""
         message = {"text": self.action_text}
@@ -460,6 +460,7 @@ class ActionRetrieveResponse(ActionBotResponse):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Query the appropriate response and create a bot utterance with that."""
         latest_message = tracker.latest_message
@@ -520,6 +521,7 @@ class ActionBack(ActionBotResponse):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         # only utter the response if it is available
@@ -545,6 +547,7 @@ class ActionListen(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         return []
@@ -570,6 +573,7 @@ class ActionRestart(ActionBotResponse):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         # only utter the response if it is available
@@ -606,6 +610,7 @@ class ActionSessionStart(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         _events: List[Event] = [SessionStarted()]
@@ -635,6 +640,7 @@ class ActionDefaultFallback(ActionBotResponse):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         # only utter the response if it is available
@@ -655,6 +661,7 @@ class ActionDeactivateLoop(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         return [ActiveLoop(None), SlotSet(REQUESTED_SLOT, None)]
@@ -769,6 +776,7 @@ class RemoteAction(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         json_body = self._action_call_format(tracker, domain)
@@ -895,6 +903,7 @@ class ActionRevertFallbackEvents(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         from rasa.core.policies.two_stage_fallback import has_user_rephrased
@@ -925,6 +934,7 @@ class ActionUnlikelyIntent(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         return []
@@ -1005,6 +1015,7 @@ class ActionDefaultAskAffirmation(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         latest_message = tracker.latest_message
@@ -1273,6 +1284,7 @@ class ActionExtractSlots(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         slot_events: List[Event] = []
@@ -1354,6 +1366,16 @@ def extract_slot_value_from_predefined_mapping(
     tracker: "DialogueStateTracker",
 ) -> List[Any]:
     """Extracts slot value if slot has an applicable predefined mapping."""
+
+    if tracker.has_bot_message_after_latest_user_message():
+        # TODO: this needs further validation - not sure if this breaks something!!!
+
+        # If the bot sent a message after the user sent a message, we can't
+        # extract any slots from the user message. We assume that the user
+        # message was already processed by the bot and the slot value was
+        # already extracted (e.g. for a prior form slot).
+        return []
+
     should_fill_entity_slot = (
         mapping_type == SlotMappingType.FROM_ENTITY
         and SlotMapping.entity_is_desired(mapping, tracker)

@@ -18,7 +18,7 @@ def _run_flow_until_listen(
     events = []
     actions = []
     while True:
-        action_prediction = executor.advance_flows(tracker, domain)
+        action_prediction = executor.advance_flows(tracker)
         if not action_prediction:
             break
 
@@ -60,7 +60,7 @@ def test_select_next_action() -> None:
         ],
     )
     domain = Domain.empty()
-    executor = FlowExecutor.from_tracker(tracker, flows)
+    executor = FlowExecutor.from_tracker(tracker, flows, domain)
 
     actions, events = _run_flow_until_listen(executor, tracker, domain)
 

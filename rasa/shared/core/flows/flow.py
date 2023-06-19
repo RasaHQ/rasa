@@ -7,6 +7,8 @@ from rasa.shared.exceptions import RasaException
 
 import rasa.shared.utils.io
 
+HANDLING_PATTERN_PREFIX = "pattern_"
+
 
 class UnreachableFlowStepException(RasaException):
     """Raised when a flow step is unreachable."""
@@ -150,7 +152,7 @@ class FlowsList:
         if not flow:
             raise UnresolvedFlowException(flow_id)
 
-        step = flow.step_for_id(step_id)
+        step = flow.step_by_id(step_id)
         if not step:
             raise UnresolvedFlowStepIdException(step_id, flow, referenced_from=None)
 
@@ -240,7 +242,7 @@ class Flow:
             reached_steps.add(step.id)
             for link in step.next.links:
                 reached_steps = _reachable_steps(
-                    self.step_for_id(link.target), reached_steps
+                    self.step_by_id(link.target), reached_steps
                 )
             return reached_steps
 
@@ -250,7 +252,7 @@ class Flow:
             if step.id not in reached_steps:
                 raise UnreachableFlowStepException(step, self)
 
-    def step_for_id(self, step_id: Optional[Text]) -> Optional[FlowStep]:
+    def step_by_id(self, step_id: Optional[Text]) -> Optional[FlowStep]:
         """Returns the step with the given id."""
         if not step_id:
             return None
@@ -273,6 +275,73 @@ class Flow:
         if len(self.steps) == 0:
             return None
         return self.steps[0]
+
+    @staticmethod
+    def slots_from_steps(steps: List[FlowStep]) -> List[str]:
+        """Return the names of the slots used in the given steps."""
+        result = []
+        for step in steps:
+            if isinstance(step, QuestionFlowStep) and step.question not in result:
+                result.append(step.question)
+        return result
+
+    def slots(self) -> List[str]:
+        """Return the names of the slots used in the flow."""
+        return self.slots_from_steps(self.steps)
+
+    def slots_up_to_step(self, id: str) -> List[str]:
+        """Returns the names of the slots used in this flow up to a step."""
+        step_ids = [step.id for step in self.steps]
+        try:
+            idx = step_ids.index(id)
+        except ValueError:
+            idx = -1
+        steps = self.steps[: idx + 1]
+        return self.slots_from_steps(steps)
+
+    def previously_asked_questions(self, step_id: Text) -> List[QuestionFlowStep]:
+        """Returns the questions asked before the given step.
+
+        Questions are returned roughly in reverse order, i.e. the first
+        question in the list is the one asked last. But due to circles
+        in the flow the order is not guaranteed to be exactly reverse.
+        """
+
+        def _previously_asked_questions(
+            current_step_id: Text, visited_steps: Set[Text]
+        ) -> List[QuestionFlowStep]:
+            """Returns the questions asked before the given step.
+
+            Keeps track of the steps that have been visited to avoid circles.
+            """
+            current_step = self.step_by_id(current_step_id)
+
+            questions: List[QuestionFlowStep] = []
+
+            if not current_step:
+                return questions
+
+            if isinstance(current_step, QuestionFlowStep):
+                questions.append(current_step)
+
+            visited_steps.add(current_step.id)
+
+            for previous_step in self.steps:
+                for next_link in previous_step.next.links:
+                    if next_link.target != current_step_id:
+                        continue
+                    if previous_step.id in visited_steps:
+                        continue
+                    questions.extend(
+                        _previously_asked_questions(previous_step.id, visited_steps)
+                    )
+            return questions
+
+        return _previously_asked_questions(step_id, set())
+
+    def is_handling_pattern(self) -> bool:
+        """Returns whether the flow is handling a pattern."""
+        return self.id.startswith(HANDLING_PATTERN_PREFIX)
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
@@ -713,8 +782,10 @@ class SetSlotsFlowStep(FlowStep):
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> SetSlotsFlowStep:
         """Used to read flow steps from parsed YAML.
+
         Args:
             flow_step_config: The parsed YAML as a dictionary.
+
         Returns:
             The parsed flow step.
         """
@@ -731,6 +802,7 @@ class SetSlotsFlowStep(FlowStep):
 
     def as_json(self) -> Dict[Text, Any]:
         """Returns the flow step as a dictionary.
+
         Returns:
             The flow step as a dictionary.
         """

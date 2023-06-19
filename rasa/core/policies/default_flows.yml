@@ -1,0 +1,68 @@
+responses:
+  utter_flow_continue_interrupted: 
+    - text: Let's continue with the topic {rasa_previous_flow}.
+      metadata: 
+        rephrase: True
+
+  utter_ask_confirm_correction:
+    - text: "Do you want to update your information?"
+      buttons:
+        - payload: /affirm
+          title: Yes
+        - payload: /deny
+          title: No, please keep the previous information
+      metadata: 
+        rephrase: True
+  
+  utter_corrected_previous_input:
+    - text: "Ok, I corrected the previous input."
+      metadata: 
+        rephrase: True
+  
+  utter_not_corrected_previous_input:
+    - text: "Ok, I did not correct the previous input."
+      metadata: 
+        rephrase: True
+
+slots:
+  confirm_correction:
+    type: text
+    mappings:
+      - intent: affirm
+        type: from_intent
+        value: "True"
+        conditions:
+          - active_loop: question_confirm_correction
+      - intent: deny
+        type: from_intent
+        value: "False"
+        conditions:
+          - active_loop: question_confirm_correction
+
+flows:  
+  pattern_continue_interrupted:
+    description: A meta flow that should be started to continue an interrupted flow. 
+
+    steps:
+      - id: "0"
+        action: utter_flow_continue_interrupted
+  
+  pattern_correction:
+    description: A meta flow that should be started to correct a previous user input.
+
+    steps:
+      - id: "0"
+        question: confirm_correction
+        next:
+          - if: confirm_correction
+            then: "1"
+          - else: "2"
+      - id: "1"
+        action: utter_corrected_previous_input
+      - id: "2"
+        set_slots:
+          - rasa_corrected_slots: None
+        next: "3"
+      - id: "3"
+        action: utter_not_corrected_previous_input
+ 
