@@ -246,48 +246,96 @@ flows:
 ```
 
 ### Asking for confirmation
-- TODO: include flow but also slot configuration from domain
+
+excerpt from flows.yml
+```yaml
+flows:
+  transfer_money:
+    description: This flow demonstrates asking for confirmation from the user.
+    steps:
+      - id: "0"
+        intent: transfer_money
+        next: "1"
+      - id: "1"
+        question: money
+        next: "2"
+      - id: "2"
+        question: confirm_transfer
+        next:
+          - if: confirm_transfer == "yes"
+            then: "3"
+          - else: "4"
+      - id: "3"
+        action: utter_transfer_success
+      - id: "4"
+        action: utter_transfer_cancel
+```
+
+excerpt from domain.yml that shows the slot configuration.
+```yaml
+slots:
+  money:
+    type: float
+    mappings:
+    - type: from_text
+      conditions:
+      - active_loop: question_money
+        requested_slot: money
+  confirm_transfer:
+    type: text
+    mappings:
+    - type: from_text
+      conditions:
+      - active_loop: question_confirm_transfer
+        requested_slot: confirm_transfer
+
+responses:
+  utter_ask_money:
+    - text: "How much money do you wish to transfer?"
+  utter_ask_confirm_transfer:
+    - text: "Do you wish to proceed with the transfer?"
+```
 
 #### Flows branching on the result of the user selection
 ```yaml
 flows:
-  flow: basic flow with questions
-  description: optional description of a basic flow with questions
-  steps:
-    - id: "1"
-      intent: greet
-      next: "2"
-    - id: "2"
-      action: utter_greet
-      next: "3"
-    - id: "3"
-      question: account_type
-      next:
-        - if: account_type == "checking"
-          then: "5"
-        - if: account_type == "savings"
-          then: "7"
-        - else: "9"
-    - id: "5"
-      question: specific_checking_question
-      next: "6"
-    - id: "6"
-      action: utter_something_specific_to_checking
-      next: "11"
-    - id: "7"
-      question: specific_savings_question
-      next: "8"
-    - id: "8"
-      action: utter_something_specific_to_savings
-      next: "11"
-    - id: "9"
-      question: specific_credit_card_question
-      next: "10"
-    - id: "10"
-      action: utter_something_specific_to_credit_card
-      next: "11"
-    - id: "11"
-      action: action_open_account
+  user_selection_based_flow_branching_example:
+    description: This flow opens a bank account based on the user's choice of account model.
+    steps:
+      - id: "1"
+        intent: greet
+        next: "2"
+      - id: "2"
+        action: utter_greet
+        next: "3"
+      - id: "3"
+        question: account_type
+        next:
+          - if: account_type == "checking"
+            then: "5"
+          - if: account_type == "savings"
+            then: "7"
+          - else: "9"
+      - id: "5"
+        question: specific_checking_question
+        next: "6"
+      - id: "6"
+        action: utter_something_specific_to_checking
+        next: "11"
+      - id: "7"
+        question: specific_savings_question
+        next: "8"
+      - id: "8"
+        action: utter_something_specific_to_savings
+        next: "11"
+      - id: "9"
+        question: specific_credit_card_question
+        next: "10"
+      - id: "10"
+        action: utter_something_specific_to_credit_card
+        next: "11"
+      - id: "11"
+        action: action_open_account
 ```
 
 ### Multiple Flows with links
