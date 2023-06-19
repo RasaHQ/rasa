@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 
 # original code taken from
-# https://github.com/tensorflow/addons/blob/master/tensorflow_addons/metrics/f_scores.py
+# https://github.com/tensorflow/addons/blob/f30df4322b5580b3e5946530a60f7126035dd73b/tensorflow_addons/metrics/f_scores.py
 # (modified to our neeeds)
 
 
