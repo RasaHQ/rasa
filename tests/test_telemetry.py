@@ -34,6 +34,15 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
 
 
+@pytest.fixture(autouse=True)
+def patch_telemetry_context() -> Generator[None, None, None]:
+    """Use a new telemetry context for each test to avoid tests influencing each other."""
+    defaut_context = telemetry.TELEMETRY_CONTEXT
+    telemetry.TELEMETRY_CONTEXT = None
+    yield
+    telemetry.TELEMETRY_CONTEXT = defaut_context
+
+
 async def test_events_schema(
     monkeypatch: MonkeyPatch, default_agent: Agent, config_path: Text
 ):
@@ -489,7 +498,6 @@ def test_context_contains_os():
 
 def test_context_contains_license_hash(monkeypatch: MonkeyPatch) -> None:
     mock = MagicMock()
-    telemetry.TELEMETRY_CONTEXT = None # make sure we don't use the cached value
     mock.return_value.hook.get_license_hash.return_value = "1234567890"
     monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
     context = telemetry._default_context_fields()
@@ -505,7 +513,6 @@ def test_context_contains_license_hash(monkeypatch: MonkeyPatch) -> None:
 
 def test_context_does_not_contain_license_hash(monkeypatch: MonkeyPatch) -> None:
     mock = MagicMock()
-    telemetry.TELEMETRY_CONTEXT = None # make sure we don't use the cached value
     mock.return_value.hook.get_license_hash.return_value = None
     monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
     context = telemetry._default_context_fields()
