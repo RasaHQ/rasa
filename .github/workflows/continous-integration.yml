@@ -847,10 +847,7 @@ jobs:
         shell: bash
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c
-        with:
-          version: v0.5.1
-          driver: docker
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to DockerHub Registry 🔢
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
@@ -1046,11 +1043,7 @@ jobs:
         shell: bash
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c
-        id: buildx
-        with:
-          version: v0.5.1
-          driver: docker
+        uses: docker/setup-buildx-action@v2
 
       - name: Echo Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
