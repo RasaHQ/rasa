@@ -1,25 +1,41 @@
 ---
 id: flows
-sidebar_label: Flows
-title: Flows
-abstract: Flows in Rasa offer a structured way to design conversation-driven business logic. The documentation details the rules for effectively using and managing Flows within Rasa.
+sidebar_label: Business Logic with Flows
+title: Business Logic with Flows
+abstract: |
+  Flows in Rasa offer a structured way to design conversation-driven business
+  logic. The documentation details the rules for effectively using and managing
+  Flows within Rasa.
 ---
+
+import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
+
+<RasaDiscoveryBanner/>
 
 ## Overview
 
-**Flow** is a novel Rasa feature designed to build intuitive, conversation-centric business logic for your chatbots. Flows are primarily devised using Studio's Flow builder. However, as a Rasa core feature, they also offer a YAML counterpart, yielding a specification for creating Flow primitives in YAML.
+**Flow** is a novel Rasa feature designed to build intuitive,
+conversation-centric business logic for your chatbots. Flows are primarily
+devised using Studio's Flow builder. However, as a Rasa core feature, they also
+offer a YAML counterpart, yielding a specification for creating Flow primitives
+in YAML.
 
-In essence, a **Flow** embodies a conversational state machine in the form of a directed graph. The primary building block of a Flow is a **Step**, equivalent to a node in the graph. Each step outlines the potential subsequent steps, which may be associated with certain conditions. Hence, graph vertices are embedded in steps.
+In essence, a **Flow** embodies a conversational state machine in the form of a
+directed graph. The primary building block of a Flow is a **Step**, equivalent
+to a node in the graph. Each step outlines the potential subsequent steps, which
+may be associated with certain conditions. Hence, graph vertices are embedded in
+steps.
 
 ### YAML Specification for Flow
 
 A Flow is defined using the following structure:
 
 ```yaml
-flow: A flow # a name
-id: a_flow # an id
-description: optional description of a flow
-steps: [] # a list of steps
+flows:
+  a_flow: # an id
+    name: A flow # a name
+    description: optional description of a flow
+    steps: [] # a list of steps
 ```
 
 ## Steps
@@ -33,60 +49,68 @@ metadata: {} # an optional dict
 next: an id or conditionals to determine which step should be executed next
 ```
 
-Steps can manifest in one of three types: `user_message`, `action`, or `question`.
+Steps can manifest in one of three types: `user_message`, `action`, or
+`question`.
 
 ### User Message (`user_message`)
 
 This step signifies a user utterance. Here's an example:
 
 ```yaml
-- step:
-    id: a_required_unique_id
-    intent: open_bank_account
-    entities: [] # optional
-    description: open a bank account
-    metadata: {} # an optional dict
-    next: "5"
+- id: a_required_unique_id
+  intent: open_bank_account
+  entities: [] # optional
+  description: open a bank account
+  metadata: {} # an optional dict
+  next: "5"
 ```
 
-In this example, the user intent is to open a bank account. The `next` field indicates the ID of the next step to be taken in the flow, which would be the step with the ID "5".
+In this example, the user intent is to open a bank account. The `next` field
+indicates the ID of the next step to be taken in the flow, which would be the
+step with the ID "5".
 
-A `user_message` step can also support `OR` statements. This means that the flow can proceed if either of the conditions in the `OR` statement are met:
+A `user_message` step can also support `OR` statements. This means that the flow
+can proceed if either of the conditions in the `OR` statement are met:
 
 ```yaml
-- step:
-    id: a_required_unique_id
-    or:
-      - intent: complaint
-        entities: [] # optional
-      - intent: talk_to_agent
-        entities: [] # optional
-    description: handle a complaint or talk to an agent
-    metadata: {} # an optional dict
-    next: "5"
+- id: a_required_unique_id
+  or:
+    - intent: complaint
+      entities: [] # optional
+    - intent: talk_to_agent
+      entities: [] # optional
+  description: handle a complaint or talk to an agent
+  metadata: {} # an optional dict
+  next: "5"
 ```
 
-Here, if the user intent is either to make a complaint or to talk to an agent, the flow would proceed to the step with ID "5".
+Here, if the user intent is either to make a complaint or to talk to an agent,
+the flow would proceed to the step with ID "5".
 
 ### Action (`action`)
 
-An `action` step is where the bot performs a specific action or utters a message. Here are two examples:
+An `action` step is where the bot performs a specific action or utters a
+message. Here are two examples:
 
 ```yaml
 action: action_xyz
 ```
 
-This could be a custom action where the bot performs a specific function defined in your custom actions script.
+This could be a custom action where the bot performs a specific function defined
+in your custom actions script.
 
 ```yaml
 action: utter_xyz
 ```
 
-This is an utterance action where the bot sends a predefined message to the user. The message for "utter_xyz" would be defined in the domain file under responses.
+This is an utterance action where the bot sends a predefined message to the
+user. The message for "utter_xyz" would be defined in the domain file under
+responses.
 
 ### Question (`question`)
 
-In a `question` step, the bot asks a question, with the aim usually being to fill a slot. Here is an example:
+In a `question` step, the bot asks a question, with the aim usually being to
+fill a slot. Here is an example:
 
 ```yaml
 question: account_type # slot name
@@ -94,18 +118,23 @@ question: account_type # slot name
 
 In this example, the bot is
 
- asking the user to provide their account type. The response will be used to fill the "account_type" slot.
+asking the user to provide their account type. The response will be used to fill
+the "account_type" slot.
 
-A question can be configured to be skipped if the slot is already filled, as shown below:
+A question can be configured to be skipped if the slot is already filled, as
+shown below:
 
 ```yaml
 question: first_name # slot name
 skip_if_filled: true
 ```
 
-In this scenario, if the "first_name" slot is already filled, the bot will skip this question.
+In this scenario, if the "first_name" slot is already filled, the bot will skip
+this question.
 
-The slot can also be configured to be cleared at the end of the flow execution. The following configuration would clear the slot when a leaf of the flow is reached OR when exiting a `link`ed node:
+The slot can also be configured to be cleared at the end of the flow execution.
+The following configuration would clear the slot when a leaf of the flow is
+reached OR when exiting a `link`ed node:
 
 ```yaml
 question: yes_or_no # slot name
@@ -116,14 +145,18 @@ For the `slot_type`, it's recommended to use `text` slots in Flows.
 
 ### Scope (`scope`)
 
-Scopes determine the lifespan of a slot or variable. There are two types of scopes available:
+Scopes determine the lifespan of a slot or variable. There are two types of
+scopes available:
 
-- **flow**: The variable exists only for the duration of the flow. Once the flow ends, the variable ceases to exist.
+- **flow**: The variable exists only for the duration of the flow. Once the flow
+  ends, the variable ceases to exist.
 - **global**: The variable persists across flows until it is explicitly changed.
 
 ### Fill (`fill`)
 
-`Fill` refers to the process of filling slots based on user responses. It is a simplified version of slot mapping. Below is an example of mapping from entities:
+`Fill` refers to the process of filling slots based on user responses. It is a
+simplified version of slot mapping. Below is an example of mapping from
+entities:
 
 ```yaml
 fill:
@@ -131,7 +164,8 @@ fill:
   window: question | flow | global
 ```
 
-Here, the "entity_name" entity from the user's message is extracted and used to fill a corresponding slot.
+Here, the "entity_name" entity from the user's message is extracted and used to
+fill a corresponding slot.
 
 Or mapping from intent (or button payload):
 
@@ -142,21 +176,119 @@ fill:
   window: question
 ```
 
-Here, if the user's intent is "affirm", the corresponding slot will be filled with the value "true".
+Here, if the user's intent is "affirm", the corresponding slot will be filled
+with the value "true".
 
 ### Next (`next`)
 
 The `next` field in steps allows for branching logic. For instance:
 
 ```yaml
-- step:
-    id: "2"
-    question: Do you have any other questions?
-    next:
-      - intent: affirm
-        id: "3"
-      - intent: deny
-        id: "4"
+- id: "2"
+  question: Do you have any other questions?
+  next:
+    - intent: affirm
+      id: "3"
+    - intent: deny
+      id: "4"
 ```
 
-In this example, depending on whether the user's intent is "affirm" or "deny", the flow will proceed to step "3" or "4", respectively. This allows you to create complex and dynamic conversational flows that adapt to user inputs.
+In this example, depending on whether the user's intent is "affirm" or "deny",
+the flow will proceed to step "3" or "4", respectively. This allows you to
+create complex and dynamic conversational flows that adapt to user inputs.
+
+## Examples
+
+### Hello World Flow
+
+```yaml
+flows:
+  hello_world:
+    name: Hello World!
+    description: A basic flow
+    steps:
+      - id: "1"
+        intent: greet
+        next: "2"
+      - id: "2"
+        action: utter_greet
+```
+
+The intent `greet` and the response template `utter_greet` need to be defined in
+the domain file.
+
+The `next` property determines the id of the next step and links all the 
+different steps together.
+
+### A basic flow with branching
+
+```yaml
+flows:
+  basic_flow_with_branching:
+    name: basic flow with branching
+    description: a flow with a branch
+    steps:
+      - id: "1"
+        intent: greet
+        next: "2"
+      - id: "2"
+        action: utter_greet
+        next: "3"
+      - id: "3"
+        question: age
+        next:
+          - if: age < 18
+            then: "4"
+          - else: "5"
+      - id: "4"
+        action: utter_too_young
+      - id: "5"
+        action: utter_old_enough
+```
+
+### Asking for confirmation
+- TODO: include flow but also slot configuration from domain
+- TODO: include branching on the result of the user selection
+
+### Multiple Flows with links
+
+```yaml
+flows:
+  flow_with_links:
+    name: flow with links
+    description: optional description of a flow with links
+    steps:
+      - id: "1"
+        intent: greet
+        next: "2"
+      - id: "2"
+        action: utter_greet
+        next: "3"
+      - id: "3"
+        link: collect_personal_details
+        next:
+          - if: age < 18
+            then: "4"
+          - else: "5"
+      - id: "4"
+        action: utter_too_young
+        next: "6"
+      - id: "5"
+        action: utter_old_enough
+        next: "6"
+      - id: "6"
+        link: another_flow
+
+  collect_personal_details:
+    name: collect details
+    description: gather personal details from the user
+    steps:
+      - id: "1"
+        question: first_name
+        next: "2"
+      - id: "2"
+        question: last_name
+        next: "3"
+      - id: "3"
+        question: age
+```
