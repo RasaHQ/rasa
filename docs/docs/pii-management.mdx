@@ -33,10 +33,12 @@ anonymizing data in flight could have undesirable consequences for the assistant
 ## Architecture Overview
 
 The anonymization of the Rasa event is run through an anonymization pipeline at the end of the dialogue management
-action prediction and execution. The Rasa agent will invoke the anonymization pipeline during each user message
-handling before saving the un-anonymized new events to the tracker store. The anonymization pipeline will first run
-through a sequence of anonymization rules that are applied to the new events. Then the pipeline will publish the events to
-the Kafka topic that is mapped to the anonymization rule list.
+action prediction and execution. The anonymization steps are as follows:
+1. The Rasa agent will invoke the anonymization pipeline during each user message handling.
+2. The anonymization pipeline will run through a sequence of anonymization rules that are applied to the new events.
+3. The pipeline will publish the anonymized events to the Kafka topic that is mapped to the anonymization rule list in
+`endpoints.yml`.
+4. The tracker store saves the original events which are not anonymized.
 
 ### Supported Rasa Events
 
