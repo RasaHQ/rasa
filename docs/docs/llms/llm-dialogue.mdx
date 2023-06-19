@@ -8,5 +8,27 @@ abstract: |
 
 import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 
-<RasaDiscoveryBanner/>
+<RasaDiscoveryBanner />
 
+## Motivation
+
+The approach combine the best of both worlds:
+
+- the flexibility of LLMs and
+- the control of business logic.
+
+The idea is to use LLMs to handle unhappy paths and to use business logic to
+handle happy paths.
+
+The combination of LLMs and Flows avoids "black box" behavior. This approach
+allows to limit the specification of business logic to a minimum and provides
+ample opportunity to customize dialogue behavior.
+
+## Approach
+
+- specify happy paths with business logic
+- specify patterns of unhappy paths using separate flows
+- use flows to keep track of state
+- use LLMs to update flow states
+
+## Example conversation
