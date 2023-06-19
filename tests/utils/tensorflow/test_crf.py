@@ -16,7 +16,6 @@ from rasa.utils.tensorflow.crf import (
     crf_binary_score,
     crf_log_norm,
     crf_log_likelihood,
-
 )
 
 
@@ -80,7 +79,7 @@ def test_crf_sequence_score(dtype):
         np.array([1], dtype=np.int32),
     ]
     for sequence_lengths, inputs, tag_indices in zip(
-            sequence_lengths_list, inputs_list, tag_indices_list
+        sequence_lengths_list, inputs_list, tag_indices_list
     ):
         sequence_score = crf_sequence_score(
             inputs=tf.expand_dims(inputs, 0),
@@ -150,7 +149,7 @@ def test_crf_log_norm(dtype):
     ]
 
     for sequence_lengths, inputs, tag_indices in zip(
-            sequence_lengths_list, inputs_list, tag_indices_list
+        sequence_lengths_list, inputs_list, tag_indices_list
     ):
         num_words = inputs.shape[0]
         num_tags = inputs.shape[1]
