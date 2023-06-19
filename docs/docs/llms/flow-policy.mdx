@@ -34,10 +34,10 @@ modify the underlying state machine to handle edge-cases.
 Please refer to the [flows specification](../flows.mdx) for detailed 
 information on defining flows.
 
-## Adding the FlowPolicy to your bot
+## Adding the `FlowPolicy` to your bot
 
-Incorporating the FlowPolicy into your bot involves a two-step process. First,
-you need to configure the FlowPolicy in your 'config.yml' file. The
+Incorporating the `FlowPolicy` into your bot involves a two-step process. First,
+you need to configure the `FlowPolicy` in your `config.yml` file. The
 configuration ensures that your bot recognizes and applies the `FlowPolicy` when
 running:
     
@@ -57,8 +57,7 @@ and apply them.
 
 ## How does it work?
 
-The FlowPolicy works by managing the state of your bot, transitioning between
-states, and initiating new flows when required.
+The `FlowPolicy` leverages a Flow stack structure (Last In First Out) together with internal slots to manage the state of your bot.
 
 ### Managing the State
 
@@ -97,12 +96,11 @@ flow to be started. This **correction is not explicitly modeled** in the
 `transfer_money` flow but rather handled by a so called 
 "conversational pattern".
 
-The correction flow is one of these "conversational patterns". It is only 
-executed when the user corrects a prior input. When triggered, the 
-correction flow is put on top of the flow stack and executed. 
+The correction flow is only  executed when the user wants to correct a prior input.
+When triggered, the correction flow is put on top of the flow stack and executed. 
 
-The correction flow is an "interruption" to the `transfer_money` flow. Once the
-correction flow is completed, the `transfer_money` flow is resumed. Before, the
+From the `transfer_money` flow, the correction flow is an interruption. Once the
+correction flow is completed, the `transfer_money` flow is resumed. Before the
 `transfer_money` is resumed, the `resume_flow` flow is triggered. It allows the
 dialogue designer to define how to guide the user back to the original flow, 
 `transfer_money` in this case.
@@ -114,7 +112,7 @@ correction flow.
 
 ### Transitioning Between States
 
-The FlowPolicy transitions between states in response to user inputs or after an
+The `FlowPolicy` transitions between states in response to user inputs or after an
 action has been completed. Initially, it waits for user input. Once received, it
 advances the state of the machine until it makes an action prediction. After the
 action has been completed and its result incorporated, it continues advancing to
@@ -122,8 +120,8 @@ the next state.
 
 ### Starting New Flows
 
-Starting a new flow in the FlowPolicy can be done in one of two ways. Either,
-by user input that corresponds that matches the first step in a flow or 
+Starting a new flow in the `FlowPolicy` can be done in one of two ways. Either,
+by user input that matches the first step in a flow or 
 by predicting the "flow action".
 
 #### User Input
@@ -144,28 +142,28 @@ flows:
     # - ... 
 ```
 
-The NLU model will predict the intent `transfer_money` and the FlowPolicy will
+The NLU model will predict the intent `transfer_money` and the `FlowPolicy` will
 start the flow `transfer_money` as a result.
 
 #### Predicting Flow Actions
-Another policy can predict the action `flow_transfer_money` and the FlowPolicy
+Another policy can predict the action `flow_transfer_money` and the `FlowPolicy`
 will start the flow `transfer_money` as a result.
 
 ### Interruptions and Digressions
 
 Flows and their specification should model the happy path of a conversation.
-Digressions and interruptions are not explicitly modeled in the flow. Instead,
+Digressions and interruptions are not explicitly modeled in a flow. Instead,
 the `FlowPolicy` relies on other components to identify these cases and
 interrupt the flow. The digressions and interruptions the flow policy is able 
 to handle are documented in [Handling Unhappy Paths](./unhappy-paths.mdx).
 
-At times, the user might provide something that the flow does not expect. The
+Sometimes, the user might provide something that a flow does not expect. The
 `FlowPolicy` does not identify these cases itself, but relies on other 
 components to identify these cases and interrupt the flow. 
 
 For example, the user message *"oh sorry I meant John"* is a correction to a 
 prior input. The `FlowPolicy` relies on another component to identify that this
-is a corretion and set the corresponding slots. Based on this, the `FlowPolicy`
+is a correction and set the corresponding slots. Based on this, the `FlowPolicy`
 will then start the correction flow.
 
 ## Configuration
