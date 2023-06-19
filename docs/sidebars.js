@@ -272,6 +272,7 @@ module.exports = {
                 'llms/llm-dialogue',
                 'flows',
                 'llms/unhappy-paths',
+                'llms/llm-detector',
             ]
         },      
         {

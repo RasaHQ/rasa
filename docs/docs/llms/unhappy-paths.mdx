@@ -11,3 +11,14 @@ import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 
 <RasaDiscoveryBanner/>
 
+- TODO explain general concept: flows are a sequence of steps, each step is a question. unhappy paths handled through "conversation patterns" (special flows). flow classifier detects them and triggers the conversation pattern flows to handle them
+
+- default flows are in https://github.com/RasaHQ/rasa/pull/12501/files#diff-ef650ec4c31fc5423a8811c54ad1abed3c2c8501b6640fb782144a725e362053
+
+- TODO handling of starting another flow from within a flow
+- TODO include configuration of the continuation template  and exaplantion of default
+
+- TODO handling of corrections of an earlier question
+- TODO include configuration of the correction template and exaplantion of default
+- TODO include how to reject the correction and continue with the original answer (set the slot `rasa_corrected_slots` to `None`)
+
