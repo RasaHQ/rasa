@@ -13,7 +13,6 @@ Computes the forward decoding in a linear-chain CRF.
 #### \_\_init\_\_
 
 ```python
-@typechecked
 def __init__(transition_params: TensorLike, **kwargs: Any) -> None
 ```
 
@@ -135,4 +134,143 @@ Decode the highest scoring sequence of tags.
 - `decode_scores` - A [batch_size, max_seq_len] matrix, containing the score of
   `decode_tags`.
 - `best_score` - A [batch_size] vector, containing the best score of `decode_tags`.
+
+#### crf\_unary\_score
+
+```python
+def crf_unary_score(tag_indices: TensorLike, sequence_lengths: TensorLike,
+                    inputs: TensorLike) -> tf.Tensor
+```
+
+Computes the unary scores of tag sequences.
+
+**Arguments**:
+
+- `tag_indices` - A [batch_size, max_seq_len] matrix of tag indices.
+- `sequence_lengths` - A [batch_size] vector of true sequence lengths.
+- `inputs` - A [batch_size, max_seq_len, num_tags] tensor of unary potentials.
+
+**Returns**:
+
+- `unary_scores` - A [batch_size] vector of unary scores.
+
+#### crf\_binary\_score
+
+```python
+def crf_binary_score(tag_indices: TensorLike, sequence_lengths: TensorLike,
+                     transition_params: TensorLike) -> tf.Tensor
+```
+
+Computes the binary scores of tag sequences.
+
+**Arguments**:
+
+- `tag_indices` - A [batch_size, max_seq_len] matrix of tag indices.
+- `sequence_lengths` - A [batch_size] vector of true sequence lengths.
+- `transition_params` - A [num_tags, num_tags] matrix of binary potentials.
+
+**Returns**:
+
+- `binary_scores` - A [batch_size] vector of binary scores.
+
+#### crf\_sequence\_score
+
+```python
+def crf_sequence_score(inputs: TensorLike, tag_indices: TensorLike,
+                       sequence_lengths: TensorLike,
+                       transition_params: TensorLike) -> tf.Tensor
+```
+
+Computes the unnormalized score for a tag sequence.
+
+**Arguments**:
+
+- `inputs` - A [batch_size, max_seq_len, num_tags] tensor of unary potentials
+  to use as input to the CRF layer.
+- `tag_indices` - A [batch_size, max_seq_len] matrix of tag indices for which
+  we compute the unnormalized score.
+- `sequence_lengths` - A [batch_size] vector of true sequence lengths.
+- `transition_params` - A [num_tags, num_tags] transition matrix.
+
+**Returns**:
+
+- `sequence_scores` - A [batch_size] vector of unnormalized sequence scores.
+
+#### crf\_forward
+
+```python
+def crf_forward(inputs: TensorLike, state: TensorLike,
+                transition_params: TensorLike,
+                sequence_lengths: TensorLike) -> tf.Tensor
+```
+
+Computes the alpha values in a linear-chain CRF.
+
+See http://www.cs.columbia.edu/~mcollins/fb.pdf for reference.
+
+**Arguments**:
+
+- `inputs` - A [batch_size, num_tags] matrix of unary potentials.
+- `state` - A [batch_size, num_tags] matrix containing the previous alpha
+  values.
+- `transition_params` - A [num_tags, num_tags] matrix of binary potentials.
+  This matrix is expanded into a [1, num_tags, num_tags] in preparation
+  for the broadcast summation occurring within the cell.
+- `sequence_lengths` - A [batch_size] vector of true sequence lengths.
+  
+
+**Returns**:
+
+- `new_alphas` - A [batch_size, num_tags] matrix containing the
+  new alpha values.
+
+#### crf\_log\_norm
+
+```python
+def crf_log_norm(inputs: TensorLike, sequence_lengths: TensorLike,
+                 transition_params: TensorLike) -> tf.Tensor
+```
+
+Computes the normalization for a CRF.
+
+**Arguments**:
+
+- `inputs` - A [batch_size, max_seq_len, num_tags] tensor of unary potentials
+  to use as input to the CRF layer.
+- `sequence_lengths` - A [batch_size] vector of true sequence lengths.
+- `transition_params` - A [num_tags, num_tags] transition matrix.
+
+**Returns**:
+
+- `log_norm` - A [batch_size] vector of normalizers for a CRF.
+
+#### crf\_log\_likelihood
+
+```python
+def crf_log_likelihood(
+    inputs: TensorLike,
+    tag_indices: TensorLike,
+    sequence_lengths: TensorLike,
+    transition_params: Optional[TensorLike] = None
+) -> Tuple[tf.Tensor, tf.Tensor]
+```
+
+Computes the log-likelihood of tag sequences in a CRF.
+
+**Arguments**:
+
+- `inputs` - A [batch_size, max_seq_len, num_tags] tensor of unary potentials
+  to use as input to the CRF layer.
+- `tag_indices` - A [batch_size, max_seq_len] matrix of tag indices for which
+  we compute the log-likelihood.
+- `sequence_lengths` - A [batch_size] vector of true sequence lengths.
+- `transition_params` - A [num_tags, num_tags] transition matrix,
+  if available.
+
+**Returns**:
+
+- `log_likelihood` - A [batch_size] `Tensor` containing the log-likelihood of
+  each example, given the sequence of tag indices.
+- `transition_params` - A [num_tags, num_tags] transition matrix. This is
+  either provided by the caller or created in this function.
 
