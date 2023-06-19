@@ -733,11 +733,6 @@ class MessageProcessor:
                 parse_data.update(
                     msg.as_dict(only_output_properties=only_output_properties)
                 )
-        logger.debug(
-            "Received user message '{}' with intent '{}' "
-            "and entities '{}'".format(
-                parse_data["text"], parse_data["intent"], parse_data["entities"]
-            )
 
         structlogger.debug(
             "processor.message.parse",
