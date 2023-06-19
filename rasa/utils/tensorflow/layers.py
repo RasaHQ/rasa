@@ -1,7 +1,6 @@
 import logging
 from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 # TODO: The following is not (yet) available via tf.keras
 from keras.utils.control_flow_util import smart_cond
@@ -21,13 +20,13 @@ from rasa.core.constants import DIALOGUE
 from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME, ACTION_TEXT
 
+from rasa.utils.tensorflow.metrics import F1Score
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 import rasa.utils.tensorflow.layers_utils as layers_utils
+from rasa.utils.tensorflow.crf import crf_log_likelihood
 
 logger = logging.getLogger(__name__)
 
-# https://github.com/tensorflow/addons#gpu-and-cpu-custom-ops-1
-tfa.options.TF_ADDONS_PY_OPS = True
 
 POSSIBLE_ATTRIBUTES = [
     TEXT,
@@ -590,7 +589,7 @@ class CRF(tf.keras.layers.Layer):
         self.num_tags = num_tags
         self.scale_loss = scale_loss
         self.transition_regularizer = tf.keras.regularizers.l2(reg_lambda)
-        self.f1_score_metric = tfa.metrics.F1Score(
+        self.f1_score_metric = F1Score(
             num_classes=num_tags - 1,  # `0` prediction is not a prediction
             average="micro",
         )
@@ -653,7 +652,7 @@ class CRF(tf.keras.layers.Layer):
             given the sequence of tag indices.
         """
 
-        log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
+        log_likelihood, _ = crf_log_likelihood(
             logits, tag_indices, sequence_lengths, self.transition_params
         )
         loss = -log_likelihood
