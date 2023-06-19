@@ -30,6 +30,7 @@ import RasaProBanner from "@theme/RasaProBanner";
 |`rasa data validate`      |Checks the domain, NLU and conversation data for inconsistencies.                                                                         |
 |`rasa export`             |Exports conversations from a tracker store to an event broker.                                                                            |
 |`rasa evaluate markers`   |Extracts markers from an existing tracker store.                                                                                          |
+|`rasa marker upload`      |Upload marker configurations to Analytics Data Pipeline                                                                                   |
 |`rasa license`            |Display licensing information.                                                                                                            |
 |`rasa -h`                 |Shows all available commands.                                                                                                             |
 
@@ -659,6 +660,38 @@ Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
   -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
   --quiet               Be quiet! Sets logging level to WARNING. (default: None)
+```
+
+## rasa marker upload
+
+This command is only relevant for Rasa Pro users with an Analytics Data Pipeline.
+It applies to [markers](./markers.mdx) and their [real-time processing](./monitoring/analytics/realtime-markers.mdx).
+Running this command validates the marker configuration file against the domain file and uploads the configuration to Analytics Data Pipeline
+
+```
+usage: rasa markers upload [-h] [--config CONFIG]
+                           [--rasa-pro-services-url RASA_PRO_SERVICES_URL]
+                           -d DOMAIN
+
+This command uploads Markers to the Rasa Pro Services for real-time analysis and insights generation.
+
+Optional Arguments:
+  -h, --help            Show this help message and exit.
+  --config CONFIG       Path to the marker configuration file(s) containing marker definitions. This can be a single YAML file or a directory that contains multiple files with marker definitions. The content of these files will be read and merged together. (default: markers.yml)
+  --rasa-pro-services-url RASA_PRO_SERVICES_URL
+                        The URL of the Rasa Pro Services instance to upload markers to. The specified URL should not contain a trailing slash.
+
+Required Arguments:
+  -d DOMAIN, --domain DOMAIN
+                        Path to the Rasa domain file.
+
+Description:
+  The `rasa markers upload` command allows you to upload Markers to the Rasa Pro Services. Markers are custom conversational events that provide additional context for analysis and insights generation. By uploading Markers, you can enable real-time analysis and enhance the performance of your Rasa Assistant.
+
+Examples:
+  Upload Markers to Rasa Pro Services:
+    rasa markers upload --config markers.yml --rasa-pro-services-url https://example.com/rasa-pro -d domain.yml
+
 ```
 
 ## rasa license
