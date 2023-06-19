@@ -973,6 +973,10 @@ class FlowExecutor:
                         self._correct_flow_position(
                             corrected_slots, previous_flow_step, previous_flow, tracker
                         )
+                    else:
+                        # TODO: we need to figure out how to actually "undo" the
+                        #    changed slots
+                        pass
             return ActionPrediction(None, 0.0, events=events)
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")
