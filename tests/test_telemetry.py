@@ -489,6 +489,7 @@ def test_context_contains_os():
 
 def test_context_contains_license_hash(monkeypatch: MonkeyPatch):
     mock = MagicMock()
+    telemetry.TELEMETRY_CONTEXT = None # make sure we don't use the cached value
     mock.return_value.hook.get_license_hash.return_value = "1234567890"
     monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
     context = telemetry._default_context_fields()
@@ -504,6 +505,7 @@ def test_context_contains_license_hash(monkeypatch: MonkeyPatch):
 
 def test_context_does_not_contain_license_hash(monkeypatch: MonkeyPatch):
     mock = MagicMock()
+    telemetry.TELEMETRY_CONTEXT = None # make sure we don't use the cached value
     mock.return_value.hook.get_license_hash.return_value = None
     monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
     context = telemetry._default_context_fields()
