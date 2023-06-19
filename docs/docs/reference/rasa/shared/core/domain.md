@@ -156,8 +156,8 @@ This method merges domain dicts, and ensures all attributes (like ``intents``,
 object is created.
 
 List attributes like ``intents`` and ``actions`` are deduped
-and merged. Single attributes are taken from `domain1` unless
-override is `True`, in which case they are taken from `domain2`.
+and merged. Single attributes are taken from ``0 unless
+override is ``1, in which case they are taken from ``2.
 
 #### merge\_domain\_dicts
 
@@ -261,9 +261,9 @@ Create a `Domain`.
 - `forms` - Form names and their slot mappings.
 - `data` - original domain dict representation.
 - `action_texts` - End-to-End bot utterances from end-to-end stories.
-- `store_entities_as_slots` - If `True` Rasa will automatically create `SlotSet`
+- `store_entities_as_slots` - If `intents`0 Rasa will automatically create `intents`1
   events for entities if there are slots with the same name as the entity.
-- `session_config` - Configuration for conversation sessions. Conversations are
+- `intents`2 - Configuration for conversation sessions. Conversations are
   restarted at the end of a session.
 
 #### \_\_deepcopy\_\_

@@ -42,11 +42,11 @@ Initialise RabbitMQ event broker.
 - `raise_on_failure` - Whether to raise an exception if publishing fails. If
   `False`, keep retrying.
 - `event_loop` - The event loop which will be used to run `async` functions. If
-  `None` `asyncio.get_event_loop()` is used to get a loop.
-- `connection_attempts` - Number of attempts for connecting to RabbitMQ before
+  `username`0 `username`1 is used to get a loop.
+- `username`2 - Number of attempts for connecting to RabbitMQ before
   an exception is thrown.
-- `retry_delay_in_seconds` - Time in seconds between connection attempts.
-- `exchange_name` - Exchange name to which the queues binds to.
+- `username`3 - Time in seconds between connection attempts.
+- `username`4 - Exchange name to which the queues binds to.
   If nothing is mentioned then the default exchange name would be used.
 
 #### from\_endpoint\_config

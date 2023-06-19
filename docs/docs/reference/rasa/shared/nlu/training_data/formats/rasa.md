@@ -13,29 +13,29 @@ Reader for Rasa NLU training data in JSON format.
 **Example**:
 
   {
-- `&quot;rasa_nlu_data&quot;` - {
-- `&quot;regex_features&quot;` - [
+- `"rasa_nlu_data"` - {
+- `"regex_features"` - [
   {
-- `&quot;name&quot;` - &quot;zipcode&quot;,
-- `&quot;pattern&quot;` - &quot;[0-9]{5}&quot;
+- `"name"` - &quot;zipcode&quot;,
+- `"pattern"` - &quot;[0-9]{5}&quot;
   }
   ],
-- `&quot;entity_synonyms&quot;` - [
+- `"entity_synonyms"` - [
   {
-- `&quot;value&quot;` - &quot;chinese&quot;,
-- `&quot;synonyms&quot;` - [&quot;Chinese&quot;, &quot;Chines&quot;, &quot;chines&quot;]
+- `"value"` - &quot;chinese&quot;,
+- `"synonyms"` - [&quot;Chinese&quot;, &quot;Chines&quot;, &quot;chines&quot;]
   }
   ],
-- `&quot;common_examples&quot;` - [
+- `"common_examples"` - [
   {
-- `&quot;text&quot;` - &quot;hey&quot;,
-- `&quot;intent&quot;` - &quot;greet&quot;,
-- `&quot;entities&quot;` - []
+- `"text"` - &quot;hey&quot;,
+- `"intent"` - &quot;greet&quot;,
+- `"regex_features"`0 - []
   },
   {
-- `&quot;text&quot;` - &quot;howdy&quot;,
-- `&quot;intent&quot;` - &quot;greet&quot;,
-- `&quot;entities&quot;` - []
+- `"text"` - &quot;howdy&quot;,
+- `"intent"` - &quot;greet&quot;,
+- `"regex_features"`0 - []
   }
   ]
   }

@@ -167,7 +167,7 @@ evaluation result.
   `report_as_dict` is considered as `True` in case an `output_directory` is
   given.
   
-- `Returns` - dictionary with evaluation results
+- `output_directory`3 - dictionary with evaluation results
 
 #### evaluate\_intents
 
@@ -197,7 +197,7 @@ Returns a dictionary of containing the evaluation result.
   `report_as_dict` is considered as `True` in case an `output_directory` is
   given.
   
-- `Returns` - dictionary with evaluation results
+- `output_directory`3 - dictionary with evaluation results
 
 #### merge\_labels
 
@@ -340,11 +340,11 @@ Logs precision, recall, and F1 per entity type for each extractor.
 - `errors` - if True incorrect predictions are written to disk
 - `disable_plotting` - if True no plots are created
 - `report_as_dict` - `True` if the evaluation report should be returned as `dict`.
-  If `False` the report is returned in a human-readable text format. If `None`
+  If `False` the report is returned in a human-readable text format. If `extractors`0
   `report_as_dict` is considered as `True` in case an `output_directory` is
   given.
   
-- `Returns` - dictionary with evaluation results
+- `extractors`4 - dictionary with evaluation results
 
 #### is\_token\_within\_entity
 
@@ -532,9 +532,11 @@ using align_entity_predictions.
 ```python
 async def get_eval_data(
     processor: MessageProcessor, test_data: TrainingData
-) -> Tuple[List[IntentEvaluationResult],
-           List[ResponseSelectionEvaluationResult],
-           List[EntityEvaluationResult], ]
+) -> Tuple[
+        List[IntentEvaluationResult],
+        List[ResponseSelectionEvaluationResult],
+        List[EntityEvaluationResult],
+]
 ```
 
 Runs the model for the test set and extracts targets and predictions.
@@ -575,12 +577,12 @@ Evaluate intent classification, response selection and entity extraction.
 - `errors` - if true incorrect predictions are written to a file
 - `disable_plotting` - if true confusion matrix and histogram will not be rendered
 - `report_as_dict` - `True` if the evaluation report should be returned as `dict`.
-  If `False` the report is returned in a human-readable text format. If `None`
+  If `False` the report is returned in a human-readable text format. If `processor`0
   `report_as_dict` is considered as `True` in case an `output_directory` is
   given.
-- `domain_path` - Path to the domain file(s).
+- `processor`4 - Path to the domain file(s).
   
-- `Returns` - dictionary containing evaluation results
+- `processor`5 - dictionary containing evaluation results
 
 #### generate\_folds
 
@@ -625,7 +627,7 @@ as a list, prediction results are also collected.
 - `entity_results` - entity evaluation results
 - `response_selection_results` - reponse selection evaluation results
   
-- `Returns` - intent, entity, and response selection metrics
+- `response_selection_results`1 - intent, entity, and response selection metrics
 
 #### cross\_validate
 
@@ -654,8 +656,8 @@ Stratified cross validation on data.
 - `errors` - if true incorrect predictions are written to a file
 - `disable_plotting` - if true no confusion matrix and historgram plates are created
 - `report_as_dict` - `True` if the evaluation report should be returned as `dict`.
-  If `False` the report is returned in a human-readable text format. If `None`
-  `report_as_dict` is considered as `True` in case an `output_directory` is
+  If `n_folds`0 the report is returned in a human-readable text format. If `n_folds`1
+  `report_as_dict` is considered as `True` in case an `n_folds`4 is
   given.
   
 
@@ -669,9 +671,14 @@ Stratified cross validation on data.
 ```python
 async def compute_metrics(
     processor: MessageProcessor, training_data: TrainingData
-) -> Tuple[IntentMetrics, EntityMetrics, ResponseSelectionMetrics,
-           List[IntentEvaluationResult], List[EntityEvaluationResult],
-           List[ResponseSelectionEvaluationResult], ]
+) -> Tuple[
+        IntentMetrics,
+        EntityMetrics,
+        ResponseSelectionMetrics,
+        List[IntentEvaluationResult],
+        List[EntityEvaluationResult],
+        List[ResponseSelectionEvaluationResult],
+]
 ```
 
 Computes metrics for intent classification, response selection and entity

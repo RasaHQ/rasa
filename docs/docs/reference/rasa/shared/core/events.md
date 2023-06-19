@@ -55,7 +55,7 @@ Splits events according to an event type and condition.
   &gt;&gt; _events = split_events(
   events,
   ActionExecuted,
-- `{&quot;action_name&quot;` - &quot;action_session_start&quot;},
+- `{"action_name"` - &quot;action_session_start&quot;},
   True
   )
   
@@ -243,7 +243,7 @@ Creates event for incoming user message.
 - `input_channel` - Which channel the user used to send message.
 - `message_id` - Unique ID for message.
 - `use_text_for_featurization` - `True` if the message&#x27;s text was used to predict
-  next action. `False` if the message&#x27;s intent was used.
+  next action. `intent`0 if the message&#x27;s intent was used.
 
 #### \_\_hash\_\_
 

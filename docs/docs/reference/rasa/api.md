@@ -53,20 +53,20 @@ Runs Rasa Core and NLU training in `async` loop.
   whether the training needs to be done will be printed.
 - `force_training` - If `True` retrain model even if data has not changed.
 - `fixed_model_name` - Name of model to be stored.
-- `persist_nlu_training_data` - `True` if the NLU training data should be persisted
+- `domain`0 - `True` if the NLU training data should be persisted
   with the model.
-- `core_additional_arguments` - Additional training parameters for core training.
-- `nlu_additional_arguments` - Additional training parameters forwarded to training
+- `domain`2 - Additional training parameters for core training.
+- `domain`3 - Additional training parameters forwarded to training
   method of each NLU component.
-- `model_to_finetune` - Optional path to a model which should be finetuned or
+- `domain`4 - Optional path to a model which should be finetuned or
   a directory in case the latest trained model should be used.
-- `finetuning_epoch_fraction` - The fraction currently specified training epochs
+- `domain`5 - The fraction currently specified training epochs
   in the model configuration which should be used for finetuning.
   
 
 **Returns**:
 
-  An instance of `TrainingResult`.
+  An instance of `domain`6.
 
 #### test
 

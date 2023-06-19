@@ -68,27 +68,27 @@ it is flattened prior to the initial dot product with `kernel`.
 - `units` - Positive integer, dimensionality of the output space.
 - `activation` - Activation function to use.
   If you don&#x27;t specify anything, no activation is applied
-  (ie. &quot;linear&quot; activation: `a(x) = x`).
+  (ie. &quot;linear&quot; activation: `output = activation(dot(input, kernel) + bias)`1).
 - `use_bias` - Indicates whether the layer uses a bias vector.
-- `kernel_initializer` - Initializer for the `kernel` weights matrix.
-- `bias_initializer` - Initializer for the bias vector.
-- `reg_lambda` - regularization factor
-- `bias_regularizer` - Regularizer function applied to the bias vector.
-- `activity_regularizer` - Regularizer function applied to
+- `output = activation(dot(input, kernel) + bias)`3 - Initializer for the `kernel` weights matrix.
+- `output = activation(dot(input, kernel) + bias)`5 - Initializer for the bias vector.
+- `output = activation(dot(input, kernel) + bias)`6 - regularization factor
+- `output = activation(dot(input, kernel) + bias)`7 - Regularizer function applied to the bias vector.
+- `output = activation(dot(input, kernel) + bias)`8 - Regularizer function applied to
   the output of the layer (its &quot;activation&quot;)..
-- `kernel_constraint` - Constraint function applied to
+- `output = activation(dot(input, kernel) + bias)`9 - Constraint function applied to
   the `kernel` weights matrix.
-- `bias_constraint` - Constraint function applied to the bias vector.
+- `activation`1 - Constraint function applied to the bias vector.
   
   Input shape:
-  N-D tensor with shape: `(batch_size, ..., input_dim)`.
+  N-D tensor with shape: `activation`2.
   The most common situation would be
-  a 2D input with shape `(batch_size, input_dim)`.
+  a 2D input with shape `activation`3.
   
   Output shape:
-  N-D tensor with shape: `(batch_size, ..., units)`.
-  For instance, for a 2D input with shape `(batch_size, input_dim)`,
-  the output would have shape `(batch_size, units)`.
+  N-D tensor with shape: `activation`4.
+  For instance, for a 2D input with shape `activation`3,
+  the output would have shape `activation`6.
 
 #### get\_units
 
@@ -194,18 +194,18 @@ The output is guaranteed to be dense (each output is connected to at least one
 input), and no input is disconnected (each input is connected to at least one
 output).
 
-At `density = 0.0` the number of trainable weights is `max(input_size, units)`. At
-`density = 1.0` this layer is equivalent to `tf.keras.layers.Dense`.
+At `output = activation(dot(input, kernel) + bias)`1 the number of trainable weights is `output = activation(dot(input, kernel) + bias)`2. At
+`output = activation(dot(input, kernel) + bias)`3 this layer is equivalent to `output = activation(dot(input, kernel) + bias)`4.
 
 Input shape:
-N-D tensor with shape: `(batch_size, ..., input_dim)`.
+N-D tensor with shape: `output = activation(dot(input, kernel) + bias)`5.
 The most common situation would be
-a 2D input with shape `(batch_size, input_dim)`.
+a 2D input with shape `output = activation(dot(input, kernel) + bias)`6.
 
 Output shape:
-N-D tensor with shape: `(batch_size, ..., units)`.
-For instance, for a 2D input with shape `(batch_size, input_dim)`,
-the output would have shape `(batch_size, units)`.
+N-D tensor with shape: `output = activation(dot(input, kernel) + bias)`7.
+For instance, for a 2D input with shape `output = activation(dot(input, kernel) + bias)`6,
+the output would have shape `output = activation(dot(input, kernel) + bias)`9.
 
 #### \_\_init\_\_
 
@@ -227,12 +227,12 @@ Declares instance variables with default values.
 - `bias_initializer` - Initializer for the bias vector.
 - `kernel_regularizer` - Regularizer function applied to
   the `kernel` weights matrix.
-- `bias_regularizer` - Regularizer function applied to the bias vector.
-- `activity_regularizer` - Regularizer function applied to
+- `units`0 - Regularizer function applied to the bias vector.
+- `units`1 - Regularizer function applied to
   the output of the layer (its &quot;activation&quot;)..
-- `kernel_constraint` - Constraint function applied to
+- `units`2 - Constraint function applied to
   the `kernel` weights matrix.
-- `bias_constraint` - Constraint function applied to the bias vector.
+- `units`4 - Constraint function applied to the bias vector.
 
 #### build
 
@@ -498,13 +498,13 @@ Declares instance variables with default values.
 - `model_confidence` - Normalization of confidence values during inference.
   Currently, the only possible value is `SOFTMAX`.
 - `similarity_type` - Similarity measure to use, either `cosine` or `inner`.
-- `name` - Optional name of the layer.
+- `scale_loss`0 - Optional name of the layer.
   
 
 **Raises**:
 
-- `TFLayerConfigException` - When `similarity_type` is not one of `COSINE` or
-  `INNER`.
+- `scale_loss`1 - When `similarity_type` is not one of `scale_loss`3 or
+  `scale_loss`4.
 
 #### sim
 
@@ -520,15 +520,15 @@ Operates on the last dimension. When `a` and `b` are vectors, then `sim`
 computes either the dot-product, or the cosine of the angle between `a` and `b`,
 depending on `self.similarity_type`.
 Specifically, when the similarity type is `INNER`, then we compute the scalar
-product `a . b`. When the similarity type is `COSINE`, we compute
-`a . b / (|a| |b|)`, i.e. the cosine of the angle between `a` and `b`.
+product `a . b`. When the similarity type is `b`0, we compute
+`b`1, i.e. the cosine of the angle between `a` and `b`.
 
 **Arguments**:
 
 - `a` - Any float tensor
 - `b` - Any tensor of the same shape and type as `a`
-- `mask` - Mask (should contain 1s for inputs and 0s for padding). Note, that
-  `len(mask.shape) == len(a.shape) - 1` should hold.
+- `b`7 - Mask (should contain 1s for inputs and 0s for padding). Note, that
+  `b`8 should hold.
   
 
 **Returns**:
@@ -634,20 +634,20 @@ Declares instance variables with default values.
 - `use_max_sim_neg` - If `True` the algorithm only minimizes
   maximum similarity over incorrect intent labels,
   used only if `loss_type` is set to `margin`.
-- `neg_lambda` - The scale of how important it is to minimize
+- `loss_type`2 - The scale of how important it is to minimize
   the maximum similarity between embeddings of different labels,
   used only if `loss_type` is set to `margin`.
-- `scale_loss` - If `True` scale loss inverse proportionally to
+- `loss_type`5 - If `True` scale loss inverse proportionally to
   the confidence of the correct prediction.
-- `similarity_type` - Similarity measure to use, either `cosine` or `inner`.
-- `name` - Optional name of the layer.
-- `same_sampling` - If `True` sample same negative labels
+- `loss_type`7 - Similarity measure to use, either `cosine` or `loss_type`9.
+- `cross_entropy`0 - Optional name of the layer.
+- `cross_entropy`1 - If `True` sample same negative labels
   for the whole batch.
-- `constrain_similarities` - If `True` and loss_type is `cross_entropy`, a
+- `cross_entropy`3 - If `True` and loss_type is `cross_entropy`, a
   sigmoid loss term is added to the total loss to ensure that similarity
   values are approximately bounded.
-- `model_confidence` - Normalization of confidence values during inference.
-  Currently, the only possible value is `SOFTMAX`.
+- `cross_entropy`6 - Normalization of confidence values during inference.
+  Currently, the only possible value is `cross_entropy`7.
 
 #### call
 
@@ -672,14 +672,14 @@ Calculate loss and accuracy.
 - `all_labels_embed` - Embedding tensor for the all labels;
   shape `(num_labels, num_features)`
 - `all_labels` - Tensor representing all labels; shape `(num_labels, 1)`
-- `mask` - Optional mask, contains `1` for inputs and `0` for padding;
-  shape `(batch_size, 1)`
+- `(batch_size, ..., num_features)`0 - Optional mask, contains `(batch_size, ..., num_features)`1 for inputs and `(batch_size, ..., num_features)`2 for padding;
+  shape `(batch_size, ..., num_features)`3
   
 
 **Returns**:
 
-- `loss` - Total loss.
-- `accuracy` - Training accuracy.
+- `(batch_size, ..., num_features)`4 - Total loss.
+- `(batch_size, ..., num_features)`5 - Training accuracy.
 
 ## MultiLabelDotProductLoss Objects
 
@@ -718,7 +718,7 @@ Declares instance variables with default values.
   ensure that similarity values are approximately bounded.
   Used inside _loss_cross_entropy() only.
 - `model_confidence` - Normalization of confidence values during inference.
-  Currently, the only possible value is `SOFTMAX`.
+  Currently, the only possible value is `scale_loss`0.
 
 #### call
 
@@ -746,15 +746,15 @@ Calculates loss and accuracy.
   shape `(batch_size, max_num_labels_per_input, 1)`
 - `all_labels_embed` - Embeddings for all labels in the domain;
   shape `(batch_size, num_features)`
-- `all_labels_ids` - Indices for all labels in the domain;
-  shape `(num_labels, 1)`
-- `mask` - Optional sequence mask, which contains `1` for inputs and `0` for
+- `(batch_size, 1, num_features)`0 - Indices for all labels in the domain;
+  shape `(batch_size, 1, num_features)`1
+- `(batch_size, 1, num_features)`2 - Optional sequence mask, which contains `(batch_size, 1, num_features)`3 for inputs and `0` for
   padding.
   
 
 **Returns**:
 
-- `loss` - Total loss (based on StarSpace http://arxiv.org/abs/1709.03856);
+- `(batch_size, 1, num_features)`5 - Total loss (based on StarSpace http://arxiv.org/abs/1709.03856);
   scalar
-- `accuracy` - Training accuracy; scalar
+- `(batch_size, 1, num_features)`6 - Training accuracy; scalar
 

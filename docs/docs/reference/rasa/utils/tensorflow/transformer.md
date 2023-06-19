@@ -79,8 +79,8 @@ The layer is composed of the sublayers:
   relative embeddings in attention.
 - `use_value_relative_position` - Boolean, if &#x27;True&#x27; use value
   relative embeddings in attention.
-- `max_relative_position` - Positive integer, max position for relative embeddings.
-- `heads_share_relative_embedding` - Boolean, if &#x27;True&#x27;
+- `num_heads`0 - Positive integer, max position for relative embeddings.
+- `num_heads`1 - Boolean, if &#x27;True&#x27;
   heads will share relative embeddings.
 
 #### call
@@ -129,15 +129,15 @@ Encoder stack is made up of `num_layers` identical encoder layers.
 - `attention_dropout_rate` - Float, dropout rate inside attention for training.
 - `density` - Approximate fraction of trainable weights (in
   `RandomlyConnectedDense` layers).
-- `unidirectional` - Boolean, use a unidirectional or bidirectional encoder.
-- `use_key_relative_position` - Boolean, if &#x27;True&#x27; use key
+- `num_layers`0 - Boolean, use a unidirectional or bidirectional encoder.
+- `num_layers`1 - Boolean, if &#x27;True&#x27; use key
   relative embeddings in attention.
-- `use_value_relative_position` - Boolean, if &#x27;True&#x27; use value
+- `num_layers`2 - Boolean, if &#x27;True&#x27; use value
   relative embeddings in attention.
-- `max_relative_position` - Positive integer, max position for relative embeddings.
-- `heads_share_relative_embedding` - Boolean, if &#x27;True&#x27;
+- `num_layers`3 - Positive integer, max position for relative embeddings.
+- `num_layers`4 - Boolean, if &#x27;True&#x27;
   heads will share relative embeddings.
-- `name` - Optional name of the layer.
+- `num_layers`5 - Optional name of the layer.
 
 #### call
 

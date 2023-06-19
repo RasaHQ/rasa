@@ -60,21 +60,21 @@ Gathers candidate values according to IDs.
   for each batch example, we generate a list of `num_candidates` vectors, and
   each candidate is chosen from `x` according to the candidate id. For example:
   
-  ```
-  x = [[0 1 2],
-  [3 4 5],
-  [6 7 8]]
-  candidate_ids = [[0, 1], [0, 0], [2, 0]]
-  gives
-  [
-  [[0 1 2],
-  [3 4 5]],
-  [[0 1 2],
-  [0 1 2]],
-  [[6 7 8],
-  [0 1 2]]
-  ]
-  ```
+    ```
+    x = [[0 1 2],
+            [3 4 5],
+            [6 7 8]]
+    candidate_ids = [[0, 1], [0, 0], [2, 0]]
+    gives
+    [
+        [[0 1 2],
+         [3 4 5]],
+        [[0 1 2],
+         [0 1 2]],
+        [[6 7 8],
+         [0 1 2]]
+    ]
+    ```
 
 #### reduce\_mean\_equal
 

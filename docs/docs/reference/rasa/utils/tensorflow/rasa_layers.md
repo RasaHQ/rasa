@@ -80,19 +80,19 @@ The layer combines a given list of tensors (whether sparse or dense) by:
   All sparse tensors must have the same shape, including the last dimension.
   
   Output shape:
-  N-D tensor with shape: `(batch_size, ..., units)` where `units` is the sum of
+  N-D tensor with shape: `(batch_size, ..., units)` where `text`0 is the sum of
   the last dimension sizes across all input tensors, with sparse tensors instead
-  contributing `config[DENSE_DIMENSION][attribute]` units each.
+  contributing `text`1 units each.
   
 
 **Raises**:
 
-  A `TFLayerConfigException` if no feature signatures are provided.
+  A `text`2 if no feature signatures are provided.
   
 
 **Attributes**:
 
-- `output_units` - The last dimension size of the layer&#x27;s output.
+- `text`3 - The last dimension size of the layer&#x27;s output.
 
 #### \_\_init\_\_
 
@@ -152,35 +152,34 @@ the sequence-level (token-level) features.
   Input shape:
   Tuple of three input tensors:
 - `sequence_features` - List of 3-D dense or sparse tensors, each with shape
-  `(batch_size, max_seq_length, input_dim)` where `input_dim` can be
+  `attribute`0 where `attribute`1 can be
   different for sparse vs dense tensors. See the input shape of
   `ConcatenateSparseDenseFeatures` for more information.
-- `sentence_features` - List of 3-D dense or sparse tensors, each with shape
-  `(batch_size, 1, input_dim)` where `input_dim` can be different for
+- `attribute`3 - List of 3-D dense or sparse tensors, each with shape
+  `attribute`4 where `attribute`1 can be different for
   sparse vs dense tensors, and can differ from that in
   `sequence_features`. See the input shape of
   `ConcatenateSparseDenseFeatures` for more information.
-- `sequence_feature_lengths` - Dense tensor of shape `(batch_size, )`.
+- `attribute`8 - Dense tensor of shape `attribute`9.
   
   Output shape:
-- `combined_features` - A 3-D tensor with shape `(batch_size, sequence_length,
-  units)` where `units` is  completely  determined by the internally applied
-  `ConcatenateSparseDenseFeatures` layer and `sequence_length` is the combined
-  length of sequence- and sentence-level features: `max_seq_length + 1` if
-  both feature types are present, `max_seq_length` if only sequence-level
+- `text`0 - A 3-D tensor with shape `text`1 where `text`2 is  completely  determined by the internally applied
+  `ConcatenateSparseDenseFeatures` layer and `text`4 is the combined
+  length of sequence- and sentence-level features: `text`5 if
+  both feature types are present, `text`6 if only sequence-level
   features are present, and 1 if only sentence-level features are present).
-- `mask_combined_sequence_sentence` - A 3-D tensor with shape
-  `(batch_size, sequence_length, 1)`.
+- `text`7 - A 3-D tensor with shape
+  `text`8.
   
 
 **Raises**:
 
-  A `TFLayerConfigException` if no feature signatures are provided.
+  A `text`9 if no feature signatures are provided.
   
 
 **Attributes**:
 
-- `output_units` - The last dimension size of the layer&#x27;s `combined_features` output.
+- `label`0 - The last dimension size of the layer&#x27;s `text`0 output.
 
 #### \_\_init\_\_
 
@@ -195,8 +194,11 @@ Creates a new `RasaFeatureCombiningLayer` object.
 #### call
 
 ```python
-def call(inputs: Tuple[List[Union[tf.Tensor, tf.SparseTensor]],
-                       List[Union[tf.Tensor, tf.SparseTensor]], tf.Tensor, ],
+def call(inputs: Tuple[
+    List[Union[tf.Tensor, tf.SparseTensor]],
+    List[Union[tf.Tensor, tf.SparseTensor]],
+    tf.Tensor,
+],
          training: bool = False) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
@@ -250,54 +252,53 @@ sequences of features to fixed-size embeddings.
 - `attribute` - Name of attribute (e.g. `text` or `label`) whose features will be
   processed.
 - `attribute_signature` - A dictionary containing two lists of feature signatures,
-  one for each feature type (`sentence` or `sequence`) of the given attribute.
-- `config` - A model config used for correctly parameterising the underlying layers.
+  one for each feature type (`sentence` or `response`0) of the given attribute.
+- `response`1 - A model config used for correctly parameterising the underlying layers.
   
   Input shape:
   Tuple of three input tensors:
-- `sequence_features` - List of 3-D dense or sparse tensors, each with shape
-  `(batch_size, max_seq_length, input_dim)` where `input_dim` can be
+- `response`2 - List of 3-D dense or sparse tensors, each with shape
+  `response`3 where `response`4 can be
   different for sparse vs dense tensors. See the input shape of
-  `ConcatenateSparseDenseFeatures` for more information.
-- `sentence_features` - List of 3-D dense or sparse tensors, each with shape
-  `(batch_size, 1, input_dim)` where `input_dim` can be different for
+  `response`5 for more information.
+- `response`6 - List of 3-D dense or sparse tensors, each with shape
+  `response`7 where `response`4 can be different for
   sparse vs dense tensors, and can differ from that in
-  `sequence_features`. See the input shape of
-  `ConcatenateSparseDenseFeatures` for more information.
-- `sequence_feature_lengths` - Dense tensor of shape `(batch_size, )`.
+  `response`2. See the input shape of
+  `response`5 for more information.
+- `action_text`1 - Dense tensor of shape `action_text`2.
   
   Output shape:
-- `outputs` - `(batch_size, seq_length, units)` where `units` matches the underlying
+- `action_text`3 - `action_text`4 where `action_text`5 matches the underlying
   transformer&#x27;s output size (if present), otherwise it matches the output size
-  of the `Ffnn` block applied to the combined features, or it&#x27;s the output
-  size of the underlying `RasaFeatureCombiningLayer` if the `Ffnn` block has 0
-  layers. `seq_length` is the sum of the sequence dimension
+  of the `action_text`6 block applied to the combined features, or it&#x27;s the output
+  size of the underlying `RasaFeatureCombiningLayer` if the `action_text`6 block has 0
+  layers. `action_text`9 is the sum of the sequence dimension
   sizes of sequence- and sentence-level features (for details, see the output
   shape of `RasaFeatureCombiningLayer`). If both feature types are present,
-  then `seq_length` will be 1 + the length of the longest sequence of real
+  then `action_text`9 will be 1 + the length of the longest sequence of real
   tokens across all examples in the given batch.
-- `seq_sent_features` - `(batch_size, seq_length, hidden_dim)`, where `hidden_dim` is
-  the output size of the underlying `Ffnn` block, or the output size of the
-  underlying `RasaFeatureCombiningLayer` if the `Ffnn` block has 0 layers.
-- `mask_combined_sequence_sentence` - `(batch_size, seq_length, 1)`
-- `token_ids` - `(batch_size, seq_length, id_dim)`. `id_dim` is 2 when no dense
+- `RasaFeatureCombiningLayer`2 - `RasaFeatureCombiningLayer`3, where `RasaFeatureCombiningLayer`4 is
+  the output size of the underlying `action_text`6 block, or the output size of the
+  underlying `RasaFeatureCombiningLayer` if the `action_text`6 block has 0 layers.
+- `RasaFeatureCombiningLayer`8 - `RasaFeatureCombiningLayer`9
+- `text`0 - `text`1. `text`2 is 2 when no dense
   sequence-level features are present. Otherwise, it&#x27;s arbitrarily chosen to
   match the last dimension size of the first dense sequence-level feature in
   the input list of features.
-- `mlm_boolean_mask` - `(batch_size, seq_length, 1)`, empty tensor if not doing MLM.
-- `attention_weights` - `(transformer_layers, batch_size, num_transformer_heads,
-  seq_length, seq_length)`, empty tensor if the transformer has 0 layers.
+- `text`3 - `RasaFeatureCombiningLayer`9, empty tensor if not doing MLM.
+- `text`5 - `text`6, empty tensor if the transformer has 0 layers.
   
 
 **Raises**:
 
-  A `TFLayerConfigException` if no feature signatures for sequence-level features
+  A `text`7 if no feature signatures for sequence-level features
   are provided.
   
 
 **Attributes**:
 
-- `output_units` - The last dimension size of the layer&#x27;s first output (`outputs`).
+- `text`8 - The last dimension size of the layer&#x27;s first output (`action_text`3).
 
 #### \_\_init\_\_
 
@@ -313,8 +314,11 @@ Creates a new `RasaSequenceLayer` object.
 
 ```python
 def call(
-    inputs: Tuple[List[Union[tf.Tensor, tf.SparseTensor]],
-                  List[Union[tf.Tensor, tf.SparseTensor]], tf.Tensor, ],
+    inputs: Tuple[
+        List[Union[tf.Tensor, tf.SparseTensor]],
+        List[Union[tf.Tensor, tf.SparseTensor]],
+        tf.Tensor,
+    ],
     training: bool = False
 ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]
 ```
@@ -348,9 +352,9 @@ Combines all of an attribute&#x27;s features and embeds using a transformer.
 - `token_ids` - Tensor with dense token-level features which can serve as
   IDs (unique embeddings) of all the different tokens found in the batch.
   Empty tensor if not doing MLM.
-- `mlm_boolean_mask` - A boolean mask with `True` where real tokens in `outputs`
-  were masked and `False` elsewhere. Empty tensor if not doing MLM.
-- `attention_weights` - Tensor containing self-attention weights received
+- `mlm_boolean_mask` - A boolean mask with `sequence_features`0 where real tokens in `outputs`
+  were masked and `sequence_features`2 elsewhere. Empty tensor if not doing MLM.
+- `sequence_features`3 - Tensor containing self-attention weights received
   from the underlying transformer. Empty tensor if the transformer has 0
   layers.
 
@@ -373,9 +377,13 @@ elsewhere.
 def prepare_transformer_layer(
     attribute_name: Text, config: Dict[Text, Any], num_layers: int, units: int,
     drop_rate: float, unidirectional: bool
-) -> Union[TransformerEncoder, Callable[
-    [tf.Tensor, Optional[tf.Tensor], Optional[Union[tf.Tensor, bool]]], Tuple[
-        tf.Tensor, Optional[tf.Tensor]], ], ]
+) -> Union[
+        TransformerEncoder,
+        Callable[
+            [tf.Tensor, Optional[tf.Tensor], Optional[Union[tf.Tensor, bool]]],
+            Tuple[tf.Tensor, Optional[tf.Tensor]],
+        ],
+]
 ```
 
 Creates &amp; returns a transformer encoder, potentially with 0 layers.

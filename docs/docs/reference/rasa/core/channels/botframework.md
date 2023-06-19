@@ -40,7 +40,7 @@ def add_attachments_to_metadata(
         metadata: Optional[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
 ```
 
-Merge the values of `postdata[&#x27;attachments&#x27;]` with `metadata`.
+Merge the values of `postdata['attachments']` with `metadata`.
 
 #### blueprint
 

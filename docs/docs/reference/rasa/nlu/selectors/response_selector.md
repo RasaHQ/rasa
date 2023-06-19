@@ -78,9 +78,9 @@ Declare instance variables with default values.
 - `model` - Model architecture.
 - `all_retrieval_intents` - All retrieval intents defined in the data.
 - `responses` - All responses defined in the data.
-- `finetune_mode` - If `True` loads the model with pre-trained weights,
+- `model_storage`0 - If `model_storage`1 loads the model with pre-trained weights,
   otherwise initializes it with random weights.
-- `sparse_feature_sizes` - Sizes of the sparse features the model was trained on.
+- `model_storage`2 - Sizes of the sparse features the model was trained on.
 
 #### label\_key
 

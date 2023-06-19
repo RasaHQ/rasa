@@ -121,8 +121,11 @@ def featurize_trackers(
     precomputations: Optional[MessageContainerForCoreFeaturization],
     bilou_tagging: bool = False,
     ignore_action_unlikely_intent: bool = False
-) -> Tuple[List[List[Dict[Text, List[Features]]]], np.ndarray, List[List[Dict[
-        Text, List[Features]]]], ]
+) -> Tuple[
+        List[List[Dict[Text, List[Features]]]],
+        np.ndarray,
+        List[List[Dict[Text, List[Features]]]],
+]
 ```
 
 Featurizes the training trackers.

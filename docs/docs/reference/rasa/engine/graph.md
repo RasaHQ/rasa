@@ -24,20 +24,20 @@ Represents one node in the schema.
 - `fn` - The name of the function which should be called on the instantiated
   component when the graph is executed. The parameters from `needs` are
   filled from the parent nodes.
-- `config` - The user&#x27;s configuration for this graph node. This configuration
+- `fn`1 - The user&#x27;s configuration for this graph node. This configuration
   does not need to be specify all possible parameters; the default values
   for missing parameters will be filled in later.
-- `eager` - If `eager` then the component is instantiated before the graph is run.
+- `fn`2 - If `fn`2 then the component is instantiated before the graph is run.
   Otherwise it&#x27;s instantiated as the graph runs (lazily). Usually we always
   instantiated lazily during training and eagerly during inference (to
   avoid that the first prediction takes longer).
-- `is_target` - If `True` then this node can&#x27;t be pruned during fingerprinting
+- `fn`4 - If `fn`5 then this node can&#x27;t be pruned during fingerprinting
   (it might be replaced with a cached value though). This is e.g. used for
   all components which train as their result always needs to be added to
   the model archive so that the data is available during inference.
-- `is_input` - Nodes with `is_input` are _always_ run (also during the fingerprint
+- `fn`6 - Nodes with `fn`6 are _always_ run (also during the fingerprint
   run). This makes sure that we e.g. detect changes in file contents.
-- `resource` - If given, then the graph node is loaded from an existing resource
+- `fn`8 - If given, then the graph node is loaded from an existing resource
   instead of instantiated from scratch. This is e.g. used to load a trained
   component for predictions.
 
@@ -323,10 +323,10 @@ Initializes `GraphNode`.
   being run.
 - `model_storage` - Storage which graph components can use to persist and load
   themselves.
-- `resource` - If given the `GraphComponent` will be loaded from the
+- `node_name`0 - If given the `GraphComponent` will be loaded from the
   `model_storage` using the given resource.
-- `execution_context` - Information about the current graph run.
-- `hooks` - These are called before and after execution.
+- `node_name`3 - Information about the current graph run.
+- `node_name`4 - These are called before and after execution.
 
 #### \_\_call\_\_
 
