@@ -1010,7 +1010,7 @@ jobs:
 
     strategy:
       matrix:
-        image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
+        image: [default]  # , full, mitie-en, spacy-de, spacy-it, spacy-en]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
@@ -1056,7 +1056,7 @@ jobs:
         run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Login to DockerHub Registry 🔢
-        if: needs.changes.outputs.docker == 'true'
+#        if: needs.changes.outputs.docker == 'true'
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
       - name: Copy Segment write key to the package
@@ -1068,12 +1068,12 @@ jobs:
           ./scripts/write_keys_file.sh
 
       - name: Build Docker image
-        if: needs.changes.outputs.docker == 'true'
+#        if: needs.changes.outputs.docker == 'true'
         run: |
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
 
       - name: Push image with main tag 📦
-        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
+#        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
         run: |
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
