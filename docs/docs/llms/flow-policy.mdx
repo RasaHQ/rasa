@@ -3,7 +3,7 @@ id: flow-policy
 sidebar_label: Flow Policy
 title: Flow Policy
 abstract: |
-  Guide on implementing and managing Flows with the FlowPolicy.
+  This is a guide to implementing and managing conversational flows using the FlowPolicy.
 ---
 
 import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
@@ -12,35 +12,34 @@ import flowStackOverview from "./flow_stack.png";
 
 <RasaDiscoveryBanner />
 
-The Flow Policy in Rasa is a state machine that enables you to manage
-conversational flows in your chatbot and combine your business logic with
-machine learning.
+Rasa's Flow Policy is a state machine that allows you to manage and control your
+chatbot's conversational flows. It facilitates the integration of your business
+logic with machine learning capabilities.
 
-The policy manages the state of your bot, transitioning between states, and
-initiating new flows when required. The "Flow Stack" represents all flows that
-have been started and not yet completed and reference steps defined using the
+The Flow Policy oversees your bot's state, handles state transitions, and
+triggers new flows when needed. The "Flow Stack" represents all started but
+incomplete flows and refers to steps defined in the
 [flows specification](../flows.mdx).
 
 <Image
   img={flowStackOverview}
-  caption="Flow Stack reflecting the state of the conversation referencing a flow."
+  caption="Flow Stack represents the current state of the conversation referring to a flow."
   alt=""
 />
 
-The policy allows you to express your logic in flows, shaping the way a
-conversation progresses based on user input and system response. Other
-classifiers will modify the underlying state machine to handle edge-cases.
+Using the Flow Policy, you can encapsulate your logic into flows, thereby
+guiding the conversation based on user input and system response. Other
+classifiers adjust the underlying state machine to handle edge cases.
 
-Please refer to the [flows specification](../flows.mdx) for detailed information
-on defining flows.
+For more detailed information on defining flows, refer to the
+[flows specification](../flows.mdx).
 
 ## Adding the `FlowPolicy` to your bot
 
-The flow policy can be used like [any other policy](../policies.mdx).
-Incorporating the `FlowPolicy` into your bot involves a two-step process. First,
-you need to configure the `FlowPolicy` in your `config.yml` file. The
-configuration ensures that your bot recognizes and applies the `FlowPolicy` when
-running:
+The Flow Policy can be integrated like [any other policy](../policies.mdx). It
+involves two steps:
+
+1. Configure the `FlowPolicy` in your `config.yml` file:
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -49,33 +48,31 @@ policies:
 # - ...
 ```
 
-Second, you need to add flows to your bot in accordance with the
-[flows specification](../flows.mdx). This step involves defining the states and
-transitions your bot should recognize and respond to.
+2. Add flows to your bot as per the [flows specification](../flows.mdx). This
+   step involves defining the states and transitions that your bot should
+   recognize and react to.
 
 Once added, the `FlowPolicy` will read all defined flows from your training data
 and apply them.
 
 ## How does it work?
 
-The `FlowPolicy` leverages a Flow stack structure (Last In First Out) together
-with internal slots to manage the state of your bot.
+The `FlowPolicy` employs a Flow stack structure (Last In First Out) along with
+internal slots to manage your bot's state.
 
 ### Managing the State
 
-The state of your bot is managed using a "flow stack". The flow stack stores the
-position in each started flow. The stack is ordered as "last in, first out"
-queue. The flow that got started last, will be completed first, before flows
-inserted earlier will be continued. The flow stack is stored in the `flow_stack`
-slot.
+Your bot's state is managed using a "flow stack". The flow stack stores the
+current position in each started flow. The stack follows a "last in, first out"
+sequence. The last started flow will be completed first, and then earlier
+inserted flows will continue. The flow stack is stored in the `flow_stack` slot.
 
-Let's take the following example flow and a conversation that is currently using
-it:
+Here's an example flow and a conversation currently using it:
 
 ```yaml title="flows.yml"
 flows:
   transfer_money:
-    description: This flow let's users send money to friends and family.
+    description: This flow enables users to send money to friends and family.
 
     steps:
       - id: "start"
@@ -92,54 +89,50 @@ flows:
 
 <Image
   img={flowStackEvolution}
-  caption="Changes to the flow stack during a correction of a prior user input"
+  caption="Flow stack changes during a correction of a previous user input"
   alt=""
 />
 
-The correction _"oh sorry I meant John"_ from the user triggers a correction
-flow to be started. This **correction is not explicitly modeled** in the
-`transfer_money` flow but rather handled by a so called "conversational
-pattern".
+A correction by the user, _"oh sorry I meant John"_, initiates a correction
+flow. This correction is not explicitly modeled in the `transfer_money` flow;
+it's handled by a conversational pattern.
 
-The correction flow is only executed when the user wants to correct a prior
-input. When triggered, the correction flow is put on top of the flow stack and
-executed.
+The correction flow only executes when the user wants to correct a previous
+input. Once triggered, it's placed on top of the flow stack for execution.
 
-From the `transfer_money` flow, the correction flow is an interruption. Once the
-correction flow is completed, the `transfer_money` flow is resumed. Before the
-`transfer_money` is resumed, the `resume_flow` flow is triggered. What happens
-in the `resume_flow` and `correction` flows can be
-[customized](./unhappy-paths.mdx).
+For the `transfer_money` flow, the correction flow is an interruption. Once
+completed, the `transfer_money` flow resumes. Before its res
 
-Once the `resume_flow` flow is completed, the `transfer_money` flow is resumed
-and the bot is back in the state it was before the correction flow was started.
-The `transfer_money` flow will re-ask the question that was interrupted by the
-correction flow.
-
-Both, the `resume_flow` and the `correction` flow are "conersational patterns"
-that are not explicitly modeled in the `transfer_money` flow. They are
-automatically triggered by the `FlowPolicy` when required. Details on how to
-define conversational patterns can be found in
+umption, a `resume_flow` flow is activated. You can customize what happens in
+`resume_flow` and `correction` flows in
 [Handling Unhappy Paths](./unhappy-paths.mdx).
+
+Upon completion of the `resume_flow` flow, the `transfer_money` flow resumes,
+and the bot returns to the state before the correction flow started. The
+`transfer_money` flow will re-ask the interrupted question.
+
+The `resume_flow` and `correction` flows are conversational patterns not
+explicitly modeled in the `transfer_money` flow. The `FlowPolicy` automatically
+triggers them when needed. For more details on defining conversational patterns,
+refer to [Handling Unhappy Paths](./unhappy-paths.mdx).
 
 ### Transitioning Between States
 
-The `FlowPolicy` transitions between states in response to user inputs or after
-an action has been completed. Initially, it waits for user input. Once received,
-it advances the state of the machine until it makes an action prediction. After
-the action has been completed and its result incorporated, it continues
-advancing to the next state.
+The `FlowPolicy` transitions between states either in response to user inputs or
+after an action's completion. Initially, it awaits user input. Once received, it
+advances the state of the machine until an action prediction is made. After
+completing the action and incorporating its result, it moves to the next state.
 
 ### Starting New Flows
 
-Starting a new flow in the `FlowPolicy` can be done in one of two ways. Either,
-by user input that matches the first step in a flow or by predicting the "flow
-action".
+Starting a new flow in the `FlowPolicy` can occur in two ways: by user input
+matching the first step in a flow, or by predicting the "flow action".
 
 #### User Input
 
-The user message _"i want to transfer money"_ will trigger a flow
-`transfer_money` if this flow is defined to be triggered by this message, e.g.:
+A user message like _"I want to transfer money"_ will trigger the
+`transfer_money` flow, provided this flow is defined to be initiated by such a
+message:
 
 ```yaml title="flows.yml"
 flows:
@@ -154,57 +147,53 @@ flows:
     # - ...
 ```
 
-The NLU model will predict the intent `transfer_money` and the `FlowPolicy` will
-start the flow `transfer_money` as a result.
+Here, the NLU model predicts the `transfer_money` intent, and as a result, the
+`FlowPolicy` initiates the `transfer_money` flow.
 
 #### Predicting Flow Actions
 
-Another policy can predict the action `flow_transfer_money` and the `FlowPolicy`
-will start the flow `transfer_money` as a result.
+Another policy predicting the action `flow_transfer_money` will result in the
+`FlowPolicy` initiating the `transfer_money` flow.
 
 ### Interruptions and Digressions
 
-Flows and their specification should model the happy path of a conversation.
-Digressions and interruptions are not explicitly modeled in a flow. Instead, the
-`FlowPolicy` relies on other components to identify these cases and interrupt
-the flow. The digressions and interruptions the flow policy is able to handle
-are documented in [Handling Unhappy Paths](./unhappy-paths.mdx).
-
-Sometimes, the user might provide something that a flow does not expect. The
-`FlowPolicy` does not identify these cases itself, but relies on other
-components to identify these cases and interrupt the flow.
+Flows and their specifications should ideally model the happy path of a
+conversation. The `FlowPolicy` depends on other components to identify
+digressions and interruptions and interrupt the flow accordingly. For details on
+which digressions and interruptions the flow policy can handle, refer to
+[Handling Unhappy Paths](./unhappy-paths.mdx).
 
 For example, the user message _"oh sorry I meant John"_ is a correction to a
-prior input. The `FlowPolicy` relies on another component to identify that this
-is a correction and set the corresponding slots, e.g. the
-[LLM Flow Classifier](./llm-flow-classifier.mdx). Based on this, the
-`FlowPolicy` will then start the correction flow.
+prior input. The `FlowPolicy` depends on another component, like the
+[LLM Flow Classifier](./llm-flow-classifier.mdx), to identify it as a correction
+and set the corresponding slots. Based on this, the `FlowPolicy` initiates the
+correction flow.
 
 ## Configuration
 
-Currently, there is no additional configuration required for the FlowPolicy
-beyond what has been outlined above.
+No additional configuration is required for the FlowPolicy beyond what's already
+outlined above.
 
-## FAQ
+## Frequently Asked Questions
 
-### Using the FlowPolicy with other Polices
+### Can FlowPolicy be used with other Policies?
 
-Currently, we recommend to avoid using the `FlowPolicy` together with the
-`RulePolicy`. The `RulePolicy` is not aware of the flow stack and its
-predictions are known to interfere with the `FlowPolicy`.
+Currently, we recommend not using the `FlowPolicy` in conjunction with the
+`RulePolicy`. The `RulePolicy` isn't aware of the flow stack and may interfere
+with the `FlowPolicy`.
 
-### What triggers the start of a flow?
+### What triggers a flow start?
 
-A flow can be started in multiple ways:
+A flow can be initiated in several ways:
 
-1. one flow can ["link" to another flow](../flows.mdx#next-next), which will
-   start the linked flow and return to the original flow once the linked flow is
-   completed.
-2. a flow will be started when the user message matches the
+1. One flow can ["link" to another flow](../flows.mdx#next-next), which will
+   initiate the linked flow and return to the original flow once the linked flow
+   completes.
+2. A flow starts when the user message matches the
    [`user_message` step](../flows.mdx#user-message-user_message) of the flow. A
-   match is based on the intent and entities of the user message.
-3. Flows, which are "comversational patterns" (e.g. correction, resume flow) are
-   started automatically by the `FlowPolicy` when required.
-4. A flow will be started when another policy predicts the corresponding flow
-   action named `flow_{flow_name}`. This action will push the flow onto the flow
-   stack and the `FlowPolicy` will run it.
+   match is determined by the intent and entities of the user message.
+3. Flows, which are conversational patterns (e.g. correction, resume flow), are
+   automatically initiated by the `FlowPolicy` when needed.
+4. A flow starts when another policy predicts the corresponding flow action
+   named `flow_{flow_name}`. This action pushes the flow onto the flow stack,
+   and the `FlowPolicy` executes it.
