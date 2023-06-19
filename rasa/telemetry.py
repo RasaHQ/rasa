@@ -492,6 +492,7 @@ def _default_context_fields() -> Dict[Text, Any]:
             "docker": _is_docker(),
         }
         license_hash = plugin_manager().hook.get_license_hash()
+        print("LLLLLLLLLLLLLLL",license_hash)
         if license_hash:
             TELEMETRY_CONTEXT["license_hash"] = license_hash
 
