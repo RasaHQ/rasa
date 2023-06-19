@@ -39,7 +39,7 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
         super().build(input_shape)
 
     def call(
-            self, inputs: TensorLike, state: TensorLike
+        self, inputs: TensorLike, state: TensorLike
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Build the CrfDecodeForwardRnnCell.
 
@@ -70,10 +70,10 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
 
 
 def crf_decode_forward(
-        inputs: TensorLike,
-        state: TensorLike,
-        transition_params: TensorLike,
-        sequence_lengths: TensorLike,
+    inputs: TensorLike,
+    state: TensorLike,
+    transition_params: TensorLike,
+    sequence_lengths: TensorLike,
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes forward decoding in a linear-chain CRF.
 
@@ -98,7 +98,7 @@ def crf_decode_forward(
 
 
 def crf_decode_backward(
-        backpointers: TensorLike, scores: TensorLike, state: TensorLike
+    backpointers: TensorLike, scores: TensorLike, state: TensorLike
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes backward decoding in a linear-chain CRF.
 
@@ -130,7 +130,7 @@ def crf_decode_backward(
 
 
 def crf_decode(
-        potentials: TensorLike, transition_params: TensorLike, sequence_length: TensorLike
+    potentials: TensorLike, transition_params: TensorLike, sequence_length: TensorLike
 ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Decode the highest scoring sequence of tags.
 
@@ -218,7 +218,7 @@ def crf_decode(
 
 
 def crf_unary_score(
-        tag_indices: TensorLike, sequence_lengths: TensorLike, inputs: TensorLike
+    tag_indices: TensorLike, sequence_lengths: TensorLike, inputs: TensorLike
 ) -> tf.Tensor:
     """Computes the unary scores of tag sequences.
 
@@ -258,7 +258,7 @@ def crf_unary_score(
 
 
 def crf_binary_score(
-        tag_indices: TensorLike, sequence_lengths: TensorLike, transition_params: TensorLike
+    tag_indices: TensorLike, sequence_lengths: TensorLike, transition_params: TensorLike
 ) -> tf.Tensor:
     """Computes the binary scores of tag sequences.
 
@@ -296,10 +296,10 @@ def crf_binary_score(
 
 
 def crf_sequence_score(
-        inputs: TensorLike,
-        tag_indices: TensorLike,
-        sequence_lengths: TensorLike,
-        transition_params: TensorLike,
+    inputs: TensorLike,
+    tag_indices: TensorLike,
+    sequence_lengths: TensorLike,
+    transition_params: TensorLike,
 ) -> tf.Tensor:
     """Computes the unnormalized score for a tag sequence.
 
@@ -349,10 +349,10 @@ def crf_sequence_score(
 
 
 def crf_forward(
-        inputs: TensorLike,
-        state: TensorLike,
-        transition_params: TensorLike,
-        sequence_lengths: TensorLike,
+    inputs: TensorLike,
+    state: TensorLike,
+    transition_params: TensorLike,
+    sequence_lengths: TensorLike,
 ) -> tf.Tensor:
     """Computes the alpha values in a linear-chain CRF.
 
@@ -394,7 +394,7 @@ def crf_forward(
 
 
 def crf_log_norm(
-        inputs: TensorLike, sequence_lengths: TensorLike, transition_params: TensorLike
+    inputs: TensorLike, sequence_lengths: TensorLike, transition_params: TensorLike
 ) -> tf.Tensor:
     """Computes the normalization for a CRF.
 
@@ -442,10 +442,10 @@ def crf_log_norm(
 
 
 def crf_log_likelihood(
-        inputs: TensorLike,
-        tag_indices: TensorLike,
-        sequence_lengths: TensorLike,
-        transition_params: Optional[TensorLike] = None,
+    inputs: TensorLike,
+    tag_indices: TensorLike,
+    sequence_lengths: TensorLike,
+    transition_params: Optional[TensorLike] = None,
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes the log-likelihood of tag sequences in a CRF.
 

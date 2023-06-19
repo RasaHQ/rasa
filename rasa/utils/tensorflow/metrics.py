@@ -76,14 +76,14 @@ class FBetaScore(tf.keras.metrics.Metric):
     """
 
     def __init__(
-            self,
-            num_classes: TensorLike,
-            average: Optional[str] = None,
-            beta: TensorLike = 1.0,
-            threshold: Optional[TensorLike] = None,
-            name: str = "fbeta_score",
-            dtype: Any = None,
-            **kwargs: Any,
+        self,
+        num_classes: TensorLike,
+        average: Optional[str] = None,
+        beta: TensorLike = 1.0,
+        threshold: Optional[TensorLike] = None,
+        name: str = "fbeta_score",
+        dtype: Any = None,
+        **kwargs: Any,
     ) -> None:
         super().__init__(name=name, dtype=dtype)
 
@@ -126,7 +126,12 @@ class FBetaScore(tf.keras.metrics.Metric):
         self.false_negatives = _zero_wt_init("false_negatives")
         self.weights_intermediate = _zero_wt_init("weights_intermediate")
 
-    def update_state(self, y_true: TensorLike, y_pred: TensorLike, sample_weight: Optional[TensorLike] = None) -> None:
+    def update_state(
+        self,
+        y_true: TensorLike,
+        y_pred: TensorLike,
+        sample_weight: Optional[TensorLike] = None,
+    ) -> None:
         if self.threshold is None:
             threshold = tf.reduce_max(y_pred, axis=-1, keepdims=True)
             # make sure [0, 0, 0] doesn't become [1, 1, 1]
@@ -138,7 +143,9 @@ class FBetaScore(tf.keras.metrics.Metric):
         y_true = tf.cast(y_true, self.dtype)
         y_pred = tf.cast(y_pred, self.dtype)
 
-        def _weighted_sum(val: TensorLike, sample_weight: Optional[TensorLike]) -> TensorLike:
+        def _weighted_sum(
+            val: TensorLike, sample_weight: Optional[TensorLike]
+        ) -> TensorLike:
             if sample_weight is not None:
                 val = tf.math.multiply(val, tf.expand_dims(sample_weight, 1))
             return tf.reduce_sum(val, axis=self.axis)
@@ -260,12 +267,12 @@ class F1Score(FBetaScore):
     """
 
     def __init__(
-            self,
-            num_classes: TensorLike,
-            average: str = None,
-            threshold: Optional[TensorLike] = None,
-            name: str = "f1_score",
-            dtype: Any = None,
+        self,
+        num_classes: TensorLike,
+        average: str = None,
+        threshold: Optional[TensorLike] = None,
+        name: str = "f1_score",
+        dtype: Any = None,
     ):
         super().__init__(num_classes, average, 1.0, threshold, name=name, dtype=dtype)
 
