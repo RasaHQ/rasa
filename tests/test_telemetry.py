@@ -487,7 +487,7 @@ def test_context_contains_os():
     assert "os" in telemetry._default_context_fields()
 
 
-def test_context_contains_license_hash(monkeypatch: MonkeyPatch):
+def test_context_contains_license_hash(monkeypatch: MonkeyPatch) -> None:
     mock = MagicMock()
     telemetry.TELEMETRY_CONTEXT = None # make sure we don't use the cached value
     mock.return_value.hook.get_license_hash.return_value = "1234567890"
@@ -503,7 +503,7 @@ def test_context_contains_license_hash(monkeypatch: MonkeyPatch):
     assert "license_hash" in telemetry._default_context_fields()
 
 
-def test_context_does_not_contain_license_hash(monkeypatch: MonkeyPatch):
+def test_context_does_not_contain_license_hash(monkeypatch: MonkeyPatch) -> None:
     mock = MagicMock()
     telemetry.TELEMETRY_CONTEXT = None # make sure we don't use the cached value
     mock.return_value.hook.get_license_hash.return_value = None
