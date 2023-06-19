@@ -191,6 +191,73 @@ class FlowPolicy(Policy):
         if predicted_action is not None:
             return self._create_prediction_result(predicted_action, domain, 1.0, [])
 
+        def handle_multi_intent_message(tracker, domain, flows, multi_intent):
+            executor = FlowExecutor.from_tracker(
+                tracker, flows or FlowsList([]), domain
+            )
+            structlogger.debug(vars(executor.flow_stack))
+            for intent in multi_intent:
+                structlogger.debug(intent)
+                for flow in executor.all_flows.underlying_flows:
+                    first_step = flow.first_step_in_flow()
+                    if not first_step or not isinstance(first_step, UserMessageStep):
+                        continue
+
+                    if first_step.is_triggered(intent, []):
+                        structlogger.debug("IN STACK PUSH")
+                        executor.flow_stack.push(
+                            FlowStackFrame(
+                                flow_id=flow.id,
+                                step_id=START_STEP,
+                                frame_type=StackFrameType.REGULAR,
+                            )
+                        )
+                        break
+            structlogger.debug(vars(executor.flow_stack))
+            prediction = ActionPrediction(
+                FLOW_PREFIX + executor.flow_stack.top().flow_id, 1.0
+            )
+            if not prediction.events:
+                prediction.events = []
+            prediction.events.append(
+                SlotSet(
+                    FLOW_STACK_SLOT,
+                    executor.flow_stack.as_dict(),
+                )
+            )
+            return prediction
+            # return ActionPrediction(None, 0.0)
+
+        structlogger.debug("***********************************")
+        structlogger.debug(vars(flows))
+        predictions = tracker.latest_message.parse_data.get("intent_ranking", [])
+        structlogger.debug("PREDICTONS")
+        structlogger.debug(predictions)
+        INTENT_CONFIDENCE_THRESHOLD = 0.2
+        multi_intent = [
+            intent_ranking["name"]
+            for intent_ranking in predictions
+            if intent_ranking["confidence"] > INTENT_CONFIDENCE_THRESHOLD
+        ]
+        structlogger.debug("LEN")
+        structlogger.debug(len(multi_intent))
+        if (
+            len(multi_intent) >= 2
+            and not tracker.has_action_after_latest_user_message()
+        ):
+            structlogger.debug("MULTIPLE INTENT FOUND")
+            prediction = handle_multi_intent_message(
+                tracker, domain, flows, multi_intent
+            )
+
+            return self._create_prediction_result(
+                prediction.action_name,
+                domain,
+                prediction.score,
+                prediction.events,
+                prediction.metadata,
+            )
+
         executor = FlowExecutor.from_tracker(tracker, flows or FlowsList([]), domain)
 
         # create executor and predict next action
