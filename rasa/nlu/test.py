@@ -1018,7 +1018,7 @@ def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
                 token_text=copy.deepcopy(token.text),
                 token_start=token.start,
                 token_end=token.end,
-                entity=e,
+                entity=copy.deepcopy(e),
             )
     return candidates
 

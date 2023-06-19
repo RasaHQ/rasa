@@ -200,7 +200,7 @@ class MessageProcessor:
             "processor.extract.slots",
             action_extract_slot=ACTION_EXTRACT_SLOTS,
             len_extraction_events=len(extraction_events),
-            rasa_events=extraction_events,
+            rasa_events=copy.deepcopy(extraction_events),
         )
 
         return tracker
@@ -1015,7 +1015,7 @@ class MessageProcessor:
         if not action_was_rejected_manually:
             structlogger.debug(
                 "processor.actions.policy_prediction",
-                prediction_events=prediction.events,
+                prediction_events=copy.deepcopy(prediction.events),
             )
             tracker.update_with_events(prediction.events, self.domain)
 
