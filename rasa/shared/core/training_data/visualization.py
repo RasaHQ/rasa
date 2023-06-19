@@ -400,16 +400,18 @@ def _add_message_edge(
     is_current: bool,
 ) -> None:
     """Create an edge based on the user message."""
-    message_intent = message.get("intent", {}).get("name", None)
-    if message and message_intent:
+    if message:
+        message_intent = message.get("intent", {}).get("name", None)
         # get the entities as \n separated values
-        entities: List[Dict[Text, Any]] = message.get("entities")
-        entity_values = [
-            value
-            for entity in entities
-            for key, value in entity.items()
-            if key == "entity"
-        ]
+        entities: Optional[List[Dict[Text, Any]]] = message.get("entities")
+        entity_values = []
+        if entities:
+            entity_values = [
+                value
+                for entity in entities
+                for key, value in entity.items()
+                if key == "entity"
+            ]
         if entity_values:
             newline = ",\n"
             entity_values_as_str = f"{newline}({newline.join(entity_values)})"
@@ -421,7 +423,7 @@ def _add_message_edge(
     elif message and message.get("text"):
 
         message_label = message.get("text", None)
-        message_key = message.label
+        message_key = message.get("intent", {}).get("name", None)
     else:
         message_key = None
         message_label = None
