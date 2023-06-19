@@ -1,9 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import backend as K
-
-from typing import Any, Optional
-
-TensorLike = tf.types.experimental.TensorLike
+from tensorflow.types.experimental import TensorLike
+from typing import Any, Dict, Optional
 
 
 # original code taken from
@@ -78,15 +76,15 @@ class FBetaScore(tf.keras.metrics.Metric):
     """
 
     def __init__(
-        self,
-        num_classes: TensorLike,
-        average: Optional[str] = None,
-        beta: TensorLike = 1.0,
-        threshold: Optional[TensorLike] = None,
-        name: str = "fbeta_score",
-        dtype: Any = None,
-        **kwargs,
-    ):
+            self,
+            num_classes: TensorLike,
+            average: Optional[str] = None,
+            beta: TensorLike = 1.0,
+            threshold: Optional[TensorLike] = None,
+            name: str = "fbeta_score",
+            dtype: Any = None,
+            **kwargs: Any,
+    ) -> None:
         super().__init__(name=name, dtype=dtype)
 
         if average not in (None, "micro", "macro", "weighted"):
@@ -118,7 +116,7 @@ class FBetaScore(tf.keras.metrics.Metric):
             self.axis = 0
             self.init_shape = [self.num_classes]
 
-        def _zero_wt_init(name):
+        def _zero_wt_init(name: Any) -> Any:
             return self.add_weight(
                 name, shape=self.init_shape, initializer="zeros", dtype=self.dtype
             )
@@ -128,7 +126,7 @@ class FBetaScore(tf.keras.metrics.Metric):
         self.false_negatives = _zero_wt_init("false_negatives")
         self.weights_intermediate = _zero_wt_init("weights_intermediate")
 
-    def update_state(self, y_true, y_pred, sample_weight=None):
+    def update_state(self, y_true: TensorLike, y_pred: TensorLike, sample_weight: Optional[TensorLike] = None) -> None:
         if self.threshold is None:
             threshold = tf.reduce_max(y_pred, axis=-1, keepdims=True)
             # make sure [0, 0, 0] doesn't become [1, 1, 1]
@@ -140,7 +138,7 @@ class FBetaScore(tf.keras.metrics.Metric):
         y_true = tf.cast(y_true, self.dtype)
         y_pred = tf.cast(y_pred, self.dtype)
 
-        def _weighted_sum(val, sample_weight):
+        def _weighted_sum(val: TensorLike, sample_weight: Optional[TensorLike]) -> TensorLike:
             if sample_weight is not None:
                 val = tf.math.multiply(val, tf.expand_dims(sample_weight, 1))
             return tf.reduce_sum(val, axis=self.axis)
@@ -154,7 +152,7 @@ class FBetaScore(tf.keras.metrics.Metric):
         )
         self.weights_intermediate.assign_add(_weighted_sum(y_true, sample_weight))
 
-    def result(self):
+    def result(self) -> TensorLike:
         precision = tf.math.divide_no_nan(
             self.true_positives, self.true_positives + self.false_positives
         )
@@ -178,7 +176,7 @@ class FBetaScore(tf.keras.metrics.Metric):
 
         return f1_score
 
-    def get_config(self):
+    def get_config(self) -> Dict[str, Any]:
         """Returns the serializable config of the metric."""
 
         config = {
@@ -191,11 +189,11 @@ class FBetaScore(tf.keras.metrics.Metric):
         base_config = super().get_config()
         return {**base_config, **config}
 
-    def reset_state(self):
+    def reset_state(self) -> None:
         reset_value = tf.zeros(self.init_shape, dtype=self.dtype)
         K.batch_set_value([(v, reset_value) for v in self.variables])
 
-    def reset_states(self):
+    def reset_states(self) -> None:
         # Backwards compatibility alias of `reset_state`. New classes should
         # only implement `reset_state`.
         # Required in Tensorflow < 2.5.0
@@ -262,16 +260,16 @@ class F1Score(FBetaScore):
     """
 
     def __init__(
-        self,
-        num_classes: TensorLike,
-        average: str = None,
-        threshold: Optional[TensorLike] = None,
-        name: str = "f1_score",
-        dtype: Any = None,
+            self,
+            num_classes: TensorLike,
+            average: str = None,
+            threshold: Optional[TensorLike] = None,
+            name: str = "f1_score",
+            dtype: Any = None,
     ):
         super().__init__(num_classes, average, 1.0, threshold, name=name, dtype=dtype)
 
-    def get_config(self):
+    def get_config(self) -> Dict[str, Any]:
         base_config = super().get_config()
         del base_config["beta"]
         return base_config

@@ -1,9 +1,7 @@
 import tensorflow as tf
 from tensorflow import TensorShape
-
+from tensorflow.types.experimental import TensorLike
 from typing import Tuple, Any, List, Union, Optional
-
-TensorLike = tf.types.experimental.TensorLike
 
 
 # original code taken from
@@ -41,7 +39,7 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
         super().build(input_shape)
 
     def call(
-        self, inputs: TensorLike, state: TensorLike
+            self, inputs: TensorLike, state: TensorLike
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Build the CrfDecodeForwardRnnCell.
 
@@ -72,10 +70,10 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
 
 
 def crf_decode_forward(
-    inputs: TensorLike,
-    state: TensorLike,
-    transition_params: TensorLike,
-    sequence_lengths: TensorLike,
+        inputs: TensorLike,
+        state: TensorLike,
+        transition_params: TensorLike,
+        sequence_lengths: TensorLike,
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes forward decoding in a linear-chain CRF.
 
@@ -100,7 +98,7 @@ def crf_decode_forward(
 
 
 def crf_decode_backward(
-    backpointers: TensorLike, scores: TensorLike, state: TensorLike
+        backpointers: TensorLike, scores: TensorLike, state: TensorLike
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes backward decoding in a linear-chain CRF.
 
@@ -132,7 +130,7 @@ def crf_decode_backward(
 
 
 def crf_decode(
-    potentials: TensorLike, transition_params: TensorLike, sequence_length: TensorLike
+        potentials: TensorLike, transition_params: TensorLike, sequence_length: TensorLike
 ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Decode the highest scoring sequence of tags.
 
@@ -220,7 +218,7 @@ def crf_decode(
 
 
 def crf_unary_score(
-    tag_indices: TensorLike, sequence_lengths: TensorLike, inputs: TensorLike
+        tag_indices: TensorLike, sequence_lengths: TensorLike, inputs: TensorLike
 ) -> tf.Tensor:
     """Computes the unary scores of tag sequences.
 
@@ -260,7 +258,7 @@ def crf_unary_score(
 
 
 def crf_binary_score(
-    tag_indices: TensorLike, sequence_lengths: TensorLike, transition_params: TensorLike
+        tag_indices: TensorLike, sequence_lengths: TensorLike, transition_params: TensorLike
 ) -> tf.Tensor:
     """Computes the binary scores of tag sequences.
 
@@ -298,10 +296,10 @@ def crf_binary_score(
 
 
 def crf_sequence_score(
-    inputs: TensorLike,
-    tag_indices: TensorLike,
-    sequence_lengths: TensorLike,
-    transition_params: TensorLike,
+        inputs: TensorLike,
+        tag_indices: TensorLike,
+        sequence_lengths: TensorLike,
+        transition_params: TensorLike,
 ) -> tf.Tensor:
     """Computes the unnormalized score for a tag sequence.
 
@@ -320,7 +318,7 @@ def crf_sequence_score(
 
     # If max_seq_len is 1, we skip the score calculation and simply gather the
     # unary potentials of the single tag.
-    def _single_seq_fn():
+    def _single_seq_fn() -> TensorLike:
         batch_size = tf.shape(inputs, out_type=tf.int32)[0]
         batch_inds = tf.reshape(tf.range(batch_size), [-1, 1])
         indices = tf.concat([batch_inds, tf.zeros_like(batch_inds)], axis=1)
@@ -338,7 +336,7 @@ def crf_sequence_score(
         )
         return sequence_scores
 
-    def _multi_seq_fn():
+    def _multi_seq_fn() -> TensorLike:
         # Compute the scores of the given tag sequence.
         unary_scores = crf_unary_score(tag_indices, sequence_lengths, inputs)
         binary_scores = crf_binary_score(
@@ -351,10 +349,10 @@ def crf_sequence_score(
 
 
 def crf_forward(
-    inputs: TensorLike,
-    state: TensorLike,
-    transition_params: TensorLike,
-    sequence_lengths: TensorLike,
+        inputs: TensorLike,
+        state: TensorLike,
+        transition_params: TensorLike,
+        sequence_lengths: TensorLike,
 ) -> tf.Tensor:
     """Computes the alpha values in a linear-chain CRF.
 
@@ -381,7 +379,7 @@ def crf_forward(
     inputs = tf.transpose(inputs, [1, 0, 2])
     transition_params = tf.expand_dims(transition_params, 0)
 
-    def _scan_fn(_state, _inputs):
+    def _scan_fn(_state: TensorLike, _inputs: TensorLike) -> TensorLike:
         _state = tf.expand_dims(_state, 2)
         transition_scores = _state + transition_params
         new_alphas = _inputs + tf.reduce_logsumexp(transition_scores, [1])
@@ -396,7 +394,7 @@ def crf_forward(
 
 
 def crf_log_norm(
-    inputs: TensorLike, sequence_lengths: TensorLike, transition_params: TensorLike
+        inputs: TensorLike, sequence_lengths: TensorLike, transition_params: TensorLike
 ) -> tf.Tensor:
     """Computes the normalization for a CRF.
 
@@ -416,7 +414,7 @@ def crf_log_norm(
 
     # If max_seq_len is 1, we skip the algorithm and simply reduce_logsumexp
     # over the "initial state" (the unary potentials).
-    def _single_seq_fn():
+    def _single_seq_fn() -> TensorLike:
         log_norm = tf.reduce_logsumexp(first_input, [1])
         # Mask `log_norm` of the sequences with length <= zero.
         log_norm = tf.where(
@@ -424,7 +422,7 @@ def crf_log_norm(
         )
         return log_norm
 
-    def _multi_seq_fn():
+    def _multi_seq_fn() -> TensorLike:
         """Forward computation of alpha values."""
         rest_of_input = tf.slice(inputs, [0, 1, 0], [-1, -1, -1])
         # Compute the alpha values in the forward algorithm in order to get the
@@ -444,10 +442,10 @@ def crf_log_norm(
 
 
 def crf_log_likelihood(
-    inputs: TensorLike,
-    tag_indices: TensorLike,
-    sequence_lengths: TensorLike,
-    transition_params: Optional[TensorLike] = None,
+        inputs: TensorLike,
+        tag_indices: TensorLike,
+        sequence_lengths: TensorLike,
+        transition_params: Optional[TensorLike] = None,
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes the log-likelihood of tag sequences in a CRF.
 
