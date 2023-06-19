@@ -41,12 +41,12 @@ involves two steps:
 
 1. Configure the `FlowPolicy` in your `config.yml` file:
 
-```yaml-rasa title="config.yml"
-policies:
-# - ...
-  - name: rasa.core.policies.flow_policy.FlowPolicy
-# - ...
-```
+   ```yaml-rasa title="config.yml"
+   policies:
+   # - ...
+     - name: rasa.core.policies.flow_policy.FlowPolicy
+   # - ...
+   ```
 
 2. Add flows to your bot as per the [flows specification](../flows.mdx). This
    step involves defining the states and transitions that your bot should
@@ -87,25 +87,26 @@ flows:
     # - ...
 ```
 
+The flow can be started with the intent `transfer_money`. The first step in the
+flow is `ask_recipient`. A correction by the user, _"oh sorry I meant John"_, 
+initiates a correction flow. This correction is not explicitly modeled in 
+the `transfer_money` flow; it's handled by a conversational pattern:
+
 <Image
   img={flowStackEvolution}
   caption="Flow stack changes during a correction of a previous user input"
   alt=""
 />
 
-A correction by the user, _"oh sorry I meant John"_, initiates a correction
-flow. This correction is not explicitly modeled in the `transfer_money` flow;
-it's handled by a conversational pattern.
+
 
 The correction flow only executes when the user wants to correct a previous
 input. Once triggered, it's placed on top of the flow stack for execution.
 
 For the `transfer_money` flow, the correction flow is an interruption. Once
-completed, the `transfer_money` flow resumes. Before its res
-
-umption, a `resume_flow` flow is activated. You can customize what happens in
-`resume_flow` and `correction` flows in
-[Handling Unhappy Paths](./unhappy-paths.mdx).
+completed, the `transfer_money` flow resumes. Before its res umption, a
+`resume_flow` flow is activated. You can customize what happens in `resume_flow`
+and `correction` flows in [Handling Unhappy Paths](./unhappy-paths.mdx).
 
 Upon completion of the `resume_flow` flow, the `transfer_money` flow resumes,
 and the bot returns to the state before the correction flow started. The
