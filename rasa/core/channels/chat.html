@@ -68,12 +68,14 @@
       </div>
     </div>
   </div>
-  <div id="rasa-chat-widget" data-websocket-url="" data-default-open=true></div>
+  <div id="rasa-chat-widget" data-websocket-url="" data-default-open=true data-height="500"></div>
 
   <script>
     let chatDiv = document.getElementById("rasa-chat-widget");
     let websocketUrl = window.location.origin.replace("http", "ws")
+    let maxHeight = document.documentElement.scrollHeight - 150;
     chatDiv.setAttribute("data-websocket-url", websocketUrl);
+    chatDiv.setAttribute("data-height", maxHeight)
   </script>
 
   <script>

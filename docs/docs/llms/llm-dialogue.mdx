@@ -1,0 +1,88 @@
+---
+id: llm-dialogue
+sidebar_label: Dialogues with LLMs & Flows
+title: Dialogues with LLMs & Flows
+abstract: |
+  This documentation explores dialogue management by combining Large Language Models (LLMs) and business logic through Flows.
+---
+
+import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
+
+<RasaDiscoveryBanner />
+
+## Motivation
+
+Our approach aims to harness the strengths of both Large Language Models (LLMs)
+and the control needed for business logic. This innovative blend enables you to
+manage both the flexible and predictable aspects of dialogues within your
+chatbot.
+
+By utilizing LLMs, we can effectively handle ["unhappy paths"—instances](../glossary.mdx#happy--unhappy-paths) where
+user interactions diverge from the expected or desired course. Meanwhile,
+business logic or 'Flows' are used to manage ["happy paths"—scenarios](../glossary.mdx#happy--unhappy-paths) where
+interactions proceed as anticipated.
+
+Combining LLMs and Flows helps prevent "black box" behaviors, whereby the
+chatbot's responses can seem inexplicable or out of control. With this method,
+you only need to specify a minimal amount of business logic. At the same time,
+it opens up a wide range of possibilities for customizing your chatbot's
+dialogue behavior.
+
+## Approach
+
+Here's a breakdown of our approach:
+
+- We specify 'happy paths' using business logic. This means setting out clear,
+  pre-defined paths that the conversation should follow under ideal
+  circumstances using [Flows](../flows.mdx).
+- We identify patterns of 'unhappy paths' and specify these using separate
+  Flows. These [conversational patterns](./unhappy-paths.mdx) define how the
+  chatbot should respond when the user's input doesn't match the expected course
+  of a flow.
+- We use Flows to keep track of the conversation's state, ensuring we always
+  know where we are in the dialogue and what's been covered.
+- We employ LLMs to update the state of these Flows. These language models
+  process user input, adjusting the conversation's course as needed.
+- We use LLMs to [improve the chatbot's responses](./llm-nlg.mdx). These
+  language models generate the chatbot's responses, ensuring they feel natural and
+  fluent.
+
+## Configuration and Setup
+
+In order to set up and configure this approach:
+
+- You'll first need to get the `dm2` branches of `rasa` and `rasa-plus`. 
+  All components are implemented on these branches.
+- Next, you'll need to configure the `config.yml` file to ensure your bot
+  recognizes and applies this combination of LLMs and Flows.
+
+An example configuration file is shown below:
+
+```yaml title="config.yml"
+recipe: default.v1
+language: en
+pipeline:
+  - name: LLMFlowClassifier
+
+policies:
+  - name: rasa.core.policies.flow_policy.FlowPolicy
+  - name: RulePolicy
+```
+
+To use the rephrasing capability, you'll also need to add the following to your
+endpoint configuration:
+
+```yaml title="endpoints.yml"
+nlg:
+  type: rasa_plus.ml.LLMResponseRephraser
+```
+
+Additional configuration parameters are explained in detail in the documentation
+pages for each of these components:
+- [LLMFlowClassifier](./llm-flow-classifier.mdx)
+- [FlowPolicy](./flow-policy.mdx)
+- [LLMResponseRephraser](./llm-nlg.mdx) 
+
+## Example Conversation
+
+[Example conversation goes here]

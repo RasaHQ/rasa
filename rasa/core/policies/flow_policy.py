@@ -253,7 +253,6 @@ class FlowPolicy(Policy):
             prediction = handle_multi_intent_message(
                 tracker, domain, flows, multi_intent
             )
-
             return self._create_prediction_result(
                 prediction.action_name,
                 domain,
@@ -441,6 +440,7 @@ class StackFrameType(str, Enum):
     This means that the previous flow was interrupted by this flow."""
     LINK = "link"
     """The frame is a link frame.
+
 
     This means that the previous flow linked to this flow."""
     RESUME = "resume"
@@ -1067,9 +1067,13 @@ class FlowExecutor:
                         events=events,
                     )
 
-                structlogger.debug("flow.current_frame", vars(current_frame))
-                structlogger.debug("flow.previous_flow", vars(previous_flow))
-                structlogger.debug("flow.previous_flow_step", vars(previous_flow_step))
+                else:
+                    # TODO: we need to figure out how to actually "undo" the
+                    #    changed slots
+                    pass
+            structlogger.debug("flow.current_frame", vars(current_frame))
+            structlogger.debug("flow.previous_flow", vars(previous_flow))
+            structlogger.debug("flow.previous_flow_step", vars(previous_flow_step))
 
             return ActionPrediction(None, 0.0, events=events)
         else:
