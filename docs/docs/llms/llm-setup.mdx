@@ -55,9 +55,26 @@ To configure the API token, follow these steps:
 
 3. To set the API key as an environment variable, you can use the following command in a
    terminal or command prompt:
-   ```shell
-   export OPENAI_API_KEY=<your-api-key>
-   ```
+
+   <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+     ```shell
+     export OPENAI_API_KEY=<your-api-key>
+     ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_KEY <your-api-key>
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
    Replace `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
 
 ### Model Configuration
