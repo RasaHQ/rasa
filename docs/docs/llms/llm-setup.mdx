@@ -47,8 +47,17 @@ interaction between the two.
 
 To configure the API token, follow these steps:
 
-1. [Instructions to get your API token]
-2. [Instructions to set the token in your LLM configuration]
+1. If you haven't already, sign up for an account on the OpenAI platform.
+   Navigate to the OpenAI Key Management page at https://platform.openai.com/account/api-keys.
+   Once there, click on the "Create New Secret Key" button to initiate the process of
+   obtaining your API key.
+
+2. Setting the API key as an environment variable, you can use the following command in a
+   terminal or command prompt:
+   ```shell Copy code
+      export OPENAI_API_KEY=<your-api-key>
+   ```
+  Replace `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
 
 ### Model Configuration
 
@@ -70,14 +79,19 @@ to be configured:
   OpenAI Service.
 - `openai.api_base`: This should be the URL for your Azure OpenAI instance. An
   example might look like this: "https://docs-test-001.openai.azure.com/".
-- `openai.api_version`: This should be the version of Azure OpenAI you are
-  using, such as "2023-05-15".
+
 
 To configure these parameters, follow these steps:
 
-1. [Instructions to set `openai.api_type`]
-2. [Instructions to set `openai.api_base`]
-3. [Instructions to set `openai.api_version`]
+1. To configure the `openai.api_type` as an environment variable:
+  ```shell
+  export OPENAI_API_TYPE="azure"
+  ```
+2. To configure the `openai.api_base` as an environment variable:
+  ```shell
+  export OPENAI_API_BASE=<your-azure-openai-instance-url>
+  ```
+
 
 ## Other LLM providers
 
