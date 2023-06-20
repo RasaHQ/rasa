@@ -14,12 +14,14 @@ import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 ## Flows with Unhappy Paths
 
 A flow represents a specific business function as a directed graph.
-Depending on your business logic, these graphs can be purely linear, branch multiple times or have cycles in certain sections.
-To limit complexity for flow creators, we want them to be able to focus on the direct
-or "happy path" where the user sticks to their original goal and where these goals are
+Depending on your business logic, these graphs can be purely linear, branch multiple
+times or have cycles in certain sections. To limit complexity for flow designers,
+we let them focus on implementing simple direct flows
+or [happy paths](../glossary.mdx#happy--unhappy-paths), where the user reaches
+their initial goal and where these goals are
 attained step by step. Instead of having to model flow switches, cancellations, or
-slot corrections explicitly, rasa handles these things in a uniform manner across flows,
-greatly reducing the modeling complexity.
+slot corrections explicitly, a rasa assistant handles these things in a
+uniform manner across flows, greatly reducing the complexity of flow design.
 
 
 ## Digressions
