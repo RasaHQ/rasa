@@ -116,10 +116,8 @@ fill a slot. Here is an example:
 question: account_type # slot name
 ```
 
-In this example, the bot is
-
-asking the user to provide their account type. The response will be used to fill
-the "account_type" slot.
+In this example, the bot is asking the user to provide their account type. 
+The response will be used to fill the "account_type" slot.
 
 A question can be configured to be skipped if the slot is already filled, as
 shown below:
@@ -297,7 +295,7 @@ responses:
   utter_ask_confirm_transfer:
     - text: "Do you wish to proceed with the transfer?"
 ```
-The snippet shows the slot configuration that is needed to make the `tranfer_money` flow work.
+The snippet shows the slot configuration that is needed to make the `question` step in the `tranfer_money` flow work.
 
 #### Flows branching on the result of the user selection
 ```yaml-rasa title="flows.yml"
