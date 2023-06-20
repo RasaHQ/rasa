@@ -1,3 +1,4 @@
+version: "3.1"
 responses:
   utter_flow_continue_interrupted: 
     - text: Let's continue with the topic {rasa_previous_flow}.
@@ -24,10 +25,19 @@ responses:
       metadata: 
         rephrase: True
 
-  utter_flow_cancelled:
+  utter_flow_cancelled_rasa:
     - text: Okay, stopping the flow {rasa_cancelled_flow}.
       metadata:
         rephrase: True
+
+  utter_too_complex_rasa:
+    - text: This is too complex for me, let's take it one step at a time.
+
+  utter_sorry_mistake_rasa:
+    - text: sorry, it seems I made a mistake. Let's try this again.
+
+  utter_openai_error_rasa:
+    - text: Sorry, I'm having trouble understanding you right now. Please try again later.
 
 slots:
   confirm_correction:
@@ -76,5 +86,37 @@ flows:
 
     steps:
       - id: "0"
-        action: utter_flow_cancelled
- 
+        action: utter_flow_cancelled_rasa
+
+  too_complex:
+    description: replies to the user that their request is too complex
+    steps:
+      - id: "0"
+        intent: rasa_too_complex
+        next: "1"
+      - id: "1"
+        action: utter_too_complex_rasa
+
+  mistake:
+    description: bot made a mistake
+    steps:
+      - id: "0"
+        intent: rasa_mistake
+        next: "1"
+      - id: "1"
+        action: utter_sorry_mistake_rasa
+
+  comment:
+    description: user made a comment - nothing to be done
+    steps:
+      - id: "0"
+        intent: rasa_comment
+
+  openai_error:
+    description: openai error
+    steps:
+      - id: "0"
+        intent: rasa_openai_error
+        next: "1"
+      - id: "1"
+        action: utter_openai_error_rasa

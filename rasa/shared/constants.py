@@ -112,3 +112,7 @@ OPENAI_API_KEY_ENV_VAR = "OPENAI_API_KEY"
 
 CORRECTION_INTENT = "rasa_correction"
 CANCEL_FLOW_INTENT = "rasa_cancel_flow"
+COMMENT_INTENT = "rasa_comment"
+INFORM_INTENT = "rasa_inform"
+TOO_COMPLEX_INTENT = "rasa_too_complex"
+OPENAI_ERROR_INTENT = "rasa_openai_error"

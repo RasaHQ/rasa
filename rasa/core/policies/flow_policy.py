@@ -10,7 +10,12 @@ from rasa.core.constants import (
     POLICY_PRIORITY,
 )
 from pypred import Predicate
-from rasa.shared.constants import FLOW_PREFIX, CORRECTION_INTENT, CANCEL_FLOW_INTENT
+from rasa.shared.constants import (
+    FLOW_PREFIX,
+    CORRECTION_INTENT,
+    CANCEL_FLOW_INTENT
+
+)
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     ENTITY_ATTRIBUTE_TYPE,
@@ -20,7 +25,8 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
-    PREVIOUS_FLOW_SLOT, CANCELLED_FLOW_SLOT,
+    PREVIOUS_FLOW_SLOT,
+    CANCELLED_FLOW_SLOT,
 )
 from rasa.shared.core.events import ActiveLoop, Event, SlotSet, UserUttered
 from rasa.shared.core.flows.flow import (

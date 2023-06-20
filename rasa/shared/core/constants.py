@@ -19,6 +19,10 @@ DEFAULT_INTENTS = [
     USER_INTENT_SESSION_START,
     constants.CANCEL_FLOW_INTENT,
     constants.CORRECTION_INTENT,
+    constants.TOO_COMPLEX_INTENT,
+    constants.COMMENT_INTENT,
+    constants.INFORM_INTENT,
+    constants.OPENAI_ERROR_INTENT,
     constants.DEFAULT_NLU_FALLBACK_INTENT_NAME,
 ]
 
