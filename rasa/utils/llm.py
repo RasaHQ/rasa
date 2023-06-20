@@ -1,12 +1,13 @@
 from typing import Optional
 import openai
 import logging
-
+import openai.error
+import structlog
 from rasa.shared.core.events import BotUttered, UserUttered
 
 from rasa.shared.core.trackers import DialogueStateTracker
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 USER = "USER"
 
@@ -35,12 +36,16 @@ def generate_text_openai_chat(
         The generated text.
     """
     # TODO: exception handling
-    chat_completion = openai.ChatCompletion.create(  # type: ignore[no-untyped-call]
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=temperature,
-    )
-    return chat_completion.choices[0].message.content
+    try:
+        chat_completion = openai.ChatCompletion.create(  # type: ignore[no-untyped-call]
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=temperature,
+        )
+        return chat_completion.choices[0].message.content
+    except openai.error.OpenAIError as e:
+        structlogger.exception("openai.generate.error", model=model, prompt=prompt)
+        return None
 
 
 def tracker_as_readable_transcript(

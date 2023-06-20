@@ -154,9 +154,11 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     @classmethod
     def parse_action_list(
-        cls, actions: str, tracker: DialogueStateTracker, flows: FlowsList
+        cls, actions: Optional[str], tracker: DialogueStateTracker, flows: FlowsList
     ) -> Tuple[str, List[Tuple[str, str]]]:
         """Parse the actions returned by the llm into intent and entities."""
+        if not actions:
+            return "openai_error", []
         start_flow_actions = []
         slot_sets = []
         cancel_flow = False
