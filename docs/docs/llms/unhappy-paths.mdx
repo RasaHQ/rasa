@@ -87,11 +87,13 @@ In the above conversation you can see that
 1. The bot understands that the user wants to correct a slot that was set earlier and asks the user for confirmation before making the change
 2. The bot informs the user about the successful change
 
-What you cannot see from this conversation is that the flow graph was also retraced in
-the background starting from the altered recipient question to make sure the updated
-information is still in line with any logical checks along the flow graph. If the update
-had resulted in going down a different path we would see the questions and utterances
-of this alternate path being used.
+Under the hood, the flow is replayed in the background starting from the
+corrected question to ensure the updated information is still in line with
+any logical checks along the flow.
+
+If the change had resulted in going down a different path, the user
+would see the the questions and utterances
+of this alternate path.
 
 This represents the default behavior in flows. You can adjust this behavior by adapting
 the preconfigured flow called `pattern_correction` which is defined as follows:
