@@ -49,7 +49,10 @@ def generate_text_openai_chat(
 
 
 def tracker_as_readable_transcript(
-    tracker: DialogueStateTracker, human_prefix: str = USER, ai_prefix: str = AI
+    tracker: DialogueStateTracker,
+    human_prefix: str = USER,
+    ai_prefix: str = AI,
+    max_turns: Optional[int] = 20,
 ) -> str:
     """Creates a readable dialogue from a tracker.
 
@@ -57,6 +60,7 @@ def tracker_as_readable_transcript(
         tracker: the tracker to convert
         human_prefix: the prefix to use for human utterances
         ai_prefix: the prefix to use for ai utterances
+        max_turns: the maximum number of turns to include in the transcript
 
     Example:
         >>> tracker = Tracker(
@@ -83,6 +87,9 @@ def tracker_as_readable_transcript(
             )
         if isinstance(event, BotUttered):
             transcript.append(f"{ai_prefix}: {sanitize_message_for_prompt(event.text)}")
+
+    if max_turns:
+        transcript = transcript[-max_turns:]
     return "\n".join(transcript)
 
 
