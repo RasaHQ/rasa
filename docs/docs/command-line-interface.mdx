@@ -664,8 +664,16 @@ Python Logging Options:
 
 ## rasa markers upload
 
-This command is only relevant for Rasa Pro users with an Analytics Data Pipeline.
-It applies to [markers](./markers.mdx) and their [real-time processing](./monitoring/analytics/realtime-markers.mdx).
+<RasaProLabel />
+
+<RasaProBanner />
+
+:::info New in 3.6
+
+This command is available from Rasa Pro 3.6.0 and requires [Rasa Analytics Data Pipeline](./monitoring/analytics/getting-started-with-analytics.mdx)
+:::
+
+This command applies to [markers](./markers.mdx) and their [real-time processing](./monitoring/analytics/realtime-markers.mdx).
 Running this command validates the marker configuration file against the domain file and uploads the configuration to Analytics Data Pipeline
 
 ```
