@@ -363,6 +363,8 @@ class Agent:
 
         # update domain on all instances
         self.tracker_store.domain = self.domain
+        if hasattr(self.tracker_store, "_tracker_store"):
+            self.tracker_store._tracker_store.domain = self.domain
         if isinstance(self.nlg, TemplatedNaturalLanguageGenerator):
             self.nlg.responses = self.domain.responses if self.domain else {}
 
