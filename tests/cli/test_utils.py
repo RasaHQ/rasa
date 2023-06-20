@@ -106,7 +106,7 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
         ("hi this is test text\n", "hi this is test text"),
         ("hi this is test text (/button_one)", "/button_one"),
         ("hi this is test text (and something) (/button_one)", "/button_one"),
-    ]
+    ],
 )
 async def test_payload_from_button_question(text_input: str, button: str) -> None:
     question = AsyncMock()
