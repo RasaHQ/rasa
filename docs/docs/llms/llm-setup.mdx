@@ -47,8 +47,35 @@ interaction between the two.
 
 To configure the API token, follow these steps:
 
-1. [Instructions to get your API token]
-2. [Instructions to set the token in your LLM configuration]
+1. If you haven't already, sign up for an account on the OpenAI platform.
+
+2. Navigate to the [OpenAI Key Management page](https://platform.openai.com/account/api-keys),
+   and click on the "Create New Secret Key" button to initiate the process of
+   obtaining your API key.
+
+3. To set the API key as an environment variable, you can use the following command in a
+   terminal or command prompt:
+
+   <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+     ```shell
+     export OPENAI_API_KEY=<your-api-key>
+     ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_KEY <your-api-key>
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
+   Replace `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
 
 ### Model Configuration
 
@@ -70,14 +97,52 @@ to be configured:
   OpenAI Service.
 - `openai.api_base`: This should be the URL for your Azure OpenAI instance. An
   example might look like this: "https://docs-test-001.openai.azure.com/".
-- `openai.api_version`: This should be the version of Azure OpenAI you are
-  using, such as "2023-05-15".
+
 
 To configure these parameters, follow these steps:
 
-1. [Instructions to set `openai.api_type`]
-2. [Instructions to set `openai.api_base`]
-3. [Instructions to set `openai.api_version`]
+1. To configure the `openai.api_type` as an environment variable:
+
+   <Tabs groupId="os-dist-api-type" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+     ```shell
+     export OPENAI_API_TYPE="azure"
+     ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_TYPE "azure"
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
+2. To configure the `openai.api_base` as an environment variable:
+
+   <Tabs groupId="os-dist-api-base" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+      ```shell
+      export OPENAI_API_BASE=<your-azure-openai-instance-url>
+      ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_BASE <your-azure-openai-instance-url>
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
 
 ## Other LLM providers
 
