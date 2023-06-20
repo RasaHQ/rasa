@@ -120,8 +120,8 @@ The LLM might reply to this prompt with:
 SetSlot(transfer_money_amount_of_money, 40$)
 ```
 Which we would then turn into an `inform` intent, since no other flow needs to be
-started and the information belongs to the question that was just asked. Also,
-the `transfer_money_amount_of_money` entity would be present.
+started and the information belongs to the question that was just asked. The
+`transfer_money_amount_of_money` entity would also be detected.
 
 If the user had said "Sorry, I meant to John" instead, the LLM might have replied with
 ```
