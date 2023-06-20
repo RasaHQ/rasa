@@ -73,3 +73,8 @@ def create_tracker_store(  # type: ignore[empty-body]
     event_broker: Optional["EventBroker"],
 ) -> "TrackerStore":
     """Hook specification for wrapping with AuthRetryTrackerStore."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def get_license_hash() -> Optional[Text]:
+    """Hook specification for getting the license hash."""
