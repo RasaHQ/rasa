@@ -11,14 +11,155 @@ import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 
 <RasaDiscoveryBanner/>
 
-- TODO explain general concept: flows are a sequence of steps, each step is a question. unhappy paths handled through "conversation patterns" (special flows). flow classifier detects them and triggers the conversation pattern flows to handle them
+## Flows with Unhappy Paths
 
-- default flows are in https://github.com/RasaHQ/rasa/pull/12501/files#diff-ef650ec4c31fc5423a8811c54ad1abed3c2c8501b6640fb782144a725e362053
+A flow represents a specific business function as a directed graph.
+Depending on your business logic, these graphs can be purely linear, branch multiple
+times or have cycles in certain sections. To limit complexity for flow designers,
+we let them focus on implementing simple direct flows
+or [happy paths](../glossary.mdx#happy--unhappy-paths), where the user reaches
+their initial goal and where these goals are
+attained step by step. Instead of having to model flow switches, cancellations, or
+slot corrections explicitly, a rasa assistant handles these things in a
+uniform manner across flows, greatly reducing the complexity of flow design.
 
-- TODO handling of starting another flow from within a flow
-- TODO include configuration of the continuation template  and exaplantion of default
 
-- TODO handling of corrections of an earlier question
-- TODO include configuration of the correction template and exaplantion of default
-- TODO include how to reject the correction and continue with the original answer (set the slot `rasa_corrected_slots` to `None`)
+## Digressions
 
+Digressions happen when the user is currently involved in one flow, e.g. transferring
+money to a friend, and they need access to some information, such as
+their current balance, before continuing with the flow.
+
+```
+User: I want to send some money to Sudarshana
+Bot: How much do you want to send to Sudarshana?
+User: Ah wait, how much money do I have, did my paycheck already arrive?
+Bot: You currently have 4021.20$ in your account.
+Bot: Let's continue with sending money to Sudarshana.
+Bot: How much money do you want to send to Sudarshana then?
+...
+```
+
+In the above conversation you can see that
+1. The transferring money flow was interrupted by the checking balance flow and the needed information was provided
+2. The bot commented on returning to the original flow
+3. The bot restated the current question of the original flow
+
+This represents the default behavior in flows. You can adjust this behavior by adapting
+the preconfigured flow called `pattern_continue_interrupted` which is defined as follows:
+```yaml title="domain.yml"
+responses:
+  utter_flow_continue_interrupted:
+    - text: Let's continue with the topic {rasa_previous_flow}.
+      metadata:
+        rephrase: True
+```
+
+```yaml title="flows.yml"
+flows:
+  pattern_continue_interrupted:
+    description: A meta flow that should be started to continue an interrupted flow.
+
+    steps:
+      - id: "0"
+        action: utter_flow_continue_interrupted
+```
+You can override these defaults by defining flows, slots, or responses with the
+respective names shown here. For instance, you could either remove
+the statement about the interrupted flow being continued
+or add another confirmation step.
+
+## Corrections
+Corrections of slots happen for a variety of reasons. Users might want to correct their
+own mistake or a mistake the bot made, or they might change their minds about certain
+aspects of what they want to achieve.
+
+A common correction scenario looks like this:
+```
+User: I want to send some money to Joe
+Bot: How much money do you want to send?
+User: 50$
+Bot: Do you want to send 50$ to Joe? (Yes/No)
+User: Oh wait!! I meant to say to John, not to Joe!
+Bot: Do you want to update the recipient to John? (Yes/No)
+User: Yes!
+Bot: Updated recipient to John
+Bot: Do you want to send 50$ to John? (Yes/No)
+...
+```
+
+In the above conversation you can see that
+1. The bot understands that the user wants to correct a slot that was set earlier and asks the user for confirmation before making the change
+2. The bot informs the user about the successful change
+
+Under the hood, the flow is replayed in the background starting from the
+corrected question to ensure the updated information is still in line with
+any logical checks along the flow.
+
+If the change had resulted in going down a different path, the user
+would see the the questions and utterances
+of this alternate path.
+
+This represents the default behavior in flows. You can adjust this behavior by adapting
+the preconfigured flow called `pattern_correction` which is defined as follows:
+```yaml title="domain.yml"
+responses:
+  utter_ask_confirm_correction:
+    - text: "Do you want to update your information?"
+      buttons:
+        - payload: /affirm
+          title: Yes
+        - payload: /deny
+          title: No, please keep the previous information
+      metadata:
+        rephrase: True
+  utter_corrected_previous_input:
+    - text: "Ok, I corrected the previous input."
+      metadata:
+        rephrase: True
+  utter_not_corrected_previous_input:
+    - text: "Ok, I did not correct the previous input."
+      metadata:
+        rephrase: True
+slots:
+  confirm_correction:
+    type: text
+    mappings:
+      - intent: affirm
+        type: from_intent
+        value: "True"
+        conditions:
+          - active_loop: question_confirm_correction
+      - intent: deny
+        type: from_intent
+        value: "False"
+        conditions:
+          - active_loop: question_confirm_correction
+
+```
+```yaml title="flows.yml"
+flows:
+  pattern_correction:
+    description: A meta flow that should be started to correct a previous user input.
+
+    steps:
+      - id: "0"
+        question: confirm_correction
+        next:
+          - if: confirm_correction
+            then: "1"
+          - else: "2"
+      - id: "1"
+        action: utter_corrected_previous_input
+      - id: "2"
+        set_slots:
+          - rasa_corrected_slots: None
+        next: "3"
+      - id: "3"
+        action: utter_not_corrected_previous_input
+```
+You can override these defaults by defining flows, slots, or responses with the
+respective names shown here. For instance, you could either remove the confirmation for correcting slots or disable slots correction altogether.
+
+## Cancellations
+_TODO, Not implemented yet._
