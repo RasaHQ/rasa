@@ -635,13 +635,14 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
     # reset input files to original state
     rasa.shared.utils.io.write_yaml(original_config_data, config_file, True)
 
+
 @pytest.mark.parametrize(
     "text_input, button",
     [
         ("hi this is test text\n", "hi this is test text"),
         ("hi this is test text (/button_one)", "/button_one"),
         ("hi this is test text (and something) (/button_one)", "/button_one"),
-    ]
+    ],
 )
 async def test_payload_from_button_question(text_input: str, button: str) -> None:
     question = AsyncMock()
