@@ -24,6 +24,11 @@ responses:
       metadata: 
         rephrase: True
 
+  utter_flow_cancelled:
+    - text: Okay, stopping the flow {rasa_cancelled_flow}.
+      metadata:
+        rephrase: True
+
 slots:
   confirm_correction:
     type: text
@@ -65,4 +70,11 @@ flows:
         next: "3"
       - id: "3"
         action: utter_not_corrected_previous_input
+
+  pattern_cancel_flow:
+    description: A meta flow that's started when a flow is cancelled.
+
+    steps:
+      - id: "0"
+        action: utter_flow_cancelled
  

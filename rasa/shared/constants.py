@@ -109,3 +109,6 @@ RESPONSE_CONDITION = "condition"
 CHANNEL = "channel"
 
 OPENAI_API_KEY_ENV_VAR = "OPENAI_API_KEY"
+
+CORRECTION_INTENT = "rasa_correction"
+CANCEL_FLOW_INTENT = "rasa_cancel_flow"

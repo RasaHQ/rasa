@@ -25,8 +25,8 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_TEXT,
     ENTITY_ATTRIBUTE_CONFIDENCE,
-    CORRECTION_INTENT,
 )
+from rasa.shared.constants import CORRECTION_INTENT, CANCEL_FLOW_INTENT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.llm import (
@@ -229,7 +229,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             if len(slot_sets) == 0 and not cancel_flow:
                 return "comment", []
             elif len(slot_sets) == 0 and cancel_flow:
-                return "cancel_flow", []
+                return CANCEL_FLOW_INTENT, []
             elif (
                 len(slot_sets) == 1
                 and isinstance(top_flow_step, QuestionFlowStep)
