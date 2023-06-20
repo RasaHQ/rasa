@@ -128,8 +128,8 @@ If the user had said "Sorry, I meant to John" instead, the LLM might have replie
 SetSlot(transfer_money_recipient, John)
 ```
 Which would then be turned into a `correction` intent, since it tries to set a slot that
-was asked earlier in the flow. Also, the `transfer_money_recipient` entity would be
-present.
+was asked earlier in the flow. The `transfer_money_recipient` entity would also be
+detected.
 
 If the user had said "How much do I still have in my account" instead, the LLM might
 have replied with
