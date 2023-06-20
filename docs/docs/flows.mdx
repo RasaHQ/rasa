@@ -213,7 +213,7 @@ flows:
         action: utter_greet
 ```
 
-The intent `greet` and the response template `utter_greet` need to be defined in
+The intent `greet` and the response template `utter_greet` needs to be defined in
 the domain file.
 
 The `next` property determines the id of the next step and links all the 
@@ -245,10 +245,11 @@ flows:
         action: utter_old_enough
 ```
 
+The example shows a flow that branches based on logic.
+
 ### Asking for confirmation
 
-excerpt from flows.yml
-```yaml
+```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
     description: This flow demonstrates asking for confirmation from the user.
@@ -271,8 +272,9 @@ flows:
         action: utter_transfer_cancel
 ```
 
-excerpt from domain.yml that shows the slot configuration.
-```yaml
+The example shows a flow that can take confirmation from the user and branch based on it.
+
+```yaml-rasa title="domain.yml"
 slots:
   money:
     type: float
@@ -295,9 +297,10 @@ responses:
   utter_ask_confirm_transfer:
     - text: "Do you wish to proceed with the transfer?"
 ```
+The snippet shows the slot configuration that is needed to make the `tranfer_money` flow work.
 
 #### Flows branching on the result of the user selection
-```yaml
+```yaml-rasa title="flows.yml"
 flows:
   user_selection_based_flow_branching_example:
     description: This flow opens a bank account based on the user's choice of account model.
