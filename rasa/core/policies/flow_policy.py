@@ -212,7 +212,7 @@ class FlowPolicy(Policy):
                                 FlowStackFrame(
                                     flow_id=flow.id,
                                     step_id=START_STEP,
-                                    frame_type=StackFrameType.SEQUENCE,
+                                    frame_type=StackFrameType.REGULAR,
                                 )
                             )
                             stack_update = True
@@ -1023,7 +1023,7 @@ class FlowExecutor:
             if current_frame := self.flow_stack.pop():
                 previous_flow = self.flow_stack.top_flow(self.all_flows)
                 previous_flow_step = self.flow_stack.top_flow_step(self.all_flows)
-                prev_frame = self.flow_stack.top()
+                # prev_frame = self.flow_stack.top()
                 if current_frame.frame_type == StackFrameType.INTERRUPT:
                     # get stack frame that is below the current one and which will
                     # be continued now that this one has ended.
@@ -1051,9 +1051,9 @@ class FlowExecutor:
                         self._correct_flow_position(
                             corrected_slots, previous_flow_step, previous_flow, tracker
                         )
-                elif prev_frame.frame_type == StackFrameType.SEQUENCE:
+                elif current_frame.frame_type == StackFrameType.SEQUENCE:
                     structlogger.debug("HERE", "CHECKING")
-                    structlogger.debug("flow.test", vars(self.flow_stack.top()))
+                    structlogger.debug("flow.test", self.flow_stack.top())
                     previous_flow_name = (
                         previous_flow.name or previous_flow.id
                         if previous_flow
@@ -1071,9 +1071,9 @@ class FlowExecutor:
                     # TODO: we need to figure out how to actually "undo" the
                     #    changed slots
                     pass
-            structlogger.debug("flow.current_frame", vars(current_frame))
-            structlogger.debug("flow.previous_flow", vars(previous_flow))
-            structlogger.debug("flow.previous_flow_step", vars(previous_flow_step))
+            structlogger.debug("flow.current_frame", current_frame)
+            structlogger.debug("flow.previous_flow", previous_flow)
+            structlogger.debug("flow.previous_flow_step", previous_flow_step)
 
             return ActionPrediction(None, 0.0, events=events)
         else:

@@ -51,6 +51,10 @@ class FlowTriggerAction(action.Action):
             frame_type = StackFrameType.RESUME
         elif self._flow_name == "pattern_correction":
             frame_type = StackFrameType.CORRECTION
+        elif self._flow_name == "pattern_continue_sequence":
+            frame_type = StackFrameType.REGULAR
+        elif not stack.is_empty():
+            frame_type = StackFrameType.SEQUENCE
         else:
             frame_type = StackFrameType.REGULAR
 
