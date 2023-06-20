@@ -196,6 +196,8 @@ class FlowPolicy(Policy):
                 tracker, flows or FlowsList([]), domain
             )
             structlogger.debug(vars(executor.flow_stack))
+            stack_update = False
+            current_flow = None
             for intent in multi_intent:
                 structlogger.debug(intent)
                 for flow in executor.all_flows.underlying_flows:
@@ -205,18 +207,20 @@ class FlowPolicy(Policy):
 
                     if first_step.is_triggered(intent, []):
                         structlogger.debug("IN STACK PUSH")
-                        executor.flow_stack.push(
-                            FlowStackFrame(
-                                flow_id=flow.id,
-                                step_id=START_STEP,
-                                frame_type=StackFrameType.REGULAR,
+                        if not stack_update:
+                            executor.flow_stack.push(
+                                FlowStackFrame(
+                                    flow_id=flow.id,
+                                    step_id=START_STEP,
+                                    frame_type=StackFrameType.SEQUENCE,
+                                )
                             )
-                        )
+                            stack_update = True
+                        else:
+                            current_flow = flow.id
                         break
             structlogger.debug(vars(executor.flow_stack))
-            prediction = ActionPrediction(
-                FLOW_PREFIX + executor.flow_stack.top().flow_id, 1.0
-            )
+            prediction = ActionPrediction(FLOW_PREFIX + current_flow, 1.0)
             if not prediction.events:
                 prediction.events = []
             prediction.events.append(
@@ -438,7 +442,6 @@ class StackFrameType(str, Enum):
     LINK = "link"
     """The frame is a link frame.
 
-
     This means that the previous flow linked to this flow."""
     RESUME = "resume"
     """The frame is a resume frame.
@@ -450,8 +453,13 @@ class StackFrameType(str, Enum):
     This means that the previous flow was corrected by this flow."""
     REGULAR = "regular"
     """The frame is a regular frame.
-
+    
     In all other cases, this is the case."""
+    SEQUENCE = "sequence"
+    """The frame is a sequence frame.
+    
+    This frame was created together with another frame, that 
+    needs to be executed in sequence."""
 
     @staticmethod
     def from_str(typ: Optional[Text]) -> "StackFrameType":
@@ -468,6 +476,8 @@ class StackFrameType(str, Enum):
             return StackFrameType.RESUME
         elif typ == StackFrameType.CORRECTION.value:
             return StackFrameType.CORRECTION
+        elif typ == StackFrameType.SEQUENCE.value:
+            return StackFrameType.SEQUENCE
         else:
             raise NotImplementedError
 
@@ -1013,6 +1023,7 @@ class FlowExecutor:
             if current_frame := self.flow_stack.pop():
                 previous_flow = self.flow_stack.top_flow(self.all_flows)
                 previous_flow_step = self.flow_stack.top_flow_step(self.all_flows)
+                prev_frame = self.flow_stack.top()
                 if current_frame.frame_type == StackFrameType.INTERRUPT:
                     # get stack frame that is below the current one and which will
                     # be continued now that this one has ended.
@@ -1040,6 +1051,26 @@ class FlowExecutor:
                         self._correct_flow_position(
                             corrected_slots, previous_flow_step, previous_flow, tracker
                         )
+                elif prev_frame.frame_type == StackFrameType.SEQUENCE:
+                    structlogger.debug("HERE", "CHECKING")
+                    structlogger.debug("flow.test", vars(self.flow_stack.top()))
+                    previous_flow_name = (
+                        previous_flow.name or previous_flow.id
+                        if previous_flow
+                        else None
+                    )
+
+                    return ActionPrediction(
+                        FLOW_PREFIX + "pattern_continue_sequence",
+                        1.0,
+                        metadata={"slots": {PREVIOUS_FLOW_SLOT: previous_flow_name}},
+                        events=events,
+                    )
+
+                structlogger.debug("flow.current_frame", vars(current_frame))
+                structlogger.debug("flow.previous_flow", vars(previous_flow))
+                structlogger.debug("flow.previous_flow_step", vars(previous_flow_step))
+
             return ActionPrediction(None, 0.0, events=events)
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")

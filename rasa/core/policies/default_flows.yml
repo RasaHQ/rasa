@@ -23,6 +23,9 @@ responses:
     - text: "Ok, I did not correct the previous input."
       metadata: 
         rephrase: True
+  
+  utter_flow_continue_sequence:
+    - text: Let's proceed to the next topic.
 
 slots:
   confirm_correction:
@@ -65,4 +68,11 @@ flows:
         next: "3"
       - id: "3"
         action: utter_not_corrected_previous_input
+
+  pattern_continue_sequence:
+    description: A meta flow that should be started to continue to the flow in sequence.
+
+    steps:
+      - id: "0"
+        action: utter_flow_continue_sequence
  
