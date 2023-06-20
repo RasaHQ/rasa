@@ -3,8 +3,8 @@ id: realtime-markers
 sidebar_label: Real-time Markers
 title: Real-time Analysis of Markers
 description:
-abstract: Process Markers in real-time from Rasa
-    Assistant to track metrics, like solution rate and abandonment,
+abstract: Process Markers real-time from Rasa
+    Assistants to track metrics like solution and abandonment rates,
     add metatags to conversations,
     or filter conversations for Conversation Driven Development
 ---
@@ -16,9 +16,12 @@ import { Grid } from "@theme/Grid";
 
 <RasaProLabel />
 
+:::info Available in Rasa Pro from 3.6.0
+:::
+
 <RasaProBanner />
 
-In Rasa, [Markers](../../markers.mdx) are a powerful feature that allows
+In Rasa Pro, [Markers](../../markers.mdx) is a powerful feature that allows
 you to track and extract custom conversational events. With the Analytics
 Data Pipeline, you can now process these Markers in real-time, enabling
 you to gain valuable insights and enhance the performance of your Rasa
@@ -34,7 +37,7 @@ for details about defining Markers.
 
 To enable real-time analysis of Markers in your Rasa project, you need to
 upload the markers to Analytics Data Pipeline with the `rasa marker upload`
-command. This command sends the marker configuration YAML and starts the
+command. This command uploads the marker configuration YAML and starts the
 processing of Markers in the Analytics Data Pipeline. To get started,
 make sure you have the latest version of Rasa installed. Then, open your command line
 interface and navigate to your Rasa project directory. Run the following command:
@@ -49,13 +52,12 @@ optional `-d` argument.
 
 This command should be run whenever there is a change in the marker
 configuration file. The changes might include addition of new markers,
-changing an existing marker or removing an existing marker. This command
-will upload the configuration file to the Analytics Data Pipeline
+changing an existing marker or removing an existing marker.
 
 :::note
 
-This command **uploads** the marker configurations to the data pipeline. The pipeline assusmes the configuration
-file as the source of truth and only processes the markers defined in it. If you remove a marker from this file,
+This command **uploads** the marker configurations to the data pipeline. The pipeline assumes the configuration
+file is the source of truth and only processes the markers defined in it. If you remove a marker from this file,
 and run this command, then the processing for that marker is stopped.
 
 :::
@@ -70,8 +72,8 @@ for more information about the command line arguments available.
 Once the marker definitions are uploaded to the Analytics Data Pipeline, they
 are stored in the `rasa_patterns` table. As the Kafka Consumer starts receiving events
 from the Rasa Assistant, it starts analyzing them for markers. The Pipeline 
-processes all the events from the Kafka Event Broker and identifies points of interest
-in the conversation where the marker can be applied. The extracted markers are stored
+processes all the events from the Kafka Event Broker and identifies points of 
+interests in the conversation that matches the marker. The extracted markers are stored
 in the data warehouse.
 
 The evaluation of Markers in the Pipeline is similar to the `rasa evaluate markers`

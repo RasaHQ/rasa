@@ -781,11 +781,11 @@ Time of the last update of the slot in this session. The timestamp is a UTC.
 - Type: `DateTime`
 - Example: `2022-06-21 02:15:49.326936`
 
-## rasa_patterns
+### rasa_patterns
 
 Patterns are marker definitions that have been received from Rasa. This table is called `patterns`
 to distinguish them from extracted markers which are stored in `rasa_markers` table. It 
-stores the configuration of markers (which can be thought of as pattern
+stores the configuration of markers (which can be thought of as a pattern
 of conversational events) along with their metadata.
 
 #### `id` pattern identifier
@@ -809,7 +809,7 @@ Description of the pattern
 - Type: `varchar()`
 - Example: `This marker identifies successful account registration in the chat`
 
-### `config` pattern configuration
+#### `config` pattern configuration
 
 Pattern configuration dictionary stored as an escaped string
 
@@ -836,10 +836,10 @@ Time of the last update of the pattern in this session. The timestamp is a UTC.
 - Type: `DateTime`
 - Example: `2022-06-21 02:15:49.326936`
 
-## rasa_markers
+### rasa_markers
 
 Markers are the extracted markers from the conversations. Each row in this table corresponds
-to a conversation where the marker was applied
+to a marker along with details of the pattern, sender, session and the event
 
 #### `id` marker identifier
 
