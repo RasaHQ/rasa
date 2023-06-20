@@ -47,12 +47,15 @@ In the above conversation you can see that
 
 This represents the default behavior in flows. You can adjust this behavior by adapting
 the preconfigured flow called `pattern_continue_interrupted` which is defined as follows:
-```yaml
+```yaml title="domain.yml"
 responses:
   utter_flow_continue_interrupted:
     - text: Let's continue with the topic {rasa_previous_flow}.
       metadata:
         rephrase: True
+```
+
+```yaml title="flows.yml"
 flows:
   pattern_continue_interrupted:
     description: A meta flow that should be started to continue an interrupted flow.
@@ -99,7 +102,7 @@ of this alternate path.
 
 This represents the default behavior in flows. You can adjust this behavior by adapting
 the preconfigured flow called `pattern_correction` which is defined as follows:
-```yaml
+```yaml title="domain.yml"
 responses:
   utter_ask_confirm_correction:
     - text: "Do you want to update your information?"
@@ -133,6 +136,8 @@ slots:
         conditions:
           - active_loop: question_confirm_correction
 
+```
+```yaml title="flows.yml"
 flows:
   pattern_correction:
     description: A meta flow that should be started to correct a previous user input.
@@ -152,7 +157,6 @@ flows:
         next: "3"
       - id: "3"
         action: utter_not_corrected_previous_input
-
 ```
 You can override these defaults by defining flows, slots, or responses with the
 respective names shown here. For instance, you could either remove the confirmation for correcting slots or disable slots correction altogether.
