@@ -1,3 +1,4 @@
+import copy
 import itertools
 import os
 import logging
@@ -285,7 +286,7 @@ def write_response_successes(
     if successes:
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
-        structlogger.debug("test.write.response", successes=successes)
+        structlogger.debug("test.write.response", successes=copy.deepcopy(successes))
     else:
         logger.info("No successful response predictions found.")
 
@@ -797,7 +798,7 @@ def write_successful_entity_predictions(
     if successes:
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
-        structlogger.debug("test.write.entities", successes=successes)
+        structlogger.debug("test.write.entities", successes=copy.deepcopy(successes))
     else:
         logger.info("No successful entity prediction found.")
 
@@ -988,7 +989,9 @@ def do_entities_overlap(entities: List[Dict]) -> bool:
             and next_ent["entity"] != curr_ent["entity"]
         ):
             structlogger.warning(
-                "test.overlaping.entities", curr_ent=curr_ent, next_ent=next_ent
+                "test.overlaping.entities",
+                current_entity=copy.deepcopy(curr_ent),
+                next_entity=copy.deepcopy(next_ent),
             )
             return True
 
@@ -1012,10 +1015,10 @@ def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
             candidates.append(e)
             structlogger.debug(
                 "test.intersecting.entities",
-                token_text=token.text,
+                token_text=copy.deepcopy(token.text),
                 token_start=token.start,
                 token_end=token.end,
-                entity=e,
+                entity=copy.deepcopy(e),
             )
     return candidates
 

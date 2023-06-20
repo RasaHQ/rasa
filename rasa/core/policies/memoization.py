@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 import zlib
 
 import base64
@@ -253,7 +254,9 @@ class MemoizationPolicy(Policy):
         result = self._default_predictions(domain)
 
         states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
-        structlogger.debug("memoization.predict.actions", tracker_states=states)
+        structlogger.debug(
+            "memoization.predict.actions", tracker_states=copy.deepcopy(states)
+        )
         predicted_action_name = self.recall(
             states, tracker, domain, rule_only_data=rule_only_data
         )
@@ -428,7 +431,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 # check if we like new futures
                 memorised = self._recall_states(states)
                 if memorised is not None:
-                    structlogger.debug("memoization.states_recall", states=states)
+                    structlogger.debug(
+                        "memoization.states_recall", states=copy.deepcopy(states)
+                    )
                     return memorised
                 old_states = states
 
@@ -438,7 +443,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             )
 
         # No match found
-        structlogger.debug("memoization.states_recall", old_states=old_states)
+        structlogger.debug(
+            "memoization.states_recall", old_states=copy.deepcopy(old_states)
+        )
         return None
 
     def recall(
