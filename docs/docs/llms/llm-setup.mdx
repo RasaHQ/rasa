@@ -85,13 +85,46 @@ to be configured:
 To configure these parameters, follow these steps:
 
 1. To configure the `openai.api_type` as an environment variable:
-  ```shell
-  export OPENAI_API_TYPE="azure"
-  ```
+
+   <Tabs groupId="os-dist-api-type" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+     ```shell
+     export OPENAI_API_TYPE="azure"
+     ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_TYPE "azure"
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
 2. To configure the `openai.api_base` as an environment variable:
-  ```shell
-  export OPENAI_API_BASE=<your-azure-openai-instance-url>
-  ```
+
+   <Tabs groupId="os-dist-api-base" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+      ```shell
+      export OPENAI_API_BASE=<your-azure-openai-instance-url>
+      ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_BASE <your-azure-openai-instance-url>
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
 
 
 ## Other LLM providers
