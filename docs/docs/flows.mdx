@@ -339,6 +339,10 @@ flows:
         action: action_open_account
 ```
 
+This example flow demonstrates how to implement branching flows based on multiple conditions. 
+It involves fetching the slot `account_type` using a `question` step, and the value of this slot is then used to determine which specific flow should be executed.
+
+
 ### Multiple Flows with links
 
 ```yaml
@@ -381,3 +385,5 @@ flows:
       - id: "3"
         question: age
 ```
+This example demonstrates how the `link` step in flows enables the invocation of another flow. 
+Specifically, within the `flow_with_links` flow, the `collect_personal_details` flow is called using the `link` step.
