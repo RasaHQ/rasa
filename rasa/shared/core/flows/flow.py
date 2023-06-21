@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, Set, Text
+
+from rasa.shared.constants import RASA_DEFAULT_INTENT_PREFIX
 from rasa.shared.exceptions import RasaException
 
 import rasa.shared.utils.io
@@ -367,7 +369,10 @@ class Flow:
         """Test whether something is a rasa default flow."""
         trigger_intents = self.get_trigger_intents()
         any_has_rasa_prefix = any(
-            [intent.startswith("rasa_") for intent in trigger_intents]
+            [
+                intent.startswith(RASA_DEFAULT_INTENT_PREFIX)
+                for intent in trigger_intents
+            ]
         )
         return any_has_rasa_prefix
 
