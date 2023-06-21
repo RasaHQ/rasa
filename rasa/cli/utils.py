@@ -235,9 +235,7 @@ def validate_files(
     else:
         if importer.get_domain().is_empty():
             rasa.shared.utils.cli.print_error_and_exit(
-                "Failed to load the domain."
-                "Please make sure you've provided the correct path to "
-                "a domain file."
+                "Encountered empty domain during validation."
             )
 
         valid_domain = _validate_domain(validator)
