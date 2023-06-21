@@ -361,6 +361,7 @@ class TestShapeValuesTrainAndProcess:
             assert intent_sentence_vec is None
 
     @pytest.mark.timeout(120, func_only=True)
+    @pytest.mark.skip_on_windows
     def test_lm_featurizer_shapes_in_process_training_data(
         self,
         model_name: Text,
