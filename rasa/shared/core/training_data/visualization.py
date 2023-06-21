@@ -400,7 +400,7 @@ def _add_message_edge(
     is_current: bool,
 ) -> None:
     """Create an edge based on the user message."""
-    if message:
+    if message and message.get("entities"):
         message_intent = message.get("intent", {}).get("name", None)
         # get the entities as \n separated values
         entities: Optional[List[Dict[Text, Any]]] = message.get("entities")
@@ -419,11 +419,10 @@ def _add_message_edge(
             entity_values_as_str = ""
 
         message_key = message_intent + entity_values_as_str
-        message_label = message_key  # message.get("text", None)
+        message_label = message_key
     elif message and message.get("text"):
-
-        message_label = message.get("text", None)
         message_key = message.get("intent", {}).get("name", None)
+        message_label = message.get("text", None)
     else:
         message_key = None
         message_label = None
@@ -478,8 +477,6 @@ def visualize_neighborhood(
                 idx -= 1
                 break
             if isinstance(el, UserUttered):
-                if message is not None:
-                    logger.error("multiple messages or slots in a row!!")
                 message = el.parse_data
                 message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"  # type: ignore[literal-required]  # noqa: E501
             elif isinstance(el, SlotSet):
@@ -570,9 +567,7 @@ def visualize_neighborhood(
 
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
-    _replace_edge_labels_with_nodes(
-        graph, next_node_idx, None
-    )  # None instead of nlu_training_data)
+    _replace_edge_labels_with_nodes(graph, next_node_idx, nlu_training_data)
 
     _remove_auxiliary_nodes(graph, special_node_idx)
 
