@@ -367,6 +367,7 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
     ],
 )
 async def test_payload_from_button_question(text_input: str, button: str) -> None:
+    """Test that the payload is extracted correctly from the text input."""
     question = AsyncMock()
     question.ask_async.return_value = text_input
     result = await rasa.cli.utils.payload_from_button_question(question)
