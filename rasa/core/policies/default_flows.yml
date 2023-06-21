@@ -27,6 +27,11 @@ responses:
   utter_flow_continue_sequence:
     - text: Let's proceed to the next topic.
 
+  utter_ask_choose_intent:
+    - text: "Which one would you like to start with now?"
+      buttons:
+        - payload:
+
 slots:
   confirm_correction:
     type: text
@@ -41,6 +46,10 @@ slots:
         value: "False"
         conditions:
           - active_loop: question_confirm_correction
+  choose_intent:
+    type: text
+    mappings:
+      - intent: 
 
 flows:  
   pattern_continue_interrupted:
@@ -75,4 +84,16 @@ flows:
     steps:
       - id: "0"
         action: utter_flow_continue_sequence
+
+  handle_multi_intent:
+    descriptions: A meta flow that asks user's choice during a multi intent prediction.
+
+    steps:
+    - id: "0"
+      action: 
+      question: choose_intent
+      next : "1"
+    - id: "1"
+      action: handle_multi_intent
+
  
