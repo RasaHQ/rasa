@@ -567,7 +567,7 @@ def test_train_validation_fail_to_load_domain(
         "not_existing_domain.yml",
     )
 
-    assert "Failed to load the domain." in str(result.outlines)
+    assert "Encountered empty domain during validation." in str(result.outlines)
     assert result.ret == 1
 
 

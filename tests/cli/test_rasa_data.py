@@ -210,16 +210,16 @@ def test_data_validate_not_used_warning(
 
 
 def test_data_validate_failed_to_load_domain(
-    run_in_simple_project: Callable[..., RunResult]
+    run_in_simple_project_with_warnings: Callable[..., RunResult]
 ):
-    result = run_in_simple_project(
+    result = run_in_simple_project_with_warnings(
         "data",
         "validate",
         "--domain",
         "not-existing-domain.yml",
     )
 
-    assert "Failed to load the domain." in str(result.outlines)
+    assert "The path 'not-existing-domain.yml' does not exist." in str(result.outlines)
     assert result.ret == 1
 
 
