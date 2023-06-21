@@ -235,7 +235,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         if len(start_flow_actions) == 0:
             if len(slot_sets) == 0 and not cancel_flow:
                 return COMMENT_INTENT, []
-            elif len(slot_sets) == 0 and cancel_flow:
+            elif cancel_flow:
                 return CANCEL_FLOW_INTENT, []
             elif (
                 len(slot_sets) == 1
