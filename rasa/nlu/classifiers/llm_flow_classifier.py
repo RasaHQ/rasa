@@ -12,7 +12,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
+from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep, UserMessageStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -283,13 +283,14 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     def create_template_inputs(cls, flows: FlowsList) -> List[Dict[str, Any]]:
         result = []
         for flow in flows.underlying_flows:
-            result.append(
-                {
-                    "name": flow.id,
-                    "description": flow.description,
-                    "slots": flow.slots(),
-                }
-            )
+            if flow.is_user_triggerable() and not flow.is_rasa_default_flow():
+                result.append(
+                    {
+                        "name": flow.id,
+                        "description": flow.description,
+                        "slots": flow.slots(),
+                    }
+                )
         return result
 
     def render_template(
