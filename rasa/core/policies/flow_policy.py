@@ -10,12 +10,7 @@ from rasa.core.constants import (
     POLICY_PRIORITY,
 )
 from pypred import Predicate
-from rasa.shared.constants import (
-    FLOW_PREFIX,
-    CORRECTION_INTENT,
-    CANCEL_FLOW_INTENT
-
-)
+from rasa.shared.constants import FLOW_PREFIX, CORRECTION_INTENT, CANCEL_FLOW_INTENT
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     ENTITY_ATTRIBUTE_TYPE,
@@ -692,8 +687,7 @@ class FlowExecutor:
         if self.flow_stack.is_empty():
             # if there are no flows, there is nothing to do
             return ActionPrediction(None, 0.0)
-        elif self.should_flow_be_cancelled(tracker) and \
-                not self.flow_stack.is_empty():
+        elif self.should_flow_be_cancelled(tracker) and not self.flow_stack.is_empty():
             top_flow = self.flow_stack.pop()
             return ActionPrediction(
                 FLOW_PREFIX + "pattern_cancel_flow",

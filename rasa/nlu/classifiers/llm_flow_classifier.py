@@ -26,8 +26,14 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TEXT,
     ENTITY_ATTRIBUTE_CONFIDENCE,
 )
-from rasa.shared.constants import CORRECTION_INTENT, CANCEL_FLOW_INTENT, COMMENT_INTENT, \
-    TOO_COMPLEX_INTENT, INFORM_INTENT, OPENAI_ERROR_INTENT
+from rasa.shared.constants import (
+    CORRECTION_INTENT,
+    CANCEL_FLOW_INTENT,
+    COMMENT_INTENT,
+    TOO_COMPLEX_INTENT,
+    INFORM_INTENT,
+    OPENAI_ERROR_INTENT,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.llm import (
