@@ -641,7 +641,10 @@ class FlowExecutor:
         Returns:
         Whether the current flow should be cancelled
         """
-        if tracker.has_action_after_latest_user_message():
+        if (
+            not tracker.latest_message
+            or tracker.latest_action_name != ACTION_LISTEN_NAME
+        ):
             # flows can only be cancelled as a response to a user message
             return False
         return tracker.latest_message.intent.get(INTENT_NAME_KEY) == CANCEL_FLOW_INTENT

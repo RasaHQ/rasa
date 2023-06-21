@@ -347,7 +347,7 @@ class Flow:
 
     def get_trigger_intents(self) -> Set[str]:
         """Returns the trigger intents of the flow"""
-        results = set()
+        results: Set[str] = set()
         if len(self.steps) == 0:
             return results
 
