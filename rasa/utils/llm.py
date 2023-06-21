@@ -1,6 +1,5 @@
 from typing import Optional
 import openai
-import logging
 import openai.error
 import structlog
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -43,7 +42,7 @@ def generate_text_openai_chat(
             temperature=temperature,
         )
         return chat_completion.choices[0].message.content
-    except openai.error.OpenAIError as e:
+    except openai.error.OpenAIError:
         structlogger.exception("openai.generate.error", model=model, prompt=prompt)
         return None
 

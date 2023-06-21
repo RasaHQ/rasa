@@ -25,7 +25,14 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_TEXT,
     ENTITY_ATTRIBUTE_CONFIDENCE,
+)
+from rasa.shared.constants import (
     CORRECTION_INTENT,
+    CANCEL_FLOW_INTENT,
+    COMMENT_INTENT,
+    TOO_COMPLEX_INTENT,
+    INFORM_INTENT,
+    OPENAI_ERROR_INTENT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -158,7 +165,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     ) -> Tuple[str, List[Tuple[str, str]]]:
         """Parse the actions returned by the llm into intent and entities."""
         if not actions:
-            return "openai_error", []
+            return OPENAI_ERROR_INTENT, []
         start_flow_actions = []
         slot_sets = []
         cancel_flow = False
@@ -227,15 +234,15 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         if len(start_flow_actions) == 0:
             if len(slot_sets) == 0 and not cancel_flow:
-                return "comment", []
-            elif len(slot_sets) == 0 and cancel_flow:
-                return "cancel_flow", []
+                return COMMENT_INTENT, []
+            elif cancel_flow:
+                return CANCEL_FLOW_INTENT, []
             elif (
                 len(slot_sets) == 1
                 and isinstance(top_flow_step, QuestionFlowStep)
                 and top_flow_step.question == slot_sets[0][0]
             ):
-                return "inform", slot_sets
+                return INFORM_INTENT, slot_sets
             elif (
                 len(slot_sets) == 1
                 and isinstance(top_flow_step, QuestionFlowStep)
@@ -249,12 +256,12 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 and slot_sets[0][0] in other_slots
             ):
                 # trying to set a slot from another flow
-                return "too_complex", []
+                return TOO_COMPLEX_INTENT, []
             elif len(slot_sets) > 1:
-                return "too_complex", []
+                return TOO_COMPLEX_INTENT, []
         elif len(start_flow_actions) == 1:
             if cancel_flow:
-                return "too_complex", []
+                return TOO_COMPLEX_INTENT, []
             new_flow_id = start_flow_actions[0]
             potential_new_flow = flows.flow_by_id(new_flow_id)
             if potential_new_flow is not None:
@@ -268,21 +275,22 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 return "mistake", []
                 # TODO: potentially re-prompt or ask for correction on invalid flow name
         elif len(start_flow_actions) > 1:
-            return "too_complex", []
+            return TOO_COMPLEX_INTENT, []
 
-        return "too_complex", []
+        return TOO_COMPLEX_INTENT, []
 
     @classmethod
     def create_template_inputs(cls, flows: FlowsList) -> List[Dict[str, Any]]:
         result = []
         for flow in flows.underlying_flows:
-            result.append(
-                {
-                    "name": flow.id,
-                    "description": flow.description,
-                    "slots": flow.slots(),
-                }
-            )
+            if flow.is_user_triggerable() and not flow.is_rasa_default_flow():
+                result.append(
+                    {
+                        "name": flow.id,
+                        "description": flow.description,
+                        "slots": flow.slots(),
+                    }
+                )
         return result
 
     def render_template(
