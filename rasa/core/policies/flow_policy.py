@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Text, List, Optional, Union
 
+from jinja2 import Template
+
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
@@ -19,6 +21,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
+    ACTION_SEND_TEXT,
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
     PREVIOUS_FLOW_SLOT,
@@ -33,8 +36,9 @@ from rasa.shared.core.flows.flow import (
     Flow,
     FlowStep,
     FlowsList,
+    GenerateResponseFlowStep,
     IfFlowLink,
-    LLMPromptStep,
+    EntryPromptFlowStep,
     QuestionScope,
     StepThatCanStartAFlow,
     UserMessageStep,
@@ -56,6 +60,8 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
 import structlog
+
+from rasa.utils import llm
 
 structlogger = structlog.get_logger()
 
@@ -905,8 +911,22 @@ class FlowExecutor:
             )
         elif isinstance(step, UserMessageStep):
             return ActionPrediction(None, 0.0)
-        elif isinstance(step, LLMPromptStep):
+        elif isinstance(step, EntryPromptFlowStep):
             return ActionPrediction(None, 0.0)
+        elif isinstance(step, GenerateResponseFlowStep):
+            context = {
+                "history": llm.tracker_as_readable_transcript(tracker, max_turns=5),
+                "latest_user_message": tracker.latest_message.text
+                if tracker.latest_message
+                else "",
+            }
+            context.update(tracker.current_slot_values())
+            prompt = Template(step.generation_prompt).render(context)
+
+            generated = llm.generate_text_openai_chat(prompt)
+            return ActionPrediction(
+                ACTION_SEND_TEXT, 1.0, metadata={"message": {"text": generated}}
+            )
         elif isinstance(step, EndFlowStep):
             # this is the end of the flow, so we'll pop it from the stack
             events = self._reset_scoped_slots(flow, tracker)

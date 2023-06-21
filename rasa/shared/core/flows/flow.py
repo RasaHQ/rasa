@@ -367,8 +367,10 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         return LinkFlowStep.from_json(flow_step_config)
     if "set_slots" in flow_step_config:
         return SetSlotsFlowStep.from_json(flow_step_config)
-    if "prompt" in flow_step_config:
-        return LLMPromptStep.from_json(flow_step_config)
+    if "entry_prompt" in flow_step_config:
+        return EntryPromptFlowStep.from_json(flow_step_config)
+    if "generation_prompt" in flow_step_config:
+        return GenerateResponseFlowStep.from_json(flow_step_config)
     else:
         raise ValueError(f"Flow step is missing a type. {flow_step_config}")
 
@@ -705,14 +707,14 @@ class UserMessageStep(FlowStep, StepThatCanStartAFlow):
 
 
 @dataclass
-class LLMPromptStep(FlowStep, StepThatCanStartAFlow):
+class GenerateResponseFlowStep(FlowStep):
     """Represents the configuration of a step prompting an LLM."""
 
-    prompt: Text
+    generation_prompt: Text
     """The prompt template of the flow step."""
 
     @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> LLMPromptStep:
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> GenerateResponseFlowStep:
         """Used to read flow steps from parsed YAML.
 
         Args:
@@ -722,8 +724,8 @@ class LLMPromptStep(FlowStep, StepThatCanStartAFlow):
             The parsed flow step.
         """
         base = super()._from_json(flow_step_config)
-        return LLMPromptStep(
-            prompt=flow_step_config.get("prompt", ""),
+        return GenerateResponseFlowStep(
+            generation_prompt=flow_step_config.get("generation_prompt", ""),
             **base.__dict__,
         )
 
@@ -734,7 +736,47 @@ class LLMPromptStep(FlowStep, StepThatCanStartAFlow):
             The flow step as a dictionary.
         """
         dump = super().as_json()
-        dump["prompt"] = self.prompt
+        dump["generation_prompt"] = self.generation_prompt
+
+        return dump
+
+
+@dataclass
+class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
+    """Represents the configuration of a step prompting an LLM."""
+
+    entry_prompt: Text
+    """The prompt template of the flow step."""
+    advance_if: Optional[Text]
+    """The expected response to start the flow"""
+
+    @classmethod
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> EntryPromptFlowStep:
+        """Used to read flow steps from parsed YAML.
+
+        Args:
+            flow_step_config: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed flow step.
+        """
+        base = super()._from_json(flow_step_config)
+        return EntryPromptFlowStep(
+            entry_prompt=flow_step_config.get("entry_prompt", ""),
+            advance_if=flow_step_config.get("advance_if"),
+            **base.__dict__,
+        )
+
+    def as_json(self) -> Dict[Text, Any]:
+        """Returns the flow step as a dictionary.
+
+        Returns:
+            The flow step as a dictionary.
+        """
+        dump = super().as_json()
+        dump["entry_prompt"] = self.entry_prompt
+        if self.advance_if:
+            dump["advance_if"] = self.advance_if
 
         return dump
 
@@ -751,7 +793,7 @@ class LLMPromptStep(FlowStep, StepThatCanStartAFlow):
         from rasa.utils import llm
         from jinja2 import Template
 
-        if not self.prompt:
+        if not self.entry_prompt:
             return False
 
         context = {
@@ -761,10 +803,12 @@ class LLMPromptStep(FlowStep, StepThatCanStartAFlow):
             else "",
         }
         context.update(tracker.current_slot_values())
-        prompt = Template(self.prompt).render(context)
+        prompt = Template(self.entry_prompt).render(context)
 
         generated = llm.generate_text_openai_chat(prompt)
-        if generated and generated.lower() == "yes":
+
+        expected_response = self.advance_if.lower() if self.advance_if else "yes"
+        if generated and generated.lower() == expected_response:
             return True
         else:
             return False
