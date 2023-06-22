@@ -10,7 +10,7 @@ abstract: |
 
 import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 
-<RasaDiscoveryBanner/>
+<RasaDiscoveryBanner />
 
 ## Overview
 
@@ -26,11 +26,27 @@ to a node in the graph. Each step outlines the potential subsequent steps, which
 may be associated with certain conditions. Hence, graph vertices are embedded in
 steps.
 
-### YAML Specification for Flow
+A Flow is defined using YAML syntax. The following example illustrates a simple
+Flow:
 
-A Flow is defined using the following structure:
+```yaml title="flows.yml"
+flows:
+  hello_world:
+    name: Hello World
+    description: A simple flow that greets the user
+    steps:
+      - id: "0"
+        user_message: greet
+        next: "1"
+      - id: "1"
+        action: utter_greet
+```
 
-```yaml
+## Flow Properties
+
+A Flow is defined using the following properties:
+
+```yaml title="flows.yml"
 flows:
   a_flow: # an id
     name: A flow # a name
@@ -38,9 +54,20 @@ flows:
     steps: [] # a list of steps
 ```
 
-## Steps
+### Name
 
-A `Flow` comprises `step`s. All steps share these common properties:
+The `name` field is a required human readable name for the flow.
+
+### Description
+
+The `description` field is an optional human readable description of the flow.
+
+### Steps
+
+The `steps` field is a required list of steps that make up the flow. The steps
+are executed in the order they are defined in the list.
+
+All steps share these common properties:
 
 ```yaml
 id: a_required_unique_id
@@ -49,10 +76,66 @@ metadata: {} # an optional dict
 next: an id or conditionals to determine which step should be executed next
 ```
 
-Steps can manifest in one of three types: `user_message`, `action`, or
-`question`.
+#### Id Property
 
-### User Message (`user_message`)
+The `id` field is a required unique identifier for each step. It is used to
+reference the step in the `next` field of other steps.
+
+#### Next Property
+
+The `next` field in steps allows for branching logic. For instance:
+
+```yaml
+- id: "2"
+  question: age
+  next:
+    - if: age < 18
+      then: "3"
+    - else: "4"
+```
+
+In this example, depending on the user's input value for age, the flow will
+proceed to step `"3"` or `"4"`, respectively. This allows you to create complex
+and dynamic conversational flows that adapt to user inputs.
+
+The `next` field can be either a string or a list of conditionals. If it is a
+string, it is interpreted as the ID of the next step to be executed. If it is a
+list of conditionals, the flow will proceed to the step that matches the first
+conditional.
+
+The `next` field can also be omitted. In this case, the flow will end.
+
+#### Step types
+
+Steps can manifest in one of the following types:
+
+- [user message step](./flows.mdx#user-message): a user utterance that will
+  trigger the flow
+- [entry prompt step](./flows.mdx#entry-prompt): an LLM prompt that will be used
+  to determine if the flow should start
+- [action step](./flows.mdx#action): a custom action or utterance action to be
+  run by the flow
+- [generation prompt step](./flows.mdx#generation-prompt): a prompt to generate
+  a message that will be sent to the user
+- [set slots step](./flows.mdx#set-slots): a step to set slots
+- [question step](./flows.mdx#question): a question to be asked to the user
+
+### Starting a Flow
+
+How a flow can be triggered, depends on the first step in the flow. If the first
+step is a [user message step](./flows.mdx#user-message), the flow will be
+triggered by a user utterance that matches the intent or entities specified in
+the step.
+
+If the first step is an [entry prompt step](./flows.mdx#entry-prompt), the flow
+will be triggered if the prompt will evaluate to 'yes' when send to an LLM.
+
+Flows that start with a different step cannot be triggered by a user directly.
+They can only be triggered by other flows, e.g. by linking to them.
+
+## Step Types
+
+### User Message
 
 This step signifies a user utterance. Here's an example:
 
@@ -62,7 +145,6 @@ This step signifies a user utterance. Here's an example:
   entities: [] # optional
   description: open a bank account
   metadata: {} # an optional dict
-  next: "5"
 ```
 
 In this example, the user intent is to open a bank account. The `next` field
@@ -81,33 +163,108 @@ can proceed if either of the conditions in the `OR` statement are met:
       entities: [] # optional
   description: handle a complaint or talk to an agent
   metadata: {} # an optional dict
-  next: "5"
 ```
 
 Here, if the user intent is either to make a complaint or to talk to an agent,
 the flow would proceed to the step with ID "5".
 
-### Action (`action`)
+### Entry Prompt
+
+An `entry_prompt`
+
+```yaml
+- id: "start_if_sensitive_topic"
+  entry_prompt: |
+    Below is the message from the user to the specialized
+    financial chatbot. Can you detect the sensitive topic, not related to
+    the scope of the bot? Reply "yes" or "no" and nothing else.
+
+    {{latest_user_message}}
+  advance_if: "yes" # optional, defaults to "yes"
+```
+
+Entry prompts should be used infrequently, as the prompt will be sent to an LLM
+for every incoming user message. Having to many entry prompts can slow down the
+bot.
+
+Good use cases for entry prompts are detecting sensitive topics or out of scope
+messages.
+
+### Action
 
 An `action` step is where the bot performs a specific action or utters a
 message. Here are two examples:
 
 ```yaml
-action: action_xyz
+- id: "an_action"
+  action: action_xyz
 ```
 
 This could be a custom action where the bot performs a specific function defined
 in your custom actions script.
 
 ```yaml
-action: utter_xyz
+- id: "an_utter_action"
+  action: utter_xyz
 ```
 
 This is an utterance action where the bot sends a predefined message to the
 user. The message for "utter_xyz" would be defined in the domain file under
 responses.
 
-### Question (`question`)
+### Generation Prompt
+
+A `generation_prompt` step contains a prompt that is used to generate a message
+using an LLM. The message is then sent to the user. Here is an example:
+
+```yaml
+- id: "a_generation_step"
+  generation_prompt: |
+    You are an incredibly friendly assistant. Generate a short 
+    response to the user's comment in simple english.
+
+    User: {{latest_user_message}}
+    Response:
+```
+
+The `generation_prompt` field contains the prompt that will be sent to the LLM
+to generate a message. The prompt can use the following available variables:
+
+- `{{latest_user_message}}`: the latest user message, e.g.
+  ```
+  How are you?
+  ```
+- `{{history}}`: the history of the conversation so far, e.g.
+  ```
+  User: Hello
+  Bot: Hi
+  User: How are you?
+  ```
+
+The generated message will be sent to the user. The flow will proceed to the
+next step once the message is sent.
+
+### Set Slots
+
+A `set_slots` step is used to set a slot. Here is an example:
+
+```yaml
+- id: "a_set_slot_step"
+  set_slots:
+    - account_type: "savings"
+```
+
+In this example, the slot with the key `account_type` is set to the value
+`savings`. Multiple slots can be set in one step, as shown below:
+
+```yaml
+- id: "a_set_slot_step"
+  set_slots:
+    - account_type: "savings"
+    - account_number: "123456789"
+```
+
+### Question
 
 In a `question` step, the bot asks a question, with the aim usually being to
 fill a slot. Here is an example:
@@ -116,8 +273,8 @@ fill a slot. Here is an example:
 question: account_type # slot name
 ```
 
-In this example, the bot is asking the user to provide their account type. 
-The response will be used to fill the "account_type" slot.
+In this example, the bot is asking the user to provide their account type. The
+response will be used to fill the "account_type" slot.
 
 A question can be configured to be skipped if the slot is already filled, as
 shown below:
@@ -141,59 +298,6 @@ scope: flow | global
 
 For the `slot_type`, it's recommended to use `text` slots in Flows.
 
-### Scope (`scope`)
-
-Scopes determine the lifespan of a slot or variable. There are two types of
-scopes available:
-
-- **flow**: The variable exists only for the duration of the flow. Once the flow
-  ends, the variable ceases to exist.
-- **global**: The variable persists across flows until it is explicitly changed.
-
-### Fill (`fill`)
-
-`Fill` refers to the process of filling slots based on user responses. It is a
-simplified version of slot mapping. Below is an example of mapping from
-entities:
-
-```yaml
-fill:
-  entity: entity_name
-  window: question | flow | global
-```
-
-Here, the "entity_name" entity from the user's message is extracted and used to
-fill a corresponding slot.
-
-Or mapping from intent (or button payload):
-
-```yaml
-fill:
-  intent: affirm
-  value: "true"
-  window: question
-```
-
-Here, if the user's intent is "affirm", the corresponding slot will be filled
-with the value "true".
-
-### Next (`next`)
-
-The `next` field in steps allows for branching logic. For instance:
-
-```yaml
-- id: "2"
-  question: age 
-  next:
-    - if: age < 18
-      then: "3"
-    - else: "4"
-```
-
-In this example, depending on the user's input value for age,
-the flow will proceed to step "3" or "4", respectively. This allows you to
-create complex and dynamic conversational flows that adapt to user inputs.
-
 ## Examples
 
 ### Hello World Flow
@@ -211,10 +315,10 @@ flows:
         action: utter_greet
 ```
 
-The intent `greet` and the response template `utter_greet` needs to be defined in
-the domain file.
+The intent `greet` and the response template `utter_greet` needs to be defined
+in the domain file.
 
-The `next` property determines the id of the next step and links all the 
+The `next` property determines the id of the next step and links all the
 different steps together.
 
 ### A basic flow with branching
@@ -270,7 +374,8 @@ flows:
         action: utter_transfer_cancel
 ```
 
-The example shows a flow that can take confirmation from the user and branch based on it.
+The example shows a flow that can take confirmation from the user and branch
+based on it.
 
 ```yaml-rasa title="domain.yml"
 slots:
@@ -295,9 +400,12 @@ responses:
   utter_ask_confirm_transfer:
     - text: "Do you wish to proceed with the transfer?"
 ```
-The snippet shows the responses and slot configuration that is needed to make the `question` steps in the `tranfer_money` flow work.
+
+The snippet shows the responses and slot configuration that is needed to make
+the `question` steps in the `tranfer_money` flow work.
 
 #### Flows branching on the result of the user selection
+
 ```yaml-rasa title="flows.yml"
 flows:
   user_selection_based_flow_branching_example:
@@ -339,9 +447,10 @@ flows:
         action: action_open_account
 ```
 
-This example flow demonstrates how to implement branching flows based on multiple conditions. 
-It involves fetching the slot `account_type` using a `question` step, and the value of this slot is then used to determine which specific flow should be executed.
-
+This example flow demonstrates how to implement branching flows based on
+multiple conditions. It involves fetching the slot `account_type` using a
+`question` step, and the value of this slot is then used to determine which
+specific flow should be executed.
 
 ### Multiple Flows with links
 
@@ -385,5 +494,7 @@ flows:
       - id: "3"
         question: age
 ```
-This example demonstrates how the `link` step in flows enables the invocation of another flow. 
-Specifically, within the `flow_with_links` flow, the `collect_personal_details` flow is called using the `link` step.
+
+This example demonstrates how the `link` step in flows enables the invocation of
+another flow. Specifically, within the `flow_with_links` flow, the
+`collect_personal_details` flow is called using the `link` step.
