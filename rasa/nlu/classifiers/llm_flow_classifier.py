@@ -323,7 +323,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         question, question_description = (
             (current_step.question, current_step.description)
-            if current_step is not None and isinstance(current_step, QuestionFlowStep)
+            if isinstance(current_step, QuestionFlowStep)
             else (None, None)
         )
         current_conversation = tracker_as_readable_transcript(tracker)
