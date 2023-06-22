@@ -70,10 +70,10 @@ are executed in the order they are defined in the list.
 All steps share these common properties:
 
 ```yaml
-id: a_required_unique_id
-description: an optional human readable description of the step
-metadata: {} # an optional dict
-next: an id or conditionals to determine which step should be executed next
+- id: a_required_unique_id
+  description: an optional human readable description of the step
+  metadata: {} # an optional dict
+  next: an id or conditionals to determine which step should be executed next
 ```
 
 #### Id Property
@@ -135,21 +135,24 @@ They can only be triggered by other flows, e.g. by linking to them.
 
 ## Step Types
 
+Every step in a flow has a type. The type determines what the step does and 
+what properties it supports.
+
 ### User Message
 
 This step signifies a user utterance. Here's an example:
 
 ```yaml
-- id: a_required_unique_id
-  intent: open_bank_account
+- id: an_incoming_user_message
+  intent: greet
   entities: [] # optional
-  description: open a bank account
+  description: greet the user
   metadata: {} # an optional dict
 ```
 
-In this example, the user intent is to open a bank account. The `next` field
-indicates the ID of the next step to be taken in the flow, which would be the
-step with the ID "5".
+User steps can only be used as a first step in a flow. They can be used to
+trigger a flow when a user sends a message that matches the intent and entities
+specified in the step.
 
 A `user_message` step can also support `OR` statements. This means that the flow
 can proceed if either of the conditions in the `OR` statement are met:
@@ -166,11 +169,12 @@ can proceed if either of the conditions in the `OR` statement are met:
 ```
 
 Here, if the user intent is either to make a complaint or to talk to an agent,
-the flow would proceed to the step with ID "5".
+the flow should be started.
 
 ### Entry Prompt
 
-An `entry_prompt`
+An `entry_prompt` step is used to determine if a flow should be started. Here's
+an example:
 
 ```yaml
 - id: "start_if_sensitive_topic"
@@ -270,7 +274,8 @@ In a `question` step, the bot asks a question, with the aim usually being to
 fill a slot. Here is an example:
 
 ```yaml
-question: account_type # slot name
+- id: "a_question_step"
+  question: account_type # slot name
 ```
 
 In this example, the bot is asking the user to provide their account type. The
@@ -280,8 +285,9 @@ A question can be configured to be skipped if the slot is already filled, as
 shown below:
 
 ```yaml
-question: first_name # slot name
-skip_if_filled: true
+- id: "another_question_step"
+  question: first_name # slot name
+  skip_if_filled: true
 ```
 
 In this scenario, if the "first_name" slot is already filled, the bot will skip
@@ -292,8 +298,9 @@ The following configuration would clear the slot when a leaf of the flow is
 reached OR when exiting a `link`ed node:
 
 ```yaml
-question: yes_or_no # slot name
-scope: flow | global
+- id: "another_confirmation_step"
+  question: yes_or_no # slot name
+  scope: flow | global
 ```
 
 For the `slot_type`, it's recommended to use `text` slots in Flows.
