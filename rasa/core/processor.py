@@ -196,7 +196,7 @@ class MessageProcessor:
 
         tracker.update_with_events(extraction_events, self.domain)
 
-        await structlogger.adebug(
+        structlogger.debug(
             "processor.extract.slots",
             action_extract_slot=ACTION_EXTRACT_SLOTS,
             len_extraction_events=len(extraction_events),

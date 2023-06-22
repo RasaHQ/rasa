@@ -301,14 +301,14 @@ class PikaEventBroker(EventBroker):
         try:
             await self._exchange.publish(self._message(event, headers), "")
 
-            await structlogger.adebug(
+            structlogger.debug(
                 "pika.events.publish",
                 rabbitmq_exchange=RABBITMQ_EXCHANGE,
                 host=self.host,
                 rasa_event=copy.deepcopy(event),
             )
         except Exception as e:
-            await structlogger.aerror(
+            structlogger.error(
                 "pika.events.publish.failed",
                 host=self.host,
                 rasa_event=copy.deepcopy(event),

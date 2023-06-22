@@ -127,7 +127,7 @@ class Messenger:
             attachment = message["message"]["attachments"][0]
             text = attachment["payload"]["url"]
         else:
-            await structlogger.awarning(
+            structlogger.warning(
                 "facebook.message.handle", message=copy.deepcopy(message)
             )
             return

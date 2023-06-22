@@ -171,11 +171,11 @@ class RestInput(InputChannel):
                         )
                     )
                 except CancelledError:
-                    await structlogger.aerror(
+                    structlogger.error(
                         "rest.message.received", text=copy.deepcopy(text)
                     )
                 except Exception:
-                    await structlogger.aexception(
+                    structlogger.exception(
                         "rest.message.received.failure", text=copy.deepcopy(text)
                     )
 
