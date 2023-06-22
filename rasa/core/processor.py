@@ -721,8 +721,10 @@ class MessageProcessor:
             )
             # Intent is not explicitly present. Pass message to graph.
             if msg.data.get(INTENT) is None:
+                if tracker is None:
+                    tracker = DialogueStateTracker.from_events(message.sender_id, [])
                 parse_data = self._parse_message_with_graph(
-                    message, only_output_properties
+                    message, tracker, only_output_properties
                 )
             else:
                 parse_data = {
