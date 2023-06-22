@@ -224,8 +224,10 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         top_flow = flow_stack.top_flow(flows)
         top_flow_step = flow_stack.top_flow_step(flows)
         if top_flow_step is not None and top_flow is not None:
-            slots_so_far = {q.question for q in
-                            top_flow.previously_asked_questions(top_flow_step.id)}
+            slots_so_far = {
+                q.question
+                for q in top_flow.previously_asked_questions(top_flow_step.id)
+            }
             other_slots = [
                 slot_set for slot_set in slot_sets if slot_set[0] not in slots_so_far
             ]
@@ -285,13 +287,15 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         result = []
         for flow in flows.underlying_flows:
             if flow.is_user_triggerable() and not flow.is_rasa_default_flow():
-                slots_with_info = [{"name": q.question, "description": q.description}
-                                    for q in flow.get_question_steps()]
+                slots_with_info = [
+                    {"name": q.question, "description": q.description}
+                    for q in flow.get_question_steps()
+                ]
                 result.append(
                     {
                         "name": flow.id,
                         "description": flow.description,
-                        "slots": slots_with_info
+                        "slots": slots_with_info,
                     }
                 )
         return result
@@ -310,7 +314,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                     "name": q.question,
                     "value": (tracker.get_slot(q.question) or "undefined"),
                     "type": tracker.slots[q.question].type_name,
-                    "description": q.description
+                    "description": q.description,
                 }
                 for q in top_flow.get_question_steps()
             ]
