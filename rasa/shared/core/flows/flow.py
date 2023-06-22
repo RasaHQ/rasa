@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, Set, Text
+
+from rasa.shared.constants import RASA_DEFAULT_INTENT_PREFIX
 from rasa.shared.exceptions import RasaException
 
 import rasa.shared.utils.io
@@ -276,29 +278,6 @@ class Flow:
             return None
         return self.steps[0]
 
-    @staticmethod
-    def slots_from_steps(steps: List[FlowStep]) -> List[str]:
-        """Return the names of the slots used in the given steps."""
-        result = []
-        for step in steps:
-            if isinstance(step, QuestionFlowStep) and step.question not in result:
-                result.append(step.question)
-        return result
-
-    def slots(self) -> List[str]:
-        """Return the names of the slots used in the flow."""
-        return self.slots_from_steps(self.steps)
-
-    def slots_up_to_step(self, id: str) -> List[str]:
-        """Returns the names of the slots used in this flow up to a step."""
-        step_ids = [step.id for step in self.steps]
-        try:
-            idx = step_ids.index(id)
-        except ValueError:
-            idx = -1
-        steps = self.steps[: idx + 1]
-        return self.slots_from_steps(steps)
-
     def previously_asked_questions(self, step_id: Text) -> List[QuestionFlowStep]:
         """Returns the questions asked before the given step.
 
@@ -343,6 +322,49 @@ class Flow:
         """Returns whether the flow is handling a pattern."""
         return self.id.startswith(HANDLING_PATTERN_PREFIX)
 
+    def get_trigger_intents(self) -> Set[str]:
+        """Returns the trigger intents of the flow"""
+        results: Set[str] = set()
+        if len(self.steps) == 0:
+            return results
+
+        first_step = self.steps[0]
+
+        if not isinstance(first_step, UserMessageStep):
+            return results
+
+        for condition in first_step.trigger_conditions:
+            results.add(condition.intent)
+
+        return results
+
+    def is_user_triggerable(self) -> bool:
+        """Test whether a user can trigger the flow with an intent."""
+        return len(self.get_trigger_intents()) > 0
+
+    def is_rasa_default_flow(self) -> bool:
+        """Test whether something is a rasa default flow."""
+        trigger_intents = self.get_trigger_intents()
+        any_has_rasa_prefix = any(
+            [
+                intent.startswith(RASA_DEFAULT_INTENT_PREFIX)
+                for intent in trigger_intents
+            ]
+        )
+        return any_has_rasa_prefix
+
+    def get_question_steps(self) -> List[QuestionFlowStep]:
+        """Return the question steps of the flow."""
+        question_steps = []
+        for step in self.steps:
+            if isinstance(step, QuestionFlowStep):
+                question_steps.append(step)
+        return question_steps
+
+    def get_slots(self) -> Set[str]:
+        """The slots used in this flow."""
+        return {q.question for q in self.get_question_steps()}
+
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
     """Used to read flow steps from parsed YAML.
@@ -357,8 +379,6 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         return ActionFlowStep.from_json(flow_step_config)
     if "intent" in flow_step_config:
         return UserMessageStep.from_json(flow_step_config)
-    if "user" in flow_step_config:
-        return UserFlowStep.from_json(flow_step_config)
     if "question" in flow_step_config:
         return QuestionFlowStep.from_json(flow_step_config)
     if "link" in flow_step_config:
@@ -735,40 +755,6 @@ class QuestionFlowStep(FlowStep):
         dump["skip_if_filled"] = self.skip_if_filled
         dump["scope"] = self.scope.value
 
-        return dump
-
-
-@dataclass
-class UserFlowStep(FlowStep):
-    """Represents the configuration of a user flow step."""
-
-    user: Text
-    """The user of the flow step."""
-
-    @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> UserFlowStep:
-        """Used to read flow steps from parsed YAML.
-
-        Args:
-            flow_step_config: The parsed YAML as a dictionary.
-
-        Returns:
-            The parsed flow step.
-        """
-        base = super()._from_json(flow_step_config)
-        return UserFlowStep(
-            user=flow_step_config.get("user", ""),
-            **base.__dict__,
-        )
-
-    def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
-
-        Returns:
-            The flow step as a dictionary.
-        """
-        dump = super().as_json()
-        dump["user"] = self.user
         return dump
 
 
