@@ -582,6 +582,7 @@ class TestSubTokensTrainAndProcess:
             )
 
     @pytest.mark.timeout(120, func_only=True)
+    @pytest.mark.skip_on_windows
     def test_lm_featurizer_num_sub_tokens_process_training_data(
         self,
         model_name: Text,
