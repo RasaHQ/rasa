@@ -98,11 +98,19 @@ async def test_agent_train(default_agent: Agent):
                         "start": 6,
                         "end": 21,
                         "value": "Rasa",
-                        "extractor": "RegexMessageHandler",
                     }
                 ],
             },
-        )
+        ),
+        (
+            "hi hello",
+            {
+                "text": "hi hello",
+                "intent": {"name": "greet", "confidence": 1.0},
+                "text_tokens": [(0, 2), (3, 8)],
+                "entities": [],
+            },
+        ),
     ],
 )
 async def test_agent_parse_message(
