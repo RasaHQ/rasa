@@ -278,29 +278,6 @@ class Flow:
             return None
         return self.steps[0]
 
-    @staticmethod
-    def slots_from_steps(steps: List[FlowStep]) -> List[str]:
-        """Return the names of the slots used in the given steps."""
-        result = []
-        for step in steps:
-            if isinstance(step, QuestionFlowStep) and step.question not in result:
-                result.append(step.question)
-        return result
-
-    def slots(self) -> List[str]:
-        """Return the names of the slots used in the flow."""
-        return self.slots_from_steps(self.steps)
-
-    def slots_up_to_step(self, id: str) -> List[str]:
-        """Returns the names of the slots used in this flow up to a step."""
-        step_ids = [step.id for step in self.steps]
-        try:
-            idx = step_ids.index(id)
-        except ValueError:
-            idx = -1
-        steps = self.steps[: idx + 1]
-        return self.slots_from_steps(steps)
-
     def previously_asked_questions(self, step_id: Text) -> List[QuestionFlowStep]:
         """Returns the questions asked before the given step.
 
@@ -375,6 +352,14 @@ class Flow:
             ]
         )
         return any_has_rasa_prefix
+
+    def get_question_steps(self) -> List[QuestionFlowStep]:
+        """Return the question steps of the flow."""
+        question_steps = []
+        for step in self.steps:
+            if isinstance(step, QuestionFlowStep):
+                question_steps.append(step)
+        return question_steps
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
