@@ -322,11 +322,11 @@ class HangoutsInput(InputChannel):
                     )
                 )
             except CancelledError:
-                structlogger.error(
+                await structlogger.aerror(
                     "hangouts.message.blueprint", text=copy.deepcopy(text)
                 )
             except Exception:
-                structlogger.exception(
+                await structlogger.aexception(
                     "hangouts.message.blueprint.failure", text=copy.deepcopy(text)
                 )
 

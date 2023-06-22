@@ -257,7 +257,7 @@ class FormAction(LoopAction):
             Otherwise, returns empty list since the extracted slots already have
             corresponding `SlotSet` events in the tracker.
         """
-        structlogger.debug(
+        await structlogger.adebug(
             "forms.slots.validate", slot_candidates=copy.deepcopy(slot_candidates)
         )
         events: List[Union[SlotSet, Event]] = [
@@ -543,7 +543,7 @@ class FormAction(LoopAction):
         )
 
         if needs_validation:
-            structlogger.debug(
+            await structlogger.adebug(
                 "forms.validation.required",
                 tracker_latest_message=copy.deepcopy(tracker.latest_message),
             )
@@ -614,7 +614,7 @@ class FormAction(LoopAction):
         if not prefilled_slots:
             logger.debug("No pre-filled required slots to validate.")
         else:
-            structlogger.debug(
+            await structlogger.adebug(
                 "forms.activate.form", prefilled_slots=copy.deepcopy(prefilled_slots)
             )
 

@@ -47,7 +47,7 @@ class RasaNLUHttpInterpreter:
         Return `None` on failure.
         """
         if not self.endpoint_config or self.endpoint_config.url is None:
-            structlogger.error(
+            await structlogger.aerror(
                 "http.parse.text",
                 text=copy.deepcopy(text),
             )
@@ -72,7 +72,7 @@ class RasaNLUHttpInterpreter:
                         return await resp.json()
                     else:
                         response_text = await resp.text()
-                        structlogger.error(
+                        await structlogger.aerror(
                             "http.parse.text.failure",
                             text=copy.deepcopy(text),
                             response_text=copy.deepcopy(response_text),
@@ -81,7 +81,7 @@ class RasaNLUHttpInterpreter:
         except Exception:  # skipcq: PYL-W0703
             # need to catch all possible exceptions when doing http requests
             # (timeouts, value errors, parser errors, ...)
-            structlogger.exception(
+            await structlogger.aexception(
                 "http.parse.text.exception",
                 text=copy.deepcopy(text),
             )
