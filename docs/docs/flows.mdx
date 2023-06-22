@@ -83,25 +83,33 @@ reference the step in the `next` field of other steps.
 
 #### Next Property
 
-The `next` field in steps allows for branching logic. For instance:
+The `next` field in steps allows to link steps together and create 
+branching logic. 
+
+To link to the next step, you can use the `id` of the next step:
 
 ```yaml
-- id: "2"
+- id: "some_question"
+  question: age
+  next: "id_of_the_next_step"
+```
+
+To create branching logic, you can use conditionals:
+
+```yaml
+- id: "some_question"
   question: age
   next:
     - if: age < 18
-      then: "3"
-    - else: "4"
+      then: "under_18_step"
+    - if: age >= 18 and age < 65
+      then: "18_to_65_step"
+    - else: "over_65_step"
 ```
 
 In this example, depending on the user's input value for age, the flow will
-proceed to step `"3"` or `"4"`, respectively. This allows you to create complex
+proceed to different steps. This allows you to create complex
 and dynamic conversational flows that adapt to user inputs.
-
-The `next` field can be either a string or a list of conditionals. If it is a
-string, it is interpreted as the ID of the next step to be executed. If it is a
-list of conditionals, the flow will proceed to the step that matches the first
-conditional.
 
 The `next` field can also be omitted. In this case, the flow will end.
 
@@ -119,6 +127,7 @@ Steps can manifest in one of the following types:
   a message that will be sent to the user
 - [set slots step](./flows.mdx#set-slots): a step to set slots
 - [question step](./flows.mdx#question): a question to be asked to the user
+- [link step](./flows.mdx#link): a step to link to another flow
 
 ### Starting a Flow
 
@@ -281,6 +290,13 @@ fill a slot. Here is an example:
 In this example, the bot is asking the user to provide their account type. The
 response will be used to fill the "account_type" slot.
 
+:::note
+
+The slot needs to be defined in the domain file. See the [domain
+documentation](./domain.mdx) for more information. Additionaly, the slot
+should have fitting slot mappings.
+:::
+
 A question can be configured to be skipped if the slot is already filled, as
 shown below:
 
@@ -304,6 +320,20 @@ reached OR when exiting a `link`ed node:
 ```
 
 For the `slot_type`, it's recommended to use `text` slots in Flows.
+
+### Link
+
+A `link` step is used to link to another flow. Here is an example:
+
+```yaml
+- id: "a_link_step"
+  link: id_of_another_flow
+```
+
+In this example, the bot will proceed to the flow with the id
+`id_of_another_flow`. The bot will return to the current flow once the linked
+flow is completed.
+
 
 ## Examples
 
