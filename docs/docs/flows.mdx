@@ -32,14 +32,14 @@ Flow:
 ```yaml title="flows.yml"
 flows:
   hello_world:
-    name: Hello World
-    description: A simple flow that greets the user
+    name: "Hello World"
+    description: "A simple flow that greets the user"
     steps:
       - id: "0"
-        user_message: greet
+        user_message: "greet"
         next: "1"
       - id: "1"
-        action: utter_greet
+        action: "utter_greet"
 ```
 
 ## Flow Properties
@@ -49,8 +49,8 @@ A Flow is defined using the following properties:
 ```yaml title="flows.yml"
 flows:
   a_flow: # an id
-    name: A flow # a name
-    description: optional description of a flow
+    name: "A flow" # a name
+    description: "optional description of a flow"
     steps: [] # a list of steps
 ```
 
@@ -70,10 +70,10 @@ are executed in the order they are defined in the list.
 All steps share these common properties:
 
 ```yaml
-- id: a_required_unique_id
-  description: an optional human readable description of the step
+- id: "a_required_unique_id"
+  description: "an optional human readable description of the step"
   metadata: {} # an optional dict
-  next: an id or conditionals to determine which step should be executed next
+  next: "an id or conditionals to determine which step should be executed next"
 ```
 
 #### Id Property
@@ -90,7 +90,7 @@ To link to the next step, you can use the `id` of the next step:
 
 ```yaml
 - id: "some_question"
-  question: age
+  question: "age"
   next: "id_of_the_next_step"
 ```
 
@@ -98,7 +98,7 @@ To create branching logic, you can use conditionals:
 
 ```yaml
 - id: "some_question"
-  question: age
+  question: "age"
   next:
     - if: age < 18
       then: "under_18_step"
@@ -152,10 +152,10 @@ properties it supports.
 This step signifies a user utterance. Here's an example:
 
 ```yaml
-- id: an_incoming_user_message
-  intent: greet
+- id: "an_incoming_user_message"
+  intent: "greet"
   entities: [] # optional
-  description: greet the user
+  description: "greet the user"
   metadata: {} # an optional dict
 ```
 
@@ -167,13 +167,13 @@ A `user_message` step can also support `OR` statements. This means that the flow
 can proceed if either of the conditions in the `OR` statement are met:
 
 ```yaml
-- id: a_required_unique_id
+- id: "a_required_unique_id"
   or:
-    - intent: complaint
+    - intent: "complaint"
       entities: [] # optional
-    - intent: talk_to_agent
+    - intent: "talk_to_agent"
       entities: [] # optional
-  description: handle a complaint or talk to an agent
+  description: "handle a complaint or talk to an agent"
   metadata: {} # an optional dict
 ```
 
@@ -196,9 +196,17 @@ an example:
   advance_if: "yes" # optional, defaults to "yes"
 ```
 
-Entry prompts should be used infrequently, as the prompt will be sent to an LLM
-for every incoming user message. Having to many entry prompts can slow down the
-bot.
+When a new message is received, the `entry_prompt` will be sent to an LLM. If
+the LLM responds with the value specified in `advance_if`, the flow will be
+started.
+
+:::caution
+
+Entry prompts should be **used infrequently**, as the prompt will be sent to an
+LLM for every incoming user message. Having to many entry prompts can slow down
+the bot.
+
+:::
 
 Good use cases for entry prompts are detecting sensitive topics or out of scope
 messages.
@@ -210,7 +218,7 @@ message. Here are two examples:
 
 ```yaml
 - id: "an_action"
-  action: action_xyz
+  action: "action_xyz"
 ```
 
 This could be a custom action where the bot performs a specific function defined
@@ -218,7 +226,7 @@ in your custom actions script.
 
 ```yaml
 - id: "an_utter_action"
-  action: utter_xyz
+  action: "utter_xyz"
 ```
 
 This is an utterance action where the bot sends a predefined message to the
@@ -284,7 +292,7 @@ fill a slot. Here is an example:
 
 ```yaml
 - id: "a_question_step"
-  question: account_type # slot name
+  question: "account_type" # slot name
 ```
 
 In this example, the bot is asking the user to provide their account type. The
@@ -294,7 +302,9 @@ response will be used to fill the "account_type" slot.
 
 The slot needs to be defined in the domain file. See the
 [domain documentation](./domain.mdx) for more information. Additionaly, the slot
-should have fitting slot mappings. :::
+should have fitting slot mappings.
+
+:::
 
 For the `slot_type`, it's recommended to use `text` slots in Flows.
 
@@ -305,7 +315,7 @@ shown below:
 
 ```yaml
 - id: "another_question_step"
-  question: first_name # slot name
+  question: "first_name" # slot name
   skip_if_filled: true
 ```
 
@@ -327,8 +337,8 @@ is completed.
 
 ```yaml
 - id: "another_confirmation_step"
-  question: yes_or_no # slot name
-  scope: flow
+  question: "yes_or_no" # slot name
+  scope: "flow"
 ```
 
 ### Link
@@ -337,7 +347,7 @@ A `link` step is used to link to another flow. Here is an example:
 
 ```yaml
 - id: "a_link_step"
-  link: id_of_another_flow
+  link: "id_of_another_flow"
 ```
 
 In this example, the bot will proceed to the flow with the id
@@ -351,14 +361,14 @@ flow is completed.
 ```yaml
 flows:
   hello_world:
-    name: Hello World!
-    description: A basic flow
+    name: "Hello World!"
+    description: "A basic flow"
     steps:
       - id: "1"
-        intent: greet
+        intent: "greet"
         next: "2"
       - id: "2"
-        action: utter_greet
+        action: "utter_greet"
 ```
 
 The intent `greet` and the response template `utter_greet` needs to be defined
@@ -372,25 +382,25 @@ different steps together.
 ```yaml
 flows:
   basic_flow_with_branching:
-    name: basic flow with branching
-    description: a flow with a branch
+    name: "basic flow with branching"
+    description: "a flow with a branch"
     steps:
       - id: "1"
-        intent: greet
+        intent: "greet"
         next: "2"
       - id: "2"
-        action: utter_greet
+        action: "utter_greet"
         next: "3"
       - id: "3"
-        question: age
+        question: "age"
         next:
           - if: age < 18
             then: "4"
           - else: "5"
       - id: "4"
-        action: utter_too_young
+        action: "utter_too_young"
       - id: "5"
-        action: utter_old_enough
+        action: "utter_old_enough"
 ```
 
 The example shows a flow that branches based on logic.
@@ -400,24 +410,24 @@ The example shows a flow that branches based on logic.
 ```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
-    description: This flow demonstrates asking for confirmation from the user.
+    description: "This flow demonstrates asking for confirmation from the user.""
     steps:
       - id: "0"
-        intent: transfer_money
+        intent: "transfer_money"
         next: "1"
       - id: "1"
-        question: money
+        question: "money"
         next: "2"
       - id: "2"
-        question: confirm_transfer
+        question: "confirm_transfer"
         next:
           - if: confirm_transfer == "yes"
             then: "3"
           - else: "4"
       - id: "3"
-        action: utter_transfer_success
+        action: "utter_transfer_success"
       - id: "4"
-        action: utter_transfer_cancel
+        action: "utter_transfer_cancel"
 ```
 
 The example shows a flow that can take confirmation from the user and branch
