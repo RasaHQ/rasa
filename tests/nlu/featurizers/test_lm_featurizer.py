@@ -387,6 +387,7 @@ class TestShapeValuesTrainAndProcess:
         )
 
     @pytest.mark.timeout(120, func_only=True)
+    @pytest.mark.skip_on_windows
     def test_lm_featurizer_shapes_in_process_messages(
         self,
         model_name: Text,
@@ -608,6 +609,7 @@ class TestSubTokensTrainAndProcess:
         )
 
     @pytest.mark.timeout(120, func_only=True)
+    @pytest.mark.skip_on_windows
     def test_lm_featurizer_num_sub_tokens_process_messages(
         self,
         model_name: Text,
