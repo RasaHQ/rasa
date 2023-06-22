@@ -1,15 +1,10 @@
 from __future__ import annotations
-import asyncio
 import os
 import logging
 import sys
-from typing import Any, Dict, Optional, Callable, Iterable
+from typing import Any, Dict, Optional
 
-import contextvars
-from functools import partial
 import structlog
-from structlog import BoundLogger
-from structlog.typing import Context, Processor
 from structlog_sentry import SentryProcessor
 from rasa.shared.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 from rasa.plugin import plugin_manager
@@ -121,8 +116,6 @@ def configure_structlog(
         # `wrapper_class` is the bound logger that you get back from
         # get_logger(). This one imitates the API of `logging.Logger`.
         wrapper_class=structlog.make_filtering_bound_logger(log_level),
-        # wrapper_class=structlog.stdlib.BoundLogger,
-        # wrapper_class=AsyncBoundLogger,
         # Effectively freeze configuration after creating the first bound
         # logger.
         cache_logger_on_first_use=True,

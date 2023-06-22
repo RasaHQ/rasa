@@ -152,4 +152,8 @@ def get_license_hash() -> Optional[Text]:
 
 @hookspec  # type: ignore[misc]
 def after_server_stop() -> None:
-    """Hook specification for stopping the server."""
+    """Hook specification for stopping the server.
+
+    Use this hook to de-initialize any resources that require explicit cleanup like,
+    thread shutdown, closing connections, etc.
+    """

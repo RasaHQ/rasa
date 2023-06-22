@@ -1,5 +1,3 @@
-import time
-
 import json
 import logging
 import uuid
@@ -88,10 +86,7 @@ def register(
     """Registers input channel blueprints with Sanic."""
 
     async def handler(message: UserMessage) -> None:
-        start = time.process_time()
         await app.ctx.agent.handle_message(message)
-        end = time.process_time()
-        logger.info(f"Time taken to process the request: {end - start}")
 
     for channel in input_channels:
         if route:
