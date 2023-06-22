@@ -210,9 +210,9 @@ def test_data_validate_not_used_warning(
 
 
 def test_data_validate_failed_to_load_domain(
-    run_in_simple_project_with_warnings: Callable[..., RunResult]
+    run_in_simple_project_with_no_domain: Callable[..., RunResult]
 ):
-    result = run_in_simple_project_with_warnings(
+    result = run_in_simple_project_with_no_domain(
         "data",
         "validate",
         "--domain",

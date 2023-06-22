@@ -12,6 +12,7 @@ import rasa.cli.utils
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
 )
 import rasa.shared.data
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -151,7 +152,7 @@ def _build_training_data_importer(args: argparse.Namespace) -> "TrainingDataImpo
 
     # Exit the validation if the domain path is invalid
     domain = rasa.cli.utils.get_validated_path(
-        args.domain, "domain", None, none_is_valid=False
+        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=False
     )
 
     return TrainingDataImporter.load_from_config(
