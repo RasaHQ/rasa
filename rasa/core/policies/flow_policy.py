@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Text, List, Optional, Union
 
+from jinja2 import Template
+
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
@@ -18,6 +20,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
+    ACTION_SEND_TEXT,
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
     PREVIOUS_FLOW_SLOT,
@@ -33,8 +36,11 @@ from rasa.shared.core.flows.flow import (
     Flow,
     FlowStep,
     FlowsList,
+    GenerateResponseFlowStep,
     IfFlowLink,
+    EntryPromptFlowStep,
     QuestionScope,
+    StepThatCanStartAFlow,
     UserMessageStep,
     LinkFlowStep,
     SetSlotsFlowStep,
@@ -53,12 +59,11 @@ from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
-from rasa.core.policies.detectors import SensitiveTopicDetector
 import structlog
 
-structlogger = structlog.get_logger()
+from rasa.utils import llm
 
-SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY = "sensitive_topic_detector"
+structlogger = structlog.get_logger()
 
 
 class FlowException(Exception):
@@ -84,7 +89,6 @@ class FlowPolicy(Policy):
         return {
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
             POLICY_MAX_HISTORY: None,
-            SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY: None,
         }
 
     @staticmethod
@@ -112,16 +116,6 @@ class FlowPolicy(Policy):
 
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
         self.resource = resource
-
-        if detector_config := self.config.get(SENSITIVE_TOPIC_DETECTOR_CONFIG_KEY):
-            # if the detector is configured, we need to load it
-            full_config = SensitiveTopicDetector.get_default_config()
-            full_config.update(detector_config)
-            self._sensitive_topic_detector: Optional[
-                SensitiveTopicDetector
-            ] = SensitiveTopicDetector(full_config)
-        else:
-            self._sensitive_topic_detector = None
 
     def train(
         self,
@@ -168,24 +162,6 @@ class FlowPolicy(Policy):
              The prediction.
         """
         predicted_action = None
-        if (
-            self._sensitive_topic_detector
-            and not tracker.has_action_after_latest_user_message()
-            and (latest_message := tracker.latest_message)
-        ):
-            if self._sensitive_topic_detector.check(latest_message.text):
-                predicted_action = self._sensitive_topic_detector.action()
-                # TODO: in addition to predicting an action, we need to make
-                #   sure that the input isn't used in any following flow
-                #   steps. At the same time, we can't completely skip flows
-                #   as we want to guide the user to the next step of the flow.
-                structlogger.info(
-                    "sensitive.topic.detected", predicted_action=predicted_action
-                )
-            else:
-                structlogger.debug(
-                    "sensitive.topic.notdetected", message=latest_message.text
-                )
 
         # if detector predicted an action, we don't want to predict a flow
         if predicted_action is not None:
@@ -511,17 +487,13 @@ class FlowExecutor:
         ):
             # flows can only be started automatically as a response to a user message
             return None
-        latest_intent: Text = tracker.latest_message.intent.get(INTENT_NAME_KEY, "")
-        latest_entities: List[Text] = [
-            e.get(ENTITY_ATTRIBUTE_TYPE, "") for e in tracker.latest_message.entities
-        ]
 
         for flow in self.all_flows.underlying_flows:
             first_step = flow.first_step_in_flow()
-            if not first_step or not isinstance(first_step, UserMessageStep):
+            if not first_step or not isinstance(first_step, StepThatCanStartAFlow):
                 continue
 
-            if first_step.is_triggered(latest_intent, latest_entities):
+            if first_step.is_triggered(tracker):
                 return flow
         return None
 
@@ -963,6 +935,22 @@ class FlowExecutor:
             )
         elif isinstance(step, UserMessageStep):
             return ActionPrediction(None, 0.0)
+        elif isinstance(step, EntryPromptFlowStep):
+            return ActionPrediction(None, 0.0)
+        elif isinstance(step, GenerateResponseFlowStep):
+            context = {
+                "history": llm.tracker_as_readable_transcript(tracker, max_turns=5),
+                "latest_user_message": tracker.latest_message.text
+                if tracker.latest_message
+                else "",
+            }
+            context.update(tracker.current_slot_values())
+            prompt = Template(step.generation_prompt).render(context)
+
+            generated = llm.generate_text_openai_chat(prompt)
+            return ActionPrediction(
+                ACTION_SEND_TEXT, 1.0, metadata={"message": {"text": generated}}
+            )
         elif isinstance(step, EndFlowStep):
             # this is the end of the flow, so we'll pop it from the stack
             events = self._reset_scoped_slots(flow, tracker)
