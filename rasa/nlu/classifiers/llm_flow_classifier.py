@@ -232,7 +232,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 slot_set for slot_set in slot_sets if slot_set[0] not in slots_so_far
             ]
         else:
-            slots_so_far = []
+            slots_so_far = set()
             other_slots = slot_sets
 
         if len(start_flow_actions) == 0:
@@ -271,7 +271,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 valid_slot_sets = [
                     slot_set
                     for slot_set in slot_sets
-                    if slot_set[0] in potential_new_flow.slots()
+                    if slot_set[0] in potential_new_flow.get_slots()
                 ]
                 return start_flow_actions[0], valid_slot_sets
             else:
