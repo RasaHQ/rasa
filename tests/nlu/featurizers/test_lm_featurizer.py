@@ -734,6 +734,7 @@ def test_input_padding(
         (256, "bert", "bert-base-uncased", False),
     ],
 )
+@pytest.mark.skip_on_windows
 def test_log_longer_sequence(
     sequence_length: int,
     model_name: Text,
