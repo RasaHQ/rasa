@@ -718,6 +718,9 @@ class MessageProcessor:
             parse_data = await self.http_interpreter.parse(message)
         else:
             # Intent is not explicitly present. Pass message to graph.
+            msg = YAMLStoryReader.unpack_regex_message(
+                message=Message({TEXT: message.text})
+            )
             if msg.data.get(INTENT) is None:
                 parse_data = self._parse_message_with_graph(
                     message, tracker, only_output_properties
