@@ -201,6 +201,10 @@ class FlowPolicy(Policy):
             prediction.score,
             prediction.events,
             prediction.metadata,
+            is_no_user_prediction=(
+                prediction.action_name is not None
+                and prediction.action_name != ACTION_LISTEN_NAME
+            ),
         )
 
     def _create_prediction_result(
@@ -210,6 +214,7 @@ class FlowPolicy(Policy):
         score: float = 1.0,
         events: Optional[List[Event]] = None,
         action_metadata: Optional[Dict[Text, Any]] = None,
+        is_no_user_prediction: bool = False,
     ) -> PolicyPrediction:
         """Creates a prediction result.
 
@@ -225,7 +230,10 @@ class FlowPolicy(Policy):
         if action_name:
             result[domain.index_for_action(action_name)] = score
         return self._prediction(
-            result, optional_events=events, action_metadata=action_metadata
+            result,
+            optional_events=events,
+            action_metadata=action_metadata,
+            is_no_user_prediction=is_no_user_prediction,
         )
 
 

@@ -4,6 +4,7 @@ These are the flows that can be started, with their description and slots:
 {% for flow in available_flows %}
 - {{ flow.name }}: {{ flow.description }} (slots: {{ flow.slots }})
 {%- endfor %}
+- noflow: no flow can be started (slots: [])
 
 Here is what happened previously in the conversation:
 {{ current_conversation }}
