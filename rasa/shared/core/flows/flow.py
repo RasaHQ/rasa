@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol, Set, Text
+from typing import Any, Dict, List, Optional, Protocol, Set, Text, runtime_checkable
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.constants import RASA_DEFAULT_INTENT_PREFIX
 from rasa.shared.exceptions import RasaException
