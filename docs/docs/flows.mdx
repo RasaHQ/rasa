@@ -410,7 +410,7 @@ The example shows a flow that branches based on logic.
 ```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
-    description: "This flow demonstrates asking for confirmation from the user.""
+    description: "This flow demonstrates asking for confirmation from the user."
     steps:
       - id: "0"
         intent: "transfer_money"
@@ -465,16 +465,16 @@ the `question` steps in the `tranfer_money` flow work.
 ```yaml-rasa title="flows.yml"
 flows:
   user_selection_based_flow_branching_example:
-    description: This flow opens a bank account based on the user's choice of account model.
+    description: "This flow opens a bank account based on the user's choice of account model."
     steps:
       - id: "1"
-        intent: greet
+        intent: "greet"
         next: "2"
       - id: "2"
-        action: utter_greet
+        action: "utter_greet"
         next: "3"
       - id: "3"
-        question: account_type
+        question: "account_type"
         next:
           - if: account_type == "checking"
             then: "5"
@@ -482,25 +482,25 @@ flows:
             then: "7"
           - else: "9"
       - id: "5"
-        question: specific_checking_question
+        question: "specific_checking_question"
         next: "6"
       - id: "6"
-        action: utter_something_specific_to_checking
+        action: "utter_something_specific_to_checking"
         next: "11"
       - id: "7"
-        question: specific_savings_question
+        question: "specific_savings_question"
         next: "8"
       - id: "8"
-        action: utter_something_specific_to_savings
+        action: "utter_something_specific_to_savings"
         next: "11"
       - id: "9"
-        question: specific_credit_card_question
+        question: "specific_credit_card_question"
         next: "10"
       - id: "10"
-        action: utter_something_specific_to_credit_card
+        action: "utter_something_specific_to_credit_card"
         next: "11"
       - id: "11"
-        action: action_open_account
+        action: "action_open_account"
 ```
 
 This example flow demonstrates how to implement branching flows based on
@@ -513,42 +513,42 @@ specific flow should be executed.
 ```yaml
 flows:
   flow_with_links:
-    name: flow with links
-    description: optional description of a flow with links
+    name: "flow with links"
+    description: "optional description of a flow with links"
     steps:
       - id: "1"
-        intent: greet
+        intent: "greet"
         next: "2"
       - id: "2"
-        action: utter_greet
+        action: "utter_greet"
         next: "3"
       - id: "3"
-        link: collect_personal_details
+        link: "collect_personal_details"
         next:
           - if: age < 18
             then: "4"
           - else: "5"
       - id: "4"
-        action: utter_too_young
+        action: "utter_too_young"
         next: "6"
       - id: "5"
-        action: utter_old_enough
+        action: "utter_old_enough"
         next: "6"
       - id: "6"
-        link: another_flow
+        link: "another_flow"
 
   collect_personal_details:
-    name: collect details
-    description: gather personal details from the user
+    name: "collect details"
+    description: "gather personal details from the user"
     steps:
       - id: "1"
-        question: first_name
+        question: "first_name"
         next: "2"
       - id: "2"
-        question: last_name
+        question: "last_name"
         next: "3"
       - id: "3"
-        question: age
+        question: "age"
 ```
 
 This example demonstrates how the `link` step in flows enables the invocation of
