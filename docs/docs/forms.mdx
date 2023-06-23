@@ -320,6 +320,19 @@ The following example shows the implementation of a form which extracts a slot
 The method `extract_outdoor_seating` sets the slot `outdoor_seating` based on whether
 the keyword `outdoor` was present in the last user message.
 
+:::note
+Always return a value from the `extract_` methods. If you didn't found a match or you can't
+be sure that there is a new value, you can return the previous value using:
+
+```python
+return {"outdoor_seating": tracker.slots.get("outdoor_seating")}
+```
+
+If you don't return the slot value (i.e. returning `{}`) Rasa will continue processing the
+message as other intent. This might be useful if you want to process an intent to break
+from the conversation.
+:::
+
 ```python
 from typing import Dict, Text, List, Optional, Any
 
