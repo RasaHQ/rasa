@@ -92,7 +92,7 @@ anonymization:
 
 The metadata section contains the following fields: `language`, `model_name`, and `model_provider`.
 
-The `language` field specifies the language of the text to be anonymized. Note that you can only specify one language
+The `language` field specifies the language code of the text to be anonymized. Note that you can only specify one language
 per anonymization pipeline because the assumption made was that an assistant will be developed for a single language.
 
 The `model_name` and `model_provider` fields specify the name and provider of the Presidio model to be used for
@@ -127,7 +127,7 @@ You can follow model installation instructions for spaCy and stanza models in th
 
 In the case of the `transformers` model provider, you must install the model name you declare to the `model_name` field
 in your Rasa Pro environment. For example, if you declare `model_name: dslim/bert-base-NER` in `endpoints.yml`, you must
-install the `dslim/bert-base-NER` model in your Rasa Pro environment. You can find model installation instructions for
+install the `dslim/bert-base-NER` model in your Rasa Pro environment. You can find model download instructions for
 `HuggingFace` in the [Presidio official documentation](https://microsoft.github.io/presidio/analyzer/nlp_engines/transformers/).
 
 :::note
@@ -201,3 +201,8 @@ logger:
 ```
 
 The `anonymization_rules` field specifies the `id` of the anonymization rule list to be used for the logs.
+
+:::caution
+We strongly recommend to run with log level INFO in production.
+Running with log level DEBUG will increase the assistant's response latency because of processing delays.
+:::
