@@ -159,6 +159,12 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             message.set(ENTITIES, formatted_entities, add_to_output=True)
         return message
 
+    @staticmethod
+    def is_hallucinated_value(value: str):
+        return ("_" in value or
+                value in {"[missing information]", "[missing]", "None", "undefined"}
+                )
+
     @classmethod
     def parse_action_list(
         cls, actions: Optional[str], tracker: DialogueStateTracker, flows: FlowsList
@@ -183,8 +189,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 if slot_name == "flow_name":
                     start_flow_actions.append(slot_value)
                 else:
-                    # most likely some hallucinated variable
-                    if "_" in slot_value:
+                    if cls.is_hallucinated_value(slot_value):
                         continue
                     slot_sets.append((slot_name, slot_value))
             elif m := start_flow_re.search(action):
@@ -223,6 +228,13 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         flow_stack = FlowStack.from_tracker(tracker)
         top_flow = flow_stack.top_flow(flows)
         top_flow_step = flow_stack.top_flow_step(flows)
+
+        # filter start flow actions so that same flow isn't started again
+        if top_flow is not None:
+            start_flow_actions = [start_flow_action
+                                  for start_flow_action in start_flow_actions
+                                  if start_flow_action != top_flow.id]
+
         if top_flow_step is not None and top_flow is not None:
             slots_so_far = {
                 q.question
