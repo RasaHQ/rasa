@@ -21,6 +21,7 @@ from rasa.core.constants import (
     COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
     DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
 )
+from rasa.core.nlg.callback import RESPONSE_ID_KEY
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -28,6 +29,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
@@ -225,7 +227,6 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
         },
         metadata=message,
     )
-
     return bot_message
 
 
@@ -305,7 +306,23 @@ class ActionBotResponse(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) response."""
-        message = await nlg.generate(self.utter_action, tracker, output_channel.name())
+        response_ids_for_response = domain.response_ids_per_response.get(
+            self.utter_action, set()
+        )
+
+        response_id_list = list(response_ids_for_response)
+        response_id_list.sort()
+
+        kwargs = {
+            RESPONSE_ID_KEY: response_id_list,
+        }
+
+        message = await nlg.generate(
+            self.utter_action,
+            tracker,
+            output_channel.name(),
+            **kwargs,
+        )
         if message is None:
             if not self.silent_fail:
                 logger.error(
@@ -509,6 +526,7 @@ class ActionListen(Action):
     """
 
     def name(self) -> Text:
+        """Returns action listen name."""
         return ACTION_LISTEN_NAME
 
     async def run(
@@ -764,13 +782,19 @@ class RemoteAction(Action):
                 DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
             )
 
+            modified_json = plugin_manager().hook.prefix_stripping_for_custom_actions(
+                json_body=json_body
+            )
             response: Any = await self.action_endpoint.request(
-                json=json_body,
+                json=modified_json if modified_json else json_body,
                 method="post",
                 timeout=DEFAULT_REQUEST_TIMEOUT,
                 compress=should_compress,
             )
-
+            if modified_json:
+                plugin_manager().hook.prefixing_custom_actions_response(
+                    json_body=json_body, response=response
+                )
             self._validate_action_result(response)
 
             events_json = response.get("events", [])
@@ -831,6 +855,7 @@ class ActionExecutionRejection(RasaException):
     """
 
     def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
+        """Create a new ActionExecutionRejection exception."""
         self.action_name = action_name
         self.message = message or "Custom action '{}' rejected to run".format(
             action_name
@@ -1062,6 +1087,9 @@ class ActionExtractSlots(Action):
                 if condition_requested_slot == tracker.get_slot(REQUESTED_SLOT):
                     return True
 
+            if active_loop is None and tracker.active_loop_name is None:
+                return True
+
         return False
 
     @staticmethod
@@ -1286,7 +1314,6 @@ class ActionExtractSlots(Action):
         validated_events = await self._execute_validation_action(
             slot_events, output_channel, nlg, tracker, domain
         )
-
         return validated_events
 
 

@@ -1,8 +1,10 @@
+import asyncio
+
 import logging
 import textwrap
 from datetime import datetime
 from typing import List, Text, Any, Dict, Optional
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 import pytest
 from pytest import MonkeyPatch
@@ -28,6 +30,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
+from rasa.core.channels.slack import SlackBot
 from rasa.core.constants import COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.constants import (
@@ -783,7 +786,6 @@ async def test_response_invalid_response(
 
 
 async def test_response_channel_specific(default_nlg, default_tracker, domain: Domain):
-    from rasa.core.channels.slack import SlackBot
 
     output_channel = SlackBot("DummyToken", "General")
 
@@ -797,6 +799,111 @@ async def test_response_channel_specific(default_nlg, default_tracker, domain: D
             metadata={"channel": "slack", "utter_action": "utter_channel"},
         )
     ]
+
+
+@pytest.fixture
+def domain_with_response_ids() -> Domain:
+    domain_yaml = """
+    responses:
+        utter_one_id:
+            - text: test
+              id: '1'
+        utter_multiple_ids:
+            - text: test
+              id: '2'
+            - text: test
+              id: '3'
+        utter_no_id:
+            - text: test
+    """
+    domain = Domain.from_yaml(domain_yaml)
+    return domain
+
+
+@pytest.fixture
+def mock_message() -> Dict[Text, Any]:
+    return {"text": "test", "response_ids": ["1"]}
+
+
+@pytest.fixture
+def mock_nlg(mock_message, monkeypatch: MonkeyPatch) -> MagicMock:
+    _mock_nlg = MagicMock()
+
+    future = asyncio.Future()
+    future.set_result(mock_message)
+
+    _mock_nlg.generate = MagicMock()
+    _mock_nlg.generate.return_value = future
+    return _mock_nlg
+
+
+async def test_action_bot_response_with_one_response_id(
+    mock_nlg: MagicMock,
+    default_channel,
+    default_tracker,
+    domain_with_response_ids: Domain,
+) -> None:
+    await ActionBotResponse("utter_one_id").run(
+        default_channel, mock_nlg, default_tracker, domain_with_response_ids
+    )
+
+    mock_nlg.generate.assert_called_once_with(
+        "utter_one_id", default_tracker, default_channel.name(), response_ids=["1"]
+    )
+
+
+async def test_action_bot_response_with_multiple_response_id(
+    mock_nlg: MagicMock,
+    default_channel,
+    default_tracker,
+    domain_with_response_ids: Domain,
+) -> None:
+    await ActionBotResponse("utter_multiple_ids").run(
+        default_channel, mock_nlg, default_tracker, domain_with_response_ids
+    )
+
+    mock_nlg.generate.assert_called_once_with(
+        "utter_multiple_ids",
+        default_tracker,
+        default_channel.name(),
+        response_ids=["2", "3"],
+    )
+
+
+async def test_action_bot_response_with_empty_response_id_set(
+    mock_nlg: MagicMock,
+    default_channel,
+    default_tracker,
+    domain_with_response_ids: Domain,
+) -> None:
+    await ActionBotResponse("utter_no_id").run(
+        default_channel, mock_nlg, default_tracker, domain_with_response_ids
+    )
+
+    mock_nlg.generate.assert_called_once_with(
+        "utter_no_id",
+        default_tracker,
+        default_channel.name(),
+        response_ids=[],
+    )
+
+
+async def test_action_bot_response_with_non_existing_id_mapping(
+    mock_nlg: MagicMock,
+    default_channel,
+    default_tracker,
+    domain_with_response_ids: Domain,
+) -> None:
+    await ActionBotResponse("utter_non_existing").run(
+        default_channel, mock_nlg, default_tracker, domain_with_response_ids
+    )
+
+    mock_nlg.generate.assert_called_once_with(
+        "utter_non_existing",
+        default_tracker,
+        default_channel.name(),
+        response_ids=[],
+    )
 
 
 async def test_action_back(
@@ -1722,7 +1829,6 @@ async def test_action_extract_slots_from_entity(
     expected_slot_events: List[SlotSet],
 ):
     """Test extraction of a slot value from entity with the different restrictions."""
-
     form_name = "some form"
     form = FormAction(form_name, None)
 
@@ -2883,3 +2989,100 @@ async def test_action_extract_slots_allows_slotset_for_same_value(
         )
         assert len(caplog_info_records) == 0
         assert events == [SlotSet("custom_slot_a", "test_A")]
+
+
+async def test_action_extract_slots_active_loop_none_in_mapping_condition():
+    entity = "name"
+    entity_value = "Julia"
+    slot = "user_name"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        intents:
+        - greet
+
+        entities:
+        - {entity}
+
+        slots:
+          {slot}:
+            type: text
+            mappings:
+            - type: from_entity
+              entity: {entity}
+              conditions:
+              - active_loop: null
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        UserUttered(
+            "Hi, I'm Julia.",
+            intent={"name": "greet"},
+            entities=[{"entity": entity, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [SlotSet(slot, entity_value)]
+
+
+async def test_action_extract_slots_active_loop_none_does_not_set_slot_in_form():
+    entity = "name"
+    entity_value = "Julia"
+    slot = "user_name"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+            intents:
+            - greet
+
+            entities:
+            - {entity}
+
+            slots:
+              {slot}:
+                type: text
+                mappings:
+                - type: from_entity
+                  entity: {entity}
+                  conditions:
+                  - active_loop: null
+
+            forms:
+              my_form:
+                required_slots: []
+            """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        ActiveLoop("my_form"),
+        UserUttered(
+            "Hi, I'm Julia.",
+            intent={"name": "greet"},
+            entities=[{"entity": entity, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == []

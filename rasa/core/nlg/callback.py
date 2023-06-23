@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 def nlg_response_format_spec() -> Dict[Text, Any]:
     """Expected response schema for an NLG endpoint.
 
-    Used for validation of the response returned from the NLG endpoint."""
+    Used for validation of the response returned from the NLG endpoint.
+    """
     return {
         "type": "object",
         "properties": {
@@ -27,6 +28,9 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
     }
 
 
+RESPONSE_ID_KEY = "response_ids"
+
+
 def nlg_request_format(
     utter_action: Text,
     tracker: DialogueStateTracker,
@@ -35,9 +39,11 @@ def nlg_request_format(
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
     tracker_state = tracker.current_state(EventVerbosity.ALL)
+    response_ids = kwargs.pop(RESPONSE_ID_KEY, [])
 
     return {
         "response": utter_action,
+        "ids": response_ids,
         "arguments": kwargs,
         "tracker": tracker_state,
         "channel": {"name": output_channel},
@@ -50,7 +56,8 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
     The generator will call the endpoint for each message it wants to
     generate. The endpoint needs to respond with a properly formatted
     json. The generator will use this message to create a response for
-    the bot."""
+    the bot.
+    """
 
     def __init__(self, endpoint_config: EndpointConfig) -> None:
 

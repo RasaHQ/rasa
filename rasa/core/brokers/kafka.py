@@ -2,6 +2,7 @@ import asyncio
 import os
 import json
 import logging
+import structlog
 import threading
 from asyncio import AbstractEventLoop
 from typing import Any, Text, List, Optional, Union, Dict, TYPE_CHECKING
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
     from confluent_kafka import KafkaError, Producer, Message
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class KafkaEventBroker(EventBroker):
@@ -237,9 +239,12 @@ class KafkaEventBroker(EventBroker):
                 )
             ]
 
-        logger.debug(
-            f"Calling kafka send({self.topic}, value={event},"
-            f" key={partition_key!s}, headers={headers})"
+        structlogger.debug(
+            "kafka.publish.event",
+            topic=self.topic,
+            rasa_event=event,
+            partition_key=partition_key,
+            headers=headers,
         )
 
         serialized_event = json.dumps(event).encode(DEFAULT_ENCODING)

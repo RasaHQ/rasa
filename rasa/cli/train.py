@@ -1,4 +1,5 @@
 import argparse
+import logging
 import sys
 from typing import Dict, List, Optional, Text
 
@@ -6,8 +7,10 @@ from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
 
 import rasa.cli.utils
+from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.utils.common
 from rasa.core.train import do_compare_training
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
@@ -15,6 +18,8 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def add_subparser(
@@ -84,6 +89,15 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         for f in args.data
     ]
 
+    if not args.skip_validation:
+        logger.info("Started validating domain and training data...")
+        importer = TrainingDataImporter.load_from_config(
+            domain_path=args.domain, training_data_paths=args.data, config_path=config
+        )
+        rasa.cli.utils.validate_files(
+            args.fail_on_validation_warnings, args.validation_max_history, importer
+        )
+
     training_result = train_all(
         domain=domain,
         config=config,
@@ -93,7 +107,10 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         force_training=args.force,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
-        core_additional_arguments=extract_core_additional_arguments(args),
+        core_additional_arguments={
+            **extract_core_additional_arguments(args),
+            **_extract_additional_arguments(args),
+        },
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
         model_to_finetune=_model_for_finetuning(args),
         finetuning_epoch_fraction=args.epoch_fraction,
@@ -131,7 +148,10 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
     story_file = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
-    additional_arguments = extract_core_additional_arguments(args)
+    additional_arguments = {
+        **extract_core_additional_arguments(args),
+        **_extract_additional_arguments(args),
+    }
 
     # Policies might be a list for the compare training. Do normal training
     # if only list item was passed.
@@ -185,7 +205,10 @@ def run_nlu_training(args: argparse.Namespace) -> Optional[Text]:
         output=args.out,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
-        additional_arguments=extract_nlu_additional_arguments(args),
+        additional_arguments={
+            **extract_nlu_additional_arguments(args),
+            **_extract_additional_arguments(args),
+        },
         domain=args.domain,
         model_to_finetune=_model_for_finetuning(args),
         finetuning_epoch_fraction=args.epoch_fraction,
@@ -210,3 +233,8 @@ def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
         arguments["num_threads"] = args.num_threads
 
     return arguments
+
+
+def _extract_additional_arguments(args: argparse.Namespace) -> Dict:
+    space = plugin_manager().hook.handle_space_args(args=args)
+    return space or {}
