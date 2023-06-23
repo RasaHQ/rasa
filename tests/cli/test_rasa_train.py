@@ -541,7 +541,7 @@ def test_train_validation_fail_on_warnings(
     request: pytest.FixtureRequest,
 ):
     test_data_dir = Path(request.config.rootdir, "data", "test_moodbot", "data")
-    test_domain = Path(request.config.rootdir, "data", "test_domains", "domain.yml")
+    test_domain = Path(request.config.rootdir, "data", "test_domains", "default.yml")
 
     result = run_in_simple_project_with_warnings(
         "train",
@@ -555,6 +555,19 @@ def test_train_validation_fail_on_warnings(
     )
 
     assert "Project validation completed with errors." in str(result.outlines)
+    assert result.ret == 1
+
+
+def test_train_validation_fail_to_load_domain(
+    run_in_simple_project: Callable[..., RunResult],
+):
+    result = run_in_simple_project(
+        "train",
+        "--domain",
+        "not_existing_domain.yml",
+    )
+
+    assert "Encountered empty domain during validation." in str(result.outlines)
     assert result.ret == 1
 
 
