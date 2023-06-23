@@ -98,6 +98,20 @@ def run_in_simple_project(testdir: Testdir) -> Callable[..., RunResult]:
 
 
 @pytest.fixture
+def run_in_simple_project_with_no_domain(testdir: Testdir) -> Callable[..., RunResult]:
+    os.environ["LOG_LEVEL"] = "WARNING"
+
+    create_simple_project(testdir.tmpdir)
+    Path(testdir.tmpdir / "domain.yml").unlink()
+
+    def do_run(*args):
+        args = [shutil.which(RASA_EXE)] + list(args)
+        return testdir.run(*args)
+
+    return do_run
+
+
+@pytest.fixture
 def run_in_simple_project_with_model(
     testdir: Testdir, trained_simple_project: Text
 ) -> Callable[..., RunResult]:
