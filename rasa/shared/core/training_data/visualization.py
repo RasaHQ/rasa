@@ -533,17 +533,18 @@ def _remove_auxiliary_nodes(
 
     graph.remove_node(TMP_NODE_ID)
 
-    if not len(list(graph.predecessors(END_NODE_ID))):
+    if not graph.predecessors(END_NODE_ID):
         graph.remove_node(END_NODE_ID)
 
     # remove duplicated "..." nodes after merging
-    ps = set()
+    predecessors_seen = set()
     for i in range(special_node_idx + 1, TMP_NODE_ID):
-        for pred in list(graph.predecessors(i)):
-            if pred in ps:
+        predecessors = graph.predecessors(i)
+        for pred in predecessors:
+            if pred in predecessors_seen:
                 graph.remove_node(i)
-            else:
-                ps.add(pred)
+                break
+        predecessors_seen.update(predecessors)
 
 
 def visualize_stories(
