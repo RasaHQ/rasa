@@ -33,7 +33,10 @@ anonymizing data in flight could have undesirable consequences for the assistant
 ## Architecture Overview
 
 The anonymization of the Rasa event is run through an anonymization pipeline at the end of the dialogue management
-action prediction and execution. The anonymization steps are as follows:
+action prediction and execution. Note that the processing done by the anonymization pipeline is scheduled as a background
+task and does not affect the assistant's response time.
+
+The anonymization steps are as follows:
 1. The Rasa agent will invoke the anonymization pipeline during each user message handling.
 2. The anonymization pipeline will run through a sequence of anonymization rules that are applied to the new events.
 3. The pipeline will publish the anonymized events to the Kafka topic that is mapped to the anonymization rule list in
@@ -147,7 +150,9 @@ following anonymization methods are supported: `text`, `mask`, and `faker`. If n
 the default substitution method is `mask`.
 
 The `value` field is only required for the `text` anonymization method. It specifies the text to be used as the anonymized value.
-If the `value` field is not specified, the original entity value to be anonymized will be replaced with a null value.
+If the `value` field is not specified, the original entity value to be anonymized will be replaced with the entity type
+name between brackets. For example, if the `value` field is not specified for the `PERSON` entity type, the anonymized
+value will be `<PERSON>`.
 
 The `faker` anonymization method uses the [Faker](https://faker.readthedocs.io/en/master/) library to generate fake data.
 By default, the `faker` anonymization method will generate fake data in English unless a localized Presidio
