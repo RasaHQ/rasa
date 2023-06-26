@@ -41,6 +41,9 @@ def _anonymizer(
         "states",
         "entity",
         "token_text",
+        "user_message",
+        "activity",
+        "json_message",
     ]
     anonymization_pipeline = plugin_manager().hook.get_anonymization_pipeline()
 
