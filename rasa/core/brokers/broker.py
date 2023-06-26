@@ -4,6 +4,7 @@ from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union, TypeVar, Type
 
 import aiormq
+import celery
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -38,6 +39,7 @@ class EventBroker:
             aio_pika.exceptions.AMQPConnectionError,
             aiormq.exceptions.ChannelNotFoundEntity,
             *aio_pika.exceptions.CONNECTION_EXCEPTIONS,
+            celery.exceptions.OperationalError
         ) as error:
             raise ConnectionException("Cannot connect to event broker.") from error
 
@@ -101,6 +103,10 @@ async def _create_from_endpoint_config(
         from rasa.core.brokers.kafka import KafkaEventBroker
 
         broker = await KafkaEventBroker.from_endpoint_config(endpoint_config)
+    elif endpoint_config.type.lower() == "celery":
+        from rasa.core.brokers.celery import CeleryEventBroker
+
+        broker = await CeleryEventBroker.from_endpoint_config(endpoint_config)
     else:
         broker = await _load_from_module_name_in_endpoint_config(endpoint_config)
 

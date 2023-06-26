@@ -1,0 +1,6 @@
+event_broker:
+  type: celery
+  broker_url: rediss://:password@localhost:6379/0
+  task_name: tasks.event_logger
+  countdown: 2
+  priority: 1

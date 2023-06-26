@@ -190,6 +190,32 @@ If using the `SASL_SSL` protocol, the endpoints file should look like:
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_sasl_ssl_endpoint.yml)
 ```
 
+## Celery Event Broker
+
+It is possible to use an celery as an event broker. Connections to message brokers are established 
+using celery's existing connection handler, Kombu. Celery allows connections to different brokers, ie 
+Redis, SQS, and RabbitMQ. To explore the connection detail, please see the SQLAlchemy documentation on SQL dialects.
+Adding optional keyword arguments for task calls are also allowed by adding the arguments as in here.
+### Adding a Celery Event Broker Using the Endpoint Configuration
+#### Task is in another code base
+```yaml-rasa title="endpoints.yml"
+event_broker:
+  type: celery
+  broker_url: rediss://:password@localhost:6379/0
+  task_name: tasks.event_logger
+  countdown: 2
+  priority: 1
+```
+#### Rasa has access to the task code 
+```yaml-rasa title="endpoints.yml"
+event_broker:
+  type: celery
+  task_name: tasks.event_logger
+  countdown: 2
+  priority: 1
+```
+
+
 ## SQL Event Broker
 
 It is possible to use an SQL database as an event broker. Connections to databases are established using
