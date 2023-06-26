@@ -141,9 +141,9 @@ or [huggingface](https://huggingface.co/docs/transformers/training) model and in
 
 ### How to populate the rule_lists section
 
-The `rule_lists` section contains a list of anonymization rule lists. Each rule list must have a unique `id` and a list
-of `rules`. Each rule must have an `entity` field and a `substitution` field. The `entity` field specifies the Presidio
-entity type to be anonymized and must be in uppercase.
+The `rule_lists` section contains a list of anonymization rule lists. Each rule list must have a unique `id` of type
+string and a list of `rules`. Each rule must have an `entity` field and a `substitution` field. The `entity` field
+specifies the Presidio entity type to be anonymized and must be in uppercase.
 
 The `substitution` field specifies the anonymization method to be used. Currently, the
 following anonymization methods are supported: `text`, `mask`, and `faker`. If no substitution method is specified,
