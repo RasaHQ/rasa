@@ -84,7 +84,7 @@ def tracker_as_readable_transcript(
             transcript.append(
                 f"{human_prefix}: {sanitize_message_for_prompt(event.text)}"
             )
-        if isinstance(event, BotUttered):
+        elif isinstance(event, BotUttered):
             transcript.append(f"{ai_prefix}: {sanitize_message_for_prompt(event.text)}")
 
     if max_turns:
