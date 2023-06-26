@@ -170,7 +170,7 @@ test-policies: test-marker
 
 test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky)
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
-test-nlu-featurizers: prepare-spacy prepare-mitie prepare-transformers test-marker
+test-nlu-featurizers: prepare-spacy prepare-mitie test-marker
 
 test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky)
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
