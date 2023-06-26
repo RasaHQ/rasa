@@ -23,6 +23,7 @@ Instantiate the package `rasa_sdk_plugins` and initialise the hooks. create an `
 def init_hooks(manager: pluggy.PluginManager) -> None:
     """Initialise hooks into rasa sdk."""
     import sys
+    import rasa_sdk_plugins.your_module
     logger.info("Finding hooks")
     manager.register(sys.modules["rasa_sdk_plugins.your_module"])
 ```
