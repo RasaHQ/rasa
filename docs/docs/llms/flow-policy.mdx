@@ -187,11 +187,11 @@ with the `FlowPolicy`.
 
 A flow can be initiated in several ways:
 
-1. One flow can ["link" to another flow](../flows.mdx#next-next), which will
+1. One flow can ["link" to another flow](../flows.mdx#next-property), which will
    initiate the linked flow and return to the original flow once the linked flow
    completes.
 2. A flow starts when the user message matches the
-   [`user_message` step](../flows.mdx#user-message-user_message) of the flow. A
+   [`user_message` step](../flows.mdx#user-message) of the flow. A
    match is determined by the intent and entities of the user message.
 3. Flows, which are conversational patterns (e.g. correction, resume flow), are
    automatically initiated by the `FlowPolicy` when needed.
