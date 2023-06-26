@@ -97,7 +97,7 @@ corrected question to ensure the updated information is still in line with
 any logical checks along the flow.
 
 If the change had resulted in going down a different path, the user
-would see the the questions and utterances
+would see the questions and utterances
 of this alternate path.
 
 This represents the default behavior in flows. You can adjust this behavior by adapting
@@ -162,4 +162,47 @@ You can override these defaults by defining flows, slots, or responses with the
 respective names shown here. For instance, you could either remove the confirmation for correcting slots or disable slots correction altogether.
 
 ## Cancellations
-_TODO, Not implemented yet._
+Cancellations can happen for a variety of reasons. The user might have changed their
+mind on a whim or due to new information learned during the conversation.
+
+A common correction scenario looks like this:
+```
+User: I want to send some money to Dimitri
+Bot: How much money do you want to send?
+User: One moment, please show me my transactions
+Bot: Here are your latest transactions: ...
+Bot: Let's get back to sending money
+Bot: How much money do you want to send?
+User: Ah, nevermind. I see I have already sent it earlier.
+Bot: Okay, I am cancelling the transfer.
+...
+```
+
+In the above conversation you can see that the bot informed the user about the
+cancellation of the flow. This represents the default behavior in flows.
+You can adjust this behavior by adapting the preconfigured flow called
+`pattern_cancel_flow` which is defined as follows:
+
+```yaml title="domain.yml"
+responses:
+  utter_flow_cancelled_rasa:
+    - text: Okay, stopping the flow {rasa_cancelled_flow}.
+      metadata:
+        rephrase: True
+```
+
+```yaml title="flows.yml"
+flows:
+  pattern_cancel_flow:
+    description: A meta flow that's started when a flow is cancelled.
+
+    steps:
+      - id: "0"
+        action: utter_flow_cancelled_rasa
+```
+
+You can see that this response is using an extra variable, `rasa_cancelled_flow` which
+is filled by the flow policy upon executing the cancel flow pattern. Currently,
+you can only change the cancellation message, but not introduce a confirmation. This is
+on our todo list.
+
