@@ -141,6 +141,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         intent_name, entities = self.parse_action_list(
             action_list, tracker, flows_without_patterns
         )
+        logger.info(f"Predicting {intent_name} with {len(entities)} entities")
         intent = {"name": intent_name, "confidence": 0.90}
         message.set(INTENT, intent, add_to_output=True)
         if len(entities) > 0:
@@ -226,14 +227,16 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         # TODO: assign slot sets to current flow, new flow if any, and other
 
         flow_stack = FlowStack.from_tracker(tracker)
+
         top_flow = flow_stack.top_flow(flows)
+        flows_on_the_stack = {f.flow_id for f in flow_stack.frames}
         top_flow_step = flow_stack.top_flow_step(flows)
 
         # filter start flow actions so that same flow isn't started again
         if top_flow is not None:
             start_flow_actions = [start_flow_action
                                   for start_flow_action in start_flow_actions
-                                  if start_flow_action != top_flow.id]
+                                  if start_flow_action not in flows_on_the_stack]
 
         if top_flow_step is not None and top_flow is not None:
             slots_so_far = {
