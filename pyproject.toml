@@ -151,6 +151,8 @@ confluent-kafka = ">=1.9.2,<3.0.0"
 portalocker = "^2.7.0"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
+openai = "^0.27.7"
+
 [[tool.poetry.dependencies.dask]]
 version = "2022.2.0"
 python = "~=3.7.0"

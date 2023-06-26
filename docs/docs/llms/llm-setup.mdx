@@ -1,0 +1,153 @@
+---
+id: llm-setup
+sidebar_label: Setting up LLMs
+title: Setting up LLMs
+abstract: |
+  Instructions on how to setup and configure OpenAI Large Language Models. Here
+  you'll learn what you need to configure and how you can customize LLMs to work
+  efficiently with your specific use case.
+---
+
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
+
+<RasaLabsLabel />
+
+<RasaLabsBanner />
+
+## Overview
+
+This guide will walk you through the process of configuring Rasa to use OpenAI
+LLMs, including deployments that rely on the Azure OpenAI service.
+
+:::note
+
+At the moment we are focused on supporting OpenAI LLMs, but we are working to
+support other LLMs in the future.
+
+:::
+
+## Prerequisites
+
+Before beginning, make sure that you have:
+
+- Access to OpenAI's services
+- Ability to generate API keys for OpenAI
+
+## Configuration
+
+Configuring LLMs to work with OpenAI involves several steps. The following
+sub-sections outline each of these steps and what you need to do.
+
+### API Token
+
+The API token is a key element that allows your Rasa instance to connect and
+communicate with OpenAI. This needs to be configured correctly to ensure seamless
+interaction between the two.
+
+To configure the API token, follow these steps:
+
+1. If you haven't already, sign up for an account on the OpenAI platform.
+
+2. Navigate to the [OpenAI Key Management page](https://platform.openai.com/account/api-keys),
+   and click on the "Create New Secret Key" button to initiate the process of
+   obtaining your API key.
+
+3. To set the API key as an environment variable, you can use the following command in a
+   terminal or command prompt:
+
+   <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+     ```shell
+     export OPENAI_API_KEY=<your-api-key>
+     ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_KEY <your-api-key>
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
+   Replace `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
+
+### Model Configuration
+
+Rasa allow you to use different models for different components. For example,
+you might use one model for intent classification and another for rephrasing.
+
+To configure models per component, follow these steps described on the
+pages for each component:
+
+1. [Instructions to configure models for intent classification](./llm-intent.mdx)
+2. [Instructions to configure models for rephrasing](./llm-nlg.mdx)
+
+### Additional Configuration for Azure OpenAI Service
+
+For those using Azure OpenAI Service, there are additional parameters that need
+to be configured:
+
+- `openai.api_type`: This should be set to "azure" to indicate the use of Azure
+  OpenAI Service.
+- `openai.api_base`: This should be the URL for your Azure OpenAI instance. An
+  example might look like this: "https://docs-test-001.openai.azure.com/".
+
+
+To configure these parameters, follow these steps:
+
+1. To configure the `openai.api_type` as an environment variable:
+
+   <Tabs groupId="os-dist-api-type" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+     ```shell
+     export OPENAI_API_TYPE="azure"
+     ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_TYPE "azure"
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
+2. To configure the `openai.api_base` as an environment variable:
+
+   <Tabs groupId="os-dist-api-base" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+      ```shell
+      export OPENAI_API_BASE=<your-azure-openai-instance-url>
+      ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_BASE <your-azure-openai-instance-url>
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
+
+## Other LLM providers
+
+We're continually working to support more LLMs in the future. If you have any
+specific requests or need assistance with setup, feel free to reach out to us.
+
+Remember, your feedback helps us improve and provide the features and support
+you need.

@@ -106,3 +106,6 @@ DIAGNOSTIC_DATA = "diagnostic_data"
 
 RESPONSE_CONDITION = "condition"
 CHANNEL = "channel"
+
+
+OPENAI_API_KEY_ENV_VAR = "OPENAI_API_KEY"
