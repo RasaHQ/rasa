@@ -81,6 +81,8 @@ Specifically, we collect the following information for all telemetry events:
 - General OS level information (operating system, number of CPUs, number of
   GPUs and whether the command is run inside a CI)
 - Current Rasa and Python version
+- Whether the command is run inside a Docker container
+- Hash of the license (if you are using Rasa Pro)
 
 Here is an example report that shows the data reported to Rasa after running
 `rasa train`:
@@ -117,7 +119,9 @@ Here is an example report that shows the data reported to Rasa after running
     "project": "a0a7178e6e5f9e6484c5cfa3ea4497ffc0c96d0ad3f3ad8e9399a1edd88e3cf4",
     "python": "3.7.5",
     "rasa_open_source": "2.0.0",
-    "cpu": 16
+    "cpu": 16,
+    "docker": false,
+    "license_hash": "t1a7170e6e5f9e6484c5cfa3ea4497ffc0c96a0ad3f3ad8e9399adadd88e3cf5"
   }
 }
 ```

@@ -143,3 +143,8 @@ def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
 @hookspec(firstresult=True)  # type: ignore[misc]
 def get_anonymization_pipeline() -> Optional[Any]:
     """Hook specification for getting the anonymization pipeline."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def get_license_hash() -> Optional[Text]:
+    """Hook specification for getting the license hash."""
