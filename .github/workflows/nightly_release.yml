@@ -23,6 +23,7 @@ jobs:
         run: |
           python3 -m pip install pluggy
           python3 -m pip install ruamel.yaml
+          python3 -m pip install numpy
 
       - name: Compose tag name
         id: set_tagname
