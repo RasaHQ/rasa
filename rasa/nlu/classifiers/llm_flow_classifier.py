@@ -161,7 +161,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         return message
 
     @staticmethod
-    def is_hallucinated_value(value: str):
+    def is_hallucinated_value(value: str) -> bool:
         return "_" in value or value in {
             "[missing information]",
             "[missing]",
