@@ -1,9 +1,0 @@
-bert-base-chinese
-openai-gpt
-gpt2
-xlnet-base-cased
-bert-base-uncased
-roberta-base
-distilbert-base-uncased
-camembert-base
-sentence-transformers/all-MiniLM-L6-v2

@@ -121,9 +121,8 @@ endif
 	rm data/MITIE*.bz2
 
 prepare-transformers:
-	if [ $(CI) ]; then TRANSFORMERS_LIST="data/test/hf_transformers_models_ci.txt"; else TRANSFORMERS_LIST="data/test/hf_transformers_models.txt"; fi ;\
-	while read -r MODEL; do poetry run python scripts/download_transformer_model.py $$MODEL ; done < $$TRANSFORMERS_LIST
-
+	while read -r MODEL; do poetry run python scripts/download_transformer_model.py $$MODEL ; done < data/test/hf_transformers_models.txt
+	if ! [ $(CI) ]; then poetry run python scripts/download_transformer_model.py rasa/LaBSE; fi
 prepare-tests-macos:
 	brew install wget graphviz || true
 
