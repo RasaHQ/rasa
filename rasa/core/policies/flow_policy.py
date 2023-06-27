@@ -20,7 +20,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
-    ACTION_SEND_TEXT,
+    ACTION_SEND_TEXT_NAME,
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
     PREVIOUS_FLOW_SLOT,
@@ -949,7 +949,7 @@ class FlowExecutor:
 
             generated = llm.generate_text_openai_chat(prompt)
             return ActionPrediction(
-                ACTION_SEND_TEXT, 1.0, metadata={"message": {"text": generated}}
+                ACTION_SEND_TEXT_NAME, 1.0, metadata={"message": {"text": generated}}
             )
         elif isinstance(step, EndFlowStep):
             # this is the end of the flow, so we'll pop it from the stack
