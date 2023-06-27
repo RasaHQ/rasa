@@ -121,11 +121,8 @@ endif
 	rm data/MITIE*.bz2
 
 prepare-transformers:
-	if [ $(OS) = "Windows_NT" ]; then HOME_DIR="$(HOMEDRIVE)$(HOMEPATH)"; else HOME_DIR=$(HOME); fi;\
-	CACHE_DIR=$$HOME_DIR/.cache/torch/transformers;\
-	mkdir -p "$$CACHE_DIR";\
-	i=0;\
-	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget -nv $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
+	if [ $(CI) ] TRANSFORMERS_LIST="data/test/hf_transformers_models_ci.txt"; else TRANSFORMERS_LIST="data/test/hf_transformers_models.txt"; fi
+	while read -r model; do ; python -c 'from huggingface_hub import snapshot_download; snapshot_download(repo_id="$(model)", allow_patterns=["*.txt", "*.json", "*.h5"])'; done < $TRANSFORMERS_LIST
 
 prepare-tests-macos:
 	brew install wget graphviz || true

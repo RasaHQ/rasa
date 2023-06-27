@@ -1,4 +1,3 @@
-rasa/LaBSE
 bert-base-chinese
 openai-gpt
 gpt2
