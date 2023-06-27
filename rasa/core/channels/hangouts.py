@@ -1,4 +1,5 @@
 import logging
+import structlog
 import google.auth.transport.requests
 import cachecontrol
 import requests
@@ -15,6 +16,7 @@ from sanic.exceptions import SanicException
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 CHANNEL_NAME = "hangouts"
 CERTS_URL = (
@@ -319,14 +321,9 @@ class HangoutsInput(InputChannel):
                     )
                 )
             except CancelledError:
-                logger.error(
-                    "Message handling timed out for " "user message '{}'.".format(text)
-                )
-            except Exception as e:
-                logger.exception(
-                    f"An exception occurred while handling user message: {e}, "
-                    f"text: {text}"
-                )
+                structlogger.error("hangouts.message.blueprint", text=text)
+            except Exception:
+                structlogger.exception("hangouts.message.blueprint.failure", text=text)
 
             return response.json(collector.messages)
 

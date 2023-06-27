@@ -312,6 +312,12 @@ You also need to add those as entities and slots to the domain file.
 
 If the user wants to obtain specific information about an object, the request should include both the object and
 attribute of interest.
+
+:::info New in 3.6
+The user is not required to query the knowledge base to list any kind of object prior to this.
+The `ActionQueryKnowledgeBase` will extract the object type from the user's request and query the knowledge base for an attribute of the object. 
+:::
+
 For example, if the user asks something like:
 
 What is the cuisine of Berlin Burrito Company?
@@ -328,7 +334,8 @@ intents:
     - What is the [cuisine](attribute) of [Berlin Burrito Company](restaurant)?
 ```
 
-Make sure to add the object type, “restaurant,” to the domain file as entity and slot.
+Make sure to add the object type, “restaurant,” to the domain file as entity and slot. This will support `ActionQueryKnowledgeBase`
+to extract the object type of the object the user is interested in.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="resolve-mentions"></a>
 
@@ -568,7 +575,7 @@ The implementation of the `InMemoryKnowledgeBase` itself can be found in the
 
 If you have more data or if you want to use a more complex data structure that, for example, involves relations between
 different objects, you can create your own knowledge base implementation.
-Just inherit `KnowledgeBase` and implement the methods `get_objects()`, `get_object()`, and
+Just inherit `KnowledgeBase` and implement the methods `get_objects()`, `get_object()`, `get_object_types()` and
 `get_attributes_of_object()`. The [knowledge base code](https://github.com/RasaHQ/rasa-sdk/tree/main/rasa_sdk/knowledge_base/)
 provides more information on what those methods should do.
 
