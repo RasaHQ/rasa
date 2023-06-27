@@ -7,3 +7,4 @@ bert-base-uncased
 roberta-base
 distilbert-base-uncased
 camembert-base
+sentence-transformers/all-MiniLM-L6-v2
