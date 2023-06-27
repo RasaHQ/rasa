@@ -122,7 +122,7 @@ endif
 
 prepare-transformers:
 	if [ $(CI) ]; then TRANSFORMERS_LIST="data/test/hf_transformers_models_ci.txt"; else TRANSFORMERS_LIST="data/test/hf_transformers_models.txt"; fi ;\
-	while read -r model; do python -c 'from huggingface_hub import snapshot_download; snapshot_download(repo_id="$(model)", allow_patterns=["*.txt", "*.json", "*.h5", "*.model"])'; done < $(TRANSFORMERS_LIST)
+	while read -r MODEL; do python -c 'from huggingface_hub import snapshot_download; snapshot_download(repo_id="$$MODEL", allow_patterns=["*.txt", "*.json", "*.h5", "*.model"])'; done < $$TRANSFORMERS_LIST
 
 prepare-tests-macos:
 	brew install wget graphviz || true
