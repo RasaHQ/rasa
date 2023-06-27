@@ -162,9 +162,12 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     @staticmethod
     def is_hallucinated_value(value: str):
-        return ("_" in value or
-                value in {"[missing information]", "[missing]", "None", "undefined"}
-                )
+        return "_" in value or value in {
+            "[missing information]",
+            "[missing]",
+            "None",
+            "undefined",
+        }
 
     @classmethod
     def parse_action_list(
@@ -234,9 +237,11 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         # filter start flow actions so that same flow isn't started again
         if top_flow is not None:
-            start_flow_actions = [start_flow_action
-                                  for start_flow_action in start_flow_actions
-                                  if start_flow_action not in flows_on_the_stack]
+            start_flow_actions = [
+                start_flow_action
+                for start_flow_action in start_flow_actions
+                if start_flow_action not in flows_on_the_stack
+            ]
 
         if top_flow_step is not None and top_flow is not None:
             slots_so_far = {

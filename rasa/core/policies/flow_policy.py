@@ -15,7 +15,6 @@ from pypred import Predicate
 from rasa.shared.constants import FLOW_PREFIX, CORRECTION_INTENT, CANCEL_FLOW_INTENT
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
-    ENTITY_ATTRIBUTE_TYPE,
     INTENT_NAME_KEY,
 )
 from rasa.shared.core.constants import (
