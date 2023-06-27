@@ -11,6 +11,7 @@ abstract: |
 import RasaLabsLabel from "@theme/RasaLabsLabel";
 import RasaLabsBanner from "@theme/RasaLabsBanner";
 import intentlessPolicyInteraction from "./intentless-policy-interaction.png";
+import intentlessMeaningCompounds from "./intentless-meaning-compounds.png";
 
 <RasaLabsLabel />
 
@@ -24,6 +25,16 @@ existing rasa components and make it easier:
 - to handle conversations where messages
   [don't fit intents](https://rasa.com/blog/were-a-step-closer-to-getting-rid-of-intents/)
   and conversation context is necessary to choose a course of action.
+
+Using the `IntentlessPolicy`, our bot already provides a good 
+question-answering experience, understanding many different ways 
+that users could phrase their questions - even across a series of user messages:
+
+<Image
+  img={intentlessMeaningCompounds}
+  caption="Example of a question-answering experience"
+  alt=""
+/>
 
 To provide the appropriate guard rails and steering for the LLM you can
 
@@ -43,7 +54,7 @@ extending it.
 handle some advanced linguistic phenomena out of the box.
 
 The examples in the webinar recording are also part of the end-to-end tests
-defined in this repo (`tests/e2e_test_stories.yml`).
+defined in the [example repository](https://github.com/RasaHQ/starter-pack-intentless-policy) in (`tests/e2e_test_stories.yml`).
 
 ## Adding the Intentless Policy to your bot
 

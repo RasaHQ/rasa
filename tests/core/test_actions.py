@@ -23,6 +23,7 @@ from rasa.core.actions.action import (
     ActionRestart,
     ActionBotResponse,
     ActionRetrieveResponse,
+    ActionSendText,
     RemoteAction,
     ActionSessionStart,
     ActionEndToEndResponse,
@@ -3088,3 +3089,24 @@ async def test_action_extract_slots_active_loop_none_does_not_set_slot_in_form()
         domain,
     )
     assert events == []
+
+
+async def test_action_send_text(
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
+):
+    metadata = {"message": {"text": "foobar"}}
+    events = await ActionSendText().run(
+        default_channel, template_nlg, template_sender_tracker, domain, metadata
+    )
+
+    assert events == [BotUttered("foobar")]
+
+
+async def test_action_send_text_handles_missing_metadata(
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
+):
+    events = await ActionSendText().run(
+        default_channel, template_nlg, template_sender_tracker, domain
+    )
+
+    assert events == [BotUttered("")]
