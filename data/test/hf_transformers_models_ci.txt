@@ -4,3 +4,5 @@ gpt2
 xlnet-base-cased
 bert-base-uncased
 roberta-base
+distilbert-base-uncased
+camembert-base
