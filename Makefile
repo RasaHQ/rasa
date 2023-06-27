@@ -167,7 +167,7 @@ test-policies: test-marker
 
 test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky)
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
-test-nlu-featurizers: prepare-spacy prepare-mitie test-marker
+test-nlu-featurizers: prepare-spacy prepare-mitie prepare-transformers test-marker
 
 test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky)
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
@@ -175,7 +175,7 @@ test-nlu-predictors: prepare-spacy prepare-mitie test-marker
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
-test-full-model-training: prepare-spacy prepare-mitie test-marker
+test-full-model-training: prepare-spacy prepare-mitie prepare-transformers test-marker
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
