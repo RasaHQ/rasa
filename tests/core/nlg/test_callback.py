@@ -11,7 +11,7 @@ def test_nlg_request_format(
         output_channel="test",
     ) == {
         "response": "utter_one_id",
-        "ids": [],
+        "id": "",
         "arguments": {},
         "channel": {"name": "test"},
         "tracker": default_tracker.current_state(EventVerbosity.ALL),
@@ -28,7 +28,7 @@ def test_nlg_request_format_with_arguments(
         some_arg="some_value",
     ) == {
         "response": "utter_one_id",
-        "ids": [],
+        "id": "",
         "arguments": {"some_arg": "some_value"},
         "channel": {"name": "test"},
         "tracker": default_tracker.current_state(EventVerbosity.ALL),
@@ -42,10 +42,10 @@ def test_nlg_request_format_with_response_ids(
         utter_action="utter_one_id",
         tracker=default_tracker,
         output_channel="test",
-        response_ids=["1"],
+        response_id="1",
     ) == {
         "response": "utter_one_id",
-        "ids": ["1"],
+        "id": "1",
         "arguments": {},
         "channel": {"name": "test"},
         "tracker": default_tracker.current_state(EventVerbosity.ALL),

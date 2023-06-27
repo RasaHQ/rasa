@@ -1,8 +1,8 @@
 import logging
-from typing import Text, Any, Dict, Optional
+from typing import List, Text, Any, Dict, Optional
 
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.nlg.generator import NaturalLanguageGenerator
+from rasa.core.nlg.generator import NaturalLanguageGenerator, ResponseVariationFilter
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
@@ -39,11 +39,11 @@ def nlg_request_format(
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
     tracker_state = tracker.current_state(EventVerbosity.ALL)
-    response_ids = kwargs.pop(RESPONSE_ID_KEY, [])
+    response_id = kwargs.pop("response_id", "")
 
     return {
         "response": utter_action,
-        "ids": response_ids,
+        "id": response_id,
         "arguments": kwargs,
         "tracker": tracker_state,
         "channel": {"name": output_channel},
@@ -71,6 +71,12 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         **kwargs: Any,
     ) -> Dict[Text, Any]:
         """Retrieve a named response from the domain using an endpoint."""
+        domain_responses = kwargs.pop("domain_responses")
+        response_id = self.fetch_response_id(
+            utter_action, tracker, output_channel, domain_responses
+        )
+        kwargs["response_id"] = response_id
+
         body = nlg_request_format(utter_action, tracker, output_channel, **kwargs)
 
         logger.debug(
@@ -108,3 +114,25 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                 f"`nlg_response_format_spec` function from this same module: "
                 f"https://github.com/RasaHQ/rasa/blob/main/rasa/core/nlg/callback.py"
             )
+
+    @staticmethod
+    def fetch_response_id(
+        utter_action: Text,
+        tracker: DialogueStateTracker,
+        output_channel: Text,
+        domain_responses: Optional[Dict[Text, List[Dict[Text, Any]]]],
+    ) -> Text:
+        if domain_responses is None:
+            logger.debug("Failed to fetch response id. Responses not provided.")
+            return ""
+
+        response_filter = ResponseVariationFilter(domain_responses)
+        response_id = response_filter.get_response_variation_id(
+            utter_action, output_channel, tracker
+        )
+
+        if response_id is None:
+            logger.debug(f"Failed to fetch response id for action '{utter_action}'.")
+            return ""
+
+        return response_id

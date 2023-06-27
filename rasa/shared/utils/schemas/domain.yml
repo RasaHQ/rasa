@@ -44,7 +44,7 @@ mapping:
               send_domain:
                 type: "bool"
   responses:
-    # see utils/schemas/responses.yml
+    # see shared/nlu/training_data/schemas/responses.yml
     include: responses
 
   slots:
