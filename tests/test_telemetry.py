@@ -36,7 +36,7 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
 
 @pytest.fixture(autouse=True)
 def patch_telemetry_context() -> Generator[None, None, None]:
-    """Use a new telemetry context for each test to avoid tests influencing each other."""
+    """Use a telemetry context for each test to avoid tests influencing each other."""
     defaut_context = telemetry.TELEMETRY_CONTEXT
     telemetry.TELEMETRY_CONTEXT = None
     yield
