@@ -128,7 +128,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         response_filter = ResponseVariationFilter(domain_responses)
         response_id = response_filter.get_response_variation_id(
-            utter_action, output_channel, tracker
+            utter_action, tracker, output_channel
         )
 
         if response_id is None:
