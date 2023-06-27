@@ -121,7 +121,7 @@ endif
 	rm data/MITIE*.bz2
 
 prepare-transformers:
-	if [ $(CI) ] TRANSFORMERS_LIST="data/test/hf_transformers_models_ci.txt"; else TRANSFORMERS_LIST="data/test/hf_transformers_models.txt"; fi
+	if [ $(CI) ]; then TRANSFORMERS_LIST="data/test/hf_transformers_models_ci.txt"; else TRANSFORMERS_LIST="data/test/hf_transformers_models.txt"; fi
 	while read -r model; do ; python -c 'from huggingface_hub import snapshot_download; snapshot_download(repo_id="$(model)", allow_patterns=["*.txt", "*.json", "*.h5"])'; done < $TRANSFORMERS_LIST
 
 prepare-tests-macos:
