@@ -150,10 +150,10 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
 
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
-            self.model_weights, cache_dir=self.cache_dir
+            self.model_weights, cache_dir=self.cache_dir, local_files_only=True
         )
         self.model = model_class_dict[self.model_name].from_pretrained(
-            self.model_weights, cache_dir=self.cache_dir
+            self.model_weights, cache_dir=self.cache_dir, local_files_only=True
         )
 
         # Use a universal pad token since all transformer architectures do not have a
