@@ -8,7 +8,6 @@ abstract: |
   of the conversation into account.
 ---
 
-import llmNlgExample from "./llm-nlg-example.png";
 import RasaLabsLabel from "@theme/RasaLabsLabel";
 import RasaLabsBanner from "@theme/RasaLabsBanner";
 
@@ -31,19 +30,43 @@ import RasaLabsBanner from "@theme/RasaLabsBanner";
 ## Demo
 
 The following example shows a demo of a chatbot using an LLM to rephrase static
-response templates. The right and left hand side of the conversation show the
-same bot, the only difference is that the left hand side uses an LLM to rephrase
-the response templates.
+response templates. The first example is from an assistant without rephrasing. 
+The second example is exactly the same assistant, with rephrasing enabled.
 
-<Image
-  img={llmNlgExample}
-  caption="Bot response with and without rephrasing enabled"
-  alt=""
-/>
+<Chat caption="No rephrasing: Chatbot handling out of scope requests">
+  <ChatUserText>can you order me a pizza?</ChatUserText>
+  <ChatBotText>
+    Sorry, I am not sure how to respond to that. Type "help" for assistance.
+  </ChatBotText>
+  <ChatUserText>can you order italian food instead</ChatUserText>
+  <ChatBotText>
+    Sorry, I am not sure how to respond to that. Type "help" for assistance.
+  </ChatBotText>
+</Chat>
 
 Rephrasing messages can significantly improve the user experience and make users
-feel understood. Consider the different ways a bot might respond to an out of
-scope request like “can you order me a pizza?”.
+feel understood:
+
+<Chat caption="LLM rephrasing: Chatbot with improved out of scope responses">
+  <ChatUserText>can you order me a pizza?</ChatUserText>
+  <ChatBotText>
+    I'm not sure hot to help with that, but feel free to type "help" and I'll be
+    happy to assist with other requests.
+  </ChatBotText>
+  <ChatUserText>can you order italian food instead</ChatUserText>
+  <ChatBotText>
+    Unfortunately, I don't have the capability to order Italian food. However, I
+    can provide help with other requests. Feel free to type "help" for more
+    information.
+  </ChatBotText>
+</Chat>
+
+Behind the scenes, the conversation state is the same in both examples. The
+difference is that the LLM is used to rephrase the bot's response in the second
+example.
+
+Consider the different ways a bot might respond to an out of
+scope request like “can you order me a pizza?”:
 
 | response                                                                                                   | comment                                |
 | ---------------------------------------------------------------------------------------------------------- | -------------------------------------- |
@@ -55,9 +78,9 @@ The second and third examples would be difficult to achieve with templates.
 
 :::note Unchanged interaction flow
 
-Note that the way the **bot** behaves is not affected by the rephrasing. Stories,
-rules, and forms will behave exactly the same way. But do be aware that **user**
-behaviour will often change as a result of the rephrasing. We recommend
+Note that the way the **bot** behaves is not affected by the rephrasing.
+Stories, rules, and forms will behave exactly the same way. But do be aware that
+**user** behaviour will often change as a result of the rephrasing. We recommend
 regularly reviewing conversations to understand how the user experience is
 impacted.
 
@@ -132,9 +155,9 @@ Defaults to `text-davinci-003`. The model name needs to be set to a generative
 model using the completions API of
 [OpenAI](https://platform.openai.com/docs/guides/gpt/completions-api).
 
-If you want to use Azure OpenAI Service, you can configure the necessary 
-parameters as described in the 
-[Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service) 
+If you want to use Azure OpenAI Service, you can configure the necessary
+parameters as described in the
+[Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service)
 section.
 
 ### Temperature
@@ -153,6 +176,42 @@ Defaults to `0.3` (this is the default from OpenAI). The temperature is a value
 between 0 and 2 that controls the diversity of the generated responses. Lower
 temperatures result in more predictable responses, while higher temperatures
 result in more variable responses.
+
+#### Example using different temperatures
+
+- no rephrasing enabled:
+  <Chat caption="original conversation">
+    <ChatUserText>can you order me a pizza?</ChatUserText>
+    <ChatBotText>
+      Sorry, I am not sure how to respond to that. Type "help" for assistance.
+    </ChatBotText>
+  </Chat>
+- rephrasing with temperature 0.3:
+  <Chat caption="temperature 0.3">
+    <ChatUserText>can you order me a pizza?</ChatUserText>
+    <ChatBotText>
+      I'm sorry, I don't know how to do that. Could you type "help" for more
+      information?
+    </ChatBotText>
+  </Chat>
+- rephrasing with temperature 0.7:
+  <Chat caption="temperature 0.7">
+    <ChatUserText>can you order me a pizza?</ChatUserText>
+    <ChatBotText>
+      I'm sorry, I don't understand what you need. If you need help, type
+      "help".
+    </ChatBotText>
+  </Chat>
+- rephrasing with temperature 2.0:
+  <Chat caption="temperature 2.0">
+    <ChatUserText>can you order me a pizza?</ChatUserText>
+    <ChatBotText>
+      Sorry, I'm not quite sure how to help you with that. Can I direct you to
+      our help faq instead?
+    </ChatBotText>
+  </Chat>
+  This examples shows that the temperature is set to high: The response will lead
+  to a user response that is likely not covered by the training data.
 
 ### Prompt
 
@@ -218,18 +277,18 @@ responses:
 The LLM uses the OpenAI API to generate rephrased responses. This means that
 your bot's responses are sent to OpenAI's servers for rephrasing.
 
-Generated responses are send back to your bot's users. The following threat 
+Generated responses are send back to your bot's users. The following threat
 vectors should be considered:
 
 - **Privacy**: The LLM sends your bot's responses to OpenAI's servers for
-  rephrasing. By default, the used prompt templates include a transcript of 
-  the conversation. Slot values are not included.
+  rephrasing. By default, the used prompt templates include a transcript of the
+  conversation. Slot values are not included.
 - **Hallucination**: The LLM is a generative model that can generate responses
   that are not based on the original template. This can lead to responses that
   are not appropriate for your bot's users.
-- **Prompt exposure**: Users can use crafted messages to expose the prompt
-  used for generation. The prompt should always only contain information that
-  you are comfortable sharing with your bot's user.
+- **Prompt exposure**: Users can use crafted messages to expose the prompt used
+  for generation. The prompt should always only contain information that you are
+  comfortable sharing with your bot's user.
 
 ## Observations
 
