@@ -86,6 +86,7 @@ from rasa.shared.core.constants import (
     ACTION_TWO_STAGE_FALLBACK_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
     RULE_SNIPPET_ACTION_NAME,
+    ACTION_SEND_TEXT_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
@@ -140,7 +141,7 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 16
+    assert len(instantiated_actions) == 17
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -152,11 +153,12 @@ def test_domain_action_instantiation():
     assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
     assert instantiated_actions[9].name() == ACTION_UNLIKELY_INTENT_NAME
     assert instantiated_actions[10].name() == ACTION_BACK_NAME
-    assert instantiated_actions[11].name() == RULE_SNIPPET_ACTION_NAME
-    assert instantiated_actions[12].name() == ACTION_EXTRACT_SLOTS
-    assert instantiated_actions[13].name() == "my_module.ActionTest"
-    assert instantiated_actions[14].name() == "utter_test"
-    assert instantiated_actions[15].name() == "utter_chitchat"
+    assert instantiated_actions[11].name() == ACTION_SEND_TEXT_NAME
+    assert instantiated_actions[12].name() == RULE_SNIPPET_ACTION_NAME
+    assert instantiated_actions[13].name() == ACTION_EXTRACT_SLOTS
+    assert instantiated_actions[14].name() == "my_module.ActionTest"
+    assert instantiated_actions[15].name() == "utter_test"
+    assert instantiated_actions[16].name() == "utter_chitchat"
 
 
 @pytest.mark.parametrize(
