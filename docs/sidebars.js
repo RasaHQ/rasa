@@ -245,9 +245,10 @@ module.exports = {
         },
         {
             type: 'category',
-            label: 'Change Log',
+            label: 'Release Notes & Change Log',
             collapsed: true,
             items: [
+                'rasa-pro-release-notes',
                 'changelog',
                 'sdk_changelog',
                 'compatibility-matrix',

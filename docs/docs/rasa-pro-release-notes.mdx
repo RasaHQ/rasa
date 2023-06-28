@@ -1,0 +1,61 @@
+---
+id: rasa-pro-release-notes
+sidebar_label: Rasa Pro Release Notes
+title: Rasa Pro Release Notes
+---
+
+## Rasa Pro 3.6
+
+### Rasa Plus 3.6
+
+#### Features
+- Something about PII
+- Something about Analytics Markers
+- Something about Docker ARM support
+
+#### Deprecations and Removal
+- Removed Python 3.7 support as [it reaches its end of life in June 2023](https://devguide.python.org/versions/)
+
+### Rasa Pro Services 3.1
+
+#### Features
+- Something about Analytics Markers
+
+## Rasa Pros 3.5
+
+### Rasa Plus 3.5
+
+#### Features
+- End-to-end testing is an enhanced and comprehensive CLI-based testing tool that allows you to test conversation scenarios with different pre-configured contexts, execute custom actions, verify response texts or names, and assert when slots are filled. It is available ysing the new `rasa test e2e` command.
+- You can now store your assistant's secrets in an external credentials manager. In this release, Rasa Pro currently supports credentials manager for the Tracker Store with HashiCorp Vault.
+
+### Rasa Pro Services 3.0
+
+*No significant change from last minor version.*
+
+## Rasa Pro 3.4
+
+### Rasa Plus 3.4
+
+#### Features
+- Use a new IVR Channel to connect your assistant to AudioCodes VoiceAI Connect.
+
+#### Improvements
+- Rasa Pro now supports Pyhthon 3.10.
+
+### Rasa Pro Services 3.0
+
+*No significant change from last minor version.*
+
+## Rasa Pro 3.3
+
+### Rasa Plus 3.3
+
+#### Features
+- Tracing capabilities for your Rasa Pro assistant. Distributed tracing tracks requests as they flow through a distributed system (in this case: a Rasa assistant), sending data about the requests to a tracing backend which collects all trace data and enables inspecting it. With this version of the Tracing feature, Rasa Pro supports OpenTelemetry.
+- `ConcurrentRedisLockStore` is a new lock store that uses Redis as a persistence layer and is safe for use with multiple Rasa server replicas.
+
+### Rasa Pro Services 3.0
+
+#### Features
+- Analytics Data Pipeline helps visualize and process Rasa assistant metrics in the tooling (BI tools, data warehouses) of your choice. Visualizations and analysis of the production assistant and its conversations allow you to assess ROI and improve the performance of the assistant over time.
