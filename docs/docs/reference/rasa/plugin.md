@@ -172,3 +172,15 @@ def get_license_hash() -> Optional[Text]
 
 Hook specification for getting the license hash.
 
+#### after\_server\_stop
+
+```python
+@hookspec
+def after_server_stop() -> None
+```
+
+Hook specification for stopping the server.
+
+Use this hook to de-initialize any resources that require explicit cleanup like,
+thread shutdown, closing connections, etc.
+
