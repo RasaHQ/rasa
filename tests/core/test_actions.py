@@ -818,9 +818,24 @@ def domain_with_response_ids() -> Domain:
     return domain
 
 
-@pytest.fixture
-def mock_message() -> Dict[Text, Any]:
-    return {"text": "test", "response_ids": ["1"]}
+async def test_response_with_response_id(
+    default_channel, domain_with_response_ids: Domain
+) -> None:
+    nlg = TemplatedNaturalLanguageGenerator(domain_with_response_ids.responses)
+
+    events = await ActionBotResponse("utter_one_id").run(
+        default_channel,
+        nlg,
+        DialogueStateTracker("response_id", slots=[]),
+        domain_with_response_ids,
+    )
+
+    assert events == [
+        BotUttered(
+            "test",
+            metadata={"id": "1", "utter_action": "utter_one_id"},
+        )
+    ]
 
 
 async def test_action_back(

@@ -201,7 +201,7 @@ class ResponseVariationFilter:
                 if response_variation_id in response_ids:
                     rasa.shared.utils.io.raise_warning(
                         f"Duplicate response id '{response_variation_id}' "
-                        f"defined in domain."
+                        f"defined in the domain."
                     )
                     return False
 
