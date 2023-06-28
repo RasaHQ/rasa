@@ -1,4 +1,5 @@
 import inspect
+import copy
 import logging
 import structlog
 import os
@@ -204,7 +205,7 @@ class MessageProcessor:
             "processor.extract.slots",
             action_extract_slot=ACTION_EXTRACT_SLOTS,
             len_extraction_events=len(extraction_events),
-            rasa_events=extraction_events,
+            rasa_events=copy.deepcopy(extraction_events),
         )
 
         return tracker
@@ -654,7 +655,9 @@ class MessageProcessor:
             [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
         )
         if slot_values.strip():
-            structlogger.debug("processor.slots.log", slot_values=slot_values)
+            structlogger.debug(
+                "processor.slots.log", slot_values=copy.deepcopy(slot_values)
+            )
 
     def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
         """Warns the user if the NLU parse data contains unrecognized features.
@@ -737,9 +740,9 @@ class MessageProcessor:
 
         structlogger.debug(
             "processor.message.parse",
-            parse_data_text=parse_data["text"],
+            parse_data_text=copy.deepcopy(parse_data["text"]),
             parse_data_intent=parse_data["intent"],
-            parse_data_entities=parse_data["entities"],
+            parse_data_entities=copy.deepcopy(parse_data["entities"]),
         )
 
         self._check_for_unseen_features(parse_data)
@@ -1040,7 +1043,7 @@ class MessageProcessor:
         if not action_was_rejected_manually:
             structlogger.debug(
                 "processor.actions.policy_prediction",
-                prediction_events=prediction.events,
+                prediction_events=copy.deepcopy(prediction.events),
             )
             tracker.update_with_events(prediction.events, self.domain)
 
@@ -1048,7 +1051,9 @@ class MessageProcessor:
             tracker.update(action.event_for_successful_execution(prediction))
 
         structlogger.debug(
-            "processor.actions.log", action_name=action.name(), rasa_events=events
+            "processor.actions.log",
+            action_name=action.name(),
+            rasa_events=copy.deepcopy(events),
         )
         tracker.update_with_events(events, self.domain)
 
