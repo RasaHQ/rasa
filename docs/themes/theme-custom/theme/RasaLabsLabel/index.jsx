@@ -5,7 +5,7 @@ import styles from './styles.module.css';
 
 function RasaLabsLabel({isLoading, ...props}) {
   return (
-      <div className={clsx(styles.label)}>Rasa Labs program</div>
+      <div className={clsx(styles.label)}>Rasa Labs</div>
   )
 }
 

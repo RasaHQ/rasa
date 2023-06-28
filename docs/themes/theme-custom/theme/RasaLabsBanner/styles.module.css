@@ -13,3 +13,7 @@
     background-color: var(--ifm-color-gray-500);
     cursor: default;
 }
+
+.titleExtension {
+    text-transform: none !important;
+}
