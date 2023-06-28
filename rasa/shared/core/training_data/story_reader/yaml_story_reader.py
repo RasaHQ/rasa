@@ -1,3 +1,4 @@
+import copy
 import functools
 import json
 from json import JSONDecodeError
@@ -628,7 +629,9 @@ class YAMLStoryReader(StoryReader):
         # message text did start with the special prefix -- however, a user might
         # just have decided to start their text this way.
         if not match:
-            structlogger.warning("message.parsing.failed", user_text=user_text)
+            structlogger.warning(
+                "message.parsing.failed", user_text=copy.deepcopy(user_text)
+            )
             return message
 
         # Extract attributes from the match - and validate it via the domain.

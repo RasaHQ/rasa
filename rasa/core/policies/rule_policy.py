@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 import functools
 import logging
 import structlog
@@ -1022,7 +1023,9 @@ class RulePolicy(MemoizationPolicy):
         )
 
         current_states = self.format_tracker_states(states)
-        structlogger.debug("rule_policy.actions.find", current_states=current_states)
+        structlogger.debug(
+            "rule_policy.actions.find", current_states=copy.deepcopy(current_states)
+        )
 
         # Tracks if we are returning after an unhappy loop path. If this becomes `True`
         # the policy returns an event which notifies the loop action that it
