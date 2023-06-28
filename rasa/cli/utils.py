@@ -233,11 +233,18 @@ def validate_files(
     if stories_only:
         all_good = _validate_story_structure(validator, max_history, fail_on_warnings)
     else:
-        all_good = (
-            _validate_domain(validator)
-            and _validate_nlu(validator, fail_on_warnings)
-            and _validate_story_structure(validator, max_history, fail_on_warnings)
+        if importer.get_domain().is_empty():
+            rasa.shared.utils.cli.print_error_and_exit(
+                "Encountered empty domain during validation."
+            )
+
+        valid_domain = _validate_domain(validator)
+        valid_nlu = _validate_nlu(validator, fail_on_warnings)
+        valid_stories = _validate_story_structure(
+            validator, max_history, fail_on_warnings
         )
+
+        all_good = valid_domain and valid_nlu and valid_stories
 
     validator.warn_if_config_mandatory_keys_are_not_set()
 
@@ -249,12 +256,17 @@ def validate_files(
 
 
 def _validate_domain(validator: "Validator") -> bool:
+    valid_domain_validity = validator.verify_domain_validity()
+    valid_actions_in_stories_rules = validator.verify_actions_in_stories_rules()
+    valid_forms_in_stories_rules = validator.verify_forms_in_stories_rules()
+    valid_form_slots = validator.verify_form_slots()
+    valid_slot_mappings = validator.verify_slot_mappings()
     return (
-        validator.verify_domain_validity()
-        and validator.verify_actions_in_stories_rules()
-        and validator.verify_forms_in_stories_rules()
-        and validator.verify_form_slots()
-        and validator.verify_slot_mappings()
+        valid_domain_validity
+        and valid_actions_in_stories_rules
+        and valid_forms_in_stories_rules
+        and valid_form_slots
+        and valid_slot_mappings
     )
 
 
