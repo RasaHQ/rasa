@@ -7161,4 +7161,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "59609efc3524c13534cac729570e86deca2e7d7623db242e0e3d32b17ca10030"
+content-hash = "9b59b818b7e20f9c51a46b3f53662762cfaedc4aba94035c062bfc6c1e9b176a"
