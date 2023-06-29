@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import logging
 import sys
@@ -30,13 +31,14 @@ def _anonymizer(
         "response",
         "slot_candidates",
         "rasa_event",
+        "rasa_events",
         "tracker_states",
         "current_states",
         "old_states",
         "current_states",
         "successes",
-        "curr_ent",
-        "next_ent",
+        "current_entity",
+        "next_entity",
         "states",
         "entity",
         "token_text",
@@ -113,7 +115,7 @@ def configure_structlog(
         logger_factory=structlog.stdlib.LoggerFactory(),
         # `wrapper_class` is the bound logger that you get back from
         # get_logger(). This one imitates the API of `logging.Logger`.
-        wrapper_class=structlog.stdlib.BoundLogger,
+        wrapper_class=structlog.make_filtering_bound_logger(log_level),
         # Effectively freeze configuration after creating the first bound
         # logger.
         cache_logger_on_first_use=True,

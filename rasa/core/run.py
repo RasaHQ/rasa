@@ -6,6 +6,7 @@ from functools import partial
 from typing import Any, Callable, List, Optional, Text, Tuple, Union, Dict
 
 import rasa.core.utils
+from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.utils
@@ -143,6 +144,7 @@ def configure_app(
 
             logger.info("Killing Sanic server now.")
             running_app.stop()  # kill the sanic server
+            plugin_manager().hook.after_server_stop()
 
         app.add_task(run_cmdline_io)
 
