@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol, Set, Text
-
+from typing import Any, Dict, List, Optional, Protocol, Set, Text, runtime_checkable
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.constants import RASA_DEFAULT_INTENT_PREFIX
 from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
 
 import rasa.shared.utils.io
 
@@ -278,29 +279,6 @@ class Flow:
             return None
         return self.steps[0]
 
-    @staticmethod
-    def slots_from_steps(steps: List[FlowStep]) -> List[str]:
-        """Return the names of the slots used in the given steps."""
-        result = []
-        for step in steps:
-            if isinstance(step, QuestionFlowStep) and step.question not in result:
-                result.append(step.question)
-        return result
-
-    def slots(self) -> List[str]:
-        """Return the names of the slots used in the flow."""
-        return self.slots_from_steps(self.steps)
-
-    def slots_up_to_step(self, id: str) -> List[str]:
-        """Returns the names of the slots used in this flow up to a step."""
-        step_ids = [step.id for step in self.steps]
-        try:
-            idx = step_ids.index(id)
-        except ValueError:
-            idx = -1
-        steps = self.steps[: idx + 1]
-        return self.slots_from_steps(steps)
-
     def previously_asked_questions(self, step_id: Text) -> List[QuestionFlowStep]:
         """Returns the questions asked before the given step.
 
@@ -376,6 +354,18 @@ class Flow:
         )
         return any_has_rasa_prefix
 
+    def get_question_steps(self) -> List[QuestionFlowStep]:
+        """Return the question steps of the flow."""
+        question_steps = []
+        for step in self.steps:
+            if isinstance(step, QuestionFlowStep):
+                question_steps.append(step)
+        return question_steps
+
+    def get_slots(self) -> Set[str]:
+        """The slots used in this flow."""
+        return {q.question for q in self.get_question_steps()}
+
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
     """Used to read flow steps from parsed YAML.
@@ -396,6 +386,10 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         return LinkFlowStep.from_json(flow_step_config)
     if "set_slots" in flow_step_config:
         return SetSlotsFlowStep.from_json(flow_step_config)
+    if "entry_prompt" in flow_step_config:
+        return EntryPromptFlowStep.from_json(flow_step_config)
+    if "generation_prompt" in flow_step_config:
+        return GenerateResponseFlowStep.from_json(flow_step_config)
     else:
         raise ValueError(f"Flow step is missing a type. {flow_step_config}")
 
@@ -628,8 +622,24 @@ class TriggerCondition:
         return all(entity in entities for entity in self.entities)
 
 
+@runtime_checkable
+class StepThatCanStartAFlow(Protocol):
+    """Represents a step that can start a flow."""
+
+    def is_triggered(self, tracker: DialogueStateTracker) -> bool:
+        """Check if a flow should be started for the tracker
+
+        Args:
+            tracker: The tracker to check.
+
+        Returns:
+            Whether a flow should be started for the tracker.
+        """
+        ...
+
+
 @dataclass
-class UserMessageStep(FlowStep):
+class UserMessageStep(FlowStep, StepThatCanStartAFlow):
     """Represents the configuration of an intent flow step."""
 
     trigger_conditions: List[TriggerCondition]
@@ -692,7 +702,7 @@ class UserMessageStep(FlowStep):
 
         return dump
 
-    def is_triggered(self, intent: Text, entities: List[Text]) -> bool:
+    def is_triggered(self, tracker: DialogueStateTracker) -> bool:
         """Returns whether the flow step is triggered by the given intent and entities.
 
         Args:
@@ -702,10 +712,125 @@ class UserMessageStep(FlowStep):
         Returns:
             Whether the flow step is triggered by the given intent and entities.
         """
+        if not tracker.latest_message:
+            return False
+
+        intent: Text = tracker.latest_message.intent.get(INTENT_NAME_KEY, "")
+        entities: List[Text] = [
+            e.get(ENTITY_ATTRIBUTE_TYPE, "") for e in tracker.latest_message.entities
+        ]
         return any(
             trigger_condition.is_triggered(intent, entities)
             for trigger_condition in self.trigger_conditions
         )
+
+
+@dataclass
+class GenerateResponseFlowStep(FlowStep):
+    """Represents the configuration of a step prompting an LLM."""
+
+    generation_prompt: Text
+    """The prompt template of the flow step."""
+
+    @classmethod
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> GenerateResponseFlowStep:
+        """Used to read flow steps from parsed YAML.
+
+        Args:
+            flow_step_config: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed flow step.
+        """
+        base = super()._from_json(flow_step_config)
+        return GenerateResponseFlowStep(
+            generation_prompt=flow_step_config.get("generation_prompt", ""),
+            **base.__dict__,
+        )
+
+    def as_json(self) -> Dict[Text, Any]:
+        """Returns the flow step as a dictionary.
+
+        Returns:
+            The flow step as a dictionary.
+        """
+        dump = super().as_json()
+        dump["generation_prompt"] = self.generation_prompt
+
+        return dump
+
+
+@dataclass
+class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
+    """Represents the configuration of a step prompting an LLM."""
+
+    entry_prompt: Text
+    """The prompt template of the flow step."""
+    advance_if: Optional[Text]
+    """The expected response to start the flow"""
+
+    @classmethod
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> EntryPromptFlowStep:
+        """Used to read flow steps from parsed YAML.
+
+        Args:
+            flow_step_config: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed flow step.
+        """
+        base = super()._from_json(flow_step_config)
+        return EntryPromptFlowStep(
+            entry_prompt=flow_step_config.get("entry_prompt", ""),
+            advance_if=flow_step_config.get("advance_if"),
+            **base.__dict__,
+        )
+
+    def as_json(self) -> Dict[Text, Any]:
+        """Returns the flow step as a dictionary.
+
+        Returns:
+            The flow step as a dictionary.
+        """
+        dump = super().as_json()
+        dump["entry_prompt"] = self.entry_prompt
+        if self.advance_if:
+            dump["advance_if"] = self.advance_if
+
+        return dump
+
+    def is_triggered(self, tracker: DialogueStateTracker) -> bool:
+        """Returns whether the flow step is triggered by the given intent and entities.
+
+        Args:
+            intent: The intent to check.
+            entities: The entities to check.
+
+        Returns:
+            Whether the flow step is triggered by the given intent and entities.
+        """
+        from rasa.utils import llm
+        from jinja2 import Template
+
+        if not self.entry_prompt:
+            return False
+
+        context = {
+            "history": llm.tracker_as_readable_transcript(tracker, max_turns=5),
+            "latest_user_message": tracker.latest_message.text
+            if tracker.latest_message
+            else "",
+        }
+        context.update(tracker.current_slot_values())
+        prompt = Template(self.entry_prompt).render(context)
+
+        generated = llm.generate_text_openai_chat(prompt)
+
+        expected_response = self.advance_if.lower() if self.advance_if else "yes"
+        if generated and generated.lower() == expected_response:
+            return True
+        else:
+            return False
 
 
 # enumeration of question scopes. scope can either be flow or global

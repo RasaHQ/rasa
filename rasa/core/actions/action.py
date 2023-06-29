@@ -41,7 +41,7 @@ from rasa.shared.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
-    ACTION_SEND_TEXT,
+    ACTION_SEND_TEXT_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_DEACTIVATE_LOOP_NAME,
@@ -1068,7 +1068,7 @@ class ActionSendText(Action):
     """Sends a text message to the output channel."""
 
     def name(self) -> Text:
-        return ACTION_SEND_TEXT
+        return ACTION_SEND_TEXT_NAME
 
     async def run(
         self,
