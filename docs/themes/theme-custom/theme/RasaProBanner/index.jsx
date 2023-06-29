@@ -21,13 +21,7 @@ function RasaProBanner({isLoading, ...props}) {
         <p>You'll need a license to get started with Rasa Pro. 
         {' '}
           <a href="https://rasa.com/connect-with-rasa/" target="_blank" rel="noopener noreferrer">
-            Connect with a Rasa expert
-          </a>
-        </p>
-        <p>Not sure if you need Rasa Pro yet?
-          {' '}
-          <a href="https://info.rasa.com/rasa-platform-trial-request" target="_blank" rel="noopener noreferrer">
-            Try it for free
+            Talk with Sales
           </a>
         </p>
       </div>
