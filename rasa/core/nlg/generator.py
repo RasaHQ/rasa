@@ -111,6 +111,9 @@ class ResponseVariationFilter:
             if isinstance(filled_slots_value, str) and isinstance(value, str):
                 if filled_slots_value.casefold() != value.casefold():
                     return False
+            # slot values can be of different data types
+            # such as int, float, bool, etc. hence, this check
+            # executes when slot values are not strings
             elif filled_slots_value != value:
                 return False
 
@@ -123,12 +126,14 @@ class ResponseVariationFilter:
         filled_slots: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         """Returns array of responses that fit the channel, action and condition."""
+        # filter responses without a condition
         default_responses = list(
             filter(
                 lambda x: (x.get(RESPONSE_CONDITION) is None),
                 self.responses[utter_action],
             )
         )
+        # filter responses with a condition that matches the filled slots
         conditional_responses = list(
             filter(
                 lambda x: (
@@ -141,15 +146,19 @@ class ResponseVariationFilter:
             )
         )
 
+        # filter conditional responses that match the channel
         conditional_channel = list(
             filter(lambda x: (x.get(CHANNEL) == output_channel), conditional_responses)
         )
+        # filter conditional responses that don't match the channel
         conditional_no_channel = list(
             filter(lambda x: (x.get(CHANNEL) is None), conditional_responses)
         )
+        # filter default responses that match the channel
         default_channel = list(
             filter(lambda x: (x.get(CHANNEL) == output_channel), default_responses)
         )
+        # filter default responses that don't match the channel
         default_no_channel = list(
             filter(lambda x: (x.get(CHANNEL) is None), default_responses)
         )
@@ -171,7 +180,11 @@ class ResponseVariationFilter:
         tracker: DialogueStateTracker,
         output_channel: Text,
     ) -> Optional[Text]:
-        """Returns the first matched response variation ID that fits the channel, action and condition."""  # noqa: E501
+        """Returns the first matched response variation ID.
+
+        This ID corresponds to the response variation that fits
+        the channel, action and condition.
+        """
         filled_slots = tracker.current_slot_values()
         if utter_action in self.responses:
             eligible_variations = self.responses_for_utter_action(
@@ -197,14 +210,13 @@ class ResponseVariationFilter:
         response_ids = set()
         for response_variation in response_variations:
             response_variation_id = response_variation.get("id")
-            if response_variation_id:
-                if response_variation_id in response_ids:
-                    rasa.shared.utils.io.raise_warning(
-                        f"Duplicate response id '{response_variation_id}' "
-                        f"defined in the domain."
-                    )
-                    return False
+            if response_variation_id and response_variation_id in response_ids:
+                rasa.shared.utils.io.raise_warning(
+                    f"Duplicate response id '{response_variation_id}' "
+                    f"defined in the domain."
+                )
+                return False
 
-                response_ids.add(response_variation_id)
+            response_ids.add(response_variation_id)
 
         return True

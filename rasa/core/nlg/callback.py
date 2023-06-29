@@ -122,6 +122,11 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         output_channel: Text,
         domain_responses: Optional[Dict[Text, List[Dict[Text, Any]]]],
     ) -> Text:
+        """Fetch the response id for the utter action.
+
+        The response id is retrieved from the domain responses for the
+        utter action given the tracker state and channel.
+        """
         if domain_responses is None:
             logger.debug("Failed to fetch response id. Responses not provided.")
             return ""
