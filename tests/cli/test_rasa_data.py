@@ -208,10 +208,10 @@ def test_data_validate_failed_to_load_domain(
         "data",
         "validate",
         "--domain",
-        "not-existing-domain.yml",
+        "non-existent-domain.yml",
     )
 
-    assert "The path 'not-existing-domain.yml' does not exist." in str(result.outlines)
+    assert "The path 'non-existent-domain.yml' does not exist." in str(result.outlines)
     assert result.ret == 1
 
 
