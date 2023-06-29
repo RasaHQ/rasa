@@ -19,7 +19,7 @@ You have just asked the user for the slot "{{ question }}"{% if question_descrip
 
 {% if flow_slots|length > 0 %}
 Here are the slots of the currently active flow with their names and values:
-{% for slot in flow_slots %}
+{% for slot in flow_slots -%}
 - {{ slot.name }}: {{ slot.value }}
 {% endfor %}
 {% endif %}
