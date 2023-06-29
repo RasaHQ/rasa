@@ -24,7 +24,7 @@ and managing the data securely while making it available for analysis.
 Rasa Pro 3.6 introduces the ability to anonymize PII data in your logs and events streamed via the Kafka event broker.
 
 Note that the Tracker Store continues to store conversation data which is not anonymized. This is required so that we
-retain a source of truth for pristine data required for non-repudiation purposes. Learn how to secure your Tracker Store
+retain a source of truth of pristine data for non-repudiation purposes. Learn how to secure your Tracker Store
 using [Vault secrets manager](./secrets-managers.mdx) to protect the source of truth with rotating credentials.
 
 In addition, because the tracker store data plays a vital role in the assistant's dialogue management at inference time,
@@ -37,11 +37,11 @@ action prediction and execution. Note that the processing done by the anonymizat
 task and does not affect the assistant's response time.
 
 The anonymization steps are as follows:
-1. The Rasa agent will invoke the anonymization pipeline during each user message handling.
-2. The anonymization pipeline will run through a sequence of anonymization rules that are applied to the new events.
-3. The pipeline will publish the anonymized events to the Kafka topic that is mapped to the anonymization rule list in
+1. The Rasa agent invokes the anonymization pipeline during each user message handling.
+2. The anonymization pipeline runs through a sequence of anonymization rules that are applied to the new events.
+3. The pipeline publishes the anonymized events to the Kafka topic that is mapped to the anonymization rule list in
 `endpoints.yml`.
-4. The tracker store saves the original events which are not anonymized.
+4. The tracker store saves the original events that are not anonymized.
 
 ### Supported Rasa Events
 
@@ -96,7 +96,7 @@ anonymization:
 The metadata section contains the following fields: `language`, `model_name`, and `model_provider`.
 
 The `language` field specifies the language code of the text to be anonymized. Note that you can only specify one language
-per anonymization pipeline because the assumption made was that an assistant will be developed for a single language.
+per anonymization pipeline, because the capability is currently not able to handle language switching by end users.
 
 The `model_name` and `model_provider` fields specify the name and provider of the Presidio model to be used for
 anonymization. The available model providers are `spacy`, `stanza` and `transformers`.
@@ -110,7 +110,7 @@ When using large models, you must ensure that your Rasa Pro environment has enou
 :::
 
 If you opt for using the `transformers` model provider, you must specify two model names in the `model_name` field:
-the HuggingFace model name and the spaCy model name, where the spacy model would wrap the transformers NER model.
+the HuggingFace model name and the spaCy model name, where the spaCy model would wrap the transformers NER model.
 For example:
 
 ```yaml

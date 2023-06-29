@@ -49,8 +49,8 @@ In addition to CLI arguments, several environment variables allow you to control
 2. LOG_LEVEL_MATPLOTLIB: This is the specialized environment variable to configure log level only for Matplotlib.
 3. LOG_LEVEL_RABBITMQ: This is the specialized environment variable to configure log level only for AMQP libraries, at the moment it handles log levels from `aio_pika` and `aiormq`.
 4. LOG_LEVEL_KAFKA: This is the specialized environment variable to configure log level only for kafka.
-5. LOG_LEVEL_PRESIDIO: This is the specialized environment variable to configure log level only for presidio, at the moment it handles log levels from `presidio_analyzer` and `presidio_anonymizer`.
-6. LOG_LEVEL_FAKER: This is the specialized environment variable to configure log level only for faker.
+5. LOG_LEVEL_PRESIDIO: This is the specialized environment variable to configure log level only for Presidio, at the moment it handles log levels from `presidio_analyzer` and `presidio_anonymizer`.
+6. LOG_LEVEL_FAKER: This is the specialized environment variable to configure log level only for Faker.
 
 General configuration (`LOG_LEVEL_LIBRARIES`) has less priority than library level specific configuration (`LOG_LEVEL_MATPLOTLIB`, `LOG_LEVEL_RABBITMQ` etc); and CLI parameter sets the lowest level log messages which will be handled. This means variables can be used together with a predictable result. As an example:
 
