@@ -1,3 +1,4 @@
+import copy
 import re
 import logging
 import structlog
@@ -39,7 +40,7 @@ def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text:
     except KeyError as e:
         structlogger.exception(
             "interpolator.interpolate.text",
-            response=response,
+            response=copy.deepcopy(response),
             placeholder_key=e.args[0],
         )
         return response
