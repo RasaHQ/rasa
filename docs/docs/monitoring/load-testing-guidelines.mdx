@@ -6,26 +6,25 @@ description: |
   and how you can use tracing to help debug issues.
 ---
 
-:::note
-
-Our team is currently in the process of running more extensive performance related tests, more information will be added here as we progress.
-
-:::
-
 ## Overview
 
 In order to gather metrics on our system's ability to handle increased loads and users, we have performed tests to evaluate the maximum number of concurrent users a Rasa assistant can handle with certain machine configurations.
-In each test case we spawned the following number of concurrent users at peak concurrency using a spawn rate of 1000 users per second. In our tests we used the Rasa [HTTP-API](https://rasa.com/docs/rasa/pages/http-api),
-along with common opensource load testing tool such as [locust](https://locust.io/).
+In each test case we spawned the following number of concurrent users at peak concurrency using a [spawn rate](https://docs.locust.io/en/1.5.0/configuration.html#all-available-configuration-options) of 1000 users per second.
+In our tests we used the Rasa [HTTP-API](https://rasa.com/docs/rasa/pages/http-api) and the [Locust](https://locust.io/) open source load testing tool.
 
-|        Users             |               Configuration                        |
-|--------------------------|----------------------------------------------------|
-| Up to 50,000             |         6vCPU, 16 GB                               |
-| Up to 80,000             |         6vCPU, 16 GB but with almost 90% CPU usage |
+|        Users             |               CPU                            |      Memory   |
+|--------------------------|----------------------------------------------|---------------|
+| Up to 50,000             |         6vCPU                                |      16 GB    |
+| Up to 80,000             |         6vCPU, with almost 90% CPU usage     |      16 GB    |
 
 
 ### Debugging bot related issues while scaling up
 
-To test our [Http-Apis](https://rasa.com/docs/rasa/pages/http-api) ability to handle a large number of concurrent user activity we used Rasa Pro's [tracing](./tracing.mdx) capabilities
+To test the Rasa [HTTP-API](https://rasa.com/docs/rasa/pages/http-api) ability to handle a large number of concurrent user activity we used the Rasa Pro [tracing](./tracing.mdx) capability
 along with a tracing backend or collector, such as Jaeger, to collect traces for the bot under test.
 
+:::note
+
+Our team is currently in the process of running additional performance-related tests. More information will be added here as we progress.
+
+:::
