@@ -3,7 +3,7 @@ id: realtime-markers
 sidebar_label: Real-Time Markers
 title: Real-Time Analysis of Markers
 description:
-abstract: Process Markers real-time from Rasa
+abstract: Process markers real-time from Rasa
     Assistants to track metrics like solution and abandonment rates,
     add metatags to conversations,
     or filter conversations for Conversation Driven Development
@@ -23,21 +23,21 @@ import { Grid } from "@theme/Grid";
 
 In Rasa Pro, [Markers](../../markers.mdx) are a powerful feature that allows
 you to track and extract custom conversational events. With the Analytics
-Data Pipeline, you can now process these Markers in real-time, enabling
+Data Pipeline, you can now process these markers in real-time, enabling
 you to gain valuable insights and enhance the performance of your Rasa
 Assistant. In this guide, we'll explore how to leverage real-time
-analysis of Markers to track solution and abandonment rates in your conversations.
+analysis of markers to track solution and abandonment rates in your conversations.
 
 ![flow of information with realtime markers](/img/analytics/realtime-markers.png)
 
 ## Defining Markers
 
 Please consult the [Markers](../../markers.mdx/#defining-markers) section of Rasa documentation
-for details about defining Markers.
+for details about defining markers.
 
 ## Enable Real-time Processing
 
-To enable real-time analysis of Markers in your Rasa project, you need to
+To enable real-time analysis of markers in your Rasa project, you need to
 upload the markers to Analytics Data Pipeline with the `rasa markers upload`
 command. This command uploads the marker configuration YAML and starts the
 processing of Markers in the Analytics Data Pipeline. To get started,
@@ -79,7 +79,7 @@ interests in the conversation that matches the marker. The extracted markers are
 in the data warehouse.
 
 The evaluation of Markers in the Pipeline is similar to the `rasa evaluate markers`
-command which can be used to process markers from the conversations in Tracker Store.
+command which can be used to process Markers from the conversations in Tracker Store.
 Read more about it [here](../../markers.mdx/#extracting-markers)
 
 Extracted markers are added to the `rasa_markers` table in the data warehouse
