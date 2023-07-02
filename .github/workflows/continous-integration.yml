@@ -1037,7 +1037,7 @@ jobs:
           sudo swapoff -a
           sudo rm -f /swapfile
           sudo apt clean
-          docker rmi $(docker image ls -aq)
+          docker image prune -a
           df -h
 
       - name: Read Poetry Version 🔢

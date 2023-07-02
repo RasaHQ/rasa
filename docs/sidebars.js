@@ -95,6 +95,7 @@ module.exports = {
                 'monitoring/tracing',
             ],
         },
+        'pii-management',
         {
             type: 'category',
             label: 'Concepts',
