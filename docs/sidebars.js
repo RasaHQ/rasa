@@ -92,8 +92,10 @@ module.exports = {
                     ],
                 },
                 'monitoring/tracing',
+                'monitoring/load-testing-guidelines',
             ],
         },
+        'pii-management',
         {
             type: 'category',
             label: 'Concepts',
