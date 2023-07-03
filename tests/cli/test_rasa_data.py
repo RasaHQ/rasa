@@ -181,6 +181,8 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "data",
             "validate",
             "stories",
+            "-d",
+            "data/test_moodbot/domain.yml",
             "--data",
             "data/test_moodbot/data",
             "--max-history",
@@ -197,6 +199,20 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
 
     with pytest.raises(argparse.ArgumentTypeError):
         data.validate_files(args)
+
+
+def test_data_validate_failed_to_load_domain(
+    run_in_simple_project_with_no_domain: Callable[..., RunResult]
+):
+    result = run_in_simple_project_with_no_domain(
+        "data",
+        "validate",
+        "--domain",
+        "non-existent-domain.yml",
+    )
+
+    assert "The path 'non-existent-domain.yml' does not exist." in str(result.outlines)
+    assert result.ret == 1
 
 
 @pytest.mark.parametrize(
@@ -218,6 +234,7 @@ def test_validate_files_action_not_found_invalid_domain(
     )
     args = {
         "domain": "data/test_moodbot/domain.yml",
+        "fail_on_warnings": False,
         "data": [file_name],
         "max_history": None,
         "config": "data/test_config/config_defaults.yml",
@@ -247,6 +264,7 @@ def test_validate_files_form_not_found_invalid_domain(
     args = {
         "domain": "data/test_restaurantbot/domain.yml",
         "data": [file_name],
+        "fail_on_warnings": False,
         "max_history": None,
         "config": "data/test_config/config_defaults.yml",
     }
@@ -308,6 +326,7 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
     )
     args = {
         "domain": domain_file_name,
+        "fail_on_warnings": False,
         "data": None,
         "max_history": None,
         "config": "data/test_config/config_defaults.yml",
@@ -320,6 +339,7 @@ def test_validate_files_exit_early():
     with pytest.raises(SystemExit) as pytest_e:
         args = {
             "domain": "data/test_domains/duplicate_intents.yml",
+            "fail_on_warnings": False,
             "data": None,
             "max_history": None,
             "config": "data/test_config/config_defaults.yml",
@@ -333,6 +353,7 @@ def test_validate_files_exit_early():
 def test_validate_files_invalid_domain():
     args = {
         "domain": "data/test_domains/default_with_mapping.yml",
+        "fail_on_warnings": False,
         "data": None,
         "max_history": None,
         "config": "data/test_config/config_defaults.yml",
