@@ -195,7 +195,7 @@ async def payload_from_button_question(button_question: "Question") -> Text:
     response = await button_question.ask_async()
     if response != FREE_TEXT_INPUT_PROMPT:
         # Extract intent slash command if it's a button
-        response = response[response.find("(") + 1 : response.find(")")]
+        response = response[response.rfind("(") + 1 : response.rfind(")")]
     return response
 
 
