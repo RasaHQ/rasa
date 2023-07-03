@@ -158,12 +158,12 @@ def separate_intent_response_key(
 
 Splits intent into main intent name and optional sub-intent name.
 
-For example, `&quot;FAQ/how_to_contribute&quot;` would be split into
-`(&quot;FAQ&quot;, &quot;how_to_contribute&quot;)`. The response delimiter can
-take different values (not just `&quot;/&quot;`) and depends on the
+For example, `"FAQ/how_to_contribute"` would be split into
+`("FAQ", "how_to_contribute")`. The response delimiter can
+take different values (not just `"/"`) and depends on the
 constant - `RESPONSE_IDENTIFIER_DELIMITER`.
 If there is no response delimiter in the intent, the second tuple
-item is `None`, e.g. `&quot;FAQ&quot;` would be mapped to `(&quot;FAQ&quot;, None)`.
+item is `None`, e.g. `"FAQ"` would be mapped to `("FAQ", None)`.
 
 #### get\_sparse\_features
 

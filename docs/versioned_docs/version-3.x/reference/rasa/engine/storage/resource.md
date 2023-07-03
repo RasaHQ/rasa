@@ -39,7 +39,7 @@ This automatically loads the persisted resource into the given `ModelStorage`.
 - `directory` - The directory with the cached `Resource`.
 - `model_storage` - The `ModelStorage` which the cached `Resource` will be added
   to so that the `Resource` is accessible for other graph nodes.
-- `output_fingerprint` - The fingerprint of the cached `Resource`.
+- `ModelStorage`0 - The fingerprint of the cached `Resource`.
   
 
 **Returns**:

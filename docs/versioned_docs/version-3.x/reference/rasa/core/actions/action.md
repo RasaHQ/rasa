@@ -126,12 +126,12 @@ Execute the side effects of this action.
   user. You can access slot values using
   ``tracker.get_slot(slot_name)`` and the most recent user
   message is ``tracker.latest_message.text``.
-- `domain` _Domain_ - the bot&#x27;s domain
+- ``1 _Domain_ - the bot&#x27;s domain
   
 
 **Returns**:
 
-  A list of :class:`rasa.core.events.Event` instances
+  A list of :class:``2 instances
 
 #### \_\_str\_\_
 

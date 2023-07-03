@@ -152,11 +152,11 @@ The return value of this function is parsed_data.
 **Example**:
 
   {\
-- `&quot;text&quot;` - &#x27;/greet{&quot;name&quot;:&quot;Rasa&quot;}&#x27;,\
-- `&quot;intent&quot;` - {&quot;name&quot;: &quot;greet&quot;, &quot;confidence&quot;: 1.0},\
-- `&quot;intent_ranking&quot;` - [{&quot;name&quot;: &quot;greet&quot;, &quot;confidence&quot;: 1.0}],\
-- `&quot;entities&quot;` - [{&quot;entity&quot;: &quot;name&quot;, &quot;start&quot;: 6,\
-- `&quot;end&quot;` - 21, &quot;value&quot;: &quot;Rasa&quot;}],\
+- `"text"` - &#x27;/greet{&quot;name&quot;:&quot;Rasa&quot;}&#x27;,\
+- `"intent"` - {&quot;name&quot;: &quot;greet&quot;, &quot;confidence&quot;: 1.0},\
+- `"intent_ranking"` - [{&quot;name&quot;: &quot;greet&quot;, &quot;confidence&quot;: 1.0}],\
+- `"entities"` - [{&quot;entity&quot;: &quot;name&quot;, &quot;start&quot;: 6,\
+- `"end"` - 21, &quot;value&quot;: &quot;Rasa&quot;}],\
   }
 
 #### handle\_message

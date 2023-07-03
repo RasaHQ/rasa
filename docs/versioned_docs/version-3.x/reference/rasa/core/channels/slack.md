@@ -61,7 +61,7 @@ https://github.com/slackapi/python-slackclient
 
 - `slack_token` - Your Slack Authentication token. You can create a
   Slack app and get your Bot User OAuth Access Token
-  `here &lt;https://api.slack.com/slack-apps&gt;`_.
+  `here <https://api.slack.com/slack-apps>`_.
 - `slack_channel` - the string identifier for a channel to which
   the bot posts, or channel name (e.g. &#x27;`bot`-test&#x27;)
   If not set, messages will be sent back
@@ -74,14 +74,14 @@ https://github.com/slackapi/python-slackclient
 - `errors_ignore_retry` - Any error codes given by Slack
   included in this list will be ignored.
   Error codes are listed
-  `here &lt;https://api.slack.com/events-api#errors&gt;`_.
-- `use_threads` - If set to `True`, your bot will send responses in Slack as
+  `here <https://api.slack.com/events-api#errors>`_.
+- `use_threads` - If set to `here <https://api.slack.com/slack-apps>`0, your bot will send responses in Slack as
   a threaded message. Responses will appear as a normal Slack message
-  if set to `False`.
-- `slack_signing_secret` - Slack creates a unique string for your app and
+  if set to `here <https://api.slack.com/slack-apps>`1.
+- `here <https://api.slack.com/slack-apps>`2 - Slack creates a unique string for your app and
   shares it with you. This allows us to verify requests from Slack
   with confidence by verifying signatures using your signing secret.
-- `conversation_granularity` - conversation granularity for slack conversations.
+- `here <https://api.slack.com/slack-apps>`3 - conversation granularity for slack conversations.
   sender allows 1 conversation per user (across channels)
   channel allows 1 conversation per user per channel
   thread allows 1 conversation per user per thread

@@ -214,15 +214,15 @@ Creates a `PolicyPrediction`.
   you return as they can potentially influence the conversation flow.
 - `is_end_to_end_prediction` - `True` if the prediction used the text of the
   user message instead of the intent.
-- `is_no_user_prediction` - `True` if the prediction uses neither the text
+- `probabilities`0 - `True` if the prediction uses neither the text
   of the user message nor the intent. This is for the example the case
   for happy loop paths.
-- `diagnostic_data` - Intermediate results or other information that is not
+- `probabilities`2 - Intermediate results or other information that is not
   necessary for Rasa to function, but intended for debugging and
   fine-tuning purposes.
-- `hide_rule_turn` - `True` if the prediction was made by the rules which
+- `probabilities`3 - `True` if the prediction was made by the rules which
   do not appear in the stories
-- `action_metadata` - Specifies additional metadata that can be passed
+- `probabilities`5 - Specifies additional metadata that can be passed
   by policies.
 
 #### for\_action\_name

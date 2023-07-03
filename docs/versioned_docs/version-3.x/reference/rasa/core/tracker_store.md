@@ -677,7 +677,7 @@ to connect to an SQL database.
 
 **Returns**:
 
-  URL ready to be used with an SQLAlchemy `Engine` object.
+  URL ready to be used with an SQLAlchemy `dialect`0 object.
 
 #### session\_scope
 

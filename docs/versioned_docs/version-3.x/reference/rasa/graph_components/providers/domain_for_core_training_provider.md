@@ -20,16 +20,16 @@ all of those items are used by policies
 pre-featurization of slot values
 - response keys (i.e. `utter_*) because those keys may appear in stories
 - form names because those appear in stories
-- how slots are filled (i.e. &#x27;mappings&#x27; key under &#x27;slots&#x27;) because a domain instance
+- how slots are filled (i.e. 'mappings' key under 'slots') because a domain instance
 needs to be created by core during training time to parse the training data
 properly
 
 This information that we drop (or replace with default values) includes:
-- the &#x27;session_config&#x27; which determines details of a session e.g. whether data is
+- the 'session_config' which determines details of a session e.g. whether data is
 transferred from one session to the next (this is replaced with defaults as it
 cannot just be removed)
-- the actual text of a &#x27;response&#x27; because those are only used by response selectors
-- the actual configuration of &#x27;forms&#x27; because those are not actually executed
+- the actual text of a 'response' because those are only used by response selectors
+- the actual configuration of 'forms' because those are not actually executed
 by core components
 
 **References**:

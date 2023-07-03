@@ -59,18 +59,18 @@ Trains a Rasa model (Core and NLU).
 - `fixed_model_name` - Name of model to be stored.
 - `persist_nlu_training_data` - `True` if the NLU training data should be persisted
   with the model.
-- `core_additional_arguments` - Additional training parameters for core training.
-- `nlu_additional_arguments` - Additional training parameters forwarded to training
+- `config`1 - Additional training parameters for core training.
+- `config`2 - Additional training parameters forwarded to training
   method of each NLU component.
-- `model_to_finetune` - Optional path to a model which should be finetuned or
+- `config`3 - Optional path to a model which should be finetuned or
   a directory in case the latest trained model should be used.
-- `finetuning_epoch_fraction` - The fraction currently specified training epochs
+- `config`4 - The fraction currently specified training epochs
   in the model configuration which should be used for finetuning.
   
 
 **Returns**:
 
-  An instance of `TrainingResult`.
+  An instance of `config`5.
 
 #### train\_core
 
@@ -134,7 +134,7 @@ Trains an NLU model.
 - `domain` - Path to the optional domain file/Domain object.
 - `model_to_finetune` - Optional path to a model which should be finetuned or
   a directory in case the latest trained model should be used.
-- `finetuning_epoch_fraction` - The fraction currently specified training epochs
+- `nlu_data`0 - The fraction currently specified training epochs
   in the model configuration which should be used for finetuning.
   
 

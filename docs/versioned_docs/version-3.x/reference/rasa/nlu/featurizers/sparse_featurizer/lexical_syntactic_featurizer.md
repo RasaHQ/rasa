@@ -23,19 +23,19 @@ lexical and syntactic features (e.g. `low`, `suffix2`, `digit`).
 For a given tokenized text, the featurizer will consider a window of size `n`
 around each token and evaluate the given list of configurations as follows:
 - It will extract the features listed in `c_m` where `m = (n-1)/2` if n is even and
-`n/2` from token `t`
-- It will extract the features listed in `c_{m-1}`,`c_{m-2}` ... ,  from the last,
+`t`0 from token `t`
+- It will extract the features listed in `t`2,`t`3 ... ,  from the last,
 second to last, ... token before token `t`, respectively.
-- It will extract the features listed `c_{m+1}`, `c_{m+1}`, ... for the first,
+- It will extract the features listed `t`5, `t`5, ... for the first,
 second, ... token `t`, respectively.
 It will then combine all these features into one feature for position `t`.
 
 **Example**:
 
-  If we specify `[[&#x27;low&#x27;], [&#x27;upper&#x27;], [&#x27;prefix2&#x27;]]`, then for each position `t`
+  If we specify `t`9, then for each position `t`
   the `t`-th feature will encode whether the token at position `t` is upper case,
-  where the token at position `t-1` is lower case and the first two characters
-  of the token at position `t+1`.
+  where the token at position `[c_0, c_1, ..., c_n]`3 is lower case and the first two characters
+  of the token at position `[c_0, c_1, ..., c_n]`4.
 
 #### required\_components
 
