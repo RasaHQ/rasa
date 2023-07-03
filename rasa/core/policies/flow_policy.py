@@ -759,7 +759,7 @@ class FlowExecutor:
                 # If there is no current flow, we assume that all flows are done
                 # and there is nothing to do. The assumption here is that every
                 # flow ends with an action listen.
-                predicted_action = ActionPrediction(ACTION_LISTEN_NAME, 1.0)
+                predicted_action = ActionPrediction(ACTION_LISTEN_NAME, 0.5)
                 break
 
             if not (previous_step := self.flow_stack.top_flow_step(self.all_flows)):
@@ -873,7 +873,8 @@ class FlowExecutor:
 
             if action_name:
                 # loop is not yet done
-                return ActionPrediction(action_name, 1.0)
+
+                return ActionPrediction(action_name, 1.0 if action_name != ACTION_LISTEN_NAME else 0.5)
             else:
                 return ActionPrediction(None, 0.0)
         else:
