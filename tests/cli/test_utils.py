@@ -9,6 +9,7 @@ from _pytest.logging import LogCaptureFixture
 
 import rasa.cli.utils
 from tests.cli.conftest import RASA_EXE
+from tests.conftest import AsyncMock
 
 
 @contextlib.contextmanager
@@ -97,3 +98,18 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
         ) == str(tmp_path)
     assert len(record) == 1
     assert "does not seem to exist" in record[0].message.args[0]
+
+
+@pytest.mark.parametrize(
+    "text_input, button",
+    [
+        ("hi this is test text\n", "hi this is test text"),
+        ("hi this is test text (/button_one)", "/button_one"),
+        ("hi this is test text (and something) (/button_one)", "/button_one"),
+    ],
+)
+async def test_payload_from_button_question(text_input: str, button: str) -> None:
+    question = AsyncMock()
+    question.ask_async.return_value = text_input
+    result = await rasa.cli.utils.payload_from_button_question(question)
+    assert result == button
