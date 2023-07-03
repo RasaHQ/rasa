@@ -87,6 +87,7 @@ module.exports = {
                     collapsed: true,
                     items: [
                         'monitoring/analytics/getting-started-with-analytics',
+                        'monitoring/analytics/realtime-markers',
                         'monitoring/analytics/example-queries',
                         'monitoring/analytics/data-structure-reference',
                     ],
