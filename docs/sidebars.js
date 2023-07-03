@@ -251,6 +251,7 @@ module.exports = {
             label: 'Change Log',
             collapsed: true,
             items: [
+                'rasa-pro-changelog',
                 'changelog',
                 'sdk_changelog',
                 'compatibility-matrix',
