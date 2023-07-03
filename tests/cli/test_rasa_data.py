@@ -263,8 +263,8 @@ def test_validate_files_form_not_found_invalid_domain(
     )
     args = {
         "domain": "data/test_restaurantbot/domain.yml",
-        "fail_on_warnings": False,
         "data": [file_name],
+        "fail_on_warnings": False,
         "max_history": None,
         "config": "data/test_config/config_defaults.yml",
     }
