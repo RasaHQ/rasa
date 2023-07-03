@@ -42,7 +42,7 @@ Rasa Pro consists of two deployable artifacts: Rasa Plus and Rasa Pro Services. 
 ### Bugfixes
 - Anonymize `rasa_events` structlog key.
 - Fixes issue with uploading locally trained model to a cloud rasa-plus instance where the conversation does not
-  go as expected because slots don't get set correctly, e.g. an error is logged `Tried to set non existent slot 'placeholder_slot_name'. Make sure you added all your slots to your domain file.`.
+  go as expected because slots don't get set correctly, e.g. an error is logged "Tried to set non existent slot 'placeholder_slot_name'." Make sure you added all your slots to your domain file.
   This is because the updated domain during the cloud upload did not get passed to the wrapped tracker store of the `AuthRetryTrackerStore` rasa-plus component.
   The fix was to add domain property and setter methods to the `AuthRetryTrackerStore` component.
 -  When using `rasa studio upload`, if no specific `intents` or `entities` are specified by the user, the update will now include all available `intents` or `entities`.
