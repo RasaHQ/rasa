@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import os
 import json
 import logging
@@ -242,7 +243,7 @@ class KafkaEventBroker(EventBroker):
         structlogger.debug(
             "kafka.publish.event",
             topic=self.topic,
-            rasa_event=event,
+            rasa_event=copy.deepcopy(event),
             partition_key=partition_key,
             headers=headers,
         )

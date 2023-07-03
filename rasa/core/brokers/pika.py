@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import logging
 import structlog
@@ -304,13 +305,13 @@ class PikaEventBroker(EventBroker):
                 "pika.events.publish",
                 rabbitmq_exchange=RABBITMQ_EXCHANGE,
                 host=self.host,
-                rasa_event=event,
+                rasa_event=copy.deepcopy(event),
             )
         except Exception as e:
             structlogger.error(
                 "pika.events.publish.failed",
                 host=self.host,
-                rasa_event=event,
+                rasa_event=copy.deepcopy(event),
             )
             if self.should_keep_unpublished_messages:
                 self._unpublished_events.append(event)
