@@ -106,11 +106,11 @@ flows:
       - id: "1"
         action: utter_sorry_mistake_rasa
 
-  comment:
-    description: user made a comment - nothing to be done
-    steps:
-      - id: "0"
-        intent: rasa_comment
+#  comment:
+#    description: user made a comment - nothing to be done
+#    steps:
+#      - id: "0"
+#        intent: rasa_comment
 
   openai_error:
     description: openai error
