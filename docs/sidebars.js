@@ -87,13 +87,16 @@ module.exports = {
                     collapsed: true,
                     items: [
                         'monitoring/analytics/getting-started-with-analytics',
+                        'monitoring/analytics/realtime-markers',
                         'monitoring/analytics/example-queries',
                         'monitoring/analytics/data-structure-reference',
                     ],
                 },
                 'monitoring/tracing',
+                'monitoring/load-testing-guidelines',
             ],
         },
+        'pii-management',
         {
             type: 'category',
             label: 'Concepts',
