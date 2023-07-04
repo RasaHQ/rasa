@@ -27,13 +27,12 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     TOLERANCE,
     CHECKPOINT_MODEL,
-    PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
-from rasa.shared.exceptions import InvalidConfigException, RasaException
+from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
     from rasa.nlu.extractors.extractor import EntityTagSpec
