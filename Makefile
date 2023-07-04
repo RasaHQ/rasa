@@ -153,17 +153,17 @@ else
 endif
 
 test-cli: PYTEST_MARKER=category_cli and (not flaky)
-test-cli: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
+test-cli: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=upb
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker
 
 test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky)
-test-core-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
+test-core-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=upb
 test-core-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-core-featurizers: test-marker
 
 test-policies: PYTEST_MARKER=category_policies and (not flaky)
-test-policies: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
+test-policies: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=upb
 test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker
 
@@ -173,27 +173,27 @@ test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: prepare-spacy prepare-mitie prepare-transformers test-marker
 
 test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky)
-test-nlu-predictors: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
+test-nlu-predictors: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=upb
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: prepare-spacy prepare-mitie test-marker
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky)
-test-full-model-training: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
+test-full-model-training: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=upb
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
 test-full-model-training: prepare-spacy prepare-mitie prepare-transformers test-marker
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky)
-test-other-unit-tests: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
+test-other-unit-tests: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=upb
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: prepare-spacy prepare-mitie test-marker
 
 test-performance: PYTEST_MARKER=category_performance and (not flaky)
-test-performance: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
+test-performance: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=upb
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker
 
 test-flaky: PYTEST_MARKER=flaky
-test-flaky: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
+test-flaky: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=upb
 test-flaky: DD_ARGS := $(or $(DD_ARGS),)
 test-flaky: prepare-spacy prepare-mitie test-marker
 
