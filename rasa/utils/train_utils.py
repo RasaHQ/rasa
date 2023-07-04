@@ -175,19 +175,6 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
 def load_tf_hub_model(model_url: Text) -> Any:
     """Load model from cache if possible, otherwise from TFHub."""
     import os
-
-    # Once `tensorflow-hub` have rebuilt their `_pb2.py` files with protobuf-4.x
-    # this can be removed.
-    if os.getenv(PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION, "ubp") != "python":
-        raise RasaException(
-            "The module `tensorflow-hub` is currently not compatible with "
-            "`protobuf-4.x`. To mitigate this issue, you may set your "
-            "environment variable `PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION` "
-            "to `python`. However, please note that this will initiate "
-            "pure Python parsing, which may significantly decrease the "
-            "speed of execution."
-        )
-
     from tensorflow_hub.module_v2 import load as tfhub_load
 
     # needed to load the ConveRT model

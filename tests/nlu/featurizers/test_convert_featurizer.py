@@ -23,7 +23,6 @@ from rasa.exceptions import RasaException
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.utils.tensorflow.constants import PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
 
 
 @pytest.fixture
@@ -312,25 +311,3 @@ def test_raise_invalid_path(
         _ = create_or_load_convert_featurizer(component_config)
 
     assert "neither a valid remote URL nor a local directory" in str(excinfo.value)
-
-
-@pytest.mark.skip_on_windows
-def test_raise_tensorflow_hub_incompatible(
-    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
-    monkeypatch: MonkeyPatch,
-):
-    monkeypatch.setenv(PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION, "ubp")
-    monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
-    component_config = {
-        FEATURIZER_CLASS_ALIAS: "alias",
-        "model_url": RESTRICTED_ACCESS_URL,
-    }
-
-    with pytest.raises(RasaException) as excinfo:
-        _ = create_or_load_convert_featurizer(component_config)
-
-    assert (
-        "The module `tensorflow-hub` is currently not compatible with `protobuf-4.x`."
-        in str(excinfo.value)
-    )
-    monkeypatch.setenv(PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION, "python")
