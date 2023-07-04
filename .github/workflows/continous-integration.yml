@@ -1091,88 +1091,88 @@ jobs:
 #            docker push rasa/rasa:${LATEST_TAG}
 #          fi
 
-#  deploy:
-#    name: Deploy to PyPI
-#    runs-on: ubuntu-22.04
-#
-#    # deploy will only be run when there is a tag available
-#    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-#    needs: [docker] # only run after the docker build stage succeeds
-#
-#    steps:
-#      - name: Checkout git repository 🕝
-#        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-#
-#      - name: Set up Python 3.9 🐍
-#        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
-#        with:
-#          python-version: 3.9
-#
-#      - name: Read Poetry Version 🔢
-#        run: |
-#          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-#        shell: bash
-#
-#      - name: Install poetry 🦄
-#        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
-#        with:
-#          poetry-version: ${{ env.POETRY_VERSION }}
-#
-#      - name: Copy Segment write key to the package
-#        env:
-#          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
-#          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
-#        run: |
-#          ./scripts/write_keys_file.sh
-#
-#      - name: Build ⚒️ Distributions
-#        run: poetry build
-#
-#      - name: Publish to PyPI 📦
-#        uses: pypa/gh-action-pypi-publish@c7f29f7adef1a245bd91520e94867e5c6eedddcc
-#        with:
-#          user: __token__
-#          password: ${{ secrets.PYPI_TOKEN }}
-#
-#      - name: Notify Sentry about the release
-#        env:
-#          GITHUB_TAG: ${{ github.ref }}
-#          SENTRY_ORG: rasahq
-#          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-#        run: |
-#          curl -sL https://sentry.io/get-cli/ | bash
-#          GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-#          sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
-#          sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
-#          sentry-cli releases finalize "rasa-$GITHUB_TAG"
-#
-#      - name: Notify Slack & Publish Release Notes 🗞
-#        env:
-#          GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
-#          SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
-#          GITHUB_TAG: ${{ github.ref }}
-#          GITHUB_REPO_SLUG: ${{ github.repository }}
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        run: |
-#          GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-#          pip install -U github3.py pep440-version-utils
-#          python3 scripts/publish_gh_release_notes.py
-#          ./scripts/ping_slack_about_package_release.sh
-#
-#  send_slack_notification_for_release_on_failure:
-#    name: Notify Slack & Publish Release Notes
-#    runs-on: ubuntu-22.04
-#    # run this job when the workflow is triggered by a tag push
-#    if: always() && github.repository == 'RasaHQ/rasa' && github.ref_type == 'tag'
-#    needs:
-#      - deploy
-#
-#    steps:
-#      - name: Notify Slack of failure ⛔️
-#        # send notification if 'deploy' is skipped (previous needed job failed) or failed
-#        if: needs.deploy.result != 'success'
-#        env:
-#          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
-#        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
-#        with:
-#          args: "⛔️ *Rasa Open Source* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  deploy:
+    name: Deploy to PyPI
+    runs-on: ubuntu-22.04
+
+    # deploy will only be run when there is a tag available
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+    needs: [docker] # only run after the docker build stage succeeds
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: 3.9
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Copy Segment write key to the package
+        env:
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+        run: |
+          ./scripts/write_keys_file.sh
+
+      - name: Build ⚒️ Distributions
+        run: poetry build
+
+      - name: Publish to PyPI 📦
+        uses: pypa/gh-action-pypi-publish@c7f29f7adef1a245bd91520e94867e5c6eedddcc
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Notify Sentry about the release
+        env:
+          GITHUB_TAG: ${{ github.ref }}
+          SENTRY_ORG: rasahq
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+          sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
+          sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
+          sentry-cli releases finalize "rasa-$GITHUB_TAG"
+
+      - name: Notify Slack & Publish Release Notes 🗞
+        env:
+          GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
+          SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+          GITHUB_TAG: ${{ github.ref }}
+          GITHUB_REPO_SLUG: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+          pip install -U github3.py pep440-version-utils
+          python3 scripts/publish_gh_release_notes.py
+          ./scripts/ping_slack_about_package_release.sh
+
+  send_slack_notification_for_release_on_failure:
+    name: Notify Slack & Publish Release Notes
+    runs-on: ubuntu-22.04
+    # run this job when the workflow is triggered by a tag push
+    if: always() && github.repository == 'RasaHQ/rasa' && github.ref_type == 'tag'
+    needs:
+      - deploy
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'deploy' is skipped (previous needed job failed) or failed
+        if: needs.deploy.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Rasa Open Source* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
