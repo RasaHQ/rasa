@@ -27,6 +27,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     TOLERANCE,
     CHECKPOINT_MODEL,
+    PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
@@ -177,7 +178,7 @@ def load_tf_hub_model(model_url: Text) -> Any:
 
     # Once `tensorflow-hub` have rebuilt their `_pb2.py` files with protobuf-4.x
     # this can be removed.
-    if os.getenv("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "ubp") != "python":
+    if os.getenv(PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION, "ubp") != "python":
         raise RasaException(
             "The module `tensorflow-hub` is currently not compatible with "
             "`protobuf-4.x`. To mitigate this issue, you may set your "

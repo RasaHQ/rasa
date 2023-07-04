@@ -23,6 +23,7 @@ from rasa.exceptions import RasaException
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
+from rasa.utils.tensorflow.constants import PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
 
 
 @pytest.fixture
@@ -318,7 +319,7 @@ def test_raise_tensorflow_hub_incompatible(
     create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     monkeypatch: MonkeyPatch,
 ):
-    os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "cpp"
+    monkeypatch.setenv(PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION, "ubp")
     monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -332,4 +333,4 @@ def test_raise_tensorflow_hub_incompatible(
         "The module `tensorflow-hub` is currently not compatible with `protobuf-4.x`."
         in str(excinfo.value)
     )
-    os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+    monkeypatch.setenv(PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION, "python")
