@@ -153,38 +153,47 @@ else
 endif
 
 test-cli: PYTEST_MARKER=category_cli and (not flaky)
+test-nlu-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker
 
 test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky)
+test-nlu-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
 test-core-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-core-featurizers: test-marker
 
 test-policies: PYTEST_MARKER=category_policies and (not flaky)
+test-nlu-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
 test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker
 
 test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky)
+test-nlu-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: prepare-spacy prepare-mitie prepare-transformers test-marker
 
 test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky)
+test-nlu-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: prepare-spacy prepare-mitie test-marker
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky)
+test-nlu-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
 test-full-model-training: prepare-spacy prepare-mitie prepare-transformers test-marker
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky)
+test-nlu-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: prepare-spacy prepare-mitie test-marker
 
 test-performance: PYTEST_MARKER=category_performance and (not flaky)
+test-nlu-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker
 
 test-flaky: PYTEST_MARKER=flaky
+test-nlu-featurizers: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
 test-flaky: DD_ARGS := $(or $(DD_ARGS),)
 test-flaky: prepare-spacy prepare-mitie test-marker
 
@@ -194,7 +203,7 @@ test-gh-actions:
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	TRANSFORMERS_OFFLINE=1 OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
+	TRANSFORMERS_OFFLINE=1 OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=$(PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION) poetry run pytest tests -n $(JOBS) --dist loadscope -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
