@@ -188,3 +188,21 @@ def test_story_visualization_with_merging(domain: Domain):
     assert 15 < len(generated_graph.nodes()) < 33
 
     assert 20 < len(generated_graph.edges()) < 33
+
+
+def test_remove_auxiliary_nodes():
+    # Create a sample graph
+    graph = nx.MultiDiGraph()
+    graph.add_nodes_from([-2, -1, 0, 1, 2, 3, 4, 5])
+    graph.add_edges_from([(-2, 0), (-1, 0), (0, 1), (1, 2), (2, 3), (3, 4), (4, 5)])
+
+    # Call the method to remove auxiliary nodes
+    visualization._remove_auxiliary_nodes(graph, 3)
+
+    # Check if the expected nodes are removed
+    expected_nodes = set([0, 1, 2, 3, 4, 5, -1])
+    assert set(graph.nodes()) == expected_nodes, "Nodes mismatch"
+
+    # Check if the edges are updated correctly
+    expected_edges = [(-1, 0), (0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]
+    assert list(graph.edges()) == expected_edges, "Edges mismatch"
