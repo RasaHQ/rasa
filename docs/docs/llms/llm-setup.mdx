@@ -146,8 +146,62 @@ To configure these parameters, follow these steps:
 
 ## Other LLM providers
 
-We're continually working to support more LLMs in the future. If you have any
-specific requests or need assistance with setup, feel free to reach out to us.
+The LLM components use Langchain to communicate with the LLM provider. Langchain
+is a library that provides a common interface for interacting with LLMs. This
+allows us to support multiple LLM and embedding providers.
 
-Remember, your feedback helps us improve and provide the features and support
-you need.
+The LLM provider is configured separately for each component. All components 
+default to using OpenAI.
+
+:::important
+
+If you switch to a different LLM / embedding provider, you need to go through 
+additional installation and setup. For example, if you switch
+to Cohere, you will need to install its python package `pip install cohere` 
+as well as providing the `COHERE_API_KEY` environment variable.
+
+Details on installation and setup for different providers can be found in
+[langchains integration documentation](https://python.langchain.com/docs/ecosystem/integrations/).
+
+:::
+
+:::caution
+
+We are currently working on adding support for other LLM providers. We support
+configuring alternative LLM and embedding providers, but we have tested the 
+functionality with OpenAI only. 
+
+:::
+
+### Configuring an LLM provider
+The LLM provider can be configured using the `llm` property of each component. 
+The `llm.type` property specifies the LLM provider to use.
+
+```yaml title="config.yml"
+pipeline:
+  - name: "rasa_plus.ml.LLMIntentClassifier"
+    llm:
+      type: "cohere"
+```
+
+The above configuration specifies that the [LLMIntentClassifier](./llm-intent.mdx)
+should use the [Cohere](https://cohere.ai/) LLM provider rather than OpenAI.
+
+### Configuring an embeddings provider
+The embeddings provider can be configured using the `embeddings` property of each
+component. The `embeddings.type` property specifies the embeddings provider to use.
+
+```yaml title="config.yml"
+pipeline:
+  - name: "rasa_plus.ml.LLMIntentClassifier"
+    embeddings:
+      type: "cohere"
+```
+
+:::note
+
+Not every component uses embeddings. For example, the 
+[LLMResponseRephraser](./llm-nlg.mdx) component does not use embeddings. 
+For these components, no `embeddings` property is needed.
+
+:::
