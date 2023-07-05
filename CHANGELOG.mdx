@@ -16,6 +16,18 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.4.15] - 2023-07-05
+                        
+Rasa 3.4.15 (2023-07-05)                         
+### Bugfixes
+- [#12566](https://github.com/rasahq/rasa/issues/12566): Introduce a validation step in `rasa data validate` command to identify non-existent paths and empty domains.
+- [#12568](https://github.com/rasahq/rasa/issues/12568): Rich responses containing buttons with parentheses characters are now correctly parsed.
+  Previously any characters found between the first identified pair of `()` in response button took precedence.
+
+### Miscellaneous internal changes
+- [#12567](https://github.com/rasahq/rasa/issues/12567)
+
+
 ## [3.4.14] - 2023-06-08
                         
 Rasa 3.4.14 (2023-06-08)                         
