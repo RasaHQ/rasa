@@ -99,7 +99,7 @@ If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of the training.
 def load_tf_hub_model(model_url: Text) -> Any
 ```
 
-Load model from cache if possible, otherwise from TFHub
+Load model from cache if possible, otherwise from TFHub.
 
 #### check\_deprecated\_options
 

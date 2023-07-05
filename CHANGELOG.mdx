@@ -16,6 +16,29 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.6.1] - 2023-07-03
+                       
+Rasa 3.6.1 (2023-07-03)                        
+### Improvements
+- [#12533](https://github.com/rasahq/rasa/issues/12533): Add building multi-platform Docker image (amd64/arm64)
+- [#12543](https://github.com/rasahq/rasa/issues/12543): Switch struct log to `FilteringBoundLogger` in order to retain log level set in the config.
+- [#12560](https://github.com/rasahq/rasa/issues/12560): Add new anonymizable structlog keys.
+
+### Bugfixes
+- [#12516](https://github.com/rasahq/rasa/issues/12516): Add `rasa_events` to the list of anonymizable structlog keys and rename structlog keys.
+- [#12521](https://github.com/rasahq/rasa/issues/12521): Introduce a validation step in `rasa data validate` and `rasa train` commands to identify non-existent paths and empty domains.
+- [#12556](https://github.com/rasahq/rasa/issues/12556): Rich responses containing buttons with parentheses characters are now correctly parsed.
+  Previously any characters found between the first identified pair of `()` in response button took precedence.
+
+### Improved Documentation
+- [#12371](https://github.com/rasahq/rasa/issues/12371): Update wording in Rasa Pro installation page.
+- [#12505](https://github.com/rasahq/rasa/issues/12505): Document new PII Management section.
+- [#12527](https://github.com/rasahq/rasa/issues/12527): Added Documentation for Realtime Markers Section.
+- [#12579](https://github.com/rasahq/rasa/issues/12579): Add "Rasa Pro Change Log" to documentation.
+- [#12581](https://github.com/rasahq/rasa/issues/12581): Document new Load Testing Guidelines section.
+- [#12597](https://github.com/rasahq/rasa/issues/12597): Changes the formatting of realtime markers documentation page
+
+
 ## [3.6.0] - 2023-06-14
 
 Rasa 3.6.0 (2023-06-14)
