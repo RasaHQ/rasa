@@ -12,6 +12,12 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.shared.core.constants import (
+    MAPPING_TYPE,
+    SlotMappingType,
+    MAPPING_CONDITIONS,
+    ACTIVE_LOOP,
+)
 from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
@@ -303,13 +309,17 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         return TOO_COMPLEX_INTENT, []
 
     @classmethod
-    def create_template_inputs(cls, flows: FlowsList) -> List[Dict[str, Any]]:
+    def create_template_inputs(
+        cls, flows: FlowsList, tracker: DialogueStateTracker
+    ) -> List[Dict[str, Any]]:
         result = []
         for flow in flows.underlying_flows:
             if flow.is_user_triggerable() and not flow.is_rasa_default_flow():
+
                 slots_with_info = [
                     {"name": q.question, "description": q.description}
                     for q in flow.get_question_steps()
+                    if cls.is_extractable(q, tracker)
                 ]
                 result.append(
                     {
@@ -319,6 +329,24 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                     }
                 )
         return result
+
+    @staticmethod
+    def is_extractable(q: QuestionFlowStep, tracker: DialogueStateTracker) -> bool:
+        slot = tracker.slots.get(q.question)
+        if slot is None:
+            return False
+
+        for mapping in slot.mappings:
+            if mapping.get(MAPPING_TYPE) == str(SlotMappingType.FROM_ENTITY):
+                conditions = mapping.get(MAPPING_CONDITIONS, [])
+                if len(conditions) == 0:
+                    return True
+                else:
+                    for condition in conditions:
+                        active_loop = condition.get(ACTIVE_LOOP)
+                        if active_loop and active_loop == tracker.active_loop_name:
+                            return True
+        return False
 
     def render_template(
         self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
@@ -337,6 +365,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                     "description": q.description,
                 }
                 for q in top_flow.get_question_steps()
+                if self.is_extractable(q, tracker)
             ]
         else:
             flow_slots = []
@@ -351,7 +380,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         current_conversation += f"\nUSER: {latest_user_message}"
 
         inputs = {
-            "available_flows": self.create_template_inputs(flows),
+            "available_flows": self.create_template_inputs(flows, tracker),
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
             "current_flow": top_flow.id if top_flow is not None else None,
