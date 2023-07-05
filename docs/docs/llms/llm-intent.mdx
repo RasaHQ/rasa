@@ -44,14 +44,15 @@ During trainin the classifier
 
 During prediction the classifier
 
-3. embeds the current message and
-4. uses the embedding to find similar intent examples in the vector store.
-5. The retrieved examples are ranked based on similarity to the current message and
-6. the most similar ones are included in an LLM prompt. The prompt guides the LLM to
+1. embeds the current message and
+2. uses the embedding to find similar intent examples in the vector store.
+3. The retrieved examples are ranked based on similarity to the current message and
+4. the most similar ones are included in an LLM prompt. The prompt guides the LLM to
    predict the intent of the message.
-7. LLM predicts an intent index. 
-8. The index is translated to the intent name. If an invalid number is predicted
-   the system will use a fallback intent instead of the predicted intent.
+5. LLM predicts an intent label. 
+6. The generated label is mapped to an intent of the domain. The LLM can also
+   predict a label that is not part of the training data. In this case, the
+   intent from the domain with the most similar embedding is predicted.
 
 ## Using the LLM-based Intent Classifier in Your Bot
 
