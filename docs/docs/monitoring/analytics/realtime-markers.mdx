@@ -30,7 +30,7 @@ you to gain valuable insights and enhance the performance of your Rasa
 Assistant. In this guide, we'll explore how to leverage real-time
 analysis of markers to track solution and abandonment rates in your conversations.
 
-![flow of information with realtime markers](/img/analytics/realtime-markers.png)
+<img alt="flow of information with realtime markers" src={useBaseUrl("/img/analytics/realtime-markers.png")} />
 
 ## Defining Markers
 
@@ -44,8 +44,8 @@ upload the markers to Analytics Data Pipeline with the `rasa markers upload`
 command. This command validates the marker YAML against the domain file to
 make sure all the slots, intents and actions referred in the file also exist
 in the domain and uploads the marker configuration YAML to the
-Analytics Data Pipeline (where they're persisted in a database) and exits. 
-To get started, make sure you have the latest 
+Analytics Data Pipeline (where they're persisted in a database) and exits.
+To get started, make sure you have the latest
 version of Rasa installed. Then, open your command line
 interface and navigate to your Rasa project directory. Run the following command:
 
@@ -79,8 +79,8 @@ for more information about the command line arguments available.
 The markers YAML file describes the pattern of events for marker extraction.
 Once the YAML files are uploaded, the patterns to be used for marker extraction are
 stored in the `rasa_patterns` table. As the Kafka Consumer starts receiving events
-from the Rasa Assistant, it starts analyzing them for markers. The Pipeline 
-processes all the events from the Kafka Event Broker and identifies points of 
+from the Rasa Assistant, it starts analyzing them for markers. The Pipeline
+processes all the events from the Kafka Event Broker and identifies points of
 interest in the conversation that match the marker. The extracted markers are then stored
 in the `rasa_marker` table.
 
