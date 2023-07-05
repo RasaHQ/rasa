@@ -761,7 +761,7 @@ class FlowExecutor:
                     "to __start__ if it ended it should be popped from the stack."
                 )
 
-            structlogger.debug("flow.action.loop", previous_step)
+            structlogger.debug("flow.action.loop", previous_step=previous_step)
             predicted_action = self._wrap_up_previous_step(
                 current_flow, previous_step, tracker
             )
