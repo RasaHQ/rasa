@@ -177,6 +177,10 @@
             },
             {
               "type": "doc",
+              "id": "version-3.x/monitoring/analytics/realtime-markers"
+            },
+            {
+              "type": "doc",
               "id": "version-3.x/monitoring/analytics/example-queries"
             },
             {
@@ -188,8 +192,16 @@
         {
           "type": "doc",
           "id": "version-3.x/monitoring/tracing"
+        },
+        {
+          "type": "doc",
+          "id": "version-3.x/monitoring/load-testing-guidelines"
         }
       ]
+    },
+    {
+      "type": "doc",
+      "id": "version-3.x/pii-management"
     },
     {
       "collapsed": false,
@@ -2233,6 +2245,10 @@
       "type": "category",
       "label": "Change Log",
       "items": [
+        {
+          "type": "doc",
+          "id": "version-3.x/rasa-pro-changelog"
+        },
         {
           "type": "doc",
           "id": "version-3.x/changelog"
