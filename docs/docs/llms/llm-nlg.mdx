@@ -140,7 +140,7 @@ all responses, even if they don't specify `rephrase: true` in the response
 metadata. If you want to disable rephrasing for a specific response, you can set
 `rephrase: false` in the response metadata.
 
-### Specify an OpenAI Model
+### LLM configuration
 
 You can specify the openai model to use for rephrasing by setting the
 `llm.model_name` property in the `endpoints.yml` file:
@@ -160,6 +160,25 @@ If you want to use Azure OpenAI Service, you can configure the necessary
 parameters as described in the
 [Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service)
 section.
+
+:::info Using Other LLMs
+
+By default, OpenAI is used as the underlying LLM provider. 
+
+The used LLM provider provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="endpoints.yml"
+nlg:
+  type: rasa_plus.ml.LLMResponseRephraser
+  llm: 
+    type: "cohere"
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llm-setup.mdx#other-llms--embeddings)
+
+:::
 
 ### Temperature
 

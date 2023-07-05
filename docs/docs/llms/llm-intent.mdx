@@ -91,7 +91,7 @@ pipeline:
 
 Defaults to `out_of_scope`.
 
-### OpenAI Model
+### LLM / Embeddings
 
 You can choose the OpenAI model that is used for the LLM by adding the `llm.model_name`
 parameter to the `config.yml` file.
@@ -113,6 +113,29 @@ If you want to use Azure OpenAI Service, you can configure the necessary
 parameters as described in the 
 [Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service) 
 section.
+
+:::info Using Other LLMs / Embeddings
+
+By default, OpenAI is used as the underlying LLM and embedding provider. 
+
+The used LLM provider and embeddings provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    llm:
+      type: "cohere"
+    embeddings:
+      type: "cohere"
+# - ...
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llm-setup.mdx#other-llms--embeddings)
+
+:::
 
 ### Temperature
 

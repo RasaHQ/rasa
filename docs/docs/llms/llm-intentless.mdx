@@ -91,13 +91,14 @@ policies:
 
 If unset, `nlu_abstention_threshold` defaults to `0.9`.
 
-### Specify OpenAI Models
+### LLM / Embeddings configuration
 
-You can specify the openai models used for generation and embedding.
+You can customize the openai models used for generation and embedding.
 
 #### Embedding Model
-The `embeddings.model_name` property in the `config.yml` file configures the
-embedding model used:
+By default, OpenAI will be used for embeddings. You can configure the
+`embeddings.model_name` property in the `config.yml` file to change the used
+embedding model:
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -111,8 +112,10 @@ Defaults to `text-embedding-ada-002`. The model name needs to be set to an
 [available embedidng model.](https://platform.openai.com/docs/guides/embeddings/embedding-models).
 
 #### LLM Model
-The `llm.model_name` property in the `config.yml` file configures the
-LLM model used:
+
+By default, OpenAI is used for LLM generation. You can configure the
+`llm.model_name` property in the `config.yml` file to specify which
+OpenAI model to use:
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -128,6 +131,26 @@ If you want to use Azure OpenAI Service, you can configure the necessary
 parameters as described in the
 [Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service)
 section.
+
+#### Other LLMs / Embeddings
+
+By default, OpenAI is used as the underlying LLM and embedding provider. 
+
+The used LLM provider and embeddings provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="config.yml"
+policies:
+  # ... any other policies you have
+  - name: rasa_plus.ml.IntentlessPolicy
+    llm: 
+      type: "cohere"
+    embeddings:
+      type: "cohere"
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llm-setup.mdx#other-llms--embeddings).
 
 ### Other Policies
 
