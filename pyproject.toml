@@ -152,8 +152,8 @@ portalocker = "^2.7.0"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
 tensorflow-io-gcs-filesystem = [
-    {version = ">=0.23.1,<0.32", markers = "sys_platform == 'win32'"},
-    {version = ">=0.32", markers = "sys_platform != 'win32'"}
+    {version = "==0.31", markers = "sys_platform == 'win32'"},
+    {version = "==0.32", markers = "sys_platform != 'win32' and sys_platform != 'darwin'"}
 ]
 
 [[tool.poetry.dependencies.dask]]
@@ -169,7 +169,7 @@ version = ">=1.19.2,<1.22.0"
 python = "~=3.7.0"
 
 [[tool.poetry.dependencies.numpy]]
-version = ">=1.19.2,<1.25.0"
+version = ">=1.19.2,<1.26.0"
 python = ">=3.8,<3.11"
 
 [[tool.poetry.dependencies.numpy]]
