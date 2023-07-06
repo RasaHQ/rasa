@@ -3,9 +3,8 @@ id: llm-intentless
 sidebar_label: Intentless Dialogues with LLMs
 title: Intentless Policy - LLMs for intentless dialogues
 abstract: |
-  The intentless policy uses large language models to complement existing rasa
-  components and make it easier to build assistants without needing to define a
-  lot of intent examples.
+  The intentless policy uses large language models to drive a conversation
+  forward without relying on intent predictions. 
 ---
 
 import RasaLabsLabel from "@theme/RasaLabsLabel";
@@ -20,14 +19,13 @@ import intentlessMeaningCompounds from "./intentless-meaning-compounds.png";
 The new intentless policy leverages large language models (LLMs) to complement
 existing rasa components and make it easier:
 
-- to build assistants without needing to define a lot of intent example
-- to incorporate unstructured data such as FAQs or existing conversations logs
+- to build assistants without needing to define a lot of intent examples
 - to handle conversations where messages
-  [don't fit intents](https://rasa.com/blog/were-a-step-closer-to-getting-rid-of-intents/)
+  [don't fit into intents](https://rasa.com/blog/were-a-step-closer-to-getting-rid-of-intents/)
   and conversation context is necessary to choose a course of action.
 
-Using the `IntentlessPolicy`, our bot already provides a good 
-question-answering experience, understanding many different ways 
+Using the `IntentlessPolicy`, a 
+question-answering bot can already understanding many different ways 
 that users could phrase their questions - even across a series of user messages:
 
 <Image
@@ -36,13 +34,14 @@ that users could phrase their questions - even across a series of user messages:
   alt=""
 />
 
-To provide the appropriate guard rails and steering for the LLM you can
+This only requires appropriate responses to be defined in the domain file.
 
-- whitelist utterances to specify allowed responses for the LLM
-- provide example conversations to give information about your domain and teach
-  the LLM what to say when
-- set thresholds to determine when the intentless policy should take over from
-  the traditional NLU and core components
+To eliminate hallucinations, the policy only chooses which response from 
+your domain file to send. It does not generate new text. 
+
+In addition, you can control the LLM by:
+- providing example conversations (end-to-end stories) which will be used in the prompt.
+- setting the confidence threshold to determine when the intentless policy should kick in.
 
 [This repository](https://github.com/RasaHQ/starter-pack-intentless-policy) contains a starter pack with a bot that uses the
 `IntentlessPolicy`. It's a good starting point for trying out the policy and for
