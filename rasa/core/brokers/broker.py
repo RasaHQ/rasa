@@ -39,7 +39,7 @@ class EventBroker:
             aio_pika.exceptions.AMQPConnectionError,
             aiormq.exceptions.ChannelNotFoundEntity,
             *aio_pika.exceptions.CONNECTION_EXCEPTIONS,
-            celery.exceptions.OperationalError
+            celery.exceptions.OperationalError,
         ) as error:
             raise ConnectionException("Cannot connect to event broker.") from error
 

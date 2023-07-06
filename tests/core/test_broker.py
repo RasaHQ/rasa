@@ -412,7 +412,8 @@ def test_pika_event_broker_configure_url(
     url = broker._configure_url()
     assert url == expected_url
 
-async def test_celery_from endpoint_config():
+
+def test_celery_from_endpoint_config():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/celery_endpoint.yml", "event_broker"
     )
