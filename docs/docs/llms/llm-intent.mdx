@@ -44,14 +44,15 @@ During trainin the classifier
 
 During prediction the classifier
 
-3. embeds the current message and
-4. uses the embedding to find similar intent examples in the vector store.
-5. The retrieved examples are ranked based on similarity to the current message and
-6. the most similar ones are included in an LLM prompt. The prompt guides the LLM to
+1. embeds the current message and
+2. uses the embedding to find similar intent examples in the vector store.
+3. The retrieved examples are ranked based on similarity to the current message and
+4. the most similar ones are included in an LLM prompt. The prompt guides the LLM to
    predict the intent of the message.
-7. LLM predicts an intent index. 
-8. The index is translated to the intent name. If an invalid number is predicted
-   the system will use a fallback intent instead of the predicted intent.
+5. LLM predicts an intent label. 
+6. The generated label is mapped to an intent of the domain. The LLM can also
+   predict a label that is not part of the training data. In this case, the
+   intent from the domain with the most similar embedding is predicted.
 
 ## Using the LLM-based Intent Classifier in Your Bot
 
@@ -91,16 +92,17 @@ pipeline:
 
 Defaults to `out_of_scope`.
 
-### OpenAI Model
+### LLM / Embeddings
 
-You can choose the OpenAI model that is used for the LLM by adding the following
+You can choose the OpenAI model that is used for the LLM by adding the `llm.model_name`
 parameter to the `config.yml` file.
 
 ```yaml-rasa title="config.yml"
 pipeline:
 # - ...
   - name: rasa_plus.ml.LLMIntentClassifier
-    model: "text-davinci-003"
+    llm:
+      model_name: "text-davinci-003"
 # - ...
 ```
 
@@ -113,17 +115,41 @@ parameters as described in the
 [Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service) 
 section.
 
+:::info Using Other LLMs / Embeddings
+
+By default, OpenAI is used as the underlying LLM and embedding provider. 
+
+The used LLM provider and embeddings provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    llm:
+      type: "cohere"
+    embeddings:
+      type: "cohere"
+# - ...
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llm-setup.mdx#other-llms--embeddings)
+
+:::
+
 ### Temperature
 
 The temperature parameter controls the randomness of the LLM predictions. You
-can set the temperature by adding the following parameter to the `config.yml`
+can set the temperature by adding the `llm.temperature` parameter to the `config.yml`
 file.
 
 ```yaml-rasa title="config.yml"
 pipeline:
 # - ...
   - name: rasa_plus.ml.LLMIntentClassifier
-    temperature: 0.7
+    llm:
+      temperature: 0.7
 # - ...
 ```
 
@@ -143,18 +169,18 @@ pipeline:
 # - ...
   - name: rasa_plus.ml.LLMIntentClassifier
     prompt: |
-      Label the last message from a user
-      with an intent. Reply ONLY with the number of the intent.
-      The intent must be one of the following:
-      {% for intent in intents %}
-      {{loop.index}}: {{intent}}
+      Label a users message from a
+      conversation with an intent. Reply ONLY with the name of the intent.
+
+      The intent should be one of the following:
+      {% for intent in intents %}- {{intent}}
       {% endfor %}
       {% for example in examples %}
       Message: {{example['text']}}
-      Category: {{example['intent_number']}}
+      Intent: {{example['intent']}}
       {% endfor %}
       Message: {{message}}
-      Category:
+      Intent:
 ```
 
 The prompt is a [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) template
@@ -164,6 +190,52 @@ in the prompt:
 - `examples`: A list of the closest examples from the training data. Each
   example is a dictionary with the keys `text` and `intent`.
 - `message`: The message that needs to be classified.
+- `intents`: A list of all intents in the training data.
+
+The default prompt template results in the following prompt:
+
+```
+Label a users message from a
+conversation with an intent. Reply ONLY with 
+the name of the intent.
+
+The intent should be one of the following:
+- affirm
+- greet
+
+Message: Hello
+Intent: greet
+
+Message: Yes, I am
+Intent: affirm
+
+Message: hey there
+Intent:
+```
+
+### Number of Intent Examples
+
+The number of examples that are used to guide the LLM to predict the intent of
+the message can be customized by adding the `number_of_examples` parameter to the
+`config.yml` file:
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    number_of_examples: 3
+# - ...
+```
+
+Defaults to `10`. The examples are selected based on their similarity to the
+current message. By default, the examples are included in the prompt like this:
+```
+Message: Hello
+Intent: greet
+
+Message: Yes, I am
+Intent: affirm
+```
 
 ## Security Considerations
 

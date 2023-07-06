@@ -144,10 +144,216 @@ To configure these parameters, follow these steps:
    </Tabs>
 
 
-## Other LLM providers
+## Other LLMs & Embeddings
 
-We're continually working to support more LLMs in the future. If you have any
-specific requests or need assistance with setup, feel free to reach out to us.
+The LLM and embeddings provider can be configured separately for each 
+component. All components default to using OpenAI.
 
-Remember, your feedback helps us improve and provide the features and support
-you need.
+:::important
+
+If you switch to a different LLM / embedding provider, you need to go through 
+additional installation and setup. Please note the mentioned
+additional requirements for each provider in their respective section.
+
+:::
+
+:::caution
+
+We are currently working on adding support for other LLM providers. We support
+configuring alternative LLM and embedding providers, but we have tested the 
+functionality with OpenAI only. 
+
+:::
+
+### Configuring an LLM provider
+The LLM provider can be configured using the `llm` property of each component. 
+The `llm.type` property specifies the LLM provider to use.
+
+```yaml title="config.yml"
+pipeline:
+  - name: "rasa_plus.ml.LLMIntentClassifier"
+    llm:
+      type: "cohere"
+```
+
+The above configuration specifies that the [LLMIntentClassifier](./llm-intent.mdx)
+should use the [Cohere](https://cohere.ai/) LLM provider rather than OpenAI.
+
+The following LLM providers are supported:
+
+#### OpenAI
+Default LLM provider. Requires the `OPENAI_API_KEY` environment variable to be set.
+The model cam be configured as an optional parameter
+
+```yaml
+llm:
+  type: "openai"
+  model_name: "text-davinci-003"
+  temperature: 0.7
+```
+
+
+#### Cohere
+
+Support for Cohere needs to be installed, e.g. using `pip install cohere`.
+Additionally, requires the `COHERE_API_KEY` environment variable to be set.
+
+```yaml
+llm:
+  type: "cohere"
+  model: "gptd-instruct-tft"
+  temperature: 0.7
+```
+
+#### Vertex AI
+
+To use Vertex AI you need to install `pip install google-cloud-aiplatform` 
+The credentials for Vertex AI can be configured as described in the 
+[google auth documentation](https://googleapis.dev/python/google-auth/latest/reference/google.auth.html#module-google.auth).
+
+```yaml
+llm:
+  type: "vertexai"
+  model_name: "text-bison"
+  temperature: 0.7
+```
+
+#### Hugging Face Hub
+
+The Hugging Face Hub LLM uses models from Hugging Face.
+It requires additional packages to be installed: `pip install huggingface_hub`.
+The environment variable `HUGGINGFACEHUB_API_TOKEN` needs to be set to a 
+valid API token.
+
+```yaml
+llm:
+  type: "huggingface_hub"
+  repo_id: "gpt2"
+  task: "text-generation"
+```
+
+#### llama-cpp
+
+To use the llama-cpp language model, you should install the required python library
+`pip install llama-cpp-python`. A path to the Llama model must be provided.
+For more details, check out the [llama-cpp project]( 
+https://github.com/abetlen/llama-cpp-python).
+
+```yaml
+llm:
+  type: "llamacpp"
+  model_path: "/path/to/model.bin"
+  temperature: 0.7
+```
+
+#### Other LLM providers
+
+If you want to use a different LLM provider, you can specify the name of the
+provider in the `llm.type` property accoring to [this mapping](https://github.com/hwchase17/langchain/blob/ecee4d6e9268d71322bbf31fd16c228be304d45d/langchain/llms/__init__.py#L110). 
+
+### Configuring an embeddings provider
+The embeddings provider can be configured using the `embeddings` property of each
+component. The `embeddings.type` property specifies the embeddings provider to use.
+
+```yaml title="config.yml"
+pipeline:
+  - name: "rasa_plus.ml.LLMIntentClassifier"
+    embeddings:
+      type: "cohere"
+```
+
+The above configuration specifies that the [LLMIntentClassifier](./llm-intent.mdx)
+should use the [Cohere](https://cohere.ai/) embeddings provider rather than OpenAI.
+
+:::note Only Some Components need Embeddings
+
+Not every component uses embeddings. For example, the 
+[LLMResponseRephraser](./llm-nlg.mdx) component does not use embeddings. 
+For these components, no `embeddings` property is needed.
+
+:::
+
+The following embeddings providers are supported:
+
+#### OpenAI
+Default embeddings. Requires the `OPENAI_API_KEY` environment variable to be set.
+The model cam be configured as an optional parameter
+
+```yaml
+embeddings:
+  type: "openai"
+  model: "text-embedding-ada-002"
+```
+
+#### Cohere
+
+Embeddings from [Cohere](https://cohere.ai/). Requires the python package
+for cohere to be installed, e.g. uing `pip install cohere`. The 
+`COHERE_API_KEY` environment variable must be set. The model 
+can be configured as an optional parameter.
+
+```yaml
+embeddings:
+  type: "cohere"
+  model: "embed-english-v2.0"
+```
+
+#### spaCy
+
+The spacy embeddings provider uses `en_core_web_sm` model to generate 
+embeddings. The model needs to be installed separately, e.g. using
+`python -m spacy download en_core_web_sm`.
+
+```yaml
+embeddings:
+  type: "spacy"
+```
+
+#### Vertex AI
+
+To use Vertex AI you need to install `pip install google-cloud-aiplatform` 
+The credentials for Vertex AI can be configured as described in the 
+[google auth documentation](https://googleapis.dev/python/google-auth/latest/reference/google.auth.html#module-google.auth).
+
+```yaml
+embeddings:
+  type: "vertexai"
+  model_name: "textembedding-gecko"
+```
+
+#### Hugging Face Instruct
+
+The Hugging Face Instruct embeddings provider uses sentence transformers
+and requires additional packages to be installed: `pip install sentence_transformers InstructorEmbedding`
+
+```yaml
+embeddings:
+  type: "huggingface_instruct"
+  model_name: "hkunlp/instructor-large"
+```
+
+#### Hugging Face Hub
+
+The Hugging Face Hub embeddings provider uses models from Hugging Face.
+It requires additional packages to be installed: `pip install huggingface_hub`.
+The environment variable `HUGGINGFACEHUB_API_TOKEN` needs to be set to a 
+valid API token.
+
+```yaml
+embeddings:
+  type: "huggingface_hub"
+  repo_id: "sentence-transformers/all-mpnet-base-v2"
+  task: "feature-extraction"
+```
+
+#### llama-cpp
+To use the llama-cpp embeddings, you should install the required python library
+`pip install llama-cpp-python`. A path to the Llama model must be provided.
+For more details, check out the [llama-cpp project]( 
+https://github.com/abetlen/llama-cpp-python).
+
+```yaml
+embeddings:
+  type: "llamacpp"
+  model_path: "/path/to/model.bin"
+```
