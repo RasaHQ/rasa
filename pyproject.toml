@@ -151,7 +151,6 @@ confluent-kafka = ">=1.9.2,<3.0.0"
 portalocker = "^2.7.0"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
-openai = "^0.27.7"
 tensorflow-io-gcs-filesystem = [
     {version = ">=0.23.1,<0.32", markers = "sys_platform == 'win32'"},
     {version = ">=0.32", markers = "sys_platform != 'win32'"}
