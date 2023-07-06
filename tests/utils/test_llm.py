@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
