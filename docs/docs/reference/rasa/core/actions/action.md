@@ -111,9 +111,11 @@ Unique identifier of this simple action.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Execute the side effects of this action.
@@ -184,9 +186,11 @@ Creates action.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Simple run implementation uttering a (hopefully defined) response.
@@ -230,9 +234,11 @@ Returns action name.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action (see parent class for full docstring).
@@ -304,9 +310,11 @@ returns complete action utterance name.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Query the appropriate response and create a bot utterance with that.
@@ -346,9 +354,11 @@ Initializes action back.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -375,9 +385,11 @@ Returns action listen name.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -411,9 +423,11 @@ Initializes action restart.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -440,9 +454,11 @@ Returns action start name.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -474,9 +490,11 @@ Initializes action default fallback.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -492,9 +510,11 @@ Deactivates an active loop.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -520,9 +540,11 @@ Action endpoint.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -561,9 +583,11 @@ path. This is deprecated and can be removed once the
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -589,9 +613,11 @@ Returns the name of the action.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -619,9 +645,11 @@ description of the intent instead of its identifier name.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.
@@ -649,6 +677,26 @@ def __init__() -> None
 ```
 
 Initializes action default ask rephrase.
+
+## ActionSendText Objects
+
+```python
+class ActionSendText(Action)
+```
+
+Sends a text message to the output channel.
+
+#### run
+
+```python
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
+              tracker: "DialogueStateTracker",
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
 
 ## ActionExtractSlots Objects
 
@@ -683,9 +731,11 @@ Returns action_extract_slots name.
 #### run
 
 ```python
-async def run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator",
+async def run(output_channel: "OutputChannel",
+              nlg: "NaturalLanguageGenerator",
               tracker: "DialogueStateTracker",
-              domain: "Domain") -> List[Event]
+              domain: "Domain",
+              metadata: Optional[Dict[Text, Any]] = None) -> List[Event]
 ```
 
 Runs action. Please see parent class for the full docstring.

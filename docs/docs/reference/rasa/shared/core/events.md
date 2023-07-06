@@ -287,6 +287,14 @@ def __str__() -> Text
 
 Returns text representation of event.
 
+#### \_\_repr\_\_
+
+```python
+def __repr__() -> Text
+```
+
+Returns text representation of event for debugging.
+
 #### as\_sub\_state
 
 ```python
@@ -1346,6 +1354,14 @@ def __str__() -> Text
 ```
 
 Returns text representation of event.
+
+#### \_\_repr\_\_
+
+```python
+def __repr__() -> Text
+```
+
+Returns event as string for debugging.
 
 #### \_\_hash\_\_
 

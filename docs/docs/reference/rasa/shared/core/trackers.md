@@ -220,6 +220,30 @@ def get_slot(key: Text) -> Optional[Any]
 
 Retrieves the value of a slot.
 
+#### has\_bot\_message\_after\_latest\_user\_message
+
+```python
+def has_bot_message_after_latest_user_message() -> bool
+```
+
+Checks if there is a bot message after the most recent user message.
+
+**Returns**:
+
+  `True` if there is an action after the most recent user message.
+
+#### has\_action\_after\_latest\_user\_message
+
+```python
+def has_action_after_latest_user_message() -> bool
+```
+
+Check if there is an action after the most recent user message.
+
+**Returns**:
+
+  `True` if there is an action after the most recent user message.
+
 #### get\_latest\_entity\_values
 
 ```python
