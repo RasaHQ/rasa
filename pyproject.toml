@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.6.1"
+version = "3.6.2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -151,11 +151,17 @@ confluent-kafka = ">=1.9.2,<3.0.0"
 portalocker = "^2.7.0"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
-tensorflow-io-gcs-filesystem = [
-    {version = "==0.31", markers = "sys_platform == 'win32'"},
-    {version = "==0.32", markers = "sys_platform == 'linux'"},
-    {version = "==0.32", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"}
-]
+[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
+version = "==0.31"
+markers = "sys_platform == 'win32'"
+
+[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
+version = "==0.32"
+markers = "sys_platform == 'linux'"
+
+[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
+version = "==0.32"
+markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"
 
 [[tool.poetry.dependencies.dask]]
 version = "2022.2.0"
