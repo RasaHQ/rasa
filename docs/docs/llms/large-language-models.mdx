@@ -13,24 +13,38 @@ import RasaLabsBanner from "@theme/RasaLabsBanner";
 
 <RasaLabsBanner version="3.7.0b1" />
 
-Large Language Models (LLMs), pretrained models using retrieval-augmented
-generation, can be utilized with Rasa in several ways. This document offers an
-overview of those usage patterns and how to handle them.
+As part of a beta release, we have released multiple components 
+which make use of the latest generation of Large Language Models (LLMs).
+This document offers an overview of what you can do with them.
+We encourage you to experiment with these components and share your findings with us.
+We are working on some larger changes to the platform that leverage LLMs natively.
+Please reach out to us if you'd like to learn more about upcoming changes.
 
-## A future-proof approach using generative models
+
+## LLMs can do more than just NLU
 
 The recent advances in large language models (LLMs) have opened up new
 possibilities for conversational AI. LLMs are pretrained models that can be
-fine-tuned to perform a variety of tasks, including intent classification,
-dialogue handling, and natural language generation (NLG).
+used to perform a variety of tasks, including intent classification,
+dialogue handling, and natural language generation (NLG). The components described
+here all use in-context learning. In other words, instructions and examples are
+provided in a prompt which are sent to a general-purpose LLM. They do not require
+fine-tuning of large models.
+
+### Plug & Play LLMs of your choice
+
+Just like our NLU pipeline, the LLM components here can be configured to use different
+LLMs. There is no one-size-fits-all best model, and new models are being released every
+week. We encourage you to try out different models and evaluate their performance on 
+different languages in terms of fluency, accuracy, and latency.
 
 ### An adjustable risk profile
 
-The potential and risks of LLMs vary per use case, with more tolerance for error
-internally than for customer-facing applications. As your organization becomes
-more familiar with the technology, you may be more open to its uses, such as
-enhancing the NLU pipeline, managing long-tail topics, or subtly altering bot
-responses in low-risk situations.
+The potential and risks of LLMs vary per use case. For customer-facing use cases, 
+you may not ever want to send generated text to your users. Rasa gives you full 
+control over where and when you want to make use of LLMs. You can use LLMs for NLU and
+dialogue, and still only send messages that were authored by a human. 
+You can also allow an LLM to rephrase your existing messages to account for context.
 
 It's essential that your system provides full
 control over these processes. Understanding how LLMs and other components
