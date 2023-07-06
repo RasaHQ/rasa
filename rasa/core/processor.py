@@ -1,3 +1,4 @@
+import inspect
 import copy
 import logging
 import structlog
@@ -724,8 +725,6 @@ class MessageProcessor:
             )
             # Intent is not explicitly present. Pass message to graph.
             if msg.data.get(INTENT) is None:
-                if tracker is None:
-                    tracker = DialogueStateTracker.from_events(message.sender_id, [])
                 parse_data = self._parse_message_with_graph(
                     message, tracker, only_output_properties
                 )
@@ -753,7 +752,7 @@ class MessageProcessor:
     def _parse_message_with_graph(
         self,
         message: UserMessage,
-        tracker: DialogueStateTracker,
+        tracker: Optional[DialogueStateTracker] = None,
         only_output_properties: bool = True,
     ) -> Dict[Text, Any]:
         """Interprets the passed message.
@@ -975,9 +974,20 @@ class MessageProcessor:
             # case of a rejection.
             temporary_tracker = tracker.copy()
             temporary_tracker.update_with_events(prediction.events, self.domain)
-            events = await action.run(
-                output_channel, nlg, temporary_tracker, self.domain
-            )
+
+            run_args = inspect.getfullargspec(action.run).args
+            if "metadata" in run_args:
+                events = await action.run(
+                    output_channel,
+                    nlg,
+                    temporary_tracker,
+                    self.domain,
+                    metadata=prediction.action_metadata,
+                )
+            else:
+                events = await action.run(
+                    output_channel, nlg, temporary_tracker, self.domain
+                )
         except rasa.core.actions.action.ActionExecutionRejection:
             events = [
                 ActionExecutionRejected(
