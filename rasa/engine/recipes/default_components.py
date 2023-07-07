@@ -5,6 +5,7 @@ from rasa.nlu.classifiers.logistic_regression_classifier import (
     LogisticRegressionClassifier,
 )
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
+from rasa.nlu.classifiers.nearest_neighbors_classifier import NearestNeighborsClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.duckling_entity_extractor import DucklingEntityExtractor
@@ -45,6 +46,7 @@ DEFAULT_COMPONENTS = [
     MitieIntentClassifier,
     SklearnIntentClassifier,
     LogisticRegressionClassifier,
+    NearestNeighborsClassifier,
     # Response Selectors
     ResponseSelector,
     # Message Entity Extractors
