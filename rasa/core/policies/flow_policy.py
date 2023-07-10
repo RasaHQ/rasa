@@ -854,7 +854,7 @@ class FlowExecutor:
                     1.0,
                     metadata={
                         "slots": {
-                            CORRECTED_SLOTS_SLOT: [s.as_dict() for s in updated_slots]
+                            CORRECTED_SLOTS_SLOT: [s.key for s in updated_slots]
                         }
                     },
                 )
