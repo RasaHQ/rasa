@@ -16,6 +16,8 @@ FORCE_JSON_LOGGING = os.environ.get("FORCE_JSON_LOGGING")
 
 
 class HumanConsoleRenderer(ConsoleRenderer):
+    """Console renderer that outputs human-readable logs."""
+
     def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> str:
         if "event_info" in event_dict:
             event_key = event_dict["event"]

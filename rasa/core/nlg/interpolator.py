@@ -39,9 +39,9 @@ def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text:
         return text
     except KeyError as e:
         event_info = (
-            "There is no slot with this name "
-            "nor did you pass the value explicitly when calling the response. "
-            "Return response without filling the response"
+            "The specified slot name does not exist, "
+            "and no explicit value was provided during the response invocation. "
+            "Return the response without populating it."
         )
         structlogger.exception(
             "interpolator.interpolate.text",
