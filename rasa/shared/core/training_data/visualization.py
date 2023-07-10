@@ -543,7 +543,6 @@ def _remove_auxiliary_nodes(
         for pred in predecessors:
             if pred in predecessors_seen:
                 graph.remove_node(i)
-                break
         predecessors_seen.update(predecessors)
 
 
