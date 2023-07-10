@@ -56,7 +56,6 @@ def _anonymizer(
         "entity",
         "token_text",
         "user_message",
-        "activity",
         "json_message",
     ]
     anonymization_pipeline = plugin_manager().hook.get_anonymization_pipeline()
@@ -111,7 +110,6 @@ def configure_structlog(
         # Pretty printing when we run in a terminal session.
         # Automatically prints pretty tracebacks when "rich" is installed
         processors = shared_processors + [
-            # structlog.dev.ConsoleRenderer(),
             HumanConsoleRenderer(),
         ]
     else:
