@@ -56,7 +56,7 @@ jobs:
       - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
-        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false && github.event_name == 'pull_request'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
