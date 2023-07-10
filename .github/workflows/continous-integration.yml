@@ -56,15 +56,15 @@ jobs:
       - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
-        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false && github.event_name == 'pull_request'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
       - name: Set all filters to true if all tests are required
-        # Set all filters to true if the all-tests-required label is set
+        # Set all filters to true if the all-tests-required label is set or if we are not in a PR
         # Bypasses all the change filters in change_filters.yml and forces all outputs to true
         id: run-all
-        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') || github.event_name != 'pull_request'
         run: |
           echo "backend=true" >> $GITHUB_OUTPUT
           echo "docker=true" >> $GITHUB_OUTPUT
