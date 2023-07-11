@@ -315,7 +315,10 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 # trying to set a slot from another flow
                 return TOO_COMPLEX_INTENT, []
             elif len(slot_sets) > 1:
-                return TOO_COMPLEX_INTENT, []
+                if all([s[0] in slots_so_far for s in slot_sets]):
+                    return CORRECTION_INTENT, slot_sets
+                else:
+                    return TOO_COMPLEX_INTENT, []
         elif len(start_flow_actions) == 1:
             if cancel_flow:
                 return TOO_COMPLEX_INTENT, []
