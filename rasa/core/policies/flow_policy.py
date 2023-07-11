@@ -12,6 +12,7 @@ from rasa.core.constants import (
     POLICY_PRIORITY,
 )
 from pypred import Predicate
+
 from rasa.shared.constants import FLOW_PREFIX, CORRECTION_INTENT, CANCEL_FLOW_INTENT
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
@@ -854,7 +855,7 @@ class FlowExecutor:
                     1.0,
                     metadata={
                         "slots": {
-                            CORRECTED_SLOTS_SLOT: [s.as_dict() for s in updated_slots]
+                            CORRECTED_SLOTS_SLOT: [s.key for s in updated_slots]
                         }
                     },
                 )
@@ -894,6 +895,8 @@ class FlowExecutor:
         Returns:
         A tuple of the predicted action and a list of events.
         """
+        # TODO: better way to prevent circularity for generate_text_openai_chat
+        from rasa.nlu.classifiers.llm_flow_classifier import generate_text_openai_chat
         if isinstance(step, QuestionFlowStep):
             structlogger.debug("flow.step.run.question", step=step, flow=flow)
             slot = tracker.slots.get(step.question, None)
@@ -946,7 +949,7 @@ class FlowExecutor:
             context.update(tracker.current_slot_values())
             prompt = Template(step.generation_prompt).render(context)
 
-            generated = llm.generate_text_openai_chat(prompt)
+            generated = generate_text_openai_chat(prompt)
             return ActionPrediction(
                 ACTION_SEND_TEXT_NAME, 1.0, metadata={"message": {"text": generated}}
             )
