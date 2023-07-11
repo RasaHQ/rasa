@@ -70,7 +70,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     if len(list_of_files) == 0:
         return None
 
-    return max(list_of_files, key=os.path.getctime)
+    return max(list_of_files, key=os.path.getmtime)
 
 
 def get_model_for_finetuning(

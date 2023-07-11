@@ -170,7 +170,7 @@ class RestInput(InputChannel):
                     )
                 except CancelledError:
                     structlogger.error(
-                        "rest.message.received", text=copy.deepcopy(text)
+                        "rest.message.received.timeout", text=copy.deepcopy(text)
                     )
                 except Exception:
                     structlogger.exception(
