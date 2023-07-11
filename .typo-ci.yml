@@ -107,6 +107,7 @@ excluded_words:
   - knowledgebase
   - knowledgebasebot
   - linenos
+  - llm
   - luis
   - matmul
   - mattermost
