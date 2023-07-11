@@ -1,6 +1,8 @@
 import aiohttp
 
+import copy
 import logging
+import structlog
 
 from typing import Text, Dict, Any, Optional
 
@@ -10,6 +12,7 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class RasaNLUHttpInterpreter:
@@ -44,9 +47,10 @@ class RasaNLUHttpInterpreter:
         Return `None` on failure.
         """
         if not self.endpoint_config or self.endpoint_config.url is None:
-            logger.error(
-                f"Failed to parse text '{text}' using rasa NLU over http. "
-                f"No rasa NLU server specified!"
+            structlogger.error(
+                "http.parse.text",
+                text=copy.deepcopy(text),
+                event_info="No rasa NLU server specified!",
             )
             return None
 
@@ -69,13 +73,17 @@ class RasaNLUHttpInterpreter:
                         return await resp.json()
                     else:
                         response_text = await resp.text()
-                        logger.error(
-                            f"Failed to parse text '{text}' using rasa NLU over "
-                            f"http. Error: {response_text}"
+                        structlogger.error(
+                            "http.parse.text.failure",
+                            text=copy.deepcopy(text),
+                            response_text=copy.deepcopy(response_text),
                         )
                         return None
         except Exception:  # skipcq: PYL-W0703
             # need to catch all possible exceptions when doing http requests
             # (timeouts, value errors, parser errors, ...)
-            logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")
+            structlogger.exception(
+                "http.parse.text.exception",
+                text=copy.deepcopy(text),
+            )
             return None

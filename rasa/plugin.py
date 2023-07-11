@@ -79,9 +79,8 @@ def modify_default_recipe_graph_predict_nodes(
 
 
 @hookspec  # type: ignore[misc]
-def get_version_info() -> Tuple[Text, Text]:
+def get_version_info() -> Tuple[Text, Text]:  # type: ignore[empty-body]
     """Hook specification for getting plugin version info."""
-    return "", ""
 
 
 @hookspec  # type: ignore[misc]
@@ -137,15 +136,24 @@ def create_tracker_store(  # type: ignore[empty-body]
 
 
 @hookspec(firstresult=True)  # type: ignore[misc]
-def read_anonymization_rules(  # type: ignore[empty-body]
-    endpoints_file: Optional[Text],
-) -> List[Any]:
-    """Hook specification for reading anonymization rules."""
+def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
+    """Hook specification for initialising the anonymization pipeline."""
 
 
 @hookspec(firstresult=True)  # type: ignore[misc]
-def create_anonymization_pipeline(
-    anonymization_rules: Optional[List[Any]],
-    event_broker_config: Optional["EndpointConfig"],
-) -> Optional[Any]:
-    """Hook specification for creating the anonymization pipeline."""
+def get_anonymization_pipeline() -> Optional[Any]:
+    """Hook specification for getting the anonymization pipeline."""
+
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def get_license_hash() -> Optional[Text]:
+    """Hook specification for getting the license hash."""
+
+
+@hookspec  # type: ignore[misc]
+def after_server_stop() -> None:
+    """Hook specification for stopping the server.
+
+    Use this hook to de-initialize any resources that require explicit cleanup like,
+    thread shutdown, closing connections, etc.
+    """

@@ -1,6 +1,8 @@
+import copy
 import hashlib
 import hmac
 import logging
+import structlog
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
@@ -16,6 +18,7 @@ from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class Messenger:
@@ -76,7 +79,7 @@ class Messenger:
 
     @staticmethod
     def _is_user_message(message: Dict[Text, Any]) -> bool:
-        """Check if the message is a message from the user"""
+        """Check if the message is a message from the user."""
         return (
             "message" in message
             and "text" in message["message"]
@@ -105,7 +108,6 @@ class Messenger:
         self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
     ) -> None:
         """Handle an incoming event from the fb webhook."""
-
         # quick reply and user message both share 'text' attribute
         # so quick reply should be checked first
         if self._is_quick_reply_message(message):
@@ -125,9 +127,8 @@ class Messenger:
             attachment = message["message"]["attachments"][0]
             text = attachment["payload"]["url"]
         else:
-            logger.warning(
-                "Received a message from facebook that we can not "
-                f"handle. Message: {message}"
+            structlogger.warning(
+                "facebook.message.cannot.handle", message=copy.deepcopy(message)
             )
             return
 
@@ -137,7 +138,6 @@ class Messenger:
         self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
     ) -> None:
         """Handle a postback (e.g. quick reply button)."""
-
         text = message["postback"]["payload"]
         await self._handle_user_message(text, self.get_user_id(), metadata)
 
@@ -145,7 +145,6 @@ class Messenger:
         self, text: Text, sender_id: Text, metadata: Optional[Dict[Text, Any]]
     ) -> None:
         """Pass on the text to the dialogue engine for processing."""
-
         out_channel = MessengerBot(self.client)
         await out_channel.send_action(sender_id, sender_action="mark_seen")
 
@@ -179,7 +178,6 @@ class MessengerBot(OutputChannel):
 
     def send(self, recipient_id: Text, element: Any) -> None:
         """Sends a message to the recipient using the messenger client."""
-
         # this is a bit hacky, but the client doesn't have a proper API to
         # send messages but instead expects the incoming sender to be present
         # which we don't have as it is stored in the input channel.
@@ -189,7 +187,6 @@ class MessengerBot(OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Send a message through this channel."""
-
         for message_part in text.strip().split("\n\n"):
             self.send(recipient_id, FBText(text=message_part))
 
@@ -197,7 +194,6 @@ class MessengerBot(OutputChannel):
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         """Sends an image. Default will just post the url as a string."""
-
         self.send(recipient_id, Image(url=image))
 
     async def send_action(self, recipient_id: Text, sender_action: Text) -> None:
@@ -207,7 +203,6 @@ class MessengerBot(OutputChannel):
             recipient_id: recipient
             sender_action: action to send, e.g. "typing_on" or "mark_seen"
         """
-
         self.messenger_client.send_action(
             SenderAction(sender_action).to_dict(), recipient_id
         )
@@ -220,7 +215,6 @@ class MessengerBot(OutputChannel):
         **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
-
         # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
             rasa.shared.utils.io.raise_warning(
@@ -254,7 +248,6 @@ class MessengerBot(OutputChannel):
         **kwargs: Any,
     ) -> None:
         """Sends quick replies to the output."""
-
         quick_replies = self._convert_to_quick_reply(quick_replies)
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
@@ -262,7 +255,6 @@ class MessengerBot(OutputChannel):
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output."""
-
         for element in elements:
             if "buttons" in element:
                 self._add_postback_info(element["buttons"])
@@ -301,8 +293,7 @@ class MessengerBot(OutputChannel):
 
     @staticmethod
     def _convert_to_quick_reply(quick_replies: List[Dict[Text, Any]]) -> QuickReplies:
-        """Convert quick reply dictionary to FB QuickReplies object"""
-
+        """Convert quick reply dictionary to FB QuickReplies object."""
         fb_quick_replies = []
         for quick_reply in quick_replies:
             try:
@@ -411,7 +402,6 @@ class FacebookInput(InputChannel):
         Returns:
             bool: indicated that hub signature is validated
         """
-
         # noinspection PyBroadException
         try:
             hash_method, hub_signature = hub_signature_header.split("=")

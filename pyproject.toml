@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.6.0a1"
+version = "3.7.0b1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -90,7 +90,7 @@ select = [ "D", "E", "F", "W", "RUF",]
 python = ">=3.8,<3.11"
 boto3 = "^1.26.136"
 requests = "^2.23"
-matplotlib = ">=3.1,<3.6"
+matplotlib = ">=3.1,<3.8"
 attrs = ">=19.3,<22.2"
 jsonpickle = ">=1.3,<3.1"
 redis = ">=4.5.3, <5.0"
@@ -101,9 +101,9 @@ networkx = ">=2.4,<2.7"
 fbmessenger = "~6.0.0"
 pykwalify = ">=1.7,<1.9"
 coloredlogs = ">=10,<16"
-"ruamel.yaml" = ">=0.16.5,<0.18.0"
+"ruamel.yaml" = ">=0.16.5,<0.17.22"
 pyyaml = ">=5.3.1,<6.0"
-twilio = ">=6.26,<8.3"
+twilio = ">=6.26,<8.4"
 webexteamssdk = ">=1.1.1,<1.7.0"
 mattermostwrapper = "~2.2"
 rocketchat_API = ">=0.6.31,<1.31.0"
@@ -111,7 +111,7 @@ colorhash = ">=1.0.2,<1.3.0"
 jsonschema = ">=3.2,<4.18"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2023.0"
-rasa-sdk = "~3.6.0a1"
+rasa-sdk = "~3.7.0b1"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = "~21.12"
@@ -130,8 +130,8 @@ SQLAlchemy = ">=1.4.0,<1.5.0"
 sklearn-crfsuite = "~0.3"
 psycopg2-binary = ">=2.8.2,<2.10.0"
 python-dateutil = "~2.8"
-protobuf = ">=3.9.2,< 3.20"
-tensorflow_hub = "~0.12.0"
+protobuf = ">=4.23.3,< 4.23.4"
+tensorflow_hub = "^0.13.0"
 setuptools = ">=41.0.0"
 ujson = ">=1.35,<6.0"
 regex = ">=2020.6,<2022.11"
@@ -141,7 +141,7 @@ aio-pika = ">=6.7.1,<8.2.4"
 aiogram = "<2.26"
 typing-extensions = ">=4.1.1,<5.0.0"
 typing-utils = "^0.1.0"
-tarsafe = ">=0.0.3,<0.0.5"
+tarsafe = ">=0.0.3,<0.0.6"
 google-auth = "<3"
 CacheControl = "^0.12.9"
 randomname = "^0.1.5"
@@ -149,6 +149,20 @@ pluggy = "^1.0.0"
 slack-sdk = "^3.19.2"
 confluent-kafka = ">=1.9.2,<3.0.0"
 portalocker = "^2.7.0"
+structlog = "^23.1.0"
+structlog-sentry = "^2.0.2"
+[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
+version = "==0.31"
+markers = "sys_platform == 'win32'"
+
+[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
+version = "==0.32"
+markers = "sys_platform == 'linux'"
+
+[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
+version = "==0.32"
+markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"
+
 [[tool.poetry.dependencies.dask]]
 version = "2022.2.0"
 python = "~=3.7.0"
@@ -164,6 +178,11 @@ python = "~=3.7.0"
 [[tool.poetry.dependencies.numpy]]
 version = ">=1.19.2,<1.25.0"
 python = ">=3.8,<3.11"
+
+[[tool.poetry.dependencies.numpy]]
+version = "1.22.3"
+markers = "sys_platform =='Windows' and platform_python_implementation != 'PyPy'"
+python = "3.10"
 
 [[tool.poetry.dependencies.scipy]]
 version = ">=1.4.1,<1.7.3"
@@ -192,16 +211,8 @@ markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 optional = true
 
 [[tool.poetry.dependencies.pydantic]]
-version = "<1.10.3"
+version = "<1.10.10"
 optional = true
-
-[[tool.poetry.dependencies.tensorflow-addons]]
-version = ">=0.18,<0.20"
-markers = "sys_platform != 'linux' or (platform_machine != 'arm64' and platform_machine != 'aarch64')"
-
-[[tool.poetry.dependencies.tensorflow-addons]]
-version = "0.19.0"
-markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
@@ -232,24 +243,19 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.tensorflow]
-version = "2.11.1"
+version = "2.12.0"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 
 [tool.poetry.dependencies.tensorflow-intel]
-version = "2.11.1"
-markers = "sys_platform == 'win32'"
-
-[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]
-version = ">=0.23.1,<0.32"
+version = "2.12.0"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-cpu-aws]
-version = "2.11.1"
+version = "2.12.0"
 markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
 
 [tool.poetry.dependencies.tensorflow-macos]
-# Updated tensorflow to 2.11.1 for other platforms except Apple Silicon - 2.11.1 is not available there
-version = "2.11.0"
+version = "2.12.0"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 
 [tool.poetry.dependencies.PyJWT]
@@ -261,12 +267,12 @@ version = "^0.4.4"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-metal]
-version = "0.5.1"
+version = "0.8.0"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
-version = "2.11.0"
+version = "2.12.0"
 markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'"
 
 [tool.poetry.dependencies."github3.py"]
@@ -295,7 +301,7 @@ git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix_signal_issue"
 
 [tool.poetry.group.dev.dependencies]
-ruff = ">=0.0.255,<0.0.270"
+ruff = ">=0.0.255,<0.0.256"
 docker = "^6.0.1"
 pytest-cov = "^4.0.0"
 pytest-asyncio = "^0.20.0"

@@ -121,12 +121,8 @@ endif
 	rm data/MITIE*.bz2
 
 prepare-transformers:
-	if [ $(OS) = "Windows_NT" ]; then HOME_DIR="$(HOMEDRIVE)$(HOMEPATH)"; else HOME_DIR=$(HOME); fi;\
-	CACHE_DIR=$$HOME_DIR/.cache/torch/transformers;\
-	mkdir -p "$$CACHE_DIR";\
-	i=0;\
-	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget -nv $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
-
+	while read -r MODEL; do poetry run python scripts/download_transformer_model.py $$MODEL ; done < data/test/hf_transformers_models.txt
+	if ! [ $(CI) ]; then poetry run python scripts/download_transformer_model.py rasa/LaBSE; fi
 prepare-tests-macos:
 	brew install wget graphviz || true
 
@@ -178,7 +174,7 @@ test-nlu-predictors: prepare-spacy prepare-mitie test-marker
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
-test-full-model-training: prepare-spacy prepare-mitie test-marker
+test-full-model-training: prepare-spacy prepare-mitie prepare-transformers test-marker
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
@@ -198,7 +194,7 @@ test-gh-actions:
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
+	TRANSFORMERS_OFFLINE=1 OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"

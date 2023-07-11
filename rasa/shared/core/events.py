@@ -1,6 +1,8 @@
 import abc
+import copy
 import json
 import logging
+import structlog
 import re
 from abc import ABC
 
@@ -98,6 +100,7 @@ if TYPE_CHECKING:
         total=False,
     )
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"]:
@@ -106,7 +109,6 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
     Example format:
         [{"event": "slot", "value": 5, "name": "my_slot"}]
     """
-
     deserialised = []
 
     for e in serialized_events:
@@ -115,9 +117,8 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
             if event:
                 deserialised.append(event)
             else:
-                logger.warning(
-                    f"Unable to parse event '{event}' while deserialising. The event"
-                    " will be ignored."
+                structlogger.warning(
+                    "event.deserialization.failed", rasa_event=copy.deepcopy(event)
                 )
 
     return deserialised
@@ -358,7 +359,6 @@ class Event(ABC):
         type_name: Text, default: Optional[Type["Event"]] = None
     ) -> Optional[Type["Event"]]:
         """Returns a slots class by its type name."""
-
         for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls
@@ -547,6 +547,14 @@ class UserUttered(Event):
             f"UserUttered(text: {self.text}, intent: {self.intent_name}"
             f"{entities}"
             f", use_text_for_featurization: {self.use_text_for_featurization})"
+        )
+
+    def __repr__(self) -> Text:
+        """Returns text representation of event for debugging."""
+        return (
+            f"UserUttered('{self.text}', "
+            f"'{self.intent_name}', "
+            f"{json.dumps(self.entities)})"
         )
 
     @staticmethod
@@ -1734,6 +1742,10 @@ class ActiveLoop(Event):
     def __str__(self) -> Text:
         """Returns text representation of event."""
         return f"Loop({self.name})"
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"ActiveLoop({self.name}, {self.timestamp}, {self.metadata})"
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""

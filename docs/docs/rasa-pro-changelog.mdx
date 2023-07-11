@@ -1,0 +1,97 @@
+---
+id: rasa-pro-changelog
+sidebar_label: Rasa Pro Change Log
+title: Rasa Pro Change Log
+---
+
+All notable changes to Rasa Pro will be documented in this page.
+This product adheres to [Semantic Versioning](https://semver.org/) starting with version 3.3 (initial version).
+
+Rasa Pro consists of two deployable artifacts: Rasa Plus and Rasa Pro Services. You can read the change log for both artifacts below.
+
+You can find all changes related to Rasa Open Source in the dedicated [Rasa Open Source change log](./changelog.mdx).
+
+## Rasa Pro 3.6
+
+### Rasa Plus 3.6
+
+#### Features
+- Implemented PII (Personally Identifiable Information) management using Microsoft Presidio as the entity analyzer and
+  anonymization engine.
+  The feature covers the following:
+  - anonymization of Rasa events (`UserUttered`, `BotUttered`, `SlotSet`, `EntitiesAdded`) before they are streamed to
+  Kafka event broker anonymization topics specified in `endpoints.yml`.
+  - anonymization of Rasa logs that expose PII data
+
+  The main components of the feature are:
+  - anonymization rules that define in `endpoints.yml` the PII entities to be anonymized and the anonymization method to be used
+  - anonymization executor that executes the anonymization rules on a given text
+  - anonymization orchestrator that orchestrates the execution of the anonymization rules and publishes
+  the anonymized event to the matched Kafka topic.
+  - anonymization pipeline that contains a list of orchestrators and is registered to a singleton provider component,
+  which gets invoked in hook calls in Rasa Open Source when the pipeline must be retrieved for anonymizing events and logs.
+
+  Please read through the [PII Management](./pii-management.mdx) section in the official documentation to learn how to get started.
+
+- Implemented support for real time evaluation of [Markers](./monitoring/analytics/realtime-markers.mdx) with the Analytics
+  Data Pipeline. For this feature, we've added support for `rasa markers upload` command. Running this command validates the marker configuration file against the domain file and uploads the configuration to Analytics Data Pipeline.
+
+### Improvements
+- Add `rasa marker upload` command to upload markers to the Rasa Pro Services.
+
+- Enhance the validation of the `anonymization` key in `endpoints.yaml` by introducing checks for required fields and duplicate IDs.
+
+### Bugfixes
+- Anonymize `rasa_events` structlog key.
+- Fixes issue with uploading locally trained model to a cloud rasa-plus instance where the conversation does not
+  go as expected because slots don't get set correctly, e.g. an error is logged "Tried to set non existent slot 'placeholder_slot_name'." Make sure you added all your slots to your domain file.
+  This is because the updated domain during the cloud upload did not get passed to the wrapped tracker store of the `AuthRetryTrackerStore` rasa-plus component.
+  The fix was to add domain property and setter methods to the `AuthRetryTrackerStore` component.
+-  When using `rasa studio upload`, if no specific `intents` or `entities` are specified by the user, the update will now include all available `intents` or `entities`.
+
+#### Deprecations and Removal
+- Removed Python 3.7 support as [it reaches its end of life in June 2023](https://devguide.python.org/versions/)
+
+### Rasa Pro Services 3.1
+
+#### Features
+- You can now process [Markers](./monitoring/analytics/realtime-markers.mdx) with the Analytics Data Pipeline in real-time, enabling you to gain valuable insights and improve the performance of your Rasa Assistant.
+
+## Rasa Pro 3.5
+
+### Rasa Plus 3.5
+
+#### Features
+- [End-to-end testing](./testing-your-assistant.mdx#end-to-end-testing) is an enhanced and comprehensive CLI-based testing tool that allows you to test conversation scenarios with different pre-configured contexts, execute custom actions, verify response texts or names, and assert when slots are filled. It is available using the new `rasa test e2e` command.
+- You can now store your assistant's secrets in an [external credentials manager](./secrets-managers.mdx). In this release, Rasa Pro currently supports credentials manager for the Tracker Store with HashiCorp Vault.
+
+### Rasa Pro Services 3.0
+
+*No significant change from last minor version.*
+
+## Rasa Pro 3.4
+
+### Rasa Plus 3.4
+
+#### Features
+- Added a new [IVR channel connector](./connectors/audioodes-voiceai-connect.mdx) to connect your assistant to AudioCodes VoiceAI Connect.
+
+#### Improvements
+- Rasa Pro now supports Python 3.10.
+
+### Rasa Pro Services 3.0
+
+*No significant change from last minor version.*
+
+## Rasa Pro 3.3
+
+### Rasa Plus 3.3
+
+#### Features
+- [Tracing capabilities](./monitoring/tracing.mdx) for your Rasa Pro assistant. Distributed tracing tracks requests as they flow through a distributed system (in this case: a Rasa assistant), sending data about the requests to a tracing backend which collects all trace data and enables inspecting it. With this version of the Tracing feature, Rasa Pro supports OpenTelemetry.
+- [Concurrent Lock Store](./lock-stores.mdx#concurrentredislockstore) is a new lock store that uses Redis as a persistence layer and is safe for use with multiple Rasa server replicas.
+
+### Rasa Pro Services 3.0
+
+#### Features
+- [Analytics Data Pipeline](./monitoring/analytics/getting-started-with-analytics.mdx) helps visualize and process Rasa assistant metrics in the tooling (BI tools, data warehouses) of your choice. Visualizations and analysis of the production assistant and its conversations allow you to assess ROI and improve the performance of the assistant over time.

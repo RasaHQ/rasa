@@ -780,7 +780,7 @@ def test_generate_training_data_with_cycles(domain: Domain):
     # if new default actions are added the keys of the actions will be changed
 
     all_label_ids = [id for ids in label_ids for id in ids]
-    assert Counter(all_label_ids) == {0: 6, 15: 3, 14: num_tens, 1: 2, 16: 1}
+    assert Counter(all_label_ids) == {0: 6, 16: 3, 15: num_tens, 1: 2, 17: 1}
 
 
 def test_generate_training_data_with_unused_checkpoints(domain: Domain):

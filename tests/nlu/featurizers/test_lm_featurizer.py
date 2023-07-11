@@ -361,6 +361,7 @@ class TestShapeValuesTrainAndProcess:
             assert intent_sentence_vec is None
 
     @pytest.mark.timeout(120, func_only=True)
+    @pytest.mark.skip_on_windows
     def test_lm_featurizer_shapes_in_process_training_data(
         self,
         model_name: Text,
@@ -386,6 +387,7 @@ class TestShapeValuesTrainAndProcess:
         )
 
     @pytest.mark.timeout(120, func_only=True)
+    @pytest.mark.skip_on_windows
     def test_lm_featurizer_shapes_in_process_messages(
         self,
         model_name: Text,
@@ -581,6 +583,7 @@ class TestSubTokensTrainAndProcess:
             )
 
     @pytest.mark.timeout(120, func_only=True)
+    @pytest.mark.skip_on_windows
     def test_lm_featurizer_num_sub_tokens_process_training_data(
         self,
         model_name: Text,
@@ -606,6 +609,7 @@ class TestSubTokensTrainAndProcess:
         )
 
     @pytest.mark.timeout(120, func_only=True)
+    @pytest.mark.skip_on_windows
     def test_lm_featurizer_num_sub_tokens_process_messages(
         self,
         model_name: Text,
@@ -635,6 +639,7 @@ class TestSubTokensTrainAndProcess:
     "input_sequence_length, model_name, should_overflow",
     [(20, "bert", False), (1000, "bert", True), (1000, "xlnet", False)],
 )
+@pytest.mark.skip_on_windows
 def test_sequence_length_overflow_train(
     input_sequence_length: int,
     model_name: Text,
@@ -666,6 +671,7 @@ def test_sequence_length_overflow_train(
         (np.ones((1, 256, 5)), [256], "bert", False),
     ],
 )
+@pytest.mark.skip_on_windows
 def test_long_sequences_extra_padding(
     sequence_embeddings: np.ndarray,
     actual_sequence_lengths: List[int],
@@ -703,6 +709,7 @@ def test_long_sequences_extra_padding(
         ([[1] * 200], 200, 200, False),
     ],
 )
+@pytest.mark.skip_on_windows
 def test_input_padding(
     token_ids: List[List[int]],
     max_sequence_length_model: int,
@@ -730,6 +737,7 @@ def test_input_padding(
         (256, "bert", "bert-base-uncased", False),
     ],
 )
+@pytest.mark.skip_on_windows
 def test_log_longer_sequence(
     sequence_length: int,
     model_name: Text,
@@ -760,6 +768,7 @@ def test_log_longer_sequence(
     "actual_sequence_length, max_input_sequence_length, zero_start_index",
     [(256, 512, 256), (700, 700, 700), (700, 512, 512)],
 )
+@pytest.mark.skip_on_windows
 def test_attention_mask(
     actual_sequence_length: int,
     max_input_sequence_length: int,
@@ -792,6 +801,7 @@ def test_attention_mask(
         )
     ],
 )
+@pytest.mark.skip_on_windows
 def test_lm_featurizer_correctly_handle_whitespace_token(
     text: Text,
     tokens: List[Tuple[Text, int]],
