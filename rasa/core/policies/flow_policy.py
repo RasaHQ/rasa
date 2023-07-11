@@ -854,9 +854,7 @@ class FlowExecutor:
                     FLOW_PREFIX + "pattern_correction",
                     1.0,
                     metadata={
-                        "slots": {
-                            CORRECTED_SLOTS_SLOT: [s.key for s in updated_slots]
-                        }
+                        "slots": {CORRECTED_SLOTS_SLOT: [s.key for s in updated_slots]}
                     },
                 )
             # the question is only finished once the slot is set and the loop
@@ -897,6 +895,7 @@ class FlowExecutor:
         """
         # TODO: better way to prevent circularity for generate_text_openai_chat
         from rasa.nlu.classifiers.llm_flow_classifier import generate_text_openai_chat
+
         if isinstance(step, QuestionFlowStep):
             structlogger.debug("flow.step.run.question", step=step, flow=flow)
             slot = tracker.slots.get(step.question, None)
