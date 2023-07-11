@@ -232,6 +232,18 @@ nodes:
     is_target: false
     is_input: false
     resource: null
+  flows_provider:
+    needs:
+      domain: domain_provider
+    uses: rasa.graph_components.providers.flows_provider.FlowsProvider
+    constructor_name: load
+    fn: provide_inference
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: flows_provider
   run_MemoizationPolicy0:
     needs:
       tracker: __tracker__
