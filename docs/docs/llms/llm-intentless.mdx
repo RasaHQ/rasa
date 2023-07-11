@@ -3,9 +3,8 @@ id: llm-intentless
 sidebar_label: Intentless Dialogues with LLMs
 title: Intentless Policy - LLMs for intentless dialogues
 abstract: |
-  The intentless policy uses large language models to complement existing rasa
-  components and make it easier to build assistants without needing to define a
-  lot of intent examples.
+  The intentless policy uses large language models to drive a conversation
+  forward without relying on intent predictions. 
 ---
 
 import RasaLabsLabel from "@theme/RasaLabsLabel";
@@ -20,14 +19,13 @@ import intentlessMeaningCompounds from "./intentless-meaning-compounds.png";
 The new intentless policy leverages large language models (LLMs) to complement
 existing rasa components and make it easier:
 
-- to build assistants without needing to define a lot of intent example
-- to incorporate unstructured data such as FAQs or existing conversations logs
+- to build assistants without needing to define a lot of intent examples
 - to handle conversations where messages
-  [don't fit intents](https://rasa.com/blog/were-a-step-closer-to-getting-rid-of-intents/)
+  [don't fit into intents](https://rasa.com/blog/were-a-step-closer-to-getting-rid-of-intents/)
   and conversation context is necessary to choose a course of action.
 
-Using the `IntentlessPolicy`, our bot already provides a good 
-question-answering experience, understanding many different ways 
+Using the `IntentlessPolicy`, a 
+question-answering bot can already understanding many different ways 
 that users could phrase their questions - even across a series of user messages:
 
 <Image
@@ -36,13 +34,14 @@ that users could phrase their questions - even across a series of user messages:
   alt=""
 />
 
-To provide the appropriate guard rails and steering for the LLM you can
+This only requires appropriate responses to be defined in the domain file.
 
-- whitelist utterances to specify allowed responses for the LLM
-- provide example conversations to give information about your domain and teach
-  the LLM what to say when
-- set thresholds to determine when the intentless policy should take over from
-  the traditional NLU and core components
+To eliminate hallucinations, the policy only chooses which response from 
+your domain file to send. It does not generate new text. 
+
+In addition, you can control the LLM by:
+- providing example conversations (end-to-end stories) which will be used in the prompt.
+- setting the confidence threshold to determine when the intentless policy should kick in.
 
 [This repository](https://github.com/RasaHQ/starter-pack-intentless-policy) contains a starter pack with a bot that uses the
 `IntentlessPolicy`. It's a good starting point for trying out the policy and for
@@ -67,16 +66,18 @@ policies:
   - name: rasa_plus.ml.IntentlessPolicy
 ```
 
-## Configuration
+## Customization
 
-### Policy Parameters
-The `IntentlessPolicy` can be configured with the following parameters:
+### Combining with NLU predictions
+The intentless policy can be combined with NLU components which predict 
+intents. This is useful if you want to use the intentless policy for
+some parts of your bot, but still want to use the traditional NLU components for
+other intents. 
 
-- `max_history`: The maximum number of turns to take into account when
-  predicting the next action. Defaults to `null`, which means that all
-  conversation history is taken into account.
-- `nlu_abstention_threshold`: The threshold for the NLU prediction confidence.
-  Defaults to `0.9`. The intentless policy kicks in below this threshold.
+The `nlu_abstention_threshold` can be set to a value between 0 and 1. If 
+the NLU prediction confidence is below this threshold, the intentless policy 
+will be used if it's confidence is higher than the NLU prediction. Above the 
+threshold, the NLU prediction will always be used.
 
 The following example shows the default configuration in the `config.yml`:
 
@@ -84,9 +85,71 @@ The following example shows the default configuration in the `config.yml`:
 policies:
   # ... any other policies you have
   - name: rasa_plus.ml.IntentlessPolicy
-    max_history: null
     nlu_abstention_threshold: 0.9
 ```
+
+If unset, `nlu_abstention_threshold` defaults to `0.9`.
+
+### LLM / Embeddings configuration
+
+You can customize the openai models used for generation and embedding.
+
+#### Embedding Model
+By default, OpenAI will be used for embeddings. You can configure the
+`embeddings.model_name` property in the `config.yml` file to change the used
+embedding model:
+
+```yaml-rasa title="config.yml"
+policies:
+  # ... any other policies you have
+  - name: rasa_plus.ml.IntentlessPolicy
+    embeddings: 
+      model_name: text-embedding-ada-002
+```
+
+Defaults to `text-embedding-ada-002`. The model name needs to be set to an
+[available embedidng model.](https://platform.openai.com/docs/guides/embeddings/embedding-models).
+
+#### LLM Model
+
+By default, OpenAI is used for LLM generation. You can configure the
+`llm.model_name` property in the `config.yml` file to specify which
+OpenAI model to use:
+
+```yaml-rasa title="config.yml"
+policies:
+  # ... any other policies you have
+  - name: rasa_plus.ml.IntentlessPolicy
+    llm: 
+      model_name: text-davinci-003
+```
+Defaults to `text-davinci-003`. The model name needs to be set to an
+[available GPT-3 LLM model](https://platform.openai.com/docs/models/gpt-3).
+
+If you want to use Azure OpenAI Service, you can configure the necessary
+parameters as described in the
+[Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service)
+section.
+
+#### Other LLMs / Embeddings
+
+By default, OpenAI is used as the underlying LLM and embedding provider. 
+
+The used LLM provider and embeddings provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="config.yml"
+policies:
+  # ... any other policies you have
+  - name: rasa_plus.ml.IntentlessPolicy
+    llm: 
+      type: "cohere"
+    embeddings:
+      type: "cohere"
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llm-setup.mdx#other-llms--embeddings).
 
 ### Other Policies
 
