@@ -44,16 +44,44 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    DEFAULT_OPENAI_TEMPERATURE,
     tracker_as_readable_transcript,
-    generate_text_openai_chat,
     sanitize_message_for_prompt,
 )
+import openai
+import openai.error
 
 DEFAULT_FLOW_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.nlu.classifiers", "flow_prompt_template.jinja2"
 )
 
 logger = logging.getLogger(__name__)
+
+
+def generate_text_openai_chat(
+    prompt: str,
+    model: str = DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    temperature: float = DEFAULT_OPENAI_TEMPERATURE,
+) -> Optional[str]:
+    """Generates text using the OpenAI chat API.
+    Args:
+        prompt: the prompt to send to the API
+        model: the model to use for generation
+        temperature: the temperature to use for generation
+    Returns:
+        The generated text.
+    """
+    # TODO: exception handling
+    try:
+        chat_completion = openai.ChatCompletion.create(  # type: ignore[no-untyped-call]
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=temperature,
+        )
+        return chat_completion.choices[0].message.content
+    except openai.error.OpenAIError:
+        logger.exception("openai.generate.error %s %s", model, prompt)
+        return None
 
 
 @DefaultV1Recipe.register(
