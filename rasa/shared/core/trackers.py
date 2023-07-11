@@ -201,7 +201,7 @@ class DialogueStateTracker:
         if slots is not None:
             self.slots: Dict[str, Slot] = {slot.name: copy.copy(slot) for slot in slots}
         else:
-            self.slots: Dict[str, Slot] = AnySlotDict()
+            self.slots = AnySlotDict()
         # file source of the messages
         self.sender_source = sender_source
         # whether the tracker belongs to a rule-based data
