@@ -77,7 +77,9 @@ def test_load_from_dict(
     assert isinstance(actual, E2EImporter)
     assert isinstance(actual._importer._importer, ResponsesSyncImporter)
 
-    actual_importers = [i.__class__ for i in actual._importer._importer._importer._importers]
+    actual_importers = [
+        i.__class__ for i in actual._importer._importer._importer._importers
+    ]
     assert actual_importers == expected
 
 
@@ -91,7 +93,9 @@ def test_load_from_config(tmpdir: Path):
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)
     assert isinstance(importer._importer._importer, ResponsesSyncImporter)
-    assert isinstance(importer._importer._importer._importer._importers[0], MultiProjectImporter)
+    assert isinstance(
+        importer._importer._importer._importer._importers[0], MultiProjectImporter
+    )
 
 
 def test_nlu_only(project: Text):

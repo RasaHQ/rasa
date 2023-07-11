@@ -12,6 +12,10 @@ from rasa.shared.core.constants import (
     DEFAULT_ACTION_NAMES,
     DEFAULT_INTENTS,
     SESSION_START_METADATA_SLOT,
+    FLOW_STACK_SLOT,
+    PREVIOUS_FLOW_SLOT,
+    CANCELLED_FLOW_SLOT,
+    CORRECTED_SLOTS_SLOT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import AnySlot
@@ -28,10 +32,16 @@ def test_rasa_file_importer(project: Text):
 
     domain = importer.get_domain()
     assert len(domain.intents) == 7 + len(DEFAULT_INTENTS)
-    assert domain.slots == [AnySlot(SESSION_START_METADATA_SLOT, mappings=[{}])]
+    assert domain.slots == [
+        AnySlot(FLOW_STACK_SLOT, mappings=[{}]),
+        AnySlot(PREVIOUS_FLOW_SLOT, mappings=[{}]),
+        AnySlot(CANCELLED_FLOW_SLOT, mappings=[{}]),
+        AnySlot(CORRECTED_SLOTS_SLOT, mappings=[{}]),
+        AnySlot(SESSION_START_METADATA_SLOT, mappings=[{}]),
+    ]
     assert domain.entities == []
-    assert len(domain.action_names_or_texts) == 6 + len(DEFAULT_ACTION_NAMES)
-    assert len(domain.responses) == 6
+    assert len(domain.action_names_or_texts) == 7 + len(DEFAULT_ACTION_NAMES)
+    assert len(domain.responses) == 7
 
     stories = importer.get_stories()
     assert len(stories.story_steps) == 5

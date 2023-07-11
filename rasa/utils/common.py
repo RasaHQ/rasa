@@ -83,6 +83,10 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         DeprecationWarning,
         "non-integer arguments to randrange\\(\\) have been deprecated since",
     ),
+    (
+        UserWarning,
+        "The utterance 'utter_flow_continue_interrupted' is not used in any story or rule.",
+    ),
 ]
 
 EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)
