@@ -200,20 +200,20 @@ def test_story_visualization_with_merging(domain: Domain):
             [(-2, 0), (-1, 0), (0, 1), (1, 2), (2, 3), (3, 4), (4, 5)],
             3,
             set([0, 1, 2, 3, 4, 5, -1]),
-            [(-1, 0), (0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]
+            [(-1, 0), (0, 1), (1, 2), (2, 3), (3, 4), (4, 5)],
         ),
         (
             [-3, -2, -1, 0, 1, 2, 3, 4, 5],
             [(-3, -2), (-2, -1), (-1, 0), (0, 1), (1, 2), (2, 3), (3, 4), (4, 5)],
             4,
             set([-3, -1, 0, 1, 2, 3, 4, 5]),
-            [(-1, 0), (0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]
-        )
-    ]
+            [(-1, 0), (0, 1), (1, 2), (2, 3), (3, 4), (4, 5)],
+        ),
+    ],
 )
 def test_remove_auxiliary_nodes(
     input_nodes, input_edges, remove_count, expected_nodes, expected_edges
-    ):
+):
     import networkx as nx
 
     # Create a sample graph
