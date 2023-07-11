@@ -1,11 +1,12 @@
 import argparse
 import functools
 import sys
-from typing import List, Optional, Text, Tuple
+from typing import Any, List, Optional, Text, Tuple, Type
 
 import pluggy
 
 from rasa.cli import SubParsersAction
+# from rasa.core.channels.channel import InputChannel
 
 hookspec = pluggy.HookspecMarker("rasa")
 
@@ -52,3 +53,7 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
 @hookspec  # type: ignore[misc]
 def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
+
+@hookspec  # type: ignore[misc]
+def add_channels(input_channel_classes: List[Type[Any]]) -> None:
+    """Hook specification for adding channels."""
