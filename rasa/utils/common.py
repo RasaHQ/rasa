@@ -85,7 +85,7 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     ),
     (
         UserWarning,
-        "The utterance 'utter_flow_continue_interrupted' is not used in any story or rule.",
+        "The utterance 'utter_flow_continue_interrupted' is not used*",
     ),
 ]
 

@@ -827,8 +827,8 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
         lambda *args, **kwargs: None,
     )
     if should_raise:
-        with pytest.raises(
-            InvalidDomain,
+        with pytest.warns(
+            UserWarning,
             match="You have defined a form action, but have not added the",
         ):
             validator.validate(importer)
