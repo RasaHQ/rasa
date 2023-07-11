@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, Set, Text, runtime_checkable
+
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.constants import RASA_DEFAULT_INTENT_PREFIX
 from rasa.shared.exceptions import RasaException
@@ -809,6 +810,8 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
         Returns:
             Whether the flow step is triggered by the given intent and entities.
         """
+        # TODO: better way to prevent circularity for generate_text_openai_chat
+        from rasa.nlu.classifiers.llm_flow_classifier import generate_text_openai_chat
         from rasa.utils import llm
         from jinja2 import Template
 
@@ -824,7 +827,7 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
         context.update(tracker.current_slot_values())
         prompt = Template(self.entry_prompt).render(context)
 
-        generated = llm.generate_text_openai_chat(prompt)
+        generated = generate_text_openai_chat(prompt)
 
         expected_response = self.advance_if.lower() if self.advance_if else "yes"
         if generated and generated.lower() == expected_response:
