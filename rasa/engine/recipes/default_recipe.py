@@ -288,7 +288,17 @@ class DefaultV1Recipe(Recipe):
             train_nodes=train_nodes,
             cli_parameters=cli_parameters,
         )
-
+        train_nodes["flows_provider"] = SchemaNode(
+            needs={
+                "importer": "finetuning_validator",
+            },
+            uses=FlowsProvider,
+            constructor_name="create",
+            fn="provide_train",
+            config={},
+            is_target=True,
+            is_input=True,
+        )
         persist_nlu_data = bool(cli_parameters.get("persist_nlu_training_data"))
         train_nodes["nlu_training_data_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
@@ -585,7 +595,6 @@ class DefaultV1Recipe(Recipe):
         train_nodes["flows_provider"] = SchemaNode(
             needs={
                 "importer": "finetuning_validator",
-                "domain": "domain_for_core_training_provider",
             },
             uses=FlowsProvider,
             constructor_name="create",
@@ -732,6 +741,15 @@ class DefaultV1Recipe(Recipe):
         plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
             predict_nodes=predict_nodes
         )
+        # LLMFlowClassifier needs flows
+        predict_nodes["flows_provider"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs={},
+            uses=FlowsProvider,
+            fn="provide_inference",
+            config={},
+            resource=Resource("flows_provider"),
+        )
         for idx, config in enumerate(predict_config["pipeline"]):
             component_name = config.pop("name")
             component = self._from_registry(component_name)
@@ -844,17 +862,9 @@ class DefaultV1Recipe(Recipe):
         plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
             predict_nodes=predict_nodes
         )
-        predict_nodes["domain_provider"] = SchemaNode(
-            **DEFAULT_PREDICT_KWARGS,
-            needs={},
-            uses=DomainProvider,
-            fn="provide_inference",
-            config={},
-            resource=Resource("domain_provider"),
-        )
         predict_nodes["flows_provider"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
-            needs={"domain": "domain_provider"},
+            needs={},
             uses=FlowsProvider,
             fn="provide_inference",
             config={},

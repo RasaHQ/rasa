@@ -65,14 +65,14 @@ class FlowsProvider(GraphComponent):
             )
 
     def provide_train(
-        self, importer: TrainingDataImporter, domain: Domain
+        self, importer: TrainingDataImporter
     ) -> FlowsList:
         """Provides flows configuration from training data during training."""
         self._flows = importer.get_flows()
         self._persist(self._flows)
         return self._flows
 
-    def provide_inference(self, domain: Domain) -> FlowsList:
+    def provide_inference(self) -> FlowsList:
         """Provides the flows configuration during inference."""
         if self._flows is None:
             # This can't really happen but if it happens then we fail early
