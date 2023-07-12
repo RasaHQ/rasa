@@ -17,7 +17,7 @@ def test_nlg_request_format(
         output_channel="test",
     ) == {
         "response": "utter_one_id",
-        "id": "",
+        "id": None,
         "arguments": {},
         "channel": {"name": "test"},
         "tracker": default_tracker.current_state(EventVerbosity.ALL),
@@ -34,7 +34,7 @@ def test_nlg_request_format_with_arguments(
         some_arg="some_value",
     ) == {
         "response": "utter_one_id",
-        "id": "",
+        "id": None,
         "arguments": {"some_arg": "some_value"},
         "channel": {"name": "test"},
         "tracker": default_tracker.current_state(EventVerbosity.ALL),
@@ -113,7 +113,7 @@ def test_callback_nlg_fetch_response_id_with_no_domain_responses(
         )
 
     # Assert
-    assert response_id == ""
+    assert response_id is None
     assert "Failed to fetch response id. Responses not provided." in caplog.text
 
 
@@ -140,5 +140,5 @@ def test_callback_nlg_fetch_response_id_with_no_response_id(
         )
 
     # Assert
-    assert response_id == ""
+    assert response_id is None
     assert f"Failed to fetch response id for action '{utter_action}'." in caplog.text

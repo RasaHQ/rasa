@@ -39,7 +39,7 @@ def nlg_request_format(
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
     tracker_state = tracker.current_state(EventVerbosity.ALL)
-    response_id = kwargs.pop("response_id", "")
+    response_id = kwargs.pop("response_id", None)
 
     return {
         "response": utter_action,
@@ -121,7 +121,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         tracker: DialogueStateTracker,
         output_channel: Text,
         domain_responses: Optional[Dict[Text, List[Dict[Text, Any]]]],
-    ) -> Text:
+    ) -> Optional[Text]:
         """Fetch the response id for the utter action.
 
         The response id is retrieved from the domain responses for the
@@ -129,7 +129,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         """
         if domain_responses is None:
             logger.debug("Failed to fetch response id. Responses not provided.")
-            return ""
+            return None
 
         response_filter = ResponseVariationFilter(domain_responses)
         response_id = response_filter.get_response_variation_id(
@@ -138,6 +138,5 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         if response_id is None:
             logger.debug(f"Failed to fetch response id for action '{utter_action}'.")
-            return ""
 
         return response_id

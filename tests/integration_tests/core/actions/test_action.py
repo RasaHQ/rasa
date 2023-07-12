@@ -98,7 +98,7 @@ async def test_action_bot_response_with_empty_response_id_set(
         "utter_no_id",
         default_tracker,
         output_channel.name(),
-        response_id="",
+        response_id=None,
     )
 
     mock_nlg_endpoint.request.assert_called_once_with(
@@ -126,7 +126,7 @@ async def test_action_bot_response_with_non_existing_id_mapping(
         "utter_non_existing",
         default_tracker,
         output_channel.name(),
-        response_id="",
+        response_id=None,
     )
 
     mock_nlg_endpoint.request.assert_called_once_with(
