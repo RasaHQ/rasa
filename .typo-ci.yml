@@ -202,5 +202,8 @@ excluded_words:
   - anonymization
   - anonymized
   - dslim
+  - pluggy
+  - HookimplMarker
+  - hookimpl
 
 spellcheck_filenames: false
