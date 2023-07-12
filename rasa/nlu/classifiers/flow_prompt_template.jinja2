@@ -25,8 +25,9 @@ Here are the slots of the currently active flow with their names and values:
 {% endif %}
 {% else %}
 You are currently not in any flow and so there are no active slots.
+In order to fill a slot, you first have to start the flow and then fill the slot.
 {% endif %}
-If you start a flow, you can already fill that flow's slots with information the user provided for starting the flow.
+If you start a flow, first start the flow and then optionally fill that flow's slots with information the user provided in their message.
 
 The user just said """{{ user_message }}""".
 
@@ -34,12 +35,24 @@ The user just said """{{ user_message }}""".
 Based on this information generate a list of actions you want to take. Your job is to start flows and to fill slots where appropriate. Any logic of what happens afterwards is handled by the flow engine. These are your available actions:
 * Slot setting, described by "SetSlot(slot_name, slot_value)". An example would be "SetSlot(recipient, Freddy)"
 * Starting another flow, described by "StartFlow(flow_name)". An example would be "StartFlow(transfer_money)"
-* Cancelling the current flow, describe by "CancelFlow()"
+* Starting another flow, and already filling a slot for that flow. An example would be "StartFlow(transfer_money), SetSlot(recipient, Freddy)"
+* Setting a slot for the current flow, before starting a new flow and setting a slot for it. An example would be "SetSlot(confirmation, True), StartFlow(transfer_money), SetSlot(recipient, Joe)"
+* Cancelling the current flow, described by "CancelFlow()"
+* Asking the user to choose from two or more possible flows. An example would be ClarifyNextStep(transfer_money, list_transactions, check_balance)
+* Asking the user to clarify whether they want to go down a particular path or not. An example would be ClarifyNextStep(cancel_card)
+* Taking no action because the user's message has nothing to do with the available flows. An example would be AllowInterruption(chitchat) if the user is making small talk, or AllowInterruption(information) if the user has a question unrelated to the available flows.
+* Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one. An example would be HumanHandoff()
+* Taking no action because the user's message does not invite a further response. For example, if the user asks for more time, or simply makes a comment.
 
-Write out the actions you want to take for the last user message, one per line.
+Write out the actions you want to take for the last user message, one per line, in the order they should take place.
 Do not fill slots with abstract values or placeholders.
 Only use information provided by the user.
-Strictly adhere to the provided action types above for starting flows and setting slots.
+Only start a flow if it's completely clear what the user wants. Imagine you were a person reading this message. If it's not 100% clear, clarify the next step.
+Don't be overly confident. Take a conservative approach and clarify before proceeding.
+If the user asks for two things which seem contradictory, clarify before starting a flow.
+If a user does multiple things in one message, you can output multiple actions. An example would be if the user fills a slot but also makes some smalltalk: "SetSlot(cuisine, chinese), AllowInterruption(chitchat)"
+Acknowledge everything a user does in a message.
+Strictly adhere to the provided action types listed above.
 Focus on the last message and take it one step at a time.
 Use the previous conversation steps only to aid understanding.
 The action list:
