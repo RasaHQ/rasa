@@ -2,9 +2,9 @@ Your task is to analyze the current conversation context and start new business 
 
 These are the flows that can be started, with their description and slots:
 {% for flow in available_flows %}
-- {{ flow.name }}: {{ flow.description }}
+flow: {{ flow.name }}: {{ flow.description }}
     {% for slot in flow.slots -%}
-    - {{ slot.name }}{% if slot.description %} ({{ slot.description }}){% endif %}
+    slot: {{ slot.name }}{% if slot.description %} ({{ slot.description }}){% endif %}
     {% endfor %}
 {%- endfor %}
 
@@ -14,7 +14,7 @@ Here is what happened previously in the conversation:
 
 ===
 {% if current_flow != None %}
-You are currently in the flow "{{ current_flow }}".
+You are currently in the flow "{{ current_flow }}", which {{ current_flow.description }}
 You have just asked the user for the slot "{{ question }}"{% if question_description %} ({{ question_description }}){% endif %}.
 
 {% if flow_slots|length > 0 %}
