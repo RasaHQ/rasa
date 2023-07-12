@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import fcntl
 import os
 import json
 import logging
@@ -239,6 +240,9 @@ class KafkaEventBroker(EventBroker):
                     bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
                 )
             ]
+
+        # set stdout to non-blocking
+        fcntl.fcntl(1, fcntl.F_SETFL, 0)
 
         structlogger.debug(
             "kafka.publish.event",
