@@ -148,3 +148,12 @@ def get_anonymization_pipeline() -> Optional[Any]:
 @hookspec(firstresult=True)  # type: ignore[misc]
 def get_license_hash() -> Optional[Text]:
     """Hook specification for getting the license hash."""
+
+
+@hookspec  # type: ignore[misc]
+def after_server_stop() -> None:
+    """Hook specification for stopping the server.
+
+    Use this hook to de-initialize any resources that require explicit cleanup like,
+    thread shutdown, closing connections, etc.
+    """

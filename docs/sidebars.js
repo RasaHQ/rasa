@@ -87,13 +87,16 @@ module.exports = {
                     collapsed: true,
                     items: [
                         'monitoring/analytics/getting-started-with-analytics',
+                        'monitoring/analytics/realtime-markers',
                         'monitoring/analytics/example-queries',
                         'monitoring/analytics/data-structure-reference',
                     ],
                 },
                 'monitoring/tracing',
+                'monitoring/load-testing-guidelines',
             ],
         },
+        'pii-management',
         {
             type: 'category',
             label: 'Concepts',
@@ -219,6 +222,7 @@ module.exports = {
                                 },
                             ],
                         },
+                        'action-server/sanic-extensions',
                     ],
                 },
             ],
@@ -248,6 +252,7 @@ module.exports = {
             label: 'Change Log',
             collapsed: true,
             items: [
+                'rasa-pro-changelog',
                 'changelog',
                 'sdk_changelog',
                 'compatibility-matrix',

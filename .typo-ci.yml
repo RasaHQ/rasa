@@ -198,5 +198,12 @@ excluded_words:
   - rustc
   - conftest
   - winpty
+  - pii-management
+  - anonymization
+  - anonymized
+  - dslim
+  - pluggy
+  - HookimplMarker
+  - hookimpl
 
 spellcheck_filenames: false

@@ -170,12 +170,13 @@ class RestInput(InputChannel):
                     )
                 except CancelledError:
                     structlogger.error(
-                        "rest.message.received", text=copy.deepcopy(text)
+                        "rest.message.received.timeout", text=copy.deepcopy(text)
                     )
                 except Exception:
                     structlogger.exception(
                         "rest.message.received.failure", text=copy.deepcopy(text)
                     )
+
                 return response.json(collector.messages)
 
         return custom_webhook

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import logging
 import sys
@@ -5,11 +6,26 @@ from typing import Any, Dict, Optional
 
 import structlog
 from structlog_sentry import SentryProcessor
+from structlog.dev import ConsoleRenderer
+from structlog.typing import EventDict, WrappedLogger
 from rasa.shared.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 from rasa.plugin import plugin_manager
 
 
 FORCE_JSON_LOGGING = os.environ.get("FORCE_JSON_LOGGING")
+
+
+class HumanConsoleRenderer(ConsoleRenderer):
+    """Console renderer that outputs human-readable logs."""
+
+    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> str:
+        if "event_info" in event_dict:
+            event_key = event_dict["event"]
+            event_dict["event"] = event_dict["event_info"]
+            event_dict["event_key"] = event_key
+            del event_dict["event_info"]
+
+        return super().__call__(logger, name, event_dict)
 
 
 def _anonymizer(
@@ -41,6 +57,8 @@ def _anonymizer(
         "states",
         "entity",
         "token_text",
+        "user_message",
+        "json_message",
     ]
     anonymization_pipeline = plugin_manager().hook.get_anonymization_pipeline()
 
@@ -94,7 +112,7 @@ def configure_structlog(
         # Pretty printing when we run in a terminal session.
         # Automatically prints pretty tracebacks when "rich" is installed
         processors = shared_processors + [
-            structlog.dev.ConsoleRenderer(),
+            HumanConsoleRenderer(),
         ]
     else:
         # Print JSON when we run, e.g., in a Docker container.
@@ -114,7 +132,7 @@ def configure_structlog(
         logger_factory=structlog.stdlib.LoggerFactory(),
         # `wrapper_class` is the bound logger that you get back from
         # get_logger(). This one imitates the API of `logging.Logger`.
-        wrapper_class=structlog.stdlib.BoundLogger,
+        wrapper_class=structlog.make_filtering_bound_logger(log_level),
         # Effectively freeze configuration after creating the first bound
         # logger.
         cache_logger_on_first_use=True,

@@ -129,7 +129,7 @@ Rasa installations on Apple Silicon _don't_ use [Apple Metal](https://developer.
 We found that using the GPU on Apple Silicon increased training time for the
 [`DIETClassifier`](../components.mdx#dietclassifier) and [`TEDPolicy`](../policies.mdx#ted-policy) dramatically.
 You can, however, install the optional dependency to test it yourself
-or try it with other components using: `pip3 install rasa[metal]`.
+or try it with other components using: `pip3 install 'rasa[metal]'`.
 
 Currently, not all of Rasa's dependencies support Apple Silicon natively. This leads
 to the following restrictions:
