@@ -810,7 +810,7 @@ class GenerateResponseFlowStep(FlowStep):
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
             structlogger.error(
-                "flow.entry_step.llm.error", error=e, step=self.id, prompt=prompt
+                "flow.generate_step.llm.error", error=e, step=self.id, prompt=prompt
             )
             return None
 
