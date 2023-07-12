@@ -194,6 +194,8 @@ an example:
 
     {{latest_user_message}}
   advance_if: "yes" # optional, defaults to "yes"
+  llm:              # optional, defaults to "openai"
+    _type: "openai"  
 ```
 
 When a new message is received, the `entry_prompt` will be sent to an LLM. If
@@ -210,6 +212,31 @@ the bot.
 
 Good use cases for entry prompts are detecting sensitive topics or out of scope
 messages.
+
+:::info Using Other LLMs
+
+By default, OpenAI is used as the underlying LLM. 
+
+The used LLM provider can be configured as part of the properties of the flow 
+step and another provider, e.g. `cohere` can be used: 
+
+```yaml-rasa
+- id: "start_if_sensitive_topic"
+  entry_prompt: |
+    Below is the message from the user to the specialized
+    financial chatbot. Can you detect the sensitive topic, not related to
+    the scope of the bot? Reply "yes" or "no" and nothing else.
+
+    {{latest_user_message}}
+  advance_if: "yes"
+  llm:             
+    _type: "cohere" 
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llms/llm-setup.mdx#other-llms--embeddings)
+
+:::
 
 ### Action
 
@@ -246,6 +273,8 @@ using an LLM. The message is then sent to the user. Here is an example:
 
     User: {{latest_user_message}}
     Response:
+  llm:              # optional, defaults to "openai"
+    _type: "openai"
 ```
 
 The `generation_prompt` field contains the prompt that will be sent to the LLM
@@ -264,6 +293,30 @@ to generate a message. The prompt can use the following available variables:
 
 The generated message will be sent to the user. The flow will proceed to the
 next step once the message is sent.
+
+:::info Using Other LLMs
+
+By default, OpenAI is used as the underlying LLM. 
+
+The used LLM provider can be configured as part of the properties of the flow 
+step and another provider, e.g. `cohere` can be used: 
+
+```yaml-rasa
+- id: "a_generation_step"
+  generation_prompt: |
+    You are an incredibly friendly assistant. Generate a short 
+    response to the user's comment in simple english.
+
+    User: {{latest_user_message}}
+    Response:
+  llm:   
+    _type: "cohere"
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llms/llm-setup.mdx#other-llms--embeddings)
+
+:::
 
 ### Set Slots
 
