@@ -146,6 +146,10 @@ class Cacheable(Protocol):
         ...
 
 
+def get_local_cache_location() -> Path:
+    return Path(os.environ.get(CACHE_LOCATION_ENV, DEFAULT_CACHE_LOCATION))
+
+
 class LocalTrainingCache(TrainingCache):
     """Caches training results on local disk (see parent class for full docstring)."""
 
@@ -191,7 +195,7 @@ class LocalTrainingCache(TrainingCache):
 
     @staticmethod
     def _get_cache_location() -> Path:
-        return Path(os.environ.get(CACHE_LOCATION_ENV, DEFAULT_CACHE_LOCATION))
+        return get_local_cache_location()
 
     def _create_database(self) -> sqlalchemy.orm.sessionmaker:
         if self._is_disabled():

@@ -87,7 +87,7 @@ line-length = 88
 select = [ "D", "E", "F", "W", "RUF",]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.8.1,<3.11"
 boto3 = "^1.26.136"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.8"
@@ -152,6 +152,7 @@ portalocker = "^2.7.0"
 pypred = "^0.4.0"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
+langchain = "^0.0.223"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
 markers = "sys_platform == 'win32'"
