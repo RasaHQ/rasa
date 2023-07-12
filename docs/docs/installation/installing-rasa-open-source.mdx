@@ -82,7 +82,7 @@ configuration for your assistant and alert you to additional dependencies.
 If you don't mind the additional dependencies lying around, you can use
 
 ```bash
-pip3 install rasa[full]
+pip3 install 'rasa[full]'
 ```
 
 to install all needed dependencies for every configuration.
@@ -141,9 +141,20 @@ For more information on spaCy models, check out the [spaCy docs](https://spacy.i
 You can install it with the following commands:
 
 ```bash
-pip3 install rasa[spacy]
+pip3 install 'rasa[spacy]'
 python3 -m spacy download en_core_web_md
 ```
+
+:::tip Using `zsh`?
+
+In zsh, square brackets are interpreted as patterns on the command line. 
+To run commands with square brackets, you can either enclose the commands
+with square brackets in quotes, like pip3 install 'rasa[spacy]', or escape
+the square brackets using backslashes, like pip3 install rasa\[spacy\].
+We recommend using the former method (`pip3 install 'rasa[spacy]'`) in our
+documentation because it works as expected across any shell
+
+:::
 
 This will install Rasa Open Source as well as spaCy and its language model
 for the English language, but many other languages are available too.
@@ -157,7 +168,7 @@ First, run
 
 ```bash
 pip3 install git+https://github.com/mit-nlp/MITIE.git
-pip3 install rasa[mitie]
+pip3 install 'rasa[mitie]'
 ```
 
 and then download the
