@@ -750,8 +750,7 @@ class DefaultV1Recipe(Recipe):
             config={},
             resource=Resource("flows_provider"),
         )
-        last_run_node = "flows_provider"
-        
+
         for idx, config in enumerate(predict_config["pipeline"]):
             component_name = config.pop("name")
             component = self._from_registry(component_name)
@@ -863,6 +862,14 @@ class DefaultV1Recipe(Recipe):
     ) -> None:
         plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
             predict_nodes=predict_nodes
+        )
+        predict_nodes["domain_provider"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs={},
+            uses=DomainProvider,
+            fn="provide_inference",
+            config={},
+            resource=Resource("domain_provider"),
         )
         predict_nodes["flows_provider"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
