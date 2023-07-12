@@ -12,7 +12,6 @@ nodes:
     resource: null
   flows_provider:
     needs:
-      domain: domain_for_core_training_provider
       importer: finetuning_validator
     uses: rasa.graph_components.providers.flows_provider.FlowsProvider
     constructor_name: create

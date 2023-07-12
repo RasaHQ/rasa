@@ -750,6 +750,8 @@ class DefaultV1Recipe(Recipe):
             config={},
             resource=Resource("flows_provider"),
         )
+        last_run_node = "flows_provider"
+        
         for idx, config in enumerate(predict_config["pipeline"]):
             component_name = config.pop("name")
             component = self._from_registry(component_name)

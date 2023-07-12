@@ -233,8 +233,7 @@ nodes:
     is_input: false
     resource: null
   flows_provider:
-    needs:
-      domain: domain_provider
+    needs: {}
     uses: rasa.graph_components.providers.flows_provider.FlowsProvider
     constructor_name: load
     fn: provide_inference
