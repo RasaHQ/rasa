@@ -314,7 +314,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     ) -> List[Dict[str, Any]]:
         result = []
         for flow in flows.underlying_flows:
-            if flow.is_user_triggerable() and not flow.is_rasa_default_flow():
+            if not flow.is_rasa_default_flow():
 
                 slots_with_info = [
                     {"name": q.question, "description": q.description}
