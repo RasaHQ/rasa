@@ -147,6 +147,7 @@ class Cacheable(Protocol):
 
 
 def get_local_cache_location() -> Path:
+    """Returns the location of the local cache."""
     return Path(os.environ.get(CACHE_LOCATION_ENV, DEFAULT_CACHE_LOCATION))
 
 
