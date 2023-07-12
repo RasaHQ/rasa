@@ -114,7 +114,7 @@ def combine_custom_and_default_config(
     return {**default_config, **custom_config}
 
 
-def ensure_cache():
+def ensure_cache() -> None:
     """Ensures that the cache is initialized."""
     import langchain
     from rasa.engine import caching
