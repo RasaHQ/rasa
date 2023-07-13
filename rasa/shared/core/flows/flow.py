@@ -748,7 +748,7 @@ class GenerateResponseFlowStep(FlowStep):
 
     generation_prompt: Text
     """The prompt template of the flow step."""
-    llm: Optional[Dict[Text, Any]] = None
+    llm_config: Optional[Dict[Text, Any]] = None
     """The LLM configuration of the flow step."""
 
     @classmethod
@@ -764,7 +764,7 @@ class GenerateResponseFlowStep(FlowStep):
         base = super()._from_json(flow_step_config)
         return GenerateResponseFlowStep(
             generation_prompt=flow_step_config.get("generation_prompt", ""),
-            llm=flow_step_config.get("llm", None),
+            llm_config=flow_step_config.get("llm", None),
             **base.__dict__,
         )
 
@@ -776,8 +776,8 @@ class GenerateResponseFlowStep(FlowStep):
         """
         dump = super().as_json()
         dump["generation_prompt"] = self.generation_prompt
-        if self.llm:
-            dump["llm"] = self.llm
+        if self.llm_config:
+            dump["llm"] = self.llm_config
 
         return dump
 
@@ -801,7 +801,7 @@ class GenerateResponseFlowStep(FlowStep):
         }
         context.update(tracker.current_slot_values())
 
-        llm = llm_factory(self.llm, DEFAULT_LLM_CONFIG)
+        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
         prompt = Template(self.generation_prompt).render(context)
 
         try:
@@ -823,7 +823,7 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
     """The prompt template of the flow step."""
     advance_if: Optional[Text]
     """The expected response to start the flow"""
-    llm: Optional[Dict[Text, Any]] = None
+    llm_config: Optional[Dict[Text, Any]] = None
     """The LLM configuration of the flow step."""
 
     @classmethod
@@ -840,7 +840,7 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
         return EntryPromptFlowStep(
             entry_prompt=flow_step_config.get("entry_prompt", ""),
             advance_if=flow_step_config.get("advance_if"),
-            llm=flow_step_config.get("llm", None),
+            llm_config=flow_step_config.get("llm", None),
             **base.__dict__,
         )
 
@@ -855,8 +855,8 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
         if self.advance_if:
             dump["advance_if"] = self.advance_if
 
-        if self.llm:
-            dump["llm"] = self.llm
+        if self.llm_config:
+            dump["llm"] = self.llm_config
         return dump
 
     def _generate_using_llm(self, prompt: str) -> Optional[str]:
@@ -870,7 +870,7 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
         """
         from rasa.utils.llm import llm_factory
 
-        llm = llm_factory(self.llm, DEFAULT_LLM_CONFIG)
+        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
 
         try:
             return llm(prompt)
