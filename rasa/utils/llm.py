@@ -186,7 +186,7 @@ def embedder_factory(
     structlogger.debug("llmfactory.create.embedder", config=config)
 
     if not typ:
-        return OpenAIEmbeddings()  # type: ignore[call-arg]
+        return OpenAIEmbeddings()
     elif embeddings_cls := type_to_embedding_cls_dict.get(typ):
         parameters = config.copy()
         parameters.pop("_type")
