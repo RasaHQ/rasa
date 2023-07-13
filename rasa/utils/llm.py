@@ -1,4 +1,3 @@
-from typing import Optional
 import structlog
 from rasa.shared.core.events import BotUttered, UserUttered
 from langchain.embeddings.base import Embeddings

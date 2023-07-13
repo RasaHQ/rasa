@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Text, List, Optional, Union
 
-from jinja2 import Template
-
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
@@ -60,8 +58,6 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
 import structlog
-
-from rasa.utils import llm
 
 structlogger = structlog.get_logger()
 
