@@ -195,7 +195,7 @@ an example:
     {{latest_user_message}}
   advance_if: "yes" # optional, defaults to "yes"
   llm:              # optional, defaults to "openai"
-    _type: "openai"  
+    type: "openai"  
 ```
 
 When a new message is received, the `entry_prompt` will be sent to an LLM. If
@@ -230,7 +230,7 @@ step and another provider, e.g. `cohere` can be used:
     {{latest_user_message}}
   advance_if: "yes"
   llm:             
-    _type: "cohere" 
+    type: "cohere" 
 ```
 
 For more information, see the
@@ -274,7 +274,7 @@ using an LLM. The message is then sent to the user. Here is an example:
     User: {{latest_user_message}}
     Response:
   llm:              # optional, defaults to "openai"
-    _type: "openai"
+    type: "openai"
 ```
 
 The `generation_prompt` field contains the prompt that will be sent to the LLM
@@ -310,7 +310,7 @@ step and another provider, e.g. `cohere` can be used:
     User: {{latest_user_message}}
     Response:
   llm:   
-    _type: "cohere"
+    type: "cohere"
 ```
 
 For more information, see the
