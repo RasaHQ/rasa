@@ -1,8 +1,9 @@
 from typing import Text
-
-import docker
 import pytest
 import pika
+import docker
+import json
+
 from pytest import LogCaptureFixture
 
 from rasa.core.brokers.pika import PikaEventBroker
@@ -11,6 +12,23 @@ from tests.integration_tests.core.brokers.conftest import (
     RABBITMQ_PORT,
     RABBITMQ_DEFAULT_QUEUE,
 )
+
+
+
+@pytest.fixture
+def rabbitmq_username() -> Text:
+    return "test_user"
+
+
+@pytest.fixture
+def rabbitmq_password() -> Text:
+    return "test_password"
+
+
+def _callback(ch=, method, properties, body):
+    # Do something useful with your incoming message body here, e.g.
+    # saving it to a database
+    print('Received event {}'.format(json.loads(body)))
 
 
 @pytest.mark.xdist_group("rabbitmq")
@@ -24,17 +42,18 @@ async def test_consume_after_pika_restart(
         "RABBITMQ_DEFAULT_USER": rabbitmq_username,
         "RABBITMQ_DEFAULT_PASS": rabbitmq_password,
     }
-    credentials = pika.PlainCredentials(rabbitmq_username, rabbitmq_password)
+    credentials = pika.credentials.PlainCredentials(rabbitmq_username, rabbitmq_password)
 
-    rabbitmq_container = docker_client.containers.run(
-        image="healthcheck/rabbitmq",
+    rabbitmq_container_broker = docker_client.containers.run(
+        image="rabbitmq:3-management",
         detach=True,
         environment=environment,
-        name="rabbitmq",
+        name="rabbitmq_broker",
+        domainname="rabbitmq.com",
         ports={f"{RABBITMQ_PORT}/tcp": RABBITMQ_PORT},
     )
-    rabbitmq_container.reload()
-    assert rabbitmq_container.status == "running"
+    rabbitmq_container_broker.reload()
+    assert rabbitmq_container_broker.status == "running"
 
     broker = PikaEventBroker(
         host=RABBITMQ_HOST,
@@ -49,20 +68,22 @@ async def test_consume_after_pika_restart(
     assert broker.is_ready()
     broker.publish({"event": "test"})
 
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters('rabbitmq', credentials=credentials))
+    connection = pika.adapters.BlockingConnection(
+        pika.connection.ConnectionParameters(host='0.0.0.0', port=5672,
+                                             credentials=credentials, blocked_connection_timeout=1200))
     channel = connection.channel()
-    channel.basic_consume(queue=RABBITMQ_DEFAULT_QUEUE, auto_ack=True)
+    channel.basic_consume(on_message_callback=_callback, queue='queue1', auto_ack=True)
     channel.start_consuming()
     assert channel is not None
 
-    rabbitmq_container.stop()
+    rabbitmq_container_broker.stop()
     assert channel is None
-    rabbitmq_container.reload()
+    rabbitmq_container_broker.reload()
     assert channel is not None
 
-    assert rabbitmq_container.status == "exited"
+    assert rabbitmq_container_broker.status == "exited"
     await broker.close()
 
-    rabbitmq_container.stop()
-    rabbitmq_container.remove()
+    rabbitmq_container_broker.stop()
+    rabbitmq_container_broker.remove()
+

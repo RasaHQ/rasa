@@ -1,5 +1,3 @@
-from typing import Text
-
 import docker
 import pytest
 
@@ -15,13 +13,3 @@ def docker_client() -> docker.DockerClient:
     docker_client.containers.prune()
 
     return docker_client
-
-
-@pytest.fixture
-def rabbitmq_username() -> Text:
-    return "test_user"
-
-
-@pytest.fixture
-def rabbitmq_password() -> Text:
-    return "test_password"
