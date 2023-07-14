@@ -4,14 +4,13 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Text, List, Optional, Union
 
-from jinja2 import Template
-
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
 )
 from pypred import Predicate
+
 from rasa.shared.constants import FLOW_PREFIX, CORRECTION_INTENT, CANCEL_FLOW_INTENT
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
@@ -59,8 +58,6 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
 import structlog
-
-from rasa.utils import llm
 
 structlogger = structlog.get_logger()
 
@@ -853,9 +850,7 @@ class FlowExecutor:
                     FLOW_PREFIX + "pattern_correction",
                     1.0,
                     metadata={
-                        "slots": {
-                            CORRECTED_SLOTS_SLOT: [s.as_dict() for s in updated_slots]
-                        }
+                        "slots": {CORRECTED_SLOTS_SLOT: [s.key for s in updated_slots]}
                     },
                 )
             # the question is only finished once the slot is set and the loop
@@ -937,16 +932,7 @@ class FlowExecutor:
         elif isinstance(step, EntryPromptFlowStep):
             return ActionPrediction(None, 0.0)
         elif isinstance(step, GenerateResponseFlowStep):
-            context = {
-                "history": llm.tracker_as_readable_transcript(tracker, max_turns=5),
-                "latest_user_message": tracker.latest_message.text
-                if tracker.latest_message
-                else "",
-            }
-            context.update(tracker.current_slot_values())
-            prompt = Template(step.generation_prompt).render(context)
-
-            generated = llm.generate_text_openai_chat(prompt)
+            generated = step.generate(tracker)
             return ActionPrediction(
                 ACTION_SEND_TEXT_NAME, 1.0, metadata={"message": {"text": generated}}
             )

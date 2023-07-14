@@ -1,10 +1,13 @@
-from typing import Optional
-import openai
-import openai.error
 import structlog
 from rasa.shared.core.events import BotUttered, UserUttered
+from langchain.embeddings.base import Embeddings
 
 from rasa.shared.core.trackers import DialogueStateTracker
+from typing import Any, Dict, Optional, Text, Type
+
+from langchain.llms.base import BaseLLM
+from langchain.llms.loading import load_llm_from_config
+from langchain.cache import SQLiteCache
 
 structlogger = structlog.get_logger()
 
@@ -19,34 +22,6 @@ DEFAULT_OPENAI_CHAT_MODEL_NAME = "gpt-3.5-turbo"
 DEFAULT_OPENAI_EMBEDDING_MODEL_NAME = "text-embedding-ada-002"
 
 DEFAULT_OPENAI_TEMPERATURE = 0.7
-
-
-def generate_text_openai_chat(
-    prompt: str,
-    model: str = DEFAULT_OPENAI_CHAT_MODEL_NAME,
-    temperature: float = DEFAULT_OPENAI_TEMPERATURE,
-) -> Optional[str]:
-    """Generates text using the OpenAI chat API.
-
-    Args:
-        prompt: the prompt to send to the API
-        model: the model to use for generation
-        temperature: the temperature to use for generation
-
-    Returns:
-        The generated text.
-    """
-    # TODO: exception handling
-    try:
-        chat_completion = openai.ChatCompletion.create(  # type: ignore[no-untyped-call]
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-        )
-        return chat_completion.choices[0].message.content
-    except openai.error.OpenAIError:
-        structlogger.exception("openai.generate.error", model=model, prompt=prompt)
-        return None
 
 
 def tracker_as_readable_transcript(
@@ -104,3 +79,117 @@ def sanitize_message_for_prompt(text: Optional[str]) -> str:
     A string with new lines removed.
     """
     return text.replace("\n", " ") if text else ""
+
+
+def combine_custom_and_default_config(
+    custom_config: Optional[Dict[Text, Any]], default_config: Dict[Text, Any]
+) -> Dict[Text, Any]:
+    """Merges the given llm config with the default config.
+
+    Only uses the default configuration arguments, if the type set in the
+    custom config matches the type in the default config. Otherwise, only
+    the custom config is used.
+
+    Args:
+        custom_config: The custom config containing values to overwrite defaults
+        default_config: The default config.
+
+    Returns:
+        The merged config.
+    """
+    if custom_config is None:
+        return default_config
+
+    if "type" in custom_config:
+        # rename type to _type as "type" is the convention we use
+        # across the different components in config files.
+        # langchain expects "_type" as the key though
+        custom_config["_type"] = custom_config.pop("type")
+
+    if "_type" in custom_config and custom_config["_type"] != default_config.get(
+        "_type"
+    ):
+        return custom_config
+    return {**default_config, **custom_config}
+
+
+def ensure_cache() -> None:
+    """Ensures that the cache is initialized."""
+    import langchain
+    from rasa.engine import caching
+
+    # TODO: the caching config shouldn't be imported from engine, but rather
+    # moved somewhere else
+    location = caching.get_local_cache_location() / "rasa-llm-cache.db"
+    langchain.llm_cache = SQLiteCache(database_path=str(location))
+
+
+def llm_factory(
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
+) -> BaseLLM:
+    """Creates an LLM from the given config.
+
+    Args:
+        custom_config: The custom config  containing values to overwrite defaults
+        default_config: The default config.
+
+
+    Returns:
+    Instantiated LLM based on the configuration.
+    """
+    ensure_cache()
+
+    config = combine_custom_and_default_config(custom_config, default_config)
+
+    # need to create a copy as the langchain function modifies the
+    # config in place...
+    structlogger.debug("llmfactory.create.llm", config=config)
+    return load_llm_from_config(config.copy())
+
+
+def embedder_factory(
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
+) -> Embeddings:
+    """Creates an Embedder from the given config.
+
+    Args:
+        custom_config: The custom config containing values to overwrite defaults
+        default_config: The default config.
+
+
+    Returns:
+    Instantiated Embedder based on the configuration.
+    """
+    from langchain.embeddings import (
+        CohereEmbeddings,
+        HuggingFaceHubEmbeddings,
+        HuggingFaceInstructEmbeddings,
+        LlamaCppEmbeddings,
+        OpenAIEmbeddings,
+        SpacyEmbeddings,
+        VertexAIEmbeddings,
+    )
+
+    type_to_embedding_cls_dict: Dict[str, Type[Embeddings]] = {
+        "openai": OpenAIEmbeddings,
+        "cohere": CohereEmbeddings,
+        "spacy": SpacyEmbeddings,
+        "vertexai": VertexAIEmbeddings,
+        "huggingface_instruct": HuggingFaceInstructEmbeddings,
+        "huggingface_hub": HuggingFaceHubEmbeddings,
+        "llamacpp": LlamaCppEmbeddings,
+    }
+
+    config = combine_custom_and_default_config(custom_config, default_config)
+    typ = config.get("_type")
+
+    structlogger.debug("llmfactory.create.embedder", config=config)
+
+    if not typ:
+        return OpenAIEmbeddings()
+    elif embeddings_cls := type_to_embedding_cls_dict.get(typ):
+        parameters = config.copy()
+        parameters.pop("_type")
+        return embeddings_cls(**parameters)
+    else:
+        raise ValueError(f"Unsupported embeddings type '{typ}'")
