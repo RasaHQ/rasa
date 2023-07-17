@@ -40,7 +40,7 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.policy import Policy
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
+from rasa.shared.core.domain import KEY_FORMS, Domain
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.constants import (
@@ -827,8 +827,8 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
         lambda *args, **kwargs: None,
     )
     if should_raise:
-        with pytest.raises(
-            InvalidDomain,
+        with pytest.warns(
+            UserWarning,
             match="You have defined a form action, but have not added the",
         ):
             validator.validate(importer)

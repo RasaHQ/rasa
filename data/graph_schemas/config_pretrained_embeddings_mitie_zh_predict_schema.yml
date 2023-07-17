@@ -10,6 +10,17 @@ nodes:
     is_target: false
     is_input: false
     resource: null
+  flows_provider:
+    needs: {}
+    uses: rasa.graph_components.providers.flows_provider.FlowsProvider
+    constructor_name: load
+    fn: provide_inference
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: flows_provider
   provide_MitieNLP0:
     needs: {}
     uses: rasa.nlu.utils.mitie_utils.MitieNLP

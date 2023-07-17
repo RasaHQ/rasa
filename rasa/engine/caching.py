@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import abc
 import logging
-import os
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -24,16 +23,13 @@ import sqlalchemy.orm
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.engine.caching import (
+    get_local_cache_location,
+    get_max_cache_size,
+    get_cache_database_name,
+)
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_CACHE_LOCATION = Path(".rasa", "cache")
-DEFAULT_CACHE_NAME = "cache.db"
-DEFAULT_CACHE_SIZE_MB = 1000
-
-CACHE_LOCATION_ENV = "RASA_CACHE_DIRECTORY"
-CACHE_DB_NAME_ENV = "RASA_CACHE_NAME"
-CACHE_SIZE_ENV = "RASA_MAX_CACHE_SIZE"
 
 
 class TrainingCache(abc.ABC):
@@ -146,11 +142,6 @@ class Cacheable(Protocol):
         ...
 
 
-def get_local_cache_location() -> Path:
-    """Returns the location of the local cache."""
-    return Path(os.environ.get(CACHE_LOCATION_ENV, DEFAULT_CACHE_LOCATION))
-
-
 class LocalTrainingCache(TrainingCache):
     """Caches training results on local disk (see parent class for full docstring)."""
 
@@ -175,13 +166,9 @@ class LocalTrainingCache(TrainingCache):
         """
         self._cache_location = LocalTrainingCache._get_cache_location()
 
-        self._max_cache_size = float(
-            os.environ.get(CACHE_SIZE_ENV, DEFAULT_CACHE_SIZE_MB)
-        )
+        self._max_cache_size = get_max_cache_size()
 
-        self._cache_database_name = os.environ.get(
-            CACHE_DB_NAME_ENV, DEFAULT_CACHE_NAME
-        )
+        self._cache_database_name = get_cache_database_name()
 
         if not self._cache_location.exists() and not self._is_disabled():
             logger.debug(

@@ -1,7 +1,7 @@
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.utils.llm import (
+from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
 )

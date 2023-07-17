@@ -30,7 +30,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.utils.llm import (
+from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
     llm_factory,
     tracker_as_readable_transcript,
