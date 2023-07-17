@@ -1,6 +1,5 @@
 import asyncio
 import copy
-import fcntl
 import os
 import json
 import logging
@@ -241,13 +240,12 @@ class KafkaEventBroker(EventBroker):
                 )
             ]
 
-        # set stdout to non-blocking
-        fcntl.fcntl(1, fcntl.F_SETFL, 0)
-
+        reduced_rasa_event = rasa.shared.core.events.reduce_event(event)
         structlogger.debug(
             "kafka.publish.event",
+            event_info="Logging a reduced version of the Kafka event",
             topic=self.topic,
-            rasa_event=copy.deepcopy(event),
+            rasa_event=copy.deepcopy(reduced_rasa_event),
             partition_key=partition_key,
             headers=headers,
         )

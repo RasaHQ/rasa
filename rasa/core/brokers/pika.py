@@ -298,20 +298,24 @@ class PikaEventBroker(EventBroker):
         if self._exchange is None:
             return
 
+        reduced_rasa_event = rasa.shared.core.events.reduce_event(event)
+
         try:
             await self._exchange.publish(self._message(event, headers), "")
 
             structlogger.debug(
                 "pika.events.publish",
+                event_info="Logging a reduced version of the Pika event",
                 rabbitmq_exchange=RABBITMQ_EXCHANGE,
                 host=self.host,
-                rasa_event=copy.deepcopy(event),
+                rasa_event=copy.deepcopy(reduced_rasa_event),
             )
         except Exception as e:
             structlogger.error(
                 "pika.events.publish.failed",
+                event_info="Logging a reduced version of the failed Pika event",
                 host=self.host,
-                rasa_event=copy.deepcopy(event),
+                rasa_event=copy.deepcopy(reduced_rasa_event),
             )
             if self.should_keep_unpublished_messages:
                 self._unpublished_events.append(event)
