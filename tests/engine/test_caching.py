@@ -13,12 +13,14 @@ from sqlalchemy.exc import OperationalError
 
 import rasa.shared.utils.io
 import rasa.shared.utils.common
-from rasa.engine.caching import (
-    LocalTrainingCache,
+from rasa.shared.engine.caching import (
     CACHE_LOCATION_ENV,
     DEFAULT_CACHE_NAME,
     CACHE_SIZE_ENV,
     CACHE_DB_NAME_ENV,
+)
+from rasa.engine.caching import (
+    LocalTrainingCache,
     TrainingCache,
 )
 import tests.conftest

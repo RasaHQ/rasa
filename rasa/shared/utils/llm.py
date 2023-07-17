@@ -1,13 +1,15 @@
-import structlog
-from rasa.shared.core.events import BotUttered, UserUttered
-from langchain.embeddings.base import Embeddings
-
-from rasa.shared.core.trackers import DialogueStateTracker
 from typing import Any, Dict, Optional, Text, Type
 
+import structlog
+from langchain.embeddings.base import Embeddings
 from langchain.llms.base import BaseLLM
 from langchain.llms.loading import load_llm_from_config
 from langchain.cache import SQLiteCache
+
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.engine.caching import get_local_cache_location
+
 
 structlogger = structlog.get_logger()
 
@@ -116,11 +118,8 @@ def combine_custom_and_default_config(
 def ensure_cache() -> None:
     """Ensures that the cache is initialized."""
     import langchain
-    from rasa.engine import caching
 
-    # TODO: the caching config shouldn't be imported from engine, but rather
-    # moved somewhere else
-    location = caching.get_local_cache_location() / "rasa-llm-cache.db"
+    location = get_local_cache_location() / "rasa-llm-cache.db"
     langchain.llm_cache = SQLiteCache(database_path=str(location))
 
 
