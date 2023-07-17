@@ -1,0 +1,67 @@
+---
+id: sanic-extensions
+sidebar_label: Sanic Extensions
+title: Sanic Extensions
+---
+
+:::info New in 3.6
+
+You can now extend Sanic features such as middlewares, listeners, background tasks
+and additional routes.
+
+:::
+
+
+You can now create additional Sanic extensions by accessing the app object created by the action server. The hook implemented
+in the plugin package provides you access to the Sanic app object created by `rasa-sdk` when starting the action server.
+
+## Step-by-step guide on creating your own Sanic extension in rasa_sdk
+This example will show you how to create a Sanic listener using plugins.
+
+### Create the rasa_sdk_plugins package
+Create a package in your action server project which you must name `rasa_sdk_plugins`. Rasa SDK will try to instantiate this package in your project to start plugins.
+If no plugins are found, it will print a debug log that there are no plugins in your project.
+
+### Register modules containing the hooks
+Create the package `rasa_sdk_plugins` and initialize the hooks by creating an `__init__.py` file where the plugin manager will look for the module where the hooks are implemented:
+
+```
+def init_hooks(manager: pluggy.PluginManager) -> None:
+    """Initialise hooks into rasa sdk."""
+    import sys
+    import rasa_sdk_plugins.your_module
+
+    logger.info("Finding hooks")
+    manager.register(sys.modules["rasa_sdk_plugins.your_module"])
+```
+### Implement your hook
+Implement the hook `attach_sanic_app_extensions`. This hook forwards the app object created by Sanic in the `rasa_sdk` and allows you to create additional routes, middlewares, listeners and background tasks. Here's an example of this implementation that creates a listener.
+
+In your `rasa_sdk_plugins.your_module.py`:
+
+```
+from __future__ import annotations
+
+import logging
+import pluggy
+
+from asyncio import AbstractEventLoop
+from functools import partial
+
+
+logger = logging.getLogger(__name__)
+hookimpl = pluggy.HookimplMarker("rasa_sdk")
+
+
+@hookimpl  # type: ignore[misc]
+def attach_sanic_app_extensions(app: Sanic) -> None:
+    logger.info("hook called")
+    app.register_listener(
+        partial(before_server_start),
+        "before_server_start",
+    )
+
+
+async def before_server_start(app: Sanic, loop: AbstractEventLoop):
+    logger.info("BEFORE SERVER START")
+```
