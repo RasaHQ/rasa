@@ -12,7 +12,7 @@ from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
 
 import rasa.shared.utils.io
-from rasa.utils.llm import (
+from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     DEFAULT_OPENAI_TEMPERATURE,
 )
@@ -790,7 +790,7 @@ class GenerateResponseFlowStep(FlowStep):
         Returns:
             The generated response.
         """
-        from rasa.utils.llm import llm_factory, tracker_as_readable_transcript
+        from rasa.shared.utils.llm import llm_factory, tracker_as_readable_transcript
         from jinja2 import Template
 
         context = {
@@ -868,7 +868,7 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
         Returns:
             generated text
         """
-        from rasa.utils.llm import llm_factory
+        from rasa.shared.utils.llm import llm_factory
 
         llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
 
@@ -892,7 +892,7 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
         Returns:
             Whether the flow step is triggered by the given intent and entities.
         """
-        from rasa.utils import llm
+        from rasa.shared.utils import llm
         from jinja2 import Template
 
         if not self.entry_prompt:
