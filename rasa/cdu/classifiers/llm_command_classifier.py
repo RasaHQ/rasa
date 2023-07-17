@@ -1,17 +1,22 @@
 import importlib.resources
 import re
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List
 
 from jinja2 import Template
 import structlog
+from rasa.cdu.classifiers.base import CommandClassifier
+from rasa.cdu.commands import (
+    Command,
+    SetSlotCommand,
+    CancelFlowCommand,
+    StartFlowCommand,
+)
 
 from rasa.core.policies.flow_policy import FlowStack
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.core.constants import (
     MAPPING_TYPE,
     SlotMappingType,
@@ -21,24 +26,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
-    INTENT,
-    EXTRACTOR,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITIES,
     TEXT,
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_TEXT,
-    ENTITY_ATTRIBUTE_CONFIDENCE,
-)
-from rasa.shared.constants import (
-    CORRECTION_INTENT,
-    CANCEL_FLOW_INTENT,
-    COMMENT_INTENT,
-    TOO_COMPLEX_INTENT,
-    INFORM_INTENT,
-    OPENAI_ERROR_INTENT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -66,6 +54,8 @@ DEFAULT_LLM_CONFIG = {
 LLM_CONFIG_KEY = "llm"
 
 
+# TODO: check if the original inhertance from IntentClassifier and EntityExtractorMixin
+#   is still needed or what benefits that provided.
 @DefaultV1Recipe.register(
     [
         DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
@@ -73,7 +63,7 @@ LLM_CONFIG_KEY = "llm"
     ],
     is_trainable=True,
 )
-class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
+class LLMCommandClassifier(GraphComponent, CommandClassifier):
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
@@ -100,7 +90,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "LLMFlowClassifier":
+    ) -> "LLMCommandClassifier":
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
@@ -115,7 +105,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "LLMFlowClassifier":
+    ) -> "LLMCommandClassifier":
         """Loads trained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
@@ -123,15 +113,6 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         """Train the intent classifier on a data set."""
         self.persist()
         return self._resource
-
-    def process(
-        self,
-        messages: List[Message],
-        tracker: Optional[DialogueStateTracker] = None,
-        flows: Optional[FlowsList] = None,
-    ) -> List[Message]:
-        """Return intent and entities for a message."""
-        return [self.process_single(msg, tracker, flows) for msg in messages]
 
     def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
         """Use LLM to generate a response.
@@ -149,54 +130,35 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
-            structlogger.error("llmflowclassifier.llm.error", error=e)
+            structlogger.error("llm_command_classifier.llm.error", error=e)
             return None
 
-    def process_single(
+    def predict_commands(
         self,
         message: Message,
         tracker: Optional[DialogueStateTracker] = None,
         flows: Optional[FlowsList] = None,
-    ) -> Message:
+    ) -> List[Command]:
         if flows is None or tracker is None:
             # cannot do anything if there are no flows or no tracker
-            return message
+            return []
         flows_without_patterns = FlowsList(
             [f for f in flows.underlying_flows if not f.is_handling_pattern()]
         )
         flow_prompt = self.render_template(message, tracker, flows_without_patterns)
         structlogger.info(
-            "llmflowclassifier.process.prompt_rendered", prompt=flow_prompt
+            "llm_command_classifier.process.prompt_rendered", prompt=flow_prompt
         )
         action_list = self._generate_action_list_using_llm(flow_prompt)
         structlogger.info(
-            "llmflowclassifier.process.actions_generated", action_list=action_list
+            "llm_command_classifier.process.actions_generated", action_list=action_list
         )
-        intent_name, entities = self.parse_action_list(
-            action_list, tracker, flows_without_patterns
-        )
+        commands = self.parse_commands(action_list, tracker, flows_without_patterns)
         structlogger.info(
-            "llmflowclassifier.process.finished",
-            intent=intent_name,
-            num_entities=len(entities),
+            "llm_command_classifier.process.finished",
+            commands=commands,
         )
-        intent = {"name": intent_name, "confidence": 0.90}
-        message.set(INTENT, intent, add_to_output=True)
-        if len(entities) > 0:
-            formatted_entities = [
-                {
-                    ENTITY_ATTRIBUTE_START: 0,
-                    ENTITY_ATTRIBUTE_END: 0,
-                    ENTITY_ATTRIBUTE_TYPE: e[0],
-                    ENTITY_ATTRIBUTE_VALUE: e[1],
-                    ENTITY_ATTRIBUTE_TEXT: e[1],
-                    ENTITY_ATTRIBUTE_CONFIDENCE: 0.9,
-                    EXTRACTOR: self.__class__.__name__,
-                }
-                for e in entities
-            ]
-            message.set(ENTITIES, formatted_entities, add_to_output=True)
-        return message
+        return commands
 
     @staticmethod
     def is_hallucinated_value(value: str) -> bool:
@@ -208,15 +170,17 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         }
 
     @classmethod
-    def parse_action_list(
+    def parse_commands(
         cls, actions: Optional[str], tracker: DialogueStateTracker, flows: FlowsList
-    ) -> Tuple[str, List[Tuple[str, str]]]:
+    ) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities."""
         if not actions:
-            return OPENAI_ERROR_INTENT, []
-        start_flow_actions = []
-        slot_sets = []
-        cancel_flow = False
+            # TODO: not quite sure yet how to handle this case - revisit!
+            #  is predicting "no commands" an option?
+            return []
+
+        commands: List[Command] = []
+
         slot_set_re = re.compile(
             r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)"""
         )
@@ -226,122 +190,18 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             if m := slot_set_re.search(action):
                 slot_name = m.group(1).strip()
                 slot_value = m.group(2).strip()
-                if slot_value == "undefined":
-                    continue
                 if slot_name == "flow_name":
-                    start_flow_actions.append(slot_value)
+                    commands.append(StartFlowCommand(flow=slot_value))
+                elif cls.is_hallucinated_value(slot_value):
+                    continue
                 else:
-                    if cls.is_hallucinated_value(slot_value):
-                        continue
-                    slot_sets.append((slot_name, slot_value))
+                    commands.append(SetSlotCommand(name=slot_name, value=slot_value))
             elif m := start_flow_re.search(action):
-                start_flow_actions.append(m.group(1).strip())
+                commands.append(StartFlowCommand(flow=m.group(1).strip()))
             elif cancel_flow_re.search(action):
-                cancel_flow = True
+                commands.append(CancelFlowCommand())
 
-        # case 1
-        # "I want to send some money"
-        # starting a flow -> intent = flow name
-
-        # case 2
-        # "I want to send some money to Joe"
-        # starting a flow with entities mentioned -> intent = flow name,
-        # entities only those that are valid for the flow
-
-        # case 3
-        # "50$"
-        # giving information for the current slot -> intent = inform,
-        # entity only that of the current slot
-
-        # case 4
-        # "Sorry I meant, Joe, not John"
-        # correcting a previous slot from the flow -> intent = correction,
-        # entity of the previous slot
-
-        # everything else is too complex for now:
-        # case 5
-        # "50$, how much money do I still have btw?"
-        # giving information about current flow and starting new flow
-        # right away -> intent = complex
-
-        # TODO: check that we have a valid flow name if any, reprompt if mistake?
-        # TODO: assign slot sets to current flow, new flow if any, and other
-
-        flow_stack = FlowStack.from_tracker(tracker)
-
-        top_flow = flow_stack.top_flow(flows)
-        flows_on_the_stack = {f.flow_id for f in flow_stack.frames}
-        top_flow_step = flow_stack.top_flow_step(flows)
-
-        # filter start flow actions so that same flow isn't started again
-        if top_flow is not None:
-            start_flow_actions = [
-                start_flow_action
-                for start_flow_action in start_flow_actions
-                if start_flow_action not in flows_on_the_stack
-            ]
-
-        if top_flow_step is not None and top_flow is not None:
-            slots_so_far = {
-                q.question
-                for q in top_flow.previously_asked_questions(top_flow_step.id)
-            }
-            other_slots = [
-                slot_set for slot_set in slot_sets if slot_set[0] not in slots_so_far
-            ]
-        else:
-            slots_so_far = set()
-            other_slots = slot_sets
-
-        if len(start_flow_actions) == 0:
-            if len(slot_sets) == 0 and not cancel_flow:
-                return COMMENT_INTENT, []
-            elif cancel_flow:
-                return CANCEL_FLOW_INTENT, []
-            elif (
-                len(slot_sets) == 1
-                and isinstance(top_flow_step, QuestionFlowStep)
-                and top_flow_step.question == slot_sets[0][0]
-            ):
-                return INFORM_INTENT, slot_sets
-            elif (
-                len(slot_sets) == 1
-                and isinstance(top_flow_step, QuestionFlowStep)
-                and top_flow_step.question != slot_sets[0][0]
-                and slot_sets[0][0] in slots_so_far
-            ):
-                return CORRECTION_INTENT, slot_sets
-            elif (
-                len(slot_sets) == 1
-                and top_flow_step is not None
-                and slot_sets[0][0] in other_slots
-            ):
-                # trying to set a slot from another flow
-                return TOO_COMPLEX_INTENT, []
-            elif len(slot_sets) > 1:
-                if all([s[0] in slots_so_far for s in slot_sets]):
-                    return CORRECTION_INTENT, slot_sets
-                else:
-                    return TOO_COMPLEX_INTENT, []
-        elif len(start_flow_actions) == 1:
-            if cancel_flow:
-                return TOO_COMPLEX_INTENT, []
-            new_flow_id = start_flow_actions[0]
-            potential_new_flow = flows.flow_by_id(new_flow_id)
-            if potential_new_flow is not None:
-                valid_slot_sets = [
-                    slot_set
-                    for slot_set in slot_sets
-                    if slot_set[0] in potential_new_flow.get_slots()
-                ]
-                return start_flow_actions[0], valid_slot_sets
-            else:
-                return "mistake", []
-                # TODO: potentially re-prompt or ask for correction on invalid flow name
-        elif len(start_flow_actions) > 1:
-            return TOO_COMPLEX_INTENT, []
-
-        return TOO_COMPLEX_INTENT, []
+        return commands
 
     @classmethod
     def create_template_inputs(

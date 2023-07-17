@@ -98,6 +98,7 @@ class DefaultV1Recipe(Recipe):
         POLICY_WITHOUT_END_TO_END_SUPPORT = 4
         POLICY_WITH_END_TO_END_SUPPORT = 5
         MODEL_LOADER = 6
+        COMMAND_CLASSIFIER = 7
 
     name = "default.v1"
     _registered_components: Dict[Text, RegisteredComponent] = {}

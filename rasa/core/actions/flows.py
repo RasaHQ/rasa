@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional, Text, List
 import logging
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
-from rasa.core.policies.flow_policy import FlowStack, FlowStackFrame, StackFrameType
+from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
 from rasa.shared.constants import FLOW_PREFIX
 
 from rasa.shared.core.constants import FLOW_STACK_SLOT
