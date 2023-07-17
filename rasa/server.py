@@ -719,7 +719,7 @@ def create_app(
         )
 
         if should_start_session:
-            tracker = await app.ctx.agent.processor.fetch_tracker_with_initial_session(
+            tracker = await app.ctx.agent.processor.fetch_full_tracker_with_initial_session(
                 conversation_id,
                 output_channel=CollectingOutputChannel(),
             )
