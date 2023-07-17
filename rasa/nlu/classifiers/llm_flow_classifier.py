@@ -1,9 +1,9 @@
 import importlib.resources
 import re
-import logging
 from typing import Dict, Any, Optional, List, Tuple
 
 from jinja2 import Template
+import structlog
 
 from rasa.core.policies.flow_policy import FlowStack
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -44,44 +44,26 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
-    DEFAULT_OPENAI_TEMPERATURE,
+    llm_factory,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
 )
-import openai
-import openai.error
 
 DEFAULT_FLOW_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.nlu.classifiers", "flow_prompt_template.jinja2"
 )
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
-def generate_text_openai_chat(
-    prompt: str,
-    model: str = DEFAULT_OPENAI_CHAT_MODEL_NAME,
-    temperature: float = DEFAULT_OPENAI_TEMPERATURE,
-) -> Optional[str]:
-    """Generates text using the OpenAI chat API.
-    Args:
-        prompt: the prompt to send to the API
-        model: the model to use for generation
-        temperature: the temperature to use for generation
-    Returns:
-        The generated text.
-    """
-    # TODO: exception handling
-    try:
-        chat_completion = openai.ChatCompletion.create(  # type: ignore[no-untyped-call]
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-        )
-        return chat_completion.choices[0].message.content
-    except openai.error.OpenAIError:
-        logger.exception("openai.generate.error %s %s", model, prompt)
-        return None
+DEFAULT_LLM_CONFIG = {
+    "_type": "openai",
+    "request_timeout": 5,
+    "temperature": 0.0,
+    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
+}
+
+LLM_CONFIG_KEY = "llm"
 
 
 @DefaultV1Recipe.register(
@@ -97,8 +79,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         """The component's default config (see parent class for full docstring)."""
         return {
             "prompt": DEFAULT_FLOW_PROMPT_TEMPLATE,
-            "temperature": 0.0,
-            "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
+            LLM_CONFIG_KEY: None,
         }
 
     def __init__(
@@ -108,9 +89,7 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         resource: Resource,
     ) -> None:
         self.config = {**self.get_default_config(), **config}
-        self.model = self.config["model_name"]
         self.prompt_template = self.config["prompt"]
-        self.temperature = self.config["temperature"]
         self._model_storage = model_storage
         self._resource = resource
 
@@ -154,6 +133,25 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         """Return intent and entities for a message."""
         return [self.process_single(msg, tracker, flows) for msg in messages]
 
+    def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
+        """Use LLM to generate a response.
+
+        Args:
+            prompt: the prompt to send to the LLM
+
+        Returns:
+            generated text
+        """
+        llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
+
+        try:
+            return llm(prompt)
+        except Exception as e:
+            # unfortunately, langchain does not wrap LLM exceptions which means
+            # we have to catch all exceptions here
+            structlogger.error("llmflowclassifier.llm.error", error=e)
+            return None
+
     def process_single(
         self,
         message: Message,
@@ -167,15 +165,21 @@ class LLMFlowClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             [f for f in flows.underlying_flows if not f.is_handling_pattern()]
         )
         flow_prompt = self.render_template(message, tracker, flows_without_patterns)
-        logger.info(flow_prompt)
-        action_list = generate_text_openai_chat(
-            flow_prompt, self.model, self.temperature
+        structlogger.info(
+            "llmflowclassifier.process.prompt_rendered", prompt=flow_prompt
         )
-        logger.info(action_list)
+        action_list = self._generate_action_list_using_llm(flow_prompt)
+        structlogger.info(
+            "llmflowclassifier.process.actions_generated", action_list=action_list
+        )
         intent_name, entities = self.parse_action_list(
             action_list, tracker, flows_without_patterns
         )
-        logger.info(f"Predicting {intent_name} with {len(entities)} entities")
+        structlogger.info(
+            "llmflowclassifier.process.finished",
+            intent=intent_name,
+            num_entities=len(entities),
+        )
         intent = {"name": intent_name, "confidence": 0.90}
         message.set(INTENT, intent, add_to_output=True)
         if len(entities) > 0:

@@ -175,6 +175,17 @@ pipeline:
 The above configuration specifies that the [LLMIntentClassifier](./llm-intent.mdx)
 should use the [Cohere](https://cohere.ai/) LLM provider rather than OpenAI.
 
+:::important
+
+If you switch to a different LLM provider, all default parameters for different
+components will be ignored and the default for the new provider is used.
+
+E.g. If a component sets `temperature=0.7` and you switch to a different LLM
+provider, this default will be ignored and it is up to you to set the
+temperature for the new provider.
+
+:::
+
 The following LLM providers are supported:
 
 #### OpenAI

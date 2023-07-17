@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Text, List, Optional, Union
 
-from jinja2 import Template
-
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
@@ -60,8 +58,6 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
 import structlog
-
-from rasa.utils import llm
 
 structlogger = structlog.get_logger()
 
@@ -893,9 +889,6 @@ class FlowExecutor:
         Returns:
         A tuple of the predicted action and a list of events.
         """
-        # TODO: better way to prevent circularity for generate_text_openai_chat
-        from rasa.nlu.classifiers.llm_flow_classifier import generate_text_openai_chat
-
         if isinstance(step, QuestionFlowStep):
             structlogger.debug("flow.step.run.question", step=step, flow=flow)
             slot = tracker.slots.get(step.question, None)
@@ -939,16 +932,7 @@ class FlowExecutor:
         elif isinstance(step, EntryPromptFlowStep):
             return ActionPrediction(None, 0.0)
         elif isinstance(step, GenerateResponseFlowStep):
-            context = {
-                "history": llm.tracker_as_readable_transcript(tracker, max_turns=5),
-                "latest_user_message": tracker.latest_message.text
-                if tracker.latest_message
-                else "",
-            }
-            context.update(tracker.current_slot_values())
-            prompt = Template(step.generation_prompt).render(context)
-
-            generated = generate_text_openai_chat(prompt)
+            generated = step.generate(tracker)
             return ActionPrediction(
                 ACTION_SEND_TEXT_NAME, 1.0, metadata={"message": {"text": generated}}
             )
