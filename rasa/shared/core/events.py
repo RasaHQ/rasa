@@ -246,8 +246,10 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
     )
 
 
-def reduce_event(event: Dict[Text, Any]) -> Dict[Text, Any]:
+def remove_parse_data(event: Dict[Text, Any]) -> Dict[Text, Any]:
     """Reduce event details to the minimum necessary to be structlogged.
+
+    Deletes the parse_data key from the event if it exists.
 
     Args:
         event: The event to be reduced.

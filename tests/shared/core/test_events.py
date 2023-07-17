@@ -824,6 +824,6 @@ def test_session_started_event_is_not_serialised():
         },
     ],
 )
-def test_reduce_event(event: Dict[Text, Any]):
-    reduced_event = rasa.shared.core.events.reduce_event(event)
+def test_remove_parse_data(event: Dict[Text, Any]):
+    reduced_event = rasa.shared.core.events.remove_parse_data(event)
     assert "parse_data" not in reduced_event

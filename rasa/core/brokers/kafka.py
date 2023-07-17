@@ -1,5 +1,4 @@
 import asyncio
-import copy
 import os
 import json
 import logging
@@ -240,12 +239,12 @@ class KafkaEventBroker(EventBroker):
                 )
             ]
 
-        reduced_rasa_event = rasa.shared.core.events.reduce_event(event)
+        reduced_event = rasa.shared.core.events.remove_parse_data(event)
         structlogger.debug(
             "kafka.publish.event",
             event_info="Logging a reduced version of the Kafka event",
             topic=self.topic,
-            rasa_event=copy.deepcopy(reduced_rasa_event),
+            rasa_event=reduced_event,
             partition_key=partition_key,
             headers=headers,
         )
