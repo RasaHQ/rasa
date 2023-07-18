@@ -37,6 +37,7 @@ def command_from_json(data: Dict[str, Any]) -> "Command":
 class Command:
     """A command that can be executed on a tracker."""
 
+    @property
     def command(self) -> str:
         """Returns the command type."""
         raise NotImplementedError()

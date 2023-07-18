@@ -13,11 +13,10 @@ from rasa.core.constants import (
 )
 from pypred import Predicate
 
-from rasa.shared.constants import FLOW_PREFIX, CANCEL_FLOW_INTENT
+from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     COMMANDS,
-    INTENT_NAME_KEY,
 )
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -25,7 +24,6 @@ from rasa.shared.core.constants import (
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
     PREVIOUS_FLOW_SLOT,
-    CANCELLED_FLOW_SLOT,
 )
 from rasa.shared.core.events import ActiveLoop, Event, SlotSet
 from rasa.shared.core.flows.flow import (
@@ -151,7 +149,8 @@ class FlowPolicy(Policy):
             The commands.
         """
         if tracker.latest_message:
-            dumped_commands = tracker.latest_message.parse_data.get(COMMANDS, [])
+            dumped_commands = tracker.latest_message.parse_data.get(COMMANDS) or []
+            assert isinstance(dumped_commands, list)
             return [command_from_json(command) for command in dumped_commands]
         else:
             return []
@@ -407,22 +406,6 @@ class FlowExecutor:
                 return question_step
         return None
 
-    def should_flow_be_cancelled(self, tracker: DialogueStateTracker) -> bool:
-        """Test whether the current flow should be cancelled.
-
-        Args:
-            tracker: the conversation state tracker
-        Returns:
-        Whether the current flow should be cancelled
-        """
-        if (
-            not tracker.latest_message
-            or tracker.latest_action_name != ACTION_LISTEN_NAME
-        ):
-            # flows can only be cancelled as a response to a user message
-            return False
-        return tracker.latest_message.intent.get(INTENT_NAME_KEY) == CANCEL_FLOW_INTENT
-
     def consider_flow_switch(self, tracker: DialogueStateTracker) -> ActionPrediction:
         """Consider switching to a new flow.
 
@@ -461,14 +444,6 @@ class FlowExecutor:
         if self.flow_stack.is_empty():
             # if there are no flows, there is nothing to do
             return ActionPrediction(None, 0.0)
-        elif self.should_flow_be_cancelled(tracker) and not self.flow_stack.is_empty():
-            top_flow = self.flow_stack.pop()
-            return ActionPrediction(
-                FLOW_PREFIX + "pattern_cancel_flow",
-                1.0,
-                metadata={"slots": {CANCELLED_FLOW_SLOT: top_flow.flow_id}},
-                events=[SlotSet(FLOW_STACK_SLOT, self.flow_stack.as_dict())],
-            )
         else:
             prediction = self._select_next_action(tracker)
             if FlowStack.from_tracker(tracker).as_dict() != self.flow_stack.as_dict():

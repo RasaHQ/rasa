@@ -33,9 +33,6 @@ responses:
   utter_too_complex_rasa:
     - text: This is too complex for me, let's take it one step at a time.
 
-  utter_sorry_mistake_rasa:
-    - text: sorry, it seems I made a mistake. Let's try this again.
-
   utter_openai_error_rasa:
     - text: Sorry, I'm having trouble understanding you right now. Please try again later.
 
@@ -88,35 +85,18 @@ flows:
       - id: "0"
         action: utter_flow_cancelled_rasa
 
-  too_complex:
+  pattern_too_complex:
     description: replies to the user that their request is too complex
     steps:
       - id: "0"
-        intent: rasa_too_complex
-        next: "1"
-      - id: "1"
         action: utter_too_complex_rasa
 
-  mistake:
-    description: bot made a mistake
-    steps:
-      - id: "0"
-        intent: rasa_mistake
-        next: "1"
-      - id: "1"
-        action: utter_sorry_mistake_rasa
-
-  comment:
+  pattern_comment:
     description: user made a comment - nothing to be done
     steps:
-      - id: "0"
-        intent: rasa_comment
 
-  openai_error:
+  pattern_openai_error:
     description: openai error
     steps:
       - id: "0"
-        intent: rasa_openai_error
-        next: "1"
-      - id: "1"
         action: utter_openai_error_rasa

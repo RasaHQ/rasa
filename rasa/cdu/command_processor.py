@@ -12,6 +12,7 @@ from rasa.cdu.commands import (
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
+    CANCELLED_FLOW_SLOT,
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
 )
@@ -72,7 +73,7 @@ def execute_commands(
 
     commands = clean_up_commands(commands, tracker, all_flows)
 
-    events = []
+    events: List[Event] = []
 
     action: Optional[str] = None
 
@@ -108,6 +109,7 @@ def execute_commands(
                 if frame.flow_id == current_top_flow.id:
                     structlogger.debug("command_executor.cancel_flow", command=command)
                     del flow_stack.frames[idx]
+            events.append(SlotSet(CANCELLED_FLOW_SLOT, current_top_flow.id))
         elif isinstance(command, ListenCommand):
             structlogger.debug("command_executor.listen", command=command)
             action = ACTION_LISTEN_NAME
@@ -172,7 +174,7 @@ def clean_up_commands(
 
     slots_so_far = filled_slots_for_active_flow(tracker, all_flows)
 
-    clean_commands = []
+    clean_commands: List[Command] = []
 
     for command in commands:
         if isinstance(command, StartFlowCommand) and command.flow in flows_on_the_stack:

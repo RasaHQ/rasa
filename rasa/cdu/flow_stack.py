@@ -149,7 +149,6 @@ class StackFrameType(str, Enum):
     LINK = "link"
     """The frame is a link frame.
 
-
     This means that the previous flow linked to this flow."""
     RESUME = "resume"
     """The frame is a resume frame.
