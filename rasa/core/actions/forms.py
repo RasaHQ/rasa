@@ -1,3 +1,4 @@
+import copy
 from typing import Text, List, Optional, Union, Any, Dict, Set
 import itertools
 import logging
@@ -256,7 +257,9 @@ class FormAction(LoopAction):
             Otherwise, returns empty list since the extracted slots already have
             corresponding `SlotSet` events in the tracker.
         """
-        structlogger.debug("forms.slots.validate", slot_candidates=slot_candidates)
+        structlogger.debug(
+            "forms.slots.validate", slot_candidates=copy.deepcopy(slot_candidates)
+        )
         events: List[Union[SlotSet, Event]] = [
             SlotSet(slot_name, value) for slot_name, value in slot_candidates.items()
         ]
@@ -542,7 +545,7 @@ class FormAction(LoopAction):
         if needs_validation:
             structlogger.debug(
                 "forms.validation.required",
-                tracker_latest_message=tracker.latest_message,
+                tracker_latest_message=copy.deepcopy(tracker.latest_message),
             )
             return await self.validate(tracker, domain, output_channel, nlg)
         else:
@@ -611,7 +614,10 @@ class FormAction(LoopAction):
         if not prefilled_slots:
             logger.debug("No pre-filled required slots to validate.")
         else:
-            structlogger.debug("forms.activate.form", prefilled_slots=prefilled_slots)
+            structlogger.debug(
+                "forms.validate.prefilled_slots",
+                prefilled_slots=copy.deepcopy(prefilled_slots),
+            )
 
         validate_name = f"validate_{self.name()}"
 
