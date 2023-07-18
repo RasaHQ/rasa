@@ -25,6 +25,8 @@ structlogger = structlog.get_logger()
 
 FLOW_PATTERN_CORRECTION_ID = "pattern_correction"
 
+FLOW_PATTERN_CANCEl_ID = "pattern_cancel_flow"
+
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
     """Check if a list of commands contains a command of a given type."""
@@ -110,6 +112,13 @@ def execute_commands(
                     structlogger.debug("command_executor.cancel_flow", command=command)
                     del flow_stack.frames[idx]
             events.append(SlotSet(CANCELLED_FLOW_SLOT, current_top_flow.id))
+            flow_stack.push(
+                FlowStackFrame(
+                    flow_id=FLOW_PATTERN_CANCEl_ID,
+                    # TODO: the stack frame type should be renamed
+                    frame_type=StackFrameType.CORRECTION,
+                )
+            )
         elif isinstance(command, ListenCommand):
             structlogger.debug("command_executor.listen", command=command)
             action = ACTION_LISTEN_NAME
