@@ -180,12 +180,10 @@ jobs:
       - name: Notify slack on failure
         if: failure()
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@3665186a8c1a022b28a1dbe0954e73aa9081ea9e # v1.6.0
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
-          channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
-          status: FAILED
-          color: warning
+          args: "⛔️ *Rasa Open Source Docs* 📋 failed to Prebuild! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   preview_docs:
     name: Preview Docs
@@ -317,9 +315,7 @@ jobs:
       - name: Notify slack on failure
         if: failure()
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@3665186a8c1a022b28a1dbe0954e73aa9081ea9e # v1.6.0
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
-          channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
-          status: FAILED
-          color: warning
+          args: "⛔️ *Rasa Open Source Docs* 📋 failed to Publish! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
