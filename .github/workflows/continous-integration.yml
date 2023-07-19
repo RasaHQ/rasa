@@ -1095,20 +1095,21 @@ jobs:
           IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
 
-#          # Tag the image as latest
-#          if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
-#            if [[ "${{ matrix.image }}" == "default" ]]; then
-#              RELEASE_TAG="${IMAGE_TAG}"
-#            else
-#              RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
-#            fi
-#
-#            LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
-#
-#            docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
-#            docker push rasa/rasa:${LATEST_TAG}
-#          fi
+          # Tag the image as latest
+          if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
+            if [[ "${{ matrix.image }}" == "default" ]]; then
+              RELEASE_TAG="${IMAGE_TAG}"
+            else
+              RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
+            fi
+
+            LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
+
+            docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
+            docker push rasa/rasa:${LATEST_TAG}
+          fi
 
   deploy:
     name: Deploy to PyPI
