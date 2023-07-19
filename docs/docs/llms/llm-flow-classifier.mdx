@@ -152,3 +152,54 @@ which would then be turned into the `transfer_money` intent as well as two entit
 
 Some requests from the user and responses by the LLM are currently deemed as too complex
 and classified as such based on the composition of the action list.
+
+## Customization
+
+### LLM configuration
+
+You can specify the openai model to used for the `LLMFlowClassifier` by setting the
+`llm.model_name` property in the `config.yml` file:
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: LLMFlowClassifier
+    llm:
+      model_name: "gpt-3.5-turbo"
+      request_timeout: 5
+      temperature: 0.0
+# - ...
+```
+
+The `model_name` defaults to `gpt-3.5-turbo`. The model name should be set 
+to a chat model of [OpenAI](https://platform.openai.com/docs/guides/gpt/chat-completions-api).
+
+Similarly, you can specify the `request_timeout` and 
+`temperature` parameters for the LLM. The `request_timeout` 
+defaults to `5` seconds and the `temperature` defaults to `0.0`.
+
+If you want to use Azure OpenAI Service, you can configure the necessary
+parameters as described in the
+[Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service)
+section.
+
+:::info Using Other LLMs
+
+By default, OpenAI is used as the underlying LLM provider. 
+
+The used LLM provider provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: LLMFlowClassifier
+    llm:
+      type: "cohere"
+# - ...
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llm-setup.mdx#other-llms--embeddings)
+
+:::

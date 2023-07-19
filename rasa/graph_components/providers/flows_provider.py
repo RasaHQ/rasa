@@ -5,7 +5,6 @@ from typing import Any, Dict, Optional, Text
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
@@ -64,15 +63,13 @@ class FlowsProvider(GraphComponent):
                 resource_directory / FLOWS_PERSITENCE_FILE_NAME,
             )
 
-    def provide_train(
-        self, importer: TrainingDataImporter, domain: Domain
-    ) -> FlowsList:
+    def provide_train(self, importer: TrainingDataImporter) -> FlowsList:
         """Provides flows configuration from training data during training."""
         self._flows = importer.get_flows()
         self._persist(self._flows)
         return self._flows
 
-    def provide_inference(self, domain: Domain) -> FlowsList:
+    def provide_inference(self) -> FlowsList:
         """Provides the flows configuration during inference."""
         if self._flows is None:
             # This can't really happen but if it happens then we fail early

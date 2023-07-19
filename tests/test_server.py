@@ -53,6 +53,10 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
+    FLOW_STACK_SLOT,
+    CANCELLED_FLOW_SLOT,
+    CORRECTED_SLOTS_SLOT,
+    PREVIOUS_FLOW_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
@@ -693,7 +697,6 @@ async def test_evaluate_stories_end_to_end(
 
 
 async def test_add_message(rasa_app: SanicASGITestClient):
-
     conversation_id = "test_add_message_test_id"
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/tracker")
@@ -1115,6 +1118,10 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
         "name": None,
         REQUESTED_SLOT: None,
         SESSION_START_METADATA_SLOT: None,
+        FLOW_STACK_SLOT: None,
+        CANCELLED_FLOW_SLOT: None,
+        CORRECTED_SLOTS_SLOT: None,
+        PREVIOUS_FLOW_SLOT: None,
     }
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [

@@ -75,9 +75,11 @@ def test_load_from_dict(
     )
 
     assert isinstance(actual, E2EImporter)
-    assert isinstance(actual.importer, ResponsesSyncImporter)
+    assert isinstance(actual._importer._importer, ResponsesSyncImporter)
 
-    actual_importers = [i.__class__ for i in actual.importer._importer._importers]
+    actual_importers = [
+        i.__class__ for i in actual._importer._importer._importer._importers
+    ]
     assert actual_importers == expected
 
 
@@ -90,8 +92,10 @@ def test_load_from_config(tmpdir: Path):
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)
-    assert isinstance(importer.importer, ResponsesSyncImporter)
-    assert isinstance(importer.importer._importer._importers[0], MultiProjectImporter)
+    assert isinstance(importer._importer._importer, ResponsesSyncImporter)
+    assert isinstance(
+        importer._importer._importer._importer._importers[0], MultiProjectImporter
+    )
 
 
 def test_nlu_only(project: Text):
@@ -102,7 +106,7 @@ def test_nlu_only(project: Text):
     )
 
     assert isinstance(actual, NluDataImporter)
-    assert isinstance(actual._importer, ResponsesSyncImporter)
+    assert isinstance(actual._importer._importer, ResponsesSyncImporter)
 
     stories = actual.get_stories()
     assert stories.is_empty()
@@ -125,7 +129,7 @@ def test_import_nlu_training_data_from_e2e_stories(
 ):
     # The `E2EImporter` correctly wraps the underlying `CombinedDataImporter`
     assert isinstance(default_importer, E2EImporter)
-    importer_without_e2e = default_importer.importer
+    importer_without_e2e = default_importer._importer
 
     stories = StoryGraph(
         [
@@ -205,7 +209,7 @@ def test_different_story_order_doesnt_change_nlu_training_data(
         return StoryGraph(stories)
 
     # Patch to return our test stories
-    default_importer.importer.get_stories = mocked_stories
+    default_importer._importer.get_stories = mocked_stories
 
     training_data = default_importer.get_nlu_data()
 
@@ -225,7 +229,7 @@ def test_import_nlu_training_data_with_default_actions(
     default_importer: TrainingDataImporter,
 ):
     assert isinstance(default_importer, E2EImporter)
-    importer_without_e2e = default_importer.importer
+    importer_without_e2e = default_importer._importer
 
     # Check additional NLU training data from domain was added
     nlu_data = default_importer.get_nlu_data()
@@ -275,7 +279,7 @@ def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
         return stories
 
     # Patch to return our test stories
-    default_importer.importer.get_stories = mocked_stories
+    default_importer._importer.get_stories = mocked_stories
 
     domain = default_importer.get_domain()
 
