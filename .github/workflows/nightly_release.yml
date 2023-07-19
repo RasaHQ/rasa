@@ -19,11 +19,24 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Python module
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Read Poetry Version 🔢
         run: |
-          python3 -m pip install pluggy
-          python3 -m pip install ruamel.yaml
-          python3 -m pip install numpy
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Install Dependencies 📦
+        run: |
+          make install
 
       - name: Compose tag name
         id: set_tagname
@@ -62,10 +75,10 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
-          python-version: 3.9
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Read Poetry Version 🔢
         run: |
@@ -177,3 +190,22 @@ jobs:
       - name: Push image to release registry
         run: |
           docker push ${{env.DEV_REGISTRY}}/rasa:${IMAGE_TAG}
+
+  send_slack_notification_on_failure:
+    name: Notify Slack
+    runs-on: ubuntu-22.04
+    if: always()
+    needs:
+      - docker
+      - deploy
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'deploy' or 'docker' is skipped (previous needed job failed) or failed
+        if: needs.docker.result != 'success' && needs.deploy.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.TOKEN }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Rasa nightly release* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
