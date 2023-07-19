@@ -32,7 +32,7 @@ def _fix_matplotlib_backend() -> None:
         try:
             # on OSX sometimes the tkinter package is broken and can't be imported.
             # we'll try to import it and if it fails we will use a different backend
-            import tkinter
+            import tkinter # noqa: F401
         except (ImportError, ModuleNotFoundError):
             logger.debug("Setting matplotlib backend to 'agg'")
             matplotlib.use("agg")
