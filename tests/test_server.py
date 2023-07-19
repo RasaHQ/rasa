@@ -1,3 +1,5 @@
+# file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests.
+
 import asyncio
 import json
 import os

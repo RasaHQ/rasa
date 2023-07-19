@@ -1,3 +1,6 @@
+# file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests.
+# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests.
+
 from http import HTTPStatus
 import json
 import logging

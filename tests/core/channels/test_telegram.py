@@ -1,3 +1,6 @@
+# file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests.
+# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests.
+
 import json
 import logging
 from unittest.mock import patch
