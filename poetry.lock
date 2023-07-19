@@ -4991,14 +4991,14 @@ files = [
 
 [[package]]
 name = "sanic-testing"
-version = "23.3.0"
+version = "22.6.0"
 description = "Core testing clients for Sanic"
 category = "dev"
 optional = false
 python-versions = "*"
 files = [
-    {file = "sanic-testing-23.3.0.tar.gz", hash = "sha256:2328d86045886099d8ecbf7889f5c1377bcb98b769955680224945d9de198613"},
-    {file = "sanic_testing-23.3.0-py3-none-any.whl", hash = "sha256:fd05f8102ed0bba4b7b797f77b0fbb4ea34d71fd36c9df3ac81b5d3ac3eeacfc"},
+    {file = "sanic-testing-22.6.0.tar.gz", hash = "sha256:8f006d2332106539cd6f3da8a5c0d1f31472261f3293e43e2c9bbad605e72c5b"},
+    {file = "sanic_testing-22.6.0-py3-none-any.whl", hash = "sha256:d84303e83066de7f18e8c3a0cd04512ba1517dbc31123f14e8aec318b22c008c"},
 ]
 
 [package.dependencies]
@@ -7188,4 +7188,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "a31c157f24ce653d79a0c6674117637f80a7e7bca01f4ea74d26924f5e2d1a87"
+content-hash = "b2ce3b574df0d03a672856ad619cacc087203fa5f1a44cc141a0a463abab7e24"
