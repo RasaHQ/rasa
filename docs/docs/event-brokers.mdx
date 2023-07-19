@@ -201,7 +201,7 @@ Kafka does not allow you to configure multiple topics.
 
 However, multiple consumers can read from the same queue as long as they are in different consumer groups.
 Each consumer group will process all events independent of each other 
-(in a sense, each group has their own reference to the last event they have processed).
+(in a sense, each group has their own reference to the last event they have processed). [Kafka: The Definitive Guide](https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html#:~:text=Kafka%20consumers%20are%20typically%20part,the%20partitions%20in%20the%20topic.)
 
 ## SQL Event Broker
 
