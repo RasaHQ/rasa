@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 import sys
-
 import toml
 
 
@@ -19,7 +18,7 @@ def pyproject_file_path() -> Path:
 
 
 def get_rasa_version_from_pyproject() -> str:
-    """Fetch rasa-oss version from pyproject."""
+    """Fetch rasa version from pyproject."""
     pyproject_file = pyproject_file_path()
 
     try:
@@ -35,7 +34,4 @@ def get_rasa_version_from_pyproject() -> str:
 
 
 if __name__ == "__main__":
-    # can't use the release script here as it has to many dependencies
-    # this gets run during docker builds where we really don't want to install
-    # all the dependencies
     print(get_rasa_version_from_pyproject())

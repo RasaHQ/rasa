@@ -45,6 +45,7 @@ jobs:
 
           # Find latest rasa-oss version
           echo "Trying to find the latest rasa-oss version..."
+          pip install toml
           LATEST_RASA_MINOR=$(python scripts/get_version_from_toml.py)
           echo "Current RASA version: ${LATEST_RASA_MINOR}"
 
@@ -202,7 +203,7 @@ jobs:
     steps:
       - name: Notify Slack of failure ⛔️
         # send notification if 'deploy' or 'docker' is skipped (previous needed job failed) or failed
-        if: needs.docker.result != 'success' && needs.deploy.result != 'success'
+        if: needs.docker.result != 'success' || needs.deploy.result != 'success'
         env:
           SLACK_WEBHOOK: ${{ secrets.TOKEN }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
