@@ -45,7 +45,7 @@ jobs:
 
           # Find latest rasa-oss version
           echo "Trying to find the latest rasa-oss version..."
-          LATEST_RASA_MINOR=$(python -c "import sys; import os; sys.path.append('${{ github.workspace }}/rasa'); from rasa.version import __version__; print(__version__)")
+          LATEST_RASA_MINOR=$(python scripts/get_version_from_toml.py)
           echo "Current RASA version: ${LATEST_RASA_MINOR}"
 
           LATEST_NIGHTLY_VERSION=$(echo ${LATEST_RASA_MINOR})
