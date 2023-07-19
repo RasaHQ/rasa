@@ -615,7 +615,8 @@ class FormAction(LoopAction):
             logger.debug("No pre-filled required slots to validate.")
         else:
             structlogger.debug(
-                "forms.activate.form", prefilled_slots=copy.deepcopy(prefilled_slots)
+                "forms.validate.prefilled_slots",
+                prefilled_slots=copy.deepcopy(prefilled_slots),
             )
 
         validate_name = f"validate_{self.name()}"
