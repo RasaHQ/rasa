@@ -1,7 +1,7 @@
 recipe: default.v1
 language: en
 pipeline:
-  - name: LLMCommandClassifier
+  - name: LLMCommandGenerator
     # llm:
     #   model_name: gpt-4
 
