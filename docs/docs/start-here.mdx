@@ -8,4 +8,31 @@ hide_table_of_contents: true
 
 ## Getting Started with Rasa
 
+### Create an initial project
+
+The `init` command creates a new Rasa project for you.
+
+```bash
+rasa init
+```
+
+Run the `train` command at any time to build an assistant from the current state of your project:
+
+```bash
+rasa train
+```
+
+While the command is called `rasa train`, model training only happens if you've made changes that would affect your models.
+
+Use the `shell` command talk to your assistant on the command line:
+
+```bash
+rasa shell
+```
+
+Adding the `debug` flag can be very helpful for understanding everything that's going on:
+
+```bash
+rasa shell --debug
+```
 
