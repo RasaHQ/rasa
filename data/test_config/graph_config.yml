@@ -351,7 +351,20 @@ predict_schema:
       is_target: false
       is_input: false
       resource:
-        name: flows_provider      
+        name: flows_provider
+    command_processor:
+      needs:
+          tracker: __tracker__
+          flows: flows_provider
+      uses: rasa.cdu.command_processor_component.CommandProcessorComponent
+      constructor_name: load
+      fn: execute_commands
+      config: { }
+      eager: true
+      is_target: false
+      is_input: false
+      resource: 
+        name: command_processor      
     run_WhitespaceTokenizer0:
       needs:
         messages: nlu_message_converter
