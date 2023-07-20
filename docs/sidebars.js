@@ -2,7 +2,7 @@ module.exports = {
     default: [
         'introduction',
         'rasa-pro',
-        'playground',
+        'start-here',
         {
             type: 'category',
             label: 'Installation',
