@@ -1,4 +1,4 @@
-# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests.
+# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
 
 import logging
 import warnings
