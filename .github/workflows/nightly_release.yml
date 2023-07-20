@@ -24,20 +24,6 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
-      - name: Read Poetry Version 🔢
-        run: |
-          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
-        with:
-          poetry-version: ${{ env.POETRY_VERSION }}
-
-      - name: Install Dependencies 📦
-        run: |
-          make install
-
       - name: Compose tag name
         id: set_tagname
         run: |
@@ -205,7 +191,7 @@ jobs:
         # send notification if 'deploy' or 'docker' is skipped (previous needed job failed) or failed
         if: needs.docker.result != 'success' || needs.deploy.result != 'success'
         env:
-          SLACK_WEBHOOK: ${{ secrets.TOKEN }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "⛔️ *Rasa nightly release* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

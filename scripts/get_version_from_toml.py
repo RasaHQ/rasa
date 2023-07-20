@@ -17,9 +17,10 @@ def pyproject_file_path() -> Path:
     return project_root() / PYPROJECT_FILE_PATH
 
 
-def get_rasa_version_from_pyproject() -> str:
+def get_rasa_version_from_pyproject(pyproject_file=None) -> str:
     """Fetch rasa version from pyproject."""
-    pyproject_file = pyproject_file_path()
+    if pyproject_file is None:
+        pyproject_file = pyproject_file_path()
 
     try:
         data = toml.load(pyproject_file)
