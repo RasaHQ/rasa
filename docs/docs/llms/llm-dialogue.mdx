@@ -62,7 +62,7 @@ An example configuration file is shown below:
 recipe: default.v1
 language: en
 pipeline:
-  - name: LLMCommandClassifier
+  - name: LLMCommandGenerator
 
 policies:
   - name: rasa.core.policies.flow_policy.FlowPolicy
@@ -79,7 +79,7 @@ nlg:
 
 Additional configuration parameters are explained in detail in the documentation
 pages for each of these components:
-- [LLMCommandClassifier](./llm-command-classifier.mdx)
+- [LLMCommandGenerator](./llm-command-classifier.mdx)
 - [FlowPolicy](./flow-policy.mdx)
 - [LLMResponseRephraser](./llm-nlg.mdx) 
 

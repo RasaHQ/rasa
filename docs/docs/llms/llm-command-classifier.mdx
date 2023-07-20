@@ -11,9 +11,9 @@ import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 
 <RasaDiscoveryBanner/>
 
-## LLMCommandClassifier
+## LLMCommandGenerator
 
-The `LLMCommandClassifier` is a standalone NLU component that handles all the
+The `LLMCommandGenerator` is a standalone NLU component that handles all the
 interactions that users might have with flows. For that purpose, it recognizes
 both intents and entities to start and advance flows. It does so without needing
 any NLU training data. Instead, it leverages a zero-shot prompt in the background, which
@@ -37,19 +37,19 @@ conversation context.
 
 TODO
 
-## Using the LLMCommandClassifier in Your Bot
+## Using the LLMCommandGenerator in Your Bot
 
 To use this LLM-based  classifier in your bot, you need to add the
-`LLMCommandClassifier` to your NLU pipeline in the `config.yml` file.
+`LLMCommandGenerator` to your NLU pipeline in the `config.yml` file.
 
 ```yaml-rasa title="config.yml"
 pipeline:
 # - ...
-  - name: LLMCommandClassifier
+  - name: LLMCommandGenerator
 # - ...
 ```
 
-The `LLMCommandClassifier` requires access to an LLM API. You can use any
+The `LLMCommandGenerator` requires access to an LLM API. You can use any
 OpenAI model that supports the `/chat` endpoint such as "gpt-3.5-turbo" or "gpt-4".
 We are working on expanding the list of supported models and model providers.
 
@@ -157,13 +157,13 @@ and classified as such based on the composition of the action list.
 
 ### LLM configuration
 
-You can specify the openai model to used for the `LLMCommandClassifier` by setting the
+You can specify the openai model to used for the `LLMCommandGenerator` by setting the
 `llm.model_name` property in the `config.yml` file:
 
 ```yaml-rasa title="config.yml"
 pipeline:
 # - ...
-  - name: LLMCommandClassifier
+  - name: LLMCommandGenerator
     llm:
       model_name: "gpt-3.5-turbo"
       request_timeout: 5
@@ -193,7 +193,7 @@ The used LLM provider provider can be configured in the
 ```yaml-rasa title="config.yml"
 pipeline:
 # - ...
-  - name: LLMCommandClassifier
+  - name: LLMCommandGenerator
     llm:
       type: "cohere"
 # - ...

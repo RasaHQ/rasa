@@ -14,6 +14,7 @@ from rasa.core.featurizers.precomputation import (
     CoreFeaturizationCollector,
 )
 from rasa.graph_components.providers.flows_provider import FlowsProvider
+from rasa.cdu.command_processor_component import CommandProcessorComponent
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
@@ -887,6 +888,17 @@ class DefaultV1Recipe(Recipe):
             node_with_e2e_features = self._add_end_to_end_features_for_inference(
                 predict_nodes, preprocessors
             )
+
+        predict_nodes["command_processor"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs=self._get_needs_from_args(
+                CommandProcessorComponent, "execute_commands"
+            ),
+            uses=CommandProcessorComponent,
+            fn="execute_commands",
+            config={},
+            resource=Resource("command_processor"),
+        )
 
         rule_policy_resource = None
         policies: List[Text] = []

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, Text, List, Optional, Union
-from rasa.cdu.command_processor import execute_commands
-from rasa.cdu.commands import Command, command_from_json
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
 
 from rasa.core.constants import (
@@ -16,7 +14,6 @@ from pypred import Predicate
 from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
-    COMMANDS,
 )
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -80,6 +77,16 @@ class FlowPolicy(Policy):
     """
 
     @staticmethod
+    def supported_stack_frames() -> List[StackFrameType]:
+        return [
+            StackFrameType.CORRECTION,
+            StackFrameType.INTERRUPT,
+            StackFrameType.LINK,
+            StackFrameType.RESUME,
+            StackFrameType.REGULAR,
+        ]
+
+    @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """Returns the default config (see parent class for full docstring)."""
         # please make sure to update the docs when changing a default parameter
@@ -137,24 +144,6 @@ class FlowPolicy(Policy):
         # or do some preprocessing here.
         return self.resource
 
-    def _get_commands_from_tracker(
-        self, tracker: DialogueStateTracker
-    ) -> List[Command]:
-        """Extracts the commands from the tracker.
-
-        Args:
-            tracker: The tracker containing the conversation history up to now.
-
-        Returns:
-            The commands.
-        """
-        if tracker.latest_message:
-            dumped_commands = tracker.latest_message.parse_data.get(COMMANDS) or []
-            assert isinstance(dumped_commands, list)
-            return [command_from_json(command) for command in dumped_commands]
-        else:
-            return []
-
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
@@ -176,18 +165,10 @@ class FlowPolicy(Policy):
         Returns:
              The prediction.
         """
+        if not self.supports_current_stack_frame(tracker):
+            return self._prediction(self._default_predictions(domain))
+
         flows = flows or FlowsList([])
-        if not tracker.has_action_after_latest_user_message():
-            commands = self._get_commands_from_tracker(tracker)
-            action, events = execute_commands(commands, tracker, flows)
-            if action:
-                return self._create_prediction_result(
-                    action,
-                    domain,
-                    1.0,
-                    events,
-                )
-            tracker.update_with_events(events, domain)
         executor = FlowExecutor.from_tracker(tracker, flows, domain)
 
         # create executor and predict next action

@@ -4,9 +4,10 @@ from typing import Dict, Any, Optional, List
 
 from jinja2 import Template
 import structlog
-from rasa.cdu.classifiers.base import CommandClassifier
+from rasa.cdu.command_generator.base import CommandGenerator
 from rasa.cdu.commands import (
     Command,
+    HandleInterruptionCommand,
     SetSlotCommand,
     CancelFlowCommand,
     StartFlowCommand,
@@ -37,8 +38,8 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
 )
 
-DEFAULT_FLOW_PROMPT_TEMPLATE = importlib.resources.read_text(
-    "rasa.nlu.classifiers", "flow_prompt_template.jinja2"
+DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
+    "rasa.cdu.command_generator", "command_prompt_template.jinja2"
 )
 
 structlogger = structlog.get_logger()
@@ -63,12 +64,12 @@ LLM_CONFIG_KEY = "llm"
     ],
     is_trainable=True,
 )
-class LLMCommandClassifier(GraphComponent, CommandClassifier):
+class LLMCommandGenerator(GraphComponent, CommandGenerator):
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            "prompt": DEFAULT_FLOW_PROMPT_TEMPLATE,
+            "prompt": DEFAULT_COMMAND_PROMPT_TEMPLATE,
             LLM_CONFIG_KEY: None,
         }
 
@@ -90,7 +91,7 @@ class LLMCommandClassifier(GraphComponent, CommandClassifier):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "LLMCommandClassifier":
+    ) -> "LLMCommandGenerator":
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
@@ -105,7 +106,7 @@ class LLMCommandClassifier(GraphComponent, CommandClassifier):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "LLMCommandClassifier":
+    ) -> "LLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
@@ -130,7 +131,7 @@ class LLMCommandClassifier(GraphComponent, CommandClassifier):
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
-            structlogger.error("llm_command_classifier.llm.error", error=e)
+            structlogger.error("llm_command_generator.llm.error", error=e)
             return None
 
     def predict_commands(
@@ -147,15 +148,15 @@ class LLMCommandClassifier(GraphComponent, CommandClassifier):
         )
         flow_prompt = self.render_template(message, tracker, flows_without_patterns)
         structlogger.info(
-            "llm_command_classifier.process.prompt_rendered", prompt=flow_prompt
+            "llm_command_generator.process.prompt_rendered", prompt=flow_prompt
         )
         action_list = self._generate_action_list_using_llm(flow_prompt)
         structlogger.info(
-            "llm_command_classifier.process.actions_generated", action_list=action_list
+            "llm_command_generator.process.actions_generated", action_list=action_list
         )
         commands = self.parse_commands(action_list, tracker, flows_without_patterns)
         structlogger.info(
-            "llm_command_classifier.process.finished",
+            "llm_command_generator.process.finished",
             commands=commands,
         )
         return commands
@@ -186,6 +187,7 @@ class LLMCommandClassifier(GraphComponent, CommandClassifier):
         )
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
         cancel_flow_re = re.compile(r"CancelFlow")
+        interruption_flow_re = re.compile(r"AllowInterruption")
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
                 slot_name = m.group(1).strip()
@@ -200,6 +202,8 @@ class LLMCommandClassifier(GraphComponent, CommandClassifier):
                 commands.append(StartFlowCommand(flow=m.group(1).strip()))
             elif cancel_flow_re.search(action):
                 commands.append(CancelFlowCommand())
+            elif interruption_flow_re.search(action):
+                commands.append(HandleInterruptionCommand())
 
         return commands
 

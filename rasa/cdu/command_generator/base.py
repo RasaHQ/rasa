@@ -7,7 +7,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import COMMANDS
 
 
-class CommandClassifier:
+class CommandGenerator:
     """A command classifier.
 
     Parses a message and returns a list of commands. The commands are then
