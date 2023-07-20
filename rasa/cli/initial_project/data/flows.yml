@@ -1,0 +1,29 @@
+flows:
+  say_goodbye:
+    description: say goodbye to the user
+    steps:
+      - id: "0"
+        action: utter_goodbye
+  bot_challenge:
+    description: explain to the user that they are talking to a bot, if they ask
+    steps:
+      - id: "0"
+        action: utter_iamabot
+  greet:
+    description: greet the user and ask how they are doing. 
+    steps:
+      - id: "0"
+        action: utter_greet
+  cheer_up:
+    description: if the user is doing poorly, cheer them up with a cute photo
+    steps:
+      - id: "0"
+        action: utter_cheer_up
+        next: "1"
+      - id: "1"
+        action: utter_did_that_help
+  happy:
+    description: tell the user you are glad they are doing well
+    steps:
+      - id: "0"
+        action: utter_happy
