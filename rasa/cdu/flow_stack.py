@@ -162,6 +162,7 @@ class StackFrameType(str, Enum):
     """The frame is a regular frame.
 
     In all other cases, this is the case."""
+    DOCSEARCH = "docsearch"
 
     @staticmethod
     def from_str(typ: Optional[Text]) -> "StackFrameType":
@@ -178,6 +179,8 @@ class StackFrameType(str, Enum):
             return StackFrameType.RESUME
         elif typ == StackFrameType.CORRECTION.value:
             return StackFrameType.CORRECTION
+        elif typ == StackFrameType.DOCSEARCH.value:
+            return StackFrameType.DOCSEARCH
         else:
             raise NotImplementedError
 

@@ -1,17 +1,18 @@
-from typing import List, Optional, Set, Tuple, Type
+from typing import List, Set, Type
 
 import structlog
 from rasa.cdu.commands import (
     CancelFlowCommand,
     Command,
     CorrectSlotCommand,
+    HandleInterruptionCommand,
     ListenCommand,
     SetSlotCommand,
     StartFlowCommand,
+    command_from_json,
 )
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
 from rasa.shared.core.constants import (
-    ACTION_LISTEN_NAME,
     CANCELLED_FLOW_SLOT,
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
@@ -19,6 +20,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.events import Event, SlotSet, UserUttered
 from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import COMMANDS
 
 
 structlogger = structlog.get_logger()
@@ -26,6 +28,8 @@ structlogger = structlog.get_logger()
 FLOW_PATTERN_CORRECTION_ID = "pattern_correction"
 
 FLOW_PATTERN_CANCEl_ID = "pattern_cancel_flow"
+
+FLOW_PATTERN_LISTEN_ID = "pattern_listen"
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
@@ -55,9 +59,26 @@ def _slot_sets_after_latest_message(tracker: DialogueStateTracker) -> List[SlotS
     return slot_sets
 
 
+def _get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
+    """Extracts the commands from the tracker.
+
+    Args:
+        tracker: The tracker containing the conversation history up to now.
+
+    Returns:
+        The commands.
+    """
+    if tracker.latest_message:
+        dumped_commands = tracker.latest_message.parse_data.get(COMMANDS) or []
+        assert isinstance(dumped_commands, list)
+        return [command_from_json(command) for command in dumped_commands]
+    else:
+        return []
+
+
 def execute_commands(
-    commands: List[Command], tracker: DialogueStateTracker, all_flows: FlowsList
-) -> Tuple[Optional[str], List[Event]]:
+    tracker: DialogueStateTracker, all_flows: FlowsList
+) -> List[Event]:
     """Executes a list of commands.
 
     Args:
@@ -68,6 +89,7 @@ def execute_commands(
     Returns:
     A tuple of the action to execute and the events that were created.
     """
+    commands: List[Command] = _get_commands_from_tracker(tracker)
     flow_stack = FlowStack.from_tracker(tracker)
     original_stack_dump = flow_stack.as_dict()
 
@@ -77,8 +99,7 @@ def execute_commands(
 
     events: List[Event] = []
 
-    action: Optional[str] = None
-
+    # TODO: should this really be reversed? 🤔
     for command in reversed(commands):
         if isinstance(command, CorrectSlotCommand):
             structlogger.debug("command_executor.correct_slot", command=command)
@@ -121,12 +142,26 @@ def execute_commands(
             )
         elif isinstance(command, ListenCommand):
             structlogger.debug("command_executor.listen", command=command)
-            action = ACTION_LISTEN_NAME
+            flow_stack.push(
+                FlowStackFrame(
+                    flow_id=FLOW_PATTERN_LISTEN_ID,
+                    # TODO: the stack frame type should be renamed
+                    frame_type=StackFrameType.CORRECTION,
+                )
+            )
+        elif isinstance(command, HandleInterruptionCommand):
+            flow_stack.push(
+                FlowStackFrame(
+                    # TODO: not quite sure if we need an id here
+                    flow_id="NO_FLOW",
+                    frame_type=StackFrameType.DOCSEARCH,
+                )
+            )
 
     # if the flow stack has changed, persist it in a set slot event
     if original_stack_dump != flow_stack.as_dict():
         events.append(SlotSet(FLOW_STACK_SLOT, flow_stack.as_dict()))
-    return action, events
+    return events
 
 
 def filled_slots_for_active_flow(

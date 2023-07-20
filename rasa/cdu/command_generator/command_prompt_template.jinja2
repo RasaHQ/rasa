@@ -39,7 +39,6 @@ Based on this information generate a list of actions you want to take. Your job 
 * Setting a slot for the current flow, before starting a new flow and setting a slot for it. An example would be "SetSlot(confirmation, True), StartFlow(transfer_money), SetSlot(recipient, Joe)"
 * Cancelling the current flow, described by "CancelFlow()"
 * Asking the user to choose from two or more possible flows. An example would be ClarifyNextStep(transfer_money, list_transactions, check_balance)
-* Asking the user to clarify whether they want to go down a particular path or not. An example would be ClarifyNextStep(cancel_card)
 * Taking no action because the user's message has nothing to do with the available flows. An example would be AllowInterruption(chitchat) if the user is making small talk, or AllowInterruption(information) if the user has a question unrelated to the available flows.
 * Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one. An example would be HumanHandoff()
 * Taking no action because the user's message does not invite a further response. For example, if the user asks for more time, or simply makes a comment.
