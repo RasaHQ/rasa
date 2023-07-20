@@ -12,7 +12,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 
 class CommandProcessorComponent(GraphComponent):
-    """"""
+    """Processes commands by issuing events to modify a tracker."""
 
     def __init__(
         self,

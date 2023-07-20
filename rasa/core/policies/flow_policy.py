@@ -682,6 +682,8 @@ class FlowExecutor:
                         else None
                     )
 
+                    # TODO: rather than triggering the flow-trigger-action this should
+                    #   directly put the flow onto the stack and start it that way.
                     return ActionPrediction(
                         FLOW_PREFIX + "pattern_continue_interrupted",
                         1.0,

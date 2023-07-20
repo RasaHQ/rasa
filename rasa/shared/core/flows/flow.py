@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Protocol, Set, Text, runtime_check
 import structlog
 
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.constants import RASA_DEFAULT_FLOW_PREFIX
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
 
@@ -352,7 +352,7 @@ class Flow:
 
     def is_rasa_default_flow(self) -> bool:
         """Test whether something is a rasa default flow."""
-        return self.id.startswith(RASA_DEFAULT_FLOW_PREFIX)
+        return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
 
     def get_question_steps(self) -> List[QuestionFlowStep]:
         """Return the question steps of the flow."""

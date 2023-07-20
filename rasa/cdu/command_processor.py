@@ -12,6 +12,7 @@ from rasa.cdu.commands import (
     command_from_json,
 )
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import (
     CANCELLED_FLOW_SLOT,
     CORRECTED_SLOTS_SLOT,
@@ -25,15 +26,27 @@ from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()
 
-FLOW_PATTERN_CORRECTION_ID = "pattern_correction"
+FLOW_PATTERN_CORRECTION_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "correction"
 
-FLOW_PATTERN_CANCEl_ID = "pattern_cancel_flow"
+FLOW_PATTERN_CANCEl_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 
-FLOW_PATTERN_LISTEN_ID = "pattern_listen"
+FLOW_PATTERN_LISTEN_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "listen"
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
-    """Check if a list of commands contains a command of a given type."""
+    """Check if a list of commands contains a command of a given type.
+
+    Example:
+        >>> contains_command([ListenCommand()], ListenCommand)
+        True
+
+    Args:
+        commands: The commands to check.
+        typ: The type of command to check for.
+
+    Returns:
+    `True` if the list of commands contains a command of the given type.
+    """
     return any(isinstance(command, typ) for command in commands)
 
 
@@ -66,7 +79,7 @@ def _get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
         tracker: The tracker containing the conversation history up to now.
 
     Returns:
-        The commands.
+    The commands.
     """
     if tracker.latest_message:
         dumped_commands = tracker.latest_message.parse_data.get(COMMANDS) or []

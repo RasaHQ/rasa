@@ -55,12 +55,9 @@ DEFAULT_LLM_CONFIG = {
 LLM_CONFIG_KEY = "llm"
 
 
-# TODO: check if the original inhertance from IntentClassifier and EntityExtractorMixin
-#   is still needed or what benefits that provided.
 @DefaultV1Recipe.register(
     [
-        DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
-        DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+        DefaultV1Recipe.ComponentType.COMMAND_GENERATOR,
     ],
     is_trainable=True,
 )
@@ -213,6 +210,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     ) -> List[Dict[str, Any]]:
         result = []
         for flow in flows.underlying_flows:
+            # TODO: check if we should filter more flows; e.g. flows that are
+            #  linked to by other flows and that shouldn't be started directly.
+            #  we might need a separate flag for that.
             if not flow.is_rasa_default_flow():
 
                 slots_with_info = [

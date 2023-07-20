@@ -45,9 +45,7 @@ class FlowTriggerAction(action.Action):
     ) -> List[Event]:
         """Trigger the flow."""
         stack = FlowStack.from_tracker(tracker)
-        if self._flow_name == "pattern_correction":
-            frame_type = StackFrameType.CORRECTION
-        elif self._flow_name == "pattern_continue_interrupted":
+        if self._flow_name == "pattern_continue_interrupted":
             frame_type = StackFrameType.RESUME
         elif tracker.active_loop_name and not stack.is_empty():
             frame_type = StackFrameType.INTERRUPT
