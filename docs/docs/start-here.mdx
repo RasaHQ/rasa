@@ -158,7 +158,7 @@ When a user answers "yes" or "no", the NLU model predicts an intent like `affirm
 Then there is a second step (usually handled by the dialogue manager) which maps the intents to
 the `True/False` values of the `late_delivery` slot. 
 
-Instead, the output of the *conversation handling* component is the command `SetSlot("late_delivery")`.
+Instead, the output of the *conversation handling* component is a command like `SetSlot("late_delivery", True)`.
 
 The *conversation handling* approach requires much less work to set up, since you don't need to worry about
 intents and entities and slot mappings. It is also more powerful because it allows us to break free from intents.
@@ -172,6 +172,7 @@ For example, if the user's response requires context to be understood correctly:
 
 This kind of conversation illustrates the limitations of working with intents. It's perfectly clear 
 what the user means in this context, but in general the word "sadly" does not mean `affirm`.
+However, the conversation handling component will still correctly output `SetSlot("late_delivery", True)`. 
 
 The example project above includes a definition of the core business logic for recommending a restaurant
 and not much else. Yet, it can handle a number of advanced conversations right away. 
