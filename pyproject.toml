@@ -153,6 +153,7 @@ pypred = "^0.4.0"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
 langchain = "^0.0.223"
+openai = "^0.27.8"
 
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
