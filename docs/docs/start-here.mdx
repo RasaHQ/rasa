@@ -8,12 +8,14 @@ hide_table_of_contents: true
 
 ## Getting Started with Rasa
 
-This page will introduce you to the basics of Rasa. It's intended for newcomers and for people
-familiar with earlier versions of Rasa looking to understand our new approach.
+This page provides an introduction to Rasa. It's intended for newcomers and for people
+familiar with earlier versions of Rasa who want to understand the new DM2 approach (name TBD). 
+DM2 gives you the best of both worlds: the time-to-value and generality of LLMs, and the 
+controllability of intent-based approaches. 
 
-### Create a project
+### Command Line Interface Basics
 
-The `init` command creates a new Rasa project for you.
+Once you have installed Rasa, you can run the `init` command to create a new Rasa project:
 
 ```bash
 rasa init
@@ -25,9 +27,15 @@ Run the `train` command at any time to build an assistant from the current state
 rasa train
 ```
 
-While the command is called `rasa train`, model training only happens if you've made changes that would affect your models.
+:::note Model Training
 
-Use the `shell` command talk to your assistant on the command line:
+While the command is called `rasa train`, building a new version of your assistant doesn't always
+require training a model. Rasa uses a cache and only trains when necessary.
+
+:::
+
+
+Run the `shell` command talk to your assistant on the command line:
 
 ```bash
 rasa shell
@@ -35,16 +43,19 @@ rasa shell
 
 To stop the conversation, type `/stop` or use `control+C`.
 
-Adding the `debug` flag can be very helpful for understanding everything that's going on:
 
-```bash
-rasa shell --debug
-```
+:::note Debugging
+
+Adding the flag `rasa shell --debug` can be very helpful if you want to understand what is happening in detail.
+
+:::
+
 
 ### Exploring what your assistant can do
 
-AI assistants often have to collect a few pieces of information from the user in order to achieve a goal.
-Your start project contains an example flow which can recommend a restaurant, and collects the user's preferred cuisine, city, and price range to do so.
+Assistants often have to collect a few pieces of information from the user in order to complete a task.
+This starter project contains an example flow which recommends restaurants. To do so, it asks the user
+for their preferred cuisine, city, and price range.
 
 To try it out, start a conversation using `rasa shell`, and say something like "I'm looking for a restaurant". 
 
@@ -97,8 +108,11 @@ If you want your assistant to sound a bit more natural, you can activate [contex
 
 ### Understanding flows
 
-The `data/flows/restaurants.yml` file defines the logic for this flow. In this example the logic is very simple
-and walks the user through each of the steps in order. 
+Given the range of conversations this assistant can handle, you might expect the implementation to be complex.
+In fact, there are only two small files that provide Rasa what it needs. 
+
+The `data/flows/restaurants.yml` file defines the logic for this flow. In this example the logic is linear
+and walks the user through each of the steps in order. Each of the `question` steps fills the corresponding slot.
 
 ```yaml
 flows:
@@ -119,8 +133,9 @@ flows:
         action: search_restaurants
 ```
 
-To build more advanced flows, you can add conditional logic and linking to other flows. [add link]
-The example project uses fixed responses defined in the `domain.yml` file. 
+To build more advanced flows, you can add conditional logic, link to other flows, and more. See [add link]
+
+In addition to the flows, the `domain.yml` file contains definitions of the slots and responses used in this flow. 
 
 ### Understanding DM2
 
@@ -134,15 +149,16 @@ If you've built AI assistants before, you might look at your project and think t
 
 DM2 doesn't need any of these things to be able to handle the example conversations above. So, how does that work?
 
-Many developers are familiar with dialogue systems made up of separate NLU, dialogue, and NLG components.
-This is also how Rasa worked previously.
-In DM2, the modules are split differently. 
+Many developers are familiar with dialogue systems made up of separate NLU, dialogue, and NLG components
+(this is also how Rasa worked previously).
+
+In DM2, we have a different set of modules. 
 
 * The *conversation handling* component (name TBD) interprets the conversation so far and predicts 
 a series of commands to progress the state of the conversation.
 * The *business logic* component executes those commands and the logic of your flows. 
 
-The NLU systems you might know about take a single user message as input, and aim to represent
+The NLU systems you might be familiar with take a single user message as input, and aim to represent
 the meaning of that message by predicting intents and entities. 
 Instead, *conversation handling* considers the conversation as a whole (not just one message),
 and predicts the *intended effect* of the user's message. 
@@ -154,16 +170,17 @@ As an example, let's look at using a yes/no question to fill a slot called `late
 </Chat>
 
 
-When a user answers "yes" or "no", the NLU model predicts an intent like `affirm` or `deny`.
-Then there is a second step (usually handled by the dialogue manager) which maps the intents to
+When a user answers "yes" or "no", an NLU model predicts an intent like `affirm` or `deny`.
+A second step (usually handled by the dialogue manager) then maps the intents to
 the `True/False` values of the `late_delivery` slot. 
 
-Instead, the output of the *conversation handling* component is a command like `SetSlot("late_delivery", True)`.
+Instead, the *conversation handling* component directly outputs the command `SetSlot("late_delivery", True)`.
 
 The *conversation handling* approach requires much less work to set up, since you don't need to worry about
 intents and entities and slot mappings. It is also more powerful because it allows us to break free from intents.
 
-For example, if the user's response requires context to be understood correctly:
+For example, if the user's response requires context to be understood correctly and is a challenge for 
+intent-based systems:
 
 <Chat caption="pragmatic understanding">
 <ChatBotText>Has it been more than 10 business days since you placed your order?</ChatBotText>
@@ -172,17 +189,18 @@ For example, if the user's response requires context to be understood correctly:
 
 This kind of conversation illustrates the limitations of working with intents. It's perfectly clear 
 what the user means in this context, but in general the word "sadly" does not mean `affirm`.
-However, the conversation handling component will still correctly output `SetSlot("late_delivery", True)`. 
+The *conversation handling* component will correctly output `SetSlot("late_delivery", True)`.
 
 The example project above includes a definition of the core business logic for recommending a restaurant
 and not much else. Yet, it can handle a number of advanced conversations right away. 
 The advantage of DM2 is that it makes chatbots much smarter and much easier to build, while still giving
-you full control. 
+you full control over your business logic, and the ability to override and customize all bahavior.
 
 Learn more about how to use DM2 to build advanced assistants:
 
 * Advanced flow logic
 * Search-based question-answering
+* Context switching
 * Disambiguation
 * Contextual understanding and negation
 * Chitchat and digressions
