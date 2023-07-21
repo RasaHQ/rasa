@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import List, Text, Any, Dict, Optional
 
@@ -19,6 +20,7 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
         "type": "object",
         "properties": {
             "text": {"type": "string"},
+            "id": {"type": ["string", "null"]},
             "buttons": {"type": ["array", "null"], "items": {"type": "object"}},
             "elements": {"type": ["array", "null"], "items": {"type": "object"}},
             "attachment": {"type": ["object", "null"]},
@@ -81,12 +83,15 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         logger.debug(
             "Requesting NLG for {} from {}."
-            "".format(utter_action, self.nlg_endpoint.url)
+            "The request body is {}."
+            "".format(utter_action, self.nlg_endpoint.url, json.dumps(body))
         )
 
         response = await self.nlg_endpoint.request(
             method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT
         )
+
+        logger.debug(f"Received NLG response: {json.dumps(response)}")
 
         if isinstance(response, dict) and self.validate_response(response):
             return response
