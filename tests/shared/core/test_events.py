@@ -801,3 +801,29 @@ def test_event_fingerprint_uniqueness(event: Event):
 
 def test_session_started_event_is_not_serialised():
     assert SessionStarted().as_story_string() is None
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        {
+            "event": "user",
+            "text": "Hey",
+            "parse_data": {
+                "intent": {"name": "greet", "confidence": 0.9},
+                "entities": [],
+            },
+            "metadata": {},
+        },
+        {
+            "event": "action",
+            "name": "action_listen",
+            "policy": None,
+            "confidence": None,
+            "timestamp": None,
+        },
+    ],
+)
+def test_remove_parse_data(event: Dict[Text, Any]):
+    reduced_event = rasa.shared.core.events.remove_parse_data(event)
+    assert "parse_data" not in reduced_event

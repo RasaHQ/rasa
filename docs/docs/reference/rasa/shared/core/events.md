@@ -93,6 +93,25 @@ A session start sequence is a sequence of two events: an executed
 
   Whether `events` begins with a session start sequence.
 
+#### remove\_parse\_data
+
+```python
+def remove_parse_data(event: Dict[Text, Any]) -> Dict[Text, Any]
+```
+
+Reduce event details to the minimum necessary to be structlogged.
+
+Deletes the parse_data key from the event if it exists.
+
+**Arguments**:
+
+- `event` - The event to be reduced.
+  
+
+**Returns**:
+
+  A reduced copy of the event.
+
 ## Event Objects
 
 ```python
