@@ -119,8 +119,12 @@ def ensure_cache() -> None:
     """Ensures that the cache is initialized."""
     import langchain
 
-    location = get_local_cache_location() / "rasa-llm-cache.db"
-    langchain.llm_cache = SQLiteCache(database_path=str(location))
+    # ensure the cache directory exists
+    cache_location = get_local_cache_location()
+    cache_location.mkdir(parents=True, exist_ok=True)
+
+    db_location = cache_location / "rasa-llm-cache.db"
+    langchain.llm_cache = SQLiteCache(database_path=str(db_location))
 
 
 def llm_factory(
