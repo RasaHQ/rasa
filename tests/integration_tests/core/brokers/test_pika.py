@@ -1,3 +1,5 @@
+# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
+
 from typing import Text
 
 import docker
@@ -109,6 +111,7 @@ async def test_pika_event_broker_connect_with_path_and_query_params_in_url(
     host_component: Text,
 ) -> None:
     username = "myuser"
+    # deepcode ignore NoHardcodedPasswords/test: Test credential
     password = "mypassword"
     vhost = "myvhost"
     hostname = "my-rabbitmq"
