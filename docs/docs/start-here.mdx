@@ -8,7 +8,7 @@ hide_table_of_contents: true
 
 ## Getting Started with Rasa
 
-### Create an initial project
+### Create a project
 
 The `init` command creates a new Rasa project for you.
 
@@ -30,9 +30,120 @@ Use the `shell` command talk to your assistant on the command line:
 rasa shell
 ```
 
+To stop the conversation, type `/stop` or use `control+C`.
+
 Adding the `debug` flag can be very helpful for understanding everything that's going on:
 
 ```bash
 rasa shell --debug
 ```
 
+### Exploring what your assistant can do
+
+AI assistants often have to collect a few pieces of information from the user in order to achieve a goal.
+Your start project contains an example flow which can recommend a restaurant, and collects the user's preferred cuisine, city, and price range to do so.
+
+
+To try it out, start a conversation using `rasa shell`, and say something like "I'm looking for a restaurant". 
+
+Out of the box, this assistant can already handle some pretty advanced conversations. Users can change their mind,
+answer indirectly, or interject with questions. Try out some of these conversations yourself to get a feel for things.
+If you want to allow your assistant to paraphrase its responses
+
+<Tabs values={[{"label": "Happy path", "value": "happy-path"}, {"label": "changes mind", "value": "change-mind"}]}  groupId="example-conversations" defaultValue="happy-path">
+  <TabItem value="happy-path">
+    <Chat caption="happy path">
+    <ChatUserText>Can you recommend somewhere to eat?</ChatUserText>
+    <ChatBotText>What kind of food are you looking for?</ChatBotText>
+    <ChatUserText>Indian food</ChatUserText>
+    <ChatBotText>in what price range?</ChatBotText>
+    <ChatUserText>cheap</ChatUserText>
+    <ChatBotText>and in which city?</ChatBotText>
+    <ChatUserText>Berlin</ChatUserText>
+    </Chat>
+  </TabItem>
+  <TabItem value="change-mind">
+    <Chat caption="user changes their mind">
+    <ChatUserText>Can you recommend somewhere to eat?</ChatUserText>
+    <ChatBotText>What kind of food are you looking for?</ChatBotText>
+    <ChatUserText>Indian food</ChatUserText>
+    <ChatBotText>in what price range?</ChatBotText>
+    <ChatUserText>actually no I want Italian. A cheap spot</ChatUserText>
+    <ChatBotText>and in which city?</ChatBotText>
+    <ChatUserText>Berlin</ChatUserText>
+    </Chat>
+  </TabItem>
+</Tabs>
+
+
+### Understanding flows
+
+The `data/flows/restaurants.yml` file defines the logic for this flow. In this example the logic is very simple
+and walks the user through each of the steps in order. 
+
+```yaml
+flows:
+  recommend_restaurant:
+    description: This flow recommends a restaurant
+    steps:
+      - id: "0"
+        question: cuisine
+        skip_if_filled: true
+        next: "1"
+      - id: "1"
+        question: price_range
+        next: "2"
+      - id: "2"
+        question: part_of_town
+        next: "3"
+      - id: "3"
+        action: search_restaurants
+```
+
+To build more advanced flows, you can add conditional logic and linking to other flows. [add link]
+
+### Understanding DM2
+
+If you've built AI assistants before, you might look at your project and think that many things are missing.
+
+* There is no NLU data with intents and entities
+* There are no slot mappings
+* There is no logic mapping an intent like "restaurant_search" to the start of the restaurant flow
+* There is no explicit logic handling corrections, interruptions, or other unhappy paths.
+
+DM2 doesn't need any of these things to be able to handle the example conversations above. So, how does that work?
+
+Many developers are familiar with dialogue systems made up of separate NLU, dialogue, and NLG components.
+DM2's modules are split differently. 
+
+* The *conversation handling* component (name TBD) interprets the conversation so far and predicts 
+a series of commands to progress the state of the conversation.
+* The *business logic* component executes those commands and the logic of your flows. 
+
+The NLU systems you might know about take a single user message as input, and aim to represent
+the meaning of that message by predicting intents and entities. 
+Instead, *conversation handling* considers the conversation as a whole (not just one message),
+and predicts the *intended effect* of the user's message. 
+
+As an example, let's look at using a yes/no question to fill a slot called `late_delivery`:
+
+> Has it been more than 10 business days since you placed your order?
+
+When a user answers "yes" or "no", the NLU model predicts an intent like `affirm` or `deny`.
+Then there is a second step (usually handled by the dialogue manager) which maps the intents to
+the `True/False` values of the `late_delivery` slot. 
+
+Instead, the output of the *conversation handling* component is the command `SetSlot("late_delivery")`.
+
+The *conversation handling* approach requires much less work to set up, since you don't need to worry about
+intents and entities and slot mappings. It is also more powerful because it allows us to break free from intents.
+
+For example, if the user's response requires context to be understood correctly:
+
+<Chat caption="pragmatic understanding">
+<ChatBotText>Has it been more than 10 business days since you placed your order?</ChatBotText>
+<ChatUserText>sadly</ChatUserText>
+</Chat>
+
+This kind of conversation illustrates the limitations of working with intents. It's perfectly clear 
+what the user means in this context, but in general the word "sadly" does not mean `affirm`.
