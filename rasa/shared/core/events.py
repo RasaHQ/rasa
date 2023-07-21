@@ -246,6 +246,23 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
     )
 
 
+def remove_parse_data(event: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Reduce event details to the minimum necessary to be structlogged.
+
+    Deletes the parse_data key from the event if it exists.
+
+    Args:
+        event: The event to be reduced.
+
+    Returns:
+        A reduced copy of the event.
+    """
+    reduced_event = copy.deepcopy(event)
+    if "parse_data" in reduced_event:
+        del reduced_event["parse_data"]
+    return reduced_event
+
+
 E = TypeVar("E", bound="Event")
 
 
