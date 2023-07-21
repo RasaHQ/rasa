@@ -50,7 +50,7 @@ Out of the box, this assistant can already handle some pretty advanced conversat
 answer indirectly, or interject with questions. Try out some of these conversations yourself to get a feel for things.
 If you want to allow your assistant to paraphrase its responses
 
-<Tabs values={[{"label": "Happy path", "value": "happy-path"}, {"label": "changes mind", "value": "change-mind"}]}  groupId="example-conversations" defaultValue="happy-path">
+<Tabs values={[{"label": "Happy path", "value": "happy-path"}, {"label": "Complete request", "value": "all-upfront"}, {"label": "changes mind", "value": "change-mind"}, {"label": "Interjection", "value": "interjection"}]}  groupId="example-conversations" defaultValue="happy-path">
   <TabItem value="happy-path">
     <Chat caption="happy path">
     <ChatUserText>Can you recommend somewhere to eat?</ChatUserText>
@@ -60,8 +60,15 @@ If you want to allow your assistant to paraphrase its responses
     <ChatUserText>cheap</ChatUserText>
     <ChatBotText>and in which city?</ChatBotText>
     <ChatUserText>Berlin</ChatUserText>
+    <ChatBotText>Here's a recommendation: ...</ChatBotText>    
     </Chat>
   </TabItem>
+  <TabItem value="all-upfront">
+    <Chat caption="All info given">
+    <ChatUserText>I'm looking for a cheap Chinese restaurant in Amsterdam?</ChatUserText>
+    <ChatBotText>Here's a recommendation: ...</ChatBotText>
+    </Chat>
+  </TabItem>  
   <TabItem value="change-mind">
     <Chat caption="user changes their mind">
     <ChatUserText>Can you recommend somewhere to eat?</ChatUserText>
@@ -71,8 +78,18 @@ If you want to allow your assistant to paraphrase its responses
     <ChatUserText>actually no I want Italian. A cheap spot</ChatUserText>
     <ChatBotText>and in which city?</ChatBotText>
     <ChatUserText>Berlin</ChatUserText>
+    <ChatBotText>Here's a recommendation: ...</ChatBotText>    
     </Chat>
   </TabItem>
+  <TabItem value="interjection">
+    <Chat caption="user changes their mind">
+    <ChatUserText>Can you recommend somewhere to eat?</ChatUserText>
+    <ChatBotText>What kind of food are you looking for?</ChatBotText>
+    <ChatUserText>wait are you a bot?</ChatUserText>
+    <ChatBotText>I am a bot, powered by Rasa.</ChatBotText>
+    <ChatBotText>What kind of food are you looking for?</ChatBotText>    
+    </Chat>
+  </TabItem>  
 </Tabs>
 
 
@@ -101,6 +118,8 @@ flows:
 ```
 
 To build more advanced flows, you can add conditional logic and linking to other flows. [add link]
+The example project uses fixed responses defined in the `domain.yml` file. You can activate [contextual rephrasing]()
+to have the assistant adapt each message to sound more natural and fluent.
 
 ### Understanding DM2
 
@@ -127,7 +146,10 @@ and predicts the *intended effect* of the user's message.
 
 As an example, let's look at using a yes/no question to fill a slot called `late_delivery`:
 
-> Has it been more than 10 business days since you placed your order?
+<Chat caption="yes/no question">
+<ChatBotText>Has it been more than 10 business days since you placed your order?</ChatBotText>
+</Chat>
+
 
 When a user answers "yes" or "no", the NLU model predicts an intent like `affirm` or `deny`.
 Then there is a second step (usually handled by the dialogue manager) which maps the intents to
@@ -147,3 +169,10 @@ For example, if the user's response requires context to be understood correctly:
 
 This kind of conversation illustrates the limitations of working with intents. It's perfectly clear 
 what the user means in this context, but in general the word "sadly" does not mean `affirm`.
+
+The example project above includes a definition of the core business logic for recommending a restaurant
+and not much else. Yet, it can handle a number of advanced conversations right away. 
+The advantage of DM2 is that it makes chatbots much smarter and much easier to build, while still giving
+you full control. 
+
+To understand more about how 
