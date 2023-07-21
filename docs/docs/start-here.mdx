@@ -8,6 +8,9 @@ hide_table_of_contents: true
 
 ## Getting Started with Rasa
 
+This page will introduce you to the basics of Rasa. It's intended for newcomers and for people
+familiar with earlier versions of Rasa looking to understand our new approach.
+
 ### Create a project
 
 The `init` command creates a new Rasa project for you.
@@ -43,12 +46,11 @@ rasa shell --debug
 AI assistants often have to collect a few pieces of information from the user in order to achieve a goal.
 Your start project contains an example flow which can recommend a restaurant, and collects the user's preferred cuisine, city, and price range to do so.
 
-
 To try it out, start a conversation using `rasa shell`, and say something like "I'm looking for a restaurant". 
 
 Out of the box, this assistant can already handle some pretty advanced conversations. Users can change their mind,
 answer indirectly, or interject with questions. Try out some of these conversations yourself to get a feel for things.
-If you want to allow your assistant to paraphrase its responses
+If you want your assistant to sound a bit more natural, you can activate [contextual rephrasing] of responses.
 
 <Tabs values={[{"label": "Happy path", "value": "happy-path"}, {"label": "Complete request", "value": "all-upfront"}, {"label": "changes mind", "value": "change-mind"}, {"label": "Interjection", "value": "interjection"}]}  groupId="example-conversations" defaultValue="happy-path">
   <TabItem value="happy-path">
@@ -118,22 +120,23 @@ flows:
 ```
 
 To build more advanced flows, you can add conditional logic and linking to other flows. [add link]
-The example project uses fixed responses defined in the `domain.yml` file. You can activate contextual rephrasing
-to have the assistant adapt each message to sound more natural and fluent.
+The example project uses fixed responses defined in the `domain.yml` file. 
 
 ### Understanding DM2
 
+Rasa uses a new approach to building AI assistants called DM2 (name TBD). 
 If you've built AI assistants before, you might look at your project and think that many things are missing.
 
 * There is no NLU data with intents and entities
-* There are no slot mappings
 * There is no logic mapping an intent like "restaurant_search" to the start of the restaurant flow
+* There are no slot mappings
 * There is no explicit logic handling corrections, interruptions, or other unhappy paths.
 
 DM2 doesn't need any of these things to be able to handle the example conversations above. So, how does that work?
 
 Many developers are familiar with dialogue systems made up of separate NLU, dialogue, and NLG components.
-DM2's modules are split differently. 
+This is also how Rasa worked previously.
+In DM2, the modules are split differently. 
 
 * The *conversation handling* component (name TBD) interprets the conversation so far and predicts 
 a series of commands to progress the state of the conversation.
@@ -175,8 +178,11 @@ and not much else. Yet, it can handle a number of advanced conversations right a
 The advantage of DM2 is that it makes chatbots much smarter and much easier to build, while still giving
 you full control. 
 
-Learn more about DM2:
+Learn more about how to use DM2 to build advanced assistants:
 
 * Advanced flow logic
+* Search-based question-answering
 * Disambiguation
-* Contextual understanding
+* Contextual understanding and negation
+* Chitchat and digressions
+
