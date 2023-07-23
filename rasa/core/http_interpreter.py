@@ -20,6 +20,7 @@ class RasaNLUHttpInterpreter:
 
     def __init__(self, endpoint_config: Optional[EndpointConfig] = None) -> None:
         """Initializes a `RasaNLUHttpInterpreter`."""
+        self.session = aiohttp.ClientSession()
         if endpoint_config:
             self.endpoint_config = endpoint_config
         else:
@@ -67,18 +68,17 @@ class RasaNLUHttpInterpreter:
 
         # noinspection PyBroadException
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=params) as resp:
-                    if resp.status == 200:
-                        return await resp.json()
-                    else:
-                        response_text = await resp.text()
-                        structlogger.error(
-                            "http.parse.text.failure",
-                            text=copy.deepcopy(text),
-                            response_text=copy.deepcopy(response_text),
-                        )
-                        return None
+            async with self.session.post(url, json=params) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    response_text = await resp.text()
+                    structlogger.error(
+                        "http.parse.text.failure",
+                        text=copy.deepcopy(text),
+                        response_text=copy.deepcopy(response_text),
+                    )
+                    return None
         except Exception:  # skipcq: PYL-W0703
             # need to catch all possible exceptions when doing http requests
             # (timeouts, value errors, parser errors, ...)
