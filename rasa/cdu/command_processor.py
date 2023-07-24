@@ -111,20 +111,28 @@ def execute_commands(
     commands = clean_up_commands(commands, tracker, all_flows)
 
     events: List[Event] = []
-
+    collected_corrections = []
     # TODO: should this really be reversed? 🤔
-    for command in reversed(commands):
+    reversed_commands = list(reversed(commands))
+    for i, command in enumerate(reversed_commands):
         if isinstance(command, CorrectSlotCommand):
             structlogger.debug("command_executor.correct_slot", command=command)
-            updated_slots = _slot_sets_after_latest_message(tracker)
-            events.append(SlotSet(command.name, command.value))
-            events.append(SlotSet(CORRECTED_SLOTS_SLOT, [s.key for s in updated_slots]))
+            collected_corrections.append(command)
+            # pulling in all subsequent correction commands into a single correction
+            if i < (len(reversed_commands) - 1) and \
+                isinstance(reversed_commands[i+1], CorrectSlotCommand):
+                continue
+            for correction in collected_corrections:
+                events.append(SlotSet(correction.name, correction.value))
+            events.append(SlotSet(CORRECTED_SLOTS_SLOT,
+                                  [s.name for s in collected_corrections]))
             flow_stack.push(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_CORRECTION_ID,
                     frame_type=StackFrameType.CORRECTION,
                 )
             )
+            collected_corrections = []
         elif isinstance(command, SetSlotCommand):
             structlogger.debug("command_executor.set_slot", command=command)
             events.append(SlotSet(command.name, command.value))
