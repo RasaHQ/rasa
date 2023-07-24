@@ -89,12 +89,14 @@ FLOW_STACK_SLOT = "flow_stack"
 PREVIOUS_FLOW_SLOT = "rasa_previous_flow"
 CANCELLED_FLOW_SLOT = "rasa_cancelled_flow"
 CORRECTED_SLOTS_SLOT = "rasa_corrected_slots"
+RETURN_VALUE_SLOT = "return_value"
 
 FLOW_SLOT_NAMES = [
     FLOW_STACK_SLOT,
     PREVIOUS_FLOW_SLOT,
     CANCELLED_FLOW_SLOT,
     CORRECTED_SLOTS_SLOT,
+    RETURN_VALUE_SLOT,
 ]
 
 # slots for knowledge base
