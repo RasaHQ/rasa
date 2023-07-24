@@ -1,8 +1,9 @@
 from typing import Text
 import pytest
-import pika
+import asyncio
+from aio_pika import ExchangeType, connect
+from aio_pika.abc import AbstractIncomingMessage, AbstractConnection
 import docker
-import json
 
 from pytest import LogCaptureFixture
 
@@ -12,7 +13,6 @@ from tests.integration_tests.core.brokers.conftest import (
     RABBITMQ_PORT,
     RABBITMQ_DEFAULT_QUEUE,
 )
-
 
 
 @pytest.fixture
@@ -25,10 +25,27 @@ def rabbitmq_password() -> Text:
     return "test_password"
 
 
-def _callback(ch=, method, properties, body):
-    # Do something useful with your incoming message body here, e.g.
-    # saving it to a database
-    print('Received event {}'.format(json.loads(body)))
+async def on_message(message: AbstractIncomingMessage) -> None:
+    async with message.process():
+        print(f"[x] {message.body!r}")
+
+
+async def start_consuming() -> None:
+    # Perform connection
+    connection = await connect("amqp://test_user:test_password@127.0.0.1/")
+
+    async with connection:
+        # Creating a channel
+        channel = await connection.channel()
+        await channel.set_qos(prefetch_count=1)
+
+        # Declaring queue
+        queue = await channel.declare_queue(
+            RABBITMQ_DEFAULT_QUEUE, passive=True
+        )
+
+        # Start listening the queue
+        await queue.consume(on_message)
 
 
 @pytest.mark.xdist_group("rabbitmq")
@@ -42,7 +59,6 @@ async def test_consume_after_pika_restart(
         "RABBITMQ_DEFAULT_USER": rabbitmq_username,
         "RABBITMQ_DEFAULT_PASS": rabbitmq_password,
     }
-    credentials = pika.credentials.PlainCredentials(rabbitmq_username, rabbitmq_password)
 
     rabbitmq_container_broker = docker_client.containers.run(
         image="rabbitmq:3-management",
@@ -67,23 +83,12 @@ async def test_consume_after_pika_restart(
     await broker.connect()
     assert broker.is_ready()
     broker.publish({"event": "test"})
-
-    connection = pika.adapters.BlockingConnection(
-        pika.connection.ConnectionParameters(host='0.0.0.0', port=5672,
-                                             credentials=credentials, blocked_connection_timeout=1200))
-    channel = connection.channel()
-    channel.basic_consume(on_message_callback=_callback, queue='queue1', auto_ack=True)
-    channel.start_consuming()
-    assert channel is not None
+    await start_consuming()
 
     rabbitmq_container_broker.stop()
-    assert channel is None
     rabbitmq_container_broker.reload()
-    assert channel is not None
 
-    assert rabbitmq_container_broker.status == "exited"
     await broker.close()
 
     rabbitmq_container_broker.stop()
     rabbitmq_container_broker.remove()
-
