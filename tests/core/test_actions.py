@@ -250,6 +250,7 @@ async def test_remote_action_runs(
                     CANCELLED_FLOW_SLOT: None,
                     CORRECTED_SLOTS_SLOT: None,
                     PREVIOUS_FLOW_SLOT: None,
+                    RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
                 "latest_input_channel": None,
