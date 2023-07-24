@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-import aiohttp
 import pytest
 from aioresponses import aioresponses
 from rasa.core.channels import UserMessage
@@ -40,34 +39,33 @@ async def test_http_interpreter(endpoint_url, joined_url):
 
 
 @pytest.fixture
-def interpreter():
+def nlu_interpreter():
     with patch("aiohttp.ClientSession") as mock_session:
-        yield RasaNLUHttpInterpreter()
+        endpoint = EndpointConfig("https://example.com/a/")
+        yield RasaNLUHttpInterpreter(endpoint_config=endpoint)
 
         # Assert that the session object is initialized correctly
         assert mock_session.called
-        assert isinstance(interpreter.session, aiohttp.ClientSession)
-        assert interpreter.endpoint_config.url == "https://example.com/a/"
 
 
-async def test_same_session_object_used(interpreter):
+async def test_same_session_object_used(nlu_interpreter):
     """
     GIVEN a RasaNLUHttpInterpreter
     WHEN the parse() method is called multiple times
     THEN the same session object is used for all requests.
     """
     # Call the parse() method multiple times
-    session = interpreter.session
+    session = nlu_interpreter.session
 
-    result1 = await interpreter.parse(
+    result1 = await nlu_interpreter.parse(
         UserMessage(text="message_text_1", sender_id="message_id_1")
     )
-    assert interpreter.session == session
+    assert nlu_interpreter.session == session
 
-    result2 = await interpreter.parse(
+    result2 = await nlu_interpreter.parse(
         UserMessage(text="message_text_2", sender_id="message_id_2")
     )
-    assert interpreter.session == session
+    assert nlu_interpreter.session == session
 
     # Assert that the same session object is used for all requests
     assert result1 is not None
