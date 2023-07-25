@@ -7,10 +7,12 @@ import structlog
 from rasa.cdu.command_generator.base import CommandGenerator
 from rasa.cdu.commands import (
     Command,
+    ErrorCommand,
     HandleInterruptionCommand,
     SetSlotCommand,
     CancelFlowCommand,
-    StartFlowCommand, HumanHandoffCommand, ListenCommand, CorrectSlotCommand,
+    StartFlowCommand,
+    HumanHandoffCommand,
 )
 
 from rasa.core.policies.flow_policy import FlowStack
@@ -150,7 +152,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         action_list = self._generate_action_list_using_llm(flow_prompt)
         structlogger.info(
             "llm_command_generator.predict_commands.actions_generated",
-            action_list=action_list
+            action_list=action_list,
         )
         commands = self.parse_commands(action_list)
         structlogger.info(
@@ -170,25 +172,22 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         }
 
     @classmethod
-    def parse_commands(
-        cls, actions: Optional[str]) -> List[Command]:
+    def parse_commands(cls, actions: Optional[str]) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities."""
         if not actions:
-            # TODO: not quite sure yet how to handle this case - revisit!
-            #  is predicting "no commands" an option?
-            #  this also happens when no commands are parsed
-            return []
+            return [ErrorCommand()]
 
         commands: List[Command] = []
 
-        slot_set_re = \
-            re.compile(r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)""")
+        slot_set_re = re.compile(
+            r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)"""
+        )
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
         chitchat_re = re.compile(r"ChitChat\(\)")
         knowledge_re = re.compile(r"KnowledgeAnswer\(\)")
         humand_handoff_re = re.compile(r"HumandHandoff\(\)")
-        listen_re = re.compile(r"Listen\(\)")
+        # listen_re = re.compile(r"Listen\(\)")
 
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):

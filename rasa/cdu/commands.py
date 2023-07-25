@@ -14,7 +14,12 @@ def command_from_json(data: Dict[str, Any]) -> "Command":
     if data.get("command") == "set slot":
         return SetSlotCommand(name=data["name"], value=data["value"])
     elif data.get("command") == "correct slot":
-        return CorrectSlotCommand(name=data["name"], value=data["value"])
+        return CorrectSlotsCommand(
+            corrected_slots=[
+                CorrectedSlot(s["name"], value=s["value"])
+                for s in data["corrected_slots"]
+            ]
+        )
     elif data.get("command") == "start flow":
         return StartFlowCommand(flow=data["flow"])
     elif data.get("command") == "cancel flow":
@@ -53,11 +58,19 @@ class SetSlotCommand(Command):
 
 
 @dataclass
-class CorrectSlotCommand(Command):
-    """A command to correct the value of a slot."""
+class CorrectedSlot:
+    """A slot that was corrected."""
 
     name: str
     value: Any
+
+
+@dataclass
+class CorrectSlotsCommand(Command):
+    """A command to correct the value of a slot."""
+
+    corrected_slots: List[CorrectedSlot]
+
     command: str = "correct slot"
 
 
@@ -110,3 +123,10 @@ class HumanHandoffCommand(Command):
     """A command to indicate that the bot should handoff to a human."""
 
     command: str = "human handoff"
+
+
+@dataclass
+class ErrorCommand(Command):
+    """A command to indicate that the bot failed to handle the dialogue."""
+
+    command: str = "error"
