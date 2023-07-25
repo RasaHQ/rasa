@@ -42,7 +42,11 @@ def add_subparser(
         default=None,
         help="Directory where your project should be initialized.",
     )
-
+    scaffold_parser.add_argument(
+        "--dm2",
+        action="store_true",
+        help="Temporary. Whether to create a DM2 project or a classic one",
+    )
     scaffold_parser.set_defaults(func=run)
 
 
@@ -127,21 +131,22 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
 def init_project(args: argparse.Namespace, path: Text) -> None:
     """Inits project."""
     os.chdir(path)
-    create_initial_project(".")
+    create_initial_project(".", args.dm2)
     print(f"Created project directory at '{os.getcwd()}'.")
     print_train_or_instructions(args)
 
 
-def create_initial_project(path: Text) -> None:
+def create_initial_project(path: Text, is_dm2: bool=False) -> None:
     """Creates directory structure and templates for initial project."""
     from distutils.dir_util import copy_tree
 
-    copy_tree(scaffold_path(), path)
+    copy_tree(scaffold_path(is_dm2), path)
 
 
-def scaffold_path() -> Text:
+def scaffold_path(is_dm2: bool=False) -> Text:
     import pkg_resources
-
+    if is_dm2:
+        return pkg_resources.resource_filename(__name__, "initial_project_dm2")
     return pkg_resources.resource_filename(__name__, "initial_project")
 
 
