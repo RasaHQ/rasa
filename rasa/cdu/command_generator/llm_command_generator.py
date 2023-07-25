@@ -246,15 +246,14 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return False
 
         for mapping in slot.mappings:
-            if mapping.get(MAPPING_TYPE) == str(SlotMappingType.FROM_ENTITY):
-                conditions = mapping.get(MAPPING_CONDITIONS, [])
-                if len(conditions) == 0:
-                    return True
-                else:
-                    for condition in conditions:
-                        active_loop = condition.get(ACTIVE_LOOP)
-                        if active_loop and active_loop == tracker.active_loop_name:
-                            return True
+            conditions = mapping.get(MAPPING_CONDITIONS, [])
+            if len(conditions) == 0:
+                return True
+            else:
+                for condition in conditions:
+                    active_loop = condition.get(ACTIVE_LOOP)
+                    if active_loop and active_loop == tracker.active_loop_name:
+                        return True
         return False
 
     def render_template(
