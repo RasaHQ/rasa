@@ -1,0 +1,11 @@
+version: "3.1"
+
+nlu:
+  - intent: affirm
+    examples: |
+      - yes
+      - yup
+  - intent: deny
+    examples: |
+      - no
+      - nope

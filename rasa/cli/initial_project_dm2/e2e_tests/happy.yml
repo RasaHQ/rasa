@@ -1,0 +1,11 @@
+test_cases:
+  - test_case: user corrects recipient in the next message
+    steps:
+      - user: Please recommend a restaurant
+      - utter: utter_ask_cuisine
+      - user: Indian food
+      - utter: utter_ask_price_range
+      - user: cheap
+      - utter: utter_ask_city
+      - user: Berlin
+      - utter: utter_recommend_restaurant

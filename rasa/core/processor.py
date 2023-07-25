@@ -854,6 +854,8 @@ class MessageProcessor:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
 
+        tracker = self.run_command_processor(tracker)
+
         # action loop. predicts actions until we hit action listen
         while should_predict_another_action and self._should_handle_message(tracker):
             # this actually just calls the policy's method by the same name
@@ -958,6 +960,17 @@ class MessageProcessor:
                         scheduled_job.name, tracker.sender_id
                     ):
                         scheduler.remove_job(scheduled_job.id)
+
+    def run_command_processor(
+        self, tracker: DialogueStateTracker
+    ) -> DialogueStateTracker:
+        target = "command_processor"
+        results = self.graph_runner.run(
+            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]
+        )
+        events = results[target]
+        tracker.update_with_events(events, self.domain)
+        return tracker
 
     async def _run_action(
         self,

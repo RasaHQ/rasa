@@ -4,6 +4,7 @@ import copy
 import logging
 from enum import Enum
 from pathlib import Path
+from rasa.cdu.flow_stack import FlowStack, StackFrameType
 from rasa.shared.core.events import Event
 from typing import (
     Any,
@@ -104,6 +105,19 @@ class Policy(GraphComponent):
             The data type supported by this policy (ML-based training data).
         """
         return SupportedData.ML_DATA
+
+    @staticmethod
+    def supported_stack_frames() -> List[StackFrameType]:
+        """Returns the stack frames supported by the policy."""
+        return []
+
+    def supports_current_stack_frame(self, tracker: DialogueStateTracker) -> bool:
+        flow_stack = FlowStack.from_tracker(tracker)
+
+        if top_frame := flow_stack.top():
+            return top_frame.frame_type in self.supported_stack_frames()
+        else:
+            return True
 
     def __init__(
         self,

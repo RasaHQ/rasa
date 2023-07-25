@@ -1,6 +1,7 @@
 TEXT = "text"
 TEXT_TOKENS = "text_tokens"
 INTENT = "intent"
+COMMANDS = "commands"
 NOT_INTENT = "not_intent"
 RESPONSE = "response"
 RESPONSE_SELECTOR = "response_selector"

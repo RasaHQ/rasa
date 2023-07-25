@@ -90,7 +90,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
             ),
         ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
-        ("dm2", as_pipeline("LLMFlowClassifier")),
+        ("dm2", as_pipeline("LLMCommandGenerator")),
     ]
 
 

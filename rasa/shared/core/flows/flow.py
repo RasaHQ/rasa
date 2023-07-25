@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Protocol, Set, Text, runtime_check
 import structlog
 
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.constants import RASA_DEFAULT_INTENT_PREFIX
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
 
@@ -199,14 +199,12 @@ class Flow:
         Returns:
             The parsed flow.
         """
+        steps = flow_config.get("steps") or []
         return Flow(
             id=flow_id,
             name=flow_config.get("name", ""),
             description=flow_config.get("description"),
-            steps=[
-                step_from_json(step_config)
-                for step_config in flow_config.get("steps", [])
-            ],
+            steps=[step_from_json(step_config) for step_config in steps],
         )
 
     def as_json(self) -> Dict[Text, Any]:
@@ -354,14 +352,7 @@ class Flow:
 
     def is_rasa_default_flow(self) -> bool:
         """Test whether something is a rasa default flow."""
-        trigger_intents = self.get_trigger_intents()
-        any_has_rasa_prefix = any(
-            [
-                intent.startswith(RASA_DEFAULT_INTENT_PREFIX)
-                for intent in trigger_intents
-            ]
-        )
-        return any_has_rasa_prefix
+        return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
 
     def get_question_steps(self) -> List[QuestionFlowStep]:
         """Return the question steps of the flow."""
