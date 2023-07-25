@@ -33,7 +33,7 @@ responses:
   utter_too_complex_rasa:
     - text: This is too complex for me, let's take it one step at a time.
 
-  utter_openai_error_rasa:
+  utter_internal_error_rasa:
     - text: Sorry, I'm having trouble understanding you right now. Please try again later.
 
 slots:
@@ -97,8 +97,8 @@ flows:
       - id: "0"
         action: action_listen
 
-  pattern_openai_error:
-    description: openai error
+  pattern_internal_error:
+    description: internal error
     steps:
       - id: "0"
-        action: utter_openai_error_rasa
+        action: utter_internal_error_rasa

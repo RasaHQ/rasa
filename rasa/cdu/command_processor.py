@@ -4,7 +4,9 @@ import structlog
 from rasa.cdu.commands import (
     CancelFlowCommand,
     Command,
-    CorrectSlotCommand,
+    CorrectSlotsCommand,
+    CorrectedSlot,
+    ErrorCommand,
     HandleInterruptionCommand,
     ListenCommand,
     SetSlotCommand,
@@ -31,6 +33,8 @@ FLOW_PATTERN_CORRECTION_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "correction"
 FLOW_PATTERN_CANCEl_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 
 FLOW_PATTERN_LISTEN_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "listen"
+
+FLOW_PATTERN_INTERNAL_ERROR_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "internal_error"
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
@@ -89,6 +93,22 @@ def _get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
         return []
 
 
+def validate_state_of_commands(commands: List[Command]) -> None:
+    """Validates the state of the commands."""
+    # assert that that at max there is only one cancel flow command at
+    # the beginning of the list of commands
+    assert len([c for c in commands if isinstance(c, CancelFlowCommand)]) <= 1
+
+    # assert that interrupt commands are only at the beginning of the list
+    interrupt_commands = [
+        c for c in commands if isinstance(c, HandleInterruptionCommand)
+    ]
+    assert interrupt_commands == commands[: len(interrupt_commands)]
+
+    # assert that there is at max only one correctslots command
+    assert len([c for c in commands if isinstance(c, CorrectSlotsCommand)]) <= 1
+
+
 def execute_commands(
     tracker: DialogueStateTracker, all_flows: FlowsList
 ) -> List[Event]:
@@ -111,28 +131,29 @@ def execute_commands(
     commands = clean_up_commands(commands, tracker, all_flows)
 
     events: List[Event] = []
-    collected_corrections = []
-    # TODO: should this really be reversed? 🤔
+
+    # commands need to be reversed to make sure they end up in the right order
+    # on the stack. e.g. if there multiple start flow commands, the first one
+    # should be on top of the stack. this is achieved by reversing the list
+    # and then pushing the commands onto the stack in the reversed order.
     reversed_commands = list(reversed(commands))
+
+    validate_state_of_commands(commands)
+
     for i, command in enumerate(reversed_commands):
-        if isinstance(command, CorrectSlotCommand):
-            structlogger.debug("command_executor.correct_slot", command=command)
-            collected_corrections.append(command)
-            # pulling in all subsequent correction commands into a single correction
-            if i < (len(reversed_commands) - 1) and \
-                isinstance(reversed_commands[i+1], CorrectSlotCommand):
-                continue
-            for correction in collected_corrections:
+        if isinstance(command, CorrectSlotsCommand):
+            structlogger.debug("command_executor.correct_slots", command=command)
+            for correction in command.corrected_slots:
                 events.append(SlotSet(correction.name, correction.value))
-            events.append(SlotSet(CORRECTED_SLOTS_SLOT,
-                                  [s.name for s in collected_corrections]))
+            events.append(
+                SlotSet(CORRECTED_SLOTS_SLOT, [s.name for s in command.corrected_slots])
+            )
             flow_stack.push(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_CORRECTION_ID,
                     frame_type=StackFrameType.CORRECTION,
                 )
             )
-            collected_corrections = []
         elif isinstance(command, SetSlotCommand):
             structlogger.debug("command_executor.set_slot", command=command)
             events.append(SlotSet(command.name, command.value))
@@ -149,6 +170,10 @@ def execute_commands(
                     "command_executor.skip_cancel_flow.no_active_flow", command=command
                 )
                 continue
+            # in between the prediction and this canceling command, we might have
+            # added some stack frames. hence, we can't just cancle the current top frame
+            # but need to find the frame that was at the top before we started
+            # processing the commands.
             for idx, frame in enumerate(flow_stack.frames):
                 if frame.flow_id == current_top_flow.id:
                     structlogger.debug("command_executor.cancel_flow", command=command)
@@ -176,6 +201,14 @@ def execute_commands(
                     # TODO: not quite sure if we need an id here
                     flow_id="NO_FLOW",
                     frame_type=StackFrameType.DOCSEARCH,
+                )
+            )
+        elif isinstance(command, ErrorCommand):
+            structlogger.debug("command_executor.error", command=command)
+            flow_stack.push(
+                FlowStackFrame(
+                    flow_id=FLOW_PATTERN_INTERNAL_ERROR_ID,
+                    frame_type=StackFrameType.CORRECTION,
                 )
             )
 
@@ -263,7 +296,29 @@ def clean_up_commands(
                 "command_executor.convert_command.correction", command=command
             )
 
-            clean_commands.append(CorrectSlotCommand(command.name, command.value))
+            corrected_slot = CorrectedSlot(command.name, command.value)
+            for c in clean_commands:
+                if isinstance(c, CorrectSlotsCommand):
+                    c.corrected_slots.append(corrected_slot)
+                    break
+            else:
+                clean_commands.append(
+                    CorrectSlotsCommand(corrected_slots=[corrected_slot])
+                )
+
+        elif isinstance(command, CancelFlowCommand) and contains_command(
+            clean_commands, CancelFlowCommand
+        ):
+            structlogger.debug(
+                "command_executor.skip_command.already_cancelled_flow", command=command
+            )
+            continue
+        elif isinstance(command, HandleInterruptionCommand):
+            structlogger.debug(
+                "command_executor.prepend_command.handle_interruption", command=command
+            )
+            clean_commands.insert(0, command)
+            continue
         else:
             clean_commands.append(command)
 

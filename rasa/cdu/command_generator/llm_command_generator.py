@@ -7,6 +7,7 @@ import structlog
 from rasa.cdu.command_generator.base import CommandGenerator
 from rasa.cdu.commands import (
     Command,
+    ErrorCommand,
     HandleInterruptionCommand,
     SetSlotCommand,
     CancelFlowCommand,
@@ -173,9 +174,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     ) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities."""
         if not actions:
-            # TODO: not quite sure yet how to handle this case - revisit!
-            #  is predicting "no commands" an option?
-            return []
+            return [ErrorCommand()]
 
         commands: List[Command] = []
 
