@@ -35,10 +35,12 @@ flows:
         next: "1"
       - id: "1"
         question: price_range
+        skip_if_filled: true        
         next: "2"
       - id: "2"
-        question: part_of_town
+        question: city
+        skip_if_filled: true        
         next: "3"
       - id: "3"
-        action: search_restaurants
+        action: utter_recommend_restaurant
  

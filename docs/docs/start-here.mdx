@@ -15,7 +15,7 @@ controllability of intent-based approaches.
 
 ### Command Line Interface Basics
 
-Once you have installed Rasa, you can run the `init` command to create a starter project:
+Once you have instalgled Rasa, you can run the `init` command to create a starter project:
 
 ```bash
 rasa init --dm2
@@ -62,7 +62,7 @@ for their preferred cuisine, city, and price range.
 To try it out, start a conversation using `rasa shell`, and say something like "I'm looking for a restaurant". 
 
 Out of the box, this assistant can already handle a variety of conversations. The first is what we call the "happy path",
-where the user provides all the important when it's requested. 
+where the user always provides the information the assistant requests.
 But if users change their mind, answer indirectly, or interject with questions, this assistant can handle those cases as well.
 Try out some of these conversations yourself to get a feel for things.
 If you want your assistant to sound a bit more natural, you can activate [contextual rephrasing](./llms/llm-nlg.mdx) of responses.
@@ -184,8 +184,7 @@ The *conversation handling* approach requires much less work to set up, since yo
 intents and entities and slot mappings. It is also more powerful because it allows us to 
 [break free from intents](https://rasa.com/blog/its-about-time-we-get-rid-of-intents/).
 
-For example, if the user's response requires context to be understood correctly and is a challenge for 
-intent-based systems:
+For example, intent-based approaches struggle when context is required to understand what the user means:
 
 <Chat caption="pragmatic understanding">
 <ChatBotText>Has it been more than 10 business days since you placed your order?</ChatBotText>

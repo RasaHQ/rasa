@@ -13,7 +13,7 @@ slots:
     type: text
     mappings:
     - type: custom
-  part_of_town:
+  city:
     type: text
     mappings:
     - type: custom
@@ -32,8 +32,11 @@ responses:
   utter_ask_price_range:
   - text: "in what price range?"
 
-  utter_ask_part_of_town:
-  - text: "and in which part of town?"
+  utter_ask_city:
+  - text: "and in which city?"
+
+  utter_recommend_restaurant:
+  - text: "Here's a recommendation ..."
 
   utter_cheer_up:
   - text: "Here is something to cheer you up:"
@@ -55,8 +58,6 @@ responses:
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."
 
-actions:
-  - search_restaurants
 
 session_config:
   session_expiration_time: 60
