@@ -21,7 +21,6 @@ from rasa.core.constants import (
     COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
     DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
 )
-from rasa.core.nlg.callback import RESPONSE_ID_KEY
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -315,15 +314,8 @@ class ActionBotResponse(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) response."""
-        response_ids_for_response = domain.response_ids_per_response.get(
-            self.utter_action, set()
-        )
-
-        response_id_list = list(response_ids_for_response)
-        response_id_list.sort()
-
         kwargs = {
-            RESPONSE_ID_KEY: response_id_list,
+            "domain_responses": domain.responses,
         }
 
         message = await nlg.generate(

@@ -222,6 +222,7 @@ module.exports = {
                                 },
                             ],
                         },
+                        'action-server/sanic-extensions',
                     ],
                 },
             ],
