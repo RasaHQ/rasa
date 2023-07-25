@@ -13,8 +13,6 @@ from rasa.cdu.commands import (
     CancelFlowCommand,
     StartFlowCommand,
     HumanHandoffCommand,
-    ListenCommand,
-    CorrectSlotCommand,
 )
 
 from rasa.core.policies.flow_policy import FlowStack
@@ -189,7 +187,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         chitchat_re = re.compile(r"ChitChat\(\)")
         knowledge_re = re.compile(r"KnowledgeAnswer\(\)")
         humand_handoff_re = re.compile(r"HumandHandoff\(\)")
-        listen_re = re.compile(r"Listen\(\)")
+        # listen_re = re.compile(r"Listen\(\)")
 
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
