@@ -50,6 +50,7 @@ class RasaNLUHttpInterpreter:
             structlogger.error(
                 "http.parse.text",
                 text=copy.deepcopy(text),
+                event_info="No rasa NLU server specified!",
             )
             return None
 

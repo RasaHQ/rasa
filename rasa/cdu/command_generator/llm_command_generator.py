@@ -10,7 +10,7 @@ from rasa.cdu.commands import (
     HandleInterruptionCommand,
     SetSlotCommand,
     CancelFlowCommand,
-    StartFlowCommand,
+    StartFlowCommand, HumanHandoffCommand, ListenCommand, CorrectSlotCommand,
 )
 
 from rasa.core.policies.flow_policy import FlowStack
@@ -55,12 +55,9 @@ DEFAULT_LLM_CONFIG = {
 LLM_CONFIG_KEY = "llm"
 
 
-# TODO: check if the original inhertance from IntentClassifier and EntityExtractorMixin
-#   is still needed or what benefits that provided.
 @DefaultV1Recipe.register(
     [
-        DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
-        DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+        DefaultV1Recipe.ComponentType.COMMAND_GENERATOR,
     ],
     is_trainable=True,
 )
@@ -148,17 +145,19 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         )
         flow_prompt = self.render_template(message, tracker, flows_without_patterns)
         structlogger.info(
-            "llm_command_generator.process.prompt_rendered", prompt=flow_prompt
+            "llm_command_generator.predict_commands.prompt_rendered", prompt=flow_prompt
         )
         action_list = self._generate_action_list_using_llm(flow_prompt)
         structlogger.info(
-            "llm_command_generator.process.actions_generated", action_list=action_list
+            "llm_command_generator.predict_commands.actions_generated",
+            action_list=action_list
         )
-        commands = self.parse_commands(action_list, tracker, flows_without_patterns)
+        commands = self.parse_commands(action_list)
         structlogger.info(
-            "llm_command_generator.process.finished",
+            "llm_command_generator.predict_commands.finished",
             commands=commands,
         )
+
         return commands
 
     @staticmethod
@@ -172,26 +171,30 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     @classmethod
     def parse_commands(
-        cls, actions: Optional[str], tracker: DialogueStateTracker, flows: FlowsList
-    ) -> List[Command]:
+        cls, actions: Optional[str]) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities."""
         if not actions:
             # TODO: not quite sure yet how to handle this case - revisit!
             #  is predicting "no commands" an option?
+            #  this also happens when no commands are parsed
             return []
 
         commands: List[Command] = []
 
-        slot_set_re = re.compile(
-            r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)"""
-        )
+        slot_set_re = \
+            re.compile(r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)""")
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
-        cancel_flow_re = re.compile(r"CancelFlow")
-        interruption_flow_re = re.compile(r"AllowInterruption")
+        cancel_flow_re = re.compile(r"CancelFlow\(\)")
+        chitchat_re = re.compile(r"ChitChat\(\)")
+        knowledge_re = re.compile(r"KnowledgeAnswer\(\)")
+        humand_handoff_re = re.compile(r"HumandHandoff\(\)")
+        listen_re = re.compile(r"Listen\(\)")
+
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
                 slot_name = m.group(1).strip()
                 slot_value = m.group(2).strip()
+                # error case where the llm tries to start a flow using a slot set
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
                 elif cls.is_hallucinated_value(slot_value):
@@ -202,8 +205,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 commands.append(StartFlowCommand(flow=m.group(1).strip()))
             elif cancel_flow_re.search(action):
                 commands.append(CancelFlowCommand())
-            elif interruption_flow_re.search(action):
+            elif chitchat_re.search(action) or knowledge_re.search(action):
                 commands.append(HandleInterruptionCommand())
+            elif humand_handoff_re.search(action):
+                commands.append(HumanHandoffCommand())
+            # elif listen_re.search(action):
+            #     commands.append(ListenCommand())
 
         return commands
 
@@ -213,6 +220,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     ) -> List[Dict[str, Any]]:
         result = []
         for flow in flows.underlying_flows:
+            # TODO: check if we should filter more flows; e.g. flows that are
+            #  linked to by other flows and that shouldn't be started directly.
+            #  we might need a separate flag for that.
             if not flow.is_rasa_default_flow():
 
                 slots_with_info = [

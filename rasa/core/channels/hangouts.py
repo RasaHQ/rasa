@@ -323,7 +323,7 @@ class HangoutsInput(InputChannel):
                 )
             except CancelledError:
                 structlogger.error(
-                    "hangouts.message.blueprint", text=copy.deepcopy(text)
+                    "hangouts.message.blueprint.timeout", text=copy.deepcopy(text)
                 )
             except Exception:
                 structlogger.exception(

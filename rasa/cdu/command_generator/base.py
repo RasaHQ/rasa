@@ -8,7 +8,7 @@ from rasa.shared.nlu.constants import COMMANDS
 
 
 class CommandGenerator:
-    """A command classifier.
+    """A command generator.
 
     Parses a message and returns a list of commands. The commands are then
     executed and will lead to tracker state modifications and action
@@ -20,7 +20,11 @@ class CommandGenerator:
         tracker: Optional[DialogueStateTracker] = None,
         flows: Optional[FlowsList] = None,
     ) -> List[Message]:
-        """Return intent and entities for a message."""
+        """Process a list of messages. For each message predict commands.
+
+        The result of the generation is added to the message as a list of
+        commands.
+        """
         for message in messages:
             commands = self.predict_commands(message, tracker, flows)
             commands_dicts = [dataclasses.asdict(command) for command in commands]
@@ -33,5 +37,13 @@ class CommandGenerator:
         tracker: Optional[DialogueStateTracker] = None,
         flows: Optional[FlowsList] = None,
     ) -> List[Command]:
-        """Predict commands for a list of messages."""
+        """Predict commands for a single message.
+
+        Args:
+            message: The message to predict commands for.
+            tracker: The tracker containing the conversation history up to now.
+            flows: The flows to use for command prediction.
+
+        Returns:
+            The predicted commands."""
         raise NotImplementedError()

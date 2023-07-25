@@ -1,8 +1,8 @@
-Your task is to analyze the current conversation context and start new business processes that we call flows and to extract slots to advance active flows.
+Your task is to analyze the current conversation context and generate a list of actions to start new business processes that we call flows, to extract slots, or respond to small talk and knowledge requests.
 
 These are the flows that can be started, with their description and slots:
 {% for flow in available_flows %}
-flow: {{ flow.name }}: {{ flow.description }}
+{{ flow.name }}: {{ flow.description }}
     {% for slot in flow.slots -%}
     slot: {{ slot.name }}{% if slot.description %} ({{ slot.description }}){% endif %}
     {% endfor %}
@@ -35,23 +35,18 @@ The user just said """{{ user_message }}""".
 Based on this information generate a list of actions you want to take. Your job is to start flows and to fill slots where appropriate. Any logic of what happens afterwards is handled by the flow engine. These are your available actions:
 * Slot setting, described by "SetSlot(slot_name, slot_value)". An example would be "SetSlot(recipient, Freddy)"
 * Starting another flow, described by "StartFlow(flow_name)". An example would be "StartFlow(transfer_money)"
-* Starting another flow, and already filling a slot for that flow. An example would be "StartFlow(transfer_money), SetSlot(recipient, Freddy)"
-* Setting a slot for the current flow, before starting a new flow and setting a slot for it. An example would be "SetSlot(confirmation, True), StartFlow(transfer_money), SetSlot(recipient, Joe)"
 * Cancelling the current flow, described by "CancelFlow()"
-* Asking the user to choose from two or more possible flows. An example would be ClarifyNextStep(transfer_money, list_transactions, check_balance)
-* Taking no action because the user's message has nothing to do with the available flows. An example would be AllowInterruption(chitchat) if the user is making small talk, or AllowInterruption(information) if the user has a question unrelated to the available flows.
-* Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one. An example would be HumanHandoff()
-* Taking no action because the user's message does not invite a further response. For example, if the user asks for more time, or simply makes a comment.
+* Disambiguating which flow should be started when there are multiple likely candidates. An example would be Disambiguate(transfer_money, list_transactions, check_balance)
+* Responding to a non-task-oriented user message, described by "ChitChat()".
+* Responding to a user message that requires additional knowledge from a knowledge database, described by "KnowledgeAnswer()"
+* Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one, described by "HumanHandoff()".
 
-Write out the actions you want to take for the last user message, one per line, in the order they should take place.
+===
+Write out the actions you want to take, one per line, in the order they should take place.
 Do not fill slots with abstract values or placeholders.
 Only use information provided by the user.
-Only start a flow if it's completely clear what the user wants. Imagine you were a person reading this message. If it's not 100% clear, clarify the next step.
-Don't be overly confident. Take a conservative approach and clarify before proceeding.
-If the user asks for two things which seem contradictory, clarify before starting a flow.
-If a user does multiple things in one message, you can output multiple actions. An example would be if the user fills a slot but also makes some smalltalk: "SetSlot(cuisine, chinese), AllowInterruption(chitchat)"
-Acknowledge everything a user does in a message.
 Strictly adhere to the provided action types listed above.
 Focus on the last message and take it one step at a time.
 Use the previous conversation steps only to aid understanding.
-The action list:
+
+Your action list:

@@ -286,7 +286,7 @@ module.exports = {
             collapsed: false,
             items: [
                 'llms/llm-intent',
-                'llms/llm-flow-classifier',
+                'llms/llm-command-generator',
                 'llms/llm-nlg',
                 'llms/llm-intentless',
                 'llms/flow-policy',

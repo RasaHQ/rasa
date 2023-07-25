@@ -12,6 +12,7 @@ from rasa.cdu.commands import (
     command_from_json,
 )
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import (
     CANCELLED_FLOW_SLOT,
     CORRECTED_SLOTS_SLOT,
@@ -25,15 +26,27 @@ from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()
 
-FLOW_PATTERN_CORRECTION_ID = "pattern_correction"
+FLOW_PATTERN_CORRECTION_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "correction"
 
-FLOW_PATTERN_CANCEl_ID = "pattern_cancel_flow"
+FLOW_PATTERN_CANCEl_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 
-FLOW_PATTERN_LISTEN_ID = "pattern_listen"
+FLOW_PATTERN_LISTEN_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "listen"
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
-    """Check if a list of commands contains a command of a given type."""
+    """Check if a list of commands contains a command of a given type.
+
+    Example:
+        >>> contains_command([ListenCommand()], ListenCommand)
+        True
+
+    Args:
+        commands: The commands to check.
+        typ: The type of command to check for.
+
+    Returns:
+    `True` if the list of commands contains a command of the given type.
+    """
     return any(isinstance(command, typ) for command in commands)
 
 
@@ -66,7 +79,7 @@ def _get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
         tracker: The tracker containing the conversation history up to now.
 
     Returns:
-        The commands.
+    The commands.
     """
     if tracker.latest_message:
         dumped_commands = tracker.latest_message.parse_data.get(COMMANDS) or []
@@ -98,20 +111,28 @@ def execute_commands(
     commands = clean_up_commands(commands, tracker, all_flows)
 
     events: List[Event] = []
-
+    collected_corrections = []
     # TODO: should this really be reversed? 🤔
-    for command in reversed(commands):
+    reversed_commands = list(reversed(commands))
+    for i, command in enumerate(reversed_commands):
         if isinstance(command, CorrectSlotCommand):
             structlogger.debug("command_executor.correct_slot", command=command)
-            updated_slots = _slot_sets_after_latest_message(tracker)
-            events.append(SlotSet(command.name, command.value))
-            events.append(SlotSet(CORRECTED_SLOTS_SLOT, [s.key for s in updated_slots]))
+            collected_corrections.append(command)
+            # pulling in all subsequent correction commands into a single correction
+            if i < (len(reversed_commands) - 1) and \
+                isinstance(reversed_commands[i+1], CorrectSlotCommand):
+                continue
+            for correction in collected_corrections:
+                events.append(SlotSet(correction.name, correction.value))
+            events.append(SlotSet(CORRECTED_SLOTS_SLOT,
+                                  [s.name for s in collected_corrections]))
             flow_stack.push(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_CORRECTION_ID,
                     frame_type=StackFrameType.CORRECTION,
                 )
             )
+            collected_corrections = []
         elif isinstance(command, SetSlotCommand):
             structlogger.debug("command_executor.set_slot", command=command)
             events.append(SlotSet(command.name, command.value))
