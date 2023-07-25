@@ -21,8 +21,6 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.constants import (
-    MAPPING_TYPE,
-    SlotMappingType,
     MAPPING_CONDITIONS,
     ACTIVE_LOOP,
 )
