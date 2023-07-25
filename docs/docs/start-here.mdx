@@ -176,7 +176,7 @@ When a user answers "yes" or "no", a traditional NLU model predicts an intent li
 A second step (usually handled by the dialogue manager) then maps the intents to
 the `True/False` values of the `late_delivery` slot. 
 
-Instead, the *conversation handling* component directly outputs the command `SetSlot("late_delivery", True)`.
+Instead, the *conversation handling* component directly outputs a command to set the `late_delivery` slot to `True`.
 
 The *conversation handling* approach requires much less work to set up, since you don't need to worry about
 intents and entities and slot mappings. It is also more powerful because it allows us to 
