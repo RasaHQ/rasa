@@ -2,7 +2,7 @@ module.exports = {
     default: [
         'introduction',
         'rasa-pro',
-        'start-here',
+        'playground',
         {
             type: 'category',
             label: 'Installation',
@@ -265,6 +265,7 @@ module.exports = {
         },
     ],
     "llms": [
+        'start-here',
         'llms/large-language-models',
         'llms/llm-setup',
         {
