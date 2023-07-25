@@ -136,15 +136,16 @@ def init_project(args: argparse.Namespace, path: Text) -> None:
     print_train_or_instructions(args)
 
 
-def create_initial_project(path: Text, is_dm2: bool=False) -> None:
+def create_initial_project(path: Text, is_dm2: bool = False) -> None:
     """Creates directory structure and templates for initial project."""
     from distutils.dir_util import copy_tree
 
     copy_tree(scaffold_path(is_dm2), path)
 
 
-def scaffold_path(is_dm2: bool=False) -> Text:
+def scaffold_path(is_dm2: bool = False) -> Text:
     import pkg_resources
+
     if is_dm2:
         return pkg_resources.resource_filename(__name__, "initial_project_dm2")
     return pkg_resources.resource_filename(__name__, "initial_project")
