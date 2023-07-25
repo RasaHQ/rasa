@@ -1,0 +1,46 @@
+flows:
+  say_goodbye:
+    description: say goodbye to the user
+    steps:
+      - id: "0"
+        action: utter_goodbye
+  bot_challenge:
+    description: explain to the user that they are talking to a bot, if they ask
+    steps:
+      - id: "0"
+        action: utter_iamabot
+  greet:
+    description: greet the user and ask how they are doing. cheer them up if needed.
+    steps:
+      - id: "0"
+        question: good_mood
+        description: "can be true or false"
+        next:
+          - if: good_mood
+            then: "doing_great"
+          - else: "cheer_up"
+      - id: "doing_great"
+        action: utter_happy
+      - id: "cheer_up"
+        action: utter_cheer_up
+        next: "did_that_help" 
+      - id: "did_that_help"
+        action: utter_did_that_help
+  recommend_restaurant:
+    description: This flow recommends a restaurant
+    steps:
+      - id: "0"
+        question: cuisine
+        skip_if_filled: true
+        next: "1"
+      - id: "1"
+        question: price_range
+        skip_if_filled: true        
+        next: "2"
+      - id: "2"
+        question: city
+        skip_if_filled: true        
+        next: "3"
+      - id: "3"
+        action: utter_recommend_restaurant
+ 

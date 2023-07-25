@@ -265,6 +265,7 @@ module.exports = {
         },
     ],
     "llms": [
+        'start-here',
         'llms/large-language-models',
         'llms/llm-setup',
         {

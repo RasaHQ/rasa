@@ -46,7 +46,7 @@ def test_init_help(run: Callable[..., RunResult]):
 
     help_text = f"""usage: {RASA_EXE} init [-h] [-v] [-vv] [--quiet]
         [--logging-config-file LOGGING_CONFIG_FILE] [--no-prompt]
-        [--init-dir INIT_DIR]"""
+        [--init-dir INIT_DIR] [--dm2]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

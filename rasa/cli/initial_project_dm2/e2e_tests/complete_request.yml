@@ -1,0 +1,5 @@
+test_cases:
+  - test_case: user corrects recipient in the next message
+    steps:
+      - user: I'm looking for a cheap Chinese restaurant in Amsterdam
+      - utter: utter_recommend_restaurant
