@@ -24,6 +24,7 @@ def nlg_app(base_url="/"):
             "type": "object",
             "properties": {
                 "response": {"type": "string"},
+                "id": {"type": ["string", "null"]},
                 "arguments": {"type": "object"},
                 "tracker": {
                     "type": "object",
