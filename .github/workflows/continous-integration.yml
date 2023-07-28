@@ -1095,7 +1095,8 @@ jobs:
           IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
+          docker buildx bake --set *.platform=linux/amd64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
+          docker buildx bake --set *.platform=linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
 
           # Tag the image as latest
           if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
