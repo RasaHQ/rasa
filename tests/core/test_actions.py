@@ -1,10 +1,8 @@
-import asyncio
-
 import logging
 import textwrap
 from datetime import datetime
 from typing import List, Text, Any, Dict, Optional
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 import pytest
 from pytest import MonkeyPatch
@@ -823,90 +821,24 @@ def domain_with_response_ids() -> Domain:
     return domain
 
 
-@pytest.fixture
-def mock_message() -> Dict[Text, Any]:
-    return {"text": "test", "response_ids": ["1"]}
-
-
-@pytest.fixture
-def mock_nlg(mock_message, monkeypatch: MonkeyPatch) -> MagicMock:
-    _mock_nlg = MagicMock()
-
-    future = asyncio.Future()
-    future.set_result(mock_message)
-
-    _mock_nlg.generate = MagicMock()
-    _mock_nlg.generate.return_value = future
-    return _mock_nlg
-
-
-async def test_action_bot_response_with_one_response_id(
-    mock_nlg: MagicMock,
-    default_channel,
-    default_tracker,
-    domain_with_response_ids: Domain,
+async def test_response_with_response_id(
+    default_channel, domain_with_response_ids: Domain
 ) -> None:
-    await ActionBotResponse("utter_one_id").run(
-        default_channel, mock_nlg, default_tracker, domain_with_response_ids
+    nlg = TemplatedNaturalLanguageGenerator(domain_with_response_ids.responses)
+
+    events = await ActionBotResponse("utter_one_id").run(
+        default_channel,
+        nlg,
+        DialogueStateTracker("response_id", slots=[]),
+        domain_with_response_ids,
     )
 
-    mock_nlg.generate.assert_called_once_with(
-        "utter_one_id", default_tracker, default_channel.name(), response_ids=["1"]
-    )
-
-
-async def test_action_bot_response_with_multiple_response_id(
-    mock_nlg: MagicMock,
-    default_channel,
-    default_tracker,
-    domain_with_response_ids: Domain,
-) -> None:
-    await ActionBotResponse("utter_multiple_ids").run(
-        default_channel, mock_nlg, default_tracker, domain_with_response_ids
-    )
-
-    mock_nlg.generate.assert_called_once_with(
-        "utter_multiple_ids",
-        default_tracker,
-        default_channel.name(),
-        response_ids=["2", "3"],
-    )
-
-
-async def test_action_bot_response_with_empty_response_id_set(
-    mock_nlg: MagicMock,
-    default_channel,
-    default_tracker,
-    domain_with_response_ids: Domain,
-) -> None:
-    await ActionBotResponse("utter_no_id").run(
-        default_channel, mock_nlg, default_tracker, domain_with_response_ids
-    )
-
-    mock_nlg.generate.assert_called_once_with(
-        "utter_no_id",
-        default_tracker,
-        default_channel.name(),
-        response_ids=[],
-    )
-
-
-async def test_action_bot_response_with_non_existing_id_mapping(
-    mock_nlg: MagicMock,
-    default_channel,
-    default_tracker,
-    domain_with_response_ids: Domain,
-) -> None:
-    await ActionBotResponse("utter_non_existing").run(
-        default_channel, mock_nlg, default_tracker, domain_with_response_ids
-    )
-
-    mock_nlg.generate.assert_called_once_with(
-        "utter_non_existing",
-        default_tracker,
-        default_channel.name(),
-        response_ids=[],
-    )
+    assert events == [
+        BotUttered(
+            "test",
+            metadata={"id": "1", "utter_action": "utter_one_id"},
+        )
+    ]
 
 
 async def test_action_back(
