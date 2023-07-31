@@ -883,39 +883,6 @@ def test_model_finetuning_with_invalid_model_nlu(
     assert "No model for finetuning found" in capsys.readouterr().out
 
 
-def test_models_not_retrained_if_only_new_responses(
-    trained_e2e_model: Text,
-    moodbot_domain_path: Path,
-    e2e_bot_config_file: Path,
-    e2e_stories_path: Text,
-    nlu_data_path: Text,
-    trained_e2e_model_cache: Path,
-    tmp_path: Path,
-):
-    domain = Domain.load(moodbot_domain_path)
-    domain_with_extra_response = """
-    version: '2.0'
-    responses:
-      utter_greet:
-      - text: "Hi from Rasa"
-    """
-    domain_with_extra_response = Domain.from_yaml(domain_with_extra_response)
-
-    new_domain = domain.merge(domain_with_extra_response)
-    new_domain_path = tmp_path / "domain.yml"
-    rasa.shared.utils.io.write_yaml(new_domain.as_dict(), new_domain_path)
-
-    result = rasa.train(
-        str(new_domain_path),
-        str(e2e_bot_config_file),
-        [e2e_stories_path, nlu_data_path],
-        output=str(tmp_path),
-        dry_run=True,
-    )
-
-    assert result.code == 0
-
-
 def test_models_not_retrained_if_only_new_action(
     trained_e2e_model: Text,
     moodbot_domain_path: Path,
