@@ -10,6 +10,7 @@ def test_twilio_channel():
     input_channel = TwilioInput(
         account_sid="ACCOUNT_SID",
         # Find your Account SID and Auth Token at twilio.com/console
+        # deepcode ignore HardcodedNonCryptoSecret/test: Test credential
         auth_token="AUTH_TOKEN",
         # Phone Number you want to use
         twilio_number="TWILIO_NUMBER",
