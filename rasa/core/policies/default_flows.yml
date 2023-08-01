@@ -102,3 +102,14 @@ flows:
     steps:
       - id: "0"
         action: utter_internal_error_rasa
+
+  pattern_chitchat:
+    description: handle interactions with the user that are not task-oriented
+    steps:
+      - id: "0"
+        generation_prompt: |
+          You are an incredibly friendly assistant. Generate a short 
+          response to the user's comment in simple english.
+
+          User: {{latest_user_message}}
+          Response:

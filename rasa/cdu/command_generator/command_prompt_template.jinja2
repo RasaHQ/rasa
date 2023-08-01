@@ -37,8 +37,8 @@ Based on this information generate a list of actions you want to take. Your job 
 * Starting another flow, described by "StartFlow(flow_name)". An example would be "StartFlow(transfer_money)"
 * Cancelling the current flow, described by "CancelFlow()"
 * Disambiguating which flow should be started when there are multiple likely candidates. An example would be Disambiguate(transfer_money, list_transactions, check_balance)
-* Responding to a non-task-oriented user message, described by "ChitChat()".
-* Responding to a user message that requires additional knowledge from a knowledge database, described by "KnowledgeAnswer()"
+* Responding to knowledge-oriented user messages, described by "SearchAndReply()"
+* Responding to a casual, non-task-oriented user message, described by "ChitChat()".
 * Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one, described by "HumanHandoff()".
 
 ===

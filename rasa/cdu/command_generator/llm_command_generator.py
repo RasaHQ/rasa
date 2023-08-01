@@ -8,11 +8,10 @@ from rasa.cdu.command_generator.base import CommandGenerator
 from rasa.cdu.commands import (
     Command,
     ErrorCommand,
-    HandleInterruptionCommand,
     SetSlotCommand,
     CancelFlowCommand,
     StartFlowCommand,
-    HumanHandoffCommand,
+    HumanHandoffCommand, ChitChatAnswerCommand, KnowledgeAnswerCommand,
 )
 
 from rasa.core.policies.flow_policy import FlowStack
@@ -183,7 +182,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
         chitchat_re = re.compile(r"ChitChat\(\)")
-        knowledge_re = re.compile(r"KnowledgeAnswer\(\)")
+        knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumandHandoff\(\)")
         # listen_re = re.compile(r"Listen\(\)")
 
@@ -202,8 +201,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 commands.append(StartFlowCommand(flow=m.group(1).strip()))
             elif cancel_flow_re.search(action):
                 commands.append(CancelFlowCommand())
-            elif chitchat_re.search(action) or knowledge_re.search(action):
-                commands.append(HandleInterruptionCommand())
+            elif chitchat_re.search(action):
+                commands.append(ChitChatAnswerCommand())
+            elif knowledge_re.search(action):
+                commands.append(KnowledgeAnswerCommand())
             elif humand_handoff_re.search(action):
                 commands.append(HumanHandoffCommand())
             # elif listen_re.search(action):
