@@ -34,17 +34,37 @@ Installing Rasa Pro instead of Rasa Open Source will not break any existing scri
 
 ### Python Package Installation
 
-The Rasa Pro python package is named `rasa-plus`. The `rasa-plus` python packages as well as the docker containers are hosted on our GCP artifact registry.
+The Rasa Pro python package is named `rasa-plus`. The `rasa-plus` python packages as well as the Docker containers are hosted on our GCP Artifact Registry.
 As a prerequisite, you will need:
 
-- to [install](https://cloud.google.com/sdk/docs/install) and [initialize](https://cloud.google.com/sdk/docs/initializing) the Google Cloud CLI.
+- to [install](https://cloud.google.com/sdk/docs/install) the Google Cloud CLI.
 - to verify that the user or service account you are using has the required permissions to access the repository.
 
 #### Authentication Set-Up
+These steps assume that you are using a GCP Service Account Key which Rasa has provided to you.
 
-In order for the package manager of choice (e.g, `pip` or `poetry`) to have the necessary credentials to authenticate with the registry, follow the steps in the [Google documentation](https://cloud.google.com/artifact-registry/docs/python/authentication#keyring).
+Authenticate with GCP using the service account key.
 
-Where required, input the following parameters:
+```sh
+gcloud auth activate-service-account --key-file=service-account.json
+```
+
+Set up keyring to allow Pip to authenticate with GCP Artifact Registry by installing keyring and then the backend that supports GCP Artifact Registry
+
+```sh
+pip install keyring
+pip install keyrings.google-artifactregistry-auth
+```
+
+Verify that the backends have been installed correctly
+
+```sh
+keyring --list-backends
+```
+
+The results should include `ChainerBackend` and `GooglePythonAuth`.
+
+Print the repository configuration to add to your Python project:
 
 ```sh
 gcloud artifacts print-settings python \
@@ -55,7 +75,11 @@ gcloud artifacts print-settings python \
 
 #### Installing with `pip`
 
-Enter the following settings to the `.pypirc` file:
+Enter the following settings to the `.pypirc` file. This can be found:
+
+- Linux and MacOS: `$HOME/.pypirc`
+- Windows: `%USERPROFILE%\.pypirc`
+
 
 ```
 [distutils]
@@ -67,7 +91,19 @@ repository: https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/
 
 ```
 
-Next, add these specific settings to the pip configuration file as instructed in the [GCP authentication documentation](https://cloud.google.com/artifact-registry/docs/python/authentication#keyring-setup):
+Next, add these specific settings to the pip configuration file. The location for this depends on whether you want to update the per-user file or the file specific to a virtual environment that you are using.
+
+For the file associated with your operating system user:
+
+- Unix: `$HOME/.config/pip/pip.conf` or `$HOME/.pip/pip.conf`
+- MacOS: `/Library/Application Support/pip/pip.conf` or `$HOME/.config/pip/pip.conf`
+- Windows: `%APPDATA%\pip\pip.ini` or `%USERPROFILE%\pip\pip.ini`
+
+For virtual environments:
+
+- Unix and macOS: `$VIRTUAL_ENV/pip.conf`
+- Windows: `%VIRTUAL_ENV%\pip.ini`
+
 
 ```
 [global]
