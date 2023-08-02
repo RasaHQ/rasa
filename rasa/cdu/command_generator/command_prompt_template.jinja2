@@ -18,9 +18,9 @@ You are currently in the flow "{{ current_flow }}", which {{ current_flow.descri
 You have just asked the user for the slot "{{ question }}"{% if question_description %} ({{ question_description }}){% endif %}.
 
 {% if flow_slots|length > 0 %}
-Here are the slots of the currently active flow with their names and values:
+Here are the slots of the currently active flow:
 {% for slot in flow_slots -%}
-- {{ slot.name }}: {{ slot.value }}
+- name: {{ slot.name }}, value: {{ slot.value }}, type: {{ slot.type }}, description: {{ slot.description}}{% if slot.allowed_values %}, allowed values: {{ slot.allowed_values }}{% endif %}
 {% endfor %}
 {% endif %}
 {% else %}
