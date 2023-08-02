@@ -41,7 +41,7 @@ As a prerequisite, you will need:
 - to verify that the user or service account you are using has the required permissions to access the repository.
 
 #### Authentication Set-Up
-These steps assume that you are using a GCP Service Account Key which Rasa has provided to you.
+To authenticate you need use a service account key file provided by Rasa to authenticate with Google Cloud.
 
 Authenticate with GCP using the service account key.
 
@@ -115,7 +115,7 @@ Finally, you should be able to run `pip install rasa-plus`.
 
 #### Installing with `poetry`
 
-To install `rasa-plus` with `poetry`, you will need to associate the artifact registry URL with `rasa-plus` before installing it.
+To install `rasa-plus` with `poetry`, you will need to associate the Artifact Registry URL with `rasa-plus` before installing it.
 Note that you must upgrade poetry to the latest minor (`1.2.0`) in order for `poetry` to work with the GCP authentication set-up.
 Proceed with the following steps:
 
@@ -136,17 +136,17 @@ secondary = true
 
 ### Docker Image Installation
 
-The Rasa Pro docker image is named `rasa-plus`. The docker images are hosted on our GCP artifact registry.
+The Rasa Pro Docker image is named `rasa-plus`. The Docker images are hosted on our GCP Artifact Registry.
 As a prerequisite, you will need:
 
-- to [install](https://cloud.google.com/sdk/docs/install) and [initialize](https://cloud.google.com/sdk/docs/initializing) the Google Cloud CLI.
+- to [install](https://cloud.google.com/sdk/docs/install) the Google Cloud CLI.
 - to verify that the user or service account you are using has the required permissions to access the repository.
 
-To be able to pull the docker image you need use a key file provided by Rasa to authenticate with google cloud.
+To authenticate you need use a service account key file provided by Rasa to authenticate with Google Cloud.
 
 ```bash
 gcloud auth activate-service-account --key-file=${KEYFILE}
-gcloud auth list
+gcloud auth configure-docker europe-west3-docker.pkg.dev
 docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
 ```
 
