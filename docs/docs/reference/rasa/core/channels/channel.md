@@ -21,7 +21,8 @@ def __init__(text: Optional[Text] = None,
              parse_data: Dict[Text, Any] = None,
              input_channel: Optional[Text] = None,
              message_id: Optional[Text] = None,
-             metadata: Optional[Dict] = None) -> None
+             metadata: Optional[Dict] = None,
+             **kwargs: Any) -> None
 ```
 
 Creates a ``UserMessage`` object.
@@ -242,7 +243,6 @@ async def send_elements(recipient_id: Text, elements: Iterable[Dict[Text,
 ```
 
 Sends elements to the output.
-
 Default implementation will just post the elements as a string.
 
 #### send\_custom\_json
@@ -253,7 +253,6 @@ async def send_custom_json(recipient_id: Text, json_message: Dict[Text, Any],
 ```
 
 Sends json dict to the output channel.
-
 Default implementation will just post the json contents as a string.
 
 ## CollectingOutputChannel Objects
@@ -262,7 +261,7 @@ Default implementation will just post the json contents as a string.
 class CollectingOutputChannel(OutputChannel)
 ```
 
-Output channel that collects send messages in a list
+Output channel that collects send messages in a list.
 
 (doesn&#x27;t send them anywhere, just collects them).
 
