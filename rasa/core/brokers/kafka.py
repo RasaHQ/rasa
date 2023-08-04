@@ -63,13 +63,17 @@ class KafkaEventBroker(EventBroker):
                 SCRAM-SHA-512. Default: `PLAIN`
             ssl_cafile: Optional filename of ca file to use in certificate
                 verification.
-            ssl_certfile: Optional filename of file in pem format containing
+
+            ssl_certfile : Optional filename of file in pem format containing
                 the client certificate, as well as any ca certificates needed to
                 establish the certificate's authenticity.
-            ssl_keyfile: Optional filename containing the client private key.
-            ssl_check_hostname: Flag to configure whether ssl handshake
+
+            ssl_keyfile : Optional filename containing the client private key.
+
+            ssl_check_hostname : Flag to configure whether ssl handshake
                 should verify that the certificate matches the broker's hostname.
-            security_protocol: Protocol used to communicate with brokers.
+
+            security_protocol : Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
         """
         self.producer: Optional[Producer] = None
