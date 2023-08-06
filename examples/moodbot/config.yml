@@ -3,17 +3,10 @@ assistant_id: mood_bot
 language: en
 
 pipeline:
-  - name: "SpacyNLP"
-    model: "en_core_web_md"
-  - name: "SpacyTokenizer"
-  - name: "SpacyFeaturizer"
-  - name: "DIETClassifier"
-    entity_recognition: False
-    epochs: 1
+  - name: LLMCommandGenerator
+    llm:
+      model_name: gpt-4
 
 policies:
-  - name: TEDPolicy
-    max_history: 5
-    epochs: 1
-  - name: MemoizationPolicy
+  - name: rasa.core.policies.flow_policy.FlowPolicy
   - name: RulePolicy
