@@ -413,10 +413,25 @@ def test_pika_event_broker_configure_url(
     assert url == expected_url
 
 
-def test_celery_from_endpoint_config():
-    cfg = read_endpoint_config(
-        "data/test_endpoints/event_brokers/celery_endpoint.yml", "event_broker"
-    )
-    actual = await EventBroker.create(cfg)
+@pytest.fixture
+def celery_endpoint_config_string() -> str:
+    return """
+        event_broker:
+          type: celery
+          broker_url: rediss://:password@localhost:6379/0
+          task_name: tasks.event_logger
+          countdown: 2
+          priority: 1
+    """
+
+
+@pytest.fixture
+def celery_endpoint_config(celery_endpoint_config_string: str) -> EndpointConfig:
+    yaml_content = rasa.shared.utils.io.read_yaml(celery_endpoint_config_string)
+    return EndpointConfig.from_dict(yaml_content)
+
+
+async def test_celery_from_endpoint_config(celery_endpoint_config: EndpointConfig):
+    actual = await EventBroker.create(celery_endpoint_config)
 
     assert isinstance(actual, CeleryEventBroker)

@@ -16,11 +16,11 @@ class CeleryEventBroker(EventBroker):
     def __init__(
         self,
         broker_url: Optional[Text] = None,
-        task_name: Text = None,
+        task_queue_name: Text = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
         """Initializes `CeleryBrokerEvent`."""
-        self._task = self._get_task(broker_url, task_name)
+        self._task = self._get_task(broker_url, task_queue_name)
         self._task_kwargs: Dict[Text, Any] = kwargs
 
     def _get_task(
