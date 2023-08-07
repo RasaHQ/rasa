@@ -240,6 +240,33 @@ The `anonymization_topics` section contains a list of Kafka topics to which the 
 Each Kafka topic must have a `name` field and an `anonymization_rules` field. The `name` field specifies the name of the
 Kafka topic. The `anonymization_rules` field specifies the `id` of the anonymization rule list to be used for the Kafka topic.
 
+### Streaming anonymized events to Rasa X/Enterprise with Kafka
+
+Streaming anonymized events to Rasa X/Enterprise is only supported for Rasa X/Enterprise versions `1.3.0` and above.
+In addition, you must use the Kafka event broker, other event broker types are not supported.
+
+You can stream anonymized events to Rasa X/Enterprise via Kafka by adding the `rasa_x_consumer: true` key-value pair to
+the `anonymization_topics` section:
+
+```yaml
+event_broker:
+  type: kafka
+  partition_by_sender: True
+  url: localhost
+  anonymization_topics:
+    - name: topic_1
+      anonymization_rules: rules_1
+      rasa_x_consumer: true
+    - name: topic_2
+      anonymization_rules: rules_2
+```
+
+If multiple Kafka anonymization topics contain the `rasa_x_consumer` key-value pair, the anonymized events will be streamed
+to the Kafka topic that is mapped to the first Kafka anonymization topic that contains the `rasa_x_consumer` key-value pair.
+
+Note that the `rasa_x_consumer` key-value pair is optional. If it is not specified, the anonymized events will be published
+to the Kafka topic, but they will not be streamed to Rasa X/Enterprise.
+
 ## How to enable anonymization of PII in logs
 
 You can enable anonymization of PII in logs by filling the `logger` section in the `endpoints.yml` file.
@@ -257,3 +284,8 @@ The `anonymization_rules` field specifies the `id` of the anonymization rule lis
 We strongly recommend to run with log level INFO in production.
 Running with log level DEBUG will increase the assistant's response latency because of processing delays.
 :::
+
+Note that running `rasa shell` in debug mode with a Kafka event broker might result in logs related to the event publishing
+to be printed to console **after** the bot message. This behaviour is expected because the event anonymization and publishing
+is done asynchronously as a background task and completes after the assistant has already predicted and executed the
+bot response.
