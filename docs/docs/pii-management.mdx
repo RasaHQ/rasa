@@ -262,7 +262,8 @@ event_broker:
 ```
 
 If multiple Kafka anonymization topics contain the `rasa_x_consumer` key-value pair, the anonymized events will be streamed
-to the Kafka topic that is mapped to the first Kafka anonymization topic that contains the `rasa_x_consumer` key-value pair.
+to the Kafka topic that is mapped to the first topic in the `anonymization_topics` list that contains the `rasa_x_consumer`
+key-value pair.
 
 Note that the `rasa_x_consumer` key-value pair is optional. If it is not specified, the anonymized events will be published
 to the Kafka topic, but they will not be streamed to Rasa X/Enterprise.
@@ -287,5 +288,5 @@ Running with log level DEBUG will increase the assistant's response latency beca
 
 Note that running `rasa shell` in debug mode with a Kafka event broker might result in logs related to the event publishing
 to be printed to console **after** the bot message. This behaviour is expected because the event anonymization and publishing
-is done asynchronously as a background task and completes after the assistant has already predicted and executed the
+is done asynchronously as a background task, so it will complete after the assistant has already predicted and executed the
 bot response.
