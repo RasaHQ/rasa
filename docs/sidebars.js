@@ -265,4 +265,19 @@ module.exports = {
             ],
         },
     ],
+    "llms": [
+        'llms/large-language-models',
+        'llms/llm-setup',    
+        {
+            type: 'category',
+            label: 'LLM Components',
+            collapsed: false,
+            items: [
+                'llms/llm-intent',
+                'llms/llm-nlg',
+                'llms/llm-intentless',
+            ],
+        },
+        'llms/llm-custom',
+    ]
 };
