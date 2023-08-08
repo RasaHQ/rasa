@@ -706,18 +706,19 @@ class FlowExecutor:
                                 tracker,
                             )
                         else:
-                            found_first_event = False
-                            for event in reversed(tracker.events):
-                                if isinstance(event, SlotSet):
-                                    if event.key in corrected_slots:
-                                        if not found_first_event:
-                                            found_first_event = True
-                                        else:
-                                            events.append(
-                                                SlotSet(event.key, event.value)
-                                            )
-                                            break
-                            events.append(SlotSet(CORRECTED_SLOTS_SLOT, None))
+                            for corrected_slot in corrected_slots:
+                                found_first_event = False
+                                for event in reversed(tracker.events):
+                                    if isinstance(event, SlotSet):
+                                        if event.key == corrected_slot:
+                                            if not found_first_event:
+                                                found_first_event = True
+                                            else:
+                                                events.append(
+                                                    SlotSet(event.key, event.value)
+                                                )
+                                                break
+                        events.append(SlotSet(CORRECTED_SLOTS_SLOT, None))
             return ActionPrediction(None, 0.0, events=events)
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")
