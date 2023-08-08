@@ -695,17 +695,31 @@ class FlowExecutor:
                     and previous_flow_step
                     and current_frame.frame_type == StackFrameType.CORRECTION
                 ):
-                    # TODO: we need to figure out how to actually
-                    #    "undo" the changed slots
                     corrected_slots = tracker.get_slot(CORRECTED_SLOTS_SLOT)
                     if corrected_slots:
-                        self._correct_flow_position(
-                            corrected_slots, previous_flow_step, previous_flow, tracker
-                        )
-                    else:
-                        # TODO: we need to figure out how to actually "undo" the
-                        #    changed slots
-                        pass
+                        if (
+                            tracker.latest_action_name
+                            == "utter_corrected_previous_input"
+                        ):
+                            self._correct_flow_position(
+                                corrected_slots,
+                                previous_flow_step,
+                                previous_flow,
+                                tracker,
+                            )
+                        else:
+                            found_first_event = False
+                            for event in reversed(tracker.events):
+                                if isinstance(event, SlotSet):
+                                    if event.key in corrected_slots:
+                                        if not found_first_event:
+                                            found_first_event = True
+                                        else:
+                                            events.append(
+                                                SlotSet(event.key, event.value)
+                                            )
+                                            break
+                            events.append(SlotSet(CORRECTED_SLOTS_SLOT, None))
             return ActionPrediction(None, 0.0, events=events)
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")

@@ -72,10 +72,6 @@ flows:
       - id: "1"
         action: utter_corrected_previous_input
       - id: "2"
-        set_slots:
-          - rasa_corrected_slots: None
-        next: "3"
-      - id: "3"
         action: utter_not_corrected_previous_input
 
   pattern_cancel_flow:
