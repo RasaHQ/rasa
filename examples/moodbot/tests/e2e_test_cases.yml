@@ -2,16 +2,48 @@ test_cases:
   - test_case: greet happy
     steps:
       - user: hi
-      - utter: utter_how_are_you
+      - utter: utter_ask_how_are_you
       - user: 'happy'
       - utter: utter_happy
 
   - test_case: greet,sad,yes
     steps:
       - user: hi
-      - utter: utter_how_are_you
+      - utter: utter_ask_how_are_you
       - user: 'sad'
       - utter: utter_cheer_up
-      - utter: utter_did_that_help
+      - utter: utter_ask_did_that_help
       - user: 'yes'
       - utter: utter_happy
+
+  - test_case: greet,sad,no
+    steps:
+      - user: hi
+      - utter: utter_ask_how_are_you
+      - user: 'sad'
+      - utter: utter_cheer_up
+      - utter: utter_ask_did_that_help
+      - user: 'no'
+      - utter: utter_goodbye
+
+  - test_case: greet,happy,yes
+    steps:
+      - user: hi
+      - utter: utter_ask_how_are_you
+      - user: 'happy'
+      - utter: utter_happy
+
+  - test_case: goodbye
+    steps:
+      - user: bye
+      - utter: utter_goodbye
+
+  - test_case: bot_challenge
+    steps:
+      - user: are you a bot
+      - utter: utter_iamabot
+
+  - test_case: bot_challenge
+    steps:
+      - user: are you a AI
+      - utter: utter_iamabot
