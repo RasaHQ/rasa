@@ -59,7 +59,6 @@ from rasa.shared.core.constants import (
     CANCELLED_FLOW_SLOT,
     CORRECTED_SLOTS_SLOT,
     PREVIOUS_FLOW_SLOT,
-    RETURN_VALUE_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
@@ -1125,7 +1124,6 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
         CANCELLED_FLOW_SLOT: None,
         CORRECTED_SLOTS_SLOT: None,
         PREVIOUS_FLOW_SLOT: None,
-        RETURN_VALUE_SLOT: None,
     }
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [

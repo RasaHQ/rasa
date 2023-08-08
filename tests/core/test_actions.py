@@ -95,7 +95,6 @@ from rasa.shared.core.constants import (
     CANCELLED_FLOW_SLOT,
     PREVIOUS_FLOW_SLOT,
     CORRECTED_SLOTS_SLOT,
-    RETURN_VALUE_SLOT,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -248,7 +247,6 @@ async def test_remote_action_runs(
                     CANCELLED_FLOW_SLOT: None,
                     CORRECTED_SLOTS_SLOT: None,
                     PREVIOUS_FLOW_SLOT: None,
-                    RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
                 "latest_input_channel": None,
@@ -315,7 +313,6 @@ async def test_remote_action_logs_events(
                     CANCELLED_FLOW_SLOT: None,
                     CORRECTED_SLOTS_SLOT: None,
                     PREVIOUS_FLOW_SLOT: None,
-                    RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
                 "latest_input_channel": None,

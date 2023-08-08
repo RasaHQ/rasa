@@ -16,7 +16,6 @@ from rasa.shared.core.constants import (
     PREVIOUS_FLOW_SLOT,
     CANCELLED_FLOW_SLOT,
     CORRECTED_SLOTS_SLOT,
-    RETURN_VALUE_SLOT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import AnySlot
@@ -38,7 +37,6 @@ def test_rasa_file_importer(project: Text):
         AnySlot(PREVIOUS_FLOW_SLOT, mappings=[{}]),
         AnySlot(CANCELLED_FLOW_SLOT, mappings=[{}]),
         AnySlot(CORRECTED_SLOTS_SLOT, mappings=[{}]),
-        AnySlot(RETURN_VALUE_SLOT, mappings=[{}]),
         AnySlot(SESSION_START_METADATA_SLOT, mappings=[{}]),
     ]
     assert domain.entities == []

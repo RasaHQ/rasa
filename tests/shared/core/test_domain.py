@@ -918,7 +918,6 @@ def test_domain_from_multiple_files():
         "rasa_corrected_slots",
         "rasa_previous_flow",
         "requested_slot",
-        "return_value",
         "session_started_metadata",
     ]
 

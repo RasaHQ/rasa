@@ -39,7 +39,6 @@
     "rasa_corrected_slots": null,
     "rasa_previous_flow": null,
     "requested_slot": null,
-    "return_value": null,
     "session_started_metadata": null
   },
   "latest_input_channel": null,
