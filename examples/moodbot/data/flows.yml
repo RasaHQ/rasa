@@ -2,28 +2,24 @@ flows:
   greet:
     description: user has started a conversation with a greeting or asking what the bot can do
     steps:
-      - id: "1"
-        action: utter_greet
-
-  happy:
-    description: user says they are great or happy
-    steps:
-      - id: "1"
-        action: utter_happy
-
-  unhappy:
-    description: user says they are sad
-    steps:
       - id: "start"
+        question: how_are_you
+        next:
+          - if: how_are_you == "happy"
+            then: "happy"
+          - if: how_are_you == "sad"
+            then: "sad"
+      - id: "happy"
+        action: utter_happy
+      - id: "sad"
         action: utter_cheer_up
         next: "did_help"           # would be nice if this line wasn't required, default go to next step
       - id: "did_help"
-        action: utter_did_that_help
+        question: did_that_help
         next:
-          - if: yes_no == "affirm"
+          - if: "did_that_help"
             then: "helped"
-          - if: yes_no == "deny"
-            then: "didnt_help"
+          - else: "didnt_help"
       - id: "helped"
         action: utter_happy
       - id: "didnt_help"

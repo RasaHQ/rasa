@@ -1,0 +1,17 @@
+test_cases:
+  - test_case: greet happy
+    steps:
+      - user: hi
+      - utter: utter_how_are_you
+      - user: 'happy'
+      - utter: utter_happy
+
+  - test_case: greet,sad,yes
+    steps:
+      - user: hi
+      - utter: utter_how_are_you
+      - user: 'sad'
+      - utter: utter_cheer_up
+      - utter: utter_did_that_help
+      - user: 'yes'
+      - utter: utter_happy
