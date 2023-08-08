@@ -670,6 +670,10 @@ class FlowExecutor:
             # this is the end of the flow, so we'll pop it from the stack
             events = self._reset_scoped_slots(flow, tracker)
             structlogger.debug("flow.step.run.flowend", flow=flow)
+            structlogger.debug(
+                "flow.step.run.temp",
+                current_flow_step=self.flow_stack.top_flow_step(self.all_flows),
+            )
             if current_frame := self.flow_stack.pop():
                 previous_flow = self.flow_stack.top_flow(self.all_flows)
                 previous_flow_step = self.flow_stack.top_flow_step(self.all_flows)
@@ -696,11 +700,17 @@ class FlowExecutor:
                     and current_frame.frame_type == StackFrameType.CORRECTION
                 ):
                     corrected_slots = tracker.get_slot(CORRECTED_SLOTS_SLOT)
+                    print("*****************************8")
+                    structlogger.debug(
+                        "flow.step.run.flowend.corrected_slots",
+                        current_frame=current_frame,
+                        previous_flow_step=previous_flow_step,
+                        previous_flow=previous_flow,
+                    )
                     if corrected_slots:
-                        if (
-                            tracker.latest_action_name
-                            == "utter_corrected_previous_input"
-                        ):
+                        structlogger.debug("TLMI", tlmi=tracker.latest_message.intent)
+                        if tracker.latest_message.intent["name"] == "affirm":
+                            print("INSIDE CORRECTION")
                             self._correct_flow_position(
                                 corrected_slots,
                                 previous_flow_step,
