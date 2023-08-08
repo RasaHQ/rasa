@@ -14,6 +14,7 @@ from pypred import Predicate
 from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
+    INTENT_NAME_KEY,
 )
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -670,10 +671,6 @@ class FlowExecutor:
             # this is the end of the flow, so we'll pop it from the stack
             events = self._reset_scoped_slots(flow, tracker)
             structlogger.debug("flow.step.run.flowend", flow=flow)
-            structlogger.debug(
-                "flow.step.run.temp",
-                current_flow_step=self.flow_stack.top_flow_step(self.all_flows),
-            )
             if current_frame := self.flow_stack.pop():
                 previous_flow = self.flow_stack.top_flow(self.all_flows)
                 previous_flow_step = self.flow_stack.top_flow_step(self.all_flows)
@@ -700,17 +697,8 @@ class FlowExecutor:
                     and current_frame.frame_type == StackFrameType.CORRECTION
                 ):
                     corrected_slots = tracker.get_slot(CORRECTED_SLOTS_SLOT)
-                    print("*****************************8")
-                    structlogger.debug(
-                        "flow.step.run.flowend.corrected_slots",
-                        current_frame=current_frame,
-                        previous_flow_step=previous_flow_step,
-                        previous_flow=previous_flow,
-                    )
                     if corrected_slots:
-                        structlogger.debug("TLMI", tlmi=tracker.latest_message.intent)
-                        if tracker.latest_message.intent["name"] == "affirm":
-                            print("INSIDE CORRECTION")
+                        if tracker.latest_message.intent[INTENT_NAME_KEY] == "affirm":
                             self._correct_flow_position(
                                 corrected_slots,
                                 previous_flow_step,
