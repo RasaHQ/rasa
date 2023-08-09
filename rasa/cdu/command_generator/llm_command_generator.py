@@ -80,6 +80,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         self.prompt_template = self.config["prompt"]
         self._model_storage = model_storage
         self._resource = resource
+        self.llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
 
     @classmethod
     def create(
@@ -121,10 +122,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         Returns:
             generated text
         """
-        llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
-
         try:
-            return llm(prompt)
+            return self.llm(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
