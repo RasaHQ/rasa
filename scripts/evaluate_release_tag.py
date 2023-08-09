@@ -43,6 +43,10 @@ def filter_non_alpha_releases(tags: List[Version]) -> List[Version]:
     return [tag for tag in tags if tag.is_alpha is False]
 
 
+def filter_non_beta_relases(tags: List[Version]) -> List[Version]:
+    return [tag for tag in tags if tag.is_beta is False]
+
+
 def should_build_docs(tag: Version) -> bool:
     existing_tags = git_existing_tag_versions()
 
@@ -50,6 +54,11 @@ def should_build_docs(tag: Version) -> bool:
     non_alpha_releases.sort()
     latest_version = non_alpha_releases[-1]
     print(f"The latest non-alpha/rc/nightly tag is {latest_version}.")
+
+    non_beta_releases = filter_non_beta_relases(non_alpha_releases)
+    non_beta_releases.sort()
+    latest_version_non_beta = non_beta_releases[-1]
+    print(f"The latest non-beta tag is {latest_version_non_beta}.")
 
     previous_major = latest_version.major - 1
     previous_major_versions = [tag for tag in non_alpha_releases if tag.major == previous_major]
@@ -63,8 +72,8 @@ def should_build_docs(tag: Version) -> bool:
     elif tag >= latest_version:
         print(f"Tag {tag} is the latest version. Docs should be built.")
         need_to_build_docs = True
-    elif tag.major == previous_major and tag > previous_major_latest_version:
-        print(f"Tag {tag} is higher than the latest version for the previous major. Docs should be built.")
+    elif tag.minor == latest_version_non_beta.minor and tag >= latest_version_non_beta:
+        print(f"Tag {tag} is the latest non-beta version on the current minor. Docs should be built.")
         need_to_build_docs = True
     else:
         print(f"Tag {tag} is not the latest version. Docs should not be built.")
