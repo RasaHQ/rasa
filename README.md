@@ -90,9 +90,9 @@ We are very happy to receive and merge your contributions into this repository!
 
 To contribute via pull request, follow these steps:
 
-1. Create an issue describing the feature you want to work on (or
-   have a look at the [contributor board](https://github.com/orgs/RasaHQ/projects/23))
-2. Write your code, tests and documentation, and format them with ``black``
+1. Create an issue describing the bug/improvement you want to work on or pick up an
+   existing issue in [Jira](https://rasa-open-source.atlassian.net/jira/software/c/projects/OSS/boards/1)
+2. Follow our Pull Request guidelines: write code, test, documentation, changelog and follow our [Code Style](#code-style)
 3. Create a pull request describing your changes
 
 For more detailed instructions on how to contribute code, check out these [code contributor guidelines](CONTRIBUTING.md).
