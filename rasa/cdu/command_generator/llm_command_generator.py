@@ -254,9 +254,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                         return True
         return False
 
-    def allowed_values_for_slot(
-        self, slot: Slot
-    ) -> Optional[str]:
+    def allowed_values_for_slot(self, slot: Slot) -> Optional[str]:
         if slot.type_name == "bool":
             return str([True, False])
         if slot.type_name == "categorical":
@@ -278,7 +276,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                     "name": q.question,
                     "value": (tracker.get_slot(q.question) or "undefined"),
                     "type": tracker.slots[q.question].type_name,
-                    "allowed_values": self.allowed_values_for_slot(tracker.slots[q.question]),
+                    "allowed_values": self.allowed_values_for_slot(
+                        tracker.slots[q.question]
+                    ),
                     "description": q.description,
                 }
                 for q in top_flow.get_question_steps()
