@@ -991,6 +991,15 @@ class Domain:
                     f"but it already exists. 🤔"
                 )
 
+    def _add_user_profile_slot(self) -> None:
+        """Add a slot called `user_profile_slot` to the list of slots."""
+        if "user_profile" not in [slot.name for slot in self.slots]:
+            self.slots.append(
+                AnySlot(
+                    "user_profile", mappings=[], influence_conversation=False
+                )
+            )
+
     def _add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.
 

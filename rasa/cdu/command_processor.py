@@ -11,6 +11,7 @@ from rasa.cdu.commands import (
     ListenCommand,
     SetSlotCommand,
     StartFlowCommand,
+    UpdateUserProfileCommand,
     command_from_json,
 )
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
@@ -35,6 +36,10 @@ FLOW_PATTERN_CANCEl_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 FLOW_PATTERN_LISTEN_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "listen"
 
 FLOW_PATTERN_INTERNAL_ERROR_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "internal_error"
+
+FLOW_PATTERN_UPDATE_USER_PROFILE_ID = (
+    RASA_DEFAULT_FLOW_PATTERN_PREFIX + "update_user_profile"
+)
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
@@ -209,6 +214,14 @@ def execute_commands(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_INTERNAL_ERROR_ID,
                     frame_type=StackFrameType.CORRECTION,
+                )
+            )
+        elif isinstance(command, UpdateUserProfileCommand):
+            structlogger.debug("command_executor.update_user_profile", command=command)
+            flow_stack.push(
+                FlowStackFrame(
+                    flow_id=FLOW_PATTERN_UPDATE_USER_PROFILE_ID,
+                    frame_type=StackFrameType.REGULAR,
                 )
             )
 

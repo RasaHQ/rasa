@@ -13,6 +13,7 @@ from rasa.cdu.commands import (
     CancelFlowCommand,
     StartFlowCommand,
     HumanHandoffCommand,
+    UpdateUserProfileCommand,
 )
 
 from rasa.core.policies.flow_policy import FlowStack
@@ -185,6 +186,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         chitchat_re = re.compile(r"ChitChat\(\)")
         knowledge_re = re.compile(r"KnowledgeAnswer\(\)")
         humand_handoff_re = re.compile(r"HumandHandoff\(\)")
+        update_user_profile_re = re.compile(r"UpdateUserProfile\(\)")
         # listen_re = re.compile(r"Listen\(\)")
 
         for action in actions.strip().splitlines():
@@ -206,6 +208,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 commands.append(HandleInterruptionCommand())
             elif humand_handoff_re.search(action):
                 commands.append(HumanHandoffCommand())
+            elif update_user_profile_re.search(action):
+                commands.append(UpdateUserProfileCommand())
             # elif listen_re.search(action):
             #     commands.append(ListenCommand())
 

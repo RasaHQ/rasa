@@ -102,3 +102,9 @@ flows:
     steps:
       - id: "0"
         action: utter_internal_error_rasa
+
+  pattern_update_user_profile:
+    description: updates a user profile using an action
+    steps:
+      - id: "0"
+        action: action_update_user_profile

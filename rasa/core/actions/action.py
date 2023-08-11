@@ -112,6 +112,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionSendText(),
         ActionBack(),
         ActionExtractSlots(action_endpoint),
+        ActionUpdateUserProfile(),
     ]
 
 
@@ -1415,3 +1416,27 @@ def extract_slot_value_from_predefined_mapping(
         ]
 
     return value
+
+
+class ActionUpdateUserProfile(Action):
+    """Updates the user profile with slots' values."""
+
+    def name(self) -> Text:
+        return "action_update_user_profile"
+
+    def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> List[Event]:
+        """Updates the user profile."""
+        user_profile_slot = tracker.get_slot("user_profile")
+        if user_profile_slot is None:
+            user_profile_slot = {}
+
+        # set user profile properties
+
+        return [SetSlot("user_profile", user_profile_slot)]

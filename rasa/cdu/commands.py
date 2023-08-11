@@ -130,3 +130,10 @@ class ErrorCommand(Command):
     """A command to indicate that the bot failed to handle the dialogue."""
 
     command: str = "error"
+
+
+@dataclass
+class UpdateUserProfileCommand(Command):
+    """A command to indicate that the bot should update the user profile."""
+
+    command: str = "update user profile"
