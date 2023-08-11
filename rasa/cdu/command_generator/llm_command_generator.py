@@ -189,6 +189,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         update_user_profile_re = re.compile(r"UpdateUserProfile\(\)")
         # listen_re = re.compile(r"Listen\(\)")
 
+        structlogger.debug("predicted.actions", actions=actions)
+
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
                 slot_name = m.group(1).strip()
