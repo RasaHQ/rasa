@@ -34,6 +34,8 @@ def command_from_json(data: Dict[str, Any]) -> "Command":
         return ListenCommand()
     elif data.get("command") == "human handoff":
         return HumanHandoffCommand()
+    elif data.get("command") == "update user profile":
+        return UpdateUserProfileCommand(metadata=data.get("metadata"))
     else:
         raise ValueError(f"Unknown command type: {data}")
 

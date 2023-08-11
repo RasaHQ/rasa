@@ -40,7 +40,8 @@ Based on this information generate a list of actions you want to take. Your job 
 * Responding to a non-task-oriented user message, described by "ChitChat()".
 * Responding to a user message that requires additional knowledge from a knowledge database, described by "KnowledgeAnswer()"
 * Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one, described by "HumanHandoff()".
-* Updating a user profile with metadata about the user message, described by "UpdateUserProfile(metadata=metadata)". Metadata should be a dictionary of key-value pairs, for example: {"sentiment": "frustrated", "time_of_day": "2021-07-03 16:21:12.357246", "language": "english"}.
+* Updating a user profile with metadata about the user message, described by "UpdateUserProfile(metadata=metadata)". Metadata should be a dictionary of key-value pairs: an example would be {"sentiment": "frustrated", "time_of_day": "2021-07-03 16:21:12.357246", "language": "english"}.
+You should predict this "UpdateUserProfile(metadata=metadata)" action after every user message if you can extract any metadata from the message such as sentiment, time of day, or language available. If you do not have any metadata to extract, you should not predict this action.
 
 ===
 Write out the actions you want to take, one per line, in the order they should take place.
