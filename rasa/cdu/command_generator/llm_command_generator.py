@@ -186,7 +186,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
         chitchat_re = re.compile(r"ChitChat\(\)")
         knowledge_re = re.compile(r"KnowledgeAnswer\(\)")
-        humand_handoff_re = re.compile(r"HumandHandoff\(\)")
+        humand_handoff_re = re.compile(r"HumanHandoff\(\)")
 
         update_user_profile_re = re.compile(r"UpdateUserProfile\(([^)]+)\)")
 
@@ -214,11 +214,17 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             elif humand_handoff_re.search(action):
                 commands.append(HumanHandoffCommand())
             elif m := update_user_profile_re.search(action):
-                structlogger.debug("predicted.update_user_profile", action=action, first_match=m.group(1))
+                structlogger.debug(
+                    "predicted.update_user_profile",
+                    action=action,
+                    first_match=m.group(1),
+                )
 
                 try:
                     metadata = json.loads(m.group(1).strip())
-                    structlogger.debug("predicted.update_user_profile.metadata", metadata=metadata)
+                    structlogger.debug(
+                        "predicted.update_user_profile.metadata", metadata=metadata
+                    )
                 except json.JSONDecodeError as e:
                     raise ValueError("Error decoding JSON:", e)
 

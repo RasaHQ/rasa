@@ -13,6 +13,7 @@ from rasa.cdu.commands import (
     StartFlowCommand,
     UpdateUserProfileCommand,
     command_from_json,
+    HumanHandoffCommand,
 )
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
@@ -40,6 +41,8 @@ FLOW_PATTERN_INTERNAL_ERROR_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "internal_er
 FLOW_PATTERN_UPDATE_USER_PROFILE_ID = (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX + "update_user_profile"
 )
+
+FLOW_PATTERN_HUMAN_HANDOFF_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "human_handoff"
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
@@ -222,6 +225,13 @@ def execute_commands(
             flow_stack.push(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_UPDATE_USER_PROFILE_ID,
+                    frame_type=StackFrameType.REGULAR,
+                )
+            )
+        elif isinstance(command, HumanHandoffCommand):
+            flow_stack.push(
+                FlowStackFrame(
+                    flow_id=FLOW_PATTERN_HUMAN_HANDOFF_ID,
                     frame_type=StackFrameType.REGULAR,
                 )
             )

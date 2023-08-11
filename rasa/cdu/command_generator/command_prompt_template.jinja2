@@ -39,7 +39,7 @@ Based on this information generate a list of actions you want to take. Your job 
 * Disambiguating which flow should be started when there are multiple likely candidates. An example would be Disambiguate(transfer_money, list_transactions, check_balance)
 * Responding to a non-task-oriented user message, described by "ChitChat()".
 * Responding to a user message that requires additional knowledge from a knowledge database, described by "KnowledgeAnswer()"
-* Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one, described by "HumanHandoff()".
+* Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one, described by "HumanHandoff()". An example would be that the user says "I want to speak to a human" or "I am frustrated".
 * Updating a user profile with metadata about the user message, described by "UpdateUserProfile(metadata)". An example would be UpdateUserProfile({"sentiment": "frustrated", "language": "english"}). The metadata must contain both "sentiment" and "language" keys. This is a default action that should be predicted after every user message.
 
 ===
@@ -47,6 +47,8 @@ Write out the actions you want to take, one per line, in the order they should t
 Always extract metadata such as sentiment and language from the user message in a Python dictionary.
 The sentiment can take one of the following values: "positive", "neutral", "negative", "frustrated".
 Always predict "UpdateUserProfile(metadata)" as the first action, where metadata is the extracted Python dictionary.
+If the sentiment of the user is negative or frustrated more than 2 times based on the conversation history, predict "HumanHandoff()" as the first action.
+And if the user explicitly asks to speak to a human, predict "HumanHandoff()" as the first action.
 Do not fill slots with abstract values or placeholders.
 Only use information provided by the user.
 Strictly adhere to the provided action types listed above.

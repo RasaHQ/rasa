@@ -35,6 +35,19 @@ responses:
 
   utter_internal_error_rasa:
     - text: Sorry, I'm having trouble understanding you right now. Please try again later.
+  
+  utter_ask_confirm_human_handoff:
+    - text: "Do you want to talk to a human?"
+      buttons:
+        - payload: /affirm
+          title: "Yes, connect me to a human agent now"
+        - payload: /deny
+          title: "No"
+  
+  utter_lets_continue:
+    - text: "Alright, let's continue with the topic."
+      metadata: 
+        rephrase: True
 
 slots:
   confirm_correction:
@@ -50,6 +63,20 @@ slots:
         value: "False"
         conditions:
           - active_loop: question_confirm_correction
+
+  confirm_human_handoff:
+    type: text
+    mappings:
+      - intent: affirm
+        type: from_intent
+        value: "True"
+        conditions:
+          - active_loop: question_confirm_human_handoff
+      - intent: deny
+        type: from_intent
+        value: "False"
+        conditions:
+          - active_loop: question_confirm_human_handoff
 
 flows:  
   pattern_continue_interrupted:
@@ -108,3 +135,19 @@ flows:
     steps:
       - id: "0"
         action: action_update_user_profile
+
+  pattern_human_handoff:
+    description: Hands off to a human
+    steps:
+      - id: "0"
+        question: confirm_human_handoff
+        next:
+          - if: confirm_human_handoff
+            then: "1"
+          - else: "2"
+      - id: "1"
+        action: action_human_handoff
+      - id: "2"
+        action: utter_lets_continue
+
+        

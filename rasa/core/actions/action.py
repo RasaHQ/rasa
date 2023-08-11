@@ -112,7 +112,6 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionSendText(),
         ActionBack(),
         ActionExtractSlots(action_endpoint),
-        ActionUpdateUserProfile(),
     ]
 
 
