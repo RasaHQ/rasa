@@ -31,15 +31,12 @@ flows:
     steps:
       - id: "0"
         question: cuisine
-        skip_if_filled: true
         next: "1"
       - id: "1"
         question: price_range
-        skip_if_filled: true        
         next: "2"
       - id: "2"
         question: city
-        skip_if_filled: true        
         next: "3"
       - id: "3"
         action: utter_recommend_restaurant
