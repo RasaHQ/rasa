@@ -64,14 +64,6 @@ keyring --list-backends
 
 The results should include `ChainerBackend` and `GooglePythonAuth`.
 
-Print the repository configuration to add to your Python project:
-
-```sh
-gcloud artifacts print-settings python \
-    --project=rasa-releases \
-    --repository=rasa-plus-py \
-    --location=europe-west3
-```
 
 #### Installing with `pip`
 
@@ -95,13 +87,13 @@ Next, add these specific settings to the pip configuration file. The location fo
 
 For the file associated with your operating system user:
 
-- Unix: `$HOME/.config/pip/pip.conf` or `$HOME/.pip/pip.conf`
+- Linux: `$HOME/.config/pip/pip.conf` or `$HOME/.pip/pip.conf`
 - MacOS: `/Library/Application Support/pip/pip.conf` or `$HOME/.config/pip/pip.conf`
 - Windows: `%APPDATA%\pip\pip.ini` or `%USERPROFILE%\pip\pip.ini`
 
 For virtual environments:
 
-- Unix and macOS: `$VIRTUAL_ENV/pip.conf`
+- Linux and macOS: `$VIRTUAL_ENV/pip.conf`
 - Windows: `%VIRTUAL_ENV%\pip.ini`
 
 
