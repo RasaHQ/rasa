@@ -1437,6 +1437,10 @@ class ActionUpdateUserProfile(Action):
         if user_profile_slot is None:
             user_profile_slot = {}
 
-        # set user profile properties
+        metadata = tracker.get_slot("metadata")
 
-        return [SetSlot("user_profile", user_profile_slot)]
+        if metadata is not None:
+            for key, value in metadata.items():
+                user_profile_slot[key] = value
+
+        return [SlotSet("user_profile", user_profile_slot)]

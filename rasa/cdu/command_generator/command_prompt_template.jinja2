@@ -40,7 +40,7 @@ Based on this information generate a list of actions you want to take. Your job 
 * Responding to a non-task-oriented user message, described by "ChitChat()".
 * Responding to a user message that requires additional knowledge from a knowledge database, described by "KnowledgeAnswer()"
 * Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one, described by "HumanHandoff()".
-* Updating a user profile with information from the user message, described by "UpdateUserProfile()".
+* Updating a user profile with metadata about the user message, described by "UpdateUserProfile(metadata=metadata)". Metadata should be a dictionary of key-value pairs, e.g. {"sentiment": "frustrated", "time_of_day": "2021-07-03 16:21:12.357246"}.
 
 ===
 Write out the actions you want to take, one per line, in the order they should take place.

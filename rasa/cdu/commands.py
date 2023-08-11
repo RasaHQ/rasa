@@ -137,3 +137,4 @@ class UpdateUserProfileCommand(Command):
     """A command to indicate that the bot should update the user profile."""
 
     command: str = "update user profile"
+    metadata: Dict[str, Any] = None

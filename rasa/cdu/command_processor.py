@@ -218,6 +218,7 @@ def execute_commands(
             )
         elif isinstance(command, UpdateUserProfileCommand):
             structlogger.debug("command_executor.update_user_profile", command=command)
+            events.append(SlotSet("metadata", command.metadata))
             flow_stack.push(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_UPDATE_USER_PROFILE_ID,

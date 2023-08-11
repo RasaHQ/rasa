@@ -953,6 +953,7 @@ class Domain:
         """Sets up the default slots and slot values for the domain."""
         self._add_requested_slot()
         self._add_flow_slots()
+        self._add_user_profile_slot()
         self._add_knowledge_base_slots()
         self._add_categorical_slot_default_value()
         self._add_session_metadata_slot()
@@ -993,12 +994,14 @@ class Domain:
 
     def _add_user_profile_slot(self) -> None:
         """Add a slot called `user_profile_slot` to the list of slots."""
-        if "user_profile" not in [slot.name for slot in self.slots]:
-            self.slots.append(
-                AnySlot(
-                    "user_profile", mappings=[], influence_conversation=False
+        user_profile_slots = ["user_profile", "metadata"]
+        existing_domain_slots = [slot.name for slot in self.slots]
+
+        for slot in user_profile_slots:
+            if slot not in existing_domain_slots:
+                self.slots.append(
+                    AnySlot(slot, mappings=[], influence_conversation=False)
                 )
-            )
 
     def _add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.
