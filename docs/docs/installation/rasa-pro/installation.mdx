@@ -142,6 +142,26 @@ gcloud auth configure-docker europe-west3-docker.pkg.dev
 docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
 ```
 
+### Using An Intermediate Repository
+If you are using your own intermediate repository to cache libraries or dependencies (such as Artifactory or Nexus Repository Manager), you may need to generate a set of static credentials that allow you to authenticate with GCP Artifact Registry.
+
+As a prerequisite, you will need:
+
+- to [install](https://cloud.google.com/sdk/docs/install) the Google Cloud CLI.
+- to verify that the user or service account you are using has the required permissions to access the repository.
+
+To generate your credentials, run:
+
+```sh
+gcloud artifacts print-settings python \
+    --project=rasa-releases \
+    --repository=rasa-plus-py \
+    --location=europe-west3 \
+    --json-key=service-account.json
+```
+
+Your credentials can be found in the output. The username will be `_json_key_base64` and the password will be a long, base64 encoded string.
+
 ### Runtime Configuration
 
 Rasa Pro will look for your license in the env var `RASA_PRO_LICENSE`.
