@@ -1,4 +1,5 @@
 import importlib.resources
+import json
 import re
 from typing import Dict, Any, Optional, List
 
@@ -186,7 +187,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         chitchat_re = re.compile(r"ChitChat\(\)")
         knowledge_re = re.compile(r"KnowledgeAnswer\(\)")
         humand_handoff_re = re.compile(r"HumandHandoff\(\)")
-        update_user_profile_re = re.compile(r"UpdateUserProfile\(\)")
+
+        update_user_profile_re = re.compile(r"UpdateUserProfile\(([^)]+)\)")
+
         # listen_re = re.compile(r"Listen\(\)")
 
         structlogger.debug("predicted.actions", actions=actions)
@@ -210,8 +213,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 commands.append(HandleInterruptionCommand())
             elif humand_handoff_re.search(action):
                 commands.append(HumanHandoffCommand())
-            elif update_user_profile_re.search(action):
-                commands.append(UpdateUserProfileCommand())
+            elif m := update_user_profile_re.search(action):
+                structlogger.debug("predicted.update_user_profile", action=action, first_match=m.group(1))
+
+                try:
+                    metadata = json.loads(m.group(1).strip())
+                    structlogger.debug("predicted.update_user_profile.metadata", metadata=metadata)
+                except json.JSONDecodeError as e:
+                    raise ValueError("Error decoding JSON:", e)
+
+                commands.append(UpdateUserProfileCommand(metadata=metadata))
             # elif listen_re.search(action):
             #     commands.append(ListenCommand())
 
