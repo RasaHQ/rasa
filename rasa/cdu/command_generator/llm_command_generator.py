@@ -26,6 +26,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.slots import Slot
 from rasa.shared.nlu.constants import (
     TEXT,
 )
@@ -162,7 +163,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     @staticmethod
     def is_hallucinated_value(value: str) -> bool:
-        return "_" in value or value in {
+        return value in {
             "[missing information]",
             "[missing]",
             "None",
@@ -253,6 +254,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                         return True
         return False
 
+    def allowed_values_for_slot(
+        self, slot: Slot
+    ) -> Optional[str]:
+        if slot.type_name == "bool":
+            return str([True, False])
+        if slot.type_name == "categorical":
+            return str([v for v in slot.values if not v == "__other__"])
+        else:
+            return None
+
     def render_template(
         self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
     ) -> str:
@@ -267,6 +278,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                     "name": q.question,
                     "value": (tracker.get_slot(q.question) or "undefined"),
                     "type": tracker.slots[q.question].type_name,
+                    "allowed_values": self.allowed_values_for_slot(tracker.slots[q.question]),
                     "description": q.description,
                 }
                 for q in top_flow.get_question_steps()
