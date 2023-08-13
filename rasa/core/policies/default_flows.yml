@@ -4,24 +4,9 @@ responses:
     - text: Let's continue with the topic {rasa_previous_flow}.
       metadata: 
         rephrase: True
-
-  utter_ask_confirm_correction:
-    - text: "Do you want to update your information?"
-      buttons:
-        - payload: /affirm
-          title: Yes
-        - payload: /deny
-          title: No, please keep the previous information
-      metadata: 
-        rephrase: True
   
   utter_corrected_previous_input:
     - text: "Ok, I corrected the previous input."
-      metadata: 
-        rephrase: True
-  
-  utter_not_corrected_previous_input:
-    - text: "Ok, I did not correct the previous input."
       metadata: 
         rephrase: True
 
@@ -36,21 +21,6 @@ responses:
   utter_internal_error_rasa:
     - text: Sorry, I'm having trouble understanding you right now. Please try again later.
 
-slots:
-  confirm_correction:
-    type: text
-    mappings:
-      - intent: affirm
-        type: from_intent
-        value: "True"
-        conditions:
-          - active_loop: question_confirm_correction
-      - intent: deny
-        type: from_intent
-        value: "False"
-        conditions:
-          - active_loop: question_confirm_correction
-
 flows:  
   pattern_continue_interrupted:
     description: A meta flow that should be started to continue an interrupted flow. 
@@ -64,15 +34,7 @@ flows:
 
     steps:
       - id: "0"
-        question: confirm_correction
-        next:
-          - if: confirm_correction
-            then: "1"
-          - else: "2"
-      - id: "1"
         action: utter_corrected_previous_input
-      - id: "2"
-        action: utter_not_corrected_previous_input
 
   pattern_cancel_flow:
     description: A meta flow that's started when a flow is cancelled.

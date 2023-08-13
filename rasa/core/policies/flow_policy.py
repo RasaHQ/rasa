@@ -14,7 +14,6 @@ from pypred import Predicate
 from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
-    INTENT_NAME_KEY,
 )
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -698,27 +697,10 @@ class FlowExecutor:
                 ):
                     corrected_slots = tracker.get_slot(CORRECTED_SLOTS_SLOT)
                     if corrected_slots:
-                        if tracker.latest_message.intent[INTENT_NAME_KEY] == "affirm":
-                            self._correct_flow_position(
-                                corrected_slots,
-                                previous_flow_step,
-                                previous_flow,
-                                tracker,
-                            )
-                        else:
-                            for corrected_slot in corrected_slots:
-                                found_first_event = False
-                                for event in reversed(tracker.events):
-                                    if isinstance(event, SlotSet):
-                                        if event.key == corrected_slot:
-                                            if not found_first_event:
-                                                found_first_event = True
-                                            else:
-                                                events.append(
-                                                    SlotSet(event.key, event.value)
-                                                )
-                                                break
-                        events.append(SlotSet(CORRECTED_SLOTS_SLOT, None))
+                        self._correct_flow_position(
+                            corrected_slots, previous_flow_step, previous_flow, tracker
+                        )
+
             return ActionPrediction(None, 0.0, events=events)
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")

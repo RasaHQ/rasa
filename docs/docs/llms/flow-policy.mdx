@@ -170,6 +170,67 @@ prior input. The `FlowPolicy` depends on another component, like the
 and set the corresponding slots. Based on this, the `FlowPolicy` initiates the
 correction flow.
 
+### Cancelling an initiated correction
+
+Users have the option to cancel a correction initiated by them by adjusting the default
+ flow for pattern correction. The provided example demonstrates how to modify the 
+ default flow effectively. The confirm_correction question can be used to confirm if 
+ the user wants to accept the correction that was initiated. A custom action is 
+ used to set the values of the slot before correction.
+
+````yaml title="flows.yml"
+flows:
+  pattern_correction:
+    description: A meta flow that should be started to correct a previous user input.
+
+    steps:
+      - id: "0"
+        question: confirm_correction
+        next:
+          - if: confirm_correction
+            then: "1"
+          - else: "2"
+      - id: "1"
+        action: utter_corrected_previous_input
+      - id: "2"
+        action: action_cancel_correction
+        next: "3"
+      - id: "3"
+        action: utter_not_corrected_previous_input
+```
+
+```python
+from typing import Any, Dict
+from rasa_sdk import Action, Tracker
+from rasa_sdk.events import SlotSet
+from rasa_sdk.executor import CollectingDispatcher
+
+
+class CancelCorrectionTemplate(Action):
+
+    def name(self) -> str:
+        return "action_cancel_correction"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker, domain: Dict[str, Any]):
+        events = []
+        CORRECTED_SLOTS_SLOT = "rasa_corrected_slots"
+        corrected_slots = tracker.get_slot(CORRECTED_SLOTS_SLOT)
+        if corrected_slots and tracker.latest_message.intent["name"] == "deny":
+            for corrected_slot in corrected_slots:
+                found_first_event = False
+                for event in reversed(tracker.events):
+                    if isinstance(event, SlotSet) and event.key == corrected_slot:
+                        if not found_first_event:
+                            found_first_event = True
+                        else:
+                            events.append(SlotSet(event.key, event.value))
+                            break
+        events.append(SlotSet(CORRECTED_SLOTS_SLOT, None))
+        return events
+
+```
+
 ## Configuration
 
 No additional configuration is required for the FlowPolicy beyond what's already
@@ -198,3 +259,5 @@ A flow can be initiated in several ways:
 4. A flow starts when another policy predicts the corresponding flow action
    named `flow_{flow_name}`. This action pushes the flow onto the flow stack,
    and the `FlowPolicy` executes it.
+
+
