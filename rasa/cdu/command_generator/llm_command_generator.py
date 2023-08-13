@@ -141,10 +141,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if flows is None or tracker is None:
             # cannot do anything if there are no flows or no tracker
             return []
-        flows_without_patterns = FlowsList(
-            [f for f in flows.underlying_flows if not f.is_handling_pattern()]
-        )
-        flow_prompt = self.render_template(message, tracker, flows_without_patterns)
+        flow_prompt = self.render_template(message, tracker, flows)
         structlogger.info(
             "llm_command_generator.predict_commands.prompt_rendered", prompt=flow_prompt
         )
@@ -265,6 +262,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     def render_template(
         self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
     ) -> str:
+        flows_without_patterns = FlowsList(
+            [f for f in flows.underlying_flows if not f.is_handling_pattern()]
+        )
         flow_stack = FlowStack.from_tracker(tracker)
         top_flow = flow_stack.top_flow(flows) if flow_stack is not None else None
         current_step = (
@@ -297,7 +297,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         current_conversation += f"\nUSER: {latest_user_message}"
 
         inputs = {
-            "available_flows": self.create_template_inputs(flows, tracker),
+            "available_flows": self.create_template_inputs(
+                flows_without_patterns, tracker
+            ),
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
             "current_flow": top_flow.id if top_flow is not None else None,
