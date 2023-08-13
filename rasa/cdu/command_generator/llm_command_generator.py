@@ -255,7 +255,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if slot.type_name == "bool":
             return str([True, False])
         if slot.type_name == "categorical":
-            return str([v for v in slot.values if not v == "__other__"])  # type: ignore[attr-defined]
+            slot_values = slot.values  # type: ignore[attr-defined]
+            return str([v for v in slot_values if not v == "__other__"])
         else:
             return None
 
