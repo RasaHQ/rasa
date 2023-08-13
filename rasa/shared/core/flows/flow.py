@@ -931,7 +931,7 @@ class QuestionFlowStep(FlowStep):
 
     question: Text
     """The question of the flow step."""
-    skip_if_filled: bool = False
+    skip_if_filled: bool = True
     """Whether to skip the question if the slot is already filled."""
     scope: QuestionScope = QuestionScope.FLOW
     """how the question is scoped, determins when to reset its value."""
@@ -949,7 +949,7 @@ class QuestionFlowStep(FlowStep):
         base = super()._from_json(flow_step_config)
         return QuestionFlowStep(
             question=flow_step_config.get("question", ""),
-            skip_if_filled=flow_step_config.get("skip_if_filled", False),
+            skip_if_filled=flow_step_config.get("skip_if_filled", True),
             scope=QuestionScope.from_str(flow_step_config.get("scope")),
             **base.__dict__,
         )

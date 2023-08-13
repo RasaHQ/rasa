@@ -26,6 +26,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.slots import Slot
 from rasa.shared.nlu.constants import (
     TEXT,
 )
@@ -139,10 +140,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if flows is None or tracker is None:
             # cannot do anything if there are no flows or no tracker
             return []
-        flows_without_patterns = FlowsList(
-            [f for f in flows.underlying_flows if not f.is_handling_pattern()]
-        )
-        flow_prompt = self.render_template(message, tracker, flows_without_patterns)
+        flow_prompt = self.render_template(message, tracker, flows)
         structlogger.info(
             "llm_command_generator.predict_commands.prompt_rendered", prompt=flow_prompt
         )
@@ -161,7 +159,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     @staticmethod
     def is_hallucinated_value(value: str) -> bool:
-        return "_" in value or value in {
+        return value in {
             "[missing information]",
             "[missing]",
             "None",
@@ -252,9 +250,21 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                         return True
         return False
 
+    def allowed_values_for_slot(self, slot: Slot) -> Optional[str]:
+        if slot.type_name == "bool":
+            return str([True, False])
+        if slot.type_name == "categorical":
+            slot_values = slot.values  # type: ignore[attr-defined]
+            return str([v for v in slot_values if not v == "__other__"])
+        else:
+            return None
+
     def render_template(
         self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
     ) -> str:
+        flows_without_patterns = FlowsList(
+            [f for f in flows.underlying_flows if not f.is_handling_pattern()]
+        )
         flow_stack = FlowStack.from_tracker(tracker)
         top_flow = flow_stack.top_flow(flows) if flow_stack is not None else None
         current_step = (
@@ -266,6 +276,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                     "name": q.question,
                     "value": (tracker.get_slot(q.question) or "undefined"),
                     "type": tracker.slots[q.question].type_name,
+                    "allowed_values": self.allowed_values_for_slot(
+                        tracker.slots[q.question]
+                    ),
                     "description": q.description,
                 }
                 for q in top_flow.get_question_steps()
@@ -284,7 +297,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         current_conversation += f"\nUSER: {latest_user_message}"
 
         inputs = {
-            "available_flows": self.create_template_inputs(flows, tracker),
+            "available_flows": self.create_template_inputs(
+                flows_without_patterns, tracker
+            ),
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
             "current_flow": top_flow.id if top_flow is not None else None,
