@@ -852,6 +852,23 @@ def create_app(
                 f"An unexpected error occurred. Error: {e}",
             )
 
+    @app.get("/billable_conversations")
+    async def billable_conversations(request: Request) -> HTTPResponse:
+        """Get the number of billable conversations."""
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        try:
+            billable = await app.ctx.agent.tracker_store.get_events(start_date, end_date)
+            return response.json({"billable": billable})
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
+            )
+
+
     @app.post("/conversations/<conversation_id:path>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
