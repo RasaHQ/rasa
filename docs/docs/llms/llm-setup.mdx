@@ -146,7 +146,7 @@ To configure these parameters, follow these steps:
 
 3. To configure the `deployment` in the config.yml file. add it in the pipeline component like this:
 
-    ```
+    ```yaml title="config.yml"
     - name: rasa_plus.ml.LLMIntentClassifier
       fallback_intent: "out_of_scope"
       embeddings:
@@ -157,24 +157,24 @@ To configure these parameters, follow these steps:
 
 4. To configure the `engine` in the config file, add it in the pipeline component like this: 
   
-  ```
-  - name: LLMCommandGenerator
-    llm:
-      model_name: gpt-3.5-turbo
-      engine: nameofdeployment
-  ```
+    ```yaml title="config.yml"
+    - name: LLMCommandGenerator
+      llm:
+        model_name: gpt-3.5-turbo
+        engine: nameofdeployment
+    ```
 
 5. To configure `chunk_size` in the config file, add it in the pipeline components under `llm` object like this:
 
-  ```
-  - name: rasa_plus.ml.LLMIntentClassifier
+    ```yaml title="config.yml"
+    - name: rasa_plus.ml.LLMIntentClassifier
       fallback_intent: "out_of_scope"
       embeddings:
         type: "openai"
         model_name: "text-embedding-ada-002" 
         deployment: "name_of_deployment_on_azure"
         chunk_size: 16
-  ```
+    ```
 
 ## Other LLMs & Embeddings
 
