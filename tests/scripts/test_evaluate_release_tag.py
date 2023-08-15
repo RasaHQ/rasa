@@ -17,7 +17,13 @@ from unittest.mock import patch
             [Version("1.1.0"), Version("2.2.0")],
         ),
         (
-            [Version("1.1.0"), Version("2.2.0"), Version("1.1.1a1"), Version("1.1.1b1"), Version("1.1.1rc1")],
+            [
+                Version("1.1.0"),
+                Version("2.2.0"),
+                Version("1.1.1a1"),
+                Version("1.1.1b1"),
+                Version("1.1.1rc1"),
+            ],
             [Version("1.1.0"), Version("2.2.0")],
         ),
     ],
@@ -41,7 +47,12 @@ def test_filter_ga_releases(releases: List[Version], expected: List[Version]):
             True,
         ),
         (
-            [Version("1.1.0"), Version("2.2.0"), Version("2.3.0b1"), Version("2.4.0a1")],
+            [
+                Version("1.1.0"),
+                Version("2.2.0"),
+                Version("2.3.0b1"),
+                Version("2.4.0a1"),
+            ],
             Version("2.2.1"),
             True,
         ),
