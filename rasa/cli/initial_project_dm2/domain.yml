@@ -46,8 +46,8 @@ responses:
   - text: "Did that help you?"
 
   utter_flow_continue_interrupted: 
-  - text: Let's continue with the previous topic {flow_name}.
-    metadata: {allow_variation: True}
+  - text: Let's continue with the previous topic {rasa_previous_flow}.
+    metadata: {rephrase: True}
 
   utter_happy:
   - text: "Great, carry on!"
