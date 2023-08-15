@@ -586,7 +586,6 @@ jobs:
             -Dsonar.organization=rasahq
             -Dsonar.projectKey=RasaHQ_rasa
             -Dsonar.sources=.
-            -Dsonar.python.coverage.reportPaths=tests_coverage/coverage.xml
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.verbose=true
 
