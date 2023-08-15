@@ -156,13 +156,6 @@ To configure these parameters, follow these steps:
         chunk_size: 10 
     ```
 
-:::caution
-
-Your Azure OpenAI instance might have some limits on the number of text chunks you can pass at once to generate
-embeddings. Thus it is important to also configure a reasonable chunk_size based on your rate limits.
-
-:::
-
 4. To configure the `engine` in the config file, add it in the pipeline component like this: 
   
   ```
@@ -171,6 +164,12 @@ embeddings. Thus it is important to also configure a reasonable chunk_size based
       model_name: gpt-3.5-turbo
       engine: nameofdeployment
   ```
+:::caution
+
+Your Azure OpenAI instance might have some limits on the number of text chunks you can pass at once to generate
+embeddings. Thus it is also important to also configure a reasonable chunk_size based on your rate limits.
+
+:::
 
 ## Other LLMs & Embeddings
 
