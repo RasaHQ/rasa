@@ -97,8 +97,8 @@ to be configured:
   you must also add `deployment` parameter to the config.yml
 - `engine`: in case, you are using the chat models from azure openai, you must also create a new openAI deployment
   on azure, and provide the name of the deployment in the config.yml using `engine` parameter.
-  
-
+- `chunk_size`: some azure plans might restrict you from sending larger chunks of text for embeddings. by default, `chunk_size` is 1000
+  but this can also be configured to a lower value in the config.yml
 
 To configure these parameters, follow these steps:
 
@@ -153,7 +153,6 @@ To configure these parameters, follow these steps:
         type: "openai"
         model_name: "text-embedding-ada-002" 
         deployment: "name_of_deployment_on_azure"
-        chunk_size: 10 
     ```
 
 4. To configure the `engine` in the config file, add it in the pipeline component like this: 
@@ -164,12 +163,18 @@ To configure these parameters, follow these steps:
       model_name: gpt-3.5-turbo
       engine: nameofdeployment
   ```
-:::caution
 
-Your Azure OpenAI instance might have some limits on the number of text chunks you can pass at once to generate
-embeddings. Thus it is also important to also configure a reasonable chunk_size based on your rate limits.
+5. To configure `chunk_size` in the config file, add it in the pipeline components under `llm` object like this:
 
-:::
+  ```
+  - name: rasa_plus.ml.LLMIntentClassifier
+      fallback_intent: "out_of_scope"
+      embeddings:
+        type: "openai"
+        model_name: "text-embedding-ada-002" 
+        deployment: "name_of_deployment_on_azure"
+        chunk_size: 16
+  ```
 
 ## Other LLMs & Embeddings
 
