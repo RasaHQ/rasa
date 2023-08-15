@@ -42,8 +42,6 @@ TMP_NODE_ID = -2
 
 VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
 
-logger = logging.getLogger(__name__)
-
 
 class UserMessageGenerator:
     def __init__(self, nlu_training_data: "TrainingData") -> None:
