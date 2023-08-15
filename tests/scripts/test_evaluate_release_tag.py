@@ -1,4 +1,4 @@
-from scripts.evaluate_release_tag import filter_non_alpha_releases, should_build_docs
+from scripts.evaluate_release_tag import filter_ga_relases, should_build_docs
 import pytest
 from pep440_version_utils import Version
 from typing import List
@@ -17,13 +17,19 @@ from unittest.mock import patch
             [Version("1.1.0"), Version("2.2.0")],
         ),
         (
-            [Version("1.1.0"), Version("2.2.0"), Version("1.1.1a1")],
+            [
+                Version("1.1.0"),
+                Version("2.2.0"),
+                Version("1.1.1a1"),
+                Version("1.1.1b1"),
+                Version("1.1.1rc1"),
+            ],
             [Version("1.1.0"), Version("2.2.0")],
         ),
     ],
 )
-def test_filter_non_alpha_releases(releases: List[Version], expected: List[Version]):
-    result = filter_non_alpha_releases(releases)
+def test_filter_ga_releases(releases: List[Version], expected: List[Version]):
+    result = filter_ga_relases(releases)
     assert result == expected
 
 
@@ -41,14 +47,24 @@ def test_filter_non_alpha_releases(releases: List[Version], expected: List[Versi
             True,
         ),
         (
+            [
+                Version("1.1.0"),
+                Version("2.2.0"),
+                Version("2.3.0b1"),
+                Version("2.4.0a1"),
+            ],
+            Version("2.2.1"),
+            True,
+        ),
+        (
             [Version("1.1.0"), Version("2.2.0"), Version("2.3.0")],
             Version("1.2.0"),
-            True,
+            False,
         ),
         (
             [Version("1.1.0"), Version("1.2.0a1"), Version("2.3.0")],
             Version("1.1.2"),
-            True,
+            False,
         ),
         (
             [Version("1.1.0"), Version("2.2.0"), Version("2.3.0")],
