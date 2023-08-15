@@ -10,6 +10,7 @@ from time import sleep
 from typing import (
     Any,
     Callable,
+    Coroutine,
     Dict,
     Iterable,
     Iterator,
@@ -358,6 +359,25 @@ class TrackerStore:
         tracker.recreate_from_dialogue(dialogue)
 
         return tracker
+
+    async def get_events(
+        self,
+        start_timestamp: int,
+        end_timestamp: int,
+        action_names: Optional[List[Text]] = None
+    ) -> List[Dict]:
+        """Get events between start_timestamp and end_timestamp with action_names.
+
+        Args:
+            start_timestamp (int): timestamp of event start time to start filtering from
+            end_timestamp (int): timestamp of event end time to end filtering at
+            action_names (list[str]): action names to include in the result None for all
+
+        Returns:
+            List[Dict]: list of events
+        """
+        raise NotImplementedError()
+
 
     @property
     def domain(self) -> Domain:
@@ -1368,6 +1388,32 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             tracker.events, number_of_events_since_last_session, len(tracker.events)
         )
 
+    async def get_events(
+        self,
+        start_timestamp: int,
+        end_timestamp: int,
+        action_names: Optional[List[Text]] = None
+    ) -> List[Dict]:
+        """Get events between start_timestamp and end_timestamp with action_names.
+
+        Args:
+            start_timestamp (int): timestamp of event start time to start filtering from
+            end_timestamp (int): timestamp of event end time to end filtering at
+            action_names (list[str]): action names to include in the result None for all
+
+        Returns:
+            List[Dict]: list of events
+        """
+        with self.session_scope() as session:
+            query = session.query(self.SQLEvent).filter(
+                self.SQLEvent.timestamp >= start_timestamp,
+                self.SQLEvent.timestamp <= end_timestamp,
+            )
+            if action_names:
+                query = query.filter(self.SQLEvent.action_name.in_(action_names))
+            events = query.all()
+            return [json.loads(event.data) for event in events]
+
 
 class FailSafeTrackerStore(TrackerStore):
     """Tracker store wrapper.
@@ -1484,6 +1530,14 @@ class FailSafeTrackerStore(TrackerStore):
                 f"the '{InMemoryTrackerStore.__name__}'. Please "
                 f"investigate the following error: {error}."
             )
+
+    async def get_events(
+        self,
+        start_timestamp: int,
+        end_timestamp: int,
+        action_names: List[Text] | None = None
+        ) -> List[Dict]:
+        return await self._tracker_store.get_events(start_timestamp, end_timestamp, action_names)
 
 
 def _create_from_endpoint_config(

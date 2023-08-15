@@ -858,10 +858,14 @@ def create_app(
         start_date = request.args.get("start_date")
         end_date = request.args.get("end_date")
         try:
-            billable = await app.ctx.agent.tracker_store.get_events(start_date, end_date)
+            print(start_date, end_date, type(start_date), type(end_date), type(app.ctx.agent.tracker_store))
+            billable = await app.ctx.agent.tracker_store.get_events(
+                start_date,
+                end_date
+            )
             return response.json({"billable": billable})
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.info(traceback.format_exc())
             raise ErrorResponse(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 "ConversationError",
