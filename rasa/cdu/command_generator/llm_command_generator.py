@@ -159,12 +159,13 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return commands
 
     @staticmethod
-    def is_hallucinated_value(value: str) -> bool:
+    def is_none_value(value: str) -> bool:
         return value in {
             "[missing information]",
             "[missing]",
             "None",
             "undefined",
+            "null",
         }
 
     @classmethod
@@ -192,9 +193,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 # error case where the llm tries to start a flow using a slot set
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
-                elif cls.is_hallucinated_value(slot_value):
-                    continue
                 else:
+                    if cls.is_none_value(slot_value):
+                        slot_value = None
                     commands.append(SetSlotCommand(name=slot_name, value=slot_value))
             elif m := start_flow_re.search(action):
                 commands.append(StartFlowCommand(flow=m.group(1).strip()))
