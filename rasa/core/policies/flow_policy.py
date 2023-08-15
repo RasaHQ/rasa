@@ -310,8 +310,17 @@ class FlowExecutor:
             }
         )
         p = Predicate(predicate)
-        evaluation, _ = p.analyze(text_slots)
-        return evaluation
+        try:
+            evaluation, _ = p.analyze(text_slots)
+            return evaluation
+        except (TypeError, Exception) as e:
+            structlogger.error(
+                "flow.predicate.error",
+                predicate=predicate,
+                slots=text_slots,
+                error=str(e),
+            )
+            return False
 
     def _select_next_step_id(
         self, current: FlowStep, tracker: "DialogueStateTracker"
@@ -333,10 +342,13 @@ class FlowExecutor:
                 return link.target
 
         if next.links:
-            raise ValueError(
-                "No link was selected, but links are present. Links "
-                "must cover all possible cases."
+            structlogger.error(
+                "flow.link.failed_to_select_branch",
+                current=current,
+                links=next.links,
+                tracker=tracker,
             )
+            return None
         if current.id != END_STEP:
             # we've reached the end of the user defined steps in the flow.
             # every flow should end with an end step, so we add it here.
