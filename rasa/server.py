@@ -4,6 +4,7 @@ import logging
 import multiprocessing
 import os
 import traceback
+import polars as pl
 from collections import defaultdict
 from functools import reduce, wraps
 from inspect import isawaitable
@@ -853,25 +854,91 @@ def create_app(
             )
 
     @app.get("/billable_conversations")
+    @run_in_thread
     async def billable_conversations(request: Request) -> HTTPResponse:
         """Get the number of billable conversations."""
         start_date = request.args.get("start_date")
         end_date = request.args.get("end_date")
         try:
-            print(start_date, end_date, type(start_date), type(end_date), type(app.ctx.agent.tracker_store))
-            billable = await app.ctx.agent.tracker_store.get_events(
-                start_date,
-                end_date
+            # TODO Create a separate component for calculating
+            # and sending billable conversations
+            events = await app.ctx.agent.tracker_store.get_events(
+                start_date, end_date, ["bot", "user", "session_started"]
             )
-            return response.json({"billable": billable})
+            data = pl.DataFrame(events).lazy()
+            data = (
+                data.with_columns(
+                    (pl.col("type_name") == "session_started")
+                    .cumsum()  # give each session a unique id
+                    .over("sender_id")
+                    .alias("session_ids")
+                )
+                .with_columns(  # turns: user -> bot
+                    pl.when(
+                        (pl.col("type_name") == "bot")
+                        & (pl.col("type_name").shift(1) == "user")
+                    )
+                    .then(1)
+                    .otherwise(0)
+                    .sum()
+                    .over(["sender_id", "session_ids"])
+                    .alias("turns")
+                )
+                .with_columns(
+                    (pl.col("turns") / 50)
+                    .ceil()
+                    .over(["sender_id", "session_ids"])
+                    .alias("convo_turns"),  # 1800 seconds = 30 minutes
+                    ((pl.col("timestamp").max() - pl.col("timestamp").min()) / 1800)
+                    .ceil()
+                    .over(["sender_id", "session_ids"])
+                    .alias("convo_duration"),
+                )
+                .with_columns(  # handle special case when only session_started exists
+                    pl.when(pl.col("convo_duration") < 1)
+                    .then(1)
+                    .otherwise(pl.col("convo_duration"))
+                    .alias("convo_duration")
+                )
+            )
+
+            # sum the convo_turns and convo_duration for each session
+            # the -1 is needed to not double count the base case
+            # session < 30 mins and turns < 50
+            query = (
+                data.groupby(["sender_id", "session_ids"])
+                .agg(
+                    (
+                        (pl.col("convo_turns").max() + pl.col("convo_duration")).max()
+                        - 1
+                    ).alias("convo_count"),
+                )
+                .select("convo_count")
+                .sum()
+            )
+            billable_conversations = int(query.collect()["convo_count"][0])
+            if request.args.get("report") == "true":
+                # TODO Create a separate component for sending that does not
+                # depend on telemetry (or segment)
+                from rasa.telemetry import _track
+
+                _track(
+                    "billable_conversations",
+                    {
+                        "count": billable_conversations,
+                        "start_date": start_date,
+                        "end_date": end_date,
+                    },
+                )
+
+            return response.json({"billable_conversations": billable_conversations})
         except Exception as e:
-            logger.info(traceback.format_exc())
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 "ConversationError",
                 f"An unexpected error occurred. Error: {e}",
             )
-
 
     @app.post("/conversations/<conversation_id:path>/execute")
     @requires_auth(app, auth_token)

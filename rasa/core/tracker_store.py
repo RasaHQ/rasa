@@ -10,7 +10,6 @@ from time import sleep
 from typing import (
     Any,
     Callable,
-    Coroutine,
     Dict,
     Iterable,
     Iterator,
@@ -364,7 +363,7 @@ class TrackerStore:
         self,
         start_timestamp: int,
         end_timestamp: int,
-        action_names: Optional[List[Text]] = None
+        action_names: Optional[List[Text]] = None,
     ) -> List[Dict]:
         """Get events between start_timestamp and end_timestamp with action_names.
 
@@ -377,7 +376,6 @@ class TrackerStore:
             List[Dict]: list of events
         """
         raise NotImplementedError()
-
 
     @property
     def domain(self) -> Domain:
@@ -1392,7 +1390,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         self,
         start_timestamp: int,
         end_timestamp: int,
-        action_names: Optional[List[Text]] = None
+        action_names: Optional[List[Text]] = None,
     ) -> List[Dict]:
         """Get events between start_timestamp and end_timestamp with action_names.
 
@@ -1410,9 +1408,16 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                 self.SQLEvent.timestamp <= end_timestamp,
             )
             if action_names:
-                query = query.filter(self.SQLEvent.action_name.in_(action_names))
+                query = query.filter(self.SQLEvent.type_name.in_(action_names))
             events = query.all()
-            return [json.loads(event.data) for event in events]
+            return [
+                {
+                    "type_name": event.type_name,
+                    "sender_id": event.sender_id,
+                    "timestamp": event.timestamp,
+                }
+                for event in events
+            ]
 
 
 class FailSafeTrackerStore(TrackerStore):
@@ -1535,9 +1540,15 @@ class FailSafeTrackerStore(TrackerStore):
         self,
         start_timestamp: int,
         end_timestamp: int,
-        action_names: List[Text] | None = None
-        ) -> List[Dict]:
-        return await self._tracker_store.get_events(start_timestamp, end_timestamp, action_names)
+        action_names: List[Text] | None = None,
+    ) -> List[Dict]:
+        try:
+            return await self._tracker_store.get_events(
+                start_timestamp, end_timestamp, action_names
+            )
+        except Exception as e:
+            self.on_tracker_store_retrieve_error(e)
+            return None
 
 
 def _create_from_endpoint_config(
