@@ -15,9 +15,19 @@
     tr {
       text-align: left;
     }
+  
+    tr.center {
+      text-align: center;
+    }
 
     table {
       padding-top: 1em;
+      border-spacing: 1em 0;
+      border-collapse: separate;
+    }
+
+    td {
+      padding: 0.5em 0;
     }
 
     .bold {
@@ -44,6 +54,20 @@
   </p>
   <div class="container">
     <div>
+      <p class="content bold">Stack:</p>
+      <table>
+        <thead>
+          <tr>
+            <th># </th>
+            <th>Type</th>
+            <th>Flow</th>
+            <th>Step Id</th>
+          </tr>
+        </thead>
+        <tbody id="stack-frames">
+        </tbody>
+      </table>
+      <p class="content bold">Slots:</p>
       <table>
         <thead>
           <tr>
@@ -101,7 +125,7 @@
           }
         });
     }
-    function fetchSlots() {
+    function fetchTracker() {
       let conversationId = window.rasaChatSessionId || "";
       fetch("/conversations/" + conversationId + "/tracker?start_session=false")
         .catch(error => console.error(error))
@@ -141,16 +165,29 @@
           var sortedSlotNames = Object.keys(slots).sort()
           for (var i = 0; i < sortedSlotNames.length; i++) {
             var name = sortedSlotNames[i];
+            if(name == "flow_stack"){
+              continue;
+            }
             let slotValue = JSON.stringify(slots[name], null, 2);
             root.insertAdjacentHTML('afterbegin', `<tr><td>${name}</td><td>${slotValue}</td></tr>`);
+          }
+
+          var stackEl = document.getElementById('stack-frames');
+          let stackFrames = slots.flow_stack ?? [];
+          stackEl.innerHTML = '';
+          if(stackFrames.length == 0){
+            stackEl.insertAdjacentHTML('afterbegin', `<tr class="center"><td colspan=4>--- Empty ---</td></tr>`);
+          } else {
+            for (var i = 0; i < stackFrames.length; i++) {
+              var stackFrame = stackFrames[i];
+              stackEl.insertAdjacentHTML('afterbegin', `<tr><td>${i+1}</td><td>${stackFrame.frame_type}</td><td>${stackFrame.flow_id}</td><td>${stackFrame.step_id}</td></tr>`);
+            }
           }
         });
     }
 
     setInterval(fetchStory, 1000); // fetch the Story every second
-
-    setInterval(fetchStory, 1000); // fetch the Story every second
-    setInterval(fetchSlots, 1000); // fetch the Tracker every second
+    setInterval(fetchTracker, 1000); // fetch the Tracker every second
   </script>
 
   <script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
