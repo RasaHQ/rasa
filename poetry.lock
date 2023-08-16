@@ -6257,20 +6257,16 @@ wrapt = ">=1.11.0,<1.15"
 
 [[package]]
 name = "tensorflow-metal"
-version = "0.8.0"
+version = "1.0.1"
 description = "TensorFlow acceleration for Mac GPUs."
 category = "main"
 optional = true
 python-versions = "*"
 files = [
-    {file = "tensorflow_metal-0.8.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:bbbb28df62e20d707420f4c52d04bf87f5e5990fa36ad3ad49cf43883b2a2e15"},
-    {file = "tensorflow_metal-0.8.0-cp310-cp310-macosx_12_0_x86_64.whl", hash = "sha256:cafbfc62cd24cc6fbde64ab29a2981b87eee489534ba8f01e8609582312e62bd"},
-    {file = "tensorflow_metal-0.8.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:2a6a11a2f702153bb0b6bf44288ba7095b8e0999aba5c9aad219931a15ecf860"},
-    {file = "tensorflow_metal-0.8.0-cp311-cp311-macosx_12_0_x86_64.whl", hash = "sha256:6b75d4e519e763d710ed6eb6a20adf98034f1399251df288a410462f0712da32"},
-    {file = "tensorflow_metal-0.8.0-cp38-cp38-macosx_12_0_arm64.whl", hash = "sha256:b6e6b0b516be4d52c9149436bdd99df85f1e6a3453ff811d59b5eef1e2368834"},
-    {file = "tensorflow_metal-0.8.0-cp38-cp38-macosx_12_0_x86_64.whl", hash = "sha256:15d5fa9fec83c96940e8588e6b4140cda53f859778af713c617dc8be86025636"},
-    {file = "tensorflow_metal-0.8.0-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:8a4ef5f4804d4becf9c59d376512b1f160477e408c5d00cd4f647c6d64728531"},
-    {file = "tensorflow_metal-0.8.0-cp39-cp39-macosx_12_0_x86_64.whl", hash = "sha256:6172d4deed9ab87146d7392ccba5c0ff5511deb51c8af2de89cad31720380741"},
+    {file = "tensorflow_metal-1.0.1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:6cd2266b5201b249de2916ab643e72be34440d26716fa62daaeea6442814a9b7"},
+    {file = "tensorflow_metal-1.0.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:bfc7b36a4bed76b00455636cb7c802e98450d6cdc915e5c71405ce492a3e6b3a"},
+    {file = "tensorflow_metal-1.0.1-cp38-cp38-macosx_12_0_arm64.whl", hash = "sha256:0c8ae71bec85625b3655ca65810ed26d5f17bd23eb4c2c94e4e49c7e7fa2e5f7"},
+    {file = "tensorflow_metal-1.0.1-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:236b3585824088a56cda41c79b54bf1ae717bf32c0d7907d5119aef06f81df02"},
 ]
 
 [package.dependencies]
@@ -7463,4 +7459,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "c4862abc9dbb2aebbe7857b432408d83cb34a13c66e468704f6270ba95d33f4a"
+content-hash = "bf2b7b4d732e6e40614d7de57b376dbde05f64d980bada9b00d9c8b1516c5291"
