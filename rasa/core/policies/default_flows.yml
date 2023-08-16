@@ -8,9 +8,9 @@ responses:
   utter_ask_confirm_correction:
     - text: "Do you want to update your information?"
       buttons:
-        - payload: /affirm
+        - payload: yes
           title: Yes
-        - payload: /deny
+        - payload: no
           title: No, please keep the previous information
       metadata: 
         rephrase: True
@@ -38,18 +38,9 @@ responses:
 
 slots:
   confirm_correction:
-    type: text
+    type: bool
     mappings:
-      - intent: affirm
-        type: from_intent
-        value: "True"
-        conditions:
-          - active_loop: question_confirm_correction
-      - intent: deny
-        type: from_intent
-        value: "False"
-        conditions:
-          - active_loop: question_confirm_correction
+      - type: custom
 
 flows:  
   pattern_continue_interrupted:

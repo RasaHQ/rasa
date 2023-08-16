@@ -36,6 +36,8 @@ def command_from_json(data: Dict[str, Any]) -> "Command":
         return ListenCommand()
     elif data.get("command") == "human handoff":
         return HumanHandoffCommand()
+    elif data.get("command") == "error":
+        return ErrorCommand()
     else:
         raise ValueError(f"Unknown command type: {data}")
 

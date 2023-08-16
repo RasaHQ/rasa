@@ -363,17 +363,19 @@ For the `slot_type`, it's recommended to use `text` slots in Flows.
 
 #### Skipping Questions
 
-A question can be configured to be skipped if the slot is already filled, as
-shown below:
+By default, a question is skipped if the slot is already filled. If a question
+should always be asked, no matter if the underlying slot is already filled,
+you can set `skip_if_filled: false` on the question:
 
 ```yaml
-- id: "another_question_step"
-  question: "first_name" # slot name
-  skip_if_filled: true
+- id: "confirm_dangerous_step"
+  question: "final_confirmation" # slot name
+  skip_if_filled: false
 ```
 
-In this scenario, if the "first_name" slot is already filled, the bot will skip
-this question.
+If the "final_confirmation" slot is already filled, 
+the bot will clear it, ask the question and fill the slot again. This ensures
+the confirmation question is always asked.
 
 #### Scopes
 

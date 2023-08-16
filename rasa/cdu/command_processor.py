@@ -283,10 +283,23 @@ def clean_up_commands(
 
     clean_commands: List[Command] = []
 
+    startable_flow_ids = [
+        f.id for f in all_flows.underlying_flows if not f.is_handling_pattern()
+    ]
+
     for command in commands:
         if isinstance(command, StartFlowCommand) and command.flow in flows_on_the_stack:
             structlogger.debug(
                 "command_executor.skip_command.already_started_flow", command=command
+            )
+            continue
+
+        if (
+            isinstance(command, StartFlowCommand)
+            and command.flow not in startable_flow_ids
+        ):
+            structlogger.debug(
+                "command_executor.skip_command.start_invalid_flow_id", command=command
             )
             continue
 
