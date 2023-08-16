@@ -392,14 +392,14 @@ aio = ["aiohttp (>=3.0)"]
 
 [[package]]
 name = "azure-storage-blob"
-version = "12.15.0"
+version = "12.16.0"
 description = "Microsoft Azure Blob Storage Client Library for Python"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "azure-storage-blob-12.15.0.zip", hash = "sha256:f8b8d582492740ab16744455408342fb8e4c8897b64a8a3fc31743844722c2f2"},
-    {file = "azure_storage_blob-12.15.0-py3-none-any.whl", hash = "sha256:08d8807c577c63a436740627927c1a03a97c963efc29af5c818aed906590e1cf"},
+    {file = "azure-storage-blob-12.16.0.zip", hash = "sha256:43b45f19a518a5c6895632f263b3825ebc23574f25cc84b66e1630a6160e466f"},
+    {file = "azure_storage_blob-12.16.0-py3-none-any.whl", hash = "sha256:91bb192b2a97939c4259c72373bac0f41e30810bbc853d5184f0f45904eacafd"},
 ]
 
 [package.dependencies]
@@ -7459,4 +7459,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "bf2b7b4d732e6e40614d7de57b376dbde05f64d980bada9b00d9c8b1516c5291"
+content-hash = "165bd9e87f6aa1e112bdb3589be49d60a99b86fa722536f5ba06e447ae9bbd57"
