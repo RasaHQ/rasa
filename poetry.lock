@@ -6096,22 +6096,18 @@ files = [
 
 [[package]]
 name = "tensorflow-hub"
-version = "0.13.0"
+version = "0.14.0"
 description = "TensorFlow Hub is a library to foster the publication, discovery, and consumption of reusable parts of machine learning models."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "tensorflow_hub-0.13.0-py2.py3-none-any.whl", hash = "sha256:3544f4fd9fd99e4eeb6da1b5b5320e4a2dbdef7f9bb778f66f76d6790f32dd65"},
+    {file = "tensorflow_hub-0.14.0-py2.py3-none-any.whl", hash = "sha256:519c6b56c4d304667fbd8ce66bd637e6a750c901215468db2cc6bfd0739bb0b0"},
 ]
 
 [package.dependencies]
 numpy = ">=1.12.0"
 protobuf = ">=3.19.6"
-
-[package.extras]
-make-image-classifier = ["keras-preprocessing[image]"]
-make-nearest-neighbour-index = ["annoy", "apache-beam"]
 
 [[package]]
 name = "tensorflow-intel"
@@ -7468,4 +7464,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "b89d05539134295d8c33529ca1e81d73d40f151dd3f8b77e9bfd8213a3786789"
+content-hash = "3d54b9b6d196ad2a90f3f3c00f87115636c072429c474021c92de558fe06619a"
