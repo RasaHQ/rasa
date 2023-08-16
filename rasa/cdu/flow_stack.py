@@ -185,7 +185,7 @@ class StackFrameType(str, Enum):
             return StackFrameType.CORRECTION
         elif typ == StackFrameType.DOCSEARCH.value:
             return StackFrameType.DOCSEARCH
-        elif typ == StackFrameType.INTENTLESS:
+        elif typ == StackFrameType.INTENTLESS.value:
             return StackFrameType.INTENTLESS
         else:
             raise NotImplementedError
