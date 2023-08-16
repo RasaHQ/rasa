@@ -10,7 +10,9 @@ from rasa.cdu.commands import (
     ListenCommand,
     SetSlotCommand,
     StartFlowCommand,
-    command_from_json, FreeFormAnswerCommand, KnowledgeAnswerCommand,
+    command_from_json,
+    FreeFormAnswerCommand,
+    KnowledgeAnswerCommand,
     ChitChatAnswerCommand,
 )
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType

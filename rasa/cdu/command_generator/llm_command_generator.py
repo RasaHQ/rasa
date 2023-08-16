@@ -11,7 +11,9 @@ from rasa.cdu.commands import (
     SetSlotCommand,
     CancelFlowCommand,
     StartFlowCommand,
-    HumanHandoffCommand, ChitChatAnswerCommand, KnowledgeAnswerCommand,
+    HumanHandoffCommand,
+    ChitChatAnswerCommand,
+    KnowledgeAnswerCommand,
 )
 
 from rasa.core.policies.flow_policy import FlowStack
