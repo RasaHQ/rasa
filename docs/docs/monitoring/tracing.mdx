@@ -40,13 +40,22 @@ No further action is required to enable tracing.
 You can disable tracing by leaving the `tracing:` configuration key empty
 in your endpoints file.
 
+### Rasa Channels
+
+Trace context sent along with requests using the [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/)
+via the REST channel is used to continue tracing in Rasa Pro.
+
 ### Action Server
 
-The trace context is sent along with requests to the custom action server
-using the [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/).
-You can use this trace context to continue tracing the request through
-your custom action code. See [traced events](#traced-events) for
-details on what attributes are made available as part of the trace context.
+The trace context from Rasa Pro is sent along with requests to the custom action server
+using the [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/) and 
+then used to continue tracing the request through the custom action server.
+
+Tracing is continued in the action server by instrumenting the webhook that receives custom actions.
+See [Action server attributes](#action-server-attributes) for the attributes captured as part of the trace context.
+
+See [traced events](#traced-events) for
+details on what attributes are made available as part of the trace context in Rasa Pro.
 
 ## Configuring a Tracing Backend or Collector
 
@@ -162,3 +171,26 @@ Observable `TrackerStore` and `LockStore` attributes include:
 - `number_of_streamed_events`: number of new events to stream
 - `broker_class`: the `EventBroker` on which the new events are published
 - `lock_store_class`: Name of lock store used to lock conversations while messages are actively processed
+
+## Tracing in the Action Server
+
+API Requests are traced as they flow through the action server by
+instrumenting the webhook that receives custom actions.
+
+### Action server Attributes
+The following attributes are captured as part of the trace context;
+- `http.method`: the http method used to make the request
+- `http.route`: the endpoint of the request
+- `next_action`: the name of the next action to be executed
+- `version`: the rasa version used
+- `sender_id`:  the id of the source of the message
+- `message_id`: the unique message id
+
+You can also continue tracing the request further along
+your custom action code by [creating spans](https://opentelemetry.io/docs/instrumentation/python/manual/#creating-spans)
+to track the execution of any desired object.
+
+Enabling and disabling tracing in the action server is also done in the same way as described [above](#enabling--disabling).
+The same Tracing Backends/Collectors listed [above](#supported-tracing-backendscollectors) are also supported for the action server.
+See [Configuring a Tracing Backend or Collector](#configuring-a-tracing-backend-or-collector)
+for further instructions.
