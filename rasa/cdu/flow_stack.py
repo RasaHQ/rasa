@@ -163,6 +163,10 @@ class StackFrameType(str, Enum):
 
     In all other cases, this is the case."""
     DOCSEARCH = "docsearch"
+    """The frame to indicate the docsearch policy should act."""
+
+    INTENTLESS = "intentless"
+    """The frame to indicate the intentless policy should act."""
 
     @staticmethod
     def from_str(typ: Optional[Text]) -> "StackFrameType":
@@ -181,6 +185,8 @@ class StackFrameType(str, Enum):
             return StackFrameType.CORRECTION
         elif typ == StackFrameType.DOCSEARCH.value:
             return StackFrameType.DOCSEARCH
+        elif typ == StackFrameType.INTENTLESS:
+            return StackFrameType.INTENTLESS
         else:
             raise NotImplementedError
 

@@ -208,8 +208,8 @@ def execute_commands(
         elif isinstance(command, ChitChatAnswerCommand):
             flow_stack.push(
                 FlowStackFrame(
-                    flow_id=FLOW_PATTERN_CHITCHAT_ID,
-                    frame_type=StackFrameType.REGULAR,
+                    flow_id="NO_FLOW",
+                    frame_type=StackFrameType.INTENTLESS,
                 )
             )
         elif isinstance(command, ErrorCommand):
