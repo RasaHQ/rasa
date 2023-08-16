@@ -38,33 +38,25 @@ def git_plain_tag_versions(versions: List[Version]) -> List[Version]:
     """Return non-alpha/rc existing tags"""
     return [version for version in versions if is_plain_version(version)]
 
-
-def filter_non_alpha_releases(tags: List[Version]) -> List[Version]:
-    return [tag for tag in tags if tag.is_alpha is False]
+def filter_ga_relases(tags: List[Version]) -> List[Version]:
+    """Return all general availability (GA) releases"""
+    return [tag for tag in tags if tag.is_alpha is False and tag.is_beta is False and tag.is_release_candidate is False]
 
 
 def should_build_docs(tag: Version) -> bool:
+    """Docs should be built only for the latest GA release tags"""
     existing_tags = git_existing_tag_versions()
 
-    non_alpha_releases = filter_non_alpha_releases(existing_tags)
-    non_alpha_releases.sort()
-    latest_version = non_alpha_releases[-1]
-    print(f"The latest non-alpha/rc/nightly tag is {latest_version}.")
-
-    previous_major = latest_version.major - 1
-    previous_major_versions = [tag for tag in non_alpha_releases if tag.major == previous_major]
-    previous_major_latest_version = previous_major_versions[-1]
-    print(f"The latest tag on the previous major is {previous_major_latest_version}.")
-
+    ga_releases = filter_ga_relases(existing_tags)
+    ga_releases.sort()
+    latest_version = ga_releases[-1]
+    print(f"The latest General Availability release tag is {latest_version}.")
     need_to_build_docs = False
 
     if not is_plain_version(tag):
-        print(f"Tag {tag} is an alpha, rc, nightly, or otherwise non-standard version.")
+        print(f"Tag {tag} is an alpha, beta, rc, nightly, or otherwise non-standard version.")
     elif tag >= latest_version:
         print(f"Tag {tag} is the latest version. Docs should be built.")
-        need_to_build_docs = True
-    elif tag.major == previous_major and tag > previous_major_latest_version:
-        print(f"Tag {tag} is higher than the latest version for the previous major. Docs should be built.")
         need_to_build_docs = True
 
     return need_to_build_docs
