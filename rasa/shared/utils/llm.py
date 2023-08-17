@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional, Text, Type
+import warnings
 
 import structlog
 from langchain.embeddings.base import Embeddings
@@ -147,7 +148,16 @@ def llm_factory(
     # need to create a copy as the langchain function modifies the
     # config in place...
     structlogger.debug("llmfactory.create.llm", config=config)
-    return load_llm_from_config(config.copy())
+    # langchain issues a user warning when using chat models. at the same time
+    # it doesn't provide a way to instantiate a chat model directly using the
+    # config. so for now, we need to suppress the warning here. Original
+    # warning:
+    #   packages/langchain/llms/openai.py:189: UserWarning: You are trying to
+    #   use a chat model. This way of initializing it is no longer supported.
+    #   Instead, please use: `from langchain.chat_models import ChatOpenAI
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        return load_llm_from_config(config.copy())
 
 
 def embedder_factory(

@@ -7,11 +7,13 @@ from rasa.cdu.commands import (
     CorrectSlotsCommand,
     CorrectedSlot,
     ErrorCommand,
-    HandleInterruptionCommand,
     ListenCommand,
     SetSlotCommand,
     StartFlowCommand,
     command_from_json,
+    FreeFormAnswerCommand,
+    KnowledgeAnswerCommand,
+    ChitChatAnswerCommand,
 )
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
@@ -35,6 +37,8 @@ FLOW_PATTERN_CANCEl_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 FLOW_PATTERN_LISTEN_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "listen"
 
 FLOW_PATTERN_INTERNAL_ERROR_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "internal_error"
+
+FLOW_PATTERN_CHITCHAT_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "chitchat"
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
@@ -99,11 +103,11 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     # the beginning of the list of commands
     assert len([c for c in commands if isinstance(c, CancelFlowCommand)]) <= 1
 
-    # assert that interrupt commands are only at the beginning of the list
-    interrupt_commands = [
-        c for c in commands if isinstance(c, HandleInterruptionCommand)
+    # assert that free form answer commands are only at the beginning of the list
+    free_form_answer_commands = [
+        c for c in commands if isinstance(c, FreeFormAnswerCommand)
     ]
-    assert interrupt_commands == commands[: len(interrupt_commands)]
+    assert free_form_answer_commands == commands[: len(free_form_answer_commands)]
 
     # assert that there is at max only one correctslots command
     assert len([c for c in commands if isinstance(c, CorrectSlotsCommand)]) <= 1
@@ -195,12 +199,19 @@ def execute_commands(
                     frame_type=StackFrameType.CORRECTION,
                 )
             )
-        elif isinstance(command, HandleInterruptionCommand):
+        elif isinstance(command, KnowledgeAnswerCommand):
             flow_stack.push(
                 FlowStackFrame(
                     # TODO: not quite sure if we need an id here
                     flow_id="NO_FLOW",
                     frame_type=StackFrameType.DOCSEARCH,
+                )
+            )
+        elif isinstance(command, ChitChatAnswerCommand):
+            flow_stack.push(
+                FlowStackFrame(
+                    flow_id="NO_FLOW",
+                    frame_type=StackFrameType.INTENTLESS,
                 )
             )
         elif isinstance(command, ErrorCommand):
@@ -326,9 +337,9 @@ def clean_up_commands(
                 "command_executor.skip_command.already_cancelled_flow", command=command
             )
             continue
-        elif isinstance(command, HandleInterruptionCommand):
+        elif isinstance(command, FreeFormAnswerCommand):
             structlogger.debug(
-                "command_executor.prepend_command.handle_interruption", command=command
+                "command_executor.prepend_command.free_form_answer", command=command
             )
             clean_commands.insert(0, command)
             continue

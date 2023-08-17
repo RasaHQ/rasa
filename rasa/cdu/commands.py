@@ -28,8 +28,10 @@ def command_from_json(data: Dict[str, Any]) -> "Command":
         return ClarifyNextStepCommand(potential_flows=data["potential_flows"])
     elif data.get("command") == "cant handle":
         return CantHandleCommand()
-    elif data.get("command") == "interruption":
-        return HandleInterruptionCommand()
+    elif data.get("command") == "chitchat":
+        return ChitChatAnswerCommand()
+    elif data.get("command") == "knowledge":
+        return KnowledgeAnswerCommand()
     elif data.get("command") == "listen":
         return ListenCommand()
     elif data.get("command") == "human handoff":
@@ -107,10 +109,24 @@ class CantHandleCommand(Command):
 
 
 @dataclass
-class HandleInterruptionCommand(Command):
-    """A command to indicate that the bot was interrupted."""
+class FreeFormAnswerCommand(Command):
+    """A command to indicate a free-form answer by the bot."""
 
-    command: str = "interruption"
+    command: str = "free form answer"
+
+
+@dataclass
+class ChitChatAnswerCommand(FreeFormAnswerCommand):
+    """A command to indicate a chitchat style free-form answer by the bot."""
+
+    command: str = "chitchat"
+
+
+@dataclass
+class KnowledgeAnswerCommand(FreeFormAnswerCommand):
+    """A command to indicate a knowledge-based free-form answer by the bot."""
+
+    command: str = "knowledge"
 
 
 @dataclass
