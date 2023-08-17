@@ -34,3 +34,34 @@ def create(obj: Union["NaturalLanguageGenerator", EndpointConfig, None],
 
 Factory to create a generator.
 
+## ResponseVariationFilter Objects
+
+```python
+class ResponseVariationFilter()
+```
+
+Filters response variations based on the channel, action and condition.
+
+#### responses\_for\_utter\_action
+
+```python
+def responses_for_utter_action(
+        utter_action: Text, output_channel: Text,
+        filled_slots: Dict[Text, Any]) -> List[Dict[Text, Any]]
+```
+
+Returns array of responses that fit the channel, action and condition.
+
+#### get\_response\_variation\_id
+
+```python
+def get_response_variation_id(utter_action: Text,
+                              tracker: DialogueStateTracker,
+                              output_channel: Text) -> Optional[Text]
+```
+
+Returns the first matched response variation ID.
+
+This ID corresponds to the response variation that fits
+the channel, action and condition.
+

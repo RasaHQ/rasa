@@ -52,3 +52,18 @@ def validate_response(content: Optional[Dict[Text, Any]]) -> bool
 
 Validate the NLG response. Raises exception on failure.
 
+#### fetch\_response\_id
+
+```python
+@staticmethod
+def fetch_response_id(
+    utter_action: Text, tracker: DialogueStateTracker, output_channel: Text,
+    domain_responses: Optional[Dict[Text, List[Dict[Text, Any]]]]
+) -> Optional[Text]
+```
+
+Fetch the response id for the utter action.
+
+The response id is retrieved from the domain responses for the
+utter action given the tracker state and channel.
+
