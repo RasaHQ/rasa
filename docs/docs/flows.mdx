@@ -129,6 +129,95 @@ Steps can manifest in one of the following types:
 - [question step](./flows.mdx#question): a question to be asked to the user
 - [link step](./flows.mdx#link): a step to link to another flow
 
+### Writing Conditions
+
+Conditions in flows are written using natural language that can include
+logical operators, conditional operators and other constructs. They are evaluated
+with the [pypred](https://github.com/armon/pypred) library. 
+
+These conditions support the following operators,
+- `not`: Negates a condition.
+- `and`: Combines two conditions with logical AND.
+- `or`: Combines two conditions with logical OR.
+- `>`: Greater than.
+- `>=`: Greater than or equal to.
+- `<`: Less than.
+- `<=`: Less than or equal to.
+- `=`: Equal to.
+- `!=`: Not equal to.
+- `is`: Checks for identity.
+- `is not`: Checks for non-identity.
+- `contains`: Checks if a value is contained within another value.
+- `matches`: Uses regular expressions to match strings.
+
+#### Parentheses
+Use parentheses to group expressions and control the order of evaluation. For example:
+
+```yaml
+- id: "some_question"
+  question: "age"
+  next:
+    - if: age < 18
+      then: "under_18_step"
+    - if: (age > 18 and (consent = 'yes' or consent = 'y'))
+      then: "consent_accept"
+    - else: "consent_decline"
+```
+
+#### Sets
+Sets can be used to check for multiple conditions. For example:
+
+```
+- id: "1"
+  question: "emergency"
+  next:
+    - if: {"WARN" "ERR" "CRIT"} contains error_level
+      then: "handoff"
+    - else: "everything_okay"
+```
+
+#### Constants
+
+- String literals: Enclose in single or double quotes (`'example'` or `"example"`).
+- Numeric literals: Numbers without quotes (`42`).
+- Constants: `true`, `false`, `undefined`, `null`, `empty`
+
+#### Regular Expressions
+
+When using the `matches` operator, you can include regular expression modifiers. 
+The regex modifier should be enclosed in quotes. For example, this flow step checks if
+the `pincode` slot contains a United States zip code :
+
+```yaml
+- id: "ask_zipcode"
+  question: "zipcode"
+  description: "ask zipcode and check if its a zip code"
+  next:
+    - if: zipcode matches "\d{5}(-\d{4})?"
+      then: "ask_payment"
+    - else: "wrong_zipcode"
+```
+
+#### Examples
+
+Here are some examples of conditions that demonstrate the use of different constructs. 
+
+```
+# Simple conditions
+age > 18
+name is 'Alice'
+name is empty
+status = 'active'
+status is not null
+
+# Combining Conditions
+age > 21 and gender = 'female'
+category = 'electronics' or category = 'computers'
+status = 'active' and (priority = 1 or priority = 2)
+status = empty or status is null
+description matches '/error \d{3}/i' and (severity = 'high' or source contains 'server')
+```
+
 ### Starting a Flow
 
 How a flow can be triggered, depends on the first step in the flow. If the first
