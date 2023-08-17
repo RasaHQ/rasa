@@ -19,10 +19,20 @@ times or have cycles in certain sections. To limit complexity for flow designers
 we let them focus on implementing simple direct flows
 or [happy paths](../glossary.mdx#happy--unhappy-paths), where the user reaches
 their initial goal and where these goals are
-attained step by step. Instead of having to model flow switches, cancellations, or
+attained step by step. 
+
+Instead of having to model flow switches, cancellations, or
 slot corrections explicitly, a rasa assistant handles these things in a
 uniform manner across flows, greatly reducing the complexity of flow design.
 
+:::info
+
+Rasa ships with **default implementation for every unhappy path**. You can
+override these defaults by defining flows with the respective names shown here.
+For example, you can define a flow called `pattern_correction` to
+override the default behavior of the bot when a user interrupts a flow.
+
+:::
 
 ## Digressions
 

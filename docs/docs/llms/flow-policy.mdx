@@ -75,9 +75,6 @@ flows:
     description: This flow enables users to send money to friends and family.
 
     steps:
-      - id: "start"
-        intent: transfer_money
-        next: "ask_recipient"
       - id: "ask_recipient"
         question: transfer_money_recipient
         next: "ask_amount"
@@ -87,9 +84,9 @@ flows:
     # - ...
 ```
 
-The flow can be started with the intent `transfer_money`. The first step in the
-flow is `ask_recipient`. A correction by the user, _"oh sorry I meant John"_, 
-initiates a correction flow. This correction is not explicitly modeled in 
+The first step in the flow is `ask_recipient`. A correction by the 
+user, _"oh sorry I meant John"_, initiates a correction flow. 
+This correction is not explicitly modeled in 
 the `transfer_money` flow; it's handled by a conversational pattern:
 
 <Image
@@ -97,8 +94,6 @@ the `transfer_money` flow; it's handled by a conversational pattern:
   caption="Flow stack changes during a correction of a previous user input"
   alt=""
 />
-
-
 
 The correction flow only executes when the user wants to correct a previous
 input. Once triggered, it's placed on top of the flow stack for execution.
@@ -126,35 +121,16 @@ completing the action and incorporating its result, it moves to the next state.
 
 ### Starting New Flows
 
-Starting a new flow in the `FlowPolicy` can occur in two ways: by user input
-matching the first step in a flow, or by predicting the "flow action".
-
-#### User Input
-
-A user message like _"I want to transfer money"_ will trigger the
-`transfer_money` flow, provided this flow is defined to be initiated by such a
-message:
-
-```yaml title="flows.yml"
-flows:
-  transfer_money:
-    name: Transfer money
-    steps:
-      - id: "1"
-        intent: transfer_money
-        action: action_transfer_money
-      - id: "2"
-        action: utter_lets_transfer_money
-    # - ...
-```
-
-Here, the NLU model predicts the `transfer_money` intent, and as a result, the
-`FlowPolicy` initiates the `transfer_money` flow.
-
-#### Predicting Flow Actions
-
-Another policy predicting the action `flow_transfer_money` will result in the
-`FlowPolicy` initiating the `transfer_money` flow.
+A flow can be started in several ways:
+* A flow is started when a Rasa component puts the flow on the stack. For
+  example, the [LLM Command Generator](./llm-command-generator.mdx) puts a flow
+  on the stack when it determines that a flow would be a good fit for the
+  current conversation.
+* One flow can ["link" to another flow](../flows.mdx#next-property), which will
+  initiate the linked flow and return to the original flow once the linked flow
+  completes.
+* Flows, which are conversational patterns (e.g. correction, resume flow), are
+  automatically initiated by the `FlowPolicy` when needed.
 
 ### Interruptions and Digressions
 
@@ -182,19 +158,3 @@ outlined above.
 Currently, we recommend not using the `FlowPolicy` in conjunction with the
 `RulePolicy`. The `RulePolicy` isn't aware of the flow stack and may interfere
 with the `FlowPolicy`.
-
-### What triggers a flow start?
-
-A flow can be initiated in several ways:
-
-1. One flow can ["link" to another flow](../flows.mdx#next-property), which will
-   initiate the linked flow and return to the original flow once the linked flow
-   completes.
-2. A flow starts when the user message matches the
-   [`user_message` step](../flows.mdx#user-message) of the flow. A
-   match is determined by the intent and entities of the user message.
-3. Flows, which are conversational patterns (e.g. correction, resume flow), are
-   automatically initiated by the `FlowPolicy` when needed.
-4. A flow starts when another policy predicts the corresponding flow action
-   named `flow_{flow_name}`. This action pushes the flow onto the flow stack,
-   and the `FlowPolicy` executes it.
