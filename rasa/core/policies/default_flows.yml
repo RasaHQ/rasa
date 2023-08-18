@@ -35,9 +35,6 @@ responses:
       metadata: 
         rephrase: True
 
-  utter_too_complex_rasa:
-    - text: This is too complex for me, let's take it one step at a time.
-
   utter_internal_error_rasa:
     - text: Sorry, I'm having trouble understanding you right now. Please try again later.
 
@@ -81,13 +78,7 @@ flows:
       - id: "0"
         action: utter_flow_cancelled_rasa
 
-  pattern_too_complex:
-    description: replies to the user that their request is too complex
-    steps:
-      - id: "0"
-        action: utter_too_complex_rasa
-
-  pattern_listen:
+  pattern_deliberation:
     description: user send a message that doesn't require a response
     steps:
       - id: "0"

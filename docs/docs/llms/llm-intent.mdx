@@ -66,11 +66,6 @@ pipeline:
 # - ...
 ```
 
-The LLM-based intent classifier requires access to an LLM model API. You can use any
-OpenAI model that supports the `/completions` endpoint. 
-We are working on expanding the list of supported
-models and model providers.
-
 ## Customizing
 
 You can customize the LLM by modifying the following parameters in the
@@ -106,9 +101,7 @@ pipeline:
 # - ...
 ```
 
-Defaults to `text-davinci-003`. The model name needs to be set to a generative
-model using the completions API of
-[OpenAI](https://platform.openai.com/docs/guides/gpt/completions-api).
+Defaults to `text-davinci-003`.
 
 If you want to use Azure OpenAI Service, you can configure the necessary 
 parameters as described in the 

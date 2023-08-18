@@ -1,7 +1,7 @@
 ---
-id: large-language-models
-sidebar_label: LLMs in Rasa
-title: Using LLMs with Rasa
+id: llm-next-gen
+sidebar_label: Dialogue Management 2.0
+title: Dialogue Management 2.0
 className: hide
 abstract:
 ---
@@ -22,7 +22,7 @@ We are working on some larger changes to the platform that leverage LLMs nativel
 Please reach out to us if you'd like to learn more about upcoming changes.
 
 
-## LLMs can do more than just NLU
+## LLMs go beyond NLU
 
 The recent advances in large language models (LLMs) have opened up new
 possibilities for conversational AI. LLMs are pretrained models that can be
@@ -32,14 +32,24 @@ here all use in-context learning. In other words, instructions and examples are
 provided in a prompt which are sent to a general-purpose LLM. They do not require
 fine-tuning of large models.
 
-### Plug & Play LLMs of your choice
+Our approach aims to harness the strengths of both Large Language Models (LLMs)
+and the control needed for business logic. This innovative blend enables you to
+manage both the flexible and predictable aspects of dialogues within your
+chatbot.
+
+By utilizing LLMs, we can effectively handle ["unhappy paths"—instances](../glossary.mdx#happy--unhappy-paths) where
+user interactions diverge from the expected or desired course. Meanwhile,
+business logic or 'Flows' are used to manage ["happy paths"—scenarios](../glossary.mdx#happy--unhappy-paths) where
+interactions proceed as anticipated.
+
+### Bring your own LLM
 
 Just like our NLU pipeline, the LLM components here can be configured to use different
 LLMs. There is no one-size-fits-all best model, and new models are being released every
 week. We encourage you to try out different models and evaluate their performance on 
 different languages in terms of fluency, accuracy, and latency.
 
-### An adjustable risk profile
+### Adjustable risk profile
 
 The potential and risks of LLMs vary per use case. For customer-facing use cases, 
 you may not ever want to send generated text to your users. Rasa gives you full 
@@ -66,6 +76,25 @@ as exchangeable utilities / components in various places.
 LLMs are a key component of a future-proof architecture. More importantly,
 we have the flexibility to use different LLMs for different purposes
 and can plug the models of our choice as the technology evolves.
+
+## Approach
+
+Here's a breakdown of our approach:
+
+- We specify 'happy paths' using business logic. This means setting out clear,
+  pre-defined paths that the conversation should follow under ideal
+  circumstances using [Flows](../flows.mdx).
+- We identify patterns of 'unhappy paths' and specify these using separate
+  Flows. These [conversational patterns](./unhappy-paths.mdx) define how the
+  chatbot should respond when the user's input doesn't match the expected course
+  of a flow.
+- We use Flows to keep track of the conversation's state, ensuring we always
+  know where we are in the dialogue and what's been covered.
+- We employ LLMs to update the state of these Flows. These language models
+  process user input, adjusting the conversation's course as needed.
+- We use LLMs to [improve the chatbot's responses](./llm-nlg.mdx). These
+  language models generate the chatbot's responses, ensuring they feel natural and
+  fluent.
 
 ## Where to go from here
 

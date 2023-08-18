@@ -39,15 +39,15 @@ Digressions happen when the user is currently involved in one flow, e.g.
 transferring money to a friend, and they need access to some information, such
 as their current balance, before continuing with the flow.
 
-```
-User: I want to send some money to Sudarshana
-Bot: How much do you want to send to Sudarshana?
-User: Ah wait, how much money do I have, did my paycheck already arrive?
-Bot: You currently have 4021.20$ in your account.
-Bot: Let's continue with sending money to Sudarshana.
-Bot: How much money do you want to send to Sudarshana then?
-...
-```
+<Chat caption="Digression:">
+  <ChatUserText>I want to send some money to Sudarshana</ChatUserText>
+  <ChatBotText>How much do you want to send to Sudarshana?</ChatBotText>
+  <ChatUserText>Ah wait, how much money do I have, did my paycheck already arrive?</ChatUserText>
+  <ChatBotText>You currently have 4021.20$ in your account.</ChatBotText>
+  <ChatBotText>Let's continue with sending money to Sudarshana.</ChatBotText>
+  <ChatBotText>How much money do you want to send to Sudarshana then?</ChatBotText>
+  <ChatUserText>...</ChatUserText>
+</Chat>
 
 In the above conversation you can see that
 
@@ -89,20 +89,18 @@ Corrections of slots happen for a variety of reasons. Users might want to
 correct their own mistake or a mistake the bot made, or they might change their
 minds about certain aspects of what they want to achieve.
 
-A common correction scenario looks like this:
-
-```
-User: I want to send some money to Joe
-Bot: How much money do you want to send?
-User: 50$
-Bot: Do you want to send 50$ to Joe? (Yes/No)
-User: Oh wait!! I meant to say to John, not to Joe!
-Bot: Do you want to update the recipient to John? (Yes/No)
-User: Yes!
-Bot: Updated recipient to John
-Bot: Do you want to send 50$ to John? (Yes/No)
-...
-```
+<Chat caption="A common correction scenario">
+  <ChatUserText>I want to send some money to Joe</ChatUserText>
+  <ChatBotText>How much money do you want to send?</ChatBotText>
+  <ChatUserText>50$</ChatUserText>
+  <ChatBotText>Do you want to send 50$ to Joe? (Yes/No)</ChatBotText>
+  <ChatUserText>Oh wait!! I meant to say to John, not to Joe!</ChatUserText>
+  <ChatBotText>Do you want to update the recipient to John? (Yes/No)</ChatBotText>
+  <ChatUserText>Yes!</ChatUserText>
+  <ChatBotText>Updated recipient to John</ChatBotText>
+  <ChatBotText>Do you want to send 50$ to John? (Yes/No)</ChatBotText>
+  <ChatUserText>...</ChatUserText>
+</Chat>
 
 In the above conversation you can see that
 
@@ -188,19 +186,14 @@ confirmation for correcting slots or disable slots correction altogether.
 Cancellations can happen for a variety of reasons. The user might have changed
 their mind on a whim or due to new information learned during the conversation.
 
-A common correction scenario looks like this:
+<Chat caption="A common cancelation scenario">
+  <ChatUserText>I want to send some money to Dimitri</ChatUserText>
+  <ChatBotText>How much money do you want to send?</ChatBotText>
+  <ChatUserText>Ah, nevermind. I see I have already sent it earlier.</ChatUserText>
+  <ChatBotText>Okay, I am cancelling the transfer.</ChatBotText>
+  <ChatUserText>...</ChatUserText>
+</Chat>
 
-```
-User: I want to send some money to Dimitri
-Bot: How much money do you want to send?
-User: One moment, please show me my transactions
-Bot: Here are your latest transactions: ...
-Bot: Let's get back to sending money
-Bot: How much money do you want to send?
-User: Ah, nevermind. I see I have already sent it earlier.
-Bot: Okay, I am cancelling the transfer.
-...
-```
 
 In the above conversation you can see that the bot informed the user about the
 cancellation of the flow. This represents the default behavior in flows. You can
@@ -229,3 +222,11 @@ You can see that this response is using an extra variable, `rasa_cancelled_flow`
 which is filled by the flow policy upon executing the cancel flow pattern.
 Currently, you can only change the cancellation message, but not introduce a
 confirmation. This is on our todo list.
+
+## Deliberations
+
+## Chitchat
+
+## Completion
+
+## Internal Errors

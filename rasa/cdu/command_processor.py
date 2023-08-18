@@ -34,7 +34,7 @@ FLOW_PATTERN_CORRECTION_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "correction"
 
 FLOW_PATTERN_CANCEl_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 
-FLOW_PATTERN_LISTEN_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "listen"
+FLOW_PATTERN_DELIBERATION_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "deliberation"
 
 FLOW_PATTERN_INTERNAL_ERROR_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "internal_error"
 
@@ -195,7 +195,7 @@ def execute_commands(
             structlogger.debug("command_executor.listen", command=command)
             flow_stack.push(
                 FlowStackFrame(
-                    flow_id=FLOW_PATTERN_LISTEN_ID,
+                    flow_id=FLOW_PATTERN_DELIBERATION_ID,
                     frame_type=StackFrameType.REMARK,
                 )
             )
