@@ -1477,10 +1477,13 @@ async def record_messages(
 
         domain_intents = domain.get("intents", []) if domain is not None else []
 
+        # intents with properties such as `use_entities` or `ignore_entities`
+        # are a dictionary which needs unpacking. Other intents are strings
+        # and can be used as-is.
         intents = [
             next(iter(i))
-            if isinstance(i, dict)  # intent property
-            else i  # plain intent name
+            if isinstance(i, dict)
+            else i
             for i in domain_intents
         ]
 
