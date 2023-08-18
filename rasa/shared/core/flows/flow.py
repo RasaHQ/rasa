@@ -274,6 +274,9 @@ class Flow:
         if step_id == END_STEP:
             return EndFlowStep()
 
+        if step_id == CLEANUP_STEP:
+            return CleanUpFlowStep()
+
         for step in self.steps:
             if step.id == step_id:
                 return step
@@ -444,27 +447,12 @@ class FlowStep:
 START_STEP = "__start__"
 
 
-@dataclass
-class StartFlowStep(FlowStep):
-    """Represents the configuration of a start flow step."""
+class InternalFlowStep(FlowStep):
+    """Represents the configuration of a built-in flow step.
 
-    def __init__(self, start_step_id: Optional[Text]) -> None:
-        """Initializes a start flow step.
-
-        Args:
-            start_step: The step to start the flow from.
-        """
-        if start_step_id is not None:
-            links: List[FlowLink] = [StaticFlowLink(target=start_step_id)]
-        else:
-            links = []
-
-        super().__init__(
-            id=START_STEP,
-            description=None,
-            metadata={},
-            next=FlowLinks(links=links),
-        )
+    Built in flow steps are required to manage the lifecycle of a
+    flow and are not intended to be used by users.
+    """
 
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> ActionFlowStep:
@@ -487,11 +475,34 @@ class StartFlowStep(FlowStep):
         raise ValueError("A start step cannot be dumped.")
 
 
+@dataclass
+class StartFlowStep(InternalFlowStep):
+    """Represents the configuration of a start flow step."""
+
+    def __init__(self, start_step_id: Optional[Text]) -> None:
+        """Initializes a start flow step.
+
+        Args:
+            start_step: The step to start the flow from.
+        """
+        if start_step_id is not None:
+            links: List[FlowLink] = [StaticFlowLink(target=start_step_id)]
+        else:
+            links = []
+
+        super().__init__(
+            id=START_STEP,
+            description=None,
+            metadata={},
+            next=FlowLinks(links=links),
+        )
+
+
 END_STEP = "__end__"
 
 
 @dataclass
-class EndFlowStep(FlowStep):
+class EndFlowStep(InternalFlowStep):
     """Represents the configuration of an end to a flow."""
 
     def __init__(self) -> None:
@@ -504,28 +515,35 @@ class EndFlowStep(FlowStep):
             id=END_STEP,
             description=None,
             metadata={},
-            next=FlowLinks(links=[]),
+            # The end step links to itself. This is needed to make sure that
+            # this allows us to end a flow by setting the active step of a flow
+            # to the end step.
+            # Since the side effects of a node are executed on the transition
+            # to the next node, we need this link to run the END logic.
+            # Otherwise, setting a flow to its end step would not execute the
+            # side effects of the end step.
+            next=FlowLinks(links=[StaticFlowLink(target=CLEANUP_STEP)]),
         )
 
-    @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> ActionFlowStep:
-        """Used to read flow steps from parsed JSON.
+
+CLEANUP_STEP = "__cleanup__"
+
+
+class CleanUpFlowStep(InternalFlowStep):
+    """Represents the configuration of step to clean up a flow."""
+
+    def __init__(self) -> None:
+        """Initializes a start flow step.
 
         Args:
-            flow_step_config: The parsed JSON as a dictionary.
-
-        Returns:
-            The parsed flow step.
+            start_step: The step to start the flow from.
         """
-        raise ValueError("An end step cannot be parsed.")
-
-    def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
-
-        Returns:
-            The flow step as a dictionary.
-        """
-        raise ValueError("An end step cannot be dumped.")
+        super().__init__(
+            id=CLEANUP_STEP,
+            description=None,
+            metadata={},
+            next=FlowLinks(links=[]),
+        )
 
 
 @dataclass
