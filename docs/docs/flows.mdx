@@ -61,7 +61,8 @@ The `name` field is a required human readable name for the flow.
 ### Description
 
 The `description` field is a summary of the flow. It is required,
-and should describe the purpose of the flow. Other components use the 
+and should describe the purpose of the flow. Other components, such as the 
+[LLMCommandGenerator](./llms/llm-command-generator.mdx), use the 
 description to decide when to start the flow.
 
 ### Steps
@@ -136,10 +137,10 @@ Flows can be triggered by other Rasa components, e.g. the
 flow is very important for the LLM Command Generator, as it uses the description
 to determine which flow to trigger.
 
-An alternative way to trigger the flow directly through the Flow Policy is 
-the first step of the flow. If the first step is an 
-[entry prompt step](./flows.mdx#entry-prompt), the flow
-will be triggered if the prompt will evaluate to 'yes' when send to an LLM.
+An Alternative way to trigger flows is using an
+[entry prompt step](./flows.mdx#entry-prompt). 
+Entry prompts trigger an LLM call with the given context and a yes/no question 
+to determine whether to start the flow.
 
 ## Step Types
 
