@@ -67,7 +67,7 @@
         <tbody id="stack-frames">
         </tbody>
       </table>
-      <p class="content bold">Slots:</p>
+      <p class="content bold">Set Slots:</p>
       <table>
         <thead>
           <tr>
@@ -165,12 +165,13 @@
           var sortedSlotNames = Object.keys(slots).sort()
           for (var i = 0; i < sortedSlotNames.length; i++) {
             var name = sortedSlotNames[i];
-            if(name == "flow_stack"){
+            let slotValue = JSON.stringify(slots[name], null, 2);
+            if(name == "flow_stack" || slotValue == 'null'){
               continue;
             }
-            let slotValue = JSON.stringify(slots[name], null, 2);
-            root.insertAdjacentHTML('afterbegin', `<tr><td>${name}</td><td>${slotValue}</td></tr>`);
+            root.insertAdjacentHTML('beforeend', `<tr><td>${name}</td><td>${slotValue}</td></tr>`);
           }
+          root.insertAdjacentHTML('beforeend', `<tr><td>\<\<\< all others \>\>\></td><td>None</td></tr>`);
 
           var stackEl = document.getElementById('stack-frames');
           let stackFrames = slots.flow_stack ?? [];
