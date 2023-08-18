@@ -504,7 +504,14 @@ class EndFlowStep(FlowStep):
             id=END_STEP,
             description=None,
             metadata={},
-            next=FlowLinks(links=[]),
+            # The end step links to itself. This is needed to make sure that
+            # this allows us to end a flow by setting the active step of a flow
+            # to the end step.
+            # Since the side effects of a node are executed on the transition
+            # to the next node, we need this link to run the END logic.
+            # Otherwise, setting a flow to its end step would not execute the
+            # side effects of the end step.
+            next=FlowLinks(links=[StaticFlowLink(target=END_STEP)]),
         )
 
     @classmethod

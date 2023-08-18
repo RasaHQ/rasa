@@ -84,6 +84,7 @@ class FlowPolicy(Policy):
             StackFrameType.LINK,
             StackFrameType.RESUME,
             StackFrameType.REGULAR,
+            StackFrameType.REMARK,
         ]
 
     @staticmethod
@@ -688,6 +689,8 @@ class FlowExecutor:
                 if (
                     current_frame.frame_type == StackFrameType.INTERRUPT
                     and previous_flow is not None
+                    and previous_flow_step is not None
+                    and previous_flow_step.id != END_STEP
                 ):
                     # get stack frame that is below the current one and which will
                     # be continued now that this one has ended.

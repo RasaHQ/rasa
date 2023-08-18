@@ -23,7 +23,7 @@ from rasa.shared.core.constants import (
     FLOW_STACK_SLOT,
 )
 from rasa.shared.core.events import Event, SlotSet, UserUttered
-from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
+from rasa.shared.core.flows.flow import END_STEP, FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
 
@@ -175,19 +175,18 @@ def execute_commands(
                 )
                 continue
             # in between the prediction and this canceling command, we might have
-            # added some stack frames. hence, we can't just cancle the current top frame
+            # added some stack frames. hence, we can't just cancel the current top frame
             # but need to find the frame that was at the top before we started
             # processing the commands.
             for idx, frame in enumerate(flow_stack.frames):
                 if frame.flow_id == current_top_flow.id:
                     structlogger.debug("command_executor.cancel_flow", command=command)
-                    del flow_stack.frames[idx]
+                    flow_stack.frames[idx].step_id = END_STEP
             events.append(SlotSet(CANCELLED_FLOW_SLOT, current_top_flow.id))
             flow_stack.push(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_CANCEl_ID,
-                    # TODO: the stack frame type should be renamed
-                    frame_type=StackFrameType.CORRECTION,
+                    frame_type=StackFrameType.REMARK,
                 )
             )
         elif isinstance(command, ListenCommand):
@@ -195,8 +194,7 @@ def execute_commands(
             flow_stack.push(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_LISTEN_ID,
-                    # TODO: the stack frame type should be renamed
-                    frame_type=StackFrameType.CORRECTION,
+                    frame_type=StackFrameType.REMARK,
                 )
             )
         elif isinstance(command, KnowledgeAnswerCommand):
@@ -219,7 +217,7 @@ def execute_commands(
             flow_stack.push(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_INTERNAL_ERROR_ID,
-                    frame_type=StackFrameType.CORRECTION,
+                    frame_type=StackFrameType.REMARK,
                 )
             )
 

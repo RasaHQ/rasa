@@ -146,6 +146,10 @@ class StackFrameType(str, Enum):
     """The frame is an interrupt frame.
 
     This means that the previous flow was interrupted by this flow."""
+    REMARK = "remark"
+    """The frame is an interrupt frame.
+
+    This means that the previous flow was interrupted by this flow."""
     LINK = "link"
     """The frame is a link frame.
 
@@ -187,6 +191,8 @@ class StackFrameType(str, Enum):
             return StackFrameType.DOCSEARCH
         elif typ == StackFrameType.INTENTLESS.value:
             return StackFrameType.INTENTLESS
+        elif typ == StackFrameType.REMARK.value:
+            return StackFrameType.REMARK
         else:
             raise NotImplementedError
 
