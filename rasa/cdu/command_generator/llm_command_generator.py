@@ -34,7 +34,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
-    DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
     llm_factory,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
@@ -49,9 +49,9 @@ structlogger = structlog.get_logger()
 
 DEFAULT_LLM_CONFIG = {
     "_type": "openai",
-    "request_timeout": 5,
+    "request_timeout": 7,
     "temperature": 0.0,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
 }
 
 LLM_CONFIG_KEY = "llm"

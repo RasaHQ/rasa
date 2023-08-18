@@ -168,18 +168,18 @@ pipeline:
 # - ...
   - name: LLMCommandGenerator
     llm:
-      model_name: "gpt-3.5-turbo"
-      request_timeout: 5
+      model_name: "gpt-4"
+      request_timeout: 7
       temperature: 0.0
 # - ...
 ```
 
-The `model_name` defaults to `gpt-3.5-turbo`. The model name should be set 
+The `model_name` defaults to `gpt-4`. The model name should be set 
 to a chat model of [OpenAI](https://platform.openai.com/docs/guides/gpt/chat-completions-api).
 
 Similarly, you can specify the `request_timeout` and 
 `temperature` parameters for the LLM. The `request_timeout` 
-defaults to `5` seconds and the `temperature` defaults to `0.0`.
+defaults to `7` seconds and the `temperature` defaults to `0.0`.
 
 If you want to use Azure OpenAI Service, you can configure the necessary
 parameters as described in the
