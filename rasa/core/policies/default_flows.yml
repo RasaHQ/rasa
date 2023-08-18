@@ -30,6 +30,11 @@ responses:
       metadata:
         rephrase: True
 
+  utter_can_do_something_else:
+    - text: "Is there anything else I can help you with?"
+      metadata: 
+        rephrase: True
+
   utter_too_complex_rasa:
     - text: This is too complex for me, let's take it one step at a time.
 
@@ -93,6 +98,12 @@ flows:
     steps:
       - id: "0"
         action: utter_internal_error_rasa
+  
+  pattern_completed:
+    description: a flow has been completed and there is nothing else to be done
+    steps:
+      - id: "0"
+        action: utter_can_do_something_else
 
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented

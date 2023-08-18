@@ -82,7 +82,6 @@ class FlowPolicy(Policy):
             StackFrameType.CORRECTION,
             StackFrameType.INTERRUPT,
             StackFrameType.LINK,
-            StackFrameType.RESUME,
             StackFrameType.REGULAR,
             StackFrameType.REMARK,
         ]
@@ -686,20 +685,18 @@ class FlowExecutor:
             if current_frame := self.flow_stack.pop():
                 previous_flow = self.flow_stack.top_flow(self.all_flows)
                 previous_flow_step = self.flow_stack.top_flow_step(self.all_flows)
+                # get stack frame that is below the current one and which will
+                # be continued now that this one has ended.
+                previous_flow_name = (
+                    previous_flow.name or previous_flow.id if previous_flow else None
+                )
+
                 if (
                     current_frame.frame_type == StackFrameType.INTERRUPT
                     and previous_flow is not None
                     and previous_flow_step is not None
                     and previous_flow_step.id != END_STEP
                 ):
-                    # get stack frame that is below the current one and which will
-                    # be continued now that this one has ended.
-                    previous_flow_name = (
-                        previous_flow.name or previous_flow.id
-                        if previous_flow
-                        else None
-                    )
-
                     # TODO: rather than triggering the flow-trigger-action this should
                     #   directly put the flow onto the stack and start it that way.
                     return ActionPrediction(
@@ -724,6 +721,16 @@ class FlowExecutor:
                         # TODO: we need to figure out how to actually "undo" the
                         #    changed slots
                         pass
+                elif not previous_flow and current_frame.flow_id != "pattern_completed":
+                    # TODO: rather than triggering the flow-trigger-action this should
+                    #   directly put the flow onto the stack and start it that way.
+                    return ActionPrediction(
+                        FLOW_PREFIX + "pattern_completed",
+                        1.0,
+                        metadata={"slots": {PREVIOUS_FLOW_SLOT: previous_flow_name}},
+                        events=events,
+                    )
+
             return ActionPrediction(None, 0.0, events=events)
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")
