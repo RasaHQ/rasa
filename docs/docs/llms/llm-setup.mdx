@@ -93,7 +93,12 @@ to be configured:
   OpenAI Service.
 - `openai.api_base`: This should be the URL for your Azure OpenAI instance. An
   example might look like this: "https://docs-test-001.openai.azure.com/".
-
+- `deployment` : you must create a deployment on azure for using embeddings with azure openai. In this case,
+  you must also add `deployment` parameter to the config.yml
+- `engine`: in case, you are using the chat models from azure openai, you must also create a new openAI deployment
+  on azure, and provide the name of the deployment in the config.yml using `engine` parameter.
+- `chunk_size`: some azure plans might restrict you from sending larger chunks of text for embeddings. by default, `chunk_size` is 1000
+  but this can also be configured to a lower value in the config.yml
 
 To configure these parameters, follow these steps:
 
@@ -139,6 +144,37 @@ To configure these parameters, follow these steps:
      </TabItem>
    </Tabs>
 
+3. To configure the `deployment` in the config.yml file. add it in the pipeline component like this:
+
+    ```yaml title="config.yml"
+    - name: rasa_plus.ml.LLMIntentClassifier
+      fallback_intent: "out_of_scope"
+      embeddings:
+        type: "openai"
+        model_name: "text-embedding-ada-002" 
+        deployment: "name_of_deployment_on_azure"
+    ```
+
+4. To configure the `engine` in the config file, add it in the pipeline component like this: 
+  
+    ```yaml title="config.yml"
+    - name: LLMCommandGenerator
+      llm:
+        model_name: gpt-3.5-turbo
+        engine: nameofdeployment
+    ```
+
+5. To configure `chunk_size` in the config file, add it in the pipeline components under `llm` object like this:
+
+    ```yaml title="config.yml"
+    - name: rasa_plus.ml.LLMIntentClassifier
+      fallback_intent: "out_of_scope"
+      embeddings:
+        type: "openai"
+        model_name: "text-embedding-ada-002" 
+        deployment: "name_of_deployment_on_azure"
+        chunk_size: 16
+    ```
 
 ## Other LLMs & Embeddings
 
