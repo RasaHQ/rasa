@@ -131,7 +131,7 @@ sklearn-crfsuite = "~0.3"
 psycopg2-binary = ">=2.8.2,<2.10.0"
 python-dateutil = "~2.8"
 protobuf = ">=4.23.3,< 4.23.4"
-tensorflow_hub = "^0.14.0"
+tensorflow_hub = "^0.13.0"
 setuptools = ">=41.0.0"
 ujson = ">=1.35,<6.0"
 regex = ">=2020.6,<2022.11"
@@ -271,7 +271,7 @@ version = "^0.4.4"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-metal]
-version = "1.0.1"
+version = "0.8.0"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 optional = true
 
