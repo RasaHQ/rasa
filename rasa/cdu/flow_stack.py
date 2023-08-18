@@ -147,17 +147,15 @@ class StackFrameType(str, Enum):
 
     This means that the previous flow was interrupted by this flow."""
     REMARK = "remark"
-    """The frame is an interrupt frame.
+    """The frame is a short remark - in a sense a short interruption.
 
-    This means that the previous flow was interrupted by this flow."""
+    This means that the previous flow was interrupted by this flow, but the
+    interruption is short and the previous flow should be resumed after this
+    flow is finished."""
     LINK = "link"
     """The frame is a link frame.
 
     This means that the previous flow linked to this flow."""
-    RESUME = "resume"
-    """The frame is a resume frame.
-
-    This means that the previous flow was resumed by this flow."""
     CORRECTION = "correction"
     """The frame is a correction frame.
 
@@ -183,8 +181,6 @@ class StackFrameType(str, Enum):
             return StackFrameType.LINK
         elif typ == StackFrameType.REGULAR.value:
             return StackFrameType.REGULAR
-        elif typ == StackFrameType.RESUME.value:
-            return StackFrameType.RESUME
         elif typ == StackFrameType.CORRECTION.value:
             return StackFrameType.CORRECTION
         elif typ == StackFrameType.DOCSEARCH.value:
