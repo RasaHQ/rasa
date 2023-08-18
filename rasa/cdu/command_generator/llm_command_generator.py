@@ -14,6 +14,7 @@ from rasa.cdu.commands import (
     HumanHandoffCommand,
     ChitChatAnswerCommand,
     KnowledgeAnswerCommand,
+    ClarifyCommand,
 )
 
 from rasa.core.policies.flow_policy import FlowStack
@@ -192,6 +193,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         chitchat_re = re.compile(r"ChitChat\(\)")
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumandHandoff\(\)")
+        clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
         # listen_re = re.compile(r"Listen\(\)")
 
         for action in actions.strip().splitlines():
@@ -215,6 +217,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 commands.append(KnowledgeAnswerCommand())
             elif humand_handoff_re.search(action):
                 commands.append(HumanHandoffCommand())
+            elif m := clarify_re.search(action):
+                options = [opt.strip() for opt in m.group(1).split(",")]
+                commands.append(ClarifyCommand(options))
             # elif listen_re.search(action):
             #     commands.append(ListenCommand())
 

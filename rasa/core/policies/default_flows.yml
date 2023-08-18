@@ -45,6 +45,9 @@ responses:
   utter_internal_error_rasa:
     - text: Sorry, I'm having trouble understanding you right now. Please try again later.
 
+  utter_clarification_options_rasa:
+    - text: I'm not sure what you'd like to achieve. Do you want to {rasa_clarification_options}?
+
 slots:
   confirm_correction:
     type: bool
@@ -121,3 +124,9 @@ flows:
 
           User: {{latest_user_message}}
           Response:
+
+  pattern_clarification:
+    description: handle clarifications with the user
+    steps:
+      - id: "0"
+        action: utter_clarification_options_rasa

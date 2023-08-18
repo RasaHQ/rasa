@@ -14,6 +14,7 @@ from rasa.cdu.commands import (
     FreeFormAnswerCommand,
     KnowledgeAnswerCommand,
     ChitChatAnswerCommand,
+    ClarifyCommand,
 )
 from rasa.cdu.conversation_patterns import (
     FLOW_PATTERN_CORRECTION_ID,
@@ -232,6 +233,17 @@ def execute_commands(
                     frame_type=StackFrameType.INTENTLESS,
                 )
             )
+        elif isinstance(command, ClarifyCommand):
+            context = {
+                "options": command.options,
+            }
+            flow_stack.push(
+                FlowStackFrame(
+                    flow_id="pattern_clarification",
+                    frame_type=StackFrameType.REGULAR,
+                    context=context
+                )
+            )
         elif isinstance(command, ErrorCommand):
             structlogger.debug("command_executor.error", command=command)
             flow_stack.push(
@@ -392,6 +404,26 @@ def clean_up_commands(
                 "command_executor.prepend_command.free_form_answer", command=command
             )
             clean_commands.insert(0, command)
+        elif isinstance(command, ClarifyCommand):
+            clean_options = [
+                all_flows.flow_by_id(opt).id
+                for opt in command.options
+                if all_flows.flow_by_id(opt) is not None
+            ]
+            if len(clean_options) != len(command.options):
+                structlogger.debug(
+                    "command_executor.altered_command.dropped_clarification_options",
+                    command=command,
+                    original_options=command.options,
+                    cleaned_options=clean_options,
+                )
+            if len(clean_options) == 0:
+                structlogger.debug(
+                    "command_executor.skip_command.empty_clarification",
+                    command=command
+                )
+            else:
+                clean_commands.append(ClarifyCommand(clean_options))
         else:
             clean_commands.append(command)
     return clean_commands
