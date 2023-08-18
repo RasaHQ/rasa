@@ -405,11 +405,8 @@ def clean_up_commands(
             )
             clean_commands.insert(0, command)
         elif isinstance(command, ClarifyCommand):
-            clean_options = [
-                all_flows.flow_by_id(opt).id
-                for opt in command.options
-                if all_flows.flow_by_id(opt) is not None
-            ]
+            flows = [all_flows.flow_by_id(opt) for opt in command.options]
+            clean_options = [flow.id for flow in flows if flow is not None]
             if len(clean_options) != len(command.options):
                 structlogger.debug(
                     "command_executor.altered_command.dropped_clarification_options",
