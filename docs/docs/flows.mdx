@@ -50,7 +50,7 @@ A Flow is defined using the following properties:
 flows:
   a_flow: # an id
     name: "A flow" # a name
-    description: "optional description of a flow"
+    description: "description of the purpose of the flow"
     steps: [] # a list of steps
 ```
 
@@ -60,7 +60,10 @@ The `name` field is a required human readable name for the flow.
 
 ### Description
 
-The `description` field is an optional human readable description of the flow.
+The `description` field is a summary of the flow. It is required, and should
+describe the purpose of the flow. Other components, such as the
+[LLMCommandGenerator](./llms/llm-command-generator.mdx), use the description to
+decide when to start the flow.
 
 ### Steps
 
@@ -117,8 +120,6 @@ The `next` field can also be omitted. In this case, the flow will end.
 
 Steps can manifest in one of the following types:
 
-- [user message step](./flows.mdx#user-message): a user utterance that will
-  trigger the flow
 - [entry prompt step](./flows.mdx#entry-prompt): an LLM prompt that will be used
   to determine if the flow should start
 - [action step](./flows.mdx#action): a custom action or utterance action to be
@@ -131,23 +132,23 @@ Steps can manifest in one of the following types:
 
 ### Starting a Flow
 
-How a flow can be triggered, depends on the first step in the flow. If the first
-step is a [user message step](./flows.mdx#user-message), the flow will be
-triggered by a user utterance that matches the intent or entities specified in
-the step.
+Flows can be triggered by other Rasa components, e.g. the
+[LLM Command Generator](./llms/llm-command-generator.mdx). The description of
+each flow is very important for the LLM Command Generator, as it uses the
+description to determine which flow to trigger.
 
-If the first step is an [entry prompt step](./flows.mdx#entry-prompt), the flow
-will be triggered if the prompt will evaluate to 'yes' when send to an LLM.
-
-Flows that start with a different step cannot be triggered by a user directly.
-They can only be triggered by other flows, e.g. by linking to them.
+An Alternative way to trigger flows is using an
+[entry prompt step](./flows.mdx#entry-prompt). Entry prompts trigger an LLM call
+with the given context and a yes/no question to determine whether to start the
+flow.
 
 ## Step Types
 
 Every step in a flow has a type. The type determines what the step does and what
 properties it supports.
 
-### User Message
+
+{/* ### User Message
 
 This step signifies a user utterance. Here's an example:
 
@@ -178,7 +179,8 @@ can proceed if either of the conditions in the `OR` statement are met:
 ```
 
 Here, if the user intent is either to make a complaint or to talk to an agent,
-the flow should be started.
+the flow should be started. \*/}
+
 
 ### Entry Prompt
 
@@ -194,8 +196,8 @@ an example:
 
     {{latest_user_message}}
   advance_if: "yes" # optional, defaults to "yes"
-  llm:              # optional, defaults to "openai"
-    type: "openai"  
+  llm: # optional, defaults to "openai"
+    type: "openai"
 ```
 
 When a new message is received, the `entry_prompt` will be sent to an LLM. If
@@ -215,10 +217,10 @@ messages.
 
 :::info Using Other LLMs
 
-By default, OpenAI is used as the underlying LLM. 
+By default, OpenAI is used as the underlying LLM.
 
-The used LLM provider can be configured as part of the properties of the flow 
-step and another provider, e.g. `cohere` can be used: 
+The used LLM provider can be configured as part of the properties of the flow
+step and another provider, e.g. `cohere` can be used:
 
 ```yaml
 - id: "start_if_sensitive_topic"
@@ -229,8 +231,8 @@ step and another provider, e.g. `cohere` can be used:
 
     {{latest_user_message}}
   advance_if: "yes"
-  llm:             
-    type: "cohere" 
+  llm:
+    type: "cohere"
 ```
 
 For more information, see the
@@ -273,7 +275,7 @@ using an LLM. The message is then sent to the user. Here is an example:
 
     User: {{latest_user_message}}
     Response:
-  llm:              # optional, defaults to "openai"
+  llm: # optional, defaults to "openai"
     type: "openai"
 ```
 
@@ -296,10 +298,10 @@ next step once the message is sent.
 
 :::info Using Other LLMs
 
-By default, OpenAI is used as the underlying LLM. 
+By default, OpenAI is used as the underlying LLM.
 
-The used LLM provider can be configured as part of the properties of the flow 
-step and another provider, e.g. `cohere` can be used: 
+The used LLM provider can be configured as part of the properties of the flow
+step and another provider, e.g. `cohere` can be used:
 
 ```yaml
 - id: "a_generation_step"
@@ -309,7 +311,7 @@ step and another provider, e.g. `cohere` can be used:
 
     User: {{latest_user_message}}
     Response:
-  llm:   
+  llm:
     type: "cohere"
 ```
 
@@ -364,8 +366,8 @@ For the `slot_type`, it's recommended to use `text` slots in Flows.
 #### Skipping Questions
 
 By default, a question is skipped if the slot is already filled. If a question
-should always be asked, no matter if the underlying slot is already filled,
-you can set `skip_if_filled: false` on the question:
+should always be asked, no matter if the underlying slot is already filled, you
+can set `skip_if_filled: false` on the question:
 
 ```yaml
 - id: "confirm_dangerous_step"
@@ -373,9 +375,9 @@ you can set `skip_if_filled: false` on the question:
   skip_if_filled: false
 ```
 
-If the "final_confirmation" slot is already filled, 
-the bot will clear it, ask the question and fill the slot again. This ensures
-the confirmation question is always asked.
+If the "final_confirmation" slot is already filled, the bot will clear it, ask
+the question and fill the slot again. This ensures the confirmation question is
+always asked.
 
 #### Scopes
 
