@@ -3,42 +3,41 @@ id: unhappy-paths
 sidebar_label: Handling Unhappy Paths
 title: Handling Unhappy Paths
 abstract: |
-    This page describes how to handle unhappy paths where users wander off
-    the path described in a flows business logic.
+  This page describes how to handle unhappy paths where users wander off
+  the path described in a flows business logic.
 ---
 
 import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 
-<RasaDiscoveryBanner/>
+<RasaDiscoveryBanner />
 
 ## Flows with Unhappy Paths
 
-A flow represents a specific business function as a directed graph.
-Depending on your business logic, these graphs can be purely linear, branch multiple
-times or have cycles in certain sections. To limit complexity for flow designers,
-we let them focus on implementing simple direct flows
-or [happy paths](../glossary.mdx#happy--unhappy-paths), where the user reaches
-their initial goal and where these goals are
-attained step by step. 
+A flow represents a specific business function as a directed graph. Depending on
+your business logic, these graphs can be purely linear, branch multiple times or
+have cycles in certain sections. To limit complexity for flow designers, we let
+them focus on implementing simple direct flows or
+[happy paths](../glossary.mdx#happy--unhappy-paths), where the user reaches
+their initial goal and where these goals are attained step by step.
 
-Instead of having to model flow switches, cancellations, or
-slot corrections explicitly, a rasa assistant handles these things in a
-uniform manner across flows, greatly reducing the complexity of flow design.
+Instead of having to model flow switches, cancellations, or slot corrections
+explicitly, a rasa assistant handles these things in a uniform manner across
+flows, greatly reducing the complexity of flow design.
 
 :::info
 
 Rasa comes with a **default implementation for every unhappy path**. You can
 override these defaults by defining flows with the respective names shown here.
-For example, you can define a flow called `pattern_correction` to
-override the default behavior of the bot when a user interrupts a flow.
+For example, you can define a flow called `pattern_correction` to override the
+default behavior of the bot when a user interrupts a flow.
 
 :::
 
 ## Digressions
 
-Digressions happen when the user is currently involved in one flow, e.g. transferring
-money to a friend, and they need access to some information, such as
-their current balance, before continuing with the flow.
+Digressions happen when the user is currently involved in one flow, e.g.
+transferring money to a friend, and they need access to some information, such
+as their current balance, before continuing with the flow.
 
 ```
 User: I want to send some money to Sudarshana
@@ -51,12 +50,16 @@ Bot: How much money do you want to send to Sudarshana then?
 ```
 
 In the above conversation you can see that
-1. The transferring money flow was interrupted by the checking balance flow and the needed information was provided
+
+1. The transferring money flow was interrupted by the checking balance flow and
+   the needed information was provided
 2. The bot commented on returning to the original flow
 3. The bot restated the current question of the original flow
 
-This represents the default behavior in flows. You can adjust this behavior by adapting
-the preconfigured flow called `pattern_continue_interrupted` which is defined as follows:
+This represents the default behavior in flows. You can adjust this behavior by
+adapting the preconfigured flow called `pattern_continue_interrupted` which is
+defined as follows:
+
 ```yaml title="domain.yml"
 responses:
   utter_flow_continue_interrupted:
@@ -68,23 +71,26 @@ responses:
 ```yaml title="flows.yml"
 flows:
   pattern_continue_interrupted:
-    description: A meta flow that should be started to continue an interrupted flow.
+    description:
+      A meta flow that should be started to continue an interrupted flow.
 
     steps:
       - id: "0"
         action: utter_flow_continue_interrupted
 ```
+
 You can override these defaults by defining flows, slots, or responses with the
-respective names shown here. For instance, you could either remove
-the statement about the interrupted flow being continued
-or add another confirmation step.
+respective names shown here. For instance, you could either remove the statement
+about the interrupted flow being continued or add another confirmation step.
 
 ## Corrections
-Corrections of slots happen for a variety of reasons. Users might want to correct their
-own mistake or a mistake the bot made, or they might change their minds about certain
-aspects of what they want to achieve.
+
+Corrections of slots happen for a variety of reasons. Users might want to
+correct their own mistake or a mistake the bot made, or they might change their
+minds about certain aspects of what they want to achieve.
 
 A common correction scenario looks like this:
+
 ```
 User: I want to send some money to Joe
 Bot: How much money do you want to send?
@@ -99,19 +105,22 @@ Bot: Do you want to send 50$ to John? (Yes/No)
 ```
 
 In the above conversation you can see that
-1. The bot understands that the user wants to correct a slot that was set earlier and asks the user for confirmation before making the change
+
+1. The bot understands that the user wants to correct a slot that was set
+   earlier and asks the user for confirmation before making the change
 2. The bot informs the user about the successful change
 
 Under the hood, the flow is replayed in the background starting from the
-corrected question to ensure the updated information is still in line with
-any logical checks along the flow.
+corrected question to ensure the updated information is still in line with any
+logical checks along the flow.
 
-If the change had resulted in going down a different path, the user
-would see the questions and utterances
-of this alternate path.
+If the change had resulted in going down a different path, the user would see
+the questions and utterances of this alternate path.
 
-This represents the default behavior in flows. You can adjust this behavior by adapting
-the preconfigured flow called `pattern_correction` which is defined as follows:
+This represents the default behavior in flows. You can adjust this behavior by
+adapting the preconfigured flow called `pattern_correction` which is defined as
+follows:
+
 ```yaml title="domain.yml"
 responses:
   utter_ask_confirm_correction:
@@ -145,12 +154,13 @@ slots:
         value: "False"
         conditions:
           - active_loop: question_confirm_correction
-
 ```
+
 ```yaml title="flows.yml"
 flows:
   pattern_correction:
-    description: A meta flow that should be started to correct a previous user input.
+    description:
+      A meta flow that should be started to correct a previous user input.
 
     steps:
       - id: "0"
@@ -168,14 +178,18 @@ flows:
       - id: "3"
         action: utter_not_corrected_previous_input
 ```
+
 You can override these defaults by defining flows, slots, or responses with the
-respective names shown here. For instance, you could either remove the confirmation for correcting slots or disable slots correction altogether.
+respective names shown here. For instance, you could either remove the
+confirmation for correcting slots or disable slots correction altogether.
 
 ## Cancellations
-Cancellations can happen for a variety of reasons. The user might have changed their
-mind on a whim or due to new information learned during the conversation.
+
+Cancellations can happen for a variety of reasons. The user might have changed
+their mind on a whim or due to new information learned during the conversation.
 
 A common correction scenario looks like this:
+
 ```
 User: I want to send some money to Dimitri
 Bot: How much money do you want to send?
@@ -189,8 +203,8 @@ Bot: Okay, I am cancelling the transfer.
 ```
 
 In the above conversation you can see that the bot informed the user about the
-cancellation of the flow. This represents the default behavior in flows.
-You can adjust this behavior by adapting the preconfigured flow called
+cancellation of the flow. This represents the default behavior in flows. You can
+adjust this behavior by adapting the preconfigured flow called
 `pattern_cancel_flow` which is defined as follows:
 
 ```yaml title="domain.yml"
@@ -211,8 +225,7 @@ flows:
         action: utter_flow_cancelled_rasa
 ```
 
-You can see that this response is using an extra variable, `rasa_cancelled_flow` which
-is filled by the flow policy upon executing the cancel flow pattern. Currently,
-you can only change the cancellation message, but not introduce a confirmation. This is
-on our todo list.
-
+You can see that this response is using an extra variable, `rasa_cancelled_flow`
+which is filled by the flow policy upon executing the cancel flow pattern.
+Currently, you can only change the cancellation message, but not introduce a
+confirmation. This is on our todo list.

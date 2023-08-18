@@ -84,10 +84,10 @@ flows:
     # - ...
 ```
 
-The first step in the flow is `ask_recipient`. A correction by the 
-user, _"oh sorry I meant John"_, initiates a correction flow. 
-This correction is not explicitly modeled in 
-the `transfer_money` flow; it's handled by a conversational pattern:
+The first step in the flow is `ask_recipient`. A correction by the user, _"oh
+sorry I meant John"_, initiates a correction flow. This correction is not
+explicitly modeled in the `transfer_money` flow; it's handled by a
+conversational pattern:
 
 <Image
   img={flowStackEvolution}
@@ -122,14 +122,15 @@ completing the action and incorporating its result, it moves to the next state.
 ### Starting New Flows
 
 A flow can be started in several ways:
-* A flow is started when a Rasa component puts the flow on the stack. For
+
+- A flow is started when a Rasa component puts the flow on the stack. For
   example, the [LLM Command Generator](./llm-command-generator.mdx) puts a flow
   on the stack when it determines that a flow would be a good fit for the
   current conversation.
-* One flow can ["link" to another flow](../flows.mdx#link), which will
-  initiate the linked flow and return to the original flow once the linked flow
+- One flow can ["link" to another flow](../flows.mdx#link), which will initiate
+  the linked flow and return to the original flow once the linked flow
   completes.
-* Flows, which are conversational patterns (e.g. correction, resume flow), are
+- Flows, which are conversational patterns (e.g. correction, resume flow), are
   automatically initiated by the `FlowPolicy` when needed.
 
 ### Interruptions and Digressions
@@ -142,9 +143,9 @@ which digressions and interruptions the flow policy can handle, refer to
 
 For example, the user message _"oh sorry I meant John"_ is a correction to a
 prior input. The `FlowPolicy` depends on another component, like the
-[LLM Command Generator](./llm-command-generator.mdx), to identify it as a correction
-and set the corresponding slots. Based on this, the `FlowPolicy` initiates the
-correction flow.
+[LLM Command Generator](./llm-command-generator.mdx), to identify it as a
+correction and set the corresponding slots. Based on this, the `FlowPolicy`
+initiates the correction flow.
 
 ## Configuration
 
