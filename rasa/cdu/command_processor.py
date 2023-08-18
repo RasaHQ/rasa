@@ -181,6 +181,8 @@ def execute_commands(
             for idx, frame in enumerate(flow_stack.frames):
                 if frame.flow_id == current_top_flow.id:
                     structlogger.debug("command_executor.cancel_flow", command=command)
+                    # Setting the flow to the end step so it is properly
+                    # wrapped up by the flow policy
                     flow_stack.frames[idx].step_id = END_STEP
             events.append(SlotSet(CANCELLED_FLOW_SLOT, current_top_flow.id))
             flow_stack.push(

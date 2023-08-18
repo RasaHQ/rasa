@@ -25,8 +25,10 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.events import ActiveLoop, Event, SlotSet
 from rasa.shared.core.flows.flow import (
     END_STEP,
+    CLEANUP_STEP,
     START_STEP,
     ActionFlowStep,
+    CleanUpFlowStep,
     ElseFlowLink,
     EndFlowStep,
     Flow,
@@ -349,9 +351,11 @@ class FlowExecutor:
                 tracker=tracker,
             )
             return None
-        if current.id != END_STEP:
+        if current.id != CLEANUP_STEP:
             # we've reached the end of the user defined steps in the flow.
             # every flow should end with an end step, so we add it here.
+            # the clean up happens after the end step - hence it doesn't
+            # need to be added here
             return END_STEP
         else:
             # we are already at the very end of the flow. There is no next step.
@@ -679,6 +683,8 @@ class FlowExecutor:
                 ACTION_SEND_TEXT_NAME, 1.0, metadata={"message": {"text": generated}}
             )
         elif isinstance(step, EndFlowStep):
+            return ActionPrediction(None, 0.0)
+        elif isinstance(step, CleanUpFlowStep):
             # this is the end of the flow, so we'll pop it from the stack
             events = self._reset_scoped_slots(flow, tracker)
             structlogger.debug("flow.step.run.flowend", flow=flow)

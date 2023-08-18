@@ -145,13 +145,16 @@ class StackFrameType(str, Enum):
     INTERRUPT = "interrupt"
     """The frame is an interrupt frame.
 
-    This means that the previous flow was interrupted by this flow."""
+    This means that the previous flow was interrupted by this flow. An
+    interrupt should be used for frames that span multiple turns and
+    where we expect the user needing help to get back to the previous
+    flow."""
     REMARK = "remark"
-    """The frame is a short remark - in a sense a short interruption.
+    """The frame is a short remark - in a sense, a short interruption.
 
     This means that the previous flow was interrupted by this flow, but the
-    interruption is short and the previous flow should be resumed after this
-    flow is finished."""
+    interruption is short and the previous flow should be resumed right away
+    after this flow is finished."""
     LINK = "link"
     """The frame is a link frame.
 
