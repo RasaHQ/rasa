@@ -27,9 +27,8 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SEND_TEXT_NAME,
-    CORRECTED_SLOTS_SLOT,
+    FLOW_CONTEXT_SLOT,
     FLOW_STACK_SLOT,
-    PREVIOUS_FLOW_SLOT,
 )
 from rasa.shared.core.events import ActiveLoop, Event, SlotSet
 from rasa.shared.core.flows.flow import (
@@ -401,17 +400,6 @@ class FlowExecutor:
         else:
             return True
 
-    def _find_earliest_updated_question(
-        self, current_step_id: str, flow: Flow, updated_slots: List[Text]
-    ) -> Optional[FlowStep]:
-        """Find the question that was updated."""
-        asked_question_steps = flow.previously_asked_questions(current_step_id)
-
-        for question_step in reversed(asked_question_steps):
-            if question_step.question in updated_slots:
-                return question_step
-        return None
-
     def consider_flow_switch(self, tracker: DialogueStateTracker) -> ActionPrediction:
         """Consider switching to a new flow.
 
@@ -464,26 +452,6 @@ class FlowExecutor:
                 )
             return prediction
 
-    def _correct_flow_position(
-        self,
-        newly_set_slots: List[Text],
-        step_id: str,
-        flow: Flow,
-        tracker: DialogueStateTracker,
-    ) -> None:
-        reset_point = self._find_earliest_updated_question(
-            step_id, flow, newly_set_slots
-        )
-
-        if reset_point:
-            structlogger.info(
-                "flow.reset.slotupdate",
-                step_id=step_id,
-                flow=flow,
-                reset_point=reset_point.id,
-            )
-            self.flow_stack.advance_top_flow(reset_point.id)
-
     def _select_next_action(
         self,
         tracker: DialogueStateTracker,
@@ -514,6 +482,9 @@ class FlowExecutor:
                 # If there is no current flow, we assume that all flows are done
                 # and there is nothing to do. The assumption here is that every
                 # flow ends with an action listen.
+                tracker.update_with_events(
+                    [SlotSet(FLOW_CONTEXT_SLOT, None)], self.domain
+                )
                 predicted_action = ActionPrediction(ACTION_LISTEN_NAME, 1.0)
                 break
 
@@ -523,6 +494,12 @@ class FlowExecutor:
                     "This should not happen, if a flow is started it should be set "
                     "to __start__ if it ended it should be popped from the stack."
                 )
+
+            if top_frame := self.flow_stack.top():
+                if tracker.get_slot(FLOW_CONTEXT_SLOT) != top_frame.context:
+                    tracker.update_with_events(
+                        [SlotSet(FLOW_CONTEXT_SLOT, top_frame.context)], self.domain
+                    )
 
             structlogger.debug("flow.action.loop", previous_step=previous_step)
             predicted_action = self._wrap_up_previous_step(
@@ -716,52 +693,32 @@ class FlowExecutor:
                     and previous_stack_frame.frame_type
                     in STACK_FRAME_TYPES_WITH_USER_FLOWS
                 ):
-                    # TODO: rather than triggering the flow-trigger-action this should
-                    #   directly put the flow onto the stack and start it that way.
-                    return ActionPrediction(
-                        FLOW_PREFIX + FLOW_PATTERN_CONTINUE_INTERRUPTED,
-                        1.0,
-                        metadata={
-                            "slots": {PREVIOUS_FLOW_SLOT: previous_flow.readable_name()}
-                        },
-                        events=events,
-                    )
-                elif (
-                    previous_flow
-                    and previous_stack_frame
-                    and current_frame.frame_type == StackFrameType.CORRECTION
-                ):
-                    # TODO: we need to figure out how to actually
-                    #    "undo" the changed slots
-                    corrected_slots = tracker.get_slot(CORRECTED_SLOTS_SLOT)
-                    if corrected_slots:
-                        self._correct_flow_position(
-                            corrected_slots,
-                            previous_stack_frame.step_id,
-                            previous_flow,
-                            tracker,
+                    self.flow_stack.push(
+                        FlowStackFrame(
+                            flow_id=FLOW_PATTERN_CONTINUE_INTERRUPTED,
+                            step_id=START_STEP,
+                            frame_type=StackFrameType.REMARK,
+                            context={
+                                "previous_flow_name": previous_flow.readable_name()
+                            },
                         )
-                    else:
-                        # TODO: we need to figure out how to actually "undo" the
-                        #    changed slots
-                        pass
+                    )
                 elif (
                     not previous_flow
                     and current_frame.flow_id != FLOW_PATTERN_COMPLETED
                 ):
-                    # TODO: rather than triggering the flow-trigger-action this should
-                    #   directly put the flow onto the stack and start it that way.
                     completed_flow = self.all_flows.flow_by_id(current_frame.flow_id)
                     completed_flow_name = (
                         completed_flow.readable_name() if completed_flow else None
                     )
-                    return ActionPrediction(
-                        FLOW_PREFIX + FLOW_PATTERN_COMPLETED,
-                        1.0,
-                        metadata={"slots": {PREVIOUS_FLOW_SLOT: completed_flow_name}},
-                        events=events,
+                    self.flow_stack.push(
+                        FlowStackFrame(
+                            flow_id=FLOW_PATTERN_COMPLETED,
+                            step_id=START_STEP,
+                            frame_type=StackFrameType.REMARK,
+                            context={"previous_flow_name": completed_flow_name},
+                        )
                     )
-
             return ActionPrediction(None, 0.0, events=events)
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")

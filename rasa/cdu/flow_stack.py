@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Text, List, Optional
+from typing import Any, Dict, Text, List, Optional, Tuple
 
 from rasa.shared.core.constants import (
     FLOW_STACK_SLOT,
@@ -113,6 +113,21 @@ class FlowStack:
 
         return flows.flow_by_id(top.flow_id)
 
+    def topmost_user_frame(
+        self, flows: FlowsList
+    ) -> Tuple[Optional[FlowStep], Optional[Flow]]:
+        """Returns the topmost user frame from the stack.
+
+        Returns:
+            The topmost user frame.
+        """
+        for frame in reversed(self.frames):
+            if frame.frame_type in STACK_FRAME_TYPES_WITH_USER_FLOWS:
+                flow = flows.flow_by_id(frame.flow_id)
+                return flow.step_by_id(frame.step_id), flow
+
+        return None, None
+
     def top_flow_step(self, flows: FlowsList) -> Optional[FlowStep]:
         """Get the current flow step.
 
@@ -219,6 +234,8 @@ class FlowStackFrame:
     """The ID of the current step."""
     frame_type: StackFrameType = StackFrameType.REGULAR
     """The type of the frame. Defaults to `StackFrameType.REGULAR`."""
+    context: Optional[Dict[Text, Any]] = None
+    """The context of the frame. Defaults to `None`."""
 
     @staticmethod
     def from_dict(data: Dict[Text, Any]) -> FlowStackFrame:
@@ -234,6 +251,7 @@ class FlowStackFrame:
             data["flow_id"],
             data["step_id"],
             StackFrameType.from_str(data.get("frame_type")),
+            data["context"],
         )
 
     def as_dict(self) -> Dict[Text, Any]:
@@ -246,6 +264,7 @@ class FlowStackFrame:
             "flow_id": self.flow_id,
             "step_id": self.step_id,
             "frame_type": self.frame_type.value,
+            "context": self.context,
         }
 
     def with_updated_id(self, step_id: Text) -> FlowStackFrame:
@@ -263,5 +282,6 @@ class FlowStackFrame:
         return (
             f"FlowState(flow_id: {self.flow_id}, "
             f"step_id: {self.step_id}, "
-            f"frame_type: {self.frame_type.value})"
+            f"frame_type: {self.frame_type.value}, "
+            f"context: {self.context})"
         )

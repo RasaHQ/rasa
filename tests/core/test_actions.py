@@ -72,6 +72,7 @@ from rasa.shared.core.events import (
 import rasa.shared.utils.common
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
+    FLOW_CONTEXT_SLOT,
     USER_INTENT_SESSION_START,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -92,9 +93,6 @@ from rasa.shared.core.constants import (
     SESSION_START_METADATA_SLOT,
     ACTION_EXTRACT_SLOTS,
     FLOW_STACK_SLOT,
-    CANCELLED_FLOW_SLOT,
-    PREVIOUS_FLOW_SLOT,
-    CORRECTED_SLOTS_SLOT,
     RETURN_VALUE_SLOT,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -245,9 +243,7 @@ async def test_remote_action_runs(
                     REQUESTED_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
                     FLOW_STACK_SLOT: None,
-                    CANCELLED_FLOW_SLOT: None,
-                    CORRECTED_SLOTS_SLOT: None,
-                    PREVIOUS_FLOW_SLOT: None,
+                    FLOW_CONTEXT_SLOT: None,
                     RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
@@ -312,9 +308,7 @@ async def test_remote_action_logs_events(
                     REQUESTED_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
                     FLOW_STACK_SLOT: None,
-                    CANCELLED_FLOW_SLOT: None,
-                    CORRECTED_SLOTS_SLOT: None,
-                    PREVIOUS_FLOW_SLOT: None,
+                    FLOW_CONTEXT_SLOT: None,
                     RETURN_VALUE_SLOT: None,
                 },
                 "events": [],

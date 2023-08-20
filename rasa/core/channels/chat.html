@@ -94,6 +94,7 @@
               <th>Type</th>
               <th>Flow</th>
               <th>Step Id</th>
+              <th>Context</th>
             </tr>
           </thead>
           <tbody id="stack-frames"></tbody>
@@ -212,7 +213,7 @@
             updateE2ETest(data);
             updateSlots(data.slots);
             updateStackFrames(data.slots.flow_stack || []);
-            await renderMermaidDiagram(data.slots.flow_stack || []);
+            await renderMermaidDiagram(data.slots.flow_stack || [],data.slots);
           }
         } catch (error) {
           console.error(error);
@@ -252,7 +253,7 @@
 
         sortedSlotNames.forEach((name) => {
           const slotValue = JSON.stringify(slots[name], null, 2);
-          if (name !== "flow_stack" && slotValue !== "null") {
+          if (!["flow_stack", "flow_context"].includes(name) && slotValue !== "null") {
             root.insertAdjacentHTML(
               "beforeend",
               `<tr><td>${name}</td><td>${slotValue}</td></tr>`
@@ -273,21 +274,22 @@
         if (!stackFrames.length) {
           stackEl.insertAdjacentHTML(
             "afterbegin",
-            `<tr><td colspan=4 class="empty-row">-</td></tr>`
+            `<tr><td colspan=5 class="empty-row">-</td></tr>`
           );
         } else {
           stackFrames.forEach((frame, i) => {
+            const frameContext = JSON.stringify(frame.context, null, 2);
             stackEl.insertAdjacentHTML(
               "afterbegin",
               `<tr><td>${i + 1}</td><td>${frame.frame_type}</td><td>${
                 frame.flow_id
-              }</td><td>${frame.step_id}</td></tr>`
+              }</td><td>${frame.step_id}</td><td><code>${frameContext}</code></td></tr>`
             );
           });
         }
       }
 
-      async function renderMermaidDiagram(stackFrames) {
+      async function renderMermaidDiagram(stackFrames, slots) {
         let activeFlow = stackFrames[stackFrames.length - 1]?.flow_id;
         let activeStep = stackFrames[stackFrames.length - 1]?.step_id;
         let flows = await flowsData;
@@ -309,9 +311,9 @@ classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
             let step = flow.steps[i];
             if (step.question) {
               let slotValue = slots[step.question]
-                ? `_${slots[step.question]}_`
+                ? `'${slots[step.question]}'`
                 : "\uD83D\uDCAC";
-              mermaidText += `${flow.steps[i].id}["\`${flow.steps[i].question}\n${slotValue}\`"]:::question\n`;
+              mermaidText += `${flow.steps[i].id}["${flow.steps[i].question}\n${slotValue}"]:::question\n`;
             }
             if (step.action) {
               mermaidText += `${flow.steps[i].id}["${flow.steps[i].action}"]:::action\n`;

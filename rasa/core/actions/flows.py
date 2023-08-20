@@ -1,11 +1,17 @@
 from typing import Any, Dict, Optional, Text, List
-import logging
+
+import structlog
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
 from rasa.shared.constants import FLOW_PREFIX
 
-from rasa.shared.core.constants import FLOW_STACK_SLOT
+from rasa.shared.core.constants import (
+    ACTION_CANCEL_FLOW,
+    ACTION_CORRECT_FLOW_SLOT,
+    FLOW_CONTEXT_SLOT,
+    FLOW_STACK_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActiveLoop,
@@ -13,9 +19,10 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.shared.core.flows.flow import END_STEP, START_STEP, Flow, FlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger(__name__)
 
 
 class FlowTriggerAction(action.Action):
@@ -71,5 +78,86 @@ class FlowTriggerAction(action.Action):
         ] + slot_set_events
         if tracker.active_loop_name:
             events.append(ActiveLoop(None))
+
+        return events
+
+
+class ActionCancelFlow(action.Action):
+    """Action which cancels a flow from the stack."""
+
+    def __init__(self) -> None:
+        """Creates a `ActionCancelFlow`."""
+        super().__init__()
+
+    def name(self) -> Text:
+        """Return the flow name."""
+        return ACTION_CANCEL_FLOW
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> List[Event]:
+        """Cancel the flow."""
+        stack = FlowStack.from_tracker(tracker)
+        if stack.is_empty():
+            structlogger.warning("action.cancel_flow.no_active_flow", stack=stack)
+            return []
+
+        context = tracker.get_slot(FLOW_CONTEXT_SLOT) or {}
+        canceled_flow_frames = context.get("canceled_frames", [])
+
+        for frame_idx in canceled_flow_frames:
+            if frame_idx >= len(stack.frames):
+                structlogger.warning(
+                    "action.cancel_flow.frame_not_found",
+                    stack=stack,
+                    frame_idx=frame_idx,
+                )
+                continue
+            stack.frames[frame_idx].step_id = END_STEP
+
+        return [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
+
+
+class ActionCorrectFlowSlot(action.Action):
+    """Action which corrects a slots value in a flow."""
+
+    def __init__(self) -> None:
+        """Creates a `ActionCancelFlow`."""
+        super().__init__()
+
+    def name(self) -> Text:
+        """Return the flow name."""
+        return ACTION_CORRECT_FLOW_SLOT
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> List[Event]:
+        """Correct the slots."""
+        stack = FlowStack.from_tracker(tracker)
+        if stack.is_empty():
+            structlogger.warning("action.correct_flow_slot.no_active_flow", stack=stack)
+            return []
+
+        context = tracker.get_slot(FLOW_CONTEXT_SLOT) or {}
+        corrected_slots = context.get("corrected_slots", {})
+        reset_point = context.get("corrected_reset_point", {})
+
+        for frame in stack.frames:
+            if frame.flow_id == reset_point.get("id"):
+                frame.step_id = reset_point.get("step_id") or START_STEP
+                break
+        events = [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
+
+        events.extend([SlotSet(k, v) for k, v in corrected_slots.items()])
 
         return events

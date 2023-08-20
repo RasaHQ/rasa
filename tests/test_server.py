@@ -53,12 +53,10 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
+    FLOW_CONTEXT_SLOT,
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
     FLOW_STACK_SLOT,
-    CANCELLED_FLOW_SLOT,
-    CORRECTED_SLOTS_SLOT,
-    PREVIOUS_FLOW_SLOT,
     RETURN_VALUE_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
@@ -1122,9 +1120,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
         REQUESTED_SLOT: None,
         SESSION_START_METADATA_SLOT: None,
         FLOW_STACK_SLOT: None,
-        CANCELLED_FLOW_SLOT: None,
-        CORRECTED_SLOTS_SLOT: None,
-        PREVIOUS_FLOW_SLOT: None,
+        FLOW_CONTEXT_SLOT: None,
         RETURN_VALUE_SLOT: None,
     }
     assert content["sender_id"] == "madeupid"

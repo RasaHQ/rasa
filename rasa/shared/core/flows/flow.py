@@ -291,7 +291,9 @@ class Flow:
             return None
         return self.steps[0]
 
-    def previously_asked_questions(self, step_id: Text) -> List[QuestionFlowStep]:
+    def previously_asked_questions(
+        self, step_id: Optional[str]
+    ) -> List[QuestionFlowStep]:
         """Returns the questions asked before the given step.
 
         Questions are returned roughly in reverse order, i.e. the first
@@ -300,7 +302,7 @@ class Flow:
         """
 
         def _previously_asked_questions(
-            current_step_id: Text, visited_steps: Set[Text]
+            current_step_id: str, visited_steps: Set[str]
         ) -> List[QuestionFlowStep]:
             """Returns the questions asked before the given step.
 
@@ -329,7 +331,7 @@ class Flow:
                     )
             return questions
 
-        return _previously_asked_questions(step_id, set())
+        return _previously_asked_questions(step_id or START_STEP, set())
 
     def is_handling_pattern(self) -> bool:
         """Returns whether the flow is handling a pattern."""

@@ -7,6 +7,7 @@ from typing import Text, Any, Dict, Optional, List
 from rasa.core.nlg import interpolator
 from rasa.core.nlg.generator import NaturalLanguageGenerator, ResponseVariationFilter
 from rasa.shared.constants import RESPONSE_CONDITION
+from rasa.shared.nlu.constants import METADATA
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Getting the slot values in the response variables
         response_vars = self._response_variables(filled_slots, kwargs)
 
+        # template formatting method
+        method = response.get(METADATA, {}).get("template", "format")
+
         keys_to_interpolate = [
             "text",
             "image",
@@ -113,7 +117,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             for key in keys_to_interpolate:
                 if key in response:
                     response[key] = interpolator.interpolate(
-                        response[key], response_vars
+                        response[key],
+                        response_vars,
+                        method=method,
                     )
         return response
 
