@@ -2,58 +2,78 @@
 <html lang="en">
 
 <head>
-  <style>
-    .content {
-      max-width: 30em;
-    }
+  <meta charset="UTF-8">
+  <title>Rasa Bot Inspector</title> <!-- Make sure you add a title -->
 
-    .container {
-      display: grid;
-      grid-template-columns: 35% 65%;
-    }
-
-    tr {
-      text-align: left;
-    }
-  
-    tr.center {
-      text-align: center;
-    }
-
-    table {
-      padding-top: 1em;
-      border-spacing: 1em 0;
-      border-collapse: separate;
-    }
-
-    td {
-      padding: 0.5em 0;
-    }
-
-    .bold {
-      font-weight: bold;
-    }
-  </style>
+  <!-- External Stylesheets -->
   <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/styles/default.min.css">
-  <script src="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/highlight.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.3.1/dist/mermaid.min.js"></script>
+
+  <!-- Custom Styles -->
+  <style>
+      body {
+          font-family: 'Arial', sans-serif;
+          line-height: 1.0;
+          margin: 0;
+          padding: 2em;
+      }
+
+      .content {
+          max-width: 30em;
+          margin-bottom: 1em;
+      }
+
+      .content-code {
+        margin: 1em 1em;
+      }
+
+      .container {
+          display: grid;
+          grid-template-columns: 30% 50% 20%;
+          gap: 2em;
+      }
+
+      table {
+          width: 100%;
+          border-spacing: 1em 0;
+          border-collapse: separate;
+      }
+
+      th, td {
+          padding: 0.5em;
+          text-align: left;
+          border-bottom: 1px solid #ccc;
+      }
+
+      .empty-row{
+        text-align: center;
+      }
+
+      tbody tr:hover {
+          background-color: #f7f7f7;
+      }
+
+      .bold {
+          font-weight: bold;
+      }
+
+      code, pre {
+          font-family: 'Courier New', monospace;
+          font-size: 0.9em;
+          border-spacing: 1em 0;
+      }
+  </style>
 </head>
 
-<body data-new-gr-c-s-check-loaded="14.1014.0" data-gr-ext-installed="" data-new-gr-c-s-loaded="14.1014.0">
+<body>
   <div class="logged-in-box auth0-box logged-in">
-    <h2>Happy chatting!</h2>
-    <div>You can include the chat on your own website using the following code:</div>
-    <div class="code"><code><pre>
+      <h2>Happy chatting!</h2>
+      <p>You can include the chat on your own website using the following code (<a href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget">rasa documentation</a>):</p>
+      <pre class="code">
 &lt;div id="rasa-chat-widget" data-websocket-url="https://example.com/"&gt;&lt;/div&gt;
 &lt;script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"&gt;&lt;/script&gt;
-    </pre></code></div>
+      </pre>
   </div>
-  <p class="content">Make sure to replace <code>https://example.com/</code> with the URL of your server
-    running your bot! You can find more documentation on how to use the chat widget
-    on your own page in the
-    <a href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget">rasa documentation</a>
-  </p>
+  
   <div class="container">
     <div>
       <p class="content bold">Stack:</p>
@@ -82,13 +102,13 @@
       </table>
       <div>
         <p class="content bold">End-2-End Test:</p>
-        <div>
-          <pre class="code language-json"><code id="e2e-test"></code></pre>
+        <div class="content-code">
+          <pre class="code language-json"><code id="e2e-test">No test yet</code></pre>
         </div>
       </div>
       <div>
         <p class="content bold">Tracker State:</p>
-        <div>
+        <div class="content-code">
           <pre class="code language-json"><code id="json-data">No story yet</code></pre>
         </div>
       </div>
@@ -100,8 +120,18 @@
         </pre>
       </div>
     </div>
+    <div>
+      <div id="chat-container">
+        <!-- place holder for chat window. just making sure it doesn't overlap-->
+      </div>
+    </div>
   </div>
   <div id="rasa-chat-widget" data-websocket-url="" data-default-open=true data-height="500"></div>
+
+  <!-- External Libraries -->
+  <script src="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <script src="https://unpkg.com/mermaid@10.3.1/dist/mermaid.min.js"></script>
 
   <script>
     async function updateChatDiv() {
@@ -135,7 +165,7 @@
             if (storyBlock.textContent !== data) {
                 storyBlock.textContent = data;
                 if (window.hljs) {
-                    hljs.highlightElement(storyBlock);
+                    hljs.highlightElement(storyBlock, { language: 'yaml' });
                 }
             }
         } catch (error) {
@@ -187,7 +217,7 @@
                 "steps": steps
             }]
         };
-        e2eTest.textContent = jsyaml.dump(e2eTestCase);
+        e2eTest.textContent = jsyaml.dump(e2eTestCase, {"noArrayIndent" : true});
 
         if (window.hljs) hljs.highlightElement(e2eTest);
     }
@@ -204,7 +234,7 @@
             }
         });
 
-        root.insertAdjacentHTML('beforeend', `<tr><td><<< all others >>></td><td>None</td></tr>`);
+        root.insertAdjacentHTML('beforeend', `<tr><td>< all other slots ></td><td>None</td></tr>`);
     }
 
     function updateStackFrames(stackFrames) {
@@ -212,7 +242,7 @@
         stackEl.innerHTML = '';
 
         if (!stackFrames.length) {
-            stackEl.insertAdjacentHTML('afterbegin', `<tr class="center"><td colspan=4>--- Empty ---</td></tr>`);
+            stackEl.insertAdjacentHTML('afterbegin', `<tr><td colspan=4 class="empty-row">-</td></tr>`);
         } else {
             stackFrames.forEach((frame, i) => {
                 stackEl.insertAdjacentHTML('afterbegin', `<tr><td>${i + 1}</td><td>${frame.frame_type}</td><td>${frame.flow_id}</td><td>${frame.step_id}</td></tr>`);
