@@ -36,6 +36,8 @@
   </style>
   <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/styles/default.min.css">
   <script src="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.3.1/dist/mermaid.min.js"></script>
 </head>
 
 <body data-new-gr-c-s-check-loaded="14.1014.0" data-gr-ext-installed="" data-new-gr-c-s-loaded="14.1014.0">
@@ -79,16 +81,23 @@
         </tbody>
       </table>
       <div>
-        <p class="content bold">Latest Tracker Changes:</p>
+        <p class="content bold">End-2-End Test:</p>
         <div>
-          <pre class="code language-yml"><code id="tracker-update"></code></pre>
+          <pre class="code language-json"><code id="e2e-test"></code></pre>
+        </div>
+      </div>
+      <div>
+        <p class="content bold">Tracker State:</p>
+        <div>
+          <pre class="code language-json"><code id="json-data">No story yet</code></pre>
         </div>
       </div>
     </div>
     <div>
-      <p class="content bold">Current Story:</p>
+      <p class="content bold">Current Flow:</p>
       <div>
-        <pre class="code language-json"><code id="json-data">No story yet</code></pre>
+        <pre class="mermaid" id="flow">
+        </pre>
       </div>
     </div>
   </div>
@@ -103,12 +112,29 @@
   </script>
 
   <script>
+    mermaid.initialize({ startOnLoad: false });
+
+    var previousTrackerState = null;
+
+    let get_flows = fetch("/flows")
+      .catch(error => console.error(error))
+      .then(response => {
+        if (!response.ok) {
+          console.error("Error: Flows not found");
+          return [];
+        }
+        return response.json()
+      })
+      .then(data => {
+        return data;
+      });
+
     function fetchStory() {
       let conversationId = window.rasaChatSessionId || "";
       fetch("/conversations/" + conversationId + "/story")
         .catch(error => console.error(error))
         .then(response => {
-          if (!response.ok) {
+          if (!response?.ok) {
             console.error("Error: Story not found");
             return "No story yet";
           }
@@ -125,46 +151,51 @@
           }
         });
     }
-    function fetchTracker() {
+    async function fetchTracker() {
       let conversationId = window.rasaChatSessionId || "";
-      fetch("/conversations/" + conversationId + "/tracker?start_session=false")
+      await fetch("/conversations/" + conversationId + "/tracker?start_session=false")
         .catch(error => console.error(error))
         .then(response => {
-          if (!response.ok) {
+          if (!response?.ok) {
             console.error("Error: Story not found");
             return [];
           }
           return response.json()
         })
-        .then(data => {
+        .then(async (data) => {
           let slots = data.slots;
-
-          //loop through events and display all events that happend after the
-          // event that has type user message
-          let trackerUpdates = [];
-
-          // extract all events that happend after the latest user message
-          for (let i = data.events.length - 1; i >= 0; i--) {
-            trackerUpdates.unshift(data.events[i])
-            if (data.events[i].event === "user") {
-              break;
-            }
-          }
-          let trackerUpdate = JSON.stringify(trackerUpdates, null, 2);
-          let updateBlock = document.getElementById("tracker-update");
-          if(updateBlock.textContent === trackerUpdate){
+          if(JSON.stringify(previousTrackerState) === JSON.stringify(data)){
             return;
           }
-          updateBlock.textContent = trackerUpdate;
+          previousTrackerState = data;
+
+          // update e2e-test
+          let e2eTest = document.getElementById("e2e-test");
+          let steps = []
+          for (var i = 0; i < data.events.length; i++) {
+            let event = data.events[i];
+            if(event.event == "user"){
+              steps.push({"user": event.text});
+            }
+            if(event.event == "bot"){
+              if (event.metadata?.utter_action) {
+                steps.push({"utter": event.metadata.utter_action});
+              } else {
+                steps.push({"utter": event.text});
+              }
+            }
+          }
+          let e2eTestCase = {"test_cases": [{"test_case": data.sender_id, "steps": steps}]}
+          e2eTest.textContent = jsyaml.dump(e2eTestCase);
           if (window.hljs) {
-            hljs.highlightElement(updateBlock);
+            hljs.highlightElement(e2eTest);
           }
 
-          var root = document.getElementById('slots');
+          let root = document.getElementById('slots');
           root.innerHTML = '';
-          var sortedSlotNames = Object.keys(slots).sort()
+          let sortedSlotNames = Object.keys(slots).sort()
           for (var i = 0; i < sortedSlotNames.length; i++) {
-            var name = sortedSlotNames[i];
+            let name = sortedSlotNames[i];
             let slotValue = JSON.stringify(slots[name], null, 2);
             if(name == "flow_stack" || slotValue == 'null'){
               continue;
@@ -173,17 +204,76 @@
           }
           root.insertAdjacentHTML('beforeend', `<tr><td>\<\<\< all others \>\>\></td><td>None</td></tr>`);
 
-          var stackEl = document.getElementById('stack-frames');
+          let stackEl = document.getElementById('stack-frames');
           let stackFrames = slots.flow_stack ?? [];
           stackEl.innerHTML = '';
           if(stackFrames.length == 0){
             stackEl.insertAdjacentHTML('afterbegin', `<tr class="center"><td colspan=4>--- Empty ---</td></tr>`);
           } else {
             for (var i = 0; i < stackFrames.length; i++) {
-              var stackFrame = stackFrames[i];
+              let stackFrame = stackFrames[i];
               stackEl.insertAdjacentHTML('afterbegin', `<tr><td>${i+1}</td><td>${stackFrame.frame_type}</td><td>${stackFrame.flow_id}</td><td>${stackFrame.step_id}</td></tr>`);
             }
           }
+          let activeFlow = stackFrames[stackFrames.length - 1]?.flow_id;
+          let activeStep = stackFrames[stackFrames.length - 1]?.step_id;
+          let flows = await get_flows;
+          // find flow by going through array and checking for the id field
+          let flow = flows.find(flow => flow.id === activeFlow);
+          var mermaidText = `---
+title: ${flow?.id ?? "No Flow"}
+---
+flowchart TD
+classDef question stroke-width:1px
+classDef action fill:#FBFCFD,stroke:#A0B8CF
+classDef link fill:#f43
+classDef slot fill:#aaa
+classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
+          `;
+
+          if (flow) {
+            for (var i = 0; i < flow.steps.length; i++) {
+              let step = flow.steps[i]
+              if (step.question){
+                let slotValue = slots[step.question] ? `_${slots[step.question]}_` : "\uD83D\uDCAC";
+                mermaidText += `${flow.steps[i].id}["\`${flow.steps[i].question}\n${slotValue}\`"]:::question\n`;
+              }
+              if (step.action){
+                mermaidText += `${flow.steps[i].id}["${flow.steps[i].action}"]:::action\n`;
+              }
+              if (step.link){
+                mermaidText += `${flow.steps[i].id}["\uD83D\uDD17 ${flow.steps[i].link}"]:::link\n`;
+              }
+              if (step.set_slots){
+                mermaidText += `${flow.steps[i].id}["\uD83E\uDEA3 ${flow.steps[i].id}"]:::slot\n`;
+              }
+
+              if (step.id === activeStep) {
+                mermaidText += `class ${step.id} active\n`;
+              }
+
+              // if next is an id, then it is a link
+              if (step.next && typeof step.next === "string") {
+                mermaidText += `${step.id} --> ${step.next}\n`;
+              }
+              // if next is an array, then it is a list of conditions
+              if (step.next && Array.isArray(step.next)) {
+                for (var j = 0; j < step.next.length; j++) {
+                  let condition = step.next[j];
+                  if(condition.then){
+                    mermaidText += `${step.id} -->|${condition.if}| ${condition.then}\n`;
+                  }
+                  if(condition.else){
+                    mermaidText += `${step.id} -->|else| ${condition.else}\n`;
+                  }
+                }
+              }
+            }
+          }
+          let flowEl = document.getElementById('flow');
+          console.log(mermaidText);
+          const { svg } = await mermaid.render('graphDiv', mermaidText);
+          flowEl.innerHTML = svg;
         });
     }
 

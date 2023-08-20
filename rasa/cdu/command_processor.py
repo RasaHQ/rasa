@@ -15,30 +15,30 @@ from rasa.cdu.commands import (
     KnowledgeAnswerCommand,
     ChitChatAnswerCommand,
 )
-from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
-from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
+from rasa.cdu.conversation_patterns import (
+    FLOW_PATTERN_CORRECTION_ID,
+    FLOW_PATTERN_INTERNAL_ERROR_ID,
+    FLOW_PATTERN_LISTEN_ID,
+    FLOW_PATTERN_CANCEl_ID,
+)
+from rasa.cdu.flow_stack import (
+    STACK_FRAME_TYPES_WITH_USER_FLOWS,
+    FlowStack,
+    FlowStackFrame,
+    StackFrameType,
+)
 from rasa.shared.core.constants import (
     CANCELLED_FLOW_SLOT,
     CORRECTED_SLOTS_SLOT,
     FLOW_STACK_SLOT,
 )
-from rasa.shared.core.events import Event, SlotSet, UserUttered
+from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import END_STEP, FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
 
 
 structlogger = structlog.get_logger()
-
-FLOW_PATTERN_CORRECTION_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "correction"
-
-FLOW_PATTERN_CANCEl_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
-
-FLOW_PATTERN_LISTEN_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "listen"
-
-FLOW_PATTERN_INTERNAL_ERROR_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "internal_error"
-
-FLOW_PATTERN_CHITCHAT_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "chitchat"
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
@@ -56,28 +56,6 @@ def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
     `True` if the list of commands contains a command of the given type.
     """
     return any(isinstance(command, typ) for command in commands)
-
-
-def _slot_sets_after_latest_message(tracker: DialogueStateTracker) -> List[SlotSet]:
-    """Get all slot sets after the latest message.
-
-    Args:
-        tracker: The tracker to get the slot sets from.
-
-    Returns:
-    All slot sets after the latest user message.
-    """
-    if not tracker.latest_message:
-        return []
-
-    slot_sets = []
-
-    for event in reversed(tracker.applied_events()):
-        if isinstance(event, UserUttered):
-            break
-        elif isinstance(event, SlotSet):
-            slot_sets.append(event)
-    return slot_sets
 
 
 def _get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
@@ -99,9 +77,8 @@ def _get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
 
 def validate_state_of_commands(commands: List[Command]) -> None:
     """Validates the state of the commands."""
-    # assert that that at max there is only one cancel flow command at
-    # the beginning of the list of commands
-    assert len([c for c in commands if isinstance(c, CancelFlowCommand)]) <= 1
+    # assert that only the last command can be a cancel flow command
+    assert not any(isinstance(c, CancelFlowCommand) for c in commands[:-1])
 
     # assert that free form answer commands are only at the beginning of the list
     free_form_answer_commands = [
@@ -144,7 +121,7 @@ def execute_commands(
 
     validate_state_of_commands(commands)
 
-    for i, command in enumerate(reversed_commands):
+    for command in reversed_commands:
         if isinstance(command, CorrectSlotsCommand):
             structlogger.debug("command_executor.correct_slots", command=command)
             for correction in command.corrected_slots:
@@ -152,12 +129,29 @@ def execute_commands(
             events.append(
                 SlotSet(CORRECTED_SLOTS_SLOT, [s.name for s in command.corrected_slots])
             )
-            flow_stack.push(
-                FlowStackFrame(
-                    flow_id=FLOW_PATTERN_CORRECTION_ID,
-                    frame_type=StackFrameType.CORRECTION,
+            if (
+                not current_top_flow
+                or current_top_flow.id != FLOW_PATTERN_CORRECTION_ID
+            ):
+                flow_stack.push(
+                    FlowStackFrame(
+                        flow_id=FLOW_PATTERN_CORRECTION_ID,
+                        frame_type=StackFrameType.CORRECTION,
+                    )
                 )
-            )
+            else:
+                # wrap up the previous correction flow
+                flow_stack.frames[-1].step_id = END_STEP
+                # push a new correction flow
+                flow_stack.push(
+                    FlowStackFrame(
+                        flow_id=FLOW_PATTERN_CORRECTION_ID,
+                        frame_type=StackFrameType.CORRECTION,
+                    ),
+                    # we allow the previous correction to finish first before
+                    # starting the new one
+                    index=-1,
+                )
         elif isinstance(command, SetSlotCommand):
             structlogger.debug("command_executor.set_slot", command=command)
             events.append(SlotSet(command.name, command.value))
@@ -174,17 +168,26 @@ def execute_commands(
                     "command_executor.skip_cancel_flow.no_active_flow", command=command
                 )
                 continue
-            # in between the prediction and this canceling command, we might have
-            # added some stack frames. hence, we can't just cancel the current top frame
-            # but need to find the frame that was at the top before we started
-            # processing the commands.
-            for idx, frame in enumerate(flow_stack.frames):
-                if frame.flow_id == current_top_flow.id:
-                    structlogger.debug("command_executor.cancel_flow", command=command)
-                    # Setting the flow to the end step so it is properly
-                    # wrapped up by the flow policy
-                    flow_stack.frames[idx].step_id = END_STEP
-            events.append(SlotSet(CANCELLED_FLOW_SLOT, current_top_flow.id))
+            # this logic only works if the cancel flow command is the first
+            # command in the list of commands. there is validation that
+            # ensures this. if the command is not the last command, another
+            # command might have added stackframes that unintentionally will
+            # be canceled now
+            canceled_user_flow = None
+            for frame in reversed(flow_stack.frames):
+                structlogger.debug(
+                    "command_executor.cancel_flow", command=command, frame=frame
+                )
+                # Setting the stack frame to the end step so it is properly
+                # wrapped up by the flow policy
+                frame.step_id = END_STEP
+                if frame.frame_type in STACK_FRAME_TYPES_WITH_USER_FLOWS:
+                    # as soon as we hit the first stack frame that is a "normal"
+                    # user defined flow we cancel that and leave the remaining
+                    # stack untouched
+                    canceled_user_flow = frame.flow_id
+                    break
+            events.append(SlotSet(CANCELLED_FLOW_SLOT, canceled_user_flow))
             flow_stack.push(
                 FlowStackFrame(
                     flow_id=FLOW_PATTERN_CANCEl_ID,
@@ -242,22 +245,30 @@ def filled_slots_for_active_flow(
     All slots that have been filled for the current flow.
     """
     flow_stack = FlowStack.from_tracker(tracker)
-
-    top_flow = flow_stack.top_flow(all_flows)
     top_flow_step = flow_stack.top_flow_step(all_flows)
 
     current_question = (
         top_flow_step.question if isinstance(top_flow_step, QuestionFlowStep) else None
     )
 
-    if top_flow_step is not None and top_flow is not None:
-        return {
-            q.question
-            for q in top_flow.previously_asked_questions(top_flow_step.id)
-            if q.question != current_question
-        }
-    else:
-        return set()
+    asked_questions = set()
+
+    for frame in reversed(flow_stack.frames):
+        if not (flow := all_flows.flow_by_id(frame.flow_id)):
+            break
+
+        for q in flow.previously_asked_questions(frame.step_id):
+            if q.question != current_question:
+                asked_questions.add(q.question)
+
+        if frame.frame_type in STACK_FRAME_TYPES_WITH_USER_FLOWS:
+            # as soon as we hit the first stack frame that is a "normal"
+            # user defined flow we stop looking for previously asked questions
+            # because we only want to ask questions that are part of the
+            # current flow.
+            continue
+
+    return asked_questions
 
 
 def clean_up_commands(
@@ -294,18 +305,17 @@ def clean_up_commands(
             structlogger.debug(
                 "command_executor.skip_command.already_started_flow", command=command
             )
-            continue
-
-        if (
+        elif (
             isinstance(command, StartFlowCommand)
             and command.flow not in startable_flow_ids
         ):
             structlogger.debug(
                 "command_executor.skip_command.start_invalid_flow_id", command=command
             )
-            continue
-
-        if (
+        elif isinstance(command, StartFlowCommand):
+            flows_on_the_stack.add(command.flow)
+            clean_commands.append(command)
+        elif (
             isinstance(command, SetSlotCommand)
             and tracker.get_slot(command.name) == command.value
         ):
@@ -313,9 +323,8 @@ def clean_up_commands(
             structlogger.debug(
                 "command_executor.skip_command.slot_already_set", command=command
             )
-            continue
 
-        if isinstance(command, SetSlotCommand) and command.name in slots_so_far:
+        elif isinstance(command, SetSlotCommand) and command.name in slots_so_far:
             structlogger.debug(
                 "command_executor.convert_command.correction", command=command
             )
@@ -329,21 +338,27 @@ def clean_up_commands(
                 clean_commands.append(
                     CorrectSlotsCommand(corrected_slots=[corrected_slot])
                 )
-
         elif isinstance(command, CancelFlowCommand) and contains_command(
             clean_commands, CancelFlowCommand
         ):
             structlogger.debug(
                 "command_executor.skip_command.already_cancelled_flow", command=command
             )
-            continue
         elif isinstance(command, FreeFormAnswerCommand):
             structlogger.debug(
                 "command_executor.prepend_command.free_form_answer", command=command
             )
             clean_commands.insert(0, command)
-            continue
         else:
             clean_commands.append(command)
+
+    # check if there is a cancel flow command in the list of commands
+    # if so, push it to the end of the list
+    for clean_command in clean_commands:
+        if isinstance(clean_command, CancelFlowCommand):
+            # push the command to the end
+            clean_commands.remove(clean_command)
+            clean_commands.append(clean_command)
+            break
 
     return clean_commands

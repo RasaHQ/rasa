@@ -19,8 +19,6 @@ from rasa.shared.utils.llm import (
 
 structlogger = structlog.get_logger()
 
-HANDLING_PATTERN_PREFIX = "pattern_"
-
 
 class UnreachableFlowStepException(RasaException):
     """Raised when a flow step is unreachable."""
@@ -220,6 +218,10 @@ class Flow:
             "steps": [step.as_json() for step in self.steps],
         }
 
+    def readable_name(self) -> str:
+        """Returns the name of the flow or its id if no name is set."""
+        return self.name or self.id
+
     def validate(self) -> None:
         """Validates the flow configuration.
 
@@ -331,7 +333,7 @@ class Flow:
 
     def is_handling_pattern(self) -> bool:
         """Returns whether the flow is handling a pattern."""
-        return self.id.startswith(HANDLING_PATTERN_PREFIX)
+        return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
 
     def get_trigger_intents(self) -> Set[str]:
         """Returns the trigger intents of the flow"""

@@ -2,7 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, Text, List, Optional, Union
-from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
+from rasa.cdu.conversation_patterns import (
+    FLOW_PATTERN_COMPLETED,
+    FLOW_PATTERN_CONTINUE_INTERRUPTED,
+)
+from rasa.cdu.flow_stack import (
+    STACK_FRAME_TYPES_WITH_USER_FLOWS,
+    FlowStack,
+    FlowStackFrame,
+    StackFrameType,
+)
 
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
@@ -393,10 +402,10 @@ class FlowExecutor:
             return True
 
     def _find_earliest_updated_question(
-        self, current_step: FlowStep, flow: Flow, updated_slots: List[Text]
+        self, current_step_id: str, flow: Flow, updated_slots: List[Text]
     ) -> Optional[FlowStep]:
         """Find the question that was updated."""
-        asked_question_steps = flow.previously_asked_questions(current_step.id)
+        asked_question_steps = flow.previously_asked_questions(current_step_id)
 
         for question_step in reversed(asked_question_steps):
             if question_step.question in updated_slots:
@@ -458,16 +467,18 @@ class FlowExecutor:
     def _correct_flow_position(
         self,
         newly_set_slots: List[Text],
-        step: FlowStep,
+        step_id: str,
         flow: Flow,
         tracker: DialogueStateTracker,
     ) -> None:
-        reset_point = self._find_earliest_updated_question(step, flow, newly_set_slots)
+        reset_point = self._find_earliest_updated_question(
+            step_id, flow, newly_set_slots
+        )
 
         if reset_point:
             structlogger.info(
                 "flow.reset.slotupdate",
-                step=step,
+                step_id=step_id,
                 flow=flow,
                 reset_point=reset_point.id,
             )
@@ -674,46 +685,50 @@ class FlowExecutor:
                 events=[SlotSet(slot["key"], slot["value"]) for slot in step.slots],
             )
         elif isinstance(step, UserMessageStep):
+            structlogger.debug("flow.step.run.user_message", flow=flow)
             return ActionPrediction(None, 0.0)
         elif isinstance(step, EntryPromptFlowStep):
+            structlogger.debug("flow.step.run.entry_prompt", flow=flow)
             return ActionPrediction(None, 0.0)
         elif isinstance(step, GenerateResponseFlowStep):
+            structlogger.debug("flow.step.run.generate_response", flow=flow)
             generated = step.generate(tracker)
             return ActionPrediction(
                 ACTION_SEND_TEXT_NAME, 1.0, metadata={"message": {"text": generated}}
             )
         elif isinstance(step, EndFlowStep):
+            structlogger.debug("flow.step.run.flow_end", flow=flow)
             return ActionPrediction(None, 0.0)
         elif isinstance(step, CleanUpFlowStep):
             # this is the end of the flow, so we'll pop it from the stack
             events = self._reset_scoped_slots(flow, tracker)
-            structlogger.debug("flow.step.run.flowend", flow=flow)
+            structlogger.debug("flow.step.run.flow_cleanup", flow=flow)
             if current_frame := self.flow_stack.pop():
-                previous_flow = self.flow_stack.top_flow(self.all_flows)
-                previous_flow_step = self.flow_stack.top_flow_step(self.all_flows)
                 # get stack frame that is below the current one and which will
                 # be continued now that this one has ended.
-                previous_flow_name = (
-                    previous_flow.name or previous_flow.id if previous_flow else None
-                )
-
+                previous_flow = self.flow_stack.top_flow(self.all_flows)
+                previous_stack_frame = self.flow_stack.top()
                 if (
                     current_frame.frame_type == StackFrameType.INTERRUPT
-                    and previous_flow is not None
-                    and previous_flow_step is not None
-                    and previous_flow_step.id != END_STEP
+                    and previous_flow
+                    and previous_stack_frame
+                    and previous_stack_frame.step_id != END_STEP
+                    and previous_stack_frame.frame_type
+                    in STACK_FRAME_TYPES_WITH_USER_FLOWS
                 ):
                     # TODO: rather than triggering the flow-trigger-action this should
                     #   directly put the flow onto the stack and start it that way.
                     return ActionPrediction(
-                        FLOW_PREFIX + "pattern_continue_interrupted",
+                        FLOW_PREFIX + FLOW_PATTERN_CONTINUE_INTERRUPTED,
                         1.0,
-                        metadata={"slots": {PREVIOUS_FLOW_SLOT: previous_flow_name}},
+                        metadata={
+                            "slots": {PREVIOUS_FLOW_SLOT: previous_flow.readable_name()}
+                        },
                         events=events,
                     )
                 elif (
                     previous_flow
-                    and previous_flow_step
+                    and previous_stack_frame
                     and current_frame.frame_type == StackFrameType.CORRECTION
                 ):
                     # TODO: we need to figure out how to actually
@@ -721,19 +736,29 @@ class FlowExecutor:
                     corrected_slots = tracker.get_slot(CORRECTED_SLOTS_SLOT)
                     if corrected_slots:
                         self._correct_flow_position(
-                            corrected_slots, previous_flow_step, previous_flow, tracker
+                            corrected_slots,
+                            previous_stack_frame.step_id,
+                            previous_flow,
+                            tracker,
                         )
                     else:
                         # TODO: we need to figure out how to actually "undo" the
                         #    changed slots
                         pass
-                elif not previous_flow and current_frame.flow_id != "pattern_completed":
+                elif (
+                    not previous_flow
+                    and current_frame.flow_id != FLOW_PATTERN_COMPLETED
+                ):
                     # TODO: rather than triggering the flow-trigger-action this should
                     #   directly put the flow onto the stack and start it that way.
+                    completed_flow = self.all_flows.flow_by_id(current_frame.flow_id)
+                    completed_flow_name = (
+                        completed_flow.readable_name() if completed_flow else None
+                    )
                     return ActionPrediction(
-                        FLOW_PREFIX + "pattern_completed",
+                        FLOW_PREFIX + FLOW_PATTERN_COMPLETED,
                         1.0,
-                        metadata={"slots": {PREVIOUS_FLOW_SLOT: previous_flow_name}},
+                        metadata={"slots": {PREVIOUS_FLOW_SLOT: completed_flow_name}},
                         events=events,
                     )
 
