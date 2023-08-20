@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rasa Bot Inspector</title>
 
-<head>
-  <meta charset="UTF-8">
-  <title>Rasa Bot Inspector</title>
+    <!-- External Stylesheets -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/styles/default.min.css"
+    />
 
-  <!-- External Stylesheets -->
-  <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/styles/default.min.css">
-
-  <!-- Custom Styles -->
-  <style>
+    <!-- Custom Styles -->
+    <style>
       body {
-          font-family: 'Arial', sans-serif;
-          line-height: 1.0;
-          margin: 0;
-          padding: 2em;
+        font-family: "Arial", sans-serif;
+        line-height: 1;
+        margin: 0;
+        padding: 2em;
       }
 
       .content {
-          max-width: 30em;
-          margin-bottom: 1em;
+        max-width: 30em;
+        margin-bottom: 1em;
       }
 
       .content-code {
@@ -27,235 +29,270 @@
       }
 
       .container {
-          display: grid;
-          grid-template-columns: 30% 50% 20%;
-          gap: 2em;
+        display: grid;
+        grid-template-columns: 30% 50% 20%;
+        gap: 2em;
       }
 
       table {
-          width: 100%;
-          border-spacing: 1em 0;
-          border-collapse: separate;
+        width: 100%;
+        border-spacing: 1em 0;
+        border-collapse: separate;
       }
 
-      th, td {
-          padding: 0.5em;
-          text-align: left;
-          border-bottom: 1px solid #ccc;
+      th,
+      td {
+        padding: 0.5em;
+        text-align: left;
+        border-bottom: 1px solid #ccc;
       }
 
-      .empty-row{
+      .empty-row {
         text-align: center;
       }
 
       tbody tr:hover {
-          background-color: #f7f7f7;
+        background-color: #f7f7f7;
       }
 
       .bold {
-          font-weight: bold;
+        font-weight: bold;
       }
 
-      code, pre {
-          font-family: 'Courier New', monospace;
-          font-size: 0.9em;
-          border-spacing: 1em 0;
+      code,
+      pre {
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+        border-spacing: 1em 0;
       }
-  </style>
-</head>
+    </style>
+  </head>
 
-<body>
-  <div class="logged-in-box auth0-box logged-in">
+  <body>
+    <div class="logged-in-box auth0-box logged-in">
       <h2>Happy chatting!</h2>
-      <p>You can include the chat on your own website using the following code (<a href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget">rasa documentation</a>):</p>
+      <p>
+        You can include the chat on your own website using the following code
+        (<a
+          href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget"
+          >rasa documentation</a
+        >):
+      </p>
       <pre class="code">
 &lt;div id="rasa-chat-widget" data-websocket-url="https://example.com/"&gt;&lt;/div&gt;
 &lt;script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"&gt;&lt;/script&gt;
       </pre>
-  </div>
-  
-  <div class="container">
-    <div>
-      <p class="content bold">Stack:</p>
-      <table>
-        <thead>
-          <tr>
-            <th># </th>
-            <th>Type</th>
-            <th>Flow</th>
-            <th>Step Id</th>
-          </tr>
-        </thead>
-        <tbody id="stack-frames">
-        </tbody>
-      </table>
-      <p class="content bold">Set Slots:</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Slot</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody id="slots">
-        </tbody>
-      </table>
+    </div>
+
+    <div class="container">
       <div>
-        <p class="content bold">End-2-End Test:</p>
-        <div class="content-code">
-          <pre class="code language-json"><code id="e2e-test">No test yet</code></pre>
+        <p class="content bold">Stack:</p>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Flow</th>
+              <th>Step Id</th>
+            </tr>
+          </thead>
+          <tbody id="stack-frames"></tbody>
+        </table>
+        <p class="content bold">Set Slots:</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Slot</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody id="slots"></tbody>
+        </table>
+        <div>
+          <p class="content bold">End-2-End Test:</p>
+          <div class="content-code">
+            <pre
+              class="code language-json"
+            ><code id="e2e-test">No test yet</code></pre>
+          </div>
+        </div>
+        <div>
+          <p class="content bold">Tracker State:</p>
+          <div class="content-code">
+            <pre
+              class="code language-json"
+            ><code id="json-data">No story yet</code></pre>
+          </div>
         </div>
       </div>
       <div>
-        <p class="content bold">Tracker State:</p>
-        <div class="content-code">
-          <pre class="code language-json"><code id="json-data">No story yet</code></pre>
+        <p class="content bold">Current Flow:</p>
+        <div>
+          <pre class="mermaid" id="flow"></pre>
+        </div>
+      </div>
+      <div>
+        <div id="chat-container">
+          <!-- place holder for chat window. just making sure it doesn't overlap-->
         </div>
       </div>
     </div>
-    <div>
-      <p class="content bold">Current Flow:</p>
-      <div>
-        <pre class="mermaid" id="flow">
-        </pre>
-      </div>
-    </div>
-    <div>
-      <div id="chat-container">
-        <!-- place holder for chat window. just making sure it doesn't overlap-->
-      </div>
-    </div>
-  </div>
-  <div id="rasa-chat-widget" data-websocket-url="" data-default-open=true data-height="500"></div>
+    <div
+      id="rasa-chat-widget"
+      data-websocket-url=""
+      data-default-open="true"
+      data-height="500"
+    ></div>
 
-  <!-- External Libraries -->
-  <script src="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/highlight.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-  <script src="https://unpkg.com/mermaid@10.3.1/dist/mermaid.min.js"></script>
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://unpkg.com/mermaid@10.3.1/dist/mermaid.min.js"></script>
 
-  <script>
-    async function updateChatDiv() {
-      const chatDiv = document.getElementById("rasa-chat-widget");
-      const websocketUrl = window.location.origin.replace("http", "ws");
-      const maxHeight = document.documentElement.scrollHeight - 150;
-      chatDiv.setAttribute("data-websocket-url", websocketUrl);
-      chatDiv.setAttribute("data-height", maxHeight);
-    }
+    <script>
+      async function updateChatDiv() {
+        const chatDiv = document.getElementById("rasa-chat-widget");
+        const websocketUrl = window.location.origin.replace("http", "ws");
+        const maxHeight = document.documentElement.scrollHeight - 150;
+        chatDiv.setAttribute("data-websocket-url", websocketUrl);
+        chatDiv.setAttribute("data-height", maxHeight);
+      }
 
-    async function fetchFlows() {
+      async function fetchFlows() {
         try {
-            const response = await fetch("/flows");
-            if (!response?.ok) {
-                console.error("Error: Flows not found");
-                return [];
-            }
-            return await response.json();
-        } catch (error) {
-            console.error(error);
+          const response = await fetch("/flows");
+          if (!response?.ok) {
+            console.error("Error: Flows not found");
             return [];
+          }
+          return await response.json();
+        } catch (error) {
+          console.error(error);
+          return [];
         }
-    }
+      }
 
-    async function fetchStory() {
+      async function fetchStory() {
         const conversationId = window.rasaChatSessionId || "";
         try {
-            const response = await fetch(`/conversations/${conversationId}/story`);
-            const data = await response.text();
-            const storyBlock = document.getElementById("json-data");
-            if (storyBlock.textContent !== data) {
-                storyBlock.textContent = data;
-                if (window.hljs) {
-                    hljs.highlightElement(storyBlock, { language: 'yaml' });
-                }
+          const response = await fetch(
+            `/conversations/${conversationId}/story`
+          );
+          const data = await response.text();
+          const storyBlock = document.getElementById("json-data");
+          if (storyBlock.textContent !== data) {
+            storyBlock.textContent = data;
+            if (window.hljs) {
+              hljs.highlightElement(storyBlock, { language: "yaml" });
             }
+          }
         } catch (error) {
-            console.error("Error fetching story:", error);
+          console.error("Error fetching story:", error);
         }
-    }
+      }
 
-    async function fetchTracker() {
+      async function fetchTracker() {
         const conversationId = window.rasaChatSessionId || "";
 
         try {
-            const response = await fetch(`/conversations/${conversationId}/tracker?start_session=false`);
+          const response = await fetch(
+            `/conversations/${conversationId}/tracker?start_session=false`
+          );
 
-            if (!response?.ok) {
-                console.error("Error: Story not found");
-                return;
-            }
+          if (!response?.ok) {
+            console.error("Error: Story not found");
+            return;
+          }
 
-            const data = await response.json();
+          const data = await response.json();
 
-            if (JSON.stringify(previousTrackerState) !== JSON.stringify(data)) {
-                previousTrackerState = data;
-                
-                updateE2ETest(data);
-                updateSlots(data.slots);
-                updateStackFrames(data.slots.flow_stack || []);
-                await renderMermaidDiagram(data.slots.flow_stack || []);
-            }
+          if (JSON.stringify(previousTrackerState) !== JSON.stringify(data)) {
+            previousTrackerState = data;
 
+            updateE2ETest(data);
+            updateSlots(data.slots);
+            updateStackFrames(data.slots.flow_stack || []);
+            await renderMermaidDiagram(data.slots.flow_stack || []);
+          }
         } catch (error) {
-            console.error(error);
+          console.error(error);
         }
-    }
+      }
 
-    function updateE2ETest(data) {
+      function updateE2ETest(data) {
         const e2eTest = document.getElementById("e2e-test");
-        const steps = data.events.map(event => {
-            if (event.event === "user") return { "user": event.text };
+        const steps = data.events
+          .map((event) => {
+            if (event.event === "user") return { user: event.text };
             if (event.event === "bot") {
-                return event.metadata?.utter_action ?
-                    { "utter": event.metadata.utter_action } :
-                    { "utter": event.text };
+              return event.metadata?.utter_action
+                ? { utter: event.metadata.utter_action }
+                : { utter: event.text };
             }
-        }).filter(Boolean);
+          })
+          .filter(Boolean);
 
         const e2eTestCase = {
-            "test_cases": [{
-                "test_case": data.sender_id,
-                "steps": steps
-            }]
+          test_cases: [
+            {
+              test_case: data.sender_id,
+              steps: steps,
+            },
+          ],
         };
-        e2eTest.textContent = jsyaml.dump(e2eTestCase, {"noArrayIndent" : true});
+        e2eTest.textContent = jsyaml.dump(e2eTestCase, { noArrayIndent: true });
 
         if (window.hljs) hljs.highlightElement(e2eTest);
-    }
+      }
 
-    function updateSlots(slots) {
-        const root = document.getElementById('slots');
-        root.innerHTML = '';
+      function updateSlots(slots) {
+        const root = document.getElementById("slots");
+        root.innerHTML = "";
         const sortedSlotNames = Object.keys(slots).sort();
 
-        sortedSlotNames.forEach(name => {
-            const slotValue = JSON.stringify(slots[name], null, 2);
-            if (name !== "flow_stack" && slotValue !== 'null') {
-                root.insertAdjacentHTML('beforeend', `<tr><td>${name}</td><td>${slotValue}</td></tr>`);
-            }
+        sortedSlotNames.forEach((name) => {
+          const slotValue = JSON.stringify(slots[name], null, 2);
+          if (name !== "flow_stack" && slotValue !== "null") {
+            root.insertAdjacentHTML(
+              "beforeend",
+              `<tr><td>${name}</td><td>${slotValue}</td></tr>`
+            );
+          }
         });
 
-        root.insertAdjacentHTML('beforeend', `<tr><td>< all other slots ></td><td>None</td></tr>`);
-    }
+        root.insertAdjacentHTML(
+          "beforeend",
+          `<tr><td>< all other slots ></td><td>None</td></tr>`
+        );
+      }
 
-    function updateStackFrames(stackFrames) {
-        const stackEl = document.getElementById('stack-frames');
-        stackEl.innerHTML = '';
+      function updateStackFrames(stackFrames) {
+        const stackEl = document.getElementById("stack-frames");
+        stackEl.innerHTML = "";
 
         if (!stackFrames.length) {
-            stackEl.insertAdjacentHTML('afterbegin', `<tr><td colspan=4 class="empty-row">-</td></tr>`);
+          stackEl.insertAdjacentHTML(
+            "afterbegin",
+            `<tr><td colspan=4 class="empty-row">-</td></tr>`
+          );
         } else {
-            stackFrames.forEach((frame, i) => {
-                stackEl.insertAdjacentHTML('afterbegin', `<tr><td>${i + 1}</td><td>${frame.frame_type}</td><td>${frame.flow_id}</td><td>${frame.step_id}</td></tr>`);
-            });
+          stackFrames.forEach((frame, i) => {
+            stackEl.insertAdjacentHTML(
+              "afterbegin",
+              `<tr><td>${i + 1}</td><td>${frame.frame_type}</td><td>${
+                frame.flow_id
+              }</td><td>${frame.step_id}</td></tr>`
+            );
+          });
         }
-    }
+      }
 
-    async function renderMermaidDiagram(stackFrames) {
+      async function renderMermaidDiagram(stackFrames) {
         let activeFlow = stackFrames[stackFrames.length - 1]?.flow_id;
         let activeStep = stackFrames[stackFrames.length - 1]?.step_id;
         let flows = await flowsData;
         // find flow by going through array and checking for the id field
-        let flow = flows.find(flow => flow.id === activeFlow);
+        let flow = flows.find((flow) => flow.id === activeFlow);
         var mermaidText = `---
 title: ${flow?.id ?? "No Flow"}
 ---
@@ -269,18 +306,20 @@ classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
 
         if (flow) {
           for (var i = 0; i < flow.steps.length; i++) {
-            let step = flow.steps[i]
-            if (step.question){
-              let slotValue = slots[step.question] ? `_${slots[step.question]}_` : "\uD83D\uDCAC";
+            let step = flow.steps[i];
+            if (step.question) {
+              let slotValue = slots[step.question]
+                ? `_${slots[step.question]}_`
+                : "\uD83D\uDCAC";
               mermaidText += `${flow.steps[i].id}["\`${flow.steps[i].question}\n${slotValue}\`"]:::question\n`;
             }
-            if (step.action){
+            if (step.action) {
               mermaidText += `${flow.steps[i].id}["${flow.steps[i].action}"]:::action\n`;
             }
-            if (step.link){
+            if (step.link) {
               mermaidText += `${flow.steps[i].id}["\uD83D\uDD17 ${flow.steps[i].link}"]:::link\n`;
             }
-            if (step.set_slots){
+            if (step.set_slots) {
               mermaidText += `${flow.steps[i].id}["\uD83E\uDEA3 ${flow.steps[i].id}"]:::slot\n`;
             }
 
@@ -296,37 +335,39 @@ classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
             if (step.next && Array.isArray(step.next)) {
               for (var j = 0; j < step.next.length; j++) {
                 let condition = step.next[j];
-                if(condition.then){
+                if (condition.then) {
                   mermaidText += `${step.id} -->|${condition.if}| ${condition.then}\n`;
                 }
-                if(condition.else){
+                if (condition.else) {
                   mermaidText += `${step.id} -->|else| ${condition.else}\n`;
                 }
               }
             }
           }
         }
-        let flowEl = document.getElementById('flow');
-        const { svg } = await mermaid.render('graphDiv', mermaidText);
+        let flowEl = document.getElementById("flow");
+        const { svg } = await mermaid.render("graphDiv", mermaidText);
         flowEl.innerHTML = svg;
-    }
+      }
 
-    async function updateData() {
+      async function updateData() {
         await Promise.all([fetchStory(), fetchTracker()]);
         setTimeout(updateData, 1000);
-    }    
+      }
 
-    mermaid.initialize({ startOnLoad: false });
-    
-    let previousTrackerState = null;
-    let flowsData = fetchFlows();
+      mermaid.initialize({ startOnLoad: false });
 
-    // Call functions initially
-    updateChatDiv();
-    updateData();
-  </script>
+      let previousTrackerState = null;
+      let flowsData = fetchFlows();
 
-  <script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
-</body>
+      // Call functions initially
+      updateChatDiv();
+      updateData();
+    </script>
 
+    <script
+      src="https://unpkg.com/@rasahq/rasa-chat"
+      type="application/javascript"
+    ></script>
+  </body>
 </html>
