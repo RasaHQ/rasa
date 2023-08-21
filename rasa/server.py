@@ -1372,6 +1372,14 @@ def create_app(
         logger.debug(f"Successfully unloaded model '{model_file}'.")
         return response.json(None, status=HTTPStatus.NO_CONTENT)
 
+    @app.get("/flows")
+    @requires_auth(app, auth_token)
+    async def get_flows(request: Request) -> HTTPResponse:
+        """Get all the flows currently stored by the agent."""
+        processor = app.ctx.agent.processor
+        flows = processor.get_flows()
+        return response.json(flows.as_json())
+
     @app.get("/domain")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)

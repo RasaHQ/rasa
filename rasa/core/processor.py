@@ -17,6 +17,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
 from rasa.plugin import plugin_manager
+from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.data import TrainingType
 import rasa.shared.utils.io
 import rasa.core.actions.action
@@ -971,6 +972,12 @@ class MessageProcessor:
         events = results[target]
         tracker.update_with_events(events, self.domain)
         return tracker
+
+    def get_flows(self) -> FlowsList:
+        """Get the list of flows from the graph."""
+        target = "flows_provider"
+        results = self.graph_runner.run(inputs={}, targets=[target])
+        return results[target]
 
     async def _run_action(
         self,

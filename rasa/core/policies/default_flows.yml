@@ -1,12 +1,13 @@
 version: "3.1"
 responses:
   utter_flow_continue_interrupted: 
-    - text: Let's continue with the topic {rasa_previous_flow}.
+    - text: Let's continue with the topic {{ context.previous_flow_name }}.
       metadata: 
         rephrase: True
+        template: jinja
 
   utter_ask_confirm_correction:
-    - text: "Do you want to update your information?"
+    - text: "Do you want to update the {{ context.corrected_slots.keys()|join(', ') }}?"
       buttons:
         - payload: yes
           title: Yes
@@ -14,11 +15,13 @@ responses:
           title: No, please keep the previous information
       metadata: 
         rephrase: True
+        template: jinja
   
   utter_corrected_previous_input:
-    - text: "Ok, I corrected the previous input."
+    - text: "Ok, I corrected the {{ context.corrected_slots.keys()|join(', ') }}."
       metadata: 
         rephrase: True
+        template: jinja
   
   utter_not_corrected_previous_input:
     - text: "Ok, I did not correct the previous input."
@@ -26,9 +29,10 @@ responses:
         rephrase: True
 
   utter_flow_cancelled_rasa:
-    - text: Okay, stopping the flow {rasa_cancelled_flow}.
+    - text: Okay, stopping the flow {{ context.canceled_name }}.
       metadata:
         rephrase: True
+        template: jinja
 
   utter_can_do_something_else:
     - text: "Is there anything else I can help you with?"
@@ -56,29 +60,31 @@ flows:
         action: utter_flow_continue_interrupted
   
   pattern_correction:
-    description: A meta flow that should be started to correct a previous user input.
+    description: Confirm a correction of a slot value.
 
     steps:
       - id: "0"
         question: confirm_correction
         next:
           - if: confirm_correction
-            then: "1"
-          - else: "2"
-      - id: "1"
+            then: "correct_slots"
+          - else: "abort_correction"
+      - id: "correct_slots"
+        action: action_correct_flow_slot
+        next: "inform_user"
+      - id: "inform_user"
         action: utter_corrected_previous_input
-      - id: "2"
-        set_slots:
-          - rasa_corrected_slots: None
-        next: "3"
-      - id: "3"
+      - id: "abort_correction"
         action: utter_not_corrected_previous_input
 
   pattern_cancel_flow:
     description: A meta flow that's started when a flow is cancelled.
 
     steps:
-      - id: "0"
+      - id: "cancel_flow"
+        action: action_cancel_flow
+        next: "inform_user"
+      - id: "inform_user"
         action: utter_flow_cancelled_rasa
 
   pattern_too_complex:
