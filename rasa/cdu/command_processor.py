@@ -144,7 +144,7 @@ def execute_commands(
             }
             correction_frame = FlowStackFrame(
                 flow_id=FLOW_PATTERN_CORRECTION_ID,
-                frame_type=StackFrameType.CORRECTION,
+                frame_type=StackFrameType.REMARK,
                 context=context,
             )
             if (

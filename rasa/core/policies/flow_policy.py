@@ -89,7 +89,6 @@ class FlowPolicy(Policy):
     @staticmethod
     def supported_stack_frames() -> List[StackFrameType]:
         return [
-            StackFrameType.CORRECTION,
             StackFrameType.INTERRUPT,
             StackFrameType.LINK,
             StackFrameType.REGULAR,

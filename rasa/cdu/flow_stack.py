@@ -182,10 +182,6 @@ class StackFrameType(str, Enum):
     """The frame is a link frame.
 
     This means that the previous flow linked to this flow."""
-    CORRECTION = "correction"
-    """The frame is a correction frame.
-
-    This means that the previous flow was corrected by this flow."""
     REGULAR = "regular"
     """The frame is a regular frame.
 
@@ -207,8 +203,6 @@ class StackFrameType(str, Enum):
             return StackFrameType.LINK
         elif typ == StackFrameType.REGULAR.value:
             return StackFrameType.REGULAR
-        elif typ == StackFrameType.CORRECTION.value:
-            return StackFrameType.CORRECTION
         elif typ == StackFrameType.DOCSEARCH.value:
             return StackFrameType.DOCSEARCH
         elif typ == StackFrameType.INTENTLESS.value:
