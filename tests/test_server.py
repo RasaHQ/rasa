@@ -1456,6 +1456,7 @@ def test_list_routes(empty_agent: Agent):
         "load_model",
         "unload_model",
         "get_domain",
+        "get_flows",
     }
 
 

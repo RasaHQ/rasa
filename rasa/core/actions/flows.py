@@ -19,7 +19,7 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.shared.core.flows.flow import END_STEP, START_STEP, Flow, FlowStep
+from rasa.shared.core.flows.flow import END_STEP, START_STEP
 from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger(__name__)
