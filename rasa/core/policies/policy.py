@@ -120,8 +120,7 @@ class Policy(GraphComponent):
         if top_frame := flow_stack.top():
             return top_frame.frame_type in self.supported_stack_frames()
         elif only_after_user_message and len(tracker.events) > 0:
-            last_event_type = tracker.events[-1].type_name
-            return last_event_type == UserUttered.type_name
+            return not tracker.has_action_after_latest_user_message()
         else:
             return True
 

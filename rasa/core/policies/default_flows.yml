@@ -47,6 +47,8 @@ responses:
 
   utter_clarification_options_rasa:
     - text: I'm not sure what you'd like to achieve. Do you want to {rasa_clarification_options}?
+      metadata:
+        rephrase: True
 
 slots:
   confirm_correction:
