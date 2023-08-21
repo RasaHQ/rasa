@@ -659,7 +659,11 @@ class FlowExecutor:
                     flow_id=step.link,
                     step_id=START_STEP,
                     frame_type=StackFrameType.LINK,
-                )
+                ),
+                # push this below the current stack frame so that we can
+                # complete the current flow first and then continue with the
+                # linked flow
+                index=-1,
             )
             if tracker.active_loop_name:
                 return ActionPrediction(None, 0.0, events=[ActiveLoop(None)])

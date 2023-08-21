@@ -47,13 +47,18 @@ class FlowStack:
         """
         return [frame.as_dict() for frame in self.frames]
 
-    def push(self, frame: FlowStackFrame) -> None:
+    def push(self, frame: FlowStackFrame, index: Optional[int] = None) -> None:
         """Pushes a new frame onto the stack.
 
         Args:
             frame: The frame to push onto the stack.
+            index: The index to insert the frame at. If `None`, the frame
+                is appended to the stack.
         """
-        self.frames.append(frame)
+        if index is None:
+            self.frames.append(frame)
+        else:
+            self.frames.insert(index, frame)
 
     def update(self, frame: FlowStackFrame) -> None:
         """Updates the topmost frame.
