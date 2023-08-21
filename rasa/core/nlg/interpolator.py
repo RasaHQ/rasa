@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
 
-def interpolate_format(response: Text, values: Dict[Text, Text]) -> Text:
+def interpolate_format_template(response: Text, values: Dict[Text, Text]) -> Text:
     """Interpolate values into responses with placeholders.
 
     Transform response tags from "{tag_name}" to "{0[tag_name]}" as described here:
@@ -101,7 +101,7 @@ def interpolate(
         The response with any replacements made.
     """
     if method == RASA_FORMAT_TEMPLATE_ENGINE:
-        interpolator = interpolate_format
+        interpolator = interpolate_format_template
     elif method == JINJA2_TEMPLATE_ENGINE:
         interpolator = interpolate_jinja_template
     else:
