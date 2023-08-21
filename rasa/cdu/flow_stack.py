@@ -124,7 +124,10 @@ class FlowStack:
         for frame in reversed(self.frames):
             if frame.frame_type in STACK_FRAME_TYPES_WITH_USER_FLOWS:
                 flow = flows.flow_by_id(frame.flow_id)
-                return flow.step_by_id(frame.step_id), flow
+                if flow:
+                    return flow.step_by_id(frame.step_id), flow
+                else:
+                    return None, None
 
         return None, None
 

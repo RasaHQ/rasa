@@ -156,7 +156,7 @@ class ActionCorrectFlowSlot(action.Action):
             if frame.flow_id == reset_point.get("id"):
                 frame.step_id = reset_point.get("step_id") or START_STEP
                 break
-        events = [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
+        events: List[Event] = [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
 
         events.extend([SlotSet(k, v) for k, v in corrected_slots.items()])
 

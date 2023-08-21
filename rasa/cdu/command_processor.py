@@ -138,7 +138,7 @@ def execute_commands(
             context = {
                 "corrected_slots": proposed_slots,
                 "corrected_reset_point": {
-                    "id": user_flow.id,
+                    "id": user_flow.id if user_flow else None,
                     "step_id": reset_step.id if reset_step else None,
                 },
             }
@@ -185,7 +185,7 @@ def execute_commands(
                 # Setting the stack frame to the end step so it is properly
                 # wrapped up by the flow policy
                 canceled_frames.append(len(original_frames) - i - 1)
-                if frame.flow_id == user_flow.id:
+                if user_flow and frame.flow_id == user_flow.id:
                     break
 
             flow_stack.push(
@@ -349,7 +349,7 @@ def clean_up_commands(
                 "command_executor.convert_command.correction", command=command
             )
             if (top := flow_stack.top()) and top.context:
-                already_corrected_slots = top.context.get("corrected_slots")
+                already_corrected_slots = top.context.get("corrected_slots", {})
             else:
                 already_corrected_slots = {}
 
