@@ -122,7 +122,9 @@ def test_nlg_schema_validation_empty_custom_dict():
 def test_nlg_fill_response_text(slot_name: Text, slot_value: Any):
     response = {"text": f"{{{slot_name}}}"}
     t = TemplatedNaturalLanguageGenerator(responses=dict())
-    result = t._fill_response(response=response, filled_slots={slot_name: slot_value})
+    result = t._fill_response(
+        response=response, filled_slots={slot_name: slot_value}, stack_context=dict()
+    )
     assert result == {"text": str(slot_value)}
 
 
@@ -134,7 +136,9 @@ def test_nlg_fill_response_image(img_slot_name: Text, img_slot_value: Text):
     response = {"image": f"{{{img_slot_name}}}"}
     t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_response(
-        response=response, filled_slots={img_slot_name: img_slot_value}
+        response=response,
+        filled_slots={img_slot_name: img_slot_value},
+        stack_context=dict(),
     )
     assert result == {"image": str(img_slot_value)}
 
@@ -169,7 +173,11 @@ def test_nlg_fill_response_custom(slot_name: Text, slot_value: Any):
         }
     }
     t = TemplatedNaturalLanguageGenerator(responses=dict())
-    result = t._fill_response(response=response, filled_slots={slot_name: slot_value})
+    result = t._fill_response(
+        response=response,
+        filled_slots={slot_name: slot_value},
+        stack_context=dict(),
+    )
 
     assert result == {
         "custom": {
@@ -190,7 +198,11 @@ def test_nlg_fill_response_custom_with_list():
         }
     }
     t = TemplatedNaturalLanguageGenerator(responses=dict())
-    result = t._fill_response(response=response, filled_slots={"test": 5})
+    result = t._fill_response(
+        response=response,
+        filled_slots={"test": 5},
+        stack_context=dict(),
+    )
     assert result == {
         "custom": {
             "blocks": [{"fields": [{"text": "*Departure date:*\n5"}]}],
@@ -213,7 +225,9 @@ def test_nlg_fill_response_text_with_json(response_text, expected):
     response = {"text": response_text}
     t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_response(
-        response=response, filled_slots={"slot_1": "foo", "slot_2": "bar"}
+        response=response,
+        filled_slots={"slot_1": "foo", "slot_2": "bar"},
+        stack_context=dict(),
     )
     assert result == {"text": expected}
 
@@ -223,7 +237,9 @@ def test_nlg_fill_response_with_bad_slot_name(slot_name, slot_value):
     response_text = f"{{{slot_name}}}"
     t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_response(
-        response={"text": response_text}, filled_slots={slot_name: slot_value}
+        response={"text": response_text},
+        filled_slots={slot_name: slot_value},
+        stack_context=dict(),
     )
     assert result["text"] == response_text
 
@@ -243,6 +259,7 @@ def test_nlg_fill_response_image_and_text(
     result = t._fill_response(
         response=response,
         filled_slots={text_slot_name: text_slot_value, img_slot_name: img_slot_value},
+        stack_context=dict(),
     )
     assert result == {"text": str(text_slot_value), "image": str(img_slot_value)}
 
@@ -268,6 +285,7 @@ def test_nlg_fill_response_text_and_custom(
     result = t._fill_response(
         response=response,
         filled_slots={text_slot_name: text_slot_value, cust_slot_name: cust_slot_value},
+        stack_context=dict(),
     )
     assert result == {
         "text": str(text_slot_value),
@@ -285,7 +303,9 @@ def test_nlg_fill_response_attachment(attach_slot_name, attach_slot_value):
     response = {"attachment": "{" + attach_slot_name + "}"}
     t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_response(
-        response=response, filled_slots={attach_slot_name: attach_slot_value}
+        response=response,
+        filled_slots={attach_slot_name: attach_slot_value},
+        stack_context=dict(),
     )
     assert result == {"attachment": str(attach_slot_value)}
 
@@ -304,7 +324,9 @@ def test_nlg_fill_response_button(button_slot_name, button_slot_value):
     }
     t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_response(
-        response=response, filled_slots={button_slot_name: button_slot_value}
+        response=response,
+        filled_slots={button_slot_name: button_slot_value},
+        stack_context=dict(),
     )
     assert result == {
         "buttons": [
@@ -327,5 +349,6 @@ def test_nlg_fill_response_quick_replies(
     result = t._fill_response(
         response=response,
         filled_slots={quick_replies_slot_name: quick_replies_slot_value},
+        stack_context=dict(),
     )
     assert result == {"quick_replies": str(quick_replies_slot_value)}
