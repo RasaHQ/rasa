@@ -46,9 +46,13 @@ responses:
     - text: Sorry, I'm having trouble understanding you right now. Please try again later.
 
   utter_clarification_options_rasa:
-    - text: I'm not sure what you'd like to achieve. Do you want to {rasa_clarification_options}?
+    - text: I'm not sure what you'd like to achieve. Do you want to {{context.clarification_options}}?
       metadata:
         rephrase: True
+        template: jinja
+
+
+
 
 slots:
   confirm_correction:
@@ -131,4 +135,7 @@ flows:
     description: handle clarifications with the user
     steps:
       - id: "0"
+        action: action_clarify_flows
+        next: "1"
+      - id: "1"
         action: utter_clarification_options_rasa

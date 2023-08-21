@@ -234,14 +234,18 @@ def execute_commands(
                 )
             )
         elif isinstance(command, ClarifyCommand):
+            relevant_flows = [all_flows.flow_by_id(opt) for opt in command.options]
+            names = [
+                flow.name or flow.id for flow in relevant_flows if flow is not None
+            ]
             context = {
-                "options": command.options,
+                "names": names,
             }
             flow_stack.push(
                 FlowStackFrame(
                     flow_id="pattern_clarification",
                     frame_type=StackFrameType.REGULAR,
-                    context=context
+                    context=context,
                 )
             )
         elif isinstance(command, ErrorCommand):
@@ -416,8 +420,7 @@ def clean_up_commands(
                 )
             if len(clean_options) == 0:
                 structlogger.debug(
-                    "command_executor.skip_command.empty_clarification",
-                    command=command
+                    "command_executor.skip_command.empty_clarification", command=command
                 )
             else:
                 clean_commands.append(ClarifyCommand(clean_options))

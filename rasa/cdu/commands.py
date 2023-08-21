@@ -156,30 +156,5 @@ class ErrorCommand(Command):
 class ClarifyCommand(Command):
     """A command to indicate that the bot should ask for clarification."""
 
-    from rasa.shared.core.flows.flow import FlowsList
-
     options: List[str]
     command: str = "clarify"
-
-    def assemble_options_string(self, all_flows: FlowsList) -> str:
-        """Concatenate options to a human-readable string."""
-        # TODO: this should probably be an action that can be overwritten
-        #  for different languages ? Or use LLM rephrasing
-        clarification_message = ""
-        for k, opt in enumerate(self.options):
-            flow = all_flows.flow_by_id(opt)
-            if flow is not None:
-                if len(flow.name) > 0:
-                    name = flow.name
-                else:
-                    name = flow.id
-            else:
-                name = "None"
-
-            if k == 0:
-                clarification_message += name
-            elif k == len(self.options) - 1:
-                clarification_message += f" or {name}"
-            else:
-                clarification_message += f", {name}"
-        return clarification_message
