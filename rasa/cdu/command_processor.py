@@ -181,10 +181,10 @@ def execute_commands(
 
             canceled_frames = []
             original_frames = FlowStack.from_dict(original_stack_dump).frames
-            for i, frame in enumerate(reversed(original_frames)):
+            for frame in reversed(original_frames):
                 # Setting the stack frame to the end step so it is properly
                 # wrapped up by the flow policy
-                canceled_frames.append(len(original_frames) - i - 1)
+                canceled_frames.append(frame.frame_id)
                 if user_flow and frame.flow_id == user_flow.id:
                     break
 

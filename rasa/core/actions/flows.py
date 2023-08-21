@@ -9,7 +9,6 @@ from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
     ACTION_CORRECT_FLOW_SLOT,
-    FLOW_CONTEXT_SLOT,
     FLOW_STACK_SLOT,
 )
 from rasa.shared.core.domain import Domain
@@ -107,18 +106,20 @@ class ActionCancelFlow(action.Action):
             structlogger.warning("action.cancel_flow.no_active_flow", stack=stack)
             return []
 
-        context = tracker.get_slot(FLOW_CONTEXT_SLOT) or {}
+        context = stack.current_context()
         canceled_flow_frames = context.get("canceled_frames", [])
 
-        for frame_idx in canceled_flow_frames:
-            if frame_idx >= len(stack.frames):
+        for canceled_frame_id in canceled_flow_frames:
+            for frame in stack.frames:
+                if frame.frame_id == canceled_frame_id:
+                    frame.step_id = END_STEP
+                    break
+            else:
                 structlogger.warning(
                     "action.cancel_flow.frame_not_found",
                     stack=stack,
-                    frame_idx=frame_idx,
+                    frame_id=canceled_frame_id,
                 )
-                continue
-            stack.frames[frame_idx].step_id = END_STEP
 
         return [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
 
@@ -148,7 +149,7 @@ class ActionCorrectFlowSlot(action.Action):
             structlogger.warning("action.correct_flow_slot.no_active_flow", stack=stack)
             return []
 
-        context = tracker.get_slot(FLOW_CONTEXT_SLOT) or {}
+        context = stack.current_context()
         corrected_slots = context.get("corrected_slots", {})
         reset_point = context.get("corrected_reset_point", {})
 

@@ -2,6 +2,7 @@ import copy
 import re
 import logging
 from jinja2 import Template
+import jinja2
 import structlog
 from typing import Optional, Text, Dict, Union, Any, List
 
@@ -66,7 +67,7 @@ def interpolate_jinja_template(response: Text, values: Dict[Text, Any]) -> Text:
     """
     try:
         return Template(response).render(values)
-    except KeyError as e:
+    except jinja2.exceptions.UndefinedError as e:
         event_info = (
             "The specified slot name does not exist, "
             "and no explicit value was provided during the response invocation. "

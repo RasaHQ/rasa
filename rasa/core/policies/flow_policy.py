@@ -27,7 +27,6 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SEND_TEXT_NAME,
-    FLOW_CONTEXT_SLOT,
     FLOW_STACK_SLOT,
 )
 from rasa.shared.core.events import ActiveLoop, Event, SlotSet
@@ -481,9 +480,6 @@ class FlowExecutor:
                 # If there is no current flow, we assume that all flows are done
                 # and there is nothing to do. The assumption here is that every
                 # flow ends with an action listen.
-                tracker.update_with_events(
-                    [SlotSet(FLOW_CONTEXT_SLOT, None)], self.domain
-                )
                 predicted_action = ActionPrediction(ACTION_LISTEN_NAME, 1.0)
                 break
 
@@ -493,12 +489,6 @@ class FlowExecutor:
                     "This should not happen, if a flow is started it should be set "
                     "to __start__ if it ended it should be popped from the stack."
                 )
-
-            if top_frame := self.flow_stack.top():
-                if tracker.get_slot(FLOW_CONTEXT_SLOT) != top_frame.context:
-                    tracker.update_with_events(
-                        [SlotSet(FLOW_CONTEXT_SLOT, top_frame.context)], self.domain
-                    )
 
             structlogger.debug("flow.action.loop", previous_step=previous_step)
             predicted_action = self._wrap_up_previous_step(

@@ -74,7 +74,6 @@ from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
     ACTION_CORRECT_FLOW_SLOT,
-    FLOW_CONTEXT_SLOT,
     USER_INTENT_SESSION_START,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -247,7 +246,6 @@ async def test_remote_action_runs(
                     REQUESTED_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
                     FLOW_STACK_SLOT: None,
-                    FLOW_CONTEXT_SLOT: None,
                     RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
@@ -312,7 +310,6 @@ async def test_remote_action_logs_events(
                     REQUESTED_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
                     FLOW_STACK_SLOT: None,
-                    FLOW_CONTEXT_SLOT: None,
                     RETURN_VALUE_SLOT: None,
                 },
                 "events": [],

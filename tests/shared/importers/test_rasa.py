@@ -11,7 +11,6 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import (
     DEFAULT_ACTION_NAMES,
     DEFAULT_INTENTS,
-    FLOW_CONTEXT_SLOT,
     SESSION_START_METADATA_SLOT,
     FLOW_STACK_SLOT,
     RETURN_VALUE_SLOT,
@@ -33,7 +32,6 @@ def test_rasa_file_importer(project: Text):
     assert len(domain.intents) == 7 + len(DEFAULT_INTENTS)
     assert domain.slots == [
         AnySlot(FLOW_STACK_SLOT, mappings=[{}]),
-        AnySlot(FLOW_CONTEXT_SLOT, mappings=[{}]),
         AnySlot(RETURN_VALUE_SLOT, mappings=[{}]),
         AnySlot(SESSION_START_METADATA_SLOT, mappings=[{}]),
     ]

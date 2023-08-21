@@ -19,6 +19,10 @@
         padding: 2em;
       }
 
+      .tiny {
+        font-size: 0.5em;
+      }
+
       .content {
         max-width: 30em;
         margin-bottom: 1em;
@@ -86,11 +90,11 @@
 
     <div class="container">
       <div>
-        <p class="content bold">Stack:</p>
+        <p class="content bold">Stack (top is active):</p>
         <table>
           <thead>
             <tr>
-              <th>#</th>
+              <th>ID</th>
               <th>Type</th>
               <th>Flow</th>
               <th>Step Id</th>
@@ -281,7 +285,7 @@
             const frameContext = JSON.stringify(frame.context, null, 2);
             stackEl.insertAdjacentHTML(
               "afterbegin",
-              `<tr><td>${i + 1}</td><td>${frame.frame_type}</td><td>${
+              `<tr><td class="tiny">${frame.frame_id}</td><td>${frame.frame_type}</td><td>${
                 frame.flow_id
               }</td><td>${frame.step_id}</td><td><code>${frameContext}</code></td></tr>`
             );

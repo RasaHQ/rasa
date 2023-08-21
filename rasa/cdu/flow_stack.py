@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Text, List, Optional, Tuple
 
@@ -17,6 +17,8 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
 import structlog
+
+from rasa.shared.utils.io import random_string
 
 structlogger = structlog.get_logger()
 
@@ -87,6 +89,17 @@ class FlowStack:
             The popped frame.
         """
         return self.frames.pop()
+
+    def current_context(self) -> Dict[Text, Any]:
+        """Returns the context of the topmost frame.
+
+        Returns:
+            The context of the topmost frame.
+        """
+        if self.is_empty():
+            return {}
+
+        return self.frames[-1].context or {}
 
     def top(self) -> Optional[FlowStackFrame]:
         """Returns the topmost frame from the stack.
@@ -221,18 +234,29 @@ STACK_FRAME_TYPES_WITH_USER_FLOWS = {
 }
 
 
+def generate_stack_frame_id() -> str:
+    """Generates a stack frame ID.
+
+    Returns:
+        The generated stack frame ID.
+    """
+    return random_string(8)
+
+
 @dataclass
 class FlowStackFrame:
     """Represents the current flow step."""
 
-    flow_id: Text
+    flow_id: str
     """The ID of the current flow."""
-    step_id: Text = START_STEP
+    step_id: str = START_STEP
     """The ID of the current step."""
     frame_type: StackFrameType = StackFrameType.REGULAR
     """The type of the frame. Defaults to `StackFrameType.REGULAR`."""
-    context: Optional[Dict[Text, Any]] = None
+    context: Optional[Dict[str, Any]] = None
     """The context of the frame. Defaults to `None`."""
+    frame_id: str = field(default_factory=generate_stack_frame_id)
+    """The ID of the current frame."""
 
     @staticmethod
     def from_dict(data: Dict[Text, Any]) -> FlowStackFrame:
@@ -249,6 +273,7 @@ class FlowStackFrame:
             data["step_id"],
             StackFrameType.from_str(data.get("frame_type")),
             data["context"],
+            data["frame_id"],
         )
 
     def as_dict(self) -> Dict[Text, Any]:
@@ -262,6 +287,7 @@ class FlowStackFrame:
             "step_id": self.step_id,
             "frame_type": self.frame_type.value,
             "context": self.context,
+            "frame_id": self.frame_id,
         }
 
     def with_updated_id(self, step_id: Text) -> FlowStackFrame:
@@ -273,11 +299,12 @@ class FlowStackFrame:
         Returns:
             The copy of the `FlowStackFrame` with the given step id.
         """
-        return FlowStackFrame(self.flow_id, step_id, self.frame_type)
+        return FlowStackFrame(self.flow_id, step_id, self.frame_type, self.context)
 
     def __repr__(self) -> Text:
         return (
-            f"FlowState(flow_id: {self.flow_id}, "
+            f"FlowState(frame_id: {self.frame_id},"
+            f"flow_id: {self.flow_id}, "
             f"step_id: {self.step_id}, "
             f"frame_type: {self.frame_type.value}, "
             f"context: {self.context})"
