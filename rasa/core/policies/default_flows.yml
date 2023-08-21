@@ -60,7 +60,7 @@ flows:
         action: utter_flow_continue_interrupted
   
   pattern_correction:
-    description: Confirm a previous correction of a slot value.
+    description: Confirm a correction of a slot value.
 
     steps:
       - id: "0"
