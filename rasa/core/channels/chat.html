@@ -257,7 +257,7 @@
 
         sortedSlotNames.forEach((name) => {
           const slotValue = JSON.stringify(slots[name], null, 2);
-          if (!["flow_stack", "flow_context"].includes(name) && slotValue !== "null") {
+          if (name != "flow_stack" && slotValue !== "null") {
             root.insertAdjacentHTML(
               "beforeend",
               `<tr><td>${name}</td><td>${slotValue}</td></tr>`

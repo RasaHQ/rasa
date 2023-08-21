@@ -908,7 +908,6 @@ def test_domain_from_multiple_files():
         "drumSoupChocolate",
         "drumSoupStrawberry",
         "drumStrawberryWallets",
-        "flow_context",
         "flow_stack",
         "greenOrGrey",
         "humbleSelection",
