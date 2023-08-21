@@ -369,10 +369,6 @@ class Flow:
                 question_steps.append(step)
         return question_steps
 
-    def get_slots(self) -> Set[str]:
-        """The slots used in this flow."""
-        return {q.question for q in self.get_question_steps()}
-
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
     """Used to read flow steps from parsed YAML.
@@ -602,6 +598,8 @@ class LinkFlowStep(FlowStep):
             The parsed flow step.
         """
         base = super()._from_json(flow_step_config)
+        # Links are not allowed to have next step
+        base.next = FlowLinks(links=[])
         return LinkFlowStep(
             link=flow_step_config.get("link", ""),
             **base.__dict__,

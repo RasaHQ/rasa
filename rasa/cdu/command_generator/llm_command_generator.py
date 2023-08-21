@@ -169,6 +169,13 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             "null",
         }
 
+    @staticmethod
+    def clean_extracted_value(value: str) -> str:
+        """Clean up the extracted value from the llm."""
+        # replace any combination of single quotes, double quotes, and spaces
+        # from the beginning and end of the string
+        return re.sub(r"^['\"\s]+|['\"\s]+$", "", value)
+
     @classmethod
     def parse_commands(cls, actions: Optional[str]) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities."""
@@ -190,7 +197,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
                 slot_name = m.group(1).strip()
-                slot_value = m.group(2).strip()
+                slot_value: Optional[str] = cls.clean_extracted_value(m.group(2))
                 # error case where the llm tries to start a flow using a slot set
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
