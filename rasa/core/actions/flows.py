@@ -112,6 +112,8 @@ class ActionCancelFlow(action.Action):
         for canceled_frame_id in canceled_flow_frames:
             for frame in stack.frames:
                 if frame.frame_id == canceled_frame_id:
+                    # Setting the stack frame to the end step so it is properly
+                    # wrapped up by the flow policy
                     frame.step_id = END_STEP
                     break
             else:

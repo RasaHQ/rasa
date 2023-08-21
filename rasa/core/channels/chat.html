@@ -293,6 +293,14 @@
         }
       }
 
+      function keepShort(str, rough_limit=35) {
+        // if a string is too long, use an elipsis
+        if(str.length > rough_limit){
+          return str.substring(0, rough_limit) + "...";
+        }
+        return str;
+      }
+
       async function renderMermaidDiagram(stackFrames, slots) {
         let activeFlow = stackFrames[stackFrames.length - 1]?.flow_id;
         let activeStep = stackFrames[stackFrames.length - 1]?.step_id;
@@ -311,22 +319,21 @@ classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
         `;
 
         if (flow) {
-          for (var i = 0; i < flow.steps.length; i++) {
-            let step = flow.steps[i];
+          flow.steps.forEach((step) => {
             if (step.question) {
-              let slotValue = slots[step.question]
+              var slotValue = slots[step.question]
                 ? `'${slots[step.question]}'`
                 : "\uD83D\uDCAC";
-              mermaidText += `${flow.steps[i].id}["${flow.steps[i].question}\n${slotValue}"]:::question\n`;
+              mermaidText += `${step.id}["${keepShort(step.question)}\n${keepShort(slotValue)}"]:::question\n`;
             }
             if (step.action) {
-              mermaidText += `${flow.steps[i].id}["${flow.steps[i].action}"]:::action\n`;
+              mermaidText += `${step.id}["${keepShort(step.action)}"]:::action\n`;
             }
             if (step.link) {
-              mermaidText += `${flow.steps[i].id}["\uD83D\uDD17 ${flow.steps[i].link}"]:::link\n`;
+              mermaidText += `${step.id}["\uD83D\uDD17 ${step.link}"]:::link\n`;
             }
             if (step.set_slots) {
-              mermaidText += `${flow.steps[i].id}["\uD83E\uDEA3 ${flow.steps[i].id}"]:::slot\n`;
+              mermaidText += `${step.id}["\uD83E\uDEA3 ${step.id}"]:::slot\n`;
             }
 
             if (step.id === activeStep) {
@@ -339,17 +346,16 @@ classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
             }
             // if next is an array, then it is a list of conditions
             if (step.next && Array.isArray(step.next)) {
-              for (var j = 0; j < step.next.length; j++) {
-                let condition = step.next[j];
+              step.next.forEach((condition) => {
                 if (condition.then) {
                   mermaidText += `${step.id} -->|${condition.if}| ${condition.then}\n`;
                 }
                 if (condition.else) {
                   mermaidText += `${step.id} -->|else| ${condition.else}\n`;
                 }
-              }
+              })
             }
-          }
+          })
         }
         let flowEl = document.getElementById("flow");
         const { svg } = await mermaid.render("graphDiv", mermaidText);

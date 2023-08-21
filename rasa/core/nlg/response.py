@@ -1,6 +1,7 @@
 import copy
 import logging
 from rasa.cdu.flow_stack import FlowStack
+from rasa.core.constants import DEFAULT_TEMPLATE_ENGINE, TEMPLATE_ENGINE_CONFIG_KEY
 
 from rasa.shared.core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
@@ -107,7 +108,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         response_vars = self._response_variables(filled_slots, stack_context, kwargs)
 
         # template formatting method
-        method = response.get(METADATA, {}).get("template", "format")
+        method = response.get(METADATA, {}).get(
+            TEMPLATE_ENGINE_CONFIG_KEY, DEFAULT_TEMPLATE_ENGINE
+        )
 
         keys_to_interpolate = [
             "text",

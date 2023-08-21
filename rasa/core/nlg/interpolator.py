@@ -4,7 +4,9 @@ import logging
 from jinja2 import Template
 import jinja2
 import structlog
-from typing import Optional, Text, Dict, Union, Any, List
+from typing import Text, Dict, Union, Any, List
+
+from rasa.core.constants import JINJA2_TEMPLATE_ENGINE, RASA_FORMAT_TEMPLATE_ENGINE
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
@@ -85,7 +87,7 @@ def interpolate_jinja_template(response: Text, values: Dict[Text, Any]) -> Text:
 def interpolate(
     response: Union[List[Any], Dict[Text, Any], Text],
     values: Dict[Text, Text],
-    method: Optional[str] = None,
+    method: str,
 ) -> Union[List[Any], Dict[Text, Any], Text]:
     """Recursively process response and interpolate any text keys.
 
@@ -98,9 +100,9 @@ def interpolate(
     Returns:
         The response with any replacements made.
     """
-    if method is None or method == "format":
+    if method == RASA_FORMAT_TEMPLATE_ENGINE:
         interpolator = interpolate_format
-    elif method == "jinja":
+    elif method == JINJA2_TEMPLATE_ENGINE:
         interpolator = interpolate_jinja_template
     else:
         raise ValueError(f"Unknown interpolator implementation '{method}'")
@@ -110,12 +112,12 @@ def interpolate(
     elif isinstance(response, dict):
         for k, v in response.items():
             if isinstance(v, dict):
-                interpolate(v, values)
+                interpolate(v, values, method)
             elif isinstance(v, list):
-                response[k] = [interpolate(i, values) for i in v]
+                response[k] = [interpolate(i, values, method) for i in v]
             elif isinstance(v, str):
                 response[k] = interpolator(v, values)
         return response
     elif isinstance(response, list):
-        return [interpolate(i, values) for i in response]
+        return [interpolate(i, values, method) for i in response]
     return response
