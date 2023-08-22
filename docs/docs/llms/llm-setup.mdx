@@ -244,7 +244,7 @@ Additionally, requires the `COHERE_API_KEY` environment variable to be set.
 ```yaml
 llm:
   type: "cohere"
-  model: "gptd-instruct-tft"
+  model_name: "gptd-instruct-tft"
   temperature: 0.7
 ```
 
@@ -325,7 +325,7 @@ The model cam be configured as an optional parameter
 ```yaml
 embeddings:
   type: "openai"
-  model: "text-embedding-ada-002"
+  model_name: "text-embedding-ada-002"
 ```
 
 #### Cohere
@@ -338,7 +338,7 @@ can be configured as an optional parameter.
 ```yaml
 embeddings:
   type: "cohere"
-  model: "embed-english-v2.0"
+  model_name: "embed-english-v2.0"
 ```
 
 #### spaCy
