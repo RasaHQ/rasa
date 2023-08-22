@@ -5,7 +5,7 @@ import logging
 from enum import Enum
 from pathlib import Path
 from rasa.cdu.flow_stack import FlowStack, StackFrameType
-from rasa.shared.core.events import Event, UserUttered
+from rasa.shared.core.events import Event
 from typing import (
     Any,
     List,
