@@ -66,7 +66,7 @@ might witness an alternate flow based on changes.
 
 ### 3. Cancellations
 
-Cancellations arise when users halt a flow midway.
+Cancellations happen when users halt a flow midway.
 
 **Example:** A user opts out of sending money after initiating the process.
 
@@ -95,18 +95,15 @@ Users sometimes request pauses or reflection periods.
 
 ### 5. Chitchat
 
-Engage in off-topic interactions without hampering the primary flow.
+Engage in off-topic interactions without impacting a flow.
 
-**Example:** A user indulges in casual conversation.
+**Example:** A user has a casual conversation with the bot.
 
 <Chat caption="Chitchat with the bot">
-  <ChatUserText>I want to send 10 bucks to Spencer</ChatUserText>
-  <ChatBotText>Would you like to transfer 10 to Spencer? (Yes/No)</ChatBotText>
-  <ChatUserText>yes</ChatUserText>
-  <ChatBotText>Successfully transferred 10 to Spencer.</ChatBotText>
-  <ChatBotText>Is there anything else I can help you with?</ChatBotText>
-  <ChatUserText>no, thank you. have a good day.</ChatUserText>
-  <ChatBotText>You're welcome :)</ChatBotText>
+  <ChatUserText>Hi</ChatUserText>
+  <ChatBotText>Hi! I'm your Financial Assistant!</ChatBotText>
+  <ChatUserText>are you a bot?</ChatUserText>
+  <ChatBotText>I'm a virtual assistant made with Rasa.</ChatBotText>
 </Chat>
 
 ### 6. Completion
@@ -121,7 +118,19 @@ Flows conclude either by achieving user goals or by user abandonment.
   <ChatBotText>Is there anything else I can help you with?</ChatUserText>
 </Chat>
 
-### 7. Internal Errors
+### 7. Clarification
+
+Clarifications arise when the user request can't clearly be identified and
+potentially matches multiple flows.
+
+**Example:** User request can be matched to two flows.
+
+<Chat caption="Flow completion">
+  <ChatUserText>cash</ChatUserText>
+  <ChatBotText>I'm not sure what you'd like to achieve. Do you want to check your balance or transfer money?</ChatBotText>
+</Chat>
+
+### 8. Internal Errors
 
 Errors arise from unexpected system or flow issues.
 
@@ -144,8 +153,8 @@ a flow with the same name as the pattern:
 - `pattern_deliberation` for deliberations.
 - `pattern_chitchat` for chitchat.
 - `pattern_completed` for completion.
-- `pattern_internal_error` for internal errors.
 - `pattern_clarification` for clarification.
+- `pattern_internal_error` for internal errors.
 
 The syntax for each of these flows is the same as any other flow.
 
