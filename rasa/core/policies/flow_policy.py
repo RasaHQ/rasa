@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Text, List, Optional, Union
 from rasa.cdu.conversation_patterns import (
+    FLOW_PATTERN_CLARIFICATION,
     FLOW_PATTERN_COMPLETED,
     FLOW_PATTERN_CONTINUE_INTERRUPTED,
 )
@@ -698,6 +699,7 @@ class FlowExecutor:
                 elif (
                     not previous_flow
                     and current_frame.flow_id != FLOW_PATTERN_COMPLETED
+                    and current_frame.flow_id != FLOW_PATTERN_CLARIFICATION
                 ):
                     completed_flow = self.all_flows.flow_by_id(current_frame.flow_id)
                     completed_flow_name = (
