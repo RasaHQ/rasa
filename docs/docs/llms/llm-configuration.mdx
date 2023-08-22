@@ -32,14 +32,7 @@ Before beginning, make sure that you have:
 
 ## Assitant Configration
 
-In order to set up and configure this approach:
-
-- You'll first need to get the `dm2` branches of `rasa` and `rasa-plus`. 
-  All components are implemented on these branches.
-- Next, you'll need to configure the `config.yml` file to ensure your bot
-  recognizes and applies this combination of LLMs and Flows.
-
-An example configuration file is shown below:
+To use LLMs in your assistant, you need to configure the following components:
 
 ```yaml title="config.yml"
 recipe: default.v1
@@ -49,6 +42,7 @@ pipeline:
 
 policies:
   - name: rasa.core.policies.flow_policy.FlowPolicy
+  - name: rasa_plus.ml.DocsearchPolicy
   - name: RulePolicy
 ```
 
@@ -64,6 +58,7 @@ Additional configuration parameters are explained in detail in the documentation
 pages for each of these components:
 - [LLMCommandGenerator](./llm-command-generator.mdx)
 - [FlowPolicy](./flow-policy.mdx)
+- [Docseach](./llm-docsearch.mdx)
 - [LLMResponseRephraser](./llm-nlg.mdx) 
 
 
