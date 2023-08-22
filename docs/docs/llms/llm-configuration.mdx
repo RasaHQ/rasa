@@ -18,17 +18,9 @@ import RasaLabsBanner from "@theme/RasaLabsBanner";
 
 ## Overview
 
-This guide will walk you through the process of configuring Rasa to use OpenAI
-LLMs, including deployments that rely on the Azure OpenAI service.
-Instructions for other LLM providers are further down the page. 
-
-
-## Prerequisites
-
-Before beginning, make sure that you have:
-
-- Access to OpenAI's services
-- Ability to generate API keys for OpenAI
+This guide will walk you through the process of configuring Rasa to connect to an
+LLM, including deployments that rely on Azure OpenAI service. Instructions for 
+other LLM providers are further down the page. 
 
 ## Assitant Configration
 
@@ -62,10 +54,20 @@ pages for each of these components:
 - [LLMResponseRephraser](./llm-nlg.mdx) 
 
 
-## Configuration
+## OpenAI Configuration
 
-Configuring LLMs to work with OpenAI involves several steps. The following
-sub-sections outline each of these steps and what you need to do.
+The configuration describes in detail how to connect to OpenAI. Rasa is LLM agnostic and 
+can be configured with different LLMs, but OpenAI is the default. 
+
+If you want to configure your assistant with a different LLM, you can find
+instructions for other LLM providers further down the page.
+
+### Prerequisites
+
+Before beginning, make sure that you have:
+
+- Access to OpenAI's services
+- Ability to generate API keys for OpenAI
 
 ### API Token
 
@@ -113,8 +115,10 @@ you might use one model for intent classification and another for rephrasing.
 To configure models per component, follow these steps described on the
 pages for each component:
 
-1. [Instructions to configure models for intent classification](./llm-intent.mdx)
-2. [Instructions to configure models for rephrasing](./llm-nlg.mdx)
+1. [intent classification instructions](./llm-intent.mdx#llm--embeddings)
+2. [rephrasing instructions](./llm-nlg.mdx#llm-configuration)
+3. [intentless policy instructions](./llm-intentless.mdx#llm--embeddings)
+4. [docsearch instructions](./llm-docsearch.mdx#llm--embeddings)
 
 ### Additional Configuration for Azure OpenAI Service
 
@@ -208,7 +212,7 @@ To configure these parameters, follow these steps:
         chunk_size: 16
     ```
 
-## LLMs & Embeddings
+## Other LLMs/Embeddings
 
 The LLM and embeddings provider can be configured separately for each 
 component. All components default to using OpenAI.
