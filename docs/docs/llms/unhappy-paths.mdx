@@ -12,7 +12,7 @@ import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 
 ## Overview
 
-Flows map to distinct business functions, creating directed graphs. While 
+[Flows](../flows.mdx) offer structured way to design conversation-driven business logic. While 
 flow designers primarily focus on linear [happy paths](../glossary.mdx#happy--unhappy-paths), 
 Rasa provides a robust way to manage deviations, simplifying design complexity.
 
@@ -118,7 +118,7 @@ Flows conclude either by achieving user goals or by user abandonment.
 <Chat caption="Flow completion">
   <ChatUserText>Hey, how much money do I have?</ChatUserText>
   <ChatBotText>You currently have 4021.20$ in your account.</ChatBotText>
-  <ChatUserText>Is there anything else I can help you with?</ChatUserText>
+  <ChatBotText>Is there anything else I can help you with?</ChatUserText>
 </Chat>
 
 ### 7. Internal Errors
@@ -143,8 +143,8 @@ a flow with the same name as the pattern:
 - `pattern_cancel_flow` for cancellations.
 - `pattern_deliberation` for deliberations.
 - `pattern_chitchat` for chitchat.
-- `pattern_internal_error` for internal errors.
 - `pattern_completed` for completion.
+- `pattern_internal_error` for internal errors.
 - `pattern_clarification` for clarification.
 
 The syntax for each of these flows is the same as any other flow.
