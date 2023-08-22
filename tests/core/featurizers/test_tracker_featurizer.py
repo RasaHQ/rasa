@@ -186,7 +186,7 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 19, 0, 16, 17, 0, 18]])
+    expected_labels = np.array([[0, 20, 0, 17, 18, 0, 19]])
     assert actual_labels is not None
     assert len(actual_labels) == 1
     for actual, expected in zip(actual_labels, expected_labels):
@@ -832,7 +832,7 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 19, 0, 16, 17, 0, 18]]).T
+    expected_labels = np.array([[0, 20, 0, 17, 18, 0, 19]]).T
 
     assert actual_labels is not None
     assert actual_labels.shape == expected_labels.shape
@@ -899,7 +899,7 @@ def test_featurize_trackers_ignore_action_unlikely_intent_max_history_featurizer
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 19, 0]]).T
+    expected_labels = np.array([[0, 20, 0]]).T
     assert actual_labels.shape == expected_labels.shape
     for actual, expected in zip(actual_labels, expected_labels):
         assert np.all(actual == expected)
@@ -971,7 +971,7 @@ def test_featurize_trackers_keep_action_unlikely_intent_max_history_featurizer(
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 9, 19, 0]]).T
+    expected_labels = np.array([[0, 9, 20, 0]]).T
     assert actual_labels is not None
     assert actual_labels.shape == expected_labels.shape
     for actual, expected in zip(actual_labels, expected_labels):
@@ -1088,7 +1088,7 @@ def test_deduplicate_featurize_trackers_with_max_history_tracker_featurizer(
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 19, 0, 16, 17, 0, 18]]).T
+    expected_labels = np.array([[0, 20, 0, 17, 18, 0, 19]]).T
     if not remove_duplicates:
         expected_labels = np.vstack([expected_labels] * 2)
 

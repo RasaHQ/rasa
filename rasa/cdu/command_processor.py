@@ -1,4 +1,4 @@
-from typing import List, Optional, Set, Type
+from typing import List, Optional, Set, Type, Dict, Any
 
 import structlog
 from rasa.cdu.commands import (
@@ -236,9 +236,9 @@ def execute_commands(
         elif isinstance(command, ClarifyCommand):
             relevant_flows = [all_flows.flow_by_id(opt) for opt in command.options]
             names = [
-                flow.name or flow.id for flow in relevant_flows if flow is not None
+                flow.readable_name() for flow in relevant_flows if flow is not None
             ]
-            context = {
+            context: Dict[str, Any] = {
                 "names": names,
             }
             flow_stack.push(
