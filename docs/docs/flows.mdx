@@ -236,41 +236,6 @@ flow.
 Every step in a flow has a type. The type determines what the step does and what
 properties it supports.
 
-
-{/* ### User Message
-
-This step signifies a user utterance. Here's an example:
-
-```yaml
-- id: "an_incoming_user_message"
-  intent: "greet"
-  entities: [] # optional
-  description: "greet the user"
-  metadata: {} # an optional dict
-```
-
-User steps can only be used as a first step in a flow. They can be used to
-trigger a flow when a user sends a message that matches the intent and entities
-specified in the step.
-
-A `user_message` step can also support `OR` statements. This means that the flow
-can proceed if either of the conditions in the `OR` statement are met:
-
-```yaml
-- id: "a_required_unique_id"
-  or:
-    - intent: "complaint"
-      entities: [] # optional
-    - intent: "talk_to_agent"
-      entities: [] # optional
-  description: "handle a complaint or talk to an agent"
-  metadata: {} # an optional dict
-```
-
-Here, if the user intent is either to make a complaint or to talk to an agent,
-the flow should be started. \*/}
-
-
 ### Entry Prompt
 
 An `entry_prompt` step is used to determine if a flow should be started. Here's
