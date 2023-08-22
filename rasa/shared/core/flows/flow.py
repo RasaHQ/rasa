@@ -19,8 +19,6 @@ from rasa.shared.utils.llm import (
 
 structlogger = structlog.get_logger()
 
-HANDLING_PATTERN_PREFIX = "pattern_"
-
 
 class UnreachableFlowStepException(RasaException):
     """Raised when a flow step is unreachable."""
@@ -220,6 +218,10 @@ class Flow:
             "steps": [step.as_json() for step in self.steps],
         }
 
+    def readable_name(self) -> str:
+        """Returns the name of the flow or its id if no name is set."""
+        return self.name or self.id
+
     def validate(self) -> None:
         """Validates the flow configuration.
 
@@ -289,7 +291,9 @@ class Flow:
             return None
         return self.steps[0]
 
-    def previously_asked_questions(self, step_id: Text) -> List[QuestionFlowStep]:
+    def previously_asked_questions(
+        self, step_id: Optional[str]
+    ) -> List[QuestionFlowStep]:
         """Returns the questions asked before the given step.
 
         Questions are returned roughly in reverse order, i.e. the first
@@ -298,7 +302,7 @@ class Flow:
         """
 
         def _previously_asked_questions(
-            current_step_id: Text, visited_steps: Set[Text]
+            current_step_id: str, visited_steps: Set[str]
         ) -> List[QuestionFlowStep]:
             """Returns the questions asked before the given step.
 
@@ -327,11 +331,11 @@ class Flow:
                     )
             return questions
 
-        return _previously_asked_questions(step_id, set())
+        return _previously_asked_questions(step_id or START_STEP, set())
 
     def is_handling_pattern(self) -> bool:
         """Returns whether the flow is handling a pattern."""
-        return self.id.startswith(HANDLING_PATTERN_PREFIX)
+        return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
 
     def get_trigger_intents(self) -> Set[str]:
         """Returns the trigger intents of the flow"""
@@ -364,10 +368,6 @@ class Flow:
             if isinstance(step, QuestionFlowStep):
                 question_steps.append(step)
         return question_steps
-
-    def get_slots(self) -> Set[str]:
-        """The slots used in this flow."""
-        return {q.question for q in self.get_question_steps()}
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
@@ -598,6 +598,8 @@ class LinkFlowStep(FlowStep):
             The parsed flow step.
         """
         base = super()._from_json(flow_step_config)
+        # Links are not allowed to have next step
+        base.next = FlowLinks(links=[])
         return LinkFlowStep(
             link=flow_step_config.get("link", ""),
             **base.__dict__,

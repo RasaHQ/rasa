@@ -72,6 +72,8 @@ from rasa.shared.core.events import (
 import rasa.shared.utils.common
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
+    ACTION_CANCEL_FLOW,
+    ACTION_CORRECT_FLOW_SLOT,
     USER_INTENT_SESSION_START,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -92,9 +94,6 @@ from rasa.shared.core.constants import (
     SESSION_START_METADATA_SLOT,
     ACTION_EXTRACT_SLOTS,
     FLOW_STACK_SLOT,
-    CANCELLED_FLOW_SLOT,
-    PREVIOUS_FLOW_SLOT,
-    CORRECTED_SLOTS_SLOT,
     RETURN_VALUE_SLOT,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -145,7 +144,7 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 17
+    assert len(instantiated_actions) == 19
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -160,9 +159,11 @@ def test_domain_action_instantiation():
     assert instantiated_actions[11].name() == ACTION_SEND_TEXT_NAME
     assert instantiated_actions[12].name() == RULE_SNIPPET_ACTION_NAME
     assert instantiated_actions[13].name() == ACTION_EXTRACT_SLOTS
-    assert instantiated_actions[14].name() == "my_module.ActionTest"
-    assert instantiated_actions[15].name() == "utter_test"
-    assert instantiated_actions[16].name() == "utter_chitchat"
+    assert instantiated_actions[14].name() == ACTION_CANCEL_FLOW
+    assert instantiated_actions[15].name() == ACTION_CORRECT_FLOW_SLOT
+    assert instantiated_actions[16].name() == "my_module.ActionTest"
+    assert instantiated_actions[17].name() == "utter_test"
+    assert instantiated_actions[18].name() == "utter_chitchat"
 
 
 @pytest.mark.parametrize(
@@ -245,9 +246,6 @@ async def test_remote_action_runs(
                     REQUESTED_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
                     FLOW_STACK_SLOT: None,
-                    CANCELLED_FLOW_SLOT: None,
-                    CORRECTED_SLOTS_SLOT: None,
-                    PREVIOUS_FLOW_SLOT: None,
                     RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
@@ -312,9 +310,6 @@ async def test_remote_action_logs_events(
                     REQUESTED_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
                     FLOW_STACK_SLOT: None,
-                    CANCELLED_FLOW_SLOT: None,
-                    CORRECTED_SLOTS_SLOT: None,
-                    PREVIOUS_FLOW_SLOT: None,
                     RETURN_VALUE_SLOT: None,
                 },
                 "events": [],

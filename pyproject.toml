@@ -152,6 +152,7 @@ pypred = "^0.4.0"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
 langchain = "^0.0.223"
+jinja2 = "^3.0.0"
 openai = "^0.27.8"
 # pin dnspython to avoid dependency incompatibility
 # in order to fix https://rasahq.atlassian.net/browse/ATO-1419
