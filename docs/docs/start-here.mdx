@@ -9,9 +9,16 @@ title: Introduction
 ## Getting Started with Rasa
 
 This page provides an introduction to Rasa. It's intended for newcomers and for people
-familiar with earlier versions of Rasa who want to understand the new DM2 approach (name TBD). 
+familiar with earlier versions of Rasa who want to understand the new DM2 approach. 
 DM2 gives you the best of both worlds: the time-to-value and generality of LLMs, and the 
 controllability of intent-based approaches. 
+
+:::info
+
+The names used in this documentation are likely going to change. E.g. *DM2* 
+is a placeholder for the name of the new approach.
+
+:::
 
 ## Fast Track
 
@@ -36,19 +43,23 @@ More information on the [`rasa train` command reference](./command-line-interfac
 :::
 
 
-Run the `shell` command to talk to your assistant on the command line:
+Run the `chat` command to talk to your assistant on the command line:
 
 ```bash
-rasa shell
+rasa chat
 ```
 
-To stop the conversation, type `/stop` or use `control+C`.
+By default, the command will load the most recent trained model. After the model
+is loaded a website will open at 
 
+  [http://localhost:5005/webhooks/socketio/chat.html](http://localhost:5005/webhooks/socketio/chat.html)
+
+where you can talk to your assistant.
 
 :::note Debugging
 
-Adding the flag `rasa shell --debug` can be very helpful if you want to understand what is happening in detail.
-More information on the [`rasa shell` command reference](./command-line-interface.mdx#rasa-shell)
+Adding the flag `rasa chat --debug` can be very helpful if you want 
+to understand what is happening in detail.
 
 :::
 
@@ -59,7 +70,7 @@ Assistants often have to collect a few pieces of information from the user in or
 This starter project contains an example flow which recommends restaurants. To do so, it asks the user
 for their preferred cuisine, city, and price range.
 
-To try it out, start a conversation using `rasa shell`, and say something like "I'm looking for a restaurant". 
+To try it out, start a conversation using `rasa chat`, and say something like "I'm looking for a restaurant". 
 
 Out of the box, this assistant can already handle a variety of conversations. The first is what we call the "happy path",
 where the user always provides the information the assistant requests.

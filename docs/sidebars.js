@@ -291,7 +291,7 @@ module.exports = {
         },      
         {
             type: 'category',
-            label: 'LLM Components',
+            label: 'Components',
             collapsed: false,
             items: [
                 'llms/llm-intent',
