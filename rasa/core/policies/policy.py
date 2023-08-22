@@ -111,11 +111,16 @@ class Policy(GraphComponent):
         """Returns the stack frames supported by the policy."""
         return []
 
-    def supports_current_stack_frame(self, tracker: DialogueStateTracker) -> bool:
+    def supports_current_stack_frame(
+        self, tracker: DialogueStateTracker, only_after_user_message: bool = True
+    ) -> bool:
+        """Check whether the policy is allowed to act."""
         flow_stack = FlowStack.from_tracker(tracker)
 
         if top_frame := flow_stack.top():
             return top_frame.frame_type in self.supported_stack_frames()
+        elif only_after_user_message and len(tracker.events) > 0:
+            return not tracker.has_action_after_latest_user_message()
         else:
             return True
 

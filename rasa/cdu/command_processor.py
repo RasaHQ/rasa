@@ -1,4 +1,4 @@
-from typing import List, Optional, Set, Type
+from typing import List, Optional, Set, Type, Dict, Any
 
 import structlog
 from rasa.cdu.commands import (
@@ -14,6 +14,7 @@ from rasa.cdu.commands import (
     FreeFormAnswerCommand,
     KnowledgeAnswerCommand,
     ChitChatAnswerCommand,
+    ClarifyCommand,
 )
 from rasa.cdu.conversation_patterns import (
     FLOW_PATTERN_CORRECTION_ID,
@@ -143,7 +144,7 @@ def execute_commands(
             reset_step = _find_earliest_updated_question(
                 user_step, user_flow, proposed_slots
             )
-            context = {
+            context: Dict[str, Any] = {
                 "corrected_slots": proposed_slots,
                 "corrected_reset_point": {
                     "id": user_flow.id if user_flow else None,
@@ -230,6 +231,21 @@ def execute_commands(
                 FlowStackFrame(
                     flow_id="NO_FLOW",
                     frame_type=StackFrameType.INTENTLESS,
+                )
+            )
+        elif isinstance(command, ClarifyCommand):
+            relevant_flows = [all_flows.flow_by_id(opt) for opt in command.options]
+            names = [
+                flow.readable_name() for flow in relevant_flows if flow is not None
+            ]
+            context = {
+                "names": names,
+            }
+            flow_stack.push(
+                FlowStackFrame(
+                    flow_id="pattern_clarification",
+                    frame_type=StackFrameType.REGULAR,
+                    context=context,
                 )
             )
         elif isinstance(command, ErrorCommand):
@@ -392,6 +408,22 @@ def clean_up_commands(
                 "command_executor.prepend_command.free_form_answer", command=command
             )
             clean_commands.insert(0, command)
+        elif isinstance(command, ClarifyCommand):
+            flows = [all_flows.flow_by_id(opt) for opt in command.options]
+            clean_options = [flow.id for flow in flows if flow is not None]
+            if len(clean_options) != len(command.options):
+                structlogger.debug(
+                    "command_executor.altered_command.dropped_clarification_options",
+                    command=command,
+                    original_options=command.options,
+                    cleaned_options=clean_options,
+                )
+            if len(clean_options) == 0:
+                structlogger.debug(
+                    "command_executor.skip_command.empty_clarification", command=command
+                )
+            else:
+                clean_commands.append(ClarifyCommand(clean_options))
         else:
             clean_commands.append(command)
     return clean_commands
