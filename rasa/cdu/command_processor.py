@@ -144,7 +144,7 @@ def execute_commands(
             reset_step = _find_earliest_updated_question(
                 user_step, user_flow, proposed_slots
             )
-            context = {
+            context: Dict[str, Any] = {
                 "corrected_slots": proposed_slots,
                 "corrected_reset_point": {
                     "id": user_flow.id if user_flow else None,
@@ -238,7 +238,7 @@ def execute_commands(
             names = [
                 flow.readable_name() for flow in relevant_flows if flow is not None
             ]
-            context: Dict[str, Any] = {
+            context = {
                 "names": names,
             }
             flow_stack.push(
