@@ -275,7 +275,7 @@ flows:
     steps:
       - id: "decide_cancel_step"
         next: 
-        - if: "context.canceled_name != 'my_flow'"
+        - if: "context.canceled_name == 'transfer_money'"
           then: "inform_user"
         - else: "cancel_flow"  # skips the inform step
       - id: "inform_user"
@@ -285,8 +285,8 @@ flows:
         action: action_cancel_flow
 ```
 
-In the above example, the `inform_user` step is skipped if the flow that
-was interrupted is called `my_flow`.
+In the above example, the `inform_user` step is only used if the flow that
+was interrupted is called `transfer_money`.
 
 ## Reference: Default Pattern Configuration
 

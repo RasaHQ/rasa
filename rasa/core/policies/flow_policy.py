@@ -311,7 +311,9 @@ class FlowExecutor:
 
             return initial_value
 
-        text_slots = dict(
+        # attach context to the predicate evaluation to allow coditions using it
+        document = {"context": FlowStack.from_tracker(tracker).current_context()}
+        document.update(
             {
                 slot.name: get_value(tracker.get_slot(slot.name))
                 for slot in self.domain.slots
@@ -319,12 +321,12 @@ class FlowExecutor:
         )
         p = Predicate(predicate)
         try:
-            return p.evaluate(text_slots)
+            return p.evaluate(document)
         except (TypeError, Exception) as e:
             structlogger.error(
                 "flow.predicate.error",
                 predicate=predicate,
-                slots=text_slots,
+                document=document,
                 error=str(e),
             )
             return False
