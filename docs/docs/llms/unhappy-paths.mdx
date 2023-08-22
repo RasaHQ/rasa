@@ -1,50 +1,36 @@
 ---
 id: unhappy-paths
-sidebar_label: Handling Unhappy Paths
-title: Handling Unhappy Paths
+sidebar_label: Manage Unhappy Paths
+title: Managing Unhappy Paths
 abstract: |
-  This page describes how to handle unhappy paths where users wander off
-  the path described in a flows business logic.
+  Discover how to navigate situations where users deviate from a flow's prescribed business logic.
 ---
 
 import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 
 <RasaDiscoveryBanner />
 
-## Flows with Unhappy Paths
+## Overview
 
-A flow represents a specific business function as a directed graph. Depending on
-your business logic, these graphs can be purely linear, branch multiple times or
-have cycles in certain sections. To limit complexity for flow designers, we let
-them focus on implementing simple direct flows or
-[happy paths](../glossary.mdx#happy--unhappy-paths), where the user reaches
-their initial goal and where these goals are attained step by step.
+Flows map to distinct business functions, creating directed graphs. While 
+flow designers primarily focus on linear [happy paths](../glossary.mdx#happy--unhappy-paths), 
+Rasa provides a robust way to manage deviations, simplifying design complexity.
 
-Instead of having to model flow switches, cancellations, or slot corrections
-explicitly, a rasa assistant handles these things in a uniform manner across
-flows, greatly reducing the complexity of flow design.
+### Default Behaviors
 
-### Customization
+Rasa ships a **default behavior for every unhappy path**. Override 
+defaults by creating a flows with the same name of a pattern, like `pattern_correction`.
 
-Rasa comes with a **default implementation for every unhappy path**. You can
-override these defaults by defining flows with the respective names shown here.
-For example, you can define a flow called `pattern_correction` to override the
-default behavior of the bot when a user interrupts a flow.
 
-:::info
+## Unhappy Path Types
 
-Using your own default implementation for a conversation pattern is as easy as 
-creating a flow with the id of the pattern, e.g. `pattern_correction`!
+### 1. Digressions
 
-:::
+Digressions arise when a user shifts from one flow to another.
 
-## Digressions
+**Example:** During a money transfer, a user might ask about their current balance.
 
-Digressions happen when a user is in one flow, e.g. transferring money 
-to a friend, and they trigger another flow. While transferring money, this 
-could for example be checking their current balance:
-
-<Chat caption="Digression: triggering a flow in the middle of another flow">
+<Chat caption="User digresses in the middle of a transfer">
   <ChatUserText>I want to send some money to Sudarshana</ChatUserText>
   <ChatBotText>How much do you want to send to Sudarshana?</ChatBotText>
   <ChatUserText>Ah wait, how much money do I have?</ChatUserText>
@@ -54,55 +40,13 @@ could for example be checking their current balance:
   <ChatUserText>...</ChatUserText>
 </Chat>
 
-In the above conversation you can see that
+### 2. Corrections
 
-1. The transferring money flow was interrupted by the checking balance flow and
-   the needed information was provided
-2. The bot commented on returning to the original flow
-3. The bot restated the current question of the original flow
+Corrections occur when users modify input data or rectify mistakes.
 
-This represents the default behavior in flows. You can adjust this behavior by
-adapting the preconfigured flow called `pattern_continue_interrupted` which is
-defined as follows:
+**Example:** A user might change their mind about the recipient of a transfer.
 
-```yaml title="flows.yml"
-flows:
-  pattern_continue_interrupted:
-    description: |
-      A flow that should will be started to continue 
-      an interrupted flow. 
-
-    steps:
-      - id: "0"
-        action: utter_flow_continue_interrupted
-```
-
-Part of the default definition is a response called `utter_flow_continue_interrupted`
-that gets used by the default pattern:
-
-```yaml title="domain.yml"
-responses:
-  utter_flow_continue_interrupted: 
-    - text: |
-        Let's continue with the 
-        topic {{ context.previous_flow_name }}.
-      metadata: 
-        rephrase: True
-        template: jinja
-```
-
-
-You can override these defaults by defining flows, slots, or responses with the
-respective names shown here. For instance, you could either remove the statement
-about the interrupted flow being continued or add another confirmation step.
-
-## Corrections
-
-Corrections of slots happen for a variety of reasons. Users might want to
-correct their own mistake or a mistake the bot made, or they might change their
-minds about certain aspects of what they want to achieve.
-
-<Chat caption="A common correction scenario">
+<Chat caption="User corrects recipient's name">
   <ChatUserText>I want to send some money to Joe</ChatUserText>
   <ChatBotText>How much money do you want to send?</ChatBotText>
   <ChatUserText>50$</ChatUserText>
@@ -113,24 +57,128 @@ minds about certain aspects of what they want to achieve.
   <ChatUserText>...</ChatUserText>
 </Chat>
 
-In the above conversation you can see that
-
-1. The bot understands that the user wants to correct a slot that was set
-   earlier
-2. The bot informs the user about the successful change
-
 :::important
 
-Under the hood, the flow is replayed in the background starting from the
-corrected question to ensure the updated information is still in line with any
-logical checks along the flow.
-
-If the change had resulted in going down a different path, the user would see
-the questions and utterances of this alternate path.
+Upon correction, the flow retraces to align with the updated data. User 
+might witness an alternate flow based on changes.
 
 :::
 
-### Require Confirmation
+### 3. Cancellations
+
+Cancellations arise when users halt a flow midway.
+
+**Example:** A user opts out of sending money after initiating the process.
+
+<Chat caption="User cancels a transfer">
+  <ChatUserText>I want to send some money to Dimitri</ChatUserText>
+  <ChatBotText>How much money do you want to send?</ChatBotText>
+  <ChatUserText>Ah, nevermind. I see I have already sent it earlier.</ChatUserText>
+  <ChatBotText>Okay, I am cancelling the transfer.</ChatBotText>
+  <ChatUserText>...</ChatUserText>
+</Chat>
+
+### 4. Deliberations
+
+Users sometimes request pauses or reflection periods.
+
+**Example:** User asks for time to think.
+
+<Chat caption="User requests a moment">
+  <ChatUserText>I want to send money to Yizhi</ChatUserText>
+  <ChatBotText>How much money do you want to send?</ChatBotText>
+  <ChatUserText>one moment</ChatUserText>
+  <ChatBotText>Sure, take your time</ChatBotText>
+  <ChatBotText>How much money do you want to send?</ChatBotText>
+  <ChatUserText>...</ChatUserText>
+</Chat>
+
+### 5. Chitchat
+
+Engage in off-topic interactions without hampering the primary flow.
+
+**Example:** A user indulges in casual conversation.
+
+<Chat caption="Chitchat with the bot">
+  <ChatUserText>I want to send 10 bucks to Spencer</ChatUserText>
+  <ChatBotText>Would you like to transfer 10 to Spencer? (Yes/No)</ChatBotText>
+  <ChatUserText>yes</ChatUserText>
+  <ChatBotText>Successfully transferred 10 to Spencer.</ChatBotText>
+  <ChatBotText>Is there anything else I can help you with?</ChatBotText>
+  <ChatUserText>no, thank you. have a good day.</ChatUserText>
+  <ChatBotText>You're welcome :)</ChatBotText>
+</Chat>
+
+### 6. Completion
+
+Flows conclude either by achieving user goals or by user abandonment.
+
+**Example:** User queries about account balance.
+
+<Chat caption="Flow completion">
+  <ChatUserText>Hey, how much money do I have?</ChatUserText>
+  <ChatBotText>You currently have 4021.20$ in your account.</ChatBotText>
+  <ChatUserText>Is there anything else I can help you with?</ChatUserText>
+</Chat>
+
+### 7. Internal Errors
+
+Errors arise from unexpected system or flow issues.
+
+**Example:** Unavailable action or unresponsive modules.
+
+<Chat caption="Example showcasing internal error">
+  <ChatUserText>Hey, how much money do I have?</ChatUserText>
+  <ChatBotText>Sorry, I am having trouble with that. Please try again later.</ChatBotText>
+</Chat>
+
+## Configurations
+
+Each of these unhappy paths can be configured using Rasa's YAML-based 
+domain and flow system. You can overwrite a default behavior by creating
+a flow with the same name as the pattern:
+
+- `pattern_continue_interrupted` for digressions.
+- `pattern_correction` for corrections.
+- `pattern_cancel_flow` for cancellations.
+- `pattern_deliberation` for deliberations.
+- `pattern_chitchat` for chitchat.
+- `pattern_internal_error` for internal errors.
+- `pattern_completed` for completion.
+- `pattern_clarification` for clarification.
+
+The syntax for each of these flows is the same as any other flow.
+
+:::info
+
+Since mose of these patterns interrupt another flow, they should be 
+kept short and simple.
+
+:::
+
+### Sample Configuration
+
+Modify Rasa's response when a flow concludes:
+
+```yaml title="flows.yml"
+pattern_completed:
+  description: Completion of a user's flow
+  steps:
+    - id: "0"
+      action: utter_can_do_something_else
+```
+
+```yaml title="domain.yml"
+responses:
+  utter_can_do_something_else:
+    - text: "Is there anything else I can assist you with?"
+```
+
+## Common Modifications
+
+Here are some common modifications to the default behavior.
+
+### Requiring Confirmation
 
 You can change the default implemenation for a correction and require a 
 confirmation from the user before a slot is updated, e.g. this would 
@@ -213,32 +261,11 @@ slots:
           - active_loop: question_confirm_correction
 ```
 
-## Cancellations
+### Behaviour dependent on the current flow
 
-Cancellations can happen for a variety of reasons. The user might have changed
-their mind on a whim or due to new information learned during the conversation.
-
-<Chat caption="A common cancelation scenario">
-  <ChatUserText>I want to send some money to Dimitri</ChatUserText>
-  <ChatBotText>How much money do you want to send?</ChatBotText>
-  <ChatUserText>Ah, nevermind. I see I have already sent it earlier.</ChatUserText>
-  <ChatBotText>Okay, I am cancelling the transfer.</ChatBotText>
-  <ChatUserText>...</ChatUserText>
-</Chat>
-
-
-In the above conversation you can see that the bot informed the user about the
-cancellation of the flow. This represents the default behavior in flows. You can
-adjust this behavior by adapting the preconfigured flow called
-`pattern_cancel_flow` which is defined as follows:
-
-```yaml title="domain.yml"
-responses:
-  utter_flow_cancelled_rasa:
-    - text: Okay, stopping the flow {rasa_cancelled_flow}.
-      metadata:
-        rephrase: True
-```
+You can change a patterns behaviour depending
+on the flow that was interrupted. This can be done by using the
+`context` object in the `if` condition of a pattern:
 
 ```yaml title="flows.yml"
 flows:
@@ -246,68 +273,113 @@ flows:
     description: A meta flow that's started when a flow is cancelled.
 
     steps:
-      - id: "0"
+      - id: "decide_cancel_step"
+        next: 
+        - if: "context.canceled_name != 'my_flow'"
+          then: "inform_user"
+        - else: "cancel_flow"  # skips the inform step
+      - id: "inform_user"
         action: utter_flow_cancelled_rasa
+        next: "cancel_flow"
+      - id: "cancel_flow"
+        action: action_cancel_flow
 ```
 
-You can see that this response is using an extra variable, `rasa_cancelled_flow`
-which is filled by the flow policy upon executing the cancel flow pattern.
-Currently, you can only change the cancellation message, but not introduce a
-confirmation. This is on our todo list.
+In the above example, the `inform_user` step is skipped if the flow that
+was interrupted is called `my_flow`.
 
-## Deliberations
+## Reference: Default Pattern Configuration
 
-A *deliberation* pattern gets triggered when a user says something that 
-the bot doesn't directly need to react to, as the user is still deliberating
-their answer:
-
-<Chat caption="Deliberation: user asks for a moment">
-  <ChatUserText>I want to send money to Yizhi</ChatUserText>
-  <ChatBotText>How much money do you want to send?</ChatBotText>
-  <ChatUserText>one moment</ChatUserText>
-  <ChatBotText>Sure, take your time</ChatBotText>
-  <ChatBotText>How much money do you want to send?</ChatBotText>
-  <ChatUserText>...</ChatUserText>
-</Chat>
-
-Other common deliberations are "hmm", "let me think" or "i need to check that".
-
-The default implementation for deliberations is to not respond to the message
-but to wait for the user to send the next message.
-
-Default implementation for `pattern_deliberation`:
+For reference, here is the complete default configuration for unhappy paths:
 
 ```yaml title="flows.yml"
-flows:
+version: "3.1"
+responses:
+  utter_flow_continue_interrupted: 
+    - text: Let's continue with the topic {{ context.previous_flow_name }}.
+      metadata: 
+        rephrase: True
+        template: jinja
+  
+  utter_corrected_previous_input:
+    - text: "Ok, I corrected the {{ context.corrected_slots.keys()|join(', ') }}."
+      metadata: 
+        rephrase: True
+        template: jinja
+
+  utter_flow_cancelled_rasa:
+    - text: Okay, stopping the flow {{ context.canceled_name }}.
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_can_do_something_else:
+    - text: "Is there anything else I can help you with?"
+      metadata: 
+        rephrase: True
+
+  utter_internal_error_rasa:
+    - text: Sorry, I'm having trouble understanding you right now. Please try again later.
+
+  utter_clarification_options_rasa:
+    - text: I'm not sure what you'd like to achieve. Do you want to {{context.clarification_options}}?
+      metadata:
+        rephrase: True
+        template: jinja
+
+
+slots:
+  confirm_correction:
+    type: bool
+    mappings:
+      - type: custom
+
+flows:  
+  pattern_continue_interrupted:
+    description: A flow that should will be started to continue an interrupted flow. 
+
+    steps:
+      - id: "0"
+        action: utter_flow_continue_interrupted
+  
+  pattern_correction:
+    description: Confirm a correction of a slot value.
+
+    steps:
+      - id: "correct_slots"
+        action: action_correct_flow_slot
+        next: "inform_user"
+      - id: "inform_user"
+        action: utter_corrected_previous_input
+
+  pattern_cancel_flow:
+    description: A meta flow that's started when a flow is cancelled.
+
+    steps:
+      - id: "cancel_flow"
+        action: action_cancel_flow
+        next: "inform_user"
+      - id: "inform_user"
+        action: utter_flow_cancelled_rasa
+
   pattern_deliberation:
     description: user send a message that doesn't require a response
     steps:
       - id: "0"
         action: action_listen
-```
 
-## Chitchat
+  pattern_internal_error:
+    description: internal error
+    steps:
+      - id: "0"
+        action: utter_internal_error_rasa
+  
+  pattern_completed:
+    description: a flow has been completed and there is nothing else to be done
+    steps:
+      - id: "0"
+        action: utter_can_do_something_else
 
-Chitchat is a form of small talk that is not directly related to the current
-flow. For example, at the end of a conversation the user might say goodbye:
-
-<Chat caption="Chitchat: a thankful user">
-  <ChatUserText>I want to send 10 bucks to Spencer</ChatUserText>
-  <ChatBotText>Would you like to transfer 10 to Spencer? (Yes/No)</ChatBotText>
-  <ChatUserText>yes</ChatUserText>
-  <ChatBotText>Successfully transferred 10 to Spencer.</ChatBotText>
-  <ChatBotText>Is there anything else I can help you with?</ChatBotText>
-  <ChatUserText>no, thank you. have a good day.</ChatUserText>
-  <ChatBotText>You're welcome :)</ChatBotText>
-</Chat>
-
-The last message from the user is a chitchat message and triggers the 
-`pattern_chitchat`.
-
-The default implementation for chitchat uses an LLM to generate a response.
-
-```yaml title="flows.yml"
-flows:
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented
     steps:
@@ -318,73 +390,13 @@ flows:
 
           User: {{latest_user_message}}
           Response:
-```
 
-## Completion
-
-At some point, all flows a user starts will be completed. This can happen
-because the user has reached their goal or because they have decided to abort
-the flow. In this case, the `pattern_completed` will be triggered, e.g. in the
-following example the flow is very short and completed after the first bot 
-response:
-
-<Chat caption="Completion: user completes a flow">
-  <ChatUserText>Hey, how much money do I have?</ChatUserText>
-  <ChatBotText>You currently have 4021.20$ in your account.</ChatBotText>
-  <ChatUserText>Is there anything else I can help you with?</ChatUserText>
-</Chat>
-
-The default implementation for `pattern_completed` is to ask the user if they
-need any further help.
-
-```yaml title="flows.yml"
-  pattern_completed:
-    description: a flow has been completed and there is nothing else to be done
+  pattern_clarification:
+    description: handle clarifications with the user
     steps:
       - id: "0"
-        action: utter_can_do_something_else
-```
-
-The default response is defined as follows:
-
-```yaml title="domain.yml"
-responses:
-  utter_can_do_something_else:
-    - text: "Is there anything else I can help you with?"
-      metadata: 
-        rephrase: True
-```
-
-## Internal Errors
- 
-Internal errors can happen for a variety of reasons. For example
-* the user triggered an action that is returning an error 
-* an LLM might is currently not available and response with an error
-
-In these cases, the `pattern_internal_error` will be triggered,
-e.g. because the backend to retrieve the information can not be reached:
-
-<Chat caption="Internal Error: user triggers an action that is returning an error">
-  <ChatUserText>Hey, how much money do I have?</ChatUserText>
-  <ChatBotText>Sorry, I am having trouble with that. Please try again later.</ChatBotText>
-</Chat>
-
-The default implementation for `pattern_internal_error` is to inform the user
-that the bot is having trouble and to ask the user to try again later.
-
-```yaml title="flows.yml"
-flows:
-  pattern_internal_error:
-    description: internal error
-    steps:
-      - id: "0"
-        action: utter_internal_error_rasa
-```
-
-The default response is defined as follows:
-
-```yaml title="domain.yml"
-responses:
-  utter_internal_error_rasa:
-    - text: Sorry, I'm having trouble understanding you right now. Please try again later.
+        action: action_clarify_flows
+        next: "1"
+      - id: "1"
+        action: utter_clarification_options_rasa
 ```
