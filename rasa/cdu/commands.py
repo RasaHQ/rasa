@@ -36,6 +36,8 @@ def command_from_json(data: Dict[str, Any]) -> "Command":
         return ListenCommand()
     elif data.get("command") == "human handoff":
         return HumanHandoffCommand()
+    elif data.get("command") == "clarify":
+        return ClarifyCommand(options=data["options"])
     elif data.get("command") == "error":
         return ErrorCommand()
     else:
@@ -148,3 +150,11 @@ class ErrorCommand(Command):
     """A command to indicate that the bot failed to handle the dialogue."""
 
     command: str = "error"
+
+
+@dataclass
+class ClarifyCommand(Command):
+    """A command to indicate that the bot should ask for clarification."""
+
+    options: List[str]
+    command: str = "clarify"

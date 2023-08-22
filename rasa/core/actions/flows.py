@@ -10,6 +10,7 @@ from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
     ACTION_CORRECT_FLOW_SLOT,
     FLOW_STACK_SLOT,
+    ACTION_CLARIFY_FLOWS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -164,3 +165,53 @@ class ActionCorrectFlowSlot(action.Action):
         events.extend([SlotSet(k, v) for k, v in corrected_slots.items()])
 
         return events
+
+
+class ActionClarifyFlows(action.Action):
+    """Action which clarifies which flow to start."""
+
+    def name(self) -> Text:
+        """Return the flow name."""
+        return ACTION_CLARIFY_FLOWS
+
+    @staticmethod
+    def assemble_options_string(names: List[str]) -> str:
+        """Concatenate options to a human-readable string."""
+        clarification_message = ""
+        for i, name in enumerate(names):
+            if i == 0:
+                clarification_message += name
+            elif i == len(names) - 1:
+                clarification_message += f" or {name}"
+            else:
+                clarification_message += f", {name}"
+        return clarification_message
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> List[Event]:
+        """Correct the slots."""
+        stack = FlowStack.from_tracker(tracker)
+        if stack.is_empty():
+            structlogger.warning("action.clarify_flows.no_active_flow", stack=stack)
+            return []
+
+        top_frame = stack.top()
+        if top_frame is None or top_frame.flow_id != "pattern_clarification":
+            structlogger.warning(
+                "action.clarify_flows.clarify_frame_not_on_top", stack=stack
+            )
+            return []
+
+        context = top_frame.context
+        if context is None:
+            return []
+        names = context.get("names", [])
+        options_string = self.assemble_options_string(names)
+        context["clarification_options"] = options_string
+        return [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
