@@ -324,7 +324,7 @@ def test_trackers_keep_action_unlikely_intent_with_full_dialogue_tracker_featuri
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 9, 19, 0, 9, 16, 17, 0, 9, 18]])
+    expected_labels = np.array([[0, 9, 20, 0, 9, 17, 18, 0, 9, 19]])
     assert actual_labels is not None
     assert len(actual_labels) == 1
     for actual, expected in zip(actual_labels, expected_labels):

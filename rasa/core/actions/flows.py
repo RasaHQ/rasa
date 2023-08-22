@@ -209,6 +209,8 @@ class ActionClarifyFlows(action.Action):
             return []
 
         context = top_frame.context
+        if context is None:
+            return []
         names = context.get("names", [])
         options_string = self.assemble_options_string(names)
         context["clarification_options"] = options_string
