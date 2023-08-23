@@ -151,6 +151,8 @@ confluent-kafka = ">=1.9.2,<3.0.0"
 portalocker = "^2.7.0"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
+# pin dnspython to avoid dependency incompatibility
+# in order to fix https://rasahq.atlassian.net/browse/ATO-1419
 dnspython = "2.3.0"
 wheel = ">=0.38.1"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
