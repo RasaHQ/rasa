@@ -4533,14 +4533,14 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.6.1"
+version = "3.6.2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
 python-versions = ">=3.8,<3.11"
 files = [
-    {file = "rasa_sdk-3.6.1-py3-none-any.whl", hash = "sha256:fb4d8c9ac0a6266931bc1dda108ef965d7f1c3fbe10ff2330dffef7add987b29"},
-    {file = "rasa_sdk-3.6.1.tar.gz", hash = "sha256:f5dbd776dcbe9eea4308c1dcf32f14765297af32f71f76a0f43e29d6d030810c"},
+    {file = "rasa_sdk-3.6.2-py3-none-any.whl", hash = "sha256:13dbd7d7f65378d793a171cef913fa785f01b256675dcdba4e97614c385333ae"},
+    {file = "rasa_sdk-3.6.2.tar.gz", hash = "sha256:fe69a2eb97dfe8a16e9fd3cca55f86593b1d24b5d8a117de51d152933b4bfeac"},
 ]
 
 [package.dependencies]
@@ -4550,8 +4550,10 @@ prompt-toolkit = ">=3.0,<3.0.29"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
 sanic = ">=21.12.0,<22.0.0"
 Sanic-Cors = ">=2.0.0,<3.0.0"
+setuptools = ">=65.5.1"
 typing-extensions = ">=4.1.1,<5.0.0"
 websockets = ">=10.0,<11.0"
+wheel = ">=0.38.1"
 
 [[package]]
 name = "redis"
@@ -7200,4 +7202,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "8aafcff6709b0d1bbc293967cdb42d396895664a14dfee1533f28c58bf712c64"
+content-hash = "d18bc52489f53e9ba2504c20f897c676fc5649d04e2f668e45ef049e0a988a61"
