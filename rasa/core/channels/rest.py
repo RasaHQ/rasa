@@ -166,6 +166,7 @@ class RestInput(InputChannel):
                             sender_id,
                             input_channel=input_channel,
                             metadata=metadata,
+                            headers=request.headers,
                         )
                     )
                 except CancelledError:
