@@ -194,7 +194,6 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumandHandoff\(\)")
         clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
-        # listen_re = re.compile(r"Listen\(\)")
 
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
@@ -220,8 +219,6 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             elif m := clarify_re.search(action):
                 options = [opt.strip() for opt in m.group(1).split(",")]
                 commands.append(ClarifyCommand(options))
-            # elif listen_re.search(action):
-            #     commands.append(ListenCommand())
 
         return commands
 

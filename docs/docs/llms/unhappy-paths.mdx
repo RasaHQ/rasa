@@ -78,22 +78,7 @@ Cancellations happen when users halt a flow midway.
   <ChatUserText>...</ChatUserText>
 </Chat>
 
-### 4. Deliberations
-
-Users sometimes request pauses or reflection periods.
-
-**Example:** User asks for time to think.
-
-<Chat caption="User requests a moment">
-  <ChatUserText>I want to send money to Yizhi</ChatUserText>
-  <ChatBotText>How much money do you want to send?</ChatBotText>
-  <ChatUserText>one moment</ChatUserText>
-  <ChatBotText>Sure, take your time</ChatBotText>
-  <ChatBotText>How much money do you want to send?</ChatBotText>
-  <ChatUserText>...</ChatUserText>
-</Chat>
-
-### 5. Chitchat
+### 4. Chitchat
 
 Engage in off-topic interactions without impacting a flow.
 
@@ -106,7 +91,7 @@ Engage in off-topic interactions without impacting a flow.
   <ChatBotText>I'm a virtual assistant made with Rasa.</ChatBotText>
 </Chat>
 
-### 6. Completion
+### 5. Completion
 
 Flows conclude either by achieving user goals or by user abandonment.
 
@@ -118,7 +103,7 @@ Flows conclude either by achieving user goals or by user abandonment.
   <ChatBotText>Is there anything else I can help you with?</ChatBotText>
 </Chat>
 
-### 7. Clarification
+### 6. Clarification
 
 Clarifications arise when the user request can't clearly be identified and
 potentially matches multiple flows.
@@ -130,7 +115,7 @@ potentially matches multiple flows.
   <ChatBotText>I'm not sure what you'd like to achieve. Do you want to check your balance or transfer money?</ChatBotText>
 </Chat>
 
-### 8. Internal Errors
+### 7. Internal Errors
 
 Errors arise from unexpected system or flow issues.
 
@@ -150,7 +135,6 @@ a flow with the same name as the pattern:
 - `pattern_continue_interrupted` for digressions.
 - `pattern_correction` for corrections.
 - `pattern_cancel_flow` for cancellations.
-- `pattern_deliberation` for deliberations.
 - `pattern_chitchat` for chitchat.
 - `pattern_completed` for completion.
 - `pattern_clarification` for clarification.
@@ -370,12 +354,6 @@ flows:
         next: "inform_user"
       - id: "inform_user"
         action: utter_flow_cancelled_rasa
-
-  pattern_deliberation:
-    description: user send a message that doesn't require a response
-    steps:
-      - id: "0"
-        action: action_listen
 
   pattern_internal_error:
     description: internal error

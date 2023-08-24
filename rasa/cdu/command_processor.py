@@ -7,7 +7,6 @@ from rasa.cdu.commands import (
     CorrectSlotsCommand,
     CorrectedSlot,
     ErrorCommand,
-    ListenCommand,
     SetSlotCommand,
     StartFlowCommand,
     command_from_json,
@@ -19,7 +18,7 @@ from rasa.cdu.commands import (
 from rasa.cdu.conversation_patterns import (
     FLOW_PATTERN_CORRECTION_ID,
     FLOW_PATTERN_INTERNAL_ERROR_ID,
-    FLOW_PATTERN_DELIBERATION_ID,
+    FLOW_PATTERN__ID,
     FLOW_PATTERN_CANCEl_ID,
 )
 from rasa.cdu.flow_stack import (
@@ -50,7 +49,7 @@ def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
     """Check if a list of commands contains a command of a given type.
 
     Example:
-        >>> contains_command([ListenCommand()], ListenCommand)
+        >>> contains_command([SetSlotCommand("foo", "bar")], SetSlotCommand)
         True
 
     Args:
@@ -208,14 +207,6 @@ def execute_commands(
                         else None,
                         "canceled_frames": canceled_frames,
                     },
-                )
-            )
-        elif isinstance(command, ListenCommand):
-            structlogger.debug("command_executor.listen", command=command)
-            flow_stack.push(
-                FlowStackFrame(
-                    flow_id=FLOW_PATTERN_DELIBERATION_ID,
-                    frame_type=StackFrameType.REMARK,
                 )
             )
         elif isinstance(command, KnowledgeAnswerCommand):

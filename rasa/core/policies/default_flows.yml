@@ -67,12 +67,6 @@ flows:
       - id: "inform_user"
         action: utter_flow_cancelled_rasa
 
-  pattern_deliberation:
-    description: user send a message that doesn't require a response
-    steps:
-      - id: "0"
-        action: action_listen
-
   pattern_internal_error:
     description: internal error
     steps:
