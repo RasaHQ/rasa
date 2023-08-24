@@ -98,7 +98,6 @@
               <th>Type</th>
               <th>Flow</th>
               <th>Step Id</th>
-              <th>Context</th>
             </tr>
           </thead>
           <tbody id="stack-frames"></tbody>
@@ -278,16 +277,15 @@
         if (!stackFrames.length) {
           stackEl.insertAdjacentHTML(
             "afterbegin",
-            `<tr><td colspan=5 class="empty-row">-</td></tr>`
+            `<tr><td colspan=4 class="empty-row">-</td></tr>`
           );
         } else {
           stackFrames.forEach((frame, i) => {
-            const frameContext = JSON.stringify(frame.context, null, 2);
             stackEl.insertAdjacentHTML(
               "afterbegin",
               `<tr><td class="tiny">${frame.frame_id}</td><td>${frame.frame_type}</td><td>${
                 frame.flow_id
-              }</td><td>${frame.step_id}</td><td><code>${frameContext}</code></td></tr>`
+              }</td><td>${frame.step_id}</td></tr>`
             );
           });
         }
