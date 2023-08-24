@@ -145,9 +145,9 @@ sending the transfer.
 This also shows you how you can create branching logic based on what the user says. 
 You are asking a yes/no question, so you can store the result in a boolean `slot`.
 
-In your domain file, add the definition of this slot and the corresponding question:
+In your domain file, add the definition of this slot and the corresponding response:
 
-```
+```yaml
 slots:
   recipient:
   type: Text
@@ -159,7 +159,9 @@ slots:
   mappings:
     - type: custom
   // highlight-end
+```
 
+```yaml
 responses:
   utter_ask_recipient:
     - text: "Who would you like to send money to?"
@@ -174,7 +176,7 @@ Notice that your confirmation question uses curly brackets `{}` to include slot 
 Add a `question` step to your flow, and change the `next` attribute of the `ask_amount` step to 
 match the `id` of your newly created step.
 
-```
+```yaml
 flows:
   transfer_money:
     description: This flow lets users send money to friends and family.
@@ -184,14 +186,14 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         question: amount_of_money
-      // highlight-start           
+        // highlight-start           
         next: "confirm_transfer"
       - id: "confirm_transfer"
         question: final_confirmation
         next:
           - if: final_confirmation
             then: "transfer_successful"
-      // highlight-end
+        // highlight-end
       - id: "transfer_successful"
         action: utter_transfer_complete
 ```
@@ -220,7 +222,101 @@ responses:
   // highlight-end
   utter_ask_final_confirmation:
     - text: "Please confirm: you want to transfer {amount} to {recipient}?"
-```yaml 
+```
+
+Re-run `rasa train` and then `rasa shell` again to try your updated assistant.
+
+### Integrating an API call
+
+An `action` step in a flow can describe two types of actions.
+If the name of the action starts with `utter_`, then this action sends a message to the user.
+The name of the action has to match the name of one of the `responses` defined in your domain.
+The final step in your flow contains the action `utter_transfer_complete`, and this response is 
+also defined in your domain. Responses can contain buttons, images, and custom payloads. 
+You can learn more about everything you can do with responses here (link). 
+
+The second type of `action` is a custom action. The name of a custom action starts with `action_`. 
+
+You are going to create a custom action, `action_check_balance`, to check whether the user has enough money
+to make the transfer, and then add logic to your flow to handle both cases.
+
+You are going to create your custom action by editing the `actions/actions.py` file.
+To learn more about custom actions, including how to build custom actions in languages other than python, go here (link). 
+
+Uncomment the import statements at the top of your `actions/actions.py` file, and add the following: 
+
+```python
+from typing import Any, Text, Dict, List
+from rasa_sdk import Action, Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.events import SlotSet
+
+class ActionSufficientBalance(Action):
+    def name(self) -> Text:
+        return "action_sufficient_balance"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        balance = 1000 # hard-coded for tutorial purposes
+        # a real api call would look something like
+        # result = requests.get("https://example.com/api/balance")
+        # balance = result.json()["balance"]
+        transfer_amount = tracker.get_slot("amount")
+        has_sufficient_funds = transfer_amount < balance
+        return [SlotSet("has_sufficient_funds", has_sufficient_funds)]
+```
+
+Slots are the primary way to pass information to and from custom actions.
+In the `run()` method above, you access the value of the `amount` slot that was set during the conversation,
+and you pass information back to the conversation by returning a `SlotSet` event.
+
+Now add the action and the corresponding slot following to your `domain.yml`, so that your assistant knows it can use this action:
+
+```yaml
+actions:
+  - action_sufficient_balance
+
+slots:
+  - has_sufficient_funds:
+    type: bool
+    mappings:
+      - type: custom
+```
+
+Now you are going to update your flow logic to handle the cases where the user does or does not have
+ enough money in their account to make the transfer. 
+
+```yaml
+flows:
+  transfer_money:
+    description: This flow lets users send money to friends and family.
+    steps:
+      - id: "ask_recipient"
+        question: recipient
+        next: "ask_amount"
+      - id: "ask_amount"
+        question: amount_of_money
+        // highlight-start        
+        next: "check_balance"
+      - id: "check_balance"
+        action: check_balance
+        next:
+          - if: has_sufficient_funds
+            then: "confirm_transfer"
+          - else: "insufficient_funds"
+      - id: "insufficient_funds"
+        action: utter_transfer_money_insufficient_funds      
+        // highlight-end      
+      - id: "confirm_transfer"
+        question: final_confirmation
+        next:
+          - if: final_confirmation
+            then: "transfer_successful"
+
+      - id: "transfer_successful"
+        action: utter_transfer_complete
+```
 
 
 
@@ -228,8 +324,8 @@ responses:
 x A first multi-step flow / process (transfer money) - show also works if all slots present in request.
 x Adding a confirmation step (sure you want to transfer?)
 x Adding contextual rephrasing
-- Adding an API call to execute the transfer
-- Branching based on API call response (success / fail)
+x Adding an API call 
+x Branching based on API call response (success / fail)
 - Linking to another flow (anything else?)
 - Adding Slot validation
 - Handling corrections (user changes mind about recipient)
