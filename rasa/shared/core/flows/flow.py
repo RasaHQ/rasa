@@ -394,7 +394,7 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
     if "generation_prompt" in flow_step_config:
         return GenerateResponseFlowStep.from_json(flow_step_config)
     else:
-        raise ValueError(f"Flow step is missing a type. {flow_step_config}")
+        return BranchFlowStep.from_json(flow_step_config)
 
 
 @dataclass
@@ -577,6 +577,33 @@ class ActionFlowStep(FlowStep):
         """
         dump = super().as_json()
         dump["action"] = self.action
+        return dump
+
+
+@dataclass
+class BranchFlowStep(FlowStep):
+    """Represents the configuration of a branch flow step."""
+
+    @classmethod
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> BranchFlowStep:
+        """Used to read flow steps from parsed YAML.
+
+        Args:
+            flow_step_config: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed flow step.
+        """
+        base = super()._from_json(flow_step_config)
+        return BranchFlowStep(**base.__dict__)
+
+    def as_json(self) -> Dict[Text, Any]:
+        """Returns the flow step as a dictionary.
+
+        Returns:
+            The flow step as a dictionary.
+        """
+        dump = super().as_json()
         return dump
 
 

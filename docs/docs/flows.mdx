@@ -124,13 +124,16 @@ Steps can manifest in one of the following types:
   to determine if the flow should start
 - [action step](./flows.mdx#action): a custom action or utterance action to be
   run by the flow
+- [branch step](./flows.mdx#branch): a step to branch based on a condition
 - [generation prompt step](./flows.mdx#generation-prompt): a prompt to generate
   a message that will be sent to the user
 - [set slots step](./flows.mdx#set-slots): a step to set slots
 - [question step](./flows.mdx#question): a question to be asked to the user
 - [link step](./flows.mdx#link): a step to link to another flow
 
-### Writing Conditions
+### Branching Conditions
+
+A branching condition can be used in the `next` property of a step.
 
 Conditions in flows are written using natural language that can include
 logical operators, conditional operators and other constructs. They are evaluated
@@ -315,6 +318,31 @@ in your custom actions script.
 This is an utterance action where the bot sends a predefined message to the
 user. The message for "utter_xyz" would be defined in the domain file under
 responses.
+
+### Branch
+
+A `branch` step allows you to branch the logic of a flow based on a condition. 
+Here is an example:
+
+```yaml
+- id: "a_branch_step"
+  next:
+    - if: age < 18
+      then: "under_18_step"
+    - else: "over_18_step"
+```
+
+:::info
+
+Every step type supports branching using the `next` property. The `branch`
+step is **only needed if you want to branch based on a condition without executing
+an action or sending a message**.
+
+E.g. it can be used at the beginning of a flow to directly branch to a specific
+step based on a condition.
+
+:::
+
 
 ### Generation Prompt
 

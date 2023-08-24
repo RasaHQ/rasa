@@ -35,6 +35,7 @@ from rasa.shared.core.flows.flow import (
     CLEANUP_STEP,
     START_STEP,
     ActionFlowStep,
+    BranchFlowStep,
     CleanUpFlowStep,
     ElseFlowLink,
     EndFlowStep,
@@ -312,13 +313,11 @@ class FlowExecutor:
             return initial_value
 
         # attach context to the predicate evaluation to allow coditions using it
-        document = {"context": FlowStack.from_tracker(tracker).current_context()}
-        document.update(
-            {
-                slot.name: get_value(tracker.get_slot(slot.name))
-                for slot in self.domain.slots
-            }
-        )
+        document: Dict[str, Any] = {
+            "context": FlowStack.from_tracker(tracker).current_context()
+        }
+        for slot in self.domain.slots:
+            document[slot.name] = get_value(tracker.get_slot(slot.name))
         p = Predicate(predicate)
         try:
             return p.evaluate(document)
@@ -657,6 +656,9 @@ class FlowExecutor:
             )
         elif isinstance(step, UserMessageStep):
             structlogger.debug("flow.step.run.user_message", flow=flow)
+            return ActionPrediction(None, 0.0)
+        elif isinstance(step, BranchFlowStep):
+            structlogger.debug("flow.step.run.branch", flow=flow)
             return ActionPrediction(None, 0.0)
         elif isinstance(step, EntryPromptFlowStep):
             structlogger.debug("flow.step.run.entry_prompt", flow=flow)

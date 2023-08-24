@@ -18,7 +18,6 @@ from rasa.cdu.commands import (
 from rasa.cdu.conversation_patterns import (
     FLOW_PATTERN_CORRECTION_ID,
     FLOW_PATTERN_INTERNAL_ERROR_ID,
-    FLOW_PATTERN__ID,
     FLOW_PATTERN_CANCEl_ID,
 )
 from rasa.cdu.flow_stack import (
