@@ -267,6 +267,7 @@ module.exports = {
     ],
     "llms": [
         'start-here',
+        'tutorial',
         {
             type: 'category',
             label: 'Getting Started',
