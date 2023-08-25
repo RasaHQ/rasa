@@ -204,6 +204,9 @@ class RedisLockStore(LockStore):
         db: int = 1,
         password: Optional[Text] = None,
         use_ssl: bool = False,
+        ssl_certfile: Optional[Text] = None,
+        ssl_keyfile: Optional[Text] = None,
+        ssl_ca_certs: Optional[Text] = None,
         key_prefix: Optional[Text] = None,
         socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
     ) -> None:
@@ -230,6 +233,9 @@ class RedisLockStore(LockStore):
             db=int(db),
             password=password,
             ssl=use_ssl,
+            ssl_certfile=ssl_certfile,
+            ssl_keyfile=ssl_keyfile,
+            ssl_ca_certs=ssl_ca_certs,
             socket_timeout=socket_timeout,
         )
 
