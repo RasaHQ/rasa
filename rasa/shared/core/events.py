@@ -566,6 +566,14 @@ class UserUttered(Event):
             f", use_text_for_featurization: {self.use_text_for_featurization})"
         )
 
+    def __repr__(self) -> Text:
+        """Returns text representation of event for debugging."""
+        return (
+            f"UserUttered('{self.text}', "
+            f"'{self.intent_name}', "
+            f"{json.dumps(self.entities)})"
+        )
+
     @staticmethod
     def empty() -> "UserUttered":
         return UserUttered(None)
@@ -1751,6 +1759,10 @@ class ActiveLoop(Event):
     def __str__(self) -> Text:
         """Returns text representation of event."""
         return f"Loop({self.name})"
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"ActiveLoop({self.name}, {self.timestamp}, {self.metadata})"
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
