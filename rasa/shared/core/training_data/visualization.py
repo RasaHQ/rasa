@@ -1,5 +1,5 @@
 from collections import defaultdict, deque
-
+import logging
 import random
 from typing import (
     Any,
@@ -18,7 +18,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted, Event
+from rasa.shared.core.events import UserUttered, ActionExecuted, Event, SlotSet
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.nlu.constants import (
@@ -52,10 +52,9 @@ class UserMessageGenerator:
     def _create_reverse_mapping(
         data: "TrainingData",
     ) -> Dict[Dict[Text, Any], List["Message"]]:
-        """Create a mapping from intent to messages
-
-        This allows a faster intent lookup."""
-
+        """Create a mapping from intent to messages.
+        This allows a faster intent lookup.
+        """
         d = defaultdict(list)
         for example in data.training_examples:
             if example.get(INTENT, {}) is not None:
@@ -95,8 +94,8 @@ def _fingerprint_node(
     remember max history number of nodes we have visited. Hence, if we randomly
     walk on our directed graph, always only remembering the last `max_history`
     nodes we have visited, we can never remember if we have visited node A or
-    node B if both have the same fingerprint."""
-
+    node B if both have the same fingerprint.
+    """
     # the candidate list contains all node paths that haven't been
     # extended till `max_history` length yet.
     candidates: Deque = deque()
@@ -140,8 +139,8 @@ def _outgoing_edges_are_similar(
     it doesn't matter if you are in a or b.
 
     As your path will be the same because the outgoing edges will lead you to
-    the same nodes anyways."""
-
+    the same nodes anyways.
+    """
     ignored = {node_b, node_a}
     a_edges = {
         (target, k)
@@ -177,8 +176,8 @@ def _add_edge(
     **kwargs: Any,
 ) -> None:
     """Adds an edge to the graph if the edge is not already present. Uses the
-    label as the key."""
-
+    label as the key.
+    """
     if key is None:
         key = EDGE_NONE_LABEL
 
@@ -197,8 +196,8 @@ def _transfer_style(
 ) -> Dict[Text, Any]:
     """Copy over class names from source to target for all special classes.
 
-    Used if a node is highlighted and merged with another node."""
-
+    Used if a node is highlighted and merged with another node.
+    """
     clazzes = source.get("class", "")
 
     special_classes = {"dashed", "active"}
@@ -216,7 +215,6 @@ def _transfer_style(
 
 def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) -> None:
     """Searches for equivalent nodes in the graph and merges them."""
-
     changed = True
     # every node merge changes the graph and can trigger previously
     # impossible node merges - we need to repeat until
@@ -364,7 +362,6 @@ def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> in
 
 def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> None:
     """Add the standard nodes we need."""
-
     graph.add_node(
         START_NODE_ID,
         label="START",
@@ -386,7 +383,6 @@ def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> No
 
 def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
     """Create a graph and adds the default nodes."""
-
     import networkx as nx
 
     graph = nx.MultiDiGraph()
@@ -402,8 +398,27 @@ def _add_message_edge(
     is_current: bool,
 ) -> None:
     """Create an edge based on the user message."""
+    if message and message.get("entities"):
+        message_intent = message.get("intent", {}).get("name", None)
+        # get the entities as \n separated values
+        entities: Optional[List[Dict[Text, Any]]] = message.get("entities")
+        entity_values = []
+        if entities:
+            entity_values = [
+                value
+                for entity in entities
+                for key, value in entity.items()
+                if key == "entity"
+            ]
+        if entity_values:
+            newline = ",\n"
+            entity_values_as_str = f"{newline}({newline.join(entity_values)})"
+        else:
+            entity_values_as_str = ""
 
-    if message:
+        message_key = message_intent + entity_values_as_str
+        message_label = message_key
+    elif message and message.get("text"):
         message_key = message.get("intent", {}).get("name", None)
         message_label = message.get("text", None)
     else:
@@ -411,11 +426,11 @@ def _add_message_edge(
         message_label = None
 
     _add_edge(
-        graph,
-        current_node,
-        next_node_idx,
-        message_key,
-        message_label,
+        graph=graph,
+        u=current_node,
+        v=next_node_idx,
+        key=message_key,
+        label=message_label,
         **{"class": "active" if is_current else ""},
     )
 
@@ -429,6 +444,7 @@ def visualize_neighborhood(
     should_merge_nodes: bool = True,
     max_distance: int = 1,
     fontsize: int = 12,
+    domain: Optional[Domain] = None,
 ) -> "networkx.MultiDiGraph":
     """Given a set of event lists, visualizing the flows."""
     graph = _create_graph(fontsize)
@@ -437,6 +453,11 @@ def visualize_neighborhood(
     next_node_idx = START_NODE_ID
     special_node_idx = -3
     path_ellipsis_ends = set()
+
+    if domain:
+        domain_slots = domain.as_dict()["slots"]
+    else:
+        domain_slots = {}
 
     for events in event_sequences:
         if current and max_distance:
@@ -456,6 +477,33 @@ def visualize_neighborhood(
             if isinstance(el, UserUttered):
                 message = el.parse_data
                 message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"  # type: ignore[literal-required]  # noqa: E501
+            elif isinstance(el, SlotSet):
+                slot = el.as_dict()
+
+                slot_def = domain_slots.get(slot["name"], {})
+                slot_ic = slot_def.get("influence_conversation", True)
+                if slot_ic:
+                    # ignore non conversation relevant slots
+                    label = f'Slot: { slot["name"]}'
+                    if slot["value"] is not None and slot["value"] != "":
+                        label += "==" + str(slot["value"])
+
+                    next_node_idx += 1
+                    graph.add_node(
+                        next_node_idx,
+                        label=label,
+                        fontsize=fontsize,
+                        style="filled",
+                        **{"class": "slot"},
+                    )
+
+                    _add_message_edge(
+                        graph, message, current_node, next_node_idx, is_current
+                    )
+                    current_node = next_node_idx
+
+                    message = None
+                    prefix -= 1
             elif (
                 isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
@@ -530,7 +578,6 @@ def _remove_auxiliary_nodes(
     graph: "networkx.MultiDiGraph", special_node_idx: int
 ) -> None:
     """Remove any temporary or unused nodes."""
-
     graph.remove_node(TMP_NODE_ID)
 
     if not graph.predecessors(END_NODE_ID):
@@ -603,5 +650,6 @@ def visualize_stories(
         should_merge_nodes,
         max_distance=1,
         fontsize=fontsize,
+        domain=domain,
     )
     return graph

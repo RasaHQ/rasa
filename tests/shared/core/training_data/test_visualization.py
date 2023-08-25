@@ -144,9 +144,9 @@ def test_story_visualization(domain: Domain, tmp_path: Path):
     )
 
     assert str(None) not in out_file.read_text()
-    assert "/affirm" in out_file.read_text()
-    assert len(generated_graph.nodes()) == 51
-    assert len(generated_graph.edges()) == 56
+    assert "affirm" in out_file.read_text()
+    assert len(generated_graph.nodes()) == 53
+    assert len(generated_graph.edges()) == 58
 
 
 def test_story_visualization_with_training_data(
@@ -158,7 +158,7 @@ def test_story_visualization_with_training_data(
         "data/test_yaml_stories/stories.yml", domain
     )
     out_file = tmp_path / "graph.html"
-    test_text = "test text"
+    test_text = "simple"
     test_intent = "affirm"
     generated_graph = visualization.visualize_stories(
         story_steps,
@@ -170,12 +170,11 @@ def test_story_visualization_with_training_data(
             [Message({TEXT: test_text, INTENT: test_intent})]
         ),
     )
-
     assert test_text in out_file.read_text()
-    assert test_intent not in out_file.read_text()
+    assert test_intent in out_file.read_text()
 
-    assert len(generated_graph.nodes()) == 51
-    assert len(generated_graph.edges()) == 56
+    assert len(generated_graph.nodes()) == 53
+    assert len(generated_graph.edges()) == 58
 
 
 def test_story_visualization_with_merging(domain: Domain):
