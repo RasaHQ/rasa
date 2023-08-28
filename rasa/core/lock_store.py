@@ -173,7 +173,6 @@ class LockStore:
 
         Removes ticket from lock and saves lock.
         """
-
         lock = self.get_lock(conversation_id)
         if lock:
             lock.remove_ticket_for(ticket_number)
@@ -181,7 +180,6 @@ class LockStore:
 
     def cleanup(self, conversation_id: Text, ticket_number: int) -> None:
         """Remove lock for `conversation_id` if no one is waiting."""
-
         self.finish_serving(conversation_id, ticket_number)
         if not self.is_someone_waiting(conversation_id):
             self.delete_lock(conversation_id)
@@ -220,6 +218,9 @@ class RedisLockStore(LockStore):
             password: The password which should be used for authentication with the
                 Redis database.
             use_ssl: `True` if SSL should be used for the connection to Redis.
+            ssl_certfile: Path to the SSL certificate file.
+            ssl_keyfile: Path to the SSL private key file.
+            ssl_ca_certs: Path to the SSL CA certificate file.
             key_prefix: prefix to prepend to all keys used by the lock store. Must be
                 alphanumeric.
             socket_timeout: Timeout in seconds after which an exception will be raised
