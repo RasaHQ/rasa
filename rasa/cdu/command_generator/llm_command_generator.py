@@ -1,6 +1,6 @@
 import importlib.resources
 import re
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 
 from jinja2 import Template
 import structlog
@@ -180,8 +180,20 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     @staticmethod
     def coerce_slot_value(
-        value: Any, slot_name: str, tracker: DialogueStateTracker
-    ) -> Any:
+        value: str, slot_name: str, tracker: DialogueStateTracker
+    ) -> Union[str, bool, float, None]:
+        """Coerce the slot value to the correct type.
+
+        Tries to coerce the slot value to the correct type. If the
+        conversion fails, `None` is returned.
+
+        Args:
+            value: the value to coerce
+            slot_name: the name of the slot
+            tracker: the tracker
+
+        Returns:
+            the coerced value or `None` if the conversion failed."""
         if slot_name not in tracker.slots:
             return value
 
@@ -219,7 +231,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
                 slot_name = m.group(1).strip()
-                slot_value: Optional[str] = cls.clean_extracted_value(m.group(2))
+                slot_value: Any = cls.clean_extracted_value(m.group(2))
                 # error case where the llm tries to start a flow using a slot set
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
@@ -273,50 +285,32 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return result
 
     @staticmethod
-    def can_question_be_filled(
+    def is_extractable(
         q: QuestionFlowStep,
         tracker: DialogueStateTracker,
-        current_step: Optional[FlowStep],
+        current_step: Optional[FlowStep] = None,
     ) -> bool:
+        """Check if the question can be filled.
+
+        A questions slot can only be filled if the slot exist and either the
+        question has been asked already or the slot has been filled already."""
         slot = tracker.slots.get(q.question)
         if slot is None:
             return False
-        # TODO: maybe we need to check for non None default value?
+
         return (
+            # we can fill because this is a slot that can be filled ahead of time
             q.skip_if_filled
+            # we can fill because the slot has been filled already
+            # TODO: maybe we need to check for non None default value?
             or slot.value is not None
+            # we can fill because the is currently getting asked
             or (
                 current_step is not None
                 and isinstance(current_step, QuestionFlowStep)
                 and current_step.question == q.question
             )
         )
-
-    @classmethod
-    def is_extractable(
-        cls,
-        q: QuestionFlowStep,
-        tracker: DialogueStateTracker,
-        current_step: Optional[FlowStep] = None,
-    ) -> bool:
-        slot = tracker.slots.get(q.question)
-        if slot is None:
-            return False
-
-        # TODO: rethink the name for skip if filled
-        if not cls.can_question_be_filled(q, tracker, current_step):
-            return False
-
-        for mapping in slot.mappings:
-            conditions = mapping.get(MAPPING_CONDITIONS, [])
-            if len(conditions) == 0:
-                return True
-            else:
-                for condition in conditions:
-                    active_loop = condition.get(ACTIVE_LOOP)
-                    if active_loop and active_loop == tracker.active_loop_name:
-                        return True
-        return False
 
     def allowed_values_for_slot(self, slot: Slot) -> Optional[str]:
         if slot.type_name == "bool":

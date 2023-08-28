@@ -542,13 +542,13 @@ class ContinueFlowStep(InternalFlowStep):
             id=CONTINUE_STEP_PREFIX + next,
             description=None,
             metadata={},
-            # The end step links to itself. This is needed to make sure that
-            # this allows us to end a flow by setting the active step of a flow
-            # to the end step.
-            # Since the side effects of a node are executed on the transition
-            # to the next node, we need this link to run the END logic.
-            # Otherwise, setting a flow to its end step would not execute the
-            # side effects of the end step.
+            # The continue step links to the step that should be continued.
+            # The flow policy in a sense only "runs" the logic of a step
+            # when it transitions to that step, once it is there it will use
+            # the next link to transition to the next step. This means that
+            # if we want to "re-run" a step, we need to link to it again.
+            # This is why the continue step links to the step that should be
+            # continued.
             next=FlowLinks(links=[StaticFlowLink(target=next)]),
         )
 

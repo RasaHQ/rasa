@@ -374,13 +374,11 @@ def clean_up_commands(
                 "command_executor.skip_command.slot_already_set", command=command
             )
         elif isinstance(command, SetSlotCommand) and command.name not in slots_so_far:
-            all_questions = [
-                s for f in all_flows.underlying_flows for s in f.get_question_steps()
-            ]
-            use_slot_fill = True
-            for q in all_questions:
-                if q.question == command.name and not q.skip_if_filled:
-                    use_slot_fill = False
+            use_slot_fill = all(
+                step.question != command.name or step.skip_if_filled
+                for flow in all_flows.underlying_flows
+                for step in flow.get_question_steps()
+            )
 
             if use_slot_fill:
                 clean_commands.append(command)
