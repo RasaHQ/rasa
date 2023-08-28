@@ -27,9 +27,6 @@ from rasa.core.constants import (
 from pypred import Predicate
 
 from rasa.shared.constants import FLOW_PREFIX
-from rasa.shared.nlu.constants import (
-    ACTION_NAME,
-)
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SEND_TEXT_NAME,
