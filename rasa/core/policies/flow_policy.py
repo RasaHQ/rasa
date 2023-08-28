@@ -538,34 +538,6 @@ class FlowExecutor:
                 events.append(SlotSet(step.question, initial_value))
         return events
 
-    @staticmethod
-    def _predict_question_loop(
-        tracker: DialogueStateTracker, loop_name: Text
-    ) -> Optional[Text]:
-
-        is_finished = (
-            tracker.latest_action
-            and tracker.latest_action.get(ACTION_NAME) == loop_name
-            and not tracker.active_loop
-        )
-
-        if is_finished:
-            return None
-
-        active_loop_rejected = tracker.is_active_loop_rejected
-        should_predict_loop = (
-            not active_loop_rejected
-            and tracker.latest_action
-            and tracker.latest_action.get(ACTION_NAME) != loop_name
-        )
-
-        if should_predict_loop:
-            structlogger.debug("flow.question.loop", loop=loop_name)
-            return loop_name
-        else:
-            structlogger.debug("flow.question.noloop")
-            return ACTION_LISTEN_NAME
-
     def _run_step(
         self,
         flow: Flow,
