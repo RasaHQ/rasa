@@ -101,27 +101,30 @@ class FlowStack:
 
         return self.frames[-1].context or {}
 
-    def top(self) -> Optional[FlowStackFrame]:
+    def top(self, ignore: Optional[str] = None) -> Optional[FlowStackFrame]:
         """Returns the topmost frame from the stack.
 
         Returns:
             The topmost frame.
         """
-        if self.is_empty():
-            return None
+        for frame in reversed(self.frames):
+            if ignore is None or frame.flow_id != ignore:
+                return frame
+        return None
 
-        return self.frames[-1]
-
-    def top_flow(self, flows: FlowsList) -> Optional[Flow]:
+    def top_flow(
+        self, flows: FlowsList, ignore: Optional[str] = None
+    ) -> Optional[Flow]:
         """Returns the topmost flow from the stack.
 
         Args:
             flows: The flows to use.
+            ignore: The ID of the flow to ignore.
 
         Returns:
             The topmost flow.
         """
-        if not (top := self.top()):
+        if not (top := self.top(ignore)):
             return None
 
         return flows.flow_by_id(top.flow_id)

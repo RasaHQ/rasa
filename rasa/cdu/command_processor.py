@@ -16,6 +16,7 @@ from rasa.cdu.commands import (
     ClarifyCommand,
 )
 from rasa.cdu.conversation_patterns import (
+    FLOW_PATTERN_ASK_QUESTION,
     FLOW_PATTERN_CORRECTION_ID,
     FLOW_PATTERN_INTERNAL_ERROR_ID,
     FLOW_PATTERN_CANCEl_ID,
@@ -128,7 +129,8 @@ def execute_commands(
 
     for command in reversed_commands:
         if isinstance(command, CorrectSlotsCommand):
-            if not current_top_flow:
+            top_non_question_frame = flow_stack.top(ignore=FLOW_PATTERN_ASK_QUESTION)
+            if not top_non_question_frame:
                 # we shouldn't end up here as a correction shouldn't be triggered
                 # if there is nothing to correct. but just in case we do, we
                 # just skip the command.
@@ -155,17 +157,21 @@ def execute_commands(
                 context=context,
             )
 
-            if current_top_flow.id != FLOW_PATTERN_CORRECTION_ID:
+            if top_non_question_frame.flow_id != FLOW_PATTERN_CORRECTION_ID:
                 flow_stack.push(correction_frame)
             else:
                 # wrap up the previous correction flow
-                flow_stack.frames[-1].step_id = END_STEP
+                for i, frame in enumerate(reversed(flow_stack.frames)):
+                    frame.step_id = END_STEP
+                    if frame.frame_id == top_non_question_frame.frame_id:
+                        break
+
                 # push a new correction flow
                 flow_stack.push(
                     correction_frame,
                     # we allow the previous correction to finish first before
                     # starting the new one
-                    index=-1,
+                    index=len(flow_stack.frames) - i - 1,
                 )
         elif isinstance(command, SetSlotCommand):
             structlogger.debug("command_executor.set_slot", command=command)
@@ -280,11 +286,6 @@ def filled_slots_for_active_flow(
     All slots that have been filled for the current flow.
     """
     flow_stack = FlowStack.from_tracker(tracker)
-    top_flow_step = flow_stack.top_flow_step(all_flows)
-
-    current_question = (
-        top_flow_step.question if isinstance(top_flow_step, QuestionFlowStep) else None
-    )
 
     asked_questions = set()
 
@@ -293,8 +294,7 @@ def filled_slots_for_active_flow(
             break
 
         for q in flow.previously_asked_questions(frame.step_id):
-            if q.question != current_question:
-                asked_questions.add(q.question)
+            asked_questions.add(q.question)
 
         if frame.frame_type in STACK_FRAME_TYPES_WITH_USER_FLOWS:
             # as soon as we hit the first stack frame that is a "normal"
@@ -304,6 +304,21 @@ def filled_slots_for_active_flow(
             break
 
     return asked_questions
+
+
+def get_current_question(
+    flow_stack: FlowStack, flows: FlowsList
+) -> Optional[QuestionFlowStep]:
+    if (
+        top_frame := flow_stack.top()
+    ) and top_frame.flow_id == FLOW_PATTERN_ASK_QUESTION:
+        if len(flow_stack.frames) >= 2:
+            flow = flows.flow_by_id(flow_stack.frames[-2].flow_id)
+            if flow:
+                step = flow.step_by_id(flow_stack.frames[-2].step_id)
+                if step and isinstance(step, QuestionFlowStep):
+                    return step
+    return None
 
 
 def clean_up_commands(
@@ -358,8 +373,31 @@ def clean_up_commands(
             structlogger.debug(
                 "command_executor.skip_command.slot_already_set", command=command
             )
+        elif isinstance(command, SetSlotCommand) and command.name not in slots_so_far:
+            all_questions = [
+                s for f in all_flows.underlying_flows for s in f.get_question_steps()
+            ]
+            use_slot_fill = True
+            for q in all_questions:
+                if q.question == command.name and not q.skip_if_filled:
+                    use_slot_fill = False
+
+            if use_slot_fill:
+                clean_commands.append(command)
+            else:
+                structlogger.debug(
+                    "command_executor.skip_command.slot_not_asked_for", command=command
+                )
+                continue
 
         elif isinstance(command, SetSlotCommand) and command.name in slots_so_far:
+            current_question = get_current_question(flow_stack, all_flows)
+
+            if current_question and current_question.question == command.name:
+                # not a correction but rather an answer to the current question
+                clean_commands.append(command)
+                continue
+
             structlogger.debug(
                 "command_executor.convert_command.correction", command=command
             )

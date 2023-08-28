@@ -98,3 +98,23 @@ flows:
         next: "1"
       - id: "1"
         action: utter_clarification_options_rasa
+
+  pattern_ask_question:
+    description: flow used to fill a slot
+    steps:
+      - id: "start"
+        action: action_extract_slots
+        next: "validate"
+      - id: "validate"
+        action: validate_{{context.question}}
+        next: 
+        - if: "{{context.question}} is not null"
+          then: "done"
+        - else: "ask_question"
+      - id: "ask_question"
+        action: utter_ask_{{context.question}}
+        next: "listen"
+      - id: "listen"
+        action: action_listen
+        next: "start"
+      - id: "done"

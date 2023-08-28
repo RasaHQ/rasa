@@ -16,6 +16,7 @@ from rasa.cdu.commands import (
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
+from rasa.cdu.conversation_patterns import FLOW_PATTERN_ASK_QUESTION
 
 from rasa.core.policies.flow_policy import FlowStack
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -26,9 +27,9 @@ from rasa.shared.core.constants import (
     MAPPING_CONDITIONS,
     ACTIVE_LOOP,
 )
-from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
+from rasa.shared.core.flows.flow import FlowStep, FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import BooleanSlot, FloatSlot, Slot, bool_from_any
 from rasa.shared.nlu.constants import (
     TEXT,
 )
@@ -152,7 +153,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             "llm_command_generator.predict_commands.actions_generated",
             action_list=action_list,
         )
-        commands = self.parse_commands(action_list)
+        commands = self.parse_commands(action_list, tracker)
         structlogger.info(
             "llm_command_generator.predict_commands.finished",
             commands=commands,
@@ -177,8 +178,28 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         # from the beginning and end of the string
         return re.sub(r"^['\"\s]+|['\"\s]+$", "", value)
 
+    @staticmethod
+    def coerce_slot_value(
+        value: Any, slot_name: str, tracker: DialogueStateTracker
+    ) -> Any:
+        if slot_name not in tracker.slots:
+            return value
+
+        slot = tracker.slots[slot_name]
+        if isinstance(slot, BooleanSlot):
+            return bool_from_any(value)
+        elif isinstance(slot, FloatSlot):
+            try:
+                return float(slot)
+            except ValueError:
+                return None
+        else:
+            return value
+
     @classmethod
-    def parse_commands(cls, actions: Optional[str]) -> List[Command]:
+    def parse_commands(
+        cls, actions: Optional[str], tracker: DialogueStateTracker
+    ) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities."""
         if not actions:
             return [ErrorCommand()]
@@ -205,6 +226,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 else:
                     if cls.is_none_value(slot_value):
                         slot_value = None
+                    else:
+                        slot_value = cls.coerce_slot_value(
+                            slot_value, slot_name, tracker
+                        )
                     commands.append(SetSlotCommand(name=slot_name, value=slot_value))
             elif m := start_flow_re.search(action):
                 commands.append(StartFlowCommand(flow=m.group(1).strip()))
@@ -248,9 +273,38 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return result
 
     @staticmethod
-    def is_extractable(q: QuestionFlowStep, tracker: DialogueStateTracker) -> bool:
+    def can_question_be_filled(
+        q: QuestionFlowStep,
+        tracker: DialogueStateTracker,
+        current_step: Optional[FlowStep],
+    ) -> bool:
         slot = tracker.slots.get(q.question)
         if slot is None:
+            return False
+        # TODO: maybe we need to check for non None default value?
+        return (
+            q.skip_if_filled
+            or slot.value is not None
+            or (
+                current_step is not None
+                and isinstance(current_step, QuestionFlowStep)
+                and current_step.question == q.question
+            )
+        )
+
+    @classmethod
+    def is_extractable(
+        cls,
+        q: QuestionFlowStep,
+        tracker: DialogueStateTracker,
+        current_step: Optional[FlowStep] = None,
+    ) -> bool:
+        slot = tracker.slots.get(q.question)
+        if slot is None:
+            return False
+
+        # TODO: rethink the name for skip if filled
+        if not cls.can_question_be_filled(q, tracker, current_step):
             return False
 
         for mapping in slot.mappings:
@@ -273,6 +327,14 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         else:
             return None
 
+    @staticmethod
+    def slot_value(tracker: DialogueStateTracker, slot_name: str) -> str:
+        slot_value = tracker.get_slot(slot_name)
+        if slot_value is None:
+            return "undefined"
+        else:
+            return str(slot_value)
+
     def render_template(
         self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
     ) -> str:
@@ -280,15 +342,20 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             [f for f in flows.underlying_flows if not f.is_handling_pattern()]
         )
         flow_stack = FlowStack.from_tracker(tracker)
-        top_flow = flow_stack.top_flow(flows) if flow_stack is not None else None
+        top_relevant_frame = flow_stack.top(ignore=FLOW_PATTERN_ASK_QUESTION)
+        top_flow = (
+            flows.flow_by_id(top_relevant_frame.flow_id) if top_relevant_frame else None
+        )
         current_step = (
-            flow_stack.top_flow_step(flows) if flow_stack is not None else None
+            top_flow.step_by_id(top_relevant_frame.step_id)
+            if top_flow is not None and top_relevant_frame is not None
+            else None
         )
         if top_flow is not None:
             flow_slots = [
                 {
                     "name": q.question,
-                    "value": (tracker.get_slot(q.question) or "undefined"),
+                    "value": self.slot_value(tracker, q.question),
                     "type": tracker.slots[q.question].type_name,
                     "allowed_values": self.allowed_values_for_slot(
                         tracker.slots[q.question]
@@ -296,7 +363,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                     "description": q.description,
                 }
                 for q in top_flow.get_question_steps()
-                if self.is_extractable(q, tracker)
+                if self.is_extractable(q, tracker, current_step)
             ]
         else:
             flow_slots = []

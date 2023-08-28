@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional, Text, List
 
 import structlog
+from rasa.cdu.conversation_patterns import FLOW_PATTERN_ASK_QUESTION
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
@@ -19,7 +20,7 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.shared.core.flows.flow import END_STEP, START_STEP
+from rasa.shared.core.flows.flow import END_STEP, START_STEP, ContinueFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger(__name__)
@@ -156,10 +157,22 @@ class ActionCorrectFlowSlot(action.Action):
         corrected_slots = context.get("corrected_slots", {})
         reset_point = context.get("corrected_reset_point", {})
 
-        for frame in stack.frames:
+        for i, frame in enumerate(stack.frames):
             if frame.flow_id == reset_point.get("id"):
-                frame.step_id = reset_point.get("step_id") or START_STEP
+                frame.step_id = (
+                    ContinueFlowStep.continue_step_for_id(reset_point.get("step_id"))
+                    if reset_point.get("step_id")
+                    else START_STEP
+                )
                 break
+
+        # also need to end any running question
+        if (
+            len(stack.frames) > i + 1
+            and stack.frames[i + 1].flow_id == FLOW_PATTERN_ASK_QUESTION
+        ):
+            stack.frames[i + 1].step_id = END_STEP
+
         events: List[Event] = [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
 
         events.extend([SlotSet(k, v) for k, v in corrected_slots.items()])
