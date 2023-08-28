@@ -155,6 +155,7 @@ structlog-sentry = "^2.0.2"
 # in order to fix https://rasahq.atlassian.net/browse/ATO-1419
 dnspython = "2.3.0"
 wheel = ">=0.38.1"
+certifi = ">=2023.7.22"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
 markers = "sys_platform == 'win32'"
