@@ -23,10 +23,6 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.constants import (
-    MAPPING_CONDITIONS,
-    ACTIVE_LOOP,
-)
 from rasa.shared.core.flows.flow import FlowStep, FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.slots import BooleanSlot, FloatSlot, Slot, bool_from_any
@@ -178,9 +174,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         # from the beginning and end of the string
         return re.sub(r"^['\"\s]+|['\"\s]+$", "", value)
 
-    @staticmethod
+    @classmethod
     def coerce_slot_value(
-        value: str, slot_name: str, tracker: DialogueStateTracker
+        cls, slot_value: str, slot_name: str, tracker: DialogueStateTracker
     ) -> Union[str, bool, float, None]:
         """Coerce the slot value to the correct type.
 
@@ -194,19 +190,20 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
         Returns:
             the coerced value or `None` if the conversion failed."""
+        nullable_value = slot_value if not cls.is_none_value(slot_value) else None
         if slot_name not in tracker.slots:
-            return value
+            return nullable_value
 
         slot = tracker.slots[slot_name]
         if isinstance(slot, BooleanSlot):
-            return bool_from_any(value)
+            return bool_from_any(nullable_value)
         elif isinstance(slot, FloatSlot):
             try:
-                return float(slot)
+                return float(nullable_value)
             except ValueError:
                 return None
         else:
-            return value
+            return nullable_value
 
     @classmethod
     def parse_commands(
@@ -236,12 +233,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
                 else:
-                    if cls.is_none_value(slot_value):
-                        slot_value = None
-                    else:
-                        slot_value = cls.coerce_slot_value(
-                            slot_value, slot_name, tracker
-                        )
+                    slot_value = cls.coerce_slot_value(slot_value, slot_name, tracker)
                     commands.append(SetSlotCommand(name=slot_name, value=slot_value))
             elif m := start_flow_re.search(action):
                 commands.append(StartFlowCommand(flow=m.group(1).strip()))
@@ -313,6 +305,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         )
 
     def allowed_values_for_slot(self, slot: Slot) -> Optional[str]:
+        """Get the allowed values for a slot."""
         if slot.type_name == "bool":
             return str([True, False])
         if slot.type_name == "categorical":
@@ -323,6 +316,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     @staticmethod
     def slot_value(tracker: DialogueStateTracker, slot_name: str) -> str:
+        """Get the slot value from the tracker."""
         slot_value = tracker.get_slot(slot_name)
         if slot_value is None:
             return "undefined"
@@ -335,16 +329,11 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         flows_without_patterns = FlowsList(
             [f for f in flows.underlying_flows if not f.is_handling_pattern()]
         )
-        flow_stack = FlowStack.from_tracker(tracker)
-        top_relevant_frame = flow_stack.top(ignore=FLOW_PATTERN_ASK_QUESTION)
-        top_flow = (
-            flows.flow_by_id(top_relevant_frame.flow_id) if top_relevant_frame else None
+        top_relevant_frame = FlowStack.top_frame_on_tracker(
+            tracker, ignore_frame=FLOW_PATTERN_ASK_QUESTION
         )
-        current_step = (
-            top_flow.step_by_id(top_relevant_frame.step_id)
-            if top_flow is not None and top_relevant_frame is not None
-            else None
-        )
+        top_flow = top_relevant_frame.flow(flows) if top_relevant_frame else None
+        current_step = top_relevant_frame.step(flows) if top_relevant_frame else None
         if top_flow is not None:
             flow_slots = [
                 {

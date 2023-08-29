@@ -116,7 +116,7 @@ class ActionCancelFlow(action.Action):
                 if frame.frame_id == canceled_frame_id:
                     # Setting the stack frame to the end step so it is properly
                     # wrapped up by the flow policy
-                    frame.step_id = END_STEP
+                    frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
                     break
             else:
                 structlogger.warning(
@@ -171,7 +171,9 @@ class ActionCorrectFlowSlot(action.Action):
             len(stack.frames) > i + 1
             and stack.frames[i + 1].flow_id == FLOW_PATTERN_ASK_QUESTION
         ):
-            stack.frames[i + 1].step_id = END_STEP
+            stack.frames[i + 1].step_id = ContinueFlowStep.continue_step_for_id(
+                END_STEP
+            )
 
         events: List[Event] = [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
 

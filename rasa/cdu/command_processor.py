@@ -33,6 +33,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import (
     END_STEP,
+    ContinueFlowStep,
     Flow,
     FlowStep,
     FlowsList,
@@ -129,7 +130,9 @@ def execute_commands(
 
     for command in reversed_commands:
         if isinstance(command, CorrectSlotsCommand):
-            top_non_question_frame = flow_stack.top(ignore=FLOW_PATTERN_ASK_QUESTION)
+            top_non_question_frame = flow_stack.top(
+                ignore_frame=FLOW_PATTERN_ASK_QUESTION
+            )
             if not top_non_question_frame:
                 # we shouldn't end up here as a correction shouldn't be triggered
                 # if there is nothing to correct. but just in case we do, we
@@ -162,7 +165,7 @@ def execute_commands(
             else:
                 # wrap up the previous correction flow
                 for i, frame in enumerate(reversed(flow_stack.frames)):
-                    frame.step_id = END_STEP
+                    frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
                     if frame.frame_id == top_non_question_frame.frame_id:
                         break
 
@@ -307,18 +310,61 @@ def filled_slots_for_active_flow(
 
 
 def get_current_question(
-    flow_stack: FlowStack, flows: FlowsList
+    flow_stack: FlowStack, all_flows: FlowsList
 ) -> Optional[QuestionFlowStep]:
-    if (
-        top_frame := flow_stack.top()
-    ) and top_frame.flow_id == FLOW_PATTERN_ASK_QUESTION:
-        if len(flow_stack.frames) >= 2:
-            flow = flows.flow_by_id(flow_stack.frames[-2].flow_id)
-            if flow:
-                step = flow.step_by_id(flow_stack.frames[-2].step_id)
-                if step and isinstance(step, QuestionFlowStep):
-                    return step
-    return None
+    """Get the current question if the conversation is currently in one.
+
+    If we are currently in a question step, the stack should have at least
+    two frames. The top frame is the question pattern and the frame below
+    is the flow that triggered the question pattern. We can use the flow
+    id to get the question step from the flow.
+
+    Args:
+        flow_stack: The flow stack.
+        all_flows: All flows.
+
+    Returns:
+    The current question if the conversation is currently in one,
+    `None` otherwise.
+    """
+    if not (top_frame := flow_stack.top()):
+        # we are currently not in a flow
+        return None
+
+    if top_frame.flow_id != FLOW_PATTERN_ASK_QUESTION:
+        # we are currently not in a question
+        return None
+
+    if len(flow_stack.frames) <= 1:
+        # for some reason only the question pattern step is on the stack
+        # but no flow that triggered it. this should never happen.
+        structlogger.warning(
+            "command_executor.get_current_question.no_flow_on_stack",
+            stack=flow_stack,
+        )
+        return None
+
+    frame_that_triggered_question = flow_stack.frames[-2]
+    if not (step := frame_that_triggered_question.step(all_flows)):
+        # this is a failure, if there is a frame, we should be able to get the
+        # step from it
+        structlogger.warning(
+            "command_executor.get_current_question.no_step_for_frame",
+            frame=frame_that_triggered_question,
+        )
+        return None
+
+    if isinstance(step, QuestionFlowStep):
+        # we found it!
+        return step
+    else:
+        # this should never happen as we only push question patterns
+        # onto the stack if there is a question step
+        structlogger.warning(
+            "command_executor.get_current_question.step_not_question",
+            step=step,
+        )
+        return None
 
 
 def clean_up_commands(
@@ -374,8 +420,9 @@ def clean_up_commands(
                 "command_executor.skip_command.slot_already_set", command=command
             )
         elif isinstance(command, SetSlotCommand) and command.name not in slots_so_far:
-            use_slot_fill = all(
-                step.question != command.name or step.skip_if_filled
+            # only fill slots that belong to a question that can be asked
+            use_slot_fill = any(
+                step.question == command.name and step.skip_if_filled
                 for flow in all_flows.underlying_flows
                 for step in flow.get_question_steps()
             )

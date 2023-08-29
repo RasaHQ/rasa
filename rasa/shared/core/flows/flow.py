@@ -276,9 +276,6 @@ class Flow:
         if step_id == END_STEP:
             return EndFlowStep()
 
-        if step_id == CLEANUP_STEP:
-            return CleanUpFlowStep()
-
         if step_id.startswith(CONTINUE_STEP_PREFIX):
             return ContinueFlowStep(step_id[len(CONTINUE_STEP_PREFIX) :])
 
@@ -509,23 +506,12 @@ class EndFlowStep(InternalFlowStep):
     """Represents the configuration of an end to a flow."""
 
     def __init__(self) -> None:
-        """Initializes a start flow step.
-
-        Args:
-            start_step: The step to start the flow from.
-        """
+        """Initializes an end flow step."""
         super().__init__(
             id=END_STEP,
             description=None,
             metadata={},
-            # The end step links to itself. This is needed to make sure that
-            # this allows us to end a flow by setting the active step of a flow
-            # to the end step.
-            # Since the side effects of a node are executed on the transition
-            # to the next node, we need this link to run the END logic.
-            # Otherwise, setting a flow to its end step would not execute the
-            # side effects of the end step.
-            next=FlowLinks(links=[StaticFlowLink(target=CLEANUP_STEP)]),
+            next=FlowLinks(links=[]),
         )
 
 
@@ -534,10 +520,10 @@ CONTINUE_STEP_PREFIX = "__next__"
 
 @dataclass
 class ContinueFlowStep(InternalFlowStep):
-    """Represents the configuration of an end to a flow."""
+    """Represents the configuration of a continue-step flow step."""
 
     def __init__(self, next: str) -> None:
-        """Initializes a start flow step."""
+        """Initializes a continue-step flow step."""
         super().__init__(
             id=CONTINUE_STEP_PREFIX + next,
             description=None,
@@ -555,26 +541,6 @@ class ContinueFlowStep(InternalFlowStep):
     @staticmethod
     def continue_step_for_id(step_id: str) -> str:
         return CONTINUE_STEP_PREFIX + step_id
-
-
-CLEANUP_STEP = "__cleanup__"
-
-
-class CleanUpFlowStep(InternalFlowStep):
-    """Represents the configuration of step to clean up a flow."""
-
-    def __init__(self) -> None:
-        """Initializes a start flow step.
-
-        Args:
-            start_step: The step to start the flow from.
-        """
-        super().__init__(
-            id=CLEANUP_STEP,
-            description=None,
-            metadata={},
-            next=FlowLinks(links=[]),
-        )
 
 
 @dataclass
