@@ -6,7 +6,7 @@ import tempfile
 import os
 import textwrap
 from pathlib import Path
-from typing import Text
+from typing import Text, Dict, Union, Any
 from unittest.mock import Mock
 
 import pytest
@@ -27,10 +27,18 @@ import rasa.nlu
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import GraphModelConfiguration
+from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.shared.data import TrainingType
+from rasa.model_training import (
+    CODE_FORCED_TRAINING,
+    CODE_NEEDS_TO_BE_RETRAINED,
+    CODE_NO_NEED_TO_TRAIN,
+    _dry_run_result,
+)
 from rasa.shared.core.events import ActionExecuted, SlotSet
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph, StoryStep
+from rasa.shared.data import TrainingType
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.utils.io
@@ -283,25 +291,6 @@ class TestE2e:
                 for record in caplog.records
             ]
         )
-
-    def test_models_not_retrained_if_no_new_data(
-        self,
-        trained_e2e_model: Text,
-        moodbot_domain_path: Path,
-        e2e_bot_config_file: Path,
-        e2e_stories_path: Text,
-        nlu_data_path: Text,
-        trained_e2e_model_cache: Path,
-    ):
-        result = rasa.train(
-            str(moodbot_domain_path),
-            str(e2e_bot_config_file),
-            [e2e_stories_path, nlu_data_path],
-            output=new_model_path_in_same_dir(trained_e2e_model),
-            dry_run=True,
-        )
-
-        assert result.code == 0
 
     def test_retrains_nlu_and_core_if_new_e2e_example(
         self,
@@ -894,39 +883,6 @@ def test_model_finetuning_with_invalid_model_nlu(
     assert "No model for finetuning found" in capsys.readouterr().out
 
 
-def test_models_not_retrained_if_only_new_responses(
-    trained_e2e_model: Text,
-    moodbot_domain_path: Path,
-    e2e_bot_config_file: Path,
-    e2e_stories_path: Text,
-    nlu_data_path: Text,
-    trained_e2e_model_cache: Path,
-    tmp_path: Path,
-):
-    domain = Domain.load(moodbot_domain_path)
-    domain_with_extra_response = """
-    version: '2.0'
-    responses:
-      utter_greet:
-      - text: "Hi from Rasa"
-    """
-    domain_with_extra_response = Domain.from_yaml(domain_with_extra_response)
-
-    new_domain = domain.merge(domain_with_extra_response)
-    new_domain_path = tmp_path / "domain.yml"
-    rasa.shared.utils.io.write_yaml(new_domain.as_dict(), new_domain_path)
-
-    result = rasa.train(
-        str(new_domain_path),
-        str(e2e_bot_config_file),
-        [e2e_stories_path, nlu_data_path],
-        output=str(tmp_path),
-        dry_run=True,
-    )
-
-    assert result.code == 0
-
-
 def test_models_not_retrained_if_only_new_action(
     trained_e2e_model: Text,
     moodbot_domain_path: Path,
@@ -1088,3 +1044,49 @@ def test_check_unresolved_slots(capsys: CaptureFixture):
         ]
     )
     assert rasa.model_training._check_unresolved_slots(domain, stories) is None
+
+
+@pytest.mark.parametrize(
+    "fingerprint_results, expected_code",
+    [
+        (
+            {
+                "key 1": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 1"
+                ),
+                "key 2": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 2"
+                ),
+                "key 3": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 3"
+                ),
+            },
+            CODE_NO_NEED_TO_TRAIN,
+        ),
+        (
+            {
+                "key 1": FingerprintStatus(
+                    is_hit=False, output_fingerprint="fingerprint 1"
+                ),
+                "key 2": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 2"
+                ),
+                "key 3": FingerprintStatus(
+                    is_hit=True, output_fingerprint="fingerprint 3"
+                ),
+            },
+            CODE_NEEDS_TO_BE_RETRAINED,
+        ),
+    ],
+)
+def test_dry_run_result_no_force_retraining(
+    fingerprint_results: Dict[Text, Union[FingerprintStatus, Any]],
+    expected_code: int,
+):
+    result = _dry_run_result(fingerprint_results, force_full_training=False)
+    assert result.code == expected_code
+
+
+def test_dry_run_result_force_retraining():
+    result = _dry_run_result({}, force_full_training=True)
+    assert result.code == CODE_FORCED_TRAINING
