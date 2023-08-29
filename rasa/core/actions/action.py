@@ -1066,7 +1066,6 @@ class ActionSendText(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-
         fallback = {"text": ""}
         message = metadata.get("message", fallback) if metadata else fallback
         return [create_bot_utterance(message)]
@@ -1353,7 +1352,6 @@ def extract_slot_value_from_predefined_mapping(
     tracker: "DialogueStateTracker",
 ) -> List[Any]:
     """Extracts slot value if slot has an applicable predefined mapping."""
-
     if tracker.has_bot_message_after_latest_user_message():
         # TODO: this needs further validation - not sure if this breaks something!!!
 

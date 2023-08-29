@@ -152,6 +152,9 @@ def __init__(
         db: int = 1,
         password: Optional[Text] = None,
         use_ssl: bool = False,
+        ssl_certfile: Optional[Text] = None,
+        ssl_keyfile: Optional[Text] = None,
+        ssl_ca_certs: Optional[Text] = None,
         key_prefix: Optional[Text] = None,
         socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
 ```
@@ -167,10 +170,13 @@ Create a lock store which uses Redis for persistence.
 - `password` - The password which should be used for authentication with the
   Redis database.
 - `use_ssl` - `True` if SSL should be used for the connection to Redis.
+- `ssl_certfile` - Path to the SSL certificate file.
+- `ssl_keyfile` - Path to the SSL private key file.
+- `ssl_ca_certs` - Path to the SSL CA certificate file.
 - `key_prefix` - prefix to prepend to all keys used by the lock store. Must be
   alphanumeric.
-- `socket_timeout` - Timeout in seconds after which an exception will be raised
-  in case Redis doesn&#x27;t respond within `socket_timeout` seconds.
+- `port`0 - Timeout in seconds after which an exception will be raised
+  in case Redis doesn&#x27;t respond within `port`0 seconds.
 
 #### get\_lock
 
