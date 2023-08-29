@@ -519,8 +519,8 @@ jobs:
           path: |
             ${{ github.workspace }}/${{ matrix.test }}-coverage
 
-  upload_coverage_reports:
-    name: Upload coverage reports to codeclimate
+  prepare_coverage_reports:
+    name: Prepare coverage reports
     if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     # Always upload results even if tests failed
@@ -561,15 +561,34 @@ jobs:
           coverage combine "${final_dir}/"*
           coverage xml
 
-      - name: Upload reports to codeclimate
+  sonarcloud:
+    name: SonarCloud Scan
+    if: github.ref_type != 'tag'
+    runs-on: ubuntu-22.04
+    needs:
+      - prepare_coverage_reports
+
+    steps:
+      - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: paambaati/codeclimate-action@b649ad206d2e83dafb9ed130deba698aa1b41d78
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CODECLIMATE_REPORTER_ID }}
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
-          coverageLocations: |
-            ${{ github.workspace }}/coverage.xml:coverage.py
-          debug: true
+          # Disabling shallow clone is recommended for improving relevancy of coverage reporting
+          fetch-depth: 0
+
+      - name: Analyse code with SonarCloud
+        uses: sonarsource/sonarcloud-github-action@5875562561d22a34be0c657405578705a169af6c
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=rasahq
+            -Dsonar.projectKey=RasaHQ_rasa
+            -Dsonar.sources=.
+            -Dsonar.python.coverage.reportPaths=tests_coverage/coverage.xml
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.verbose=true
 
   integration_test:
     name: Run Non-Sequential Integration Tests
@@ -1076,20 +1095,22 @@ jobs:
           IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
+          docker buildx bake --set *.platform=linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
 
-#          # Tag the image as latest
-#          if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
-#            if [[ "${{ matrix.image }}" == "default" ]]; then
-#              RELEASE_TAG="${IMAGE_TAG}"
-#            else
-#              RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
-#            fi
-#
-#            LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
-#
-#            docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
-#            docker push rasa/rasa:${LATEST_TAG}
-#          fi
+          # Tag the image as latest
+          if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
+            if [[ "${{ matrix.image }}" == "default" ]]; then
+              RELEASE_TAG="${IMAGE_TAG}"
+            else
+              RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
+            fi
+
+            LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
+
+            docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
+            docker push rasa/rasa:${LATEST_TAG}
+          fi
 
   deploy:
     name: Deploy to PyPI
