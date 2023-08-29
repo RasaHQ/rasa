@@ -32,8 +32,6 @@ def command_from_json(data: Dict[str, Any]) -> "Command":
         return ChitChatAnswerCommand()
     elif data.get("command") == "knowledge":
         return KnowledgeAnswerCommand()
-    elif data.get("command") == "listen":
-        return ListenCommand()
     elif data.get("command") == "human handoff":
         return HumanHandoffCommand()
     elif data.get("command") == "clarify":
@@ -129,13 +127,6 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
     """A command to indicate a knowledge-based free-form answer by the bot."""
 
     command: str = "knowledge"
-
-
-@dataclass
-class ListenCommand(Command):
-    """A command to indicate that the bot should not respond but listen."""
-
-    command: str = "listen"
 
 
 @dataclass

@@ -124,13 +124,16 @@ Steps can manifest in one of the following types:
   to determine if the flow should start
 - [action step](./flows.mdx#action): a custom action or utterance action to be
   run by the flow
+- [branch step](./flows.mdx#branch): a step to branch based on a condition
 - [generation prompt step](./flows.mdx#generation-prompt): a prompt to generate
   a message that will be sent to the user
 - [set slots step](./flows.mdx#set-slots): a step to set slots
 - [question step](./flows.mdx#question): a question to be asked to the user
 - [link step](./flows.mdx#link): a step to link to another flow
 
-### Writing Conditions
+### Branching Conditions
+
+A branching condition can be used in the `next` property of a step.
 
 Conditions in flows are written using natural language that can include
 logical operators, conditional operators and other constructs. They are evaluated
@@ -236,41 +239,6 @@ flow.
 Every step in a flow has a type. The type determines what the step does and what
 properties it supports.
 
-
-{/* ### User Message
-
-This step signifies a user utterance. Here's an example:
-
-```yaml
-- id: "an_incoming_user_message"
-  intent: "greet"
-  entities: [] # optional
-  description: "greet the user"
-  metadata: {} # an optional dict
-```
-
-User steps can only be used as a first step in a flow. They can be used to
-trigger a flow when a user sends a message that matches the intent and entities
-specified in the step.
-
-A `user_message` step can also support `OR` statements. This means that the flow
-can proceed if either of the conditions in the `OR` statement are met:
-
-```yaml
-- id: "a_required_unique_id"
-  or:
-    - intent: "complaint"
-      entities: [] # optional
-    - intent: "talk_to_agent"
-      entities: [] # optional
-  description: "handle a complaint or talk to an agent"
-  metadata: {} # an optional dict
-```
-
-Here, if the user intent is either to make a complaint or to talk to an agent,
-the flow should be started. \*/}
-
-
 ### Entry Prompt
 
 An `entry_prompt` step is used to determine if a flow should be started. Here's
@@ -325,7 +293,7 @@ step and another provider, e.g. `cohere` can be used:
 ```
 
 For more information, see the
-[LLM setup page on llms and embeddings](./llms/llm-setup.mdx#other-llms--embeddings)
+[LLM setup page on llms and embeddings](./llms/llm-configuration.mdx#other-llmsembeddings)
 
 :::
 
@@ -350,6 +318,31 @@ in your custom actions script.
 This is an utterance action where the bot sends a predefined message to the
 user. The message for "utter_xyz" would be defined in the domain file under
 responses.
+
+### Branch
+
+A `branch` step allows you to branch the logic of a flow based on a condition. 
+Here is an example:
+
+```yaml
+- id: "a_branch_step"
+  next:
+    - if: age < 18
+      then: "under_18_step"
+    - else: "over_18_step"
+```
+
+:::info
+
+Every step type supports branching using the `next` property. The `branch`
+step is **only needed if you want to branch based on a condition without executing
+an action or sending a message**.
+
+E.g. it can be used at the beginning of a flow to directly branch to a specific
+step based on a condition.
+
+:::
+
 
 ### Generation Prompt
 
@@ -405,7 +398,7 @@ step and another provider, e.g. `cohere` can be used:
 ```
 
 For more information, see the
-[LLM setup page on llms and embeddings](./llms/llm-setup.mdx#other-llms--embeddings)
+[LLM setup page on llms and embeddings](./llms/llm-configuration.mdx#other-llmsembeddings)
 
 :::
 

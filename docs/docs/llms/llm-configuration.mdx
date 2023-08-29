@@ -1,7 +1,7 @@
 ---
-id: llm-setup
-sidebar_label: Setting up LLMs
-title: Setting up LLMs
+id: llm-configuration
+sidebar_label: Configuration
+title: Configuration
 abstract: |
   Instructions on how to setup and configure Large Language Models from 
   OpenAI, Cohere, and other providers. 
@@ -18,22 +18,56 @@ import RasaLabsBanner from "@theme/RasaLabsBanner";
 
 ## Overview
 
-This guide will walk you through the process of configuring Rasa to use OpenAI
-LLMs, including deployments that rely on the Azure OpenAI service.
-Instructions for other LLM providers are further down the page. 
+This guide will walk you through the process of configuring Rasa to connect to an
+LLM, including deployments that rely on Azure OpenAI service. Instructions for 
+other LLM providers are further down the page. 
+
+## Assitant Configration
+
+To use LLMs in your assistant, you need to configure the following components:
+
+```yaml title="config.yml"
+recipe: default.v1
+language: en
+pipeline:
+  - name: LLMCommandGenerator
+
+policies:
+  - name: rasa.core.policies.flow_policy.FlowPolicy
+  - name: rasa_plus.ml.DocsearchPolicy
+  - name: RulePolicy
+```
+
+To use the rephrasing capability, you'll also need to add the following to your
+endpoint configuration:
+
+```yaml title="endpoints.yml"
+nlg:
+  type: rasa_plus.ml.LLMResponseRephraser
+```
+
+Additional configuration parameters are explained in detail in the documentation
+pages for each of these components:
+- [LLMCommandGenerator](./llm-command-generator.mdx)
+- [FlowPolicy](./flow-policy.mdx)
+- [Docseach](./llm-docsearch.mdx)
+- [LLMResponseRephraser](./llm-nlg.mdx) 
 
 
-## Prerequisites
+## OpenAI Configuration
+
+The configuration describes in detail how to connect to OpenAI. Rasa is LLM agnostic and 
+can be configured with different LLMs, but OpenAI is the default. 
+
+If you want to configure your assistant with a different LLM, you can find
+instructions for other LLM providers further down the page.
+
+### Prerequisites
 
 Before beginning, make sure that you have:
 
 - Access to OpenAI's services
 - Ability to generate API keys for OpenAI
-
-## Configuration
-
-Configuring LLMs to work with OpenAI involves several steps. The following
-sub-sections outline each of these steps and what you need to do.
 
 ### API Token
 
@@ -81,8 +115,10 @@ you might use one model for intent classification and another for rephrasing.
 To configure models per component, follow these steps described on the
 pages for each component:
 
-1. [Instructions to configure models for intent classification](./llm-intent.mdx)
-2. [Instructions to configure models for rephrasing](./llm-nlg.mdx)
+1. [intent classification instructions](./llm-intent.mdx#llm--embeddings)
+2. [rephrasing instructions](./llm-nlg.mdx#llm-configuration)
+3. [intentless policy instructions](./llm-intentless.mdx#llm--embeddings)
+4. [docsearch instructions](./llm-docsearch.mdx#llm--embeddings)
 
 ### Additional Configuration for Azure OpenAI Service
 
@@ -176,7 +212,7 @@ To configure these parameters, follow these steps:
         chunk_size: 16
     ```
 
-## Other LLMs & Embeddings
+## Other LLMs/Embeddings
 
 The LLM and embeddings provider can be configured separately for each 
 component. All components default to using OpenAI.

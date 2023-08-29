@@ -5,28 +5,12 @@ responses:
       metadata: 
         rephrase: True
         template: jinja
-
-  utter_ask_confirm_correction:
-    - text: "Do you want to update the {{ context.corrected_slots.keys()|join(', ') }}?"
-      buttons:
-        - payload: yes
-          title: Yes
-        - payload: no
-          title: No, please keep the previous information
-      metadata: 
-        rephrase: True
-        template: jinja
   
   utter_corrected_previous_input:
     - text: "Ok, I corrected the {{ context.corrected_slots.keys()|join(', ') }}."
       metadata: 
         rephrase: True
         template: jinja
-  
-  utter_not_corrected_previous_input:
-    - text: "Ok, I did not correct the previous input."
-      metadata: 
-        rephrase: True
 
   utter_flow_cancelled_rasa:
     - text: Okay, stopping the flow {{ context.canceled_name }}.
@@ -39,9 +23,6 @@ responses:
       metadata: 
         rephrase: True
 
-  utter_too_complex_rasa:
-    - text: This is too complex for me, let's take it one step at a time.
-
   utter_internal_error_rasa:
     - text: Sorry, I'm having trouble understanding you right now. Please try again later.
 
@@ -52,8 +33,6 @@ responses:
         template: jinja
 
 
-
-
 slots:
   confirm_correction:
     type: bool
@@ -62,7 +41,7 @@ slots:
 
 flows:  
   pattern_continue_interrupted:
-    description: A meta flow that should be started to continue an interrupted flow. 
+    description: A flow that should will be started to continue an interrupted flow. 
 
     steps:
       - id: "0"
@@ -72,19 +51,11 @@ flows:
     description: Confirm a correction of a slot value.
 
     steps:
-      - id: "0"
-        question: confirm_correction
-        next:
-          - if: confirm_correction
-            then: "correct_slots"
-          - else: "abort_correction"
       - id: "correct_slots"
         action: action_correct_flow_slot
         next: "inform_user"
       - id: "inform_user"
         action: utter_corrected_previous_input
-      - id: "abort_correction"
-        action: utter_not_corrected_previous_input
 
   pattern_cancel_flow:
     description: A meta flow that's started when a flow is cancelled.
@@ -95,18 +66,6 @@ flows:
         next: "inform_user"
       - id: "inform_user"
         action: utter_flow_cancelled_rasa
-
-  pattern_too_complex:
-    description: replies to the user that their request is too complex
-    steps:
-      - id: "0"
-        action: utter_too_complex_rasa
-
-  pattern_listen:
-    description: user send a message that doesn't require a response
-    steps:
-      - id: "0"
-        action: action_listen
 
   pattern_internal_error:
     description: internal error

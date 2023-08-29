@@ -35,7 +35,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
-    DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
     llm_factory,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
@@ -50,9 +50,9 @@ structlogger = structlog.get_logger()
 
 DEFAULT_LLM_CONFIG = {
     "_type": "openai",
-    "request_timeout": 5,
+    "request_timeout": 7,
     "temperature": 0.0,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
 }
 
 LLM_CONFIG_KEY = "llm"
@@ -194,7 +194,6 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumandHandoff\(\)")
         clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
-        # listen_re = re.compile(r"Listen\(\)")
 
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
@@ -220,8 +219,6 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             elif m := clarify_re.search(action):
                 options = [opt.strip() for opt in m.group(1).split(",")]
                 commands.append(ClarifyCommand(options))
-            # elif listen_re.search(action):
-            #     commands.append(ListenCommand())
 
         return commands
 
