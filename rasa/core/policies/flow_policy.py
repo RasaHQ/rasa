@@ -318,7 +318,7 @@ class FlowExecutor:
         document: Dict[str, Any] = context.copy()
         for slot in self.domain.slots:
             document[slot.name] = get_value(tracker.get_slot(slot.name))
-        p = Predicate(Template(predicate).render(context))
+        p = Predicate(self.render_template_variables(predicate, context))
         try:
             return p.evaluate(document)
         except (TypeError, Exception) as e:
@@ -381,6 +381,11 @@ class FlowExecutor:
             flow_id=flow.id,
         )
         return step
+
+    @staticmethod
+    def render_template_variables(text: str, context: Dict[Text, Any]) -> str:
+        """Replace context variables in a text."""
+        return Template(text).render(context)
 
     def _slot_for_question(self, question: Text) -> Slot:
         """Find the slot for a question."""
@@ -568,13 +573,22 @@ class FlowExecutor:
         if isinstance(step, QuestionFlowStep):
             structlogger.debug("flow.step.run.question")
             self.trigger_pattern_ask_question(step.question)
-            return ContinueFlowWithNextStep()
+
+            # reset the slot if its already filled and the question shouldn't
+            # be skipped
+            slot = tracker.slots.get(step.question, None)
+            if slot and slot.has_been_set and not step.skip_if_filled:
+                events = [SlotSet(step.question, slot.initial_value)]
+            else:
+                events = []
+
+            return ContinueFlowWithNextStep(events=events)
 
         elif isinstance(step, ActionFlowStep):
             if not step.action:
                 raise FlowException(f"Action not specified for step {step}")
             context = {"context": self.flow_stack.current_context()}
-            action_name = Template(step.action).render(context)
+            action_name = self.render_template_variables(step.action, context)
             if action_name in self.domain.action_names_or_texts:
                 structlogger.debug("flow.step.run.action", context=context)
                 return PauseFlowReturnPrediction(ActionPrediction(action_name, 1.0))
@@ -631,8 +645,8 @@ class FlowExecutor:
             current_frame = self.flow_stack.pop()
             self.trigger_pattern_continue_interrupted(current_frame)
             self.trigger_pattern_completed(current_frame)
-            events = self._reset_scoped_slots(flow, tracker)
-            return ContinueFlowWithNextStep(events=events)
+            reset_events = self._reset_scoped_slots(flow, tracker)
+            return ContinueFlowWithNextStep(events=reset_events)
 
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")

@@ -144,10 +144,18 @@ def execute_commands(
             structlogger.debug("command_executor.correct_slots", command=command)
             proposed_slots = {c.name: c.value for c in command.corrected_slots}
 
+            is_reset_only = all(
+                question_step.question not in proposed_slots
+                or not question_step.skip_if_filled
+                for flow in all_flows.underlying_flows
+                for question_step in flow.get_question_steps()
+            )
+
             reset_step = _find_earliest_updated_question(
                 user_step, user_flow, proposed_slots
             )
             context: Dict[str, Any] = {
+                "is_reset_only": is_reset_only,
                 "corrected_slots": proposed_slots,
                 "corrected_reset_point": {
                     "id": user_flow.id if user_flow else None,
