@@ -148,7 +148,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full
+          make install-full || make install-full || make install-full
 
       - name: Checkout target branch to be able to diff
         if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
@@ -294,7 +294,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output
+          make install-full | tee .output || make install-full | tee .output || make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -311,7 +311,7 @@ jobs:
             Remove-Item -Force -Recurse $spacy_data_dir
             New-Item -Path $spacy_data_dir -Type Directory
           }
-          make install-full
+          make install-full || make install-full || make install-full
           make prepare-tests-windows-gha
 
       - name: Add github workflow problem matchers
@@ -434,7 +434,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output
+          make install-full | tee .output || make install-full | tee .output || make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -451,7 +451,7 @@ jobs:
             Remove-Item -Force -Recurse $spacy_data_dir
             New-Item -Path $spacy_data_dir -Type Directory
           }
-          make install-full
+          make install-full || make install-full || make install-full
           make prepare-tests-windows-gha
 
       - name: Add github workflow problem matchers
@@ -671,7 +671,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output
+          make install-full | tee .output || make install-full | tee .output || make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -773,7 +773,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output
+          make install-full | tee .output || make install-full | tee .output || make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
