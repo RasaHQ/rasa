@@ -12,7 +12,7 @@ The techniques you will learn in this tutorial are fundamental to building any R
 and understanding it will bring you quite far along to mastering Rasa.
 
 
-### What are you building?
+## What are you building?
 
 In this tutorial, you will build a robust assistant that can complete a money transfer, and
 doesn't get confused as soon as a user says something unexpected. 
@@ -46,7 +46,7 @@ Here are some of the conversations your assistant will be able to handle:
   </TabItem>  
 </Tabs>
 
-### Setup
+## Setup
 
 If you haven't installed Rasa yet, go to the installation page (link) and then return here. 
 To code along with this tutorial, first create an empty folder for your project, open it in your terminal, and run:
@@ -55,7 +55,7 @@ To code along with this tutorial, first create an empty folder for your project,
 rasa init --tutorial
 ```
 
-### Overview
+## Overview
 
 Open up the project folder in your IDE to see the files that make up your new project.
 In this tutorial you will primarily work with the following files:
@@ -64,7 +64,7 @@ In this tutorial you will primarily work with the following files:
 * `domain.yml`
 * `actions/actions.py`
 
-### Testing your money transfer skill
+## Testing your money transfer skill
 
 Train your assistant by running:
 
@@ -80,7 +80,7 @@ rasa shell
 
 Tell the bot that you'd like to transfer some money to a friend.
 
-### Understanding your money transfer skill.
+## Understanding your money transfer skill.
 
 The file `data/flows.yml` contains the definition of a `flow` called `transfer_money`. 
 Let's look at this definition to see what is going on:
@@ -138,7 +138,7 @@ This means that your assistant will execute the corresponding action and then pr
 It will not stop to wait for the user's next message. 
 For now, this is the final step in the flow, so there is no next step to execute and the flow completes. 
 
-### Adding a Confirmation Step
+## Adding a Confirmation Step
 
 You're going to introduce an extra step, asking the user to confirm the amount and the recipient before 
 sending the transfer. 
@@ -206,7 +206,7 @@ Learn more about conditions here (link).
 
 To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your bot.
 
-### Contextual rephrasing
+## Contextual rephrasing
 
 So far your assistant only uses templated responses. 
 You can also allow Rasa to dynamically rephrase these, taking the context of the conversation into account.
@@ -226,7 +226,7 @@ responses:
 
 Re-run `rasa train` and then `rasa shell` again to try your updated assistant.
 
-### Integrating an API call
+## Integrating an API call
 
 An `action` step in a flow can describe two types of actions.
 If the name of the action starts with `utter_`, then this action sends a message to the user.
