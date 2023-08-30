@@ -259,7 +259,8 @@ class GraphComponent(ABC):
         """Adds additional data to the fingerprint calculation.
 
         This is useful if a component uses external data that is not provided
-        by the graph."""
+        by the graph.
+        """
         return None
 
 

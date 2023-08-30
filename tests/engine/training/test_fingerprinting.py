@@ -86,7 +86,7 @@ def test_fingerprint_changes_due_to_changed_source(monkeypatch: MonkeyPatch):
 
 
 def test_fingerprint_changes_when_external_file_changes():
-    _, tmp_file = tempfile.mkstemp()
+    tmp_file = tempfile.mktemp()
 
     class MinimalComponent(GraphComponent):
         @classmethod
