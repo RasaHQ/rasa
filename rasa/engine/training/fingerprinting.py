@@ -1,6 +1,6 @@
 import inspect
 import logging
-from typing import Any, Dict, Text, Type, TypeVar
+from typing import Any, Dict, Text, Type
 from typing_extensions import Protocol, runtime_checkable
 import pkg_resources
 import rasa.utils.common
@@ -19,9 +19,6 @@ class Fingerprintable(Protocol):
     def fingerprint(self) -> Text:
         """Returns a unique stable fingerprint of the data."""
         ...
-
-
-GraphComponentOrSubclass = TypeVar("GraphComponentOrSubclass", bound=GraphComponent)
 
 
 def calculate_fingerprint_key(
