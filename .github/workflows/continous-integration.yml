@@ -232,11 +232,11 @@ jobs:
           - test-other-unit-tests
           - test-performance
         os: [ubuntu-22.04, windows-2019]
-        python-version: [3.7, 3.8, 3.9, '3.10']
+        python-version: [3.7, 3.8, 3.9, "3.10"]
 
     steps:
       - name: Run DataDog Agent
-        if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
+        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
         run: |
           docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
           docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
@@ -298,7 +298,7 @@ jobs:
         # This is a workaround for that issue
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output || make install-full | tee .output || make install-full | tee .output
+          make install-full | tee .output  || make install-full | tee .output || make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -317,7 +317,7 @@ jobs:
             Remove-Item -Force -Recurse $spacy_data_dir
             New-Item -Path $spacy_data_dir -Type Directory
           }
-          make install-full || make install-full || make install-full
+          make install-full  || make install-full || make install-full
           make prepare-tests-windows-gha
 
       - name: Add github workflow problem matchers
@@ -376,11 +376,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, windows-2019]
-        python-version: [3.7, 3.8, 3.9, '3.10']
+        python-version: [3.7, 3.8, 3.9, "3.10"]
 
     steps:
       - name: Run DataDog Agent
-        if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
+        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
         run: |
           docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
           docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
@@ -440,7 +440,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output || make install-full | tee .output || make install-full | tee .output
+          make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -457,7 +457,7 @@ jobs:
             Remove-Item -Force -Recurse $spacy_data_dir
             New-Item -Path $spacy_data_dir -Type Directory
           }
-          make install-full || make install-full || make install-full
+          make install-full
           make prepare-tests-windows-gha
 
       - name: Add github workflow problem matchers
@@ -523,7 +523,7 @@ jobs:
       - name: Set up Python 3.10 🐍
         uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
@@ -677,7 +677,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output || make install-full | tee .output || make install-full | tee .output
+          make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -779,7 +779,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output || make install-full | tee .output || make install-full | tee .output
+          make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
