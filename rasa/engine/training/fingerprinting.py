@@ -1,6 +1,6 @@
 import inspect
 import logging
-from typing import Any, Dict, Text, Type
+from typing import Any, Dict, Text, Type, TypeVar
 from typing_extensions import Protocol, runtime_checkable
 import pkg_resources
 import rasa.utils.common
@@ -19,6 +19,9 @@ class Fingerprintable(Protocol):
     def fingerprint(self) -> Text:
         """Returns a unique stable fingerprint of the data."""
         ...
+
+
+GraphComponentOrSubclass = TypeVar("GraphComponentOrSubclass", bound=GraphComponent)
 
 
 def calculate_fingerprint_key(
@@ -49,6 +52,10 @@ def calculate_fingerprint_key(
         "inputs": inputs,
         "dependency_versions": dependency_versions,
     }
+
+    fingerprint_addon = graph_component_class.fingerprint_addon(config)
+    if fingerprint_addon is not None:
+        fingerprint_data["addon"] = fingerprint_addon
 
     fingerprint_key = rasa.shared.utils.io.deep_container_fingerprint(fingerprint_data)
 
