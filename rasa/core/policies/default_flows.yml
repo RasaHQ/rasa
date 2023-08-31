@@ -54,14 +54,15 @@ flows:
       - id: "check_if_reset_only"
         next:
           - if: context.is_reset_only
-            then: "done"
+            then: "jump_back_without_message"
           - else: "correct_slots"
       - id: "correct_slots"
         action: action_correct_flow_slot
         next: "inform_user"
       - id: "inform_user"
         action: utter_corrected_previous_input
-      - id: "done"
+      - id: "jump_back_without_message"
+        action: action_correct_flow_slot
 
   pattern_cancel_flow:
     description: A meta flow that's started when a flow is cancelled.
