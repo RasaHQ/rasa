@@ -25,7 +25,13 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.flows.flow import FlowStep, FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.slots import BooleanSlot, FloatSlot, Slot, bool_from_any
+from rasa.shared.core.slots import (
+    BooleanSlot,
+    CategoricalSlot,
+    FloatSlot,
+    Slot,
+    bool_from_any,
+)
 from rasa.shared.nlu.constants import (
     TEXT,
 )
@@ -309,11 +315,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     def allowed_values_for_slot(self, slot: Slot) -> Optional[str]:
         """Get the allowed values for a slot."""
-        if slot.type_name == "bool":
+        if isinstance(slot, BooleanSlot):
             return str([True, False])
-        if slot.type_name == "categorical":
-            slot_values = slot.values  # type: ignore[attr-defined]
-            return str([v for v in slot_values if not v == "__other__"])
+        if isinstance(slot, CategoricalSlot):
+            return str([v for v in slot.values if v != "__other__"])
         else:
             return None
 
