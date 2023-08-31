@@ -48,7 +48,7 @@ flows:
         action: utter_flow_continue_interrupted
   
   pattern_correction:
-    description: Confirm a correction of a slot value.
+    description: Handle a correction of a slot value.
 
     steps:
       - id: "check_if_reset_only"

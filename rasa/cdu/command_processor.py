@@ -144,6 +144,9 @@ def execute_commands(
             structlogger.debug("command_executor.correct_slots", command=command)
             proposed_slots = {c.name: c.value for c in command.corrected_slots}
 
+            # check if all corrected slots have skip_if_filled=False
+            # if this is a case, we are not correcting a value but we
+            # are resetting the slots and jumping back to the first question
             is_reset_only = all(
                 question_step.question not in proposed_slots
                 or not question_step.skip_if_filled
