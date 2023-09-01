@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Text
-from rasa.cdu.command_processor import execute_commands
+from rasa.cdu.processor.command_processor import execute_commands
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource

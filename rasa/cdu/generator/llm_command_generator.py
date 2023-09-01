@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional, List, Union
 
 from jinja2 import Template
 import structlog
-from rasa.cdu.command_generator.base import CommandGenerator
+from rasa.cdu.generator.base import CommandGenerator
 from rasa.cdu.commands import (
     Command,
     ErrorCommand,
@@ -45,7 +45,7 @@ from rasa.shared.utils.llm import (
 )
 
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
-    "rasa.cdu.command_generator", "command_prompt_template.jinja2"
+    "rasa.cdu.generator", "command_prompt_template.jinja2"
 )
 
 structlogger = structlog.get_logger()
@@ -140,10 +140,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     def predict_commands(
         self,
         message: Message,
+        flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
-        flows: Optional[FlowsList] = None,
     ) -> List[Command]:
-        if flows is None or tracker is None:
+        if tracker is None or flows.is_empty():
             # cannot do anything if there are no flows or no tracker
             return []
         flow_prompt = self.render_template(message, tracker, flows)

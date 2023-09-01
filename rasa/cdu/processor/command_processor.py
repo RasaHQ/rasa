@@ -15,7 +15,7 @@ from rasa.cdu.commands import (
     ChitChatAnswerCommand,
     ClarifyCommand,
 )
-from rasa.cdu.conversation_patterns import (
+from rasa.cdu.patterns import (
     FLOW_PATTERN_ASK_QUESTION,
     FLOW_PATTERN_CORRECTION_ID,
     FLOW_PATTERN_INTERNAL_ERROR_ID,
@@ -81,7 +81,18 @@ def _get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
 
 
 def validate_state_of_commands(commands: List[Command]) -> None:
-    """Validates the state of the commands."""
+    """Validates the state of the commands.
+
+    We have some invariants that should always hold true. This function
+    checks if they do. Executing the commands relies on these invariants.
+
+    We cleanup the commands before executing them, so the cleanup should
+    always make sure that these invariants hold true - no matter the commands
+    that are provided.
+
+    Args:
+        commands: The commands to validate.
+    """
     # assert that there is only at max one cancel flow command
     assert sum(isinstance(c, CancelFlowCommand) for c in commands) <= 1
 
