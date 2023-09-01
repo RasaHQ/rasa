@@ -394,7 +394,8 @@ class FlowExecutor:
                 return slot
         else:
             raise FlowException(
-                f"Collect Information '{collect_information}' does not map to an existing slot."
+                f"Collect Information '{collect_information}' does not map to "
+                f"an existing slot."
             )
 
     def _is_step_completed(

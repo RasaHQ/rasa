@@ -292,10 +292,11 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         tracker: DialogueStateTracker,
         current_step: Optional[FlowStep] = None,
     ) -> bool:
-        """Check if the collect info can be filled.
+        """Check if the collect_information can be filled.
 
-        A collect information slot can only be filled if the slot exist and either the
-        collect information  has been asked already or the slot has been filled already."""
+        A collect_information slot can only be filled if the slot exist
+        and either the collect_information has been asked already or the
+        slot has been filled already."""
         slot = tracker.slots.get(q.collect_information)
         if slot is None:
             return False
