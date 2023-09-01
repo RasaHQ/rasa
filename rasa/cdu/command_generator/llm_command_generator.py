@@ -16,14 +16,14 @@ from rasa.cdu.commands import (
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
-from rasa.cdu.conversation_patterns import FLOW_PATTERN_ASK_QUESTION
+from rasa.cdu.conversation_patterns import FLOW_PATTERN_COLLECT_INFORMATION
 
 from rasa.core.policies.flow_policy import FlowStack
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.flows.flow import FlowStep, FlowsList, QuestionFlowStep
+from rasa.shared.core.flows.flow import FlowStep, FlowsList, CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.slots import (
     BooleanSlot,
@@ -273,8 +273,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             if not flow.is_rasa_default_flow():
 
                 slots_with_info = [
-                    {"name": q.question, "description": q.description}
-                    for q in flow.get_question_steps()
+                    {"name": q.collect_information, "description": q.description}
+                    for q in flow.get_collect_information_steps()
                     if cls.is_extractable(q, tracker)
                 ]
                 result.append(
@@ -288,15 +288,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     @staticmethod
     def is_extractable(
-        q: QuestionFlowStep,
+        q: CollectInformationFlowStep,
         tracker: DialogueStateTracker,
         current_step: Optional[FlowStep] = None,
     ) -> bool:
-        """Check if the question can be filled.
+        """Check if the collect_information can be filled.
 
-        A questions slot can only be filled if the slot exist and either the
-        question has been asked already or the slot has been filled already."""
-        slot = tracker.slots.get(q.question)
+        A collect_information slot can only be filled if the slot exist
+        and either the collect_information has been asked already or the
+        slot has been filled already."""
+        slot = tracker.slots.get(q.collect_information)
         if slot is None:
             return False
 
@@ -308,8 +309,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # we can fill because the is currently getting asked
             or (
                 current_step is not None
-                and isinstance(current_step, QuestionFlowStep)
-                and current_step.question == q.question
+                and isinstance(current_step, CollectInformationFlowStep)
+                and current_step.collect_information == q.collect_information
             )
         )
 
@@ -338,30 +339,30 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             [f for f in flows.underlying_flows if not f.is_handling_pattern()]
         )
         top_relevant_frame = FlowStack.top_frame_on_tracker(
-            tracker, ignore_frame=FLOW_PATTERN_ASK_QUESTION
+            tracker, ignore_frame=FLOW_PATTERN_COLLECT_INFORMATION
         )
         top_flow = top_relevant_frame.flow(flows) if top_relevant_frame else None
         current_step = top_relevant_frame.step(flows) if top_relevant_frame else None
         if top_flow is not None:
             flow_slots = [
                 {
-                    "name": q.question,
-                    "value": self.slot_value(tracker, q.question),
-                    "type": tracker.slots[q.question].type_name,
+                    "name": q.collect_information,
+                    "value": self.slot_value(tracker, q.collect_information),
+                    "type": tracker.slots[q.collect_information].type_name,
                     "allowed_values": self.allowed_values_for_slot(
-                        tracker.slots[q.question]
+                        tracker.slots[q.collect_information]
                     ),
                     "description": q.description,
                 }
-                for q in top_flow.get_question_steps()
+                for q in top_flow.get_collect_information_steps()
                 if self.is_extractable(q, tracker, current_step)
             ]
         else:
             flow_slots = []
 
-        question, question_description = (
-            (current_step.question, current_step.description)
-            if isinstance(current_step, QuestionFlowStep)
+        collect_information, collect_information_description = (
+            (current_step.collect_information, current_step.description)
+            if isinstance(current_step, CollectInformationFlowStep)
             else (None, None)
         )
         current_conversation = tracker_as_readable_transcript(tracker)
@@ -375,8 +376,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
             "current_flow": top_flow.id if top_flow is not None else None,
-            "question": question,
-            "question_description": question_description,
+            "collect_information": collect_information,
+            "collect_information_description": collect_information_description,
             "user_message": latest_user_message,
         }
 

@@ -5,7 +5,7 @@ from typing import Any, Dict, Text, List, Optional, Union
 
 from jinja2 import Template
 from rasa.cdu.conversation_patterns import (
-    FLOW_PATTERN_ASK_QUESTION,
+    FLOW_PATTERN_COLLECT_INFORMATION,
     FLOW_PATTERN_CLARIFICATION,
     FLOW_PATTERN_COMPLETED,
     FLOW_PATTERN_CONTINUE_INTERRUPTED,
@@ -46,12 +46,12 @@ from rasa.shared.core.flows.flow import (
     GenerateResponseFlowStep,
     IfFlowLink,
     EntryPromptFlowStep,
-    QuestionScope,
+    CollectInformationScope,
     StepThatCanStartAFlow,
     UserMessageStep,
     LinkFlowStep,
     SetSlotsFlowStep,
-    QuestionFlowStep,
+    CollectInformationFlowStep,
     StaticFlowLink,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
@@ -387,22 +387,23 @@ class FlowExecutor:
         """Replace context variables in a text."""
         return Template(text).render(context)
 
-    def _slot_for_question(self, question: Text) -> Slot:
-        """Find the slot for a question."""
+    def _slot_for_collect_information(self, collect_information: Text) -> Slot:
+        """Find the slot for a collect information."""
         for slot in self.domain.slots:
-            if slot.name == question:
+            if slot.name == collect_information:
                 return slot
         else:
             raise FlowException(
-                f"Question '{question}' does not map to an existing slot."
+                f"Collect Information '{collect_information}' does not map to "
+                f"an existing slot."
             )
 
     def _is_step_completed(
         self, step: FlowStep, tracker: "DialogueStateTracker"
     ) -> bool:
         """Check if a step is completed."""
-        if isinstance(step, QuestionFlowStep):
-            return tracker.get_slot(step.question) is not None
+        if isinstance(step, CollectInformationFlowStep):
+            return tracker.get_slot(step.collect_information) is not None
         else:
             return True
 
@@ -538,10 +539,13 @@ class FlowExecutor:
         events: List[Event] = []
         for step in current_flow.steps:
             # reset all slots scoped to the flow
-            if isinstance(step, QuestionFlowStep) and step.scope == QuestionScope.FLOW:
-                slot = tracker.slots.get(step.question, None)
+            if (
+                isinstance(step, CollectInformationFlowStep)
+                and step.scope == CollectInformationScope.FLOW
+            ):
+                slot = tracker.slots.get(step.collect_information, None)
                 initial_value = slot.initial_value if slot else None
-                events.append(SlotSet(step.question, initial_value))
+                events.append(SlotSet(step.collect_information, initial_value))
         return events
 
     def _run_step(
@@ -567,15 +571,15 @@ class FlowExecutor:
         Returns:
         A result of running the step describing where to transition to.
         """
-        if isinstance(step, QuestionFlowStep):
-            structlogger.debug("flow.step.run.question")
-            self.trigger_pattern_ask_question(step.question)
+        if isinstance(step, CollectInformationFlowStep):
+            structlogger.debug("flow.step.run.collect_information")
+            self.trigger_pattern_ask_collect_information(step.collect_information)
 
-            # reset the slot if its already filled and the question shouldn't
+            # reset the slot if its already filled and the collect infomation shouldn't
             # be skipped
-            slot = tracker.slots.get(step.question, None)
+            slot = tracker.slots.get(step.collect_information, None)
             if slot and slot.has_been_set and step.ask_before_filling:
-                events = [SlotSet(step.question, slot.initial_value)]
+                events = [SlotSet(step.collect_information, slot.initial_value)]
             else:
                 events = []
 
@@ -690,13 +694,13 @@ class FlowExecutor:
                 )
             )
 
-    def trigger_pattern_ask_question(self, question: str) -> None:
+    def trigger_pattern_ask_collect_information(self, collect_information: str) -> None:
         context = self.flow_stack.current_context().copy()
-        context["question"] = question
+        context["collect_information"] = collect_information
 
         self.flow_stack.push(
             FlowStackFrame(
-                flow_id=FLOW_PATTERN_ASK_QUESTION,
+                flow_id=FLOW_PATTERN_COLLECT_INFORMATION,
                 frame_type=StackFrameType.REMARK,
                 context=context,
             )

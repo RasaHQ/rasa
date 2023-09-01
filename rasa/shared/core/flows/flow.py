@@ -291,32 +291,32 @@ class Flow:
             return None
         return self.steps[0]
 
-    def previously_asked_questions(
+    def previously_asked_collect_information(
         self, step_id: Optional[str]
-    ) -> List[QuestionFlowStep]:
-        """Returns the questions asked before the given step.
+    ) -> List[CollectInformationFlowStep]:
+        """Returns the collect informations asked before the given step.
 
-        Questions are returned roughly in reverse order, i.e. the first
-        question in the list is the one asked last. But due to circles
+        CollectInformations are returned roughly in reverse order, i.e. the first
+        collect information in the list is the one asked last. But due to circles
         in the flow the order is not guaranteed to be exactly reverse.
         """
 
-        def _previously_asked_questions(
+        def _previously_asked_collect_information(
             current_step_id: str, visited_steps: Set[str]
-        ) -> List[QuestionFlowStep]:
-            """Returns the questions asked before the given step.
+        ) -> List[CollectInformationFlowStep]:
+            """Returns the collect informations asked before the given step.
 
             Keeps track of the steps that have been visited to avoid circles.
             """
             current_step = self.step_by_id(current_step_id)
 
-            questions: List[QuestionFlowStep] = []
+            collect_informations: List[CollectInformationFlowStep] = []
 
             if not current_step:
-                return questions
+                return collect_informations
 
-            if isinstance(current_step, QuestionFlowStep):
-                questions.append(current_step)
+            if isinstance(current_step, CollectInformationFlowStep):
+                collect_informations.append(current_step)
 
             visited_steps.add(current_step.id)
 
@@ -326,12 +326,14 @@ class Flow:
                         continue
                     if previous_step.id in visited_steps:
                         continue
-                    questions.extend(
-                        _previously_asked_questions(previous_step.id, visited_steps)
+                    collect_informations.extend(
+                        _previously_asked_collect_information(
+                            previous_step.id, visited_steps
+                        )
                     )
-            return questions
+            return collect_informations
 
-        return _previously_asked_questions(step_id or START_STEP, set())
+        return _previously_asked_collect_information(step_id or START_STEP, set())
 
     def is_handling_pattern(self) -> bool:
         """Returns whether the flow is handling a pattern."""
@@ -361,13 +363,13 @@ class Flow:
         """Test whether something is a rasa default flow."""
         return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
 
-    def get_question_steps(self) -> List[QuestionFlowStep]:
-        """Return the question steps of the flow."""
-        question_steps = []
+    def get_collect_information_steps(self) -> List[CollectInformationFlowStep]:
+        """Return the collect information steps of the flow."""
+        collect_information_steps = []
         for step in self.steps:
-            if isinstance(step, QuestionFlowStep):
-                question_steps.append(step)
-        return question_steps
+            if isinstance(step, CollectInformationFlowStep):
+                collect_information_steps.append(step)
+        return collect_information_steps
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
@@ -383,8 +385,8 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         return ActionFlowStep.from_json(flow_step_config)
     if "intent" in flow_step_config:
         return UserMessageStep.from_json(flow_step_config)
-    if "question" in flow_step_config:
-        return QuestionFlowStep.from_json(flow_step_config)
+    if "collect_information" in flow_step_config:
+        return CollectInformationFlowStep.from_json(flow_step_config)
     if "link" in flow_step_config:
         return LinkFlowStep.from_json(flow_step_config)
     if "set_slots" in flow_step_config:
@@ -951,37 +953,37 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
             return False
 
 
-# enumeration of question scopes. scope can either be flow or global
-class QuestionScope(str, Enum):
+# enumeration of collect information scopes. scope can either be flow or global
+class CollectInformationScope(str, Enum):
     FLOW = "flow"
     GLOBAL = "global"
 
     @staticmethod
-    def from_str(label: Optional[Text]) -> "QuestionScope":
-        """Converts a string to a QuestionScope."""
+    def from_str(label: Optional[Text]) -> "CollectInformationScope":
+        """Converts a string to a CollectInformationScope."""
         if label is None:
-            return QuestionScope.FLOW
+            return CollectInformationScope.FLOW
         elif label.lower() == "flow":
-            return QuestionScope.FLOW
+            return CollectInformationScope.FLOW
         elif label.lower() == "global":
-            return QuestionScope.GLOBAL
+            return CollectInformationScope.GLOBAL
         else:
             raise NotImplementedError
 
 
 @dataclass
-class QuestionFlowStep(FlowStep):
-    """Represents the configuration of a question flow step."""
+class CollectInformationFlowStep(FlowStep):
+    """Represents the configuration of a collect information flow step."""
 
-    question: Text
-    """The question of the flow step."""
+    collect_information: Text
+    """The collect information of the flow step."""
     ask_before_filling: bool = False
     """Whether to always ask the question even if the slot is already filled."""
-    scope: QuestionScope = QuestionScope.FLOW
+    scope: CollectInformationScope = CollectInformationScope.FLOW
     """how the question is scoped, determins when to reset its value."""
 
     @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> QuestionFlowStep:
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> CollectInformationFlowStep:
         """Used to read flow steps from parsed YAML.
 
         Args:
@@ -991,10 +993,10 @@ class QuestionFlowStep(FlowStep):
             The parsed flow step.
         """
         base = super()._from_json(flow_step_config)
-        return QuestionFlowStep(
-            question=flow_step_config.get("question", ""),
+        return CollectInformationFlowStep(
+            collect_information=flow_step_config.get("collect_information", ""),
             ask_before_filling=flow_step_config.get("ask_before_filling", False),
-            scope=QuestionScope.from_str(flow_step_config.get("scope")),
+            scope=CollectInformationScope.from_str(flow_step_config.get("scope")),
             **base.__dict__,
         )
 
@@ -1005,7 +1007,7 @@ class QuestionFlowStep(FlowStep):
             The flow step as a dictionary.
         """
         dump = super().as_json()
-        dump["question"] = self.question
+        dump["collect_information"] = self.collect_information
         dump["ask_before_filling"] = self.ask_before_filling
         dump["scope"] = self.scope.value
 
