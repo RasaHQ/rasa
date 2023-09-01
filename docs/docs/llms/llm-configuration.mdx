@@ -126,15 +126,14 @@ For those using Azure OpenAI Service, there are additional parameters that need
 to be configured:
 
 - `openai.api_type`: This should be set to "azure" to indicate the use of Azure
-  OpenAI Service.
+  OpenAI Service. You can also set this as the OPENAI_API_TYPE environment variable.
 - `openai.api_base`: This should be the URL for your Azure OpenAI instance. An
   example might look like this: "https://docs-test-001.openai.azure.com/".
-- `deployment` : you must create a deployment on azure for using embeddings with azure openai. In this case,
-  you must also add `deployment` parameter to the config.yml
-- `engine`: in case, you are using the chat models from azure openai, you must also create a new openAI deployment
-  on azure, and provide the name of the deployment in the config.yml using `engine` parameter.
+- `engine`: For the `llm` part, provide the name of the deployment in the `config.yml` using `engine` parameter. If you are using the chat models, you must also create a new openAI deployment
+  on azure OpenAI.
+- `deployment`: For `embeddings` part, you must also add `deployment` parameter to the `config.yml`. Note that you you must create a deployment on azure for using embeddings with azure OpenAI. 
 - `chunk_size`: some azure plans might restrict you from sending larger chunks of text for embeddings. by default, `chunk_size` is 1000
-  but this can also be configured to a lower value in the config.yml
+  but this can also be configured to a lower value in the `config.yml`
 
 To configure these parameters, follow these steps:
 
@@ -187,7 +186,7 @@ To configure these parameters, follow these steps:
       fallback_intent: "out_of_scope"
       embeddings:
         type: "openai"
-        model_name: "text-embedding-ada-002" 
+        model: "text-embedding-ada-002" 
         deployment: "name_of_deployment_on_azure"
     ```
 
@@ -196,7 +195,7 @@ To configure these parameters, follow these steps:
     ```yaml title="config.yml"
     - name: LLMCommandGenerator
       llm:
-        model_name: gpt-3.5-turbo
+        model: gpt-3.5-turbo
         engine: nameofdeployment
     ```
 
@@ -206,8 +205,7 @@ To configure these parameters, follow these steps:
     - name: rasa_plus.ml.LLMIntentClassifier
       fallback_intent: "out_of_scope"
       embeddings:
-        type: "openai"
-        model_name: "text-embedding-ada-002" 
+        model: "text-embedding-ada-002" 
         deployment: "name_of_deployment_on_azure"
         chunk_size: 16
     ```
