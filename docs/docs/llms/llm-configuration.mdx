@@ -132,8 +132,7 @@ to be configured:
 - `engine`: For the `llm` part, provide the name of the deployment in the `config.yml` using `engine` parameter. If you are using the chat models, you must also create a new openAI deployment
   on azure OpenAI.
 - `deployment`: For `embeddings` part, you must also add `deployment` parameter to the `config.yml`. Note that you you must create a deployment on azure for using embeddings with azure OpenAI. 
-- `chunk_size`: some azure plans might restrict you from sending larger chunks of text for embeddings. by default, `chunk_size` is 1000
-  but this can also be configured to a lower value in the `config.yml`
+- `chunk_size`: Some azure plans might restrict you from sending larger chunks of text for embeddings. If you see an an error that says `Too many inputs`, you should decrease your `chunk_size`. By default, `chunk_size` is 1000 but this can be configured to a lower value under the `embeddings` portion  in the `config.yml`
 
 To configure these parameters, follow these steps:
 
@@ -179,15 +178,14 @@ To configure these parameters, follow these steps:
      </TabItem>
    </Tabs>
 
-3. To configure the `deployment` in the config.yml file. add it in the pipeline component like this:
+3. To configure the `deployment` in the config.yml file, add it in the pipeline component like this:
 
     ```yaml title="config.yml"
     - name: rasa_plus.ml.LLMIntentClassifier
       fallback_intent: "out_of_scope"
       embeddings:
-        type: "openai"
-        model: "text-embedding-ada-002" 
-        deployment: "name_of_deployment_on_azure"
+        model: text-embedding-ada-002
+        deployment: <name_of_deployment_on_azure>
     ```
 
 4. To configure the `engine` in the config file, add it in the pipeline component like this: 
@@ -195,8 +193,8 @@ To configure these parameters, follow these steps:
     ```yaml title="config.yml"
     - name: LLMCommandGenerator
       llm:
-        model: gpt-3.5-turbo
-        engine: nameofdeployment
+        model_name: gpt-3.5-turbo
+        engine: <name_of_deployment_on_azure>
     ```
 
 5. To configure `chunk_size` in the config file, add it in the pipeline components under `llm` object like this:
@@ -205,8 +203,8 @@ To configure these parameters, follow these steps:
     - name: rasa_plus.ml.LLMIntentClassifier
       fallback_intent: "out_of_scope"
       embeddings:
-        model: "text-embedding-ada-002" 
-        deployment: "name_of_deployment_on_azure"
+        model: text-embedding-ada-002 
+        deployment: <name_of_deployment_on_azure>
         chunk_size: 16
     ```
 
