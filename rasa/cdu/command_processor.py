@@ -144,10 +144,21 @@ def execute_commands(
             structlogger.debug("command_executor.correct_slots", command=command)
             proposed_slots = {c.name: c.value for c in command.corrected_slots}
 
+            # check if all corrected slots have ask_before_filling=True
+            # if this is a case, we are not correcting a value but we
+            # are resetting the slots and jumping back to the first question
+            is_reset_only = all(
+                question_step.question not in proposed_slots
+                or question_step.ask_before_filling
+                for flow in all_flows.underlying_flows
+                for question_step in flow.get_question_steps()
+            )
+
             reset_step = _find_earliest_updated_collect_info(
                 user_step, user_flow, proposed_slots
             )
             context: Dict[str, Any] = {
+                "is_reset_only": is_reset_only,
                 "corrected_slots": proposed_slots,
                 "corrected_reset_point": {
                     "id": user_flow.id if user_flow else None,
@@ -424,7 +435,7 @@ def clean_up_commands(
         elif isinstance(command, SetSlotCommand) and command.name not in slots_so_far:
             # only fill slots that belong to a collect infos that can be asked
             use_slot_fill = any(
-                step.collect_information == command.name and step.skip_if_filled
+                step.collect_information == command.name and not step.ask_before_filling
                 for flow in all_flows.underlying_flows
                 for step in flow.get_collect_information_steps()
             )

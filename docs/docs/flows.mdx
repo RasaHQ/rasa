@@ -445,21 +445,21 @@ should have fitting slot mappings.
 
 For the `slot_type`, it's recommended to use `text` slots in Flows.
 
-#### Skipping Questions
+#### Always Asking Questions
 
-By default, a question is skipped if the slot is already filled. If a question
-should always be asked, no matter if the underlying slot is already filled, you
-can set `skip_if_filled: false` on the question:
+By default, a collect_information is skipped if the slot is already filled. 
+If a collect_information should always be asked, no matter if the underlying slot 
+is already filled, you can set `ask_before_filling: true` on the collect_information:
 
 ```yaml
 - id: "confirm_dangerous_step"
   collect_information: "final_confirmation" # slot name
-  skip_if_filled: false
+  ask_before_filling: true
 ```
 
 If the "final_confirmation" slot is already filled, the bot will clear it, ask
-the question and fill the slot again. This ensures the confirmation question is
-always asked.
+the collect_information and fill the slot again. This ensures the confirmation 
+collect_information is always asked.
 
 #### Scopes
 
@@ -471,12 +471,12 @@ scopes available:
 - **global**: The variable persists across flows until it is explicitly changed.
 
 The slot can also be configured to be cleared at the end of the flow execution.
-The following configuration would clear the answer to the question when a flow
-is completed.
+The following configuration would clear the answer to the collect_information when a 
+flow is completed.
 
 ```yaml
 - id: "another_confirmation_step"
-  question: "yes_or_no" # slot name
+  collect_information: "yes_or_no" # slot name
   scope: "flow"
 ```
 
@@ -558,7 +558,7 @@ flows:
         collect_information: "money"
         next: "2"
       - id: "2"
-        question: "confirm_transfer"
+        collect_information: "confirm_transfer"
         next:
           - if: confirm_transfer == "yes"
             then: "3"

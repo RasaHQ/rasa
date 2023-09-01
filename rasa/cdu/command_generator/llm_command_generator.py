@@ -25,7 +25,13 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.flows.flow import FlowStep, FlowsList, CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.slots import BooleanSlot, FloatSlot, Slot, bool_from_any
+from rasa.shared.core.slots import (
+    BooleanSlot,
+    CategoricalSlot,
+    FloatSlot,
+    Slot,
+    bool_from_any,
+)
 from rasa.shared.nlu.constants import (
     TEXT,
 )
@@ -228,13 +234,17 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
                 slot_name = m.group(1).strip()
-                slot_value: Any = cls.clean_extracted_value(m.group(2))
+                slot_value = cls.clean_extracted_value(m.group(2))
                 # error case where the llm tries to start a flow using a slot set
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
                 else:
-                    slot_value = cls.coerce_slot_value(slot_value, slot_name, tracker)
-                    commands.append(SetSlotCommand(name=slot_name, value=slot_value))
+                    typed_slot_value = cls.coerce_slot_value(
+                        slot_value, slot_name, tracker
+                    )
+                    commands.append(
+                        SetSlotCommand(name=slot_name, value=typed_slot_value)
+                    )
             elif m := start_flow_re.search(action):
                 commands.append(StartFlowCommand(flow=m.group(1).strip()))
             elif cancel_flow_re.search(action):
@@ -292,10 +302,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
         return (
             # we can fill because this is a slot that can be filled ahead of time
-            q.skip_if_filled
+            not q.ask_before_filling
             # we can fill because the slot has been filled already
-            # TODO: maybe we need to check for non None default value?
-            or slot.value is not None
+            or slot.has_been_set
             # we can fill because the is currently getting asked
             or (
                 current_step is not None
@@ -306,11 +315,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     def allowed_values_for_slot(self, slot: Slot) -> Optional[str]:
         """Get the allowed values for a slot."""
-        if slot.type_name == "bool":
+        if isinstance(slot, BooleanSlot):
             return str([True, False])
-        if slot.type_name == "categorical":
-            slot_values = slot.values  # type: ignore[attr-defined]
-            return str([v for v in slot_values if not v == "__other__"])
+        if isinstance(slot, CategoricalSlot):
+            return str([v for v in slot.values if v != "__other__"])
         else:
             return None
 

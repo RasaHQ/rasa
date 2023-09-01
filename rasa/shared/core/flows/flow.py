@@ -977,10 +977,10 @@ class CollectInformationFlowStep(FlowStep):
 
     collect_information: Text
     """The collect information of the flow step."""
-    skip_if_filled: bool = True
-    """Whether to skip the collect information if the slot is already filled."""
+    ask_before_filling: bool = False
+    """Whether to always ask the question even if the slot is already filled."""
     scope: CollectInformationScope = CollectInformationScope.FLOW
-    """how the collect information is scoped, determins when to reset its value."""
+    """how the question is scoped, determins when to reset its value."""
 
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> CollectInformationFlowStep:
@@ -994,8 +994,8 @@ class CollectInformationFlowStep(FlowStep):
         """
         base = super()._from_json(flow_step_config)
         return CollectInformationFlowStep(
-            collect_information=flow_step_config.get("collect_information", ""),
-            skip_if_filled=flow_step_config.get("skip_if_filled", True),
+            question=flow_step_config.get("collect_information", ""),
+            ask_before_filling=flow_step_config.get("ask_before_filling", False),
             scope=CollectInformationScope.from_str(flow_step_config.get("scope")),
             **base.__dict__,
         )
@@ -1008,7 +1008,7 @@ class CollectInformationFlowStep(FlowStep):
         """
         dump = super().as_json()
         dump["collect_information"] = self.collect_information
-        dump["skip_if_filled"] = self.skip_if_filled
+        dump["ask_before_filling"] = self.ask_before_filling
         dump["scope"] = self.scope.value
 
         return dump
