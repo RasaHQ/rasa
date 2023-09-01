@@ -226,8 +226,8 @@
 
             updateE2ETest(data);
             updateSlots(data.slots);
-            updateStackFrames(data.slots.flow_stack || []);
-            await renderMermaidDiagram(data.slots.flow_stack || [],data.slots);
+            updateStackFrames(data.slots.dialogue_stack || []);
+            await renderMermaidDiagram(data.slots.dialogue_stack || [],data.slots);
           }
         } catch (error) {
           console.error(error);
@@ -267,7 +267,7 @@
 
         sortedSlotNames.forEach((name) => {
           const slotValue = JSON.stringify(slots[name], null, 2);
-          if (name != "flow_stack" && slotValue !== "null") {
+          if (name != "dialogue_stack" && slotValue !== "null") {
             root.insertAdjacentHTML(
               "beforeend",
               `<tr><td>${name}</td><td>${slotValue}</td></tr>`
