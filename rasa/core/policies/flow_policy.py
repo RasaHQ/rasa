@@ -448,7 +448,7 @@ class FlowExecutor:
             previous_stack = DialogueStack.get_persisted_stack(tracker)
             prediction = self._select_next_action(tracker)
             if previous_stack != self.dialogue_stack.as_dict():
-                # we need to update the dialogue stack to persist the state of the executor
+                # we need to update dialogue stack to persist the state of the executor
                 if not prediction.events:
                     prediction.events = []
                 prediction.events.append(
