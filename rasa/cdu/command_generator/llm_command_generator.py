@@ -18,7 +18,7 @@ from rasa.cdu.commands import (
 )
 from rasa.cdu.conversation_patterns import FLOW_PATTERN_ASK_QUESTION
 
-from rasa.core.policies.flow_policy import FlowStack
+from rasa.core.policies.flow_policy import DialogueStack
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -337,7 +337,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         flows_without_patterns = FlowsList(
             [f for f in flows.underlying_flows if not f.is_handling_pattern()]
         )
-        top_relevant_frame = FlowStack.top_frame_on_tracker(
+        top_relevant_frame = DialogueStack.top_frame_on_tracker(
             tracker, ignore_frame=FLOW_PATTERN_ASK_QUESTION
         )
         top_flow = top_relevant_frame.flow(flows) if top_relevant_frame else None

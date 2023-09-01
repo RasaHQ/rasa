@@ -23,8 +23,8 @@ from rasa.cdu.conversation_patterns import (
 )
 from rasa.cdu.dialogue_stack import (
     STACK_FRAME_TYPES_WITH_USER_FLOWS,
-    FlowStack,
-    FlowStackFrame,
+    DialogueStack,
+    DialogueStackFrame,
     StackFrameType,
 )
 from rasa.shared.core.constants import (
@@ -109,7 +109,7 @@ def execute_commands(
     A tuple of the action to execute and the events that were created.
     """
     commands: List[Command] = _get_commands_from_tracker(tracker)
-    dialogue_stack = FlowStack.from_tracker(tracker)
+    dialogue_stack = DialogueStack.from_tracker(tracker)
     original_stack_dump = dialogue_stack.as_dict()
 
     user_step, user_flow = dialogue_stack.topmost_user_frame(all_flows)
@@ -165,7 +165,7 @@ def execute_commands(
                     "step_id": reset_step.id if reset_step else None,
                 },
             }
-            correction_frame = FlowStackFrame(
+            correction_frame = DialogueStackFrame(
                 flow_id=FLOW_PATTERN_CORRECTION_ID,
                 frame_type=StackFrameType.REMARK,
                 context=context,
@@ -197,7 +197,7 @@ def execute_commands(
                 frame_type = StackFrameType.REGULAR
             structlogger.debug("command_executor.start_flow", command=command)
             dialogue_stack.push(
-                FlowStackFrame(flow_id=command.flow, frame_type=frame_type)
+                DialogueStackFrame(flow_id=command.flow, frame_type=frame_type)
             )
         elif isinstance(command, CancelFlowCommand):
             if not current_top_flow:
@@ -207,7 +207,7 @@ def execute_commands(
                 continue
 
             canceled_frames = []
-            original_frames = FlowStack.from_dict(original_stack_dump).frames
+            original_frames = DialogueStack.from_dict(original_stack_dump).frames
             # we need to go through the original stack dump in reverse order
             # to find the frames that were canceled. we cancel everthing from
             # the top of the stack until we hit the user flow that was canceled.
@@ -219,7 +219,7 @@ def execute_commands(
                     break
 
             dialogue_stack.push(
-                FlowStackFrame(
+                DialogueStackFrame(
                     flow_id=FLOW_PATTERN_CANCEl_ID,
                     frame_type=StackFrameType.REMARK,
                     context={
@@ -232,7 +232,7 @@ def execute_commands(
             )
         elif isinstance(command, KnowledgeAnswerCommand):
             dialogue_stack.push(
-                FlowStackFrame(
+                DialogueStackFrame(
                     # TODO: not quite sure if we need an id here
                     flow_id="NO_FLOW",
                     frame_type=StackFrameType.DOCSEARCH,
@@ -240,7 +240,7 @@ def execute_commands(
             )
         elif isinstance(command, ChitChatAnswerCommand):
             dialogue_stack.push(
-                FlowStackFrame(
+                DialogueStackFrame(
                     flow_id="NO_FLOW",
                     frame_type=StackFrameType.INTENTLESS,
                 )
@@ -254,7 +254,7 @@ def execute_commands(
                 "names": names,
             }
             dialogue_stack.push(
-                FlowStackFrame(
+                DialogueStackFrame(
                     flow_id="pattern_clarification",
                     frame_type=StackFrameType.REGULAR,
                     context=context,
@@ -263,7 +263,7 @@ def execute_commands(
         elif isinstance(command, ErrorCommand):
             structlogger.debug("command_executor.error", command=command)
             dialogue_stack.push(
-                FlowStackFrame(
+                DialogueStackFrame(
                     flow_id=FLOW_PATTERN_INTERNAL_ERROR_ID,
                     frame_type=StackFrameType.REMARK,
                 )
@@ -301,7 +301,7 @@ def filled_slots_for_active_flow(
     Returns:
     All slots that have been filled for the current flow.
     """
-    dialogue_stack = FlowStack.from_tracker(tracker)
+    dialogue_stack = DialogueStack.from_tracker(tracker)
 
     asked_questions = set()
 
@@ -323,7 +323,7 @@ def filled_slots_for_active_flow(
 
 
 def get_current_question(
-    dialogue_stack: FlowStack, all_flows: FlowsList
+    dialogue_stack: DialogueStack, all_flows: FlowsList
 ) -> Optional[QuestionFlowStep]:
     """Get the current question if the conversation is currently in one.
 
@@ -397,7 +397,7 @@ def clean_up_commands(
     Returns:
     The cleaned up commands.
     """
-    dialogue_stack = FlowStack.from_tracker(tracker)
+    dialogue_stack = DialogueStack.from_tracker(tracker)
 
     flows_on_the_stack = {f.flow_id for f in dialogue_stack.frames}
 

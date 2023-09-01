@@ -4,7 +4,7 @@ import structlog
 from rasa.cdu.conversation_patterns import FLOW_PATTERN_ASK_QUESTION
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
-from rasa.cdu.dialogue_stack import FlowStack, FlowStackFrame, StackFrameType
+from rasa.cdu.dialogue_stack import DialogueStack, DialogueStackFrame, StackFrameType
 from rasa.shared.constants import FLOW_PREFIX
 
 from rasa.shared.core.constants import (
@@ -52,7 +52,7 @@ class FlowTriggerAction(action.Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Trigger the flow."""
-        stack = FlowStack.from_tracker(tracker)
+        stack = DialogueStack.from_tracker(tracker)
         if self._flow_name == "pattern_continue_interrupted":
             frame_type = StackFrameType.REMARK
         elif self._flow_name == "pattern_completed":
@@ -63,7 +63,7 @@ class FlowTriggerAction(action.Action):
             frame_type = StackFrameType.REGULAR
 
         stack.push(
-            FlowStackFrame(
+            DialogueStackFrame(
                 flow_id=self._flow_name,
                 frame_type=frame_type,
             )
@@ -103,7 +103,7 @@ class ActionCancelFlow(action.Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Cancel the flow."""
-        stack = FlowStack.from_tracker(tracker)
+        stack = DialogueStack.from_tracker(tracker)
         if stack.is_empty():
             structlogger.warning("action.cancel_flow.no_active_flow", stack=stack)
             return []
@@ -148,7 +148,7 @@ class ActionCorrectFlowSlot(action.Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Correct the slots."""
-        stack = FlowStack.from_tracker(tracker)
+        stack = DialogueStack.from_tracker(tracker)
         if stack.is_empty():
             structlogger.warning("action.correct_flow_slot.no_active_flow", stack=stack)
             return []
@@ -211,7 +211,7 @@ class ActionClarifyFlows(action.Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Correct the slots."""
-        stack = FlowStack.from_tracker(tracker)
+        stack = DialogueStack.from_tracker(tracker)
         if stack.is_empty():
             structlogger.warning("action.clarify_flows.no_active_flow", stack=stack)
             return []

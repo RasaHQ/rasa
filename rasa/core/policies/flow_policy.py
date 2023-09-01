@@ -14,8 +14,8 @@ from structlog.contextvars import (
     bound_contextvars,
 )
 from rasa.cdu.dialogue_stack import (
-    FlowStack,
-    FlowStackFrame,
+    DialogueStack,
+    DialogueStackFrame,
     StackFrameType,
 )
 
@@ -235,7 +235,7 @@ class FlowExecutor:
     """Executes a flow."""
 
     def __init__(
-        self, dialogue_stack: FlowStack, all_flows: FlowsList, domain: Domain
+        self, dialogue_stack: DialogueStack, all_flows: FlowsList, domain: Domain
     ) -> None:
         """Initializes the `FlowExecutor`.
 
@@ -260,7 +260,7 @@ class FlowExecutor:
         Returns:
         The created `FlowExecutor`.
         """
-        dialogue_stack = FlowStack.from_tracker(tracker)
+        dialogue_stack = DialogueStack.from_tracker(tracker)
         return FlowExecutor(dialogue_stack, flows or FlowsList([]), domain)
 
     def find_startable_flow(self, tracker: DialogueStateTracker) -> Optional[Flow]:
@@ -314,7 +314,7 @@ class FlowExecutor:
             return initial_value
 
         # attach context to the predicate evaluation to allow coditions using it
-        context = {"context": FlowStack.from_tracker(tracker).current_context()}
+        context = {"context": DialogueStack.from_tracker(tracker).current_context()}
         document: Dict[str, Any] = context.copy()
         for slot in self.domain.slots:
             document[slot.name] = get_value(tracker.get_slot(slot.name))
@@ -445,7 +445,7 @@ class FlowExecutor:
             # if there are no flows, there is nothing to do
             return ActionPrediction(None, 0.0)
         else:
-            previous_stack = FlowStack.get_persisted_stack(tracker)
+            previous_stack = DialogueStack.get_persisted_stack(tracker)
             prediction = self._select_next_action(tracker)
             if previous_stack != self.dialogue_stack.as_dict():
                 # we need to update the dialogue stack to persist the state of the executor
@@ -598,7 +598,7 @@ class FlowExecutor:
         elif isinstance(step, LinkFlowStep):
             structlogger.debug("flow.step.run.link")
             self.dialogue_stack.push(
-                FlowStackFrame(
+                DialogueStackFrame(
                     flow_id=step.link,
                     frame_type=StackFrameType.LINK,
                 ),
@@ -651,7 +651,7 @@ class FlowExecutor:
             raise FlowException(f"Unknown flow step type {type(step)}")
 
     def trigger_pattern_continue_interrupted(
-        self, current_frame: FlowStackFrame
+        self, current_frame: DialogueStackFrame
     ) -> None:
         """Trigger the pattern to continue an interrupted flow if needed."""
         # get previously started user flow that will be continued
@@ -666,14 +666,14 @@ class FlowExecutor:
             and not self.is_step_end_of_flow(previous_user_flow_step)
         ):
             self.dialogue_stack.push(
-                FlowStackFrame(
+                DialogueStackFrame(
                     flow_id=FLOW_PATTERN_CONTINUE_INTERRUPTED,
                     frame_type=StackFrameType.REMARK,
                     context={"previous_flow_name": previous_user_flow.readable_name()},
                 )
             )
 
-    def trigger_pattern_completed(self, current_frame: FlowStackFrame) -> None:
+    def trigger_pattern_completed(self, current_frame: DialogueStackFrame) -> None:
         """Trigger the pattern indicating that the stack is empty, if needed."""
         if (
             self.dialogue_stack.is_empty()
@@ -685,7 +685,7 @@ class FlowExecutor:
                 completed_flow.readable_name() if completed_flow else None
             )
             self.dialogue_stack.push(
-                FlowStackFrame(
+                DialogueStackFrame(
                     flow_id=FLOW_PATTERN_COMPLETED,
                     frame_type=StackFrameType.REMARK,
                     context={"previous_flow_name": completed_flow_name},
@@ -697,7 +697,7 @@ class FlowExecutor:
         context["question"] = question
 
         self.dialogue_stack.push(
-            FlowStackFrame(
+            DialogueStackFrame(
                 flow_id=FLOW_PATTERN_ASK_QUESTION,
                 frame_type=StackFrameType.REMARK,
                 context=context,

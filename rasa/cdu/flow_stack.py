@@ -24,32 +24,32 @@ structlogger = structlog.get_logger()
 
 
 @dataclass
-class FlowStack:
+class DialogueStack:
     """Represents the current dialogue stack."""
 
-    frames: List[FlowStackFrame]
+    frames: List[DialogueStackFrame]
 
     @staticmethod
-    def from_dict(data: List[Dict[Text, Any]]) -> FlowStack:
-        """Creates a `FlowStack` from a dictionary.
+    def from_dict(data: List[Dict[Text, Any]]) -> DialogueStack:
+        """Creates a `DialogueStack` from a dictionary.
 
         Args:
-            data: The dictionary to create the `FlowStack` from.
+            data: The dictionary to create the `DialogueStack` from.
 
         Returns:
-            The created `FlowStack`.
+            The created `DialogueStack`.
         """
-        return FlowStack([FlowStackFrame.from_dict(frame) for frame in data])
+        return DialogueStack([DialogueStackFrame.from_dict(frame) for frame in data])
 
     def as_dict(self) -> List[Dict[Text, Any]]:
-        """Returns the `FlowStack` as a dictionary.
+        """Returns the `DialogueStack` as a dictionary.
 
         Returns:
-            The `FlowStack` as a dictionary.
+            The `DialogueStack` as a dictionary.
         """
         return [frame.as_dict() for frame in self.frames]
 
-    def push(self, frame: FlowStackFrame, index: Optional[int] = None) -> None:
+    def push(self, frame: DialogueStackFrame, index: Optional[int] = None) -> None:
         """Pushes a new frame onto the stack.
 
         Args:
@@ -62,7 +62,7 @@ class FlowStack:
         else:
             self.frames.insert(index, frame)
 
-    def update(self, frame: FlowStackFrame) -> None:
+    def update(self, frame: DialogueStackFrame) -> None:
         """Updates the topmost frame.
 
         Args:
@@ -82,7 +82,7 @@ class FlowStack:
         if top := self.top():
             top.step_id = updated_id
 
-    def pop(self) -> FlowStackFrame:
+    def pop(self) -> DialogueStackFrame:
         """Pops the topmost frame from the stack.
 
         Returns:
@@ -104,7 +104,7 @@ class FlowStack:
     def top(
         self,
         ignore_frame: Optional[str] = None,
-    ) -> Optional[FlowStackFrame]:
+    ) -> Optional[DialogueStackFrame]:
         """Returns the topmost frame from the stack.
 
         Args:
@@ -176,16 +176,16 @@ class FlowStack:
         return len(self.frames) == 0
 
     @staticmethod
-    def from_tracker(tracker: DialogueStateTracker) -> FlowStack:
-        """Creates a `FlowStack` from a tracker.
+    def from_tracker(tracker: DialogueStateTracker) -> DialogueStack:
+        """Creates a `DialogueStack` from a tracker.
 
         Args:
-            tracker: The tracker to create the `FlowStack` from.
+            tracker: The tracker to create the `DialogueStack` from.
 
         Returns:
-            The created `FlowStack`.
+            The created `DialogueStack`.
         """
-        return FlowStack.from_dict(FlowStack.get_persisted_stack(tracker))
+        return DialogueStack.from_dict(DialogueStack.get_persisted_stack(tracker))
 
     @staticmethod
     def get_persisted_stack(tracker: DialogueStateTracker) -> List[Dict[str, Any]]:
@@ -195,7 +195,7 @@ class FlowStack:
     @staticmethod
     def top_frame_on_tracker(
         tracker: DialogueStateTracker, ignore_frame: Optional[str] = None
-    ) -> Optional[FlowStackFrame]:
+    ) -> Optional[DialogueStackFrame]:
         """Returns the topmost frame from the tracker.
 
         Args:
@@ -205,7 +205,7 @@ class FlowStack:
         Returns:
             The topmost frame from the tracker.
         """
-        dialogue_stack = FlowStack.from_tracker(tracker)
+        dialogue_stack = DialogueStack.from_tracker(tracker)
         return dialogue_stack.top(ignore_frame=ignore_frame)
 
 
@@ -276,7 +276,7 @@ def generate_stack_frame_id() -> str:
 
 
 @dataclass
-class FlowStackFrame:
+class DialogueStackFrame:
     """Represents the current flow step."""
 
     flow_id: str
@@ -291,16 +291,16 @@ class FlowStackFrame:
     """The ID of the current frame."""
 
     @staticmethod
-    def from_dict(data: Dict[Text, Any]) -> FlowStackFrame:
-        """Creates a `FlowStackFrame` from a dictionary.
+    def from_dict(data: Dict[Text, Any]) -> DialogueStackFrame:
+        """Creates a `DialogueStackFrame` from a dictionary.
 
         Args:
-            data: The dictionary to create the `FlowStackFrame` from.
+            data: The dictionary to create the `DialogueStackFrame` from.
 
         Returns:
-            The created `FlowStackFrame`.
+            The created `DialogueStackFrame`.
         """
-        return FlowStackFrame(
+        return DialogueStackFrame(
             data["flow_id"],
             data["step_id"],
             StackFrameType.from_str(data.get("frame_type")),
@@ -320,10 +320,10 @@ class FlowStackFrame:
         return None
 
     def as_dict(self) -> Dict[Text, Any]:
-        """Returns the `FlowStackFrame` as a dictionary.
+        """Returns the `DialogueStackFrame` as a dictionary.
 
         Returns:
-            The `FlowStackFrame` as a dictionary.
+            The `DialogueStackFrame` as a dictionary.
         """
         return {
             "flow_id": self.flow_id,
@@ -333,16 +333,16 @@ class FlowStackFrame:
             "frame_id": self.frame_id,
         }
 
-    def with_updated_id(self, step_id: Text) -> FlowStackFrame:
-        """Creates a copy of the `FlowStackFrame` with the given step id.
+    def with_updated_id(self, step_id: Text) -> DialogueStackFrame:
+        """Creates a copy of the `DialogueStackFrame` with the given step id.
 
         Args:
             step_id: The step id to use for the copy.
 
         Returns:
-            The copy of the `FlowStackFrame` with the given step id.
+            The copy of the `DialogueStackFrame` with the given step id.
         """
-        return FlowStackFrame(self.flow_id, step_id, self.frame_type, self.context)
+        return DialogueStackFrame(self.flow_id, step_id, self.frame_type, self.context)
 
     def __repr__(self) -> Text:
         return (

@@ -7,8 +7,8 @@ abstract: |
 ---
 
 import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
-import flowStackEvolution from "./dialogue_stack_evolution.png";
-import flowStackOverview from "./dialogue_stack.png";
+import dialogueStackEvolution from "./dialogue_stack_evolution.png";
+import dialogueStackOverview from "./dialogue_stack.png";
 
 <RasaDiscoveryBanner />
 
@@ -22,7 +22,7 @@ incomplete flows and refers to steps defined in the
 [flows specification](../flows.mdx).
 
 <Image
-  img={flowStackOverview}
+  img={dialogueStackOverview}
   caption="Dialogue Stack represents the current state of the conversation referring to a flow."
   alt=""
 />
@@ -90,7 +90,7 @@ explicitly modeled in the `transfer_money` flow; it's handled by a
 conversational pattern:
 
 <Image
-  img={flowStackEvolution}
+  img={dialogueStackEvolution}
   caption="Dialogue stack changes during a correction of a previous user input"
   alt=""
 />
