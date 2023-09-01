@@ -577,7 +577,7 @@ class FlowExecutor:
             # reset the slot if its already filled and the question shouldn't
             # be skipped
             slot = tracker.slots.get(step.question, None)
-            if slot and slot.has_been_set and not step.skip_if_filled:
+            if slot and slot.has_been_set and step.ask_before_filling:
                 events = [SlotSet(step.question, slot.initial_value)]
             else:
                 events = []

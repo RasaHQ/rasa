@@ -302,7 +302,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
         return (
             # we can fill because this is a slot that can be filled ahead of time
-            q.skip_if_filled
+            not q.ask_before_filling
             # we can fill because the slot has been filled already
             or slot.has_been_set
             # we can fill because the is currently getting asked

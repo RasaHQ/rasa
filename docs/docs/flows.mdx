@@ -445,16 +445,16 @@ should have fitting slot mappings.
 
 For the `slot_type`, it's recommended to use `text` slots in Flows.
 
-#### Skipping Questions
+#### Always Asking Questions
 
 By default, a question is skipped if the slot is already filled. If a question
 should always be asked, no matter if the underlying slot is already filled, you
-can set `skip_if_filled: false` on the question:
+can set `ask_before_filling: true` on the question:
 
 ```yaml
 - id: "confirm_dangerous_step"
   question: "final_confirmation" # slot name
-  skip_if_filled: false
+  ask_before_filling: true
 ```
 
 If the "final_confirmation" slot is already filled, the bot will clear it, ask
