@@ -93,7 +93,7 @@ To link to the next step, you can use the `id` of the next step:
 
 ```yaml
 - id: "some_question"
-  question: "age"
+  collect_information: "age"
   next: "id_of_the_next_step"
 ```
 
@@ -101,7 +101,7 @@ To create branching logic, you can use conditionals:
 
 ```yaml
 - id: "some_question"
-  question: "age"
+  collect_information: "age"
   next:
     - if: age < 18
       then: "under_18_step"
@@ -128,7 +128,8 @@ Steps can manifest in one of the following types:
 - [generation prompt step](./flows.mdx#generation-prompt): a prompt to generate
   a message that will be sent to the user
 - [set slots step](./flows.mdx#set-slots): a step to set slots
-- [question step](./flows.mdx#question): a question to be asked to the user
+- [collect information step](./flows.mdx#collect-information): a question to be 
+  asked to the user to collect user input in a slot
 - [link step](./flows.mdx#link): a step to link to another flow
 
 ### Branching Conditions
@@ -159,7 +160,7 @@ Use parentheses to group expressions and control the order of evaluation. For ex
 
 ```yaml
 - id: "some_question"
-  question: "age"
+  collect_information: "age"
   next:
     - if: age < 18
       then: "under_18_step"
@@ -173,7 +174,7 @@ Sets can be used to check for multiple conditions. For example:
 
 ```yaml
 - id: "1"
-  question: "emergency"
+  collect_information: "emergency"
   next:
     - if: {"WARN" "ERR" "CRIT"} contains error_level
       then: "handoff"
@@ -194,7 +195,7 @@ the `zipcode` slot contains a United States zip code :
 
 ```yaml
 - id: "ask_zipcode"
-  question: "zipcode"
+  collect_information: "zipcode"
   description: "ask zipcode and check if its a zip code"
   next:
     - if: zipcode matches "\d{5}(-\d{4})?"
@@ -422,14 +423,14 @@ In this example, the slot with the key `account_type` is set to the value
     - account_number: "123456789"
 ```
 
-### Question
+### Collect Information
 
-In a `question` step, the bot asks a question, with the aim usually being to
+In a `collect_information` step, the bot asks a question, with the aim usually being to
 fill a slot. Here is an example:
 
 ```yaml
 - id: "a_question_step"
-  question: "account_type" # slot name
+  collect_information: "account_type" # slot name
 ```
 
 In this example, the bot is asking the user to provide their account type. The
@@ -447,19 +448,19 @@ For the `slot_type`, it's recommended to use `text` slots in Flows.
 
 #### Always Asking Questions
 
-By default, a question is skipped if the slot is already filled. If a question
-should always be asked, no matter if the underlying slot is already filled, you
-can set `ask_before_filling: true` on the question:
+By default, a `collect_information` step is skipped if the slot is already filled. 
+If a `collect_information` step should always be asked, no matter if the underlying slot 
+is already filled, you can set `ask_before_filling: true` on the `collect_information` step:
 
 ```yaml
 - id: "confirm_dangerous_step"
-  question: "final_confirmation" # slot name
+  collect_information: "final_confirmation" # slot name
   ask_before_filling: true
 ```
 
 If the "final_confirmation" slot is already filled, the bot will clear it, ask
-the question and fill the slot again. This ensures the confirmation question is
-always asked.
+the `collect_information` step and fill the slot again. This ensures the confirmation 
+`collect_information` step is always asked.
 
 #### Scopes
 
@@ -471,12 +472,12 @@ scopes available:
 - **global**: The variable persists across flows until it is explicitly changed.
 
 The slot can also be configured to be cleared at the end of the flow execution.
-The following configuration would clear the answer to the question when a flow
-is completed.
+The following configuration would clear the answer to the `collect_information` step when a 
+flow is completed.
 
 ```yaml
 - id: "another_confirmation_step"
-  question: "yes_or_no" # slot name
+  collect_information: "yes_or_no" # slot name
   scope: "flow"
 ```
 
@@ -531,7 +532,7 @@ flows:
         action: "utter_greet"
         next: "3"
       - id: "3"
-        question: "age"
+        collect_information: "age"
         next:
           - if: age < 18
             then: "4"
@@ -555,10 +556,10 @@ flows:
         intent: "transfer_money"
         next: "1"
       - id: "1"
-        question: "money"
+        collect_information: "money"
         next: "2"
       - id: "2"
-        question: "confirm_transfer"
+        collect_information: "confirm_transfer"
         next:
           - if: confirm_transfer == "yes"
             then: "3"
@@ -597,7 +598,7 @@ responses:
 ```
 
 The snippet shows the responses and slot configuration that is needed to make
-the `question` steps in the `tranfer_money` flow work.
+the `collect_information` steps in the `tranfer_money` flow work.
 
 #### Flows branching on the result of the user selection
 
@@ -613,7 +614,7 @@ flows:
         action: "utter_greet"
         next: "3"
       - id: "3"
-        question: "account_type"
+        collect_information: "account_type"
         next:
           - if: account_type == "checking"
             then: "5"
@@ -621,19 +622,19 @@ flows:
             then: "7"
           - else: "9"
       - id: "5"
-        question: "specific_checking_question"
+        collect_information: "specific_checking_question"
         next: "6"
       - id: "6"
         action: "utter_something_specific_to_checking"
         next: "11"
       - id: "7"
-        question: "specific_savings_question"
+        collect_information: "specific_savings_question"
         next: "8"
       - id: "8"
         action: "utter_something_specific_to_savings"
         next: "11"
       - id: "9"
-        question: "specific_credit_card_question"
+        collect_information: "specific_credit_card_question"
         next: "10"
       - id: "10"
         action: "utter_something_specific_to_credit_card"
@@ -644,7 +645,7 @@ flows:
 
 This example flow demonstrates how to implement branching flows based on
 multiple conditions. It involves fetching the slot `account_type` using a
-`question` step, and the value of this slot is then used to determine which
+`collect_information` step, and the value of this slot is then used to determine which
 specific flow should be executed.
 
 ### Multiple Flows with links
@@ -681,13 +682,13 @@ flows:
     description: "gather personal details from the user"
     steps:
       - id: "1"
-        question: "first_name"
+        collect_information: "first_name"
         next: "2"
       - id: "2"
-        question: "last_name"
+        collect_information: "last_name"
         next: "3"
       - id: "3"
-        question: "age"
+        collect_information: "age"
 ```
 
 This example demonstrates how the `link` step in flows enables the invocation of

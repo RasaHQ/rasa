@@ -338,7 +338,7 @@
 title: ${flow?.id ?? "No Flow"}
 ---
 flowchart TD
-classDef question stroke-width:1px
+classDef collect_information stroke-width:1px
 classDef action fill:#FBFCFD,stroke:#A0B8CF
 classDef link fill:#f43
 classDef slot fill:#aaa
@@ -347,11 +347,11 @@ classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
 
         if (flow) {
           flow.steps.forEach((step) => {
-            if (step.question) {
-              var slotValue = slots[step.question]
-                ? `'${slots[step.question]}'`
+            if (step.collect_information) {
+              var slotValue = slots[step.collect_information]
+                ? `'${slots[step.collect_information]}'`
                 : "\uD83D\uDCAC";
-              mermaidText += `${step.id}["${toHtmlEntities(inject(keepShort(step.question), currentContext))}\n${keepShort(slotValue)}"]:::question\n`;
+              mermaidText += `${step.id}["${toHtmlEntities(inject(keepShort(step.collect_information), currentContext))}\n${keepShort(slotValue)}"]:::collect_information\n`;
             }
             if (step.action) {
               mermaidText += `${step.id}["${toHtmlEntities(inject(keepShort(step.action), currentContext))}"]:::action\n`;
