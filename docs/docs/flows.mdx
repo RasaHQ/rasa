@@ -448,9 +448,9 @@ For the `slot_type`, it's recommended to use `text` slots in Flows.
 
 #### Always Asking Questions
 
-By default, a collect_information is skipped if the slot is already filled. 
-If a collect_information should always be asked, no matter if the underlying slot 
-is already filled, you can set `ask_before_filling: true` on the collect_information:
+By default, a `collect_information` step is skipped if the slot is already filled. 
+If a `collect_information` step should always be asked, no matter if the underlying slot 
+is already filled, you can set `ask_before_filling: true` on the `collect_information` step:
 
 ```yaml
 - id: "confirm_dangerous_step"
@@ -459,8 +459,8 @@ is already filled, you can set `ask_before_filling: true` on the collect_informa
 ```
 
 If the "final_confirmation" slot is already filled, the bot will clear it, ask
-the collect_information and fill the slot again. This ensures the confirmation 
-collect_information is always asked.
+the `collect_information` step and fill the slot again. This ensures the confirmation 
+`collect_information` step is always asked.
 
 #### Scopes
 
@@ -472,7 +472,7 @@ scopes available:
 - **global**: The variable persists across flows until it is explicitly changed.
 
 The slot can also be configured to be cleared at the end of the flow execution.
-The following configuration would clear the answer to the collect_information when a 
+The following configuration would clear the answer to the `collect_information` step when a 
 flow is completed.
 
 ```yaml

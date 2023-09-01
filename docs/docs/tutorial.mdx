@@ -114,8 +114,8 @@ The first step is a `collect_information` step, which is used to fill a `slot`.
 A `collect_information` step sends a message to the user requesting information, and waits for an answer.
 
 The syntax `collect_information: transfer_money_recipient` means that when the user answers, Rasa will try to use
-their answer to fill the slot `recipient`.
-It also means that Rasa will look for a `response` called `utter_ask_recipient`.
+their answer to fill the slot `transfer_money_recipient`.
+It also means that Rasa will look for a `response` called `utter_ask_transfer_money_recipient`.
 
 
 The slot `recipient` and the phrasing of the question `utter_ask_recipient` are both defined
