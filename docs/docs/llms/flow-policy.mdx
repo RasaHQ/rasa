@@ -105,7 +105,8 @@ and `correction` flows in [Handling Unhappy Paths](./unhappy-paths.mdx).
 
 Upon completion of the `resume_flow` flow, the `transfer_money` flow resumes,
 and the bot returns to the state before the correction flow started. The
-`transfer_money` flow will re-ask the interrupted question.
+`transfer_money` flow will re-ask the interrupted question of a 
+`collect_information` step.
 
 The `resume_flow` and `correction` flows are conversational patterns not
 explicitly modeled in the `transfer_money` flow. The `FlowPolicy` automatically

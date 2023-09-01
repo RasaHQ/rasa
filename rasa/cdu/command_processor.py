@@ -148,10 +148,10 @@ def execute_commands(
             # if this is a case, we are not correcting a value but we
             # are resetting the slots and jumping back to the first question
             is_reset_only = all(
-                question_step.question not in proposed_slots
-                or question_step.ask_before_filling
+                collect_information_step.collect_information not in proposed_slots
+                or collect_information_step.ask_before_filling
                 for flow in all_flows.underlying_flows
-                for question_step in flow.get_question_steps()
+                for collect_information_step in flow.get_collect_information_steps()
             )
 
             reset_step = _find_earliest_updated_collect_info(
