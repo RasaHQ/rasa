@@ -24,8 +24,6 @@ def command_from_json(data: Dict[str, Any]) -> "Command":
         return StartFlowCommand(flow=data["flow"])
     elif data.get("command") == "cancel flow":
         return CancelFlowCommand()
-    elif data.get("command") == "clarify flow":
-        return ClarifyNextStepCommand(potential_flows=data["potential_flows"])
     elif data.get("command") == "cant handle":
         return CantHandleCommand()
     elif data.get("command") == "chitchat":
@@ -91,14 +89,6 @@ class CancelFlowCommand(Command):
     """A command to cancel the current flow."""
 
     command: str = "cancel flow"
-
-
-@dataclass
-class ClarifyNextStepCommand(Command):
-    """A command to clarify the flow to be run."""
-
-    potential_flows: List[str]
-    command: str = "clarify flow"
 
 
 @dataclass
