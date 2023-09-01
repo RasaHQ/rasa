@@ -994,7 +994,7 @@ class CollectInformationFlowStep(FlowStep):
         """
         base = super()._from_json(flow_step_config)
         return CollectInformationFlowStep(
-            question=flow_step_config.get("collect_information", ""),
+            collect_information=flow_step_config.get("collect_information", ""),
             ask_before_filling=flow_step_config.get("ask_before_filling", False),
             scope=CollectInformationScope.from_str(flow_step_config.get("scope")),
             **base.__dict__,
