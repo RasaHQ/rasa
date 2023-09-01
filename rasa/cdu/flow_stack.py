@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, Dict, Text, List, Optional, Tuple
 
 from rasa.shared.core.constants import (
-    FLOW_STACK_SLOT,
+    DIALOGUE_STACK_SLOT,
 )
 from rasa.shared.core.flows.flow import (
     START_STEP,
@@ -25,7 +25,7 @@ structlogger = structlog.get_logger()
 
 @dataclass
 class FlowStack:
-    """Represents the current flow stack."""
+    """Represents the current dialogue stack."""
 
     frames: List[FlowStackFrame]
 
@@ -190,7 +190,7 @@ class FlowStack:
     @staticmethod
     def get_persisted_stack(tracker: DialogueStateTracker) -> List[Dict[str, Any]]:
         """Returns the persisted stack from the tracker."""
-        return tracker.get_slot(FLOW_STACK_SLOT) or []
+        return tracker.get_slot(DIALOGUE_STACK_SLOT) or []
 
     @staticmethod
     def top_frame_on_tracker(
@@ -205,8 +205,8 @@ class FlowStack:
         Returns:
             The topmost frame from the tracker.
         """
-        flow_stack = FlowStack.from_tracker(tracker)
-        return flow_stack.top(ignore_frame=ignore_frame)
+        dialogue_stack = FlowStack.from_tracker(tracker)
+        return dialogue_stack.top(ignore_frame=ignore_frame)
 
 
 class StackFrameType(str, Enum):

@@ -33,7 +33,7 @@
   "latest_event_time": 1517821726.211042,
   "followup_action": null,
   "slots": {
-    "flow_stack": null,
+    "dialogue_stack": null,
     "name": null,
     "requested_slot": null,
     "return_value": null,

@@ -4,13 +4,13 @@ import structlog
 from rasa.cdu.conversation_patterns import FLOW_PATTERN_ASK_QUESTION
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
-from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
+from rasa.cdu.dialogue_stack import FlowStack, FlowStackFrame, StackFrameType
 from rasa.shared.constants import FLOW_PREFIX
 
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
     ACTION_CORRECT_FLOW_SLOT,
-    FLOW_STACK_SLOT,
+    DIALOGUE_STACK_SLOT,
     ACTION_CLARIFY_FLOWS,
 )
 from rasa.shared.core.domain import Domain
@@ -75,7 +75,7 @@ class FlowTriggerAction(action.Action):
         ]
 
         events: List[Event] = [
-            SlotSet(FLOW_STACK_SLOT, stack.as_dict())
+            SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())
         ] + slot_set_events
         if tracker.active_loop_name:
             events.append(ActiveLoop(None))
@@ -125,7 +125,7 @@ class ActionCancelFlow(action.Action):
                     frame_id=canceled_frame_id,
                 )
 
-        return [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
+        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
 
 
 class ActionCorrectFlowSlot(action.Action):
@@ -175,7 +175,7 @@ class ActionCorrectFlowSlot(action.Action):
                 END_STEP
             )
 
-        events: List[Event] = [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
+        events: List[Event] = [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
 
         events.extend([SlotSet(k, v) for k, v in corrected_slots.items()])
 
@@ -229,4 +229,4 @@ class ActionClarifyFlows(action.Action):
         names = context.get("names", [])
         options_string = self.assemble_options_string(names)
         context["clarification_options"] = options_string
-        return [SlotSet(FLOW_STACK_SLOT, stack.as_dict())]
+        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
