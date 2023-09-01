@@ -696,7 +696,7 @@ class FlowExecutor:
 
     def trigger_pattern_ask_collect_information(self, collect_information: str) -> None:
         context = self.flow_stack.current_context().copy()
-        context["collect information"] = collect_information
+        context["collect_information"] = collect_information
 
         self.flow_stack.push(
             FlowStackFrame(
