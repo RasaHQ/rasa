@@ -891,6 +891,7 @@ def test_domain_from_multiple_files():
     expected_slots = [
         "activate_double_simulation",
         "activate_simulation",
+        "dialogue_stack",
         "display_cure_method",
         "display_drum_cure_horns",
         "display_method_artwork",
@@ -908,7 +909,6 @@ def test_domain_from_multiple_files():
         "drumSoupChocolate",
         "drumSoupStrawberry",
         "drumStrawberryWallets",
-        "dialogue_stack",
         "greenOrGrey",
         "humbleSelection",
         "humbleSelectionManagement",
