@@ -512,9 +512,6 @@ class FlowExecutor:
                     )
 
                     if current_step:
-                        # this can't be an else, because the previous if might change
-                        # this to "not None"
-
                         self.flow_stack.advance_top_flow(current_step.id)
 
                         with bound_contextvars(step_id=current_step.id):
