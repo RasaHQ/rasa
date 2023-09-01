@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional, Text, List
 
 import structlog
-from rasa.cdu.conversation_patterns import FLOW_PATTERN_ASK_QUESTION
+from rasa.cdu.conversation_patterns import FLOW_PATTERN_COLLECT_INFORMATION
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
 from rasa.cdu.flow_stack import FlowStack, FlowStackFrame, StackFrameType
@@ -166,10 +166,10 @@ class ActionCorrectFlowSlot(action.Action):
                 )
                 break
 
-        # also need to end any running question
+        # also need to end any running collect information
         if (
             len(stack.frames) > i + 1
-            and stack.frames[i + 1].flow_id == FLOW_PATTERN_ASK_QUESTION
+            and stack.frames[i + 1].flow_id == FLOW_PATTERN_COLLECT_INFORMATION
         ):
             stack.frames[i + 1].step_id = ContinueFlowStep.continue_step_for_id(
                 END_STEP

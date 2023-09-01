@@ -91,10 +91,10 @@ flows:
     description: This flow lets users send money to friends and family.
     steps:
       - id: "ask_recipient"
-        question: recipient
+        collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        question: amount_of_money
+        collect_information: amount_of_money
         next: "utter_transfer_complete"
       - id: "transfer_successful"
         action: utter_transfer_complete        
@@ -109,11 +109,11 @@ The `steps` describe the business logic required to do what the user asked for.
 
 There are three steps defined, each with an `id`. 
 The `id` can be anything you like, but it's a good idea to use names that make it clear what is going on. 
-The first step is a `question` step, which is used to fill a `slot`.
+The first step is a `collect_information` step, which is used to fill a `slot`.
 `Slots` are a key-value memory store used during a conversation. 
-A `question` step sends a message to the user requesting information, and waits for an answer.
+A `collect_information` step sends a message to the user requesting information, and waits for an answer.
 
-The syntax `question: transfer_money_recipient` means that when the user answers, Rasa will try to use
+The syntax `collect_information: transfer_money_recipient` means that when the user answers, Rasa will try to use
 their answer to fill the slot `recipient`.
 It also means that Rasa will look for a `response` called `utter_ask_recipient`.
 
@@ -173,7 +173,7 @@ responses:
 
 Notice that your confirmation question uses curly brackets `{}` to include slot values in your response. 
 
-Add a `question` step to your flow, and change the `next` attribute of the `ask_amount` step to 
+Add a `collect_information` step to your flow, and change the `next` attribute of the `ask_amount` step to 
 match the `id` of your newly created step.
 
 ```yaml
@@ -182,14 +182,14 @@ flows:
     description: This flow lets users send money to friends and family.
     steps:
       - id: "ask_recipient"
-        question: recipient
+        collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        question: amount_of_money
+        collect_information: amount_of_money
         // highlight-start           
         next: "confirm_transfer"
       - id: "confirm_transfer"
-        question: final_confirmation
+        collect_information: final_confirmation
         next:
           - if: final_confirmation
             then: "transfer_successful"
@@ -293,10 +293,10 @@ flows:
     description: This flow lets users send money to friends and family.
     steps:
       - id: "ask_recipient"
-        question: recipient
+        collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        question: amount_of_money
+        collect_information: amount_of_money
         // highlight-start        
         next: "check_balance"
       - id: "check_balance"
@@ -309,7 +309,7 @@ flows:
         action: utter_transfer_money_insufficient_funds      
         // highlight-end      
       - id: "confirm_transfer"
-        question: final_confirmation
+        collect_information: final_confirmation
         next:
           - if: final_confirmation
             then: "transfer_successful"

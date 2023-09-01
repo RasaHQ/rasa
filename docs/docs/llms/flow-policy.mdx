@@ -76,10 +76,10 @@ flows:
 
     steps:
       - id: "ask_recipient"
-        question: transfer_money_recipient
+        collect_information: transfer_money_recipient
         next: "ask_amount"
       - id: "ask_amount"
-        question: transfer_money_amount_of_money
+        collect_information: transfer_money_amount_of_money
         next: "check_transfer_funds"
     # - ...
 ```
