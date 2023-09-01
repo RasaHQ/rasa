@@ -259,8 +259,12 @@ def bool_from_any(x: Any) -> bool:
             return float(x) == 1.0
         elif x.strip().lower() == "true":
             return True
+        elif x.strip().lower() == "no":
+            return False
         elif x.strip().lower() == "false":
             return False
+        elif x.strip().lower() == "yes":
+            return True
         else:
             raise ValueError("Cannot convert string to bool")
     else:

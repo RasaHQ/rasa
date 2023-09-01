@@ -101,30 +101,42 @@ class FlowStack:
 
         return self.frames[-1].context or {}
 
-    def top(self) -> Optional[FlowStackFrame]:
+    def top(
+        self,
+        ignore_frame: Optional[str] = None,
+    ) -> Optional[FlowStackFrame]:
         """Returns the topmost frame from the stack.
+
+        Args:
+            ignore_frame: The ID of the flow to ignore. Picks the top most
+                frame that has a different flow ID.
 
         Returns:
             The topmost frame.
         """
-        if self.is_empty():
-            return None
+        for frame in reversed(self.frames):
+            if frame.flow_id == ignore_frame:
+                continue
+            return frame
+        return None
 
-        return self.frames[-1]
-
-    def top_flow(self, flows: FlowsList) -> Optional[Flow]:
+    def top_flow(
+        self, all_flows: FlowsList, ignore_frame: Optional[str] = None
+    ) -> Optional[Flow]:
         """Returns the topmost flow from the stack.
 
         Args:
             flows: The flows to use.
+            ignore_frame: The ID of the flow to ignore. Picks the top most
+                frame that has a different flow ID.
 
         Returns:
             The topmost flow.
         """
-        if not (top := self.top()):
+        if not (top_frame := self.top(ignore_frame)):
             return None
 
-        return flows.flow_by_id(top.flow_id)
+        return top_frame.flow(all_flows)
 
     def topmost_user_frame(
         self, flows: FlowsList
@@ -173,8 +185,28 @@ class FlowStack:
         Returns:
             The created `FlowStack`.
         """
-        flow_stack = tracker.get_slot(FLOW_STACK_SLOT) or []
-        return FlowStack.from_dict(flow_stack)
+        return FlowStack.from_dict(FlowStack.get_persisted_stack(tracker))
+
+    @staticmethod
+    def get_persisted_stack(tracker: DialogueStateTracker) -> List[Dict[str, Any]]:
+        """Returns the persisted stack from the tracker."""
+        return tracker.get_slot(FLOW_STACK_SLOT) or []
+
+    @staticmethod
+    def top_frame_on_tracker(
+        tracker: DialogueStateTracker, ignore_frame: Optional[str] = None
+    ) -> Optional[FlowStackFrame]:
+        """Returns the topmost frame from the tracker.
+
+        Args:
+            tracker: The tracker to use.
+            ignore: The ID of the flow to ignore.
+
+        Returns:
+            The topmost frame from the tracker.
+        """
+        flow_stack = FlowStack.from_tracker(tracker)
+        return flow_stack.top(ignore_frame=ignore_frame)
 
 
 class StackFrameType(str, Enum):
@@ -275,6 +307,17 @@ class FlowStackFrame:
             data["context"],
             data["frame_id"],
         )
+
+    def flow(self, all_flows: FlowsList) -> Optional[Flow]:
+        """Returns the current flow."""
+        return all_flows.flow_by_id(self.flow_id)
+
+    def step(self, all_flows: FlowsList) -> Optional[FlowStep]:
+        """Returns the current flow step."""
+        flow = self.flow(all_flows)
+        if flow:
+            return flow.step_by_id(self.step_id)
+        return None
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the `FlowStackFrame` as a dictionary.

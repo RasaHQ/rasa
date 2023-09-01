@@ -16,6 +16,7 @@ from rasa.cdu.commands import (
     ClarifyCommand,
 )
 from rasa.cdu.conversation_patterns import (
+    FLOW_PATTERN_ASK_QUESTION,
     FLOW_PATTERN_CORRECTION_ID,
     FLOW_PATTERN_INTERNAL_ERROR_ID,
     FLOW_PATTERN_CANCEl_ID,
@@ -32,6 +33,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import (
     END_STEP,
+    ContinueFlowStep,
     Flow,
     FlowStep,
     FlowsList,
@@ -128,7 +130,10 @@ def execute_commands(
 
     for command in reversed_commands:
         if isinstance(command, CorrectSlotsCommand):
-            if not current_top_flow:
+            top_non_question_frame = flow_stack.top(
+                ignore_frame=FLOW_PATTERN_ASK_QUESTION
+            )
+            if not top_non_question_frame:
                 # we shouldn't end up here as a correction shouldn't be triggered
                 # if there is nothing to correct. but just in case we do, we
                 # just skip the command.
@@ -139,10 +144,21 @@ def execute_commands(
             structlogger.debug("command_executor.correct_slots", command=command)
             proposed_slots = {c.name: c.value for c in command.corrected_slots}
 
+            # check if all corrected slots have ask_before_filling=True
+            # if this is a case, we are not correcting a value but we
+            # are resetting the slots and jumping back to the first question
+            is_reset_only = all(
+                question_step.question not in proposed_slots
+                or question_step.ask_before_filling
+                for flow in all_flows.underlying_flows
+                for question_step in flow.get_question_steps()
+            )
+
             reset_step = _find_earliest_updated_question(
                 user_step, user_flow, proposed_slots
             )
             context: Dict[str, Any] = {
+                "is_reset_only": is_reset_only,
                 "corrected_slots": proposed_slots,
                 "corrected_reset_point": {
                     "id": user_flow.id if user_flow else None,
@@ -155,17 +171,21 @@ def execute_commands(
                 context=context,
             )
 
-            if current_top_flow.id != FLOW_PATTERN_CORRECTION_ID:
+            if top_non_question_frame.flow_id != FLOW_PATTERN_CORRECTION_ID:
                 flow_stack.push(correction_frame)
             else:
                 # wrap up the previous correction flow
-                flow_stack.frames[-1].step_id = END_STEP
+                for i, frame in enumerate(reversed(flow_stack.frames)):
+                    frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
+                    if frame.frame_id == top_non_question_frame.frame_id:
+                        break
+
                 # push a new correction flow
                 flow_stack.push(
                     correction_frame,
                     # we allow the previous correction to finish first before
                     # starting the new one
-                    index=-1,
+                    index=len(flow_stack.frames) - i - 1,
                 )
         elif isinstance(command, SetSlotCommand):
             structlogger.debug("command_executor.set_slot", command=command)
@@ -280,11 +300,6 @@ def filled_slots_for_active_flow(
     All slots that have been filled for the current flow.
     """
     flow_stack = FlowStack.from_tracker(tracker)
-    top_flow_step = flow_stack.top_flow_step(all_flows)
-
-    current_question = (
-        top_flow_step.question if isinstance(top_flow_step, QuestionFlowStep) else None
-    )
 
     asked_questions = set()
 
@@ -293,8 +308,7 @@ def filled_slots_for_active_flow(
             break
 
         for q in flow.previously_asked_questions(frame.step_id):
-            if q.question != current_question:
-                asked_questions.add(q.question)
+            asked_questions.add(q.question)
 
         if frame.frame_type in STACK_FRAME_TYPES_WITH_USER_FLOWS:
             # as soon as we hit the first stack frame that is a "normal"
@@ -304,6 +318,64 @@ def filled_slots_for_active_flow(
             break
 
     return asked_questions
+
+
+def get_current_question(
+    flow_stack: FlowStack, all_flows: FlowsList
+) -> Optional[QuestionFlowStep]:
+    """Get the current question if the conversation is currently in one.
+
+    If we are currently in a question step, the stack should have at least
+    two frames. The top frame is the question pattern and the frame below
+    is the flow that triggered the question pattern. We can use the flow
+    id to get the question step from the flow.
+
+    Args:
+        flow_stack: The flow stack.
+        all_flows: All flows.
+
+    Returns:
+    The current question if the conversation is currently in one,
+    `None` otherwise.
+    """
+    if not (top_frame := flow_stack.top()):
+        # we are currently not in a flow
+        return None
+
+    if top_frame.flow_id != FLOW_PATTERN_ASK_QUESTION:
+        # we are currently not in a question
+        return None
+
+    if len(flow_stack.frames) <= 1:
+        # for some reason only the question pattern step is on the stack
+        # but no flow that triggered it. this should never happen.
+        structlogger.warning(
+            "command_executor.get_current_question.no_flow_on_stack",
+            stack=flow_stack,
+        )
+        return None
+
+    frame_that_triggered_question = flow_stack.frames[-2]
+    if not (step := frame_that_triggered_question.step(all_flows)):
+        # this is a failure, if there is a frame, we should be able to get the
+        # step from it
+        structlogger.warning(
+            "command_executor.get_current_question.no_step_for_frame",
+            frame=frame_that_triggered_question,
+        )
+        return None
+
+    if isinstance(step, QuestionFlowStep):
+        # we found it!
+        return step
+    else:
+        # this should never happen as we only push question patterns
+        # onto the stack if there is a question step
+        structlogger.warning(
+            "command_executor.get_current_question.step_not_question",
+            step=step,
+        )
+        return None
 
 
 def clean_up_commands(
@@ -358,8 +430,30 @@ def clean_up_commands(
             structlogger.debug(
                 "command_executor.skip_command.slot_already_set", command=command
             )
+        elif isinstance(command, SetSlotCommand) and command.name not in slots_so_far:
+            # only fill slots that belong to a question that can be asked
+            use_slot_fill = any(
+                step.question == command.name and not step.ask_before_filling
+                for flow in all_flows.underlying_flows
+                for step in flow.get_question_steps()
+            )
+
+            if use_slot_fill:
+                clean_commands.append(command)
+            else:
+                structlogger.debug(
+                    "command_executor.skip_command.slot_not_asked_for", command=command
+                )
+                continue
 
         elif isinstance(command, SetSlotCommand) and command.name in slots_so_far:
+            current_question = get_current_question(flow_stack, all_flows)
+
+            if current_question and current_question.question == command.name:
+                # not a correction but rather an answer to the current question
+                clean_commands.append(command)
+                continue
+
             structlogger.debug(
                 "command_executor.convert_command.correction", command=command
             )

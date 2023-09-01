@@ -1064,6 +1064,8 @@ class MessageProcessor:
             structlogger.debug(
                 "processor.actions.policy_prediction",
                 prediction_events=copy.deepcopy(prediction.events),
+                policy_name=prediction.policy_name,
+                action_name=action.name(),
             )
             tracker.update_with_events(prediction.events, self.domain)
 

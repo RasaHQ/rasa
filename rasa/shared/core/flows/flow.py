@@ -276,8 +276,8 @@ class Flow:
         if step_id == END_STEP:
             return EndFlowStep()
 
-        if step_id == CLEANUP_STEP:
-            return CleanUpFlowStep()
+        if step_id.startswith(CONTINUE_STEP_PREFIX):
+            return ContinueFlowStep(step_id[len(CONTINUE_STEP_PREFIX) :])
 
         for step in self.steps:
             if step.id == step_id:
@@ -506,44 +506,41 @@ class EndFlowStep(InternalFlowStep):
     """Represents the configuration of an end to a flow."""
 
     def __init__(self) -> None:
-        """Initializes a start flow step.
-
-        Args:
-            start_step: The step to start the flow from.
-        """
+        """Initializes an end flow step."""
         super().__init__(
             id=END_STEP,
             description=None,
             metadata={},
-            # The end step links to itself. This is needed to make sure that
-            # this allows us to end a flow by setting the active step of a flow
-            # to the end step.
-            # Since the side effects of a node are executed on the transition
-            # to the next node, we need this link to run the END logic.
-            # Otherwise, setting a flow to its end step would not execute the
-            # side effects of the end step.
-            next=FlowLinks(links=[StaticFlowLink(target=CLEANUP_STEP)]),
-        )
-
-
-CLEANUP_STEP = "__cleanup__"
-
-
-class CleanUpFlowStep(InternalFlowStep):
-    """Represents the configuration of step to clean up a flow."""
-
-    def __init__(self) -> None:
-        """Initializes a start flow step.
-
-        Args:
-            start_step: The step to start the flow from.
-        """
-        super().__init__(
-            id=CLEANUP_STEP,
-            description=None,
-            metadata={},
             next=FlowLinks(links=[]),
         )
+
+
+CONTINUE_STEP_PREFIX = "__next__"
+
+
+@dataclass
+class ContinueFlowStep(InternalFlowStep):
+    """Represents the configuration of a continue-step flow step."""
+
+    def __init__(self, next: str) -> None:
+        """Initializes a continue-step flow step."""
+        super().__init__(
+            id=CONTINUE_STEP_PREFIX + next,
+            description=None,
+            metadata={},
+            # The continue step links to the step that should be continued.
+            # The flow policy in a sense only "runs" the logic of a step
+            # when it transitions to that step, once it is there it will use
+            # the next link to transition to the next step. This means that
+            # if we want to "re-run" a step, we need to link to it again.
+            # This is why the continue step links to the step that should be
+            # continued.
+            next=FlowLinks(links=[StaticFlowLink(target=next)]),
+        )
+
+    @staticmethod
+    def continue_step_for_id(step_id: str) -> str:
+        return CONTINUE_STEP_PREFIX + step_id
 
 
 @dataclass
@@ -978,8 +975,8 @@ class QuestionFlowStep(FlowStep):
 
     question: Text
     """The question of the flow step."""
-    skip_if_filled: bool = True
-    """Whether to skip the question if the slot is already filled."""
+    ask_before_filling: bool = False
+    """Whether to always ask the question even if the slot is already filled."""
     scope: QuestionScope = QuestionScope.FLOW
     """how the question is scoped, determins when to reset its value."""
 
@@ -996,7 +993,7 @@ class QuestionFlowStep(FlowStep):
         base = super()._from_json(flow_step_config)
         return QuestionFlowStep(
             question=flow_step_config.get("question", ""),
-            skip_if_filled=flow_step_config.get("skip_if_filled", True),
+            ask_before_filling=flow_step_config.get("ask_before_filling", False),
             scope=QuestionScope.from_str(flow_step_config.get("scope")),
             **base.__dict__,
         )
@@ -1009,7 +1006,7 @@ class QuestionFlowStep(FlowStep):
         """
         dump = super().as_json()
         dump["question"] = self.question
-        dump["skip_if_filled"] = self.skip_if_filled
+        dump["ask_before_filling"] = self.ask_before_filling
         dump["scope"] = self.scope.value
 
         return dump

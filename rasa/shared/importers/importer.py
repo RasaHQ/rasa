@@ -6,12 +6,11 @@ import logging
 import pkg_resources
 
 import rasa.shared.constants
-from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
+from rasa.shared.core.flows.flow import FlowsList
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
 from rasa.shared.core.domain import (
-    KEY_FORMS,
     Domain,
     KEY_E2E_ACTIONS,
     KEY_INTENTS,
@@ -443,20 +442,7 @@ class FlowSyncImporter(PassThroughImporter):
             for flow in flows.underlying_flows
         ]
 
-        all_question_steps = [
-            step
-            for flow in flows.underlying_flows
-            for step in flow.steps
-            if isinstance(step, QuestionFlowStep)
-        ]
-        forms = {}
-        for step in all_question_steps:
-            form_name = "question_" + step.question
-            forms[form_name] = {
-                rasa.shared.constants.REQUIRED_SLOTS_KEY: [step.question]
-            }
-
-        flow_domain = Domain.from_dict({KEY_ACTIONS: flow_names, KEY_FORMS: forms})
+        flow_domain = Domain.from_dict({KEY_ACTIONS: flow_names})
         return domain.merge(flow_domain.merge(default_flows_domain))
 
 

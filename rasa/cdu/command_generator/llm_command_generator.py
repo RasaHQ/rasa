@@ -1,6 +1,6 @@
 import importlib.resources
 import re
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 
 from jinja2 import Template
 import structlog
@@ -16,19 +16,22 @@ from rasa.cdu.commands import (
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
+from rasa.cdu.conversation_patterns import FLOW_PATTERN_ASK_QUESTION
 
 from rasa.core.policies.flow_policy import FlowStack
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.constants import (
-    MAPPING_CONDITIONS,
-    ACTIVE_LOOP,
-)
-from rasa.shared.core.flows.flow import FlowsList, QuestionFlowStep
+from rasa.shared.core.flows.flow import FlowStep, FlowsList, QuestionFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import (
+    BooleanSlot,
+    CategoricalSlot,
+    FloatSlot,
+    Slot,
+    bool_from_any,
+)
 from rasa.shared.nlu.constants import (
     TEXT,
 )
@@ -152,7 +155,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             "llm_command_generator.predict_commands.actions_generated",
             action_list=action_list,
         )
-        commands = self.parse_commands(action_list)
+        commands = self.parse_commands(action_list, tracker)
         structlogger.info(
             "llm_command_generator.predict_commands.finished",
             commands=commands,
@@ -178,7 +181,40 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return re.sub(r"^['\"\s]+|['\"\s]+$", "", value)
 
     @classmethod
-    def parse_commands(cls, actions: Optional[str]) -> List[Command]:
+    def coerce_slot_value(
+        cls, slot_value: str, slot_name: str, tracker: DialogueStateTracker
+    ) -> Union[str, bool, float, None]:
+        """Coerce the slot value to the correct type.
+
+        Tries to coerce the slot value to the correct type. If the
+        conversion fails, `None` is returned.
+
+        Args:
+            value: the value to coerce
+            slot_name: the name of the slot
+            tracker: the tracker
+
+        Returns:
+            the coerced value or `None` if the conversion failed."""
+        nullable_value = slot_value if not cls.is_none_value(slot_value) else None
+        if slot_name not in tracker.slots:
+            return nullable_value
+
+        slot = tracker.slots[slot_name]
+        if isinstance(slot, BooleanSlot):
+            return bool_from_any(nullable_value)
+        elif isinstance(slot, FloatSlot):
+            try:
+                return float(nullable_value)
+            except ValueError:
+                return None
+        else:
+            return nullable_value
+
+    @classmethod
+    def parse_commands(
+        cls, actions: Optional[str], tracker: DialogueStateTracker
+    ) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities."""
         if not actions:
             return [ErrorCommand()]
@@ -198,14 +234,17 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         for action in actions.strip().splitlines():
             if m := slot_set_re.search(action):
                 slot_name = m.group(1).strip()
-                slot_value: Optional[str] = cls.clean_extracted_value(m.group(2))
+                slot_value = cls.clean_extracted_value(m.group(2))
                 # error case where the llm tries to start a flow using a slot set
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
                 else:
-                    if cls.is_none_value(slot_value):
-                        slot_value = None
-                    commands.append(SetSlotCommand(name=slot_name, value=slot_value))
+                    typed_slot_value = cls.coerce_slot_value(
+                        slot_value, slot_name, tracker
+                    )
+                    commands.append(
+                        SetSlotCommand(name=slot_name, value=typed_slot_value)
+                    )
             elif m := start_flow_re.search(action):
                 commands.append(StartFlowCommand(flow=m.group(1).strip()))
             elif cancel_flow_re.search(action):
@@ -248,30 +287,49 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return result
 
     @staticmethod
-    def is_extractable(q: QuestionFlowStep, tracker: DialogueStateTracker) -> bool:
+    def is_extractable(
+        q: QuestionFlowStep,
+        tracker: DialogueStateTracker,
+        current_step: Optional[FlowStep] = None,
+    ) -> bool:
+        """Check if the question can be filled.
+
+        A questions slot can only be filled if the slot exist and either the
+        question has been asked already or the slot has been filled already."""
         slot = tracker.slots.get(q.question)
         if slot is None:
             return False
 
-        for mapping in slot.mappings:
-            conditions = mapping.get(MAPPING_CONDITIONS, [])
-            if len(conditions) == 0:
-                return True
-            else:
-                for condition in conditions:
-                    active_loop = condition.get(ACTIVE_LOOP)
-                    if active_loop and active_loop == tracker.active_loop_name:
-                        return True
-        return False
+        return (
+            # we can fill because this is a slot that can be filled ahead of time
+            not q.ask_before_filling
+            # we can fill because the slot has been filled already
+            or slot.has_been_set
+            # we can fill because the is currently getting asked
+            or (
+                current_step is not None
+                and isinstance(current_step, QuestionFlowStep)
+                and current_step.question == q.question
+            )
+        )
 
     def allowed_values_for_slot(self, slot: Slot) -> Optional[str]:
-        if slot.type_name == "bool":
+        """Get the allowed values for a slot."""
+        if isinstance(slot, BooleanSlot):
             return str([True, False])
-        if slot.type_name == "categorical":
-            slot_values = slot.values  # type: ignore[attr-defined]
-            return str([v for v in slot_values if not v == "__other__"])
+        if isinstance(slot, CategoricalSlot):
+            return str([v for v in slot.values if v != "__other__"])
         else:
             return None
+
+    @staticmethod
+    def slot_value(tracker: DialogueStateTracker, slot_name: str) -> str:
+        """Get the slot value from the tracker."""
+        slot_value = tracker.get_slot(slot_name)
+        if slot_value is None:
+            return "undefined"
+        else:
+            return str(slot_value)
 
     def render_template(
         self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
@@ -279,16 +337,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         flows_without_patterns = FlowsList(
             [f for f in flows.underlying_flows if not f.is_handling_pattern()]
         )
-        flow_stack = FlowStack.from_tracker(tracker)
-        top_flow = flow_stack.top_flow(flows) if flow_stack is not None else None
-        current_step = (
-            flow_stack.top_flow_step(flows) if flow_stack is not None else None
+        top_relevant_frame = FlowStack.top_frame_on_tracker(
+            tracker, ignore_frame=FLOW_PATTERN_ASK_QUESTION
         )
+        top_flow = top_relevant_frame.flow(flows) if top_relevant_frame else None
+        current_step = top_relevant_frame.step(flows) if top_relevant_frame else None
         if top_flow is not None:
             flow_slots = [
                 {
                     "name": q.question,
-                    "value": (tracker.get_slot(q.question) or "undefined"),
+                    "value": self.slot_value(tracker, q.question),
                     "type": tracker.slots[q.question].type_name,
                     "allowed_values": self.allowed_values_for_slot(
                         tracker.slots[q.question]
@@ -296,7 +354,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                     "description": q.description,
                 }
                 for q in top_flow.get_question_steps()
-                if self.is_extractable(q, tracker)
+                if self.is_extractable(q, tracker, current_step)
             ]
         else:
             flow_slots = []
