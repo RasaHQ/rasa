@@ -197,61 +197,57 @@ To achieve the above confirmation, create a flow cancelled
 ```yaml title="flows.yml"
 flows:
   pattern_correction:
-    description:
-      A meta flow that should be started to correct a previous user input.
+    description: Confirm a previous correction of a slot value.
 
     steps:
-      - id: "0"
-        question: confirm_correction
+      - id: "check_if_reset_only"
         next:
-          - if: confirm_correction
-            then: "1"
-          - else: "2"
-      - id: "1"
+          - if: context.is_reset_only
+            then: "jump_back_without_message"
+          - else: "confirm_first"
+      - id: "confirm_first"
+        collect_information: confirm_slot_correction
+        next:
+          - if: confirm_slot_correction
+            then: "correct_slots"
+          - else: "abort_correction"
+      - id: "correct_slots"
+        action: action_correct_flow_slot
+        next: "inform_user"
+      - id: "inform_user"
         action: utter_corrected_previous_input
-      - id: "2"
-        set_slots:
-          - rasa_corrected_slots: None
-        next: "3"
-      - id: "3"
+      - id: "abort_correction"
         action: utter_not_corrected_previous_input
+      - id: "jump_back_without_message"
+        action: action_correct_flow_slot
 ```
 
 Also make sure to add the used responses and slots to your domain file:
 
 ```yaml title="domain.yml"
+
+slots:
+  confirm_slot_correction:
+    type: bool
+    mappings:
+      - type: custom
+
 responses:
-  utter_ask_confirm_correction:
-    - text: "Do you want to update your information?"
+  utter_ask_confirm_slot_correction:
+    - text: "Do you want to update the {{ context.corrected_slots.keys()|join(', ') }}?"
       buttons:
-        - payload: /affirm
+        - payload: yes
           title: Yes
-        - payload: /deny
+        - payload: no
           title: No, please keep the previous information
-      metadata:
+      metadata: 
         rephrase: True
-  utter_corrected_previous_input:
-    - text: "Ok, I corrected the previous input."
-      metadata:
-        rephrase: True
+        template: jinja
+  
   utter_not_corrected_previous_input:
     - text: "Ok, I did not correct the previous input."
-      metadata:
+      metadata: 
         rephrase: True
-slots:
-  confirm_correction:
-    type: text
-    mappings:
-      - intent: affirm
-        type: from_intent
-        value: "True"
-        conditions:
-          - active_loop: question_confirm_correction
-      - intent: deny
-        type: from_intent
-        value: "False"
-        conditions:
-          - active_loop: question_confirm_correction
 ```
 
 ### React dependent on the current flow
@@ -336,14 +332,21 @@ flows:
         action: utter_flow_continue_interrupted
   
   pattern_correction:
-    description: Confirm a correction of a slot value.
+    description: Handle a correction of a slot value.
 
     steps:
+      - id: "check_if_reset_only"
+        next:
+          - if: context.is_reset_only
+            then: "jump_back_without_message"
+          - else: "correct_slots"
       - id: "correct_slots"
         action: action_correct_flow_slot
         next: "inform_user"
       - id: "inform_user"
         action: utter_corrected_previous_input
+      - id: "jump_back_without_message"
+        action: action_correct_flow_slot
 
   pattern_cancel_flow:
     description: A meta flow that's started when a flow is cancelled.
@@ -386,4 +389,24 @@ flows:
         next: "1"
       - id: "1"
         action: utter_clarification_options_rasa
+
+  pattern_ask_collect_information:
+    description: flow used to fill a slot
+    steps:
+      - id: "start"
+        action: action_extract_slots
+        next: "validate"
+      - id: "validate"
+        action: validate_{{context.collect_information}}
+        next: 
+        - if: "{{context.collect_information}} is not null"
+          then: "done"
+        - else: "ask_collect_information"
+      - id: "ask_collect_information"
+        action: utter_ask_{{context.collect_information}}
+        next: "listen"
+      - id: "listen"
+        action: action_listen
+        next: "start"
+      - id: "done"
 ```

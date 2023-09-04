@@ -972,7 +972,7 @@ class Domain:
         Add a slot called `flow_step_slot` to the list of slots. The value of
         this slot will hold the name of the id of the next step in the flow.
 
-        Add a slot called `flow_stack_slot` to the list of slots. The value of
+        Add a slot called `dialogue_stack_slot` to the list of slots. The value of
         this slot will be a call stack of the flow ids.
         """
         from rasa.shared.core.constants import FLOW_SLOT_NAMES

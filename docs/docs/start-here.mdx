@@ -127,7 +127,7 @@ Given the range of conversations this assistant can handle, you might expect the
 In fact, there are only two small files that provide Rasa what it needs. 
 
 The `data/flows/restaurants.yml` file defines the logic for this flow. In this example the logic is linear
-and walks the user through each of the steps in order. Each of the `question` steps fills the corresponding slot.
+and walks the user through each of the steps in order. Each of the `collect_information` steps fills the corresponding slot.
 
 ```yaml
 flows:
@@ -135,13 +135,13 @@ flows:
     description: This flow recommends a restaurant
     steps:
       - id: "0"
-        question: cuisine
+        collect_information: cuisine
         next: "1"
       - id: "1"
-        question: price_range
+        collect_information: price_range
         next: "2"
       - id: "2"
-        question: part_of_town
+        collect_information: part_of_town
         next: "3"
       - id: "3"
         action: search_restaurants

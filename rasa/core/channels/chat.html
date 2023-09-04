@@ -226,8 +226,8 @@
 
             updateE2ETest(data);
             updateSlots(data.slots);
-            updateStackFrames(data.slots.flow_stack || []);
-            await renderMermaidDiagram(data.slots.flow_stack || [],data.slots);
+            updateStackFrames(data.slots.dialogue_stack || []);
+            await renderMermaidDiagram(data.slots.dialogue_stack || [],data.slots);
           }
         } catch (error) {
           console.error(error);
@@ -267,7 +267,7 @@
 
         sortedSlotNames.forEach((name) => {
           const slotValue = JSON.stringify(slots[name], null, 2);
-          if (name != "flow_stack" && slotValue !== "null") {
+          if (name != "dialogue_stack" && slotValue !== "null") {
             root.insertAdjacentHTML(
               "beforeend",
               `<tr><td>${name}</td><td>${slotValue}</td></tr>`
@@ -338,7 +338,7 @@
 title: ${flow?.id ?? "No Flow"}
 ---
 flowchart TD
-classDef question stroke-width:1px
+classDef collect_information stroke-width:1px
 classDef action fill:#FBFCFD,stroke:#A0B8CF
 classDef link fill:#f43
 classDef slot fill:#aaa
@@ -347,14 +347,14 @@ classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
 
         if (flow) {
           flow.steps.forEach((step) => {
-            if (step.question) {
-              var slotValue = slots[step.question]
-                ? `'${slots[step.question]}'`
+            if (step.collect_information) {
+              var slotValue = slots[step.collect_information]
+                ? `'${slots[step.collect_information]}'`
                 : "\uD83D\uDCAC";
-              mermaidText += `${step.id}["${toHtmlEntities(inject(keepShort(step.question), currentContext))}\n${keepShort(slotValue)}"]:::question\n`;
+              mermaidText += `${step.id}["${toHtmlEntities(keepShort(inject(step.collect_information, currentContext)))}\n${keepShort(slotValue)}"]:::collect_information\n`;
             }
             if (step.action) {
-              mermaidText += `${step.id}["${toHtmlEntities(inject(keepShort(step.action), currentContext))}"]:::action\n`;
+              mermaidText += `${step.id}["${toHtmlEntities(keepShort(inject(step.action, currentContext)))}"]:::action\n`;
             }
             if (step.link) {
               mermaidText += `${step.id}["\uD83D\uDD17 ${step.link}"]:::link\n`;

@@ -55,7 +55,7 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
-    FLOW_STACK_SLOT,
+    DIALOGUE_STACK_SLOT,
     RETURN_VALUE_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
@@ -1118,7 +1118,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
         "name": None,
         REQUESTED_SLOT: None,
         SESSION_START_METADATA_SLOT: None,
-        FLOW_STACK_SLOT: None,
+        DIALOGUE_STACK_SLOT: None,
         RETURN_VALUE_SLOT: None,
     }
     assert content["sender_id"] == "madeupid"
