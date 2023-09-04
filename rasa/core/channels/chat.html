@@ -351,10 +351,10 @@ classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
               var slotValue = slots[step.collect_information]
                 ? `'${slots[step.collect_information]}'`
                 : "\uD83D\uDCAC";
-              mermaidText += `${step.id}["${toHtmlEntities(inject(keepShort(step.collect_information), currentContext))}\n${keepShort(slotValue)}"]:::collect_information\n`;
+              mermaidText += `${step.id}["${toHtmlEntities(keepShort(inject(step.collect_information, currentContext)))}\n${keepShort(slotValue)}"]:::collect_information\n`;
             }
             if (step.action) {
-              mermaidText += `${step.id}["${toHtmlEntities(inject(keepShort(step.action), currentContext))}"]:::action\n`;
+              mermaidText += `${step.id}["${toHtmlEntities(keepShort(inject(step.action, currentContext)))}"]:::action\n`;
             }
             if (step.link) {
               mermaidText += `${step.id}["\uD83D\uDD17 ${step.link}"]:::link\n`;
