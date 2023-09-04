@@ -4,7 +4,7 @@ import copy
 import logging
 from enum import Enum
 from pathlib import Path
-from rasa.cdu.flow_stack import FlowStack, StackFrameType
+from rasa.cdu.dialogue_stack import DialogueStack, StackFrameType
 from rasa.shared.core.events import Event
 from typing import (
     Any,
@@ -115,9 +115,9 @@ class Policy(GraphComponent):
         self, tracker: DialogueStateTracker, only_after_user_message: bool = True
     ) -> bool:
         """Check whether the policy is allowed to act."""
-        flow_stack = FlowStack.from_tracker(tracker)
+        dialogue_stack = DialogueStack.from_tracker(tracker)
 
-        if top_frame := flow_stack.top():
+        if top_frame := dialogue_stack.top():
             return top_frame.frame_type in self.supported_stack_frames()
         elif only_after_user_message and len(tracker.events) > 0:
             return not tracker.has_action_after_latest_user_message()

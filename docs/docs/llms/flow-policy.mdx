@@ -7,8 +7,8 @@ abstract: |
 ---
 
 import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
-import flowStackEvolution from "./flow_stack_evolution.png";
-import flowStackOverview from "./flow_stack.png";
+import dialogueStackEvolution from "./dialogue_stack_evolution.png";
+import dialogueStackOverview from "./dialogue_stack.png";
 
 <RasaDiscoveryBanner />
 
@@ -17,13 +17,13 @@ chatbot's conversational flows. It facilitates the integration of your business
 logic with machine learning capabilities.
 
 The Flow Policy oversees your bot's state, handles state transitions, and
-triggers new flows when needed. The "Flow Stack" represents all started but
+triggers new flows when needed. The "Dialogue Stack" represents all started but
 incomplete flows and refers to steps defined in the
 [flows specification](../flows.mdx).
 
 <Image
-  img={flowStackOverview}
-  caption="Flow Stack represents the current state of the conversation referring to a flow."
+  img={dialogueStackOverview}
+  caption="Dialogue Stack represents the current state of the conversation referring to a flow."
   alt=""
 />
 
@@ -57,15 +57,15 @@ and apply them.
 
 ## How does it work?
 
-The `FlowPolicy` employs a Flow stack structure (Last In First Out) along with
+The `FlowPolicy` employs a dialogue stack structure (Last In First Out) along with
 internal slots to manage your bot's state.
 
 ### Managing the State
 
-Your bot's state is managed using a "flow stack". The flow stack stores the
+Your bot's state is managed using a "dialogue stack". The dialogue stack stores the
 current position in each started flow. The stack follows a "last in, first out"
 sequence. The last started flow will be completed first, and then earlier
-inserted flows will continue. The flow stack is stored in the `flow_stack` slot.
+inserted flows will continue. The dialogue stack is stored in the `dialogue_stack` slot.
 
 Here's an example flow and a conversation currently using it:
 
@@ -90,13 +90,13 @@ explicitly modeled in the `transfer_money` flow; it's handled by a
 conversational pattern:
 
 <Image
-  img={flowStackEvolution}
-  caption="Flow stack changes during a correction of a previous user input"
+  img={dialogueStackEvolution}
+  caption="Dialogue stack changes during a correction of a previous user input"
   alt=""
 />
 
 The correction flow only executes when the user wants to correct a previous
-input. Once triggered, it's placed on top of the flow stack for execution.
+input. Once triggered, it's placed on top of the dialogue stack for execution.
 
 For the `transfer_money` flow, the correction flow is an interruption. Once
 completed, the `transfer_money` flow resumes. Before its res umption, a
@@ -158,5 +158,5 @@ outlined above.
 ### Can FlowPolicy be used with other Policies?
 
 Currently, we recommend not using the `FlowPolicy` in conjunction with the
-`RulePolicy`. The `RulePolicy` isn't aware of the flow stack and may interfere
+`RulePolicy`. The `RulePolicy` isn't aware of the dialogue stack and may interfere
 with the `FlowPolicy`.
