@@ -407,7 +407,7 @@ def build_flow_steps_list(steps: List[Dict[Text, Any]]) -> List[FlowStep]:
     flow_steps: List[FlowStep] = []
 
     for i, step_config in enumerate(steps):
-        if step_config.get("next") is None and step_config.get("link") is None:
+        if step_config.get("next") is None:
 
             if i == len(steps) - 1:
                 step_config["next"] = END_STEP
@@ -429,6 +429,8 @@ def build_flow_steps_list(steps: List[Dict[Text, Any]]) -> List[FlowStep]:
                     updated_next_config.append(link_config)
 
                 step_config["next"] = updated_next_config
+            elif step_config["next"] == "END":
+                step_config["next"] = END_STEP
 
         flow_steps.append(step_from_json(step_config))
 
