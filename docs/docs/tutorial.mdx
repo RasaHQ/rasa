@@ -24,6 +24,12 @@ Here are some of the conversations your assistant will be able to handle:
     <Chat caption="happy path">
     <ChatUserText>I'd like to transfer some money</ChatUserText>
     <ChatBotText>Sure - who are we sending money to?</ChatBotText>
+    <ChatUserText>Jen</ChatUserText>
+    <ChatBotText>How much would you like to send?</ChatBotText>
+    <ChatUserText>$50</ChatUserText>
+    <ChatBotText>Just to confirm: you want to send $50 to Jen?</ChatBotText>
+    <ChatUserText>yes</ChatUserText>
+    <ChatBotText>Ok, it's done!</ChatBotText>
     </Chat>
   </TabItem>
   <TabItem value="all-upfront">
@@ -60,7 +66,7 @@ rasa init --tutorial
 Open up the project folder in your IDE to see the files that make up your new project.
 In this tutorial you will primarily work with the following files:
 
-* `data/flows.yml` 
+* `data/flows.yml`
 * `domain.yml`
 * `actions/actions.py`
 
