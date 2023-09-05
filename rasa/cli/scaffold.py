@@ -47,6 +47,11 @@ def add_subparser(
         action="store_true",
         help="Temporary. Whether to create a DM2 project or a classic one",
     )
+    scaffold_parser.add_argument(
+        "--tutorial",
+        action="store_true",
+        help="Whether to start with the tutorial project.",
+    )    
     scaffold_parser.set_defaults(func=run)
 
 
@@ -131,23 +136,26 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
 def init_project(args: argparse.Namespace, path: Text) -> None:
     """Inits project."""
     os.chdir(path)
-    create_initial_project(".", args.dm2)
+    create_initial_project(".", args.dm2, args.tutorial)
     print(f"Created project directory at '{os.getcwd()}'.")
     print_train_or_instructions(args)
 
 
-def create_initial_project(path: Text, is_dm2: bool = False) -> None:
+def create_initial_project(path: Text, is_dm2: bool = False, is_tutorial: bool = False) -> None:
     """Creates directory structure and templates for initial project."""
     from distutils.dir_util import copy_tree
+    copy_tree(scaffold_path(is_dm2, is_tutorial), path)
 
-    copy_tree(scaffold_path(is_dm2), path)
 
-
-def scaffold_path(is_dm2: bool = False) -> Text:
+def scaffold_path(is_dm2: bool = False, is_tutorial: bool = False) -> Text:
     import pkg_resources
 
     if is_dm2:
         return pkg_resources.resource_filename(__name__, "initial_project_dm2")
+    elif is_tutorial:
+        return pkg_resources.resource_filename(__name__, "tutorial_project")
+    # not worried about error case where dm2 and tutorial both true, 
+    # bc dm2 arg is going away once this becomes default
     return pkg_resources.resource_filename(__name__, "initial_project")
 
 
