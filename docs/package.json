@@ -16,7 +16,7 @@
     "deploy": "netlify deploy --dir=build --prod",
     "new-version": "docusaurus docs:version",
     "variables": "node scripts/compile_variables.js",
-    "program-outputs": "node scripts/compile_program_outputs.js",
+    "program-outputs": "node scripts/compile_program_outputs.js --unhandled-rejections=strict",
     "copy-md-files": "node scripts/copy_md_files.js",
     "telemetry": "node scripts/compile_telemetry_reference.js --unhandled-rejections=strict",
     "included-sources": "node scripts/compile_included_sources.js",
