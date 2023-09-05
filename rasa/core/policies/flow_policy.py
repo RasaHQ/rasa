@@ -357,12 +357,16 @@ class FlowExecutor:
                 tracker=tracker,
             )
             return None
-        if current.id != END_STEP:
-            # we've reached the end of the user defined steps in the flow.
-            # every flow should end with an end step, so we add it here.
-            return END_STEP
-        else:
+
+        if current.id == END_STEP:
             # we are already at the very end of the flow. There is no next step.
+            return None
+        else:
+            structlogger.error(
+                "flow.step.failed_to_select_next_step",
+                current=current,
+                tracker=tracker,
+            )
             return None
 
     def _select_next_step(

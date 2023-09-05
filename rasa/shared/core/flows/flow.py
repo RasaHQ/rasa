@@ -202,7 +202,7 @@ class Flow:
             id=flow_id,
             name=flow_config.get("name", ""),
             description=flow_config.get("description"),
-            steps=[step_from_json(step_config) for step_config in steps],
+            steps=build_flow_steps_list(steps),
         )
 
     def as_json(self) -> Dict[Text, Any]:
@@ -215,7 +215,11 @@ class Flow:
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "steps": [step.as_json() for step in self.steps],
+            "steps": [
+                step.as_json()
+                for step in self.steps
+                if not isinstance(step, InternalFlowStep)
+            ],
         }
 
     def readable_name(self) -> str:
@@ -397,6 +401,42 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         return GenerateResponseFlowStep.from_json(flow_step_config)
     else:
         return BranchFlowStep.from_json(flow_step_config)
+
+
+def build_flow_steps_list(steps: List[Dict[Text, Any]]) -> List[FlowStep]:
+    flow_steps: List[FlowStep] = []
+
+    for i, step_config in enumerate(steps):
+        if step_config.get("next") is None and step_config.get("link") is None:
+
+            if i == len(steps) - 1:
+                step_config["next"] = END_STEP
+            else:
+                step_config["next"] = steps[i + 1].get("id")
+
+        else:
+
+            if isinstance(step_config["next"], list):
+                updated_next_config = []
+
+                for link_config in step_config["next"]:
+                    if "then" in link_config and link_config.get("then") == "END":
+                        link_config["then"] = END_STEP
+
+                    if "else" in link_config and link_config.get("else") == "END":
+                        link_config["else"] = END_STEP
+
+                    updated_next_config.append(link_config)
+
+                step_config["next"] = updated_next_config
+
+        flow_steps.append(step_from_json(step_config))
+
+    # we must add end step to the end of the flow
+    # to avoid validation issues with referencing un-found steps
+    flow_steps.append(EndFlowStep())
+
+    return flow_steps
 
 
 @dataclass
