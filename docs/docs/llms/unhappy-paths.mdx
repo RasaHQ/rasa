@@ -1,0 +1,412 @@
+---
+id: unhappy-paths
+sidebar_label: Manage Unhappy Paths
+title: Manage Unhappy Paths
+abstract: |
+  Discover how to navigate situations where users deviate from a flow's prescribed business logic.
+---
+
+import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
+
+<RasaDiscoveryBanner />
+
+## Overview
+
+[Flows](../flows.mdx) offer structured way to design conversation-driven business logic. While 
+flow designers primarily focus on linear [happy paths](../glossary.mdx#happy--unhappy-paths), 
+Rasa provides a robust way to manage deviations, simplifying design complexity.
+
+### Default Behaviors
+
+Rasa ships a **default behavior for every unhappy path**. Override 
+defaults by creating a flows with the same name of a pattern, like `pattern_correction`.
+
+
+## Unhappy Path Types
+
+### 1. Digressions
+
+Digressions arise when a user shifts from one flow to another.
+
+**Example:** During a money transfer, a user might ask about their current balance.
+
+<Chat caption="User digresses in the middle of a transfer">
+  <ChatUserText>I want to send some money to Sudarshana</ChatUserText>
+  <ChatBotText>How much do you want to send to Sudarshana?</ChatBotText>
+  <ChatUserText>Ah wait, how much money do I have?</ChatUserText>
+  <ChatBotText>You currently have 4021.20$ in your account.</ChatBotText>
+  <ChatBotText>Let's continue with sending money to Sudarshana.</ChatBotText>
+  <ChatBotText>How much money do you want to send to Sudarshana then?</ChatBotText>
+  <ChatUserText>...</ChatUserText>
+</Chat>
+
+### 2. Corrections
+
+Corrections occur when users modify input data or rectify mistakes.
+
+**Example:** A user might change their mind about the recipient of a transfer.
+
+<Chat caption="User corrects recipient's name">
+  <ChatUserText>I want to send some money to Joe</ChatUserText>
+  <ChatBotText>How much money do you want to send?</ChatBotText>
+  <ChatUserText>50$</ChatUserText>
+  <ChatBotText>Do you want to send 50$ to Joe? (Yes/No)</ChatBotText>
+  <ChatUserText>Oh wait!! I meant to say to John, not Joe!</ChatUserText>
+  <ChatBotText>Updated recipient to John</ChatBotText>
+  <ChatBotText>Do you want to send 50$ to John? (Yes/No)</ChatBotText>
+  <ChatUserText>...</ChatUserText>
+</Chat>
+
+:::important
+
+Upon correction, the flow retraces to align with the updated data. User 
+might witness an alternate flow based on changes.
+
+:::
+
+### 3. Cancellations
+
+Cancellations happen when users halt a flow midway.
+
+**Example:** A user opts out of sending money after initiating the process.
+
+<Chat caption="User cancels a transfer">
+  <ChatUserText>I want to send some money to Dimitri</ChatUserText>
+  <ChatBotText>How much money do you want to send?</ChatBotText>
+  <ChatUserText>Ah, nevermind. I see I have already sent it earlier.</ChatUserText>
+  <ChatBotText>Okay, I am cancelling the transfer.</ChatBotText>
+  <ChatUserText>...</ChatUserText>
+</Chat>
+
+### 4. Chitchat
+
+Engage in off-topic interactions without impacting a flow.
+
+**Example:** A user has a casual conversation with the bot.
+
+<Chat caption="Chitchat with the bot">
+  <ChatUserText>Hi</ChatUserText>
+  <ChatBotText>Hi! I'm your Financial Assistant!</ChatBotText>
+  <ChatUserText>are you a bot?</ChatUserText>
+  <ChatBotText>I'm a virtual assistant made with Rasa.</ChatBotText>
+</Chat>
+
+### 5. Completion
+
+Flows conclude either by achieving user goals or by user abandonment.
+
+**Example:** User queries about account balance.
+
+<Chat caption="Flow completion">
+  <ChatUserText>Hey, how much money do I have?</ChatUserText>
+  <ChatBotText>You currently have 4021.20$ in your account.</ChatBotText>
+  <ChatBotText>Is there anything else I can help you with?</ChatBotText>
+</Chat>
+
+### 6. Clarification
+
+Clarifications arise when the user request can't clearly be identified and
+potentially matches multiple flows.
+
+**Example:** User request can be matched to two flows.
+
+<Chat caption="Flow completion">
+  <ChatUserText>cash</ChatUserText>
+  <ChatBotText>I'm not sure what you'd like to achieve. Do you want to check your balance or transfer money?</ChatBotText>
+</Chat>
+
+### 7. Internal Errors
+
+Errors arise from unexpected system or flow issues.
+
+**Example:** Unavailable action or unresponsive modules.
+
+<Chat caption="Example showcasing internal error">
+  <ChatUserText>Hey, how much money do I have?</ChatUserText>
+  <ChatBotText>Sorry, I am having trouble with that. Please try again later.</ChatBotText>
+</Chat>
+
+## Configurations
+
+Each of these unhappy paths can be configured using Rasa's YAML-based 
+domain and flow system. You can overwrite a default behavior by creating
+a flow with the same name as the pattern:
+
+- `pattern_continue_interrupted` for digressions.
+- `pattern_correction` for corrections.
+- `pattern_cancel_flow` for cancellations.
+- `pattern_chitchat` for chitchat.
+- `pattern_completed` for completion.
+- `pattern_clarification` for clarification.
+- `pattern_internal_error` for internal errors.
+
+The syntax for each of these flows is the same as any other flow.
+
+:::info
+
+Since mose of these patterns interrupt another flow, they should be 
+kept short and simple.
+
+:::
+
+### Sample Configuration
+
+Modify Rasa's response when a flow concludes:
+
+```yaml title="flows.yml"
+pattern_completed:
+  description: Completion of a user's flow
+  steps:
+    - id: "0"
+      action: utter_can_do_something_else
+```
+
+```yaml title="domain.yml"
+responses:
+  utter_can_do_something_else:
+    - text: "Is there anything else I can assist you with?"
+```
+
+## Common Modifications
+
+Here are some common modifications to the default behavior.
+
+### Requiring Confirmation
+
+You can change the default implemenation for a correction and require a 
+confirmation from the user before a slot is updated, e.g. this would 
+result in a conversation like this:
+
+<Chat caption="A common correction scenario">
+  <ChatUserText>I want to send some money to Joe</ChatUserText>
+  <ChatBotText>How much money do you want to send?</ChatBotText>
+  <ChatUserText>50$</ChatUserText>
+  <ChatBotText>Do you want to send 50$ to Joe? (Yes/No)</ChatBotText>
+  <ChatUserText>Oh wait!! I meant to say to John, not Joe!</ChatUserText>
+  <ChatBotText>Do you want to update the recipient to John? (Yes/No)</ChatBotText>
+  <ChatUserText>Yes!</ChatUserText>
+  <ChatBotText>Updated recipient to John</ChatBotText>
+  <ChatBotText>Do you want to send 50$ to John? (Yes/No)</ChatBotText>
+  <ChatUserText>...</ChatUserText>
+</Chat>
+
+
+To achieve the above confirmation, create a flow cancelled
+`pattern_correction` which is defined as follows:
+
+```yaml title="flows.yml"
+flows:
+  pattern_correction:
+    description: Confirm a previous correction of a slot value.
+
+    steps:
+      - id: "check_if_reset_only"
+        next:
+          - if: context.is_reset_only
+            then: "jump_back_without_message"
+          - else: "confirm_first"
+      - id: "confirm_first"
+        collect_information: confirm_slot_correction
+        next:
+          - if: confirm_slot_correction
+            then: "correct_slots"
+          - else: "abort_correction"
+      - id: "correct_slots"
+        action: action_correct_flow_slot
+        next: "inform_user"
+      - id: "inform_user"
+        action: utter_corrected_previous_input
+      - id: "abort_correction"
+        action: utter_not_corrected_previous_input
+      - id: "jump_back_without_message"
+        action: action_correct_flow_slot
+```
+
+Also make sure to add the used responses and slots to your domain file:
+
+```yaml title="domain.yml"
+
+slots:
+  confirm_slot_correction:
+    type: bool
+    mappings:
+      - type: custom
+
+responses:
+  utter_ask_confirm_slot_correction:
+    - text: "Do you want to update the {{ context.corrected_slots.keys()|join(', ') }}?"
+      buttons:
+        - payload: yes
+          title: Yes
+        - payload: no
+          title: No, please keep the previous information
+      metadata: 
+        rephrase: True
+        template: jinja
+  
+  utter_not_corrected_previous_input:
+    - text: "Ok, I did not correct the previous input."
+      metadata: 
+        rephrase: True
+```
+
+### React dependent on the current flow
+
+You can change a patterns behaviour depending
+on the flow that was interrupted. This can be done by using the
+`context` object in the `if` condition of a pattern:
+
+```yaml title="flows.yml"
+flows:
+  pattern_cancel_flow:
+    description: A meta flow that's started when a flow is cancelled.
+
+    steps:
+      - id: "decide_cancel_step"
+        next: 
+        - if: "context.canceled_name == 'transfer_money'"
+          then: "inform_user"
+        - else: "cancel_flow"  # skips the inform step
+      - id: "inform_user"
+        action: utter_flow_cancelled_rasa
+        next: "cancel_flow"
+      - id: "cancel_flow"
+        action: action_cancel_flow
+```
+
+In the above example, the `inform_user` step is only used if the flow that
+was interrupted is called `transfer_money`.
+
+## Reference: Default Pattern Configuration
+
+For reference, here is the complete default configuration for unhappy paths:
+
+```yaml title="flows.yml"
+version: "3.1"
+responses:
+  utter_flow_continue_interrupted: 
+    - text: Let's continue with the topic {{ context.previous_flow_name }}.
+      metadata: 
+        rephrase: True
+        template: jinja
+  
+  utter_corrected_previous_input:
+    - text: "Ok, I corrected the {{ context.corrected_slots.keys()|join(', ') }}."
+      metadata: 
+        rephrase: True
+        template: jinja
+
+  utter_flow_cancelled_rasa:
+    - text: Okay, stopping the flow {{ context.canceled_name }}.
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_can_do_something_else:
+    - text: "Is there anything else I can help you with?"
+      metadata: 
+        rephrase: True
+
+  utter_internal_error_rasa:
+    - text: Sorry, I'm having trouble understanding you right now. Please try again later.
+
+  utter_clarification_options_rasa:
+    - text: I'm not sure what you'd like to achieve. Do you want to {{context.clarification_options}}?
+      metadata:
+        rephrase: True
+        template: jinja
+
+
+slots:
+  confirm_correction:
+    type: bool
+    mappings:
+      - type: custom
+
+flows:  
+  pattern_continue_interrupted:
+    description: A flow that should will be started to continue an interrupted flow. 
+
+    steps:
+      - id: "0"
+        action: utter_flow_continue_interrupted
+  
+  pattern_correction:
+    description: Handle a correction of a slot value.
+
+    steps:
+      - id: "check_if_reset_only"
+        next:
+          - if: context.is_reset_only
+            then: "jump_back_without_message"
+          - else: "correct_slots"
+      - id: "correct_slots"
+        action: action_correct_flow_slot
+        next: "inform_user"
+      - id: "inform_user"
+        action: utter_corrected_previous_input
+      - id: "jump_back_without_message"
+        action: action_correct_flow_slot
+
+  pattern_cancel_flow:
+    description: A meta flow that's started when a flow is cancelled.
+
+    steps:
+      - id: "cancel_flow"
+        action: action_cancel_flow
+        next: "inform_user"
+      - id: "inform_user"
+        action: utter_flow_cancelled_rasa
+
+  pattern_internal_error:
+    description: internal error
+    steps:
+      - id: "0"
+        action: utter_internal_error_rasa
+  
+  pattern_completed:
+    description: a flow has been completed and there is nothing else to be done
+    steps:
+      - id: "0"
+        action: utter_can_do_something_else
+
+  pattern_chitchat:
+    description: handle interactions with the user that are not task-oriented
+    steps:
+      - id: "0"
+        generation_prompt: |
+          You are an incredibly friendly assistant. Generate a short 
+          response to the user's comment in simple english.
+
+          User: {{latest_user_message}}
+          Response:
+
+  pattern_clarification:
+    description: handle clarifications with the user
+    steps:
+      - id: "0"
+        action: action_clarify_flows
+        next: "1"
+      - id: "1"
+        action: utter_clarification_options_rasa
+
+  pattern_ask_collect_information:
+    description: flow used to fill a slot
+    steps:
+      - id: "start"
+        action: action_extract_slots
+        next: "validate"
+      - id: "validate"
+        action: validate_{{context.collect_information}}
+        next: 
+        - if: "{{context.collect_information}} is not null"
+          then: "done"
+        - else: "ask_collect_information"
+      - id: "ask_collect_information"
+        action: utter_ask_{{context.collect_information}}
+        next: "listen"
+      - id: "listen"
+        action: action_listen
+        next: "start"
+      - id: "done"
+```

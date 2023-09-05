@@ -1,0 +1,222 @@
+---
+id: start-here
+sidebar_label: Introduction
+title: Introduction
+
+---
+
+
+## Getting Started with Rasa
+
+This page provides an introduction to Rasa. It's intended for newcomers and for people
+familiar with earlier versions of Rasa who want to understand the new DM2 approach. 
+DM2 gives you the best of both worlds: the time-to-value and generality of LLMs, and the 
+controllability of intent-based approaches. 
+
+:::info
+
+The names used in this documentation are likely going to change. E.g. *DM2* 
+is a placeholder for the name of the new approach.
+
+:::
+
+## Fast Track
+
+Once you have installed Rasa, you can run the `init` command to create a starter project:
+
+```bash
+rasa init --dm2
+```
+
+Run the `train` command at any time to build an assistant from the current state of your project:
+
+```bash
+rasa train
+```
+
+:::note Model Training
+
+While the command is called `rasa train`, building a new version of your assistant doesn't always
+require training a model. Rasa uses a cache and only trains when necessary.
+More information on the [`rasa train` command reference](./command-line-interface.mdx#rasa-train).
+
+:::
+
+
+Run the `chat` command to talk to your assistant on the command line:
+
+```bash
+rasa chat
+```
+
+By default, the command will load the most recent trained model. After the model
+is loaded a website will open at 
+
+  [http://localhost:5005/webhooks/socketio/chat.html](http://localhost:5005/webhooks/socketio/chat.html)
+
+where you can talk to your assistant.
+
+:::note Debugging
+
+Adding the flag `rasa chat --debug` can be very helpful if you want 
+to understand what is happening in detail.
+
+:::
+
+
+## Exploring what your assistant can do
+
+Assistants often have to collect a few pieces of information from the user in order to complete a task.
+This starter project contains an example flow which recommends restaurants. To do so, it asks the user
+for their preferred cuisine, city, and price range.
+
+To try it out, start a conversation using `rasa chat`, and say something like "I'm looking for a restaurant". 
+
+Out of the box, this assistant can already handle a variety of conversations. The first is what we call the "happy path",
+where the user always provides the information the assistant requests.
+But if users change their mind, answer indirectly, or interject with questions, this assistant can handle those cases as well.
+Try out some of these conversations yourself to get a feel for things.
+If you want your assistant to sound a bit more natural, you can activate [contextual rephrasing](./llms/llm-nlg.mdx) of responses.
+
+<Tabs values={[{"label": "Happy path", "value": "happy-path"}, {"label": "Complete request", "value": "all-upfront"}, {"label": "Change of mind", "value": "change-mind"}, {"label": "Interjection", "value": "interjection"}]}  groupId="example-conversations" defaultValue="happy-path">
+  <TabItem value="happy-path">
+    <Chat caption="happy path">
+    <ChatUserText>Can you recommend somewhere to eat?</ChatUserText>
+    <ChatBotText>What kind of food are you looking for?</ChatBotText>
+    <ChatUserText>Indian food</ChatUserText>
+    <ChatBotText>in what price range?</ChatBotText>
+    <ChatUserText>cheap</ChatUserText>
+    <ChatBotText>and in which city?</ChatBotText>
+    <ChatUserText>Berlin</ChatUserText>
+    <ChatBotText>Here's a recommendation: ...</ChatBotText>    
+    </Chat>
+  </TabItem>
+  <TabItem value="all-upfront">
+    <Chat caption="All info given">
+    <ChatUserText>I'm looking for a cheap Chinese restaurant in Amsterdam?</ChatUserText>
+    <ChatBotText>Here's a recommendation: ...</ChatBotText>
+    </Chat>
+  </TabItem>  
+  <TabItem value="change-mind">
+    <Chat caption="user changes their mind">
+    <ChatUserText>Can you recommend somewhere to eat?</ChatUserText>
+    <ChatBotText>What kind of food are you looking for?</ChatBotText>
+    <ChatUserText>Indian food</ChatUserText>
+    <ChatBotText>in what price range?</ChatBotText>
+    <ChatUserText>actually no I want Italian. A cheap spot</ChatUserText>
+    <ChatBotText>and in which city?</ChatBotText>
+    <ChatUserText>Berlin</ChatUserText>
+    <ChatBotText>Here's a recommendation: ...</ChatBotText>    
+    </Chat>
+  </TabItem>
+  <TabItem value="interjection">
+    <Chat caption="user changes their mind">
+    <ChatUserText>Can you recommend somewhere to eat?</ChatUserText>
+    <ChatBotText>What kind of food are you looking for?</ChatBotText>
+    <ChatUserText>wait are you a bot?</ChatUserText>
+    <ChatBotText>I am a bot, powered by Rasa.</ChatBotText>
+    <ChatBotText>What kind of food are you looking for?</ChatBotText>    
+    </Chat>
+  </TabItem>  
+</Tabs>
+
+
+### Understanding flows
+
+Given the range of conversations this assistant can handle, you might expect the implementation to be complex.
+In fact, there are only two small files that provide Rasa what it needs. 
+
+The `data/flows/restaurants.yml` file defines the logic for this flow. In this example the logic is linear
+and walks the user through each of the steps in order. Each of the `collect_information` steps fills the corresponding slot.
+
+```yaml
+flows:
+  recommend_restaurant:
+    description: This flow recommends a restaurant
+    steps:
+      - id: "0"
+        collect_information: cuisine
+        next: "1"
+      - id: "1"
+        collect_information: price_range
+        next: "2"
+      - id: "2"
+        collect_information: part_of_town
+        next: "3"
+      - id: "3"
+        action: search_restaurants
+```
+
+To build more advanced flows, you can add conditional logic, link to other flows, and more. Read more on how to handle [Business Logic with Flows](./flows.mdx)
+
+In addition to the flows, the `domain.yml` file contains definitions of the slots and responses used in this flow. 
+
+### Understanding DM2
+
+Rasa uses a new approach to building AI assistants called DM2 (name TBD). 
+If you've built AI assistants before, you might look at your project and think that many things are missing.
+
+* There is no NLU data with intents and entities
+* There is no logic mapping an intent like "restaurant_search" to the start of the restaurant flow
+* There are no slot mappings
+* There is no explicit logic handling corrections, interruptions, or other unhappy paths.
+
+DM2 doesn't need any of these things to be able to handle the example conversations above. So, how does that work?
+
+Many developers are familiar with dialogue systems made up of separate NLU, dialogue, and NLG components
+(this is also how Rasa worked previously).
+
+In DM2, we have a different set of modules. 
+
+* The *conversation handling* component (name TBD) interprets the conversation so far and predicts 
+a series of commands to progress the state of the conversation.
+* The *business logic* component executes those commands and the logic of your flows. 
+
+The NLU systems you might be familiar with take a single user message as input, and aim to represent
+the meaning of that message by predicting intents and entities. 
+Instead, *conversation handling* considers the conversation as a whole (not just one message),
+and predicts the *intended effect* of the user's message. 
+
+As an example, let's look at using a yes/no question to fill a slot called `late_delivery`:
+
+<Chat caption="yes/no question">
+<ChatBotText>Has it been more than 10 business days since you placed your order?</ChatBotText>
+</Chat>
+
+
+When a user answers "yes" or "no", a traditional NLU model predicts an intent like `affirm` or `deny`.
+A second step (usually handled by the dialogue manager) then maps the intents to
+the `True/False` values of the `late_delivery` slot. 
+
+Instead, the *conversation handling* component directly outputs a command to set the `late_delivery` slot to `True`.
+
+The *conversation handling* approach requires much less work to set up, since you don't need to worry about
+intents and entities and slot mappings. It is also more powerful because it allows us to 
+[break free from intents](https://rasa.com/blog/its-about-time-we-get-rid-of-intents/).
+
+For example, intent-based approaches struggle when context is required to understand what the user means:
+
+<Chat caption="pragmatic understanding">
+<ChatBotText>Has it been more than 10 business days since you placed your order?</ChatBotText>
+<ChatUserText>sadly</ChatUserText>
+</Chat>
+
+This kind of conversation illustrates the limitations of working with intents. It's perfectly clear 
+what the user means in this context, but in general the word "sadly" does not mean `affirm`.
+The *conversation handling* component will correctly output `SetSlot("late_delivery", True)`.
+
+The example project above includes a definition of the core business logic for recommending a restaurant
+and not much else. Yet, it can handle a number of advanced conversations right away. 
+The advantage of DM2 is that it makes chatbots much smarter and much easier to build, while still giving
+you full control over your business logic, and the ability to override and customize all behavior.
+
+## Features
+
+Learn more about how to use DM2 to build advanced assistants:
+
+* Advanced flow logic
+* Search-based question-answering
+* Context switching
+* Disambiguation
+* Contextual understanding and negation
+* Chitchat and digressions

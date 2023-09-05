@@ -158,7 +158,7 @@ model using the completions API of
 
 If you want to use Azure OpenAI Service, you can configure the necessary
 parameters as described in the
-[Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service)
+[Azure OpenAI Service](./llm-configuration.mdx#additional-configuration-for-azure-openai-service)
 section.
 
 :::info Using Other LLMs
@@ -166,7 +166,7 @@ section.
 By default, OpenAI is used as the underlying LLM provider. 
 
 The used LLM provider provider can be configured in the
-`config.yml` file to use another provider, e.g. `cohere`: 
+`endpoints.yml` file to use another provider, e.g. `cohere`: 
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
@@ -176,7 +176,7 @@ nlg:
 ```
 
 For more information, see the
-[LLM setup page on llms and embeddings](./llm-setup.mdx#other-llms--embeddings)
+[LLM setup page on llms and embeddings](./llm-configuration.mdx#other-llmsembeddings)
 
 :::
 
