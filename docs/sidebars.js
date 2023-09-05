@@ -266,41 +266,16 @@ module.exports = {
         },
     ],
     "llms": [
-        'start-here',
-        'tutorial',
+        'llms/large-language-models',
+        'llms/llm-setup',    
         {
             type: 'category',
-            label: 'Getting Started',
-            collapsed: false,
-
-            items: [
-                'llms/llm-installation',
-                'llms/llm-next-gen',
-                'llms/llm-configuration',
-            ]
-        },  
-        {
-            type: 'category',
-            label: 'Next-Gen Assistants',
-            collapsed: false,
-
-            items: [
-                'flows',
-                'llms/unhappy-paths',
-                'llms/llm-detector',
-            ]
-        },      
-        {
-            type: 'category',
-            label: 'Components',
+            label: 'LLM Components',
             collapsed: false,
             items: [
                 'llms/llm-intent',
-                'llms/llm-command-generator',
                 'llms/llm-nlg',
-                'llms/llm-docsearch',
                 'llms/llm-intentless',
-                'llms/flow-policy',
             ],
         },
         'llms/llm-custom',
