@@ -100,7 +100,7 @@ flows:
         collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        collect_information: amount_of_money
+        collect_information: amount
         next: "utter_transfer_complete"
       - id: "transfer_successful"
         action: utter_transfer_complete        
@@ -145,7 +145,7 @@ flows:
         collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        collect_information: amount_of_money
+        collect_information: amount
         next: "utter_transfer_complete"
       - id: "transfer_successful"
         action: utter_transfer_complete        
@@ -219,7 +219,7 @@ flows:
         collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        collect_information: amount_of_money
+        collect_information: amount
         // highlight-start           
         next: "confirm_transfer"
       - id: "confirm_transfer"
@@ -312,7 +312,7 @@ flows:
         collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        collect_information: amount_of_money
+        collect_information: amount
         // highlight-start        
         next: "check_balance"
       - id: "check_balance"
