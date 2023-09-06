@@ -1,4 +1,4 @@
-from typing import List, Optional, Set, Type, Dict, Any
+from typing import List, Optional, Set, Type
 
 import structlog
 from rasa.cdu.commands import (
@@ -15,18 +15,25 @@ from rasa.cdu.commands import (
     ChitChatAnswerCommand,
     ClarifyCommand,
 )
-from rasa.cdu.patterns import (
-    FLOW_PATTERN_COLLECT_INFORMATION,
+from rasa.cdu.patterns.cancel import CancelPatternFlowStackFrame
+from rasa.cdu.patterns.clarify import ClarifyPatternFlowStackFrame
+from rasa.cdu.patterns.collect_information import (
+    CollectInformationPatternFlowStackFrame,
+)
+from rasa.cdu.patterns.correction import (
     FLOW_PATTERN_CORRECTION_ID,
-    FLOW_PATTERN_INTERNAL_ERROR_ID,
-    FLOW_PATTERN_CANCEl_ID,
+    CorrectionPatternFlowStackFrame,
 )
-from rasa.cdu.dialogue_stack import (
-    STACK_FRAME_TYPES_WITH_USER_FLOWS,
-    DialogueStack,
-    DialogueStackFrame,
-    StackFrameType,
+from rasa.cdu.patterns.internal_error import InternalErrorPatternFlowStackFrame
+from rasa.cdu.stack.dialogue_stack import DialogueStack
+from rasa.cdu.stack.frames import (
+    ChitChatStackFrame,
+    BaseFlowStackFrame,
+    UserFlowStackFrame,
+    SearchStackFrame,
 )
+from rasa.cdu.stack.frames.flow_frame import FlowStackFrameType
+from rasa.cdu.stack.utils import top_flow_frame, top_user_flow_frame
 from rasa.shared.core.constants import (
     DIALOGUE_STACK_SLOT,
 )
@@ -34,7 +41,6 @@ from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import (
     END_STEP,
     ContinueFlowStep,
-    Flow,
     FlowStep,
     FlowsList,
     CollectInformationFlowStep,
@@ -123,9 +129,10 @@ def execute_commands(
     dialogue_stack = DialogueStack.from_tracker(tracker)
     original_stack_dump = dialogue_stack.as_dict()
 
-    user_step, user_flow = dialogue_stack.topmost_user_frame(all_flows)
-
-    current_top_flow = dialogue_stack.top_flow(all_flows)
+    current_user_frame = top_user_flow_frame(dialogue_stack)
+    current_top_flow = (
+        current_user_frame.flow(all_flows) if current_user_frame else None
+    )
 
     commands = clean_up_commands(commands, tracker, all_flows)
 
@@ -141,9 +148,7 @@ def execute_commands(
 
     for command in reversed_commands:
         if isinstance(command, CorrectSlotsCommand):
-            top_non_collect_info_frame = dialogue_stack.top(
-                ignore_frame=FLOW_PATTERN_COLLECT_INFORMATION
-            )
+            top_non_collect_info_frame = top_flow_frame(dialogue_stack)
             if not top_non_collect_info_frame:
                 # we shouldn't end up here as a correction shouldn't be triggered
                 # if there is nothing to correct. but just in case we do, we
@@ -166,20 +171,15 @@ def execute_commands(
             )
 
             reset_step = _find_earliest_updated_collect_info(
-                user_step, user_flow, proposed_slots
+                current_user_frame, proposed_slots, all_flows
             )
-            context: Dict[str, Any] = {
-                "is_reset_only": is_reset_only,
-                "corrected_slots": proposed_slots,
-                "corrected_reset_point": {
-                    "id": user_flow.id if user_flow else None,
-                    "step_id": reset_step.id if reset_step else None,
-                },
-            }
-            correction_frame = DialogueStackFrame(
-                flow_id=FLOW_PATTERN_CORRECTION_ID,
-                frame_type=StackFrameType.REMARK,
-                context=context,
+            correction_frame = CorrectionPatternFlowStackFrame(
+                is_reset_only=is_reset_only,
+                corrected_slots=proposed_slots,
+                reset_flow_id=current_user_frame.flow_id
+                if current_user_frame
+                else None,
+                reset_step_id=reset_step.id if reset_step else None,
             )
 
             if top_non_collect_info_frame.flow_id != FLOW_PATTERN_CORRECTION_ID:
@@ -187,9 +187,10 @@ def execute_commands(
             else:
                 # wrap up the previous correction flow
                 for i, frame in enumerate(reversed(dialogue_stack.frames)):
-                    frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
-                    if frame.frame_id == top_non_collect_info_frame.frame_id:
-                        break
+                    if isinstance(frame, BaseFlowStackFrame):
+                        frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
+                        if frame.frame_id == top_non_collect_info_frame.frame_id:
+                            break
 
                 # push a new correction flow
                 dialogue_stack.push(
@@ -203,12 +204,12 @@ def execute_commands(
             events.append(SlotSet(command.name, command.value))
         elif isinstance(command, StartFlowCommand):
             if current_top_flow:
-                frame_type = StackFrameType.INTERRUPT
+                frame_type = FlowStackFrameType.INTERRUPT
             else:
-                frame_type = StackFrameType.REGULAR
+                frame_type = FlowStackFrameType.REGULAR
             structlogger.debug("command_executor.start_flow", command=command)
             dialogue_stack.push(
-                DialogueStackFrame(flow_id=command.flow, frame_type=frame_type)
+                UserFlowStackFrame(flow_id=command.flow, frame_type=frame_type)
             )
         elif isinstance(command, CancelFlowCommand):
             if not current_top_flow:
@@ -226,59 +227,34 @@ def execute_commands(
             # e.g. corrections.
             for frame in reversed(original_frames):
                 canceled_frames.append(frame.frame_id)
-                if user_flow and frame.flow_id == user_flow.id:
+                if (
+                    current_user_frame
+                    and isinstance(frame, BaseFlowStackFrame)
+                    and frame.flow_id == current_user_frame.flow_id
+                ):
                     break
 
             dialogue_stack.push(
-                DialogueStackFrame(
-                    flow_id=FLOW_PATTERN_CANCEl_ID,
-                    frame_type=StackFrameType.REMARK,
-                    context={
-                        "canceled_name": user_flow.readable_name()
-                        if user_flow
-                        else None,
-                        "canceled_frames": canceled_frames,
-                    },
+                CancelPatternFlowStackFrame(
+                    canceled_name=current_user_frame.flow(all_flows).readable_name()
+                    if current_user_frame
+                    else None,
+                    canceled_frames=canceled_frames,
                 )
             )
         elif isinstance(command, KnowledgeAnswerCommand):
-            dialogue_stack.push(
-                DialogueStackFrame(
-                    # TODO: not quite sure if we need an id here
-                    flow_id="NO_FLOW",
-                    frame_type=StackFrameType.DOCSEARCH,
-                )
-            )
+            dialogue_stack.push(SearchStackFrame())
         elif isinstance(command, ChitChatAnswerCommand):
-            dialogue_stack.push(
-                DialogueStackFrame(
-                    flow_id="NO_FLOW",
-                    frame_type=StackFrameType.INTENTLESS,
-                )
-            )
+            dialogue_stack.push(ChitChatStackFrame())
         elif isinstance(command, ClarifyCommand):
             relevant_flows = [all_flows.flow_by_id(opt) for opt in command.options]
             names = [
                 flow.readable_name() for flow in relevant_flows if flow is not None
             ]
-            context = {
-                "names": names,
-            }
-            dialogue_stack.push(
-                DialogueStackFrame(
-                    flow_id="pattern_clarification",
-                    frame_type=StackFrameType.REGULAR,
-                    context=context,
-                )
-            )
+            dialogue_stack.push(ClarifyPatternFlowStackFrame(names=names))
         elif isinstance(command, ErrorCommand):
             structlogger.debug("command_executor.error", command=command)
-            dialogue_stack.push(
-                DialogueStackFrame(
-                    flow_id=FLOW_PATTERN_INTERNAL_ERROR_ID,
-                    frame_type=StackFrameType.REMARK,
-                )
-            )
+            dialogue_stack.push(InternalErrorPatternFlowStackFrame())
 
     # if the dialogue stack has changed, persist it in a set slot event
     if original_stack_dump != dialogue_stack.as_dict():
@@ -287,14 +263,16 @@ def execute_commands(
 
 
 def _find_earliest_updated_collect_info(
-    current_step: Optional[FlowStep], flow: Optional[Flow], updated_slots: List[str]
+    current_user_flow_frame: Optional[UserFlowStackFrame],
+    updated_slots: List[str],
+    all_flows: FlowsList,
 ) -> Optional[FlowStep]:
     """Find the collect infos that was updated."""
-    if not flow or not current_step:
+    if not current_user_flow_frame:
         return None
-    asked_collect_info_steps = flow.previously_asked_collect_information(
-        current_step.id
-    )
+    flow = current_user_flow_frame.flow(all_flows)
+    step = current_user_flow_frame.step(all_flows)
+    asked_collect_info_steps = flow.previously_asked_collect_information(step.id)
 
     for collect_info_step in reversed(asked_collect_info_steps):
         if collect_info_step.collect_information in updated_slots:
@@ -319,13 +297,13 @@ def filled_slots_for_active_flow(
     asked_collect_information = set()
 
     for frame in reversed(dialogue_stack.frames):
-        if not (flow := all_flows.flow_by_id(frame.flow_id)):
+        if not isinstance(frame, BaseFlowStackFrame):
             break
-
+        flow = frame.flow(all_flows)
         for q in flow.previously_asked_collect_information(frame.step_id):
             asked_collect_information.add(q.collect_information)
 
-        if frame.frame_type in STACK_FRAME_TYPES_WITH_USER_FLOWS:
+        if isinstance(frame, UserFlowStackFrame):
             # as soon as we hit the first stack frame that is a "normal"
             # user defined flow we stop looking for previously asked collect infos
             # because we only want to ask collect infos that are part of the
@@ -357,7 +335,7 @@ def get_current_collect_information(
         # we are currently not in a flow
         return None
 
-    if top_frame.flow_id != FLOW_PATTERN_COLLECT_INFORMATION:
+    if not isinstance(top_frame, CollectInformationPatternFlowStackFrame):
         # we are currently not in a collect information
         return None
 
@@ -371,7 +349,7 @@ def get_current_collect_information(
         return None
 
     frame_that_triggered_collect_infos = dialogue_stack.frames[-2]
-    if not (step := frame_that_triggered_collect_infos.step(all_flows)):
+    if not isinstance(frame_that_triggered_collect_infos, BaseFlowStackFrame):
         # this is a failure, if there is a frame, we should be able to get the
         # step from it
         structlogger.warning(
@@ -380,6 +358,7 @@ def get_current_collect_information(
         )
         return None
 
+    step = frame_that_triggered_collect_infos.step(all_flows)
     if isinstance(step, CollectInformationFlowStep):
         # we found it!
         return step
@@ -412,7 +391,9 @@ def clean_up_commands(
     """
     dialogue_stack = DialogueStack.from_tracker(tracker)
 
-    flows_on_the_stack = {f.flow_id for f in dialogue_stack.frames}
+    flows_on_the_stack = {
+        f.flow_id for f in dialogue_stack.frames if isinstance(f, UserFlowStackFrame)
+    }
 
     slots_so_far = filled_slots_for_active_flow(tracker, all_flows)
 
@@ -477,8 +458,10 @@ def clean_up_commands(
             structlogger.debug(
                 "command_executor.convert_command.correction", command=command
             )
-            if (top := dialogue_stack.top()) and top.context:
-                already_corrected_slots = top.context.get("corrected_slots", {})
+            if (top := top_flow_frame(dialogue_stack)) and isinstance(
+                top, CorrectionPatternFlowStackFrame
+            ):
+                already_corrected_slots = top.corrected_slots
             else:
                 already_corrected_slots = {}
 

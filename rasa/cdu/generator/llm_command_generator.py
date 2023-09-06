@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional, List, Union
 
 from jinja2 import Template
 import structlog
+from rasa.cdu.stack.utils import top_flow_frame
 from rasa.cdu.generator.base import CommandGenerator
 from rasa.cdu.commands import (
     Command,
@@ -16,8 +17,6 @@ from rasa.cdu.commands import (
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
-from rasa.cdu.conversation_patterns import FLOW_PATTERN_COLLECT_INFORMATION
-
 from rasa.core.policies.flow_policy import DialogueStack
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -338,9 +337,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         flows_without_patterns = FlowsList(
             [f for f in flows.underlying_flows if not f.is_handling_pattern()]
         )
-        top_relevant_frame = DialogueStack.top_frame_on_tracker(
-            tracker, ignore_frame=FLOW_PATTERN_COLLECT_INFORMATION
-        )
+        top_relevant_frame = top_flow_frame(DialogueStack.from_tracker(tracker))
         top_flow = top_relevant_frame.flow(flows) if top_relevant_frame else None
         current_step = top_relevant_frame.step(flows) if top_relevant_frame else None
         if top_flow is not None:
