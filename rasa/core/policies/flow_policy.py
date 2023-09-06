@@ -313,7 +313,7 @@ class FlowExecutor:
 
             return initial_value
 
-        # attach context to the predicate evaluation to allow coditions using it
+        # attach context to the predicate evaluation to allow conditions using it
         context = {"context": DialogueStack.from_tracker(tracker).current_context()}
         document: Dict[str, Any] = context.copy()
         for slot in self.domain.slots:
@@ -575,9 +575,11 @@ class FlowExecutor:
         """
         if isinstance(step, CollectInformationFlowStep):
             structlogger.debug("flow.step.run.collect_information")
-            self.trigger_pattern_ask_collect_information(step.collect_information)
+            self.trigger_pattern_ask_collect_information(
+                step.collect_information, step.validation
+            )
 
-            # reset the slot if its already filled and the collect infomation shouldn't
+            # reset the slot if its already filled and the collect information shouldn't
             # be skipped
             slot = tracker.slots.get(step.collect_information, None)
             if slot and slot.has_been_set and step.ask_before_filling:
@@ -696,9 +698,24 @@ class FlowExecutor:
                 )
             )
 
-    def trigger_pattern_ask_collect_information(self, collect_information: str) -> None:
+    def trigger_pattern_ask_collect_information(
+        self,
+        collect_information: str,
+        validation: Optional[Dict[Text, Any]],
+    ) -> None:
         context = self.dialogue_stack.current_context().copy()
         context["collect_information"] = collect_information
+
+        if validation and "valid_message" not in validation:
+            validation["valid_message"] = "null"
+
+        default_validation = {
+            "condition": "true",
+            "valid_message": "null",
+            "invalid_message": "null",
+        }
+
+        context["validation"] = validation if validation else default_validation
 
         self.dialogue_stack.push(
             DialogueStackFrame(

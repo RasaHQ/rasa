@@ -111,6 +111,17 @@ flows:
     steps:
       - id: "start"
         action: action_extract_slots
+        next:
+          - if: "{{context.collect_information}} is null"
+            then: "validate"
+          - if: "{{context.validation.condition}}"
+            then: "valid_message"
+          - else: "{{context.validation.invalid_message}}"
+      - id: "valid_message"
+        action: "{{context.validation.valid_message}}"
+        next: "validate"
+      - id: "{{context.validation.invalid_message}}"
+        action: "{{context.validation.invalid_message}}"
         next: "validate"
       - id: "validate"
         action: validate_{{context.collect_information}}
