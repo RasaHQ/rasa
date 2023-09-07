@@ -145,9 +145,13 @@ class ActionCorrectFlowSlot(action.Action):
 
         # also need to end any running collect information
         if len(stack.frames) > i + 1:
-            previous_frame = stack.frames[i + 1]
-            if isinstance(previous_frame, CollectInformationPatternFlowStackFrame):
-                previous_frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
+            frame_ontop_of_user_frame = stack.frames[i + 1]
+            if isinstance(
+                frame_ontop_of_user_frame, CollectInformationPatternFlowStackFrame
+            ):
+                frame_ontop_of_user_frame.step_id = (
+                    ContinueFlowStep.continue_step_for_id(END_STEP)
+                )
 
         events: List[Event] = [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
 

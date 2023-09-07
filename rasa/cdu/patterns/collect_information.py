@@ -38,18 +38,18 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
         )
 
     def as_dict(self) -> Dict[str, Any]:
-        super_dict = super().as_dict()
-        super_dict.update(
+        data = super().as_dict()
+        data.update(
             {
                 "collect_information": self.collect_information,
             }
         )
-        return super_dict
+        return data
 
     def context_as_dict(
         self, underlying_frames: List[DialogueStackFrame]
     ) -> Dict[str, Any]:
-        super_dict = super().context_as_dict(underlying_frames)
+        context = super().context_as_dict(underlying_frames)
 
         if underlying_frames:
             underlying_context = underlying_frames[-1].context_as_dict(
@@ -61,10 +61,10 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
         # the collect information frame is a special case, as it is not
         # a regular frame, but a frame that is used to collect information
 
-        super_dict.update(underlying_context)
-        super_dict.update(
+        context.update(underlying_context)
+        context.update(
             {
                 "collect_information": self.collect_information,
             }
         )
-        return super_dict
+        return context

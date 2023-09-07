@@ -39,21 +39,21 @@ class ContinueInterruptedPatternFlowStackFrame(PatternFlowStackFrame):
         )
 
     def as_dict(self) -> Dict[str, Any]:
-        super_dict = super().as_dict()
-        super_dict.update(
+        data = super().as_dict()
+        data.update(
             {
                 "previous_flow_name": self.previous_flow_name,
             }
         )
-        return super_dict
+        return data
 
     def context_as_dict(
         self, underlying_frames: List[DialogueStackFrame]
     ) -> Dict[str, Any]:
-        super_dict = super().context_as_dict(underlying_frames)
-        super_dict.update(
+        context = super().context_as_dict(underlying_frames)
+        context.update(
             {
                 "previous_flow_name": self.previous_flow_name,
             }
         )
-        return super_dict
+        return context

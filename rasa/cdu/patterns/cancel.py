@@ -25,6 +25,57 @@ structlogger = structlog.get_logger()
 FLOW_PATTERN_CANCEL_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 
 
+@dataclass
+class CancelPatternFlowStackFrame(PatternFlowStackFrame):
+    flow_id: str = FLOW_PATTERN_CANCEL_ID
+    canceled_name: str = ""
+    canceled_frames: List[str] = field(default_factory=list)
+
+    @classmethod
+    def type(cls) -> str:
+        """Returns the type of the frame."""
+        return "pattern_cancel"
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> CancelPatternFlowStackFrame:
+        """Creates a `DialogueStackFrame` from a dictionary.
+
+        Args:
+            data: The dictionary to create the `DialogueStackFrame` from.
+
+        Returns:
+            The created `DialogueStackFrame`.
+        """
+        return CancelPatternFlowStackFrame(
+            data["frame_id"],
+            step_id=data["step_id"],
+            canceled_name=data["canceled_name"],
+            canceled_frames=data["canceled_frames"],
+        )
+
+    def as_dict(self) -> Dict[str, Any]:
+        data = super().as_dict()
+        data.update(
+            {
+                "canceled_name": self.canceled_name,
+                "canceled_frames": self.canceled_frames,
+            }
+        )
+        return data
+
+    def context_as_dict(
+        self, underlying_frames: List[DialogueStackFrame]
+    ) -> Dict[str, Any]:
+        context = super().context_as_dict(underlying_frames)
+        context.update(
+            {
+                "canceled_name": self.canceled_name,
+                "canceled_frames": self.canceled_frames,
+            }
+        )
+        return context
+
+
 class ActionCancelFlow(action.Action):
     """Action which cancels a flow from the stack."""
 
@@ -71,54 +122,3 @@ class ActionCancelFlow(action.Action):
                 )
 
         return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
-
-
-@dataclass
-class CancelPatternFlowStackFrame(PatternFlowStackFrame):
-    flow_id: str = FLOW_PATTERN_CANCEL_ID
-    canceled_name: str = ""
-    canceled_frames: List[str] = field(default_factory=list)
-
-    @classmethod
-    def type(cls) -> str:
-        """Returns the type of the frame."""
-        return "pattern_cancel"
-
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> CancelPatternFlowStackFrame:
-        """Creates a `DialogueStackFrame` from a dictionary.
-
-        Args:
-            data: The dictionary to create the `DialogueStackFrame` from.
-
-        Returns:
-            The created `DialogueStackFrame`.
-        """
-        return CancelPatternFlowStackFrame(
-            data["frame_id"],
-            step_id=data["step_id"],
-            canceled_name=data["canceled_name"],
-            canceled_frames=data["canceled_frames"],
-        )
-
-    def as_dict(self) -> Dict[str, Any]:
-        super_dict = super().as_dict()
-        super_dict.update(
-            {
-                "canceled_name": self.canceled_name,
-                "canceled_frames": self.canceled_frames,
-            }
-        )
-        return super_dict
-
-    def context_as_dict(
-        self, underlying_frames: List[DialogueStackFrame]
-    ) -> Dict[str, Any]:
-        super_dict = super().context_as_dict(underlying_frames)
-        super_dict.update(
-            {
-                "canceled_name": self.canceled_name,
-                "canceled_frames": self.canceled_frames,
-            }
-        )
-        return super_dict

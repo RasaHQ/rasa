@@ -17,8 +17,8 @@ class CommandGenerator:
     def process(
         self,
         messages: List[Message],
+        flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
-        flows: Optional[FlowsList] = None,
     ) -> List[Message]:
         """Process a list of messages. For each message predict commands.
 
@@ -33,9 +33,8 @@ class CommandGenerator:
         Returns:
         The processed messages (usually this is just one during prediction).
         """
-        list_of_flows = flows if flows else FlowsList(flows=[])
         for message in messages:
-            commands = self.predict_commands(message, list_of_flows, tracker)
+            commands = self.predict_commands(message, flows, tracker)
             commands_dicts = [dataclasses.asdict(command) for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
         return messages

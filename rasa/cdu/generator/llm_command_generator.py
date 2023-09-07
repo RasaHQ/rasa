@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional, List, Union
 from jinja2 import Template
 import structlog
 from rasa.cdu.stack.utils import top_flow_frame
-from rasa.cdu.generator.base import CommandGenerator
+from rasa.cdu.generator import CommandGenerator
 from rasa.cdu.commands import (
     Command,
     ErrorCommand,
