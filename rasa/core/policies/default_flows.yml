@@ -113,7 +113,7 @@ flows:
         action: action_extract_slots
         next:
           - if: "{{context.collect_information}} is null"
-            then: "validate"
+            then: "ask_collect_information"
           - if: "{{context.validation.condition}}"
             then: "valid_message"
           - else: "{{context.validation.invalid_message}}"
@@ -122,7 +122,7 @@ flows:
         next: "validate"
       - id: "{{context.validation.invalid_message}}"
         action: "{{context.validation.invalid_message}}"
-        next: "validate"
+        next: "ask_collect_information"
       - id: "validate"
         action: validate_{{context.collect_information}}
         next: 
