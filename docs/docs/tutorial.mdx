@@ -118,6 +118,7 @@ The `id` can be anything you like, but it's a good idea to use names that make i
 The first step is a `collect_information` step, which is used to fill a `slot`.
 A `collect_information` step sends a message to the user requesting information, and waits for an answer.
 
+
 ## Collecting Information in Slots
 
 `Slots` are a key-value memory store used during a conversation.
@@ -164,6 +165,8 @@ Rasa will try to use this answer to fill the slot `recipient`.
 Read about slot validation (link) to learn more about how to check the value of the slot is OK,
 and how to handle the case when it isn't.
 
+<img alt="explanation of how slots are used in flows" src={useBaseUrl("/img/slots_in_flows.png")} />
+
 ## Steps that do not Collect Information
 
 The third `step` in your `transfer_money` flow is not a `collect_information` step but an `action` step.
@@ -174,6 +177,7 @@ For now, this is the final step in the flow, so there is no next step to execute
 ## Adding a Confirmation Step
 
 Slots are also used to build branching logic in flows.
+
 You're going to introduce an extra step, asking the user to confirm the amount and the recipient before 
 sending the transfer. 
 Since you are asking a yes/no question, you can store the result in a boolean `slot`.
