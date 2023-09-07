@@ -170,7 +170,8 @@ and how to handle the case when it isn't.
 ## Steps that do not Collect Information
 
 The third `step` in your `transfer_money` flow is not a `collect_information` step but an `action` step.
-This means that your assistant will execute the corresponding action and then proceed.
+When you reach an action step in a flow, your assistant will execute the corresponding action and then 
+proceed to the next step.
 It will not stop to wait for the user's next message. 
 For now, this is the final step in the flow, so there is no next step to execute and the flow completes. 
 
