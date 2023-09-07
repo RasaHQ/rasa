@@ -24,6 +24,12 @@ Here are some of the conversations your assistant will be able to handle:
     <Chat caption="happy path">
     <ChatUserText>I'd like to transfer some money</ChatUserText>
     <ChatBotText>Sure - who are we sending money to?</ChatBotText>
+    <ChatUserText>Jen</ChatUserText>
+    <ChatBotText>How much would you like to send?</ChatBotText>
+    <ChatUserText>$50</ChatUserText>
+    <ChatBotText>Just to confirm: you want to send $50 to Jen?</ChatBotText>
+    <ChatUserText>yes</ChatUserText>
+    <ChatBotText>Ok, it's done!</ChatBotText>
     </Chat>
   </TabItem>
   <TabItem value="all-upfront">
@@ -60,7 +66,7 @@ rasa init --tutorial
 Open up the project folder in your IDE to see the files that make up your new project.
 In this tutorial you will primarily work with the following files:
 
-* `data/flows.yml` 
+* `data/flows.yml`
 * `domain.yml`
 * `actions/actions.py`
 
@@ -94,7 +100,7 @@ flows:
         collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        collect_information: amount_of_money
+        collect_information: amount
         next: "utter_transfer_complete"
       - id: "transfer_successful"
         action: utter_transfer_complete        
@@ -110,28 +116,58 @@ The `steps` describe the business logic required to do what the user asked for.
 There are three steps defined, each with an `id`. 
 The `id` can be anything you like, but it's a good idea to use names that make it clear what is going on. 
 The first step is a `collect_information` step, which is used to fill a `slot`.
-`Slots` are a key-value memory store used during a conversation. 
 A `collect_information` step sends a message to the user requesting information, and waits for an answer.
 
-The syntax `collect_information: transfer_money_recipient` means that when the user answers, Rasa will try to use
-their answer to fill the slot `transfer_money_recipient`.
-It also means that Rasa will look for a `response` called `utter_ask_transfer_money_recipient`.
 
+## Collecting Information in Slots
 
-The slot `recipient` and the phrasing of the question `utter_ask_recipient` are both defined
-in your domain file. The corresponding part of your domain file looks like this:
+`Slots` are a key-value memory store used during a conversation.
+Slots are defined in your `domain.yml` file. For example, the definition of your `recipient` slot looks like this:
 
 ```yaml
 slots:
   recipient:
-  type: Text
-  mappings:
-    - type: custom
+    type: Text
+    mappings:
+      - type: custom
+```
 
+They can be used to store information provided to you by the user or fetched via an API call.
+First, you're going to see how to store information provided by the end user in a slot.
+To do this, you define a `collect_information` step like the first step in your flow above.
+
+```yaml
+flows:
+  transfer_money:
+    description: This flow lets users send money to friends and family.
+    steps:
+      - id: "ask_recipient"
+        // highlight-next-line
+        collect_information: recipient
+        next: "ask_amount"
+      - id: "ask_amount"
+        collect_information: amount
+        next: "utter_transfer_complete"
+      - id: "transfer_successful"
+        action: utter_transfer_complete        
+```
+
+Rasa will look for a  `response` called `utter_ask_recipient` in your domain file and use this to 
+phrase the question to the user. It will then wait for a response. 
+
+```yaml
 responses:
   utter_ask_recipient:
     - text: "Who would you like to send money to?"
 ```
+
+Rasa will try to use this answer to fill the slot `recipient`.
+Read about slot validation (link) to learn more about how to check the value of the slot is OK,
+and how to handle the case when it isn't.
+
+<img alt="explanation of how slots are used in flows" src={useBaseUrl("/img/slots_in_flows.png")} />
+
+## Steps that do not Collect Information
 
 The third `step` in your `transfer_money` flow is not a `collect_information` step but an `action` step.
 This means that your assistant will execute the corresponding action and then proceed.
@@ -140,24 +176,25 @@ For now, this is the final step in the flow, so there is no next step to execute
 
 ## Adding a Confirmation Step
 
+Slots are also used to build branching logic in flows.
+
 You're going to introduce an extra step, asking the user to confirm the amount and the recipient before 
 sending the transfer. 
-This also shows you how you can create branching logic based on what the user says. 
-You are asking a yes/no question, so you can store the result in a boolean `slot`.
+Since you are asking a yes/no question, you can store the result in a boolean `slot`.
 
 In your domain file, add the definition of this slot and the corresponding response:
 
 ```yaml
 slots:
   recipient:
-  type: Text
-  mappings:
-    - type: custom
+    type: Text
+    mappings:
+      - type: custom
   // highlight-start  
   final_confirmation:
-  type: bool
-  mappings:
-    - type: custom
+    type: bool
+    mappings:
+      - type: custom
   // highlight-end
 ```
 
@@ -173,8 +210,9 @@ responses:
 
 Notice that your confirmation question uses curly brackets `{}` to include slot values in your response. 
 
-Add a `collect_information` step to your flow, and change the `next` attribute of the `ask_amount` step to 
-match the `id` of your newly created step.
+Add a `collect_information` step to your flow and give it the id `confirm_transfer`.
+Also change the `next` attribute of the `ask_amount` step to match the `id` of your newly created step: `confirm_transfer`.
+
 
 ```yaml
 flows:
@@ -185,7 +223,7 @@ flows:
         collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        collect_information: amount_of_money
+        collect_information: amount
         // highlight-start           
         next: "confirm_transfer"
       - id: "confirm_transfer"
@@ -205,26 +243,8 @@ Conditions can be used to create branching logic, including logical operators li
 Learn more about conditions here (link). 
 
 To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your bot.
+It should now ask you to confirm before completing the transfer. 
 
-## Contextual rephrasing
-
-So far your assistant only uses templated responses. 
-You can also allow Rasa to dynamically rephrase these, taking the context of the conversation into account.
-To do this, add `rephrase: true` metadata to some of the responses in your domain:
-
-```yaml
-responses:
-  utter_ask_recipient:
-    - text: "Who would you like to send money to?"
-  // highlight-start    
-      metadata:
-        rephrase: true    
-  // highlight-end
-  utter_ask_final_confirmation:
-    - text: "Please confirm: you want to transfer {amount} to {recipient}?"
-```
-
-Re-run `rasa train` and then `rasa shell` again to try your updated assistant.
 
 ## Integrating an API call
 
@@ -296,7 +316,7 @@ flows:
         collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
-        collect_information: amount_of_money
+        collect_information: amount
         // highlight-start        
         next: "check_balance"
       - id: "check_balance"
@@ -318,20 +338,32 @@ flows:
         action: utter_transfer_complete
 ```
 
+# How-to Guides for Advanced Topics
 
+### Slot Validation
+Use custom logic to determine whether to accept or reject the value of a slot provided by the user. 
 
+### Handling Corrections
+Handle cases where the user changes their mind about something and provides an new answer to an earlier question.
 
-x A first multi-step flow / process (transfer money) - show also works if all slots present in request.
-x Adding a confirmation step (sure you want to transfer?)
-x Adding contextual rephrasing
-x Adding an API call 
-x Branching based on API call response (success / fail)
-- Linking to another flow (anything else?)
-- Adding Slot validation
-- Handling corrections (user changes mind about recipient)
-- Customising how corrections are handled (introduces idea of patterns)
-- Handling Digressions (includes adding another flow - check balance)
-- Knowledge-based
-- Handling Disambiguation
-- More patterns → go to reference.
-- Installation
+### Handling Digressions
+Handle cases where users ask clarifying questions, make small talk, etc.
+
+### Customising Patterns
+Customise how Rasa switches between flows and other common conversational patterns.
+
+### Contextual Paraphrasing
+Use LLMs to paraphrase templated responses to account for context and increase fluency. 
+<RasaProLabel />
+
+### Linking Flows
+Link multiple flows together, build shared sub-flows
+<RasaProLabel />
+
+### Integrating Search & RAG
+Integrate flow-based and knowledge-based dialogue into fluent conversations.
+<RasaProLabel />
+
+### Handling Disambiguation
+Automatically ask clarifying questions when it is not clear which flow applies. 
+<RasaProLabel />
