@@ -1,308 +1,322 @@
 module.exports = {
-    default: [
-        'introduction',
-        'rasa-pro',
-        'playground',
+  default: [
+    "introduction", // TODO: ENG-516
+    {
+      type: "category",
+      label: "Getting started",
+      collapsed: false,
+      items: [
+        "conversational-ai-with-rasa", // TODO: create-task
         {
-            type: 'category',
-            label: 'Installation',
-            collapsed: true,
-            items: [
-                'installation/environment-set-up',
-                'installation/installing-rasa-open-source',
-                {
-                    label: 'Installing Rasa Pro',
-                    collapsed: true,
-                    type: 'category',
-                    items: [
-                        'installation/rasa-pro/rasa-pro-artifacts',
-                        'installation/rasa-pro/installation',
-                    ],
-                },
-            ],
+          type: "category",
+          label: "Installation",
+          collapsed: true,
+          items: [
+            "installation/environment-set-up",
+            "installation/installing-rasa-open-source",
+            {
+              label: "Installing Rasa Pro",
+              collapsed: true,
+              type: "category",
+              items: [
+                "installation/rasa-pro/rasa-pro-artifacts",
+                "installation/rasa-pro/installation",
+              ],
+            },
+          ],
+        },
+        "tutorial",
+        "dm2-vs-intent-based-systems", // TODO: create-task
+        "dm2-vs-llm-chaining", // TODO: create-task
+      ],
+    },
+    {
+      type: "category",
+      label: "Building Assistants",
+      collapsed: true,
+      items: [
+        "building-assistants/flows",
+        "building-assistants/domain",
+        {
+          type: "category",
+          label: "Actions",
+          items: [
+            "building-assistants/actions",
+            "building-assistants/custom-actions",
+            "building-assistants/default-actions",
+            "building-assistants/slot-validation-actions",
+          ],
+        },
+        "building-assistants/llm-command-generator",
+        "building-assistants/responses",
+        {
+          type: "category",
+          label: "Config",
+          items: [
+            "building-assistants/llm-configuration",
+            "building-assistants/custom-graph-components",
+            "building-assistants/training-data-importers",
+            "building-assistants/graph-recipe",
+            "building-assistants/spaces",
+          ],
+        },
+        // TODO: create-task add policies
+        // TODO: create-task spit CLI docs
+        "command-line-interface",
+        // TODO: create-task add how-to-guides
+        "glossary",
+        // TODO: review items below and move them around
+        {
+          type: "category",
+          label: "Building Classic Assistants",
+          collapsed: true,
+          items: [
+            // TODO: we'll need something for DM2 at some point
+            "migrate-from",
+            // TODO: create-task spit CLI docs
+            "command-line-interface",
+            {
+              type: "category",
+              label: "Conversation Patterns",
+              collapsed: true,
+              items: [
+                "chitchat-faqs",
+                "business-logic",
+                "fallback-handoff",
+                "unexpected-input",
+                "contextual-conversations",
+                "reaching-out-to-user",
+              ],
+            },
+            {
+              type: "category",
+              label: "Config",
+              items: [
+                // TODO: rename "model-configuration"
+                "model-configuration",
+                // TODO: rename "components" + pick the ones that are still relevant in DM2 and move them there
+                "components",
+                // TODO: rename "policies" + pick the ones that are still relevant in DM2 and move them there
+                "policies",
+                "language-support",
+              ],
+            },
+            "rules",
+            "stories",
+            "forms",
+            "training-data-format",
+            "nlu-training-data",
+            "tuning-your-model",
+          ],
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Testing & Deploying to Production",
+      collapsed: true,
+      items: [
+        {
+          type: "category",
+          label: "Architecture", // TODO: name still confusing with architecture page elsewhere
+          items: [
+            "arch-overview",
+            "tracker-stores",
+            "event-brokers",
+            "model-storage",
+            "lock-stores",
+            "secrets-managers",
+            "nlu-only",
+            "nlg",
+          ],
+        },
+        // TODO: change content to remove DM1 topics
+        "testing-your-assistant",
+        {
+          type: "category",
+          label: "Channel Connectors",
+          items: [
+            "messaging-and-voice-channels",
+            {
+              type: "category",
+              label: "Text & Chat",
+              items: [
+                "connectors/facebook-messenger",
+                "connectors/slack",
+                "connectors/telegram",
+                "connectors/twilio",
+                "connectors/hangouts",
+                "connectors/microsoft-bot-framework",
+                "connectors/cisco-webex-teams",
+                "connectors/rocketchat",
+                "connectors/mattermost",
+              ],
+            },
+            {
+              type: "category",
+              label: "Voice",
+              items: ["connectors/audiocodes-voiceai-connect"],
+            },
+            "connectors/custom-connectors",
+          ],
         },
         {
-            type: 'category',
-            label: 'Building Assistants',
-            collapsed: false,
-            items: [
-                'migrate-from',
-                'command-line-interface',
+          type: "category",
+          label: "Action Server",
+          collapsed: true,
+          items: [
+            "action-server/index",
+            {
+              "Action Server Fundamentals": [
+                "action-server/actions",
+                "action-server/events",
+              ],
+            },
+            {
+              "Using the Rasa SDK": [
+                "action-server/running-action-server",
                 {
-                    type: 'category',
-                    label: 'Best Practices',
-                    collapsed: true,
-                    items: [
-                        'conversation-driven-development',
-                        'generating-nlu-data',
-                        'writing-stories',
-                    ],
+                  type: "category",
+                  label: "Writing Custom Actions",
+                  collapsed: true,
+                  items: [
+                    "action-server/sdk-actions",
+                    "action-server/sdk-tracker",
+                    "action-server/sdk-dispatcher",
+                    "action-server/sdk-events",
+                    {
+                      type: "category",
+                      label: "Special Action Types",
+                      collapsed: true,
+                      items: [
+                        "action-server/knowledge-bases",
+                        "action-server/validation-action",
+                      ],
+                    },
+                  ],
                 },
-                {
-                    type: 'category',
-                    label: 'Conversation Patterns',
-                    collapsed: true,
-                    items: [
-                        'chitchat-faqs',
-                        'business-logic',
-                        'fallback-handoff',
-                        'unexpected-input',
-                        'contextual-conversations',
-                        'reaching-out-to-user',
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'Preparing For Production',
-                    collapsed: true,
-                    items: [
-                        'messaging-and-voice-channels',
-                        'tuning-your-model',
-                        'testing-your-assistant',
-                        'setting-up-ci-cd',
-                    ],
-                },
-                'glossary',
-            ],
+                "action-server/sanic-extensions",
+              ],
+            },
+          ],
+        },
+        "setting-up-ci-cd",
+        {
+          type: "category",
+          label: "Evaluation",
+          items: ["markers"],
         },
         {
-            type: 'category',
-            label: 'Deploying Assistants',
-            collapsed: true,
-            items: [
-                'deploy/introduction',
-                'deploy/deploy-rasa',
-                'deploy/deploy-action-server',
-                'deploy/deploy-rasa-pro-services',
-            ],
+          type: "category",
+          label: "Deploying Assistants",
+          collapsed: true,
+          items: [
+            "deploy/introduction",
+            "deploy/deploy-rasa",
+            "deploy/deploy-action-server",
+            "deploy/deploy-rasa-pro-services",
+          ],
         },
+        "monitoring/load-testing-guidelines",
+      ],
+    },
+    {
+      type: "category",
+      label: "Security & Compliance",
+      collapsed: true,
+      items: ["llm-guardrails", "pii-management"],
+    },
+    {
+      type: "category",
+      label: "Operating at scale",
+      collapsed: true,
+      items: [
+        "llm-cost-optimizations",
         {
-            type: 'category',
-            label: 'Monitoring and Analyzing Assistants',
-            collapsed: true,
-            items: [
-                {
-                    type: 'category',
-                    label: 'Analytics',
-                    collapsed: true,
-                    items: [
-                        'monitoring/analytics/getting-started-with-analytics',
-                        'monitoring/analytics/realtime-markers',
-                        'monitoring/analytics/example-queries',
-                        'monitoring/analytics/data-structure-reference',
-                    ],
-                },
-                'monitoring/tracing',
-                'monitoring/load-testing-guidelines',
-            ],
+          type: "category",
+          label: "Analytics",
+          collapsed: true,
+          items: [
+            "monitoring/analytics/getting-started-with-analytics",
+            "monitoring/analytics/realtime-markers",
+            "monitoring/analytics/example-queries",
+            "monitoring/analytics/data-structure-reference",
+          ],
         },
-        'pii-management',
+        "monitoring/tracing",
+      ],
+    },
+    {
+      type: "category",
+      label: "APIs",
+      collapsed: true,
+      items: ["http-api", "nlu-only-server"],
+    },
+    {
+      type: "category",
+      label: "Reference",
+      collapsed: true,
+      items: [
+        "telemetry/telemetry",
+        "telemetry/reference",
+        require("./docs/reference/sidebar.json"),
+      ],
+    },
+    {
+      type: "category",
+      label: "Change Log",
+      collapsed: true,
+      items: [
+        "rasa-pro-changelog",
+        "changelog",
+        "sdk_changelog",
+        "compatibility-matrix",
+        "migration-guide",
         {
-            type: 'category',
-            label: 'Concepts',
-            collapsed: false,
-            items: [
-                {
-                    type: 'category',
-                    label: 'Training Data',
-                    items: [
-                        'training-data-format',
-                        'nlu-training-data',
-                        'stories',
-                        'rules',
-                    ],
-                },
-                'domain',
-                {
-                    type: 'category',
-                    label: 'Config',
-                    items: [
-                        'model-configuration',
-                        'components',
-                        'policies',
-                        'custom-graph-components',
-                        'training-data-importers',
-                        'language-support',
-                        'graph-recipe',
-                        'spaces',
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'Actions',
-                    items: [
-                        'actions',
-                        'responses',
-                        'custom-actions',
-                        'forms',
-                        'default-actions',
-                        'slot-validation-actions',
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'Evaluation',
-                    items: ['markers'],
-                },
-                {
-                    type: 'category',
-                    label: 'Channel Connectors',
-                    items: [
-                        {
-                            type: 'category',
-                            label: 'Text & Chat',
-                            items: [
-                                'connectors/facebook-messenger',
-                                'connectors/slack',
-                                'connectors/telegram',
-                                'connectors/twilio',
-                                'connectors/hangouts',
-                                'connectors/microsoft-bot-framework',
-                                'connectors/cisco-webex-teams',
-                                'connectors/rocketchat',
-                                'connectors/mattermost',
-                            ],
-                        },
-                        {
-                            type: 'category',
-                            label: 'Voice',
-                            items: ['connectors/audiocodes-voiceai-connect'],
-                        },
-                        'connectors/custom-connectors',
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'Architecture', // name still confusing with architecture page elsewhere
-                    items: [
-                        'arch-overview',
-                        'tracker-stores',
-                        'event-brokers',
-                        'model-storage',
-                        'lock-stores',
-                        'secrets-managers',
-                        'nlu-only',
-                        'nlg',
-                    ],
-                },
-            ],
+          type: "link",
+          label: "Actively Maintained Versions",
+          href: "https://rasa.com/rasa-product-release-and-maintenance-policy/",
         },
-        {
-            type: 'category',
-            label: 'Action Server',
-            collapsed: true,
-            items: [
-                'action-server/index',
-                {
-                    'Action Server Fundamentals': [
-                        'action-server/actions',
-                        'action-server/events',
-                    ],
-                },
-                {
-                    'Using the Rasa SDK': [
-                        'action-server/running-action-server',
-                        {
-                            type: 'category',
-                            label: 'Writing Custom Actions',
-                            collapsed: true,
-                            items: [
-                                'action-server/sdk-actions',
-                                'action-server/sdk-tracker',
-                                'action-server/sdk-dispatcher',
-                                'action-server/sdk-events',
-                                {
-                                    type: 'category',
-                                    label: 'Special Action Types',
-                                    collapsed: true,
-                                    items: [
-                                        'action-server/knowledge-bases',
-                                        'action-server/validation-action',
-                                    ],
-                                },
-                            ],
-                        },
-                        'action-server/sanic-extensions',
-                    ],
-                },
-            ],
-        },
-        {
-            type: 'category',
-            label: 'APIs',
-            collapsed: true,
-            items: [
-                'http-api',
-                'nlu-only-server',
-                // 'jupyter-notebooks',
-            ],
-        },
-        {
-            type: 'category',
-            label: 'Reference',
-            collapsed: true,
-            items: [
-                'telemetry/telemetry',
-                'telemetry/reference',
-                require('./docs/reference/sidebar.json'),
-            ],
-        },
-        {
-            type: 'category',
-            label: 'Change Log',
-            collapsed: true,
-            items: [
-                'rasa-pro-changelog',
-                'changelog',
-                'sdk_changelog',
-                'compatibility-matrix',
-                'migration-guide',
-                {
-                    type: 'link',
-                    label: 'Actively Maintained Versions',
-                    href: 'https://rasa.com/rasa-product-release-and-maintenance-policy/',
-                },
-            ],
-        },
-    ],
-    "llms": [
-        'start-here',
-        'tutorial',
-        {
-            type: 'category',
-            label: 'Getting Started',
-            collapsed: false,
+      ],
+    },
+  ],
+  llms: [
+    "start-here",
+    "tutorial",
+    {
+      type: "category",
+      label: "Getting Started",
+      collapsed: false,
 
-            items: [
-                'llms/llm-installation',
-                'llms/llm-next-gen',
-                'llms/llm-configuration',
-            ]
-        },  
-        {
-            type: 'category',
-            label: 'Next-Gen Assistants',
-            collapsed: false,
-
-            items: [
-                'flows',
-                'llms/unhappy-paths',
-                'llms/llm-detector',
-            ]
-        },      
-        {
-            type: 'category',
-            label: 'Components',
-            collapsed: false,
-            items: [
-                'llms/llm-intent',
-                'llms/llm-command-generator',
-                'llms/llm-nlg',
-                'llms/llm-docsearch',
-                'llms/llm-intentless',
-                'llms/flow-policy',
-            ],
-        },
-        'llms/llm-custom',
-    ]
+      items: [
+        "llms/llm-installation", // DOESN'T NEED TO STAY
+        "llms/llm-next-gen", // TODO: reuse content
+        "llms/llm-configuration", // MOVED
+      ],
+    },
+    {
+      type: "category",
+      label: "Next-Gen Assistants",
+      collapsed: false,
+      items: [
+        "flows", // MOVED
+        "llms/unhappy-paths",
+        "llms/llm-detector",
+      ],
+    },
+    {
+      type: "category",
+      label: "Components",
+      collapsed: false,
+      items: [
+        "llms/llm-intent",
+        "llms/llm-command-generator", // DONE
+        "llms/llm-nlg",
+        "llms/llm-docsearch",
+        "llms/llm-intentless",
+        "llms/flow-policy",
+      ],
+    },
+    "llms/llm-custom",
+  ],
 };
