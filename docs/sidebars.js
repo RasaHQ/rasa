@@ -60,53 +60,49 @@ module.exports = {
             "building-assistants/spaces",
           ],
         },
-        // TODO: create-task add policies
+        "building-assistants/policies", // TODO: create-task
         // TODO: create-task spit CLI docs
-        "command-line-interface",
+        "building-assistants/command-line-interface",
         // TODO: create-task add how-to-guides
-        "glossary",
-        // TODO: review items below and move them around
+        "building-assistants/glossary",
         {
           type: "category",
           label: "Building Classic Assistants",
           collapsed: true,
           items: [
             // TODO: we'll need something for DM2 at some point
-            "migrate-from",
+            "building-classic-assistants/migrate-from",
             // TODO: create-task spit CLI docs
-            "command-line-interface",
+            "building-assistants/command-line-interface",
             {
               type: "category",
               label: "Conversation Patterns",
               collapsed: true,
               items: [
-                "chitchat-faqs",
-                "business-logic",
-                "fallback-handoff",
-                "unexpected-input",
-                "contextual-conversations",
-                "reaching-out-to-user",
+                "building-classic-assistants/chitchat-faqs",
+                "building-classic-assistants/business-logic",
+                "building-classic-assistants/fallback-handoff",
+                "building-classic-assistants/unexpected-input",
+                "building-classic-assistants/contextual-conversations",
+                "building-classic-assistants/reaching-out-to-user",
               ],
             },
             {
               type: "category",
               label: "Config",
               items: [
-                // TODO: rename "model-configuration"
-                "model-configuration",
-                // TODO: rename "components" + pick the ones that are still relevant in DM2 and move them there
-                "components",
-                // TODO: rename "policies" + pick the ones that are still relevant in DM2 and move them there
-                "policies",
-                "language-support",
+                "building-classic-assistants/model-configuration",
+                "building-classic-assistants/components",
+                "building-classic-assistants/policies",
+                "building-classic-assistants/language-support",
               ],
             },
-            "rules",
-            "stories",
-            "forms",
-            "training-data-format",
-            "nlu-training-data",
-            "tuning-your-model",
+            "building-classic-assistants/rules",
+            "building-classic-assistants/stories",
+            "building-classic-assistants/forms",
+            "building-classic-assistants/training-data-format",
+            "building-classic-assistants/nlu-training-data",
+            "building-classic-assistants/tuning-your-model",
           ],
         },
       ],
@@ -118,7 +114,7 @@ module.exports = {
       items: [
         {
           type: "category",
-          label: "Architecture", // TODO: name still confusing with architecture page elsewhere
+          label: "Architecture",
           items: [
             "arch-overview",
             "tracker-stores",
@@ -130,7 +126,7 @@ module.exports = {
             "nlg",
           ],
         },
-        // TODO: change content to remove DM1 topics
+        // TODO: create-task change content to remove DM1 topics
         "testing-your-assistant",
         {
           type: "category",
