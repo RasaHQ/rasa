@@ -13,8 +13,13 @@ FLOW_PATTERN_COLLECT_INFORMATION = (
 
 @dataclass
 class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
+    """A pattern flow stack frame which collects information from the user."""
+
     flow_id: str = FLOW_PATTERN_COLLECT_INFORMATION
+    """The ID of the flow."""
     collect_information: str = ""
+    """The information that should be collected from the user.
+    this corresponds to the slot that will be filled."""
 
     @classmethod
     def type(cls) -> str:
@@ -37,18 +42,17 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
             collect_information=data["collect_information"],
         )
 
-    def as_dict(self) -> Dict[str, Any]:
-        data = super().as_dict()
-        data.update(
-            {
-                "collect_information": self.collect_information,
-            }
-        )
-        return data
-
     def context_as_dict(
         self, underlying_frames: List[DialogueStackFrame]
     ) -> Dict[str, Any]:
+        """Returns the context of the frame as a dictionary.
+
+        The collect information frame needs a special implementation as
+        it includes the context of the underlying frame in its context.
+
+        This corresponds to the user expectation when e.g. using templates
+        in a collect information node.
+        """
         context = super().context_as_dict(underlying_frames)
 
         if underlying_frames:
@@ -62,9 +66,4 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
         # a regular frame, but a frame that is used to collect information
 
         context.update(underlying_context)
-        context.update(
-            {
-                "collect_information": self.collect_information,
-            }
-        )
         return context

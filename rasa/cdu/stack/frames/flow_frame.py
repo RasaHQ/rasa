@@ -90,22 +90,6 @@ class BaseFlowStackFrame(DialogueStackFrame):
             raise InvalidFlowStepIdException(self.flow_id, self.step_id)
         return step
 
-    def as_dict(self) -> Dict[str, Any]:
-        """Returns the `DialogueStackFrame` as a dictionary.
-
-        Returns:
-            The `DialogueStackFrame` as a dictionary.
-        """
-        super_dict = super().as_dict()
-        super_dict.update(
-            {
-                "flow_id": self.flow_id,
-                "step_id": self.step_id,
-                "frame_id": self.frame_id,
-            }
-        )
-        return super_dict
-
 
 @dataclass
 class UserFlowStackFrame(BaseFlowStackFrame):
@@ -133,13 +117,3 @@ class UserFlowStackFrame(BaseFlowStackFrame):
             data["step_id"],
             FlowStackFrameType.from_str(data.get("frame_type")),
         )
-
-    def as_dict(self) -> Dict[str, Any]:
-        """Returns the `DialogueStackFrame` as a dictionary.
-
-        Returns:
-            The `DialogueStackFrame` as a dictionary.
-        """
-        super_dict = super().as_dict()
-        super_dict["frame_type"] = self.frame_type.value
-        return super_dict

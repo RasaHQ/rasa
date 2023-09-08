@@ -1,4 +1,3 @@
-import dataclasses
 from typing import List, Optional
 from rasa.cdu.commands import Command
 from rasa.shared.core.flows.flow import FlowsList
@@ -35,7 +34,7 @@ class CommandGenerator:
         """
         for message in messages:
             commands = self.predict_commands(message, flows, tracker)
-            commands_dicts = [dataclasses.asdict(command) for command in commands]
+            commands_dicts = [command.as_dict() for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
         return messages
 

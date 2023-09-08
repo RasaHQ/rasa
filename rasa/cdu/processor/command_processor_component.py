@@ -12,16 +12,9 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 
 class CommandProcessorComponent(GraphComponent):
-    """Processes commands by issuing events to modify a tracker."""
+    """Processes commands by issuing events to modify a tracker.
 
-    def __init__(
-        self,
-        model_storage: ModelStorage,
-        resource: Resource,
-    ) -> None:
-        """Creates flows provider."""
-        self._model_storage = model_storage
-        self._resource = resource
+    Minimal component that applies commands to a tracker."""
 
     @classmethod
     def create(
@@ -32,22 +25,10 @@ class CommandProcessorComponent(GraphComponent):
         execution_context: ExecutionContext,
     ) -> CommandProcessorComponent:
         """Creates component (see parent class for full docstring)."""
-        return cls(model_storage, resource)
-
-    @classmethod
-    def load(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        **kwargs: Any,
-    ) -> CommandProcessorComponent:
-        """Creates provider using a persisted version of itself."""
-        return cls(model_storage, resource)
+        return cls()
 
     def execute_commands(
         self, tracker: DialogueStateTracker, flows: FlowsList
     ) -> List[Event]:
-        """Excute commands in flows to update tracker state."""
+        """Excute commands to update tracker state."""
         return execute_commands(tracker, flows)

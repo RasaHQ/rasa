@@ -11,7 +11,10 @@ FLOW_PATTERN_INTERNAL_ERROR_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "internal_er
 
 @dataclass
 class InternalErrorPatternFlowStackFrame(PatternFlowStackFrame):
+    """A pattern flow stack frame that gets added if an internal error occurs."""
+
     flow_id: str = FLOW_PATTERN_INTERNAL_ERROR_ID
+    """The ID of the flow."""
 
     @classmethod
     def type(cls) -> str:

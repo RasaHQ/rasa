@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional
 import structlog
 from rasa.cdu.stack.dialogue_stack import (
     DialogueStack,
-    DialogueStackFrame,
 )
 from rasa.cdu.stack.frames import PatternFlowStackFrame
 from rasa.core.actions import action
@@ -26,9 +25,14 @@ FLOW_PATTERN_CLARIFICATION = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "clarification"
 
 @dataclass
 class ClarifyPatternFlowStackFrame(PatternFlowStackFrame):
+    """A pattern flow stack frame which helps the user clarify their action."""
+
     flow_id: str = FLOW_PATTERN_CLARIFICATION
+    """The ID of the flow."""
     names: List[str] = field(default_factory=list)
+    """The names of the flows that the user can choose from."""
     clarification_options: str = ""
+    """The options that the user can choose from as a string."""
 
     @classmethod
     def type(cls) -> str:
@@ -51,28 +55,6 @@ class ClarifyPatternFlowStackFrame(PatternFlowStackFrame):
             names=data["names"],
             clarification_options=data["clarification_options"],
         )
-
-    def as_dict(self) -> Dict[str, Any]:
-        data = super().as_dict()
-        data.update(
-            {
-                "names": self.names,
-                "clarification_options": self.clarification_options,
-            }
-        )
-        return data
-
-    def context_as_dict(
-        self, underlying_frames: List[DialogueStackFrame]
-    ) -> Dict[str, Any]:
-        context = super().context_as_dict(underlying_frames)
-        context.update(
-            {
-                "names": self.names,
-                "clarification_options": self.clarification_options,
-            }
-        )
-        return context
 
 
 class ActionClarifyFlows(action.Action):

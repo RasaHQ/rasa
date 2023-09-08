@@ -45,10 +45,13 @@ class DialogueStack:
     def push(self, frame: DialogueStackFrame, index: Optional[int] = None) -> None:
         """Pushes a new frame onto the stack.
 
+        If the frame shouldn't be put on top of the stack, the index can be
+        specified. Not specifying an index equals `push(frame, index=-1)`.
+
         Args:
             frame: The frame to push onto the stack.
             index: The index to insert the frame at. If `None`, the frame
-                is appended to the stack.
+                is put ontop of the stack.
         """
         if index is None:
             self.frames.append(frame)
@@ -114,12 +117,24 @@ class DialogueStack:
 
     @staticmethod
     def get_persisted_stack(tracker: DialogueStateTracker) -> List[Dict[str, Any]]:
-        """Returns the persisted stack from the tracker."""
+        """Returns the persisted stack from the tracker.
+
+        The stack is stored on a slot on the tracker. If the slot is not set,
+        an empty list is returned.
+
+        Args:
+            tracker: The tracker to get the stack from.
+
+        Returns:
+            The persisted stack as a dictionary."""
         return tracker.get_slot(DIALOGUE_STACK_SLOT) or []
 
     @staticmethod
     def from_tracker(tracker: DialogueStateTracker) -> DialogueStack:
         """Creates a `DialogueStack` from a tracker.
+
+        The stack is read from a slot on the tracker. If the slot is not set,
+        an empty stack is returned.
 
         Args:
             tracker: The tracker to create the `DialogueStack` from.

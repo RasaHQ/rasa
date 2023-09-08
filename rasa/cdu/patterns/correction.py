@@ -21,7 +21,6 @@ from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
 from rasa.cdu.stack.frames import (
     BaseFlowStackFrame,
-    DialogueStackFrame,
     PatternFlowStackFrame,
 )
 
@@ -43,11 +42,22 @@ FLOW_PATTERN_CORRECTION_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "correction"
 
 @dataclass
 class CorrectionPatternFlowStackFrame(PatternFlowStackFrame):
+    """A pattern flow stack frame which gets added if a slot value is corrected."""
+
     flow_id: str = FLOW_PATTERN_CORRECTION_ID
+    """The ID of the flow."""
     is_reset_only: bool = False
+    """Whether the correction is only a reset of the flow.
+
+    This is the case if all corrected slots have `ask_before_filling=True`.
+    In this case, we do not set their value directly but rather reset the flow
+    to the position where the first question is asked to fill the slot."""
     corrected_slots: Dict[str, Any] = field(default_factory=dict)
+    """The slots that were corrected."""
     reset_flow_id: Optional[str] = None
+    """The ID of the flow to reset to."""
     reset_step_id: Optional[str] = None
+    """The ID of the step to reset to."""
 
     @classmethod
     def type(cls) -> str:
@@ -72,32 +82,6 @@ class CorrectionPatternFlowStackFrame(PatternFlowStackFrame):
             reset_flow_id=data["reset_flow_id"],
             reset_step_id=data["reset_step_id"],
         )
-
-    def as_dict(self) -> Dict[Text, Any]:
-        super_dict = super().as_dict()
-        super_dict.update(
-            {
-                "is_reset_only": self.is_reset_only,
-                "corrected_slots": self.corrected_slots,
-                "reset_flow_id": self.reset_flow_id,
-                "reset_step_id": self.reset_step_id,
-            }
-        )
-        return super_dict
-
-    def context_as_dict(
-        self, underlying_frames: List[DialogueStackFrame]
-    ) -> Dict[Text, Any]:
-        super_dict = super().context_as_dict(underlying_frames)
-        super_dict.update(
-            {
-                "is_reset_only": self.is_reset_only,
-                "corrected_slots": self.corrected_slots,
-                "reset_flow_id": self.reset_flow_id,
-                "reset_step_id": self.reset_step_id,
-            }
-        )
-        return super_dict
 
 
 class ActionCorrectFlowSlot(action.Action):
@@ -131,7 +115,7 @@ class ActionCorrectFlowSlot(action.Action):
             )
             return []
 
-        for i, frame in enumerate(stack.frames):
+        for idx_of_flow_to_cancel, frame in enumerate(stack.frames):
             if (
                 isinstance(frame, BaseFlowStackFrame)
                 and frame.flow_id == top.reset_flow_id
@@ -144,8 +128,10 @@ class ActionCorrectFlowSlot(action.Action):
                 break
 
         # also need to end any running collect information
-        if len(stack.frames) > i + 1:
-            frame_ontop_of_user_frame = stack.frames[i + 1]
+        if len(stack.frames) > idx_of_flow_to_cancel + 1:
+            frame_ontop_of_user_frame = stack.frames[idx_of_flow_to_cancel + 1]
+            # if the frame on top of the user frame is a collect information frame,
+            # we need to end it as well
             if isinstance(
                 frame_ontop_of_user_frame, CollectInformationPatternFlowStackFrame
             ):

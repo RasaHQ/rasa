@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional
 import structlog
 from rasa.cdu.stack.dialogue_stack import (
     DialogueStack,
-    DialogueStackFrame,
 )
 from rasa.cdu.stack.frames import PatternFlowStackFrame, BaseFlowStackFrame
 from rasa.core.actions import action
@@ -27,9 +26,19 @@ FLOW_PATTERN_CANCEL_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 
 @dataclass
 class CancelPatternFlowStackFrame(PatternFlowStackFrame):
+    """A pattern flow stack frame which cancels a flow.
+
+    The frame contains the information about the stack frames that should
+    be canceled."""
+
     flow_id: str = FLOW_PATTERN_CANCEL_ID
+    """The ID of the flow."""
     canceled_name: str = ""
+    """The name of the flow that should be canceled."""
     canceled_frames: List[str] = field(default_factory=list)
+    """The stack frames that should be canceled. These can be multiple
+    frames since the user frame that is getting canceled might have
+    created patterns that should be canceled as well."""
 
     @classmethod
     def type(cls) -> str:
@@ -52,28 +61,6 @@ class CancelPatternFlowStackFrame(PatternFlowStackFrame):
             canceled_name=data["canceled_name"],
             canceled_frames=data["canceled_frames"],
         )
-
-    def as_dict(self) -> Dict[str, Any]:
-        data = super().as_dict()
-        data.update(
-            {
-                "canceled_name": self.canceled_name,
-                "canceled_frames": self.canceled_frames,
-            }
-        )
-        return data
-
-    def context_as_dict(
-        self, underlying_frames: List[DialogueStackFrame]
-    ) -> Dict[str, Any]:
-        context = super().context_as_dict(underlying_frames)
-        context.update(
-            {
-                "canceled_name": self.canceled_name,
-                "canceled_frames": self.canceled_frames,
-            }
-        )
-        return context
 
 
 class ActionCancelFlow(action.Action):

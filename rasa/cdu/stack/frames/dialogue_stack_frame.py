@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+import dataclasses
+from enum import Enum
+from typing import Any, Dict, List, Tuple
 
 import structlog
 
@@ -34,7 +36,17 @@ class DialogueStackFrame:
         Returns:
             The `DialogueStackFrame` as a dictionary.
         """
-        return {"frame_id": self.frame_id, "type": self.type()}
+
+        def custom_asdict_factory(data: List[Tuple[str, Any]]) -> Dict[str, Any]:
+            """Converts enum values to their value."""
+            return {
+                field: value.value if isinstance(value, Enum) else value
+                for field, value in data
+            }
+
+        dump = dataclasses.asdict(self, dict_factory=custom_asdict_factory)
+        dump["type"] = self.type()
+        return dump
 
     @classmethod
     def type(cls) -> str:
@@ -57,7 +69,7 @@ class DialogueStackFrame:
         self, underlying_frames: List[DialogueStackFrame]
     ) -> Dict[str, Any]:
         """Returns the context of the frame."""
-        return {}
+        return self.as_dict()
 
     @staticmethod
     def create_typed_frame(data: Dict[str, Any]) -> DialogueStackFrame:
