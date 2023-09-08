@@ -220,26 +220,29 @@ module.exports = {
       type: "category",
       label: "Security & Compliance",
       collapsed: true,
-      items: ["llm-guardrails", "pii-management"],
+      items: [
+        "security/llm-guardrails", // TODO: create-task
+        "security/pii-management",
+      ],
     },
     {
       type: "category",
       label: "Operating at scale",
       collapsed: true,
       items: [
-        "llm-cost-optimizations",
+        "operating/llm-cost-optimizations",
         {
           type: "category",
           label: "Analytics",
           collapsed: true,
           items: [
-            "monitoring/analytics/getting-started-with-analytics",
-            "monitoring/analytics/realtime-markers",
-            "monitoring/analytics/example-queries",
-            "monitoring/analytics/data-structure-reference",
+            "operating/analytics/getting-started-with-analytics",
+            "operating/analytics/realtime-markers",
+            "operating/analytics/example-queries",
+            "operating/analytics/data-structure-reference",
           ],
         },
-        "monitoring/tracing",
+        "operating/tracing",
       ],
     },
     {
