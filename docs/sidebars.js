@@ -103,6 +103,7 @@ module.exports = {
             "building-classic-assistants/training-data-format",
             "building-classic-assistants/nlu-training-data",
             "building-classic-assistants/tuning-your-model",
+            "building-classic-assistants/nlu-only",
           ],
         },
       ],
@@ -116,23 +117,22 @@ module.exports = {
           type: "category",
           label: "Architecture",
           items: [
-            "arch-overview",
-            "tracker-stores",
-            "event-brokers",
-            "model-storage",
-            "lock-stores",
-            "secrets-managers",
-            "nlu-only",
-            "nlg",
+            "production/arch-overview",
+            "production/tracker-stores",
+            "production/event-brokers",
+            "production/model-storage",
+            "production/lock-stores",
+            "production/secrets-managers",
+            "production/nlg",
           ],
         },
         // TODO: create-task change content to remove DM1 topics
-        "testing-your-assistant",
+        "production/testing-your-assistant",
         {
           type: "category",
           label: "Channel Connectors",
           items: [
-            "messaging-and-voice-channels",
+            "connectors/messaging-and-voice-channels",
             {
               type: "category",
               label: "Text & Chat",
@@ -196,11 +196,11 @@ module.exports = {
             },
           ],
         },
-        "setting-up-ci-cd",
+        "production/setting-up-ci-cd",
         {
           type: "category",
           label: "Evaluation",
-          items: ["markers"],
+          items: ["production/markers"],
         },
         {
           type: "category",
@@ -213,7 +213,7 @@ module.exports = {
             "deploy/deploy-rasa-pro-services",
           ],
         },
-        "monitoring/load-testing-guidelines",
+        "production/load-testing-guidelines",
       ],
     },
     {
