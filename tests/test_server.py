@@ -53,6 +53,7 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
+    COUNTER_UTTER_ASK_SLOT,
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
     DIALOGUE_STACK_SLOT,
@@ -1120,6 +1121,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
         SESSION_START_METADATA_SLOT: None,
         DIALOGUE_STACK_SLOT: None,
         RETURN_VALUE_SLOT: None,
+        COUNTER_UTTER_ASK_SLOT: 0.0,
     }
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [

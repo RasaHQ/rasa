@@ -37,7 +37,8 @@
     "name": null,
     "requested_slot": null,
     "return_value": null,
-    "session_started_metadata": null
+    "session_started_metadata": null,
+    "counter_utter_ask": 0.0
   },
   "latest_input_channel": null,
   "events": [
