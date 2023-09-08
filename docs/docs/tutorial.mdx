@@ -63,6 +63,32 @@ To code along with this tutorial, first create an empty folder for your project,
 rasa init --tutorial
 ```
 
+By default, this tutorial uses the OpenAI API.
+If you'd like to use a different LLM, follow the instructions [here](./llms/llm-configuration.mdx#other-llmsembeddings)
+To set your OpenAI API key, run the following command:
+
+   <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+     ```shell
+     export OPENAI_API_KEY=<your-api-key>
+     ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_KEY <your-api-key>
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
+Replacing `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
+
+
 ## Overview
 
 Open up the project folder in your IDE to see the files that make up your new project.
@@ -103,8 +129,8 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        next: "utter_transfer_complete"
-      - id: "transfer_successful"
+        next: "transfer_complete"
+      - id: "transfer_complete"
         action: utter_transfer_complete        
 ```
 
@@ -129,7 +155,7 @@ Slots are defined in your `domain.yml` file. For example, the definition of your
 ```yaml
 slots:
   recipient:
-    type: Text
+    type: text
     mappings:
       - type: custom
 ```
@@ -149,8 +175,8 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        next: "utter_transfer_complete"
-      - id: "transfer_successful"
+        next: "transfer_complete"
+      - id: "transfer_complete"
         action: utter_transfer_complete        
 ```
 
@@ -193,6 +219,7 @@ slots:
     type: Text
     mappings:
       - type: custom
+  ...
   // highlight-start  
   final_confirmation:
     type: bool
@@ -205,6 +232,7 @@ slots:
 responses:
   utter_ask_recipient:
     - text: "Who would you like to send money to?"
+  ...
   // highlight-start      
   utter_ask_final_confirmation:
     - text: "Please confirm: you want to transfer {amount} to {recipient}?"
@@ -266,7 +294,7 @@ to make the transfer, and then add logic to your flow to handle both cases.
 You are going to create your custom action by editing the `actions/actions.py` file.
 To learn more about custom actions, including how to build custom actions in languages other than python, go here (link). 
 
-Uncomment the import statements at the top of your `actions/actions.py` file, and add the following: 
+Replace your `actions/actions.py` file with the following code:
 
 ```python
 from typing import Any, Text, Dict, List
