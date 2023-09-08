@@ -112,7 +112,7 @@ flows:
       - id: "start"
         action: action_extract_slots
         next:
-          - if: "{{context.collect_information}} is null"
+          - if: "{{context.collect_information}} is null and counter_utter_ask < 2"
             then: "ask_collect_information"
           - if: "{{context.validation.condition}}"
             then: "valid_message"
@@ -122,7 +122,10 @@ flows:
         next: "validate"
       - id: "{{context.validation.invalid_message}}"
         action: "{{context.validation.invalid_message}}"
-        next: "ask_collect_information"
+        next:
+            - if: counter_utter_ask < 2
+              then: "ask_collect_information"
+            - else: "done"
       - id: "validate"
         action: validate_{{context.collect_information}}
         next: 

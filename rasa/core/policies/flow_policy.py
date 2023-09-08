@@ -30,6 +30,7 @@ from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SEND_TEXT_NAME,
+    COUNTER_UTTER_ASK_SLOT,
     DIALOGUE_STACK_SLOT,
 )
 from rasa.shared.core.events import Event, SlotSet
@@ -582,10 +583,11 @@ class FlowExecutor:
             # reset the slot if its already filled and the collect information shouldn't
             # be skipped
             slot = tracker.slots.get(step.collect_information, None)
+
+            # reset the counter slot for each collect information step
+            events = [SlotSet(COUNTER_UTTER_ASK_SLOT, 0.0)]
             if slot and slot.has_been_set and step.ask_before_filling:
-                events = [SlotSet(step.collect_information, slot.initial_value)]
-            else:
-                events = []
+                events += [SlotSet(step.collect_information, slot.initial_value)]
 
             return ContinueFlowWithNextStep(events=events)
 
@@ -596,6 +598,17 @@ class FlowExecutor:
             action_name = self.render_template_variables(step.action, context)
             if action_name in self.domain.action_names_or_texts:
                 structlogger.debug("flow.step.run.action", context=context)
+
+                if action_name.startswith("utter_ask_"):
+                    counter_value = tracker.get_slot(COUNTER_UTTER_ASK_SLOT)
+
+                    if counter_value is None:
+                        counter_value = 1.0
+                    else:
+                        counter_value += 1
+
+                    tracker.update(SlotSet(COUNTER_UTTER_ASK_SLOT, counter_value))
+
                 return PauseFlowReturnPrediction(ActionPrediction(action_name, 1.0))
             else:
                 structlogger.warning("flow.step.run.action.unknown", action=action_name)
