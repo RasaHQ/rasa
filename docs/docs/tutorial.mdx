@@ -6,6 +6,8 @@ className: hide
 abstract:
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 You will build an assistant in this tutorial for helping people transfer money. 
 This tutorial does not assume and existing knowledge of Rasa or chatbots.
 The techniques you will learn in this tutorial are fundamental to building any Rasa bot,
@@ -97,7 +99,7 @@ flows:
     description: This flow lets users send money to friends and family.
     steps:
       - id: "ask_recipient"
-        collect_information: recipient
+        collect_information: recipientgi
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
