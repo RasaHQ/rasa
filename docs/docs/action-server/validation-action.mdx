@@ -6,10 +6,11 @@ abstract: Learn how `ValidationAction` class is implemented in the Rasa SDK.
 ---
 
 There are two helper classes in Rasa SDK with the role of executing custom slot extraction and validation:
+
 - `ValidationAction`: the base class for custom actions extracting and validating slots that can be set or updated
-outside of a form context.
+  outside of a form context.
 - `FormValidationAction`: the base class for custom actions extracting and validating slots that are set only within
-the context of a form.
+  the context of a form.
 
 In order to implement custom slot extraction and validation logic, you have the option of subclassing either
 `ValidationAction` or `FormValidationAction` class, depending on the context in which you want to set or update slots.
@@ -22,7 +23,7 @@ can be set or updated outside of a form context.
 :::note
 `ValidationAction` is intended for extracting slots **outside** the context of a form.
 It will ignore extraction and validation methods for any slots that have a form specified under the
-[slot mapping's `conditions`](../domain.mdx#mapping-conditions).
+[slot mapping's `conditions`](../building-assistants/domain.mdx#mapping-conditions).
 It will not run these methods when the specified form is active nor when no form is active.
 Please extend the [`FormValidationAction`](./validation-action.mdx#formvalidationaction-class) class to apply
 custom slot mappings only within the context of a form.
@@ -38,8 +39,8 @@ original name is hardcoded in the call that the default action `action_extract_s
 You should create only one subclass of `ValidationAction` which should contain all extraction and validation
 methods for different slots according to your use-case.
 
-With this option, you do not need to specify the `action` key in the [custom slot mapping](../domain.mdx#custom-slot-mappings),
-since the default action [`action_extract_slots`](../default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
+With this option, you do not need to specify the `action` key in the [custom slot mapping](../building-assistants/domain.mdx#custom-slot-mappings),
+since the default action [`action_extract_slots`](../building-assistants/default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
 automatically if present in the `actions` section of the domain.
 
 #### Validation of Slots with Predefined Mappings
@@ -106,6 +107,7 @@ class ValidateCustomSlotMappings(ValidationAction):
 `ValidationAction` is a subclass of the `Action` Rasa SDK class and the abstract Python `ABC` class.
 Therefore the class implements the `name` and `run` methods inherited from `Action`.
 In addition, `ValidationAction` implements more specialized methods that will be called in the `run` method:
+
 - `get_extraction_events`: Extracts custom slots using available `extract_<slot name>` methods
 - `get_validation_events`: Validates slots by calling available `validate_<slot name>` methods for each slot
 - `required_slots`: Returns slots which the validation action should fill
@@ -116,11 +118,11 @@ In addition, `ValidationAction` implements more specialized methods that will be
 
 Defines the action's name: this must be hardcoded as `action_validate_slot_mappings`.
 
-* **Returns**:
+- **Returns**:
 
   Name of action
 
-* **Return type**:
+- **Return type**:
 
   `str`
 
@@ -137,27 +139,27 @@ The `run` method will also execute custom validation code defined in `validate_<
 
 ###### **Parameters**
 
-  * **dispatcher** – the dispatcher which is used to
-    send messages back to the user. Use
-    `dispatcher.utter_message()` or any other
-    `rasa_sdk.executor.CollectingDispatcher`
-    method. See the [documentation for the dispatcher](./sdk-dispatcher.mdx)
+- **dispatcher** – the dispatcher which is used to
+  send messages back to the user. Use
+  `dispatcher.utter_message()` or any other
+  `rasa_sdk.executor.CollectingDispatcher`
+  method. See the [documentation for the dispatcher](./sdk-dispatcher.mdx)
 
-  * **tracker** – the state tracker for the current
-    user. You can access slot values using
-    `tracker.get_slot(slot_name)`, the most recent user message
-    is `tracker.latest_message.text` and any other
-    `rasa_sdk.Tracker` property. See the [documentation for the tracker](./sdk-tracker.mdx).
+- **tracker** – the state tracker for the current
+  user. You can access slot values using
+  `tracker.get_slot(slot_name)`, the most recent user message
+  is `tracker.latest_message.text` and any other
+  `rasa_sdk.Tracker` property. See the [documentation for the tracker](./sdk-tracker.mdx).
 
-  * **domain** – the bot's domain
+- **domain** – the bot's domain
 
 ###### **Returns**
 
-  A list of `rasa_sdk.events.Event` instances. See the [documentation for events](./sdk-events.mdx).
+A list of `rasa_sdk.events.Event` instances. See the [documentation for events](./sdk-events.mdx).
 
 ###### **Return type**
 
-  `List`[`Dict`[`str`, `Any`]]
+`List`[`Dict`[`str`, `Any`]]
 
 ##### ValidationAction.required_slots
 
@@ -171,7 +173,7 @@ do not include any slot mapping with conditions. `domain_slots` is returned by t
 
 ###### **Returns**
 
-  A list of slot names of type `Text`.
+A list of slot names of type `Text`.
 
 ##### ValidationAction.get_extraction_events
 
@@ -184,7 +186,7 @@ through every slot name to run the `extract_<slot name>` method if available.
 
 ##### **Returns**
 
-  A list of `rasa_sdk.events.SlotSet` instances. See the [documentation for SlotSet events](./sdk-events.mdx#slotset).
+A list of `rasa_sdk.events.SlotSet` instances. See the [documentation for SlotSet events](./sdk-events.mdx#slotset).
 
 ##### ValidationAction.get_validation_events
 
@@ -199,7 +201,7 @@ Looping through this mapping of recently extracted slots, it will check if the s
 
 ###### **Returns**
 
-  A list of `rasa_sdk.events.SlotSet` instances. See the [documentation for SlotSet events](./sdk-events.mdx#slotset).
+A list of `rasa_sdk.events.SlotSet` instances. See the [documentation for SlotSet events](./sdk-events.mdx#slotset).
 
 ## `FormValidationAction` class
 
@@ -210,7 +212,7 @@ the custom action should inherit from `FormValidationAction` rather than from `V
 Since a custom action extending `FormValidationAction` runs on every user turn only as long as the form is active, it is
 not required to use mapping conditions in this case.
 
-To learn more about how to implement this class, see Forms [Advanced Usage](../forms.mdx#advanced-usage).
+To learn more about how to implement this class, see Forms [Advanced Usage](.../building-classic-assistants/forms.mdx#advanced-usage).
 
 ### `FormValidationAction` class implementation
 
@@ -240,6 +242,7 @@ If users didn't override `required_slots` then we'll let the `FormAction` within
 Source request the next slot, and the method will return `None`.
 
 The parameters the method requires are:
+
 - [dispatcher](./sdk-dispatcher.mdx)
 - [tracker](./sdk-tracker.mdx)
 - the bot's domain

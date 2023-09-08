@@ -3,9 +3,11 @@ id: stories
 sidebar_label: Stories
 title: Stories
 description: Stories are used to teach Rasa real conversation designs to learn from providing the basis for a scalable machine learning dialogue management.
-abstract: Stories are a type of training data used to train your assistant's dialogue management
+abstract:
+  Stories are a type of training data used to train your assistant's dialogue management
   model. Stories can be used to train models that are able to generalize to unseen conversation paths.
 ---
+
 ## Format
 
 A story is a representation of a conversation between a user and an AI assistant,
@@ -33,7 +35,6 @@ stories:
   - action: utter_ask_num_people
 ```
 
-
 ### User Messages
 
 While writing stories, you do not have to deal with the specific contents of
@@ -43,19 +44,18 @@ entities to refer to all the possible messages the users can send to mean the
 same thing.
 
 It is important to include the entities here as well because the policies learn
-to predict the next action based on a *combination* of both the intent and
+to predict the next action based on a _combination_ of both the intent and
 entities (you can, however, change this behavior using the
-[use_entities](./domain.mdx#ignoring-entities-for-certain-intents) attribute).
+[use_entities](../building-assistants/domain.mdx#ignoring-entities-for-certain-intents) attribute).
 
 ### Actions
 
-All actions executed by the bot, including [responses](./responses.mdx) are listed
+All actions executed by the bot, including [responses](../building-assistants/responses.mdx) are listed
 in stories under the `action` key.
 
 You can use a response from your domain as an action by listing it as one
 in a story. Similarly, you can indicate that a story should call a custom action by including
 the name of the custom action from the `actions` list in your domain.
-
 
 ### Events
 
@@ -65,7 +65,7 @@ action will return.
 
 Because of this, events such as setting a slot or activating/deactivating a form have to be
 explicitly written out as part of the stories. For more info, see the documentation on
-[Events](./action-server/events.mdx).
+[Events](../action-server/events.mdx).
 
 #### Slot Events
 
@@ -89,11 +89,11 @@ stories:
 There are three kinds of events that need to be kept in mind while dealing with
 forms in stories.
 
-* A form action event (e.g. `- action: restaurant_form`) is used in the beginning when first starting a form, and also while resuming the form action when the form is already active.
+- A form action event (e.g. `- action: restaurant_form`) is used in the beginning when first starting a form, and also while resuming the form action when the form is already active.
 
-* A form activation event (e.g. `- active_loop: restaurant_form`) is used right after the first form action event.
+- A form activation event (e.g. `- active_loop: restaurant_form`) is used right after the first form action event.
 
-* A form deactivation event (e.g. `- active_loop: null`), which is used to deactivate the form.
+- A form deactivation event (e.g. `- active_loop: null`), which is used to deactivate the form.
 
 :::note writing form stories
 In order to get around the pitfall of forgetting to add events, the recommended
@@ -200,13 +200,12 @@ Overusing OR statements will slow down training.
 ## Test Conversation Format
 
 The test conversation format is a format that combines both NLU data and stories
-into a single file for evaluation. Read more about this format in [Testing Your Assistant](./testing-your-assistant.mdx).
+into a single file for evaluation. Read more about this format in [Testing Your Assistant](../production/testing-your-assistant.mdx).
 
 :::caution testing only
 This format is only used for testing and cannot be used for training.
 
 :::
-
 
 ## End-to-end Training
 
@@ -225,14 +224,13 @@ Instead, you can include the text of the user messages and/or bot responses dire
 See the [training data format](./training-data-format.mdx#end-to-end-training)
 for detailed description of how to write end-to-end stories.
 
-You can mix training data in the end-to-end format with labeled training data which has 
+You can mix training data in the end-to-end format with labeled training data which has
 `intent`s and `action`s specified: Stories can have some steps defined by intents/actions
 and other steps defined directly by user or bot utterances.
 
 We call it end-to-end training because policies can consume and predict actual text.
 For end-to-end user inputs, intents classified by the NLU pipeline
 and extracted entities are ignored.
-
 
 Only [Rule Policy](./policies.mdx#rule-policy)
 and [TED Policy](./policies.mdx#ted-policy) allow end-to-end training.
@@ -243,7 +241,7 @@ and [TED Policy](./policies.mdx#ted-policy) allow end-to-end training.
 
 - `TEDPolicy` passes user text through an additional Neural Network to create
   hidden representations of the text. In order to obtain robust performance you
-  need to provide enough training stories to capture a variety of user texts for any 
+  need to provide enough training stories to capture a variety of user texts for any
   end-to-end dialogue turn.
 
 Rasa policies are trained for next utterance selection.

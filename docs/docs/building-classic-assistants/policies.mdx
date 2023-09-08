@@ -4,6 +4,7 @@ sidebar_label: Policies
 title: Policies
 abstract: Your assistant uses policies to decide which action to take at each step in a conversation. There are machine-learning and rule-based policies that your assistant can use in tandem.
 ---
+
 You can customize the policies your assistant uses by specifying the `policies`
 key in your project's `config.yml`.
 There are different policies to choose from, and you can include
@@ -23,6 +24,7 @@ policies:
     epochs: 200
   - name: RulePolicy
 ```
+
 :::tip Starting from scratch?
 
 If you don't know which policies to choose, leave out the `policies` key from your `config.yml` completely.
@@ -55,14 +57,13 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 
 <!-- We want to have high priority policies first; it's not possible to use a Markdown ordered list for that. -->
 
-* 6 - `RulePolicy`
+- 6 - `RulePolicy`
 
-* 3 - `MemoizationPolicy` or `AugmentedMemoizationPolicy`
+- 3 - `MemoizationPolicy` or `AugmentedMemoizationPolicy`
 
-* 2 - `UnexpecTEDIntentPolicy`
+- 2 - `UnexpecTEDIntentPolicy`
 
-* 1 - `TEDPolicy`
-
+- 1 - `TEDPolicy`
 
 In general, it is not recommended to have more
 than one policy per priority level in your configuration. If you have 2 policies with the same priority and they predict
@@ -77,7 +78,6 @@ but we **do not recommend** changing them outside of specific cases such as cust
 Doing so can lead to unexpected and undesired bot behavior.
 
 :::
-
 
 ## Machine Learning Policies
 
@@ -100,6 +100,7 @@ where we explain the model architecture in detail.
 TED Policy architecture comprises the following steps:
 
 1. Concatenate features for
+
    - user input (user intent and entities) or user text processed through a user sequence transformer encoder,
    - previous system actions or bot utterances processed through a bot sequence transformer encoder,
    - slots and active forms
@@ -126,7 +127,7 @@ TED Policy architecture comprises the following steps:
 You can pass configuration parameters to the `TEDPolicy` using the `config.yml` file.
 If you want to fine-tune your model, start by modifying the following parameters:
 
-* `epochs`:
+- `epochs`:
   This parameter sets the number of times the algorithm will see the training data (default: `1`).
   One `epoch` is equals to one forward pass and one backward pass of all the training examples.
   Sometimes the model needs more epochs to properly learn.
@@ -140,7 +141,7 @@ If you want to fine-tune your model, start by modifying the following parameters
     epochs: 200
   ```
 
-* `max_history`:
+- `max_history`:
   This parameter controls how much dialogue history the model looks at to decide which
   action to take next. Default `max_history` for this policy is `None`,
   which means that the complete dialogue history since session restart is taken into
@@ -157,7 +158,7 @@ If you want to fine-tune your model, start by modifying the following parameters
     max_history: 8
   ```
 
-* `number_of_transformer_layers`:
+- `number_of_transformer_layers`:
   This parameter sets the number of sequence transformer encoder layers to use for
   sequential transformer encoders for user, action and action label texts and for
   dialogue transformer encoder.
@@ -165,33 +166,36 @@ If you want to fine-tune your model, start by modifying the following parameters
   The number of sequence transformer encoder layers corresponds
   to the transformer blocks to use for the model.
 
-* `transformer_size`:
+- `transformer_size`:
   This parameter sets the number of units in the sequence transformer encoder layers to use for
   sequential transformer encoders for user, action and action label texts and for
   dialogue transformer encoder.
   (defaults: `text: 128, action_text: 128, label_action_text: 128, dialogue: 128`).
   The vectors coming out of the transformer encoders will have the given `transformer_size`.
 
-* `connection_density`:
+- `connection_density`:
   This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
   layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
   to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
   set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
   to learn.
 
-* `split_entities_by_comma`:
+- `split_entities_by_comma`:
   This parameter defines whether adjacent entities separated by a comma should be treated as one, or split. For example,
   entities with the type `ingredients`, like "apple, banana" can be split into "apple" and "banana". An entity with type
   `address`, like "Schönhauser Allee 175, 10119 Berlin" should be treated as one.
 
   Can either be
   `True`/`False` globally:
+
   ```yaml-rasa title="config.yml"
   policies:
     - name: TEDPolicy
       split_entities_by_comma: True
   ```
+
   or set per entity type, such as:
+
   ```yaml-rasa title="config.yml"
   policies:
     - name: TEDPolicy
@@ -200,25 +204,26 @@ If you want to fine-tune your model, start by modifying the following parameters
         ingredients: True
   ```
 
-* `constrain_similarities`:
+- `constrain_similarities`:
   This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
   This helps in keeping similarities between input and negative labels to smaller values.
   This should help in better generalization of the model to real world test sets.
 
-* `model_confidence`:
+- `model_confidence`:
   This parameter allows the user to configure how confidences are computed during inference. Currently, only one value is supported:
-  * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
 
-* `use_gpu`:
-  This parameter defines whether a GPU (if available) will be used training. By default, `TEDPolicy` will be trained on GPU 
+  - `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
+
+- `use_gpu`:
+  This parameter defines whether a GPU (if available) will be used training. By default, `TEDPolicy` will be trained on GPU
   if a GPU is available (i.e. `use_gpu` is `True`). To enforce that `TEDPolicy` uses only the CPU for training, set `use_gpu` to `False`.
-  
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
 <details><summary>More configurable parameters</summary>
 
-```
+````
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | Parameter                             | Default Value          | Description                                                  |
 +=======================================+========================+==============================================================+
@@ -390,7 +395,7 @@ However, additional parameters exist that can be adapted.
 |                                       |                        |     address: True                                            |
 |                                       |                        | ```                                                          |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
-```
+````
 
 :::note
 The parameter `maximum_negative_similarity` is set to a negative value to mimic the original
@@ -410,7 +415,6 @@ command. For more information see
 
 :::
 
-
 ### UnexpecTED Intent Policy
 
 :::info New in 2.8
@@ -424,7 +428,7 @@ If you have feedback (positive or negative) please share it with us on the [Rasa
 `UnexpecTEDIntentPolicy` helps you review conversations and also allows your bot to react
 to unlikely user turns. It is an auxiliary policy that should only be used in
 conjunction with at least one other policy, as the only action that it can trigger
-is the special [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent) action.
+is the special [`action_unlikely_intent`](../building-assistants/default-actions.mdx#action_unlikely_intent) action.
 
 `UnexpecTEDIntentPolicy` has the same model architecture as [`TEDPolicy`](./policies.mdx#ted-policy).
 The difference is at a task level. Instead of learning the best action to be triggered next,
@@ -432,8 +436,8 @@ The difference is at a task level. Instead of learning the best action to be tri
 given the conversation context from training stories. It uses the learned information at inference time by
 checking if the predicted intent by NLU is the most likely intent. If the intent predicted
 by NLU is indeed likely to occur given the conversation context, `UnexpecTEDIntentPolicy` does not trigger
-any action. Otherwise, it triggers an [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
- with a confidence of `1.00`.
+any action. Otherwise, it triggers an [`action_unlikely_intent`](../building-assistants/default-actions.mdx#action_unlikely_intent)
+with a confidence of `1.00`.
 
 `UnexpecTEDIntentPolicy` should be viewed as an aid for `TEDPolicy`. Since, `TEDPolicy` is expected to improve
 with better coverage of unique conversation paths that the assistant is expected to handle in the training data,
@@ -474,69 +478,69 @@ stories:
 As soon as the `deny` intent gets triggered, the policy handling the form will keep requesting for the `cuisine` slot
 to be filled, as the training stories don't say that this case should be treated differently.
 To help you identify that a special story that handles the user's `deny` intent might be missing at this point,
- `UnexpecTEDIntentPolicy` can trigger an `action_unlikely_intent` action right after `deny` intent.
- Subsequently, you can improve your assistant by adding a new training story that handles this particular case.
+`UnexpecTEDIntentPolicy` can trigger an `action_unlikely_intent` action right after `deny` intent.
+Subsequently, you can improve your assistant by adding a new training story that handles this particular case.
 
 To reduce false warnings, `UnexpecTEDIntentPolicy` has two mechanisms in place at inference time:
 
 1. `UnexpecTEDIntentPolicy`'s [priority](./policies.mdx#policy-priority) is intentionally kept lower than all
-[rule based policies](./policies.mdx#rule-based-policies) since rules may exist for situations that are novel for
-`TEDPolicy` or `UnexpecTEDIntentPolicy`.
+   [rule based policies](./policies.mdx#rule-based-policies) since rules may exist for situations that are novel for
+   `TEDPolicy` or `UnexpecTEDIntentPolicy`.
 
 2. `UnexpecTEDIntentPolicy` does not predict an `action_unlikely_intent` if the last predicted intent
-isn't present in any of the training stories, which might happen if an intent is only used in rules.
+   isn't present in any of the training stories, which might happen if an intent is only used in rules.
 
 #### Prediction of `action_unlikely_intent`
 
 `UnexpecTEDIntentPolicy` is invoked immediately after a user utterance and can either
 trigger `action_unlikely_intent` or abstain (in which case other policies will predict actions).
 To determine if `action_unlikely_intent` should be triggered, `UnexpecTEDIntentPolicy` computes a score
- for the user's intent in the current dialogue context and checks if this score is below a
- certain threshold score.
+for the user's intent in the current dialogue context and checks if this score is below a
+certain threshold score.
 
- This threshold score is computed by collecting the ML model's output on many "negative examples".
- These negative examples are combinations of dialogue contexts and user
- intents that are _incorrect_. `UnexpecTEDIntentPolicy` generates these negative examples from your
- training data by picking a random story part and pairing it with a random intent that doesn't
- occur at this point. For example, if you had just one training story:
+This threshold score is computed by collecting the ML model's output on many "negative examples".
+These negative examples are combinations of dialogue contexts and user
+intents that are _incorrect_. `UnexpecTEDIntentPolicy` generates these negative examples from your
+training data by picking a random story part and pairing it with a random intent that doesn't
+occur at this point. For example, if you had just one training story:
 
- ```rasa-yaml title="stories.yml"
- version: 2.0
- stories:
- - story: happy path 1
-   steps:
-   - intent: greet
-   - action: utter_greet
-   - intent: mood_great
-   - action: utter_goodbye
- ```
+```rasa-yaml title="stories.yml"
+version: 2.0
+stories:
+- story: happy path 1
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_great
+  - action: utter_goodbye
+```
 
- and an intent `affirm`, then a valid negative example will be:
+and an intent `affirm`, then a valid negative example will be:
 
- ```rasa-yaml {7} title="negative_stories.yml"
- version: 2.0
- stories:
- - story: negative example with affirm unexpected
-   steps:
-   - intent: greet
-   - action: utter_greet
-   - intent: affirm
- ```
+```rasa-yaml {7} title="negative_stories.yml"
+version: 2.0
+stories:
+- story: negative example with affirm unexpected
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: affirm
+```
 
- Here, `affirm` intent is unexpected as it doesn't occur in this particular conversation context across all training stories.
- For each intent, `UnexpecTEDIntentPolicy` uses these negative examples to figure out the range of scores the model
- predicts. The threshold score is picked from this range of scores in such a way that the predicted score for a
- certain percentage of negative examples is higher than the threshold score and hence `action_unlikely_intent`
- is not triggered for them. This percentage of negative examples can be controlled by the `tolerance` parameter.
- The higher the `tolerance`, the lower the intent's score (the more unlikely the intent) needs to be
- before `UnexpecTEDIntentPolicy` triggers the `action_unlikely_intent` action.
+Here, `affirm` intent is unexpected as it doesn't occur in this particular conversation context across all training stories.
+For each intent, `UnexpecTEDIntentPolicy` uses these negative examples to figure out the range of scores the model
+predicts. The threshold score is picked from this range of scores in such a way that the predicted score for a
+certain percentage of negative examples is higher than the threshold score and hence `action_unlikely_intent`
+is not triggered for them. This percentage of negative examples can be controlled by the `tolerance` parameter.
+The higher the `tolerance`, the lower the intent's score (the more unlikely the intent) needs to be
+before `UnexpecTEDIntentPolicy` triggers the `action_unlikely_intent` action.
 
 **Configuration:**
 
 You can pass configuration parameters to the `UnexpecTEDIntentPolicy` using the `config.yml` file.
 If you want to fine-tune model's performance, start by modifying the following parameters:
 
-* `epochs`:
+- `epochs`:
   This parameter sets the number of times the algorithm will see the training data (default: `1`).
   One `epoch` is equals to one forward pass and one backward pass of all the training examples.
   Sometimes the model needs more epochs to learn properly.
@@ -550,7 +554,7 @@ If you want to fine-tune model's performance, start by modifying the following p
     epochs: 200
   ```
 
-* `max_history`:
+- `max_history`:
   This parameter controls how much dialogue history the model looks at before making an inference.
   Default `max_history` for this policy is `None`, which means that the complete dialogue history
   since session (re)start is taken into account. If you want to limit the model
@@ -572,30 +576,30 @@ If you want to fine-tune model's performance, start by modifying the following p
     max_history: 8
   ```
 
-* `ignore_intents_list`:
-    This parameter lets you configure `UnexpecTEDIntentPolicy` to not predict `action_unlikely_intent` for
-    a subset of intents. You might want to do this if you come across a certain list of intents for which there
-    are too many false warnings generated.
+- `ignore_intents_list`:
+  This parameter lets you configure `UnexpecTEDIntentPolicy` to not predict `action_unlikely_intent` for
+  a subset of intents. You might want to do this if you come across a certain list of intents for which there
+  are too many false warnings generated.
 
-* `tolerance`:
-    The `tolerance` parameter is a number that ranges from `0.0` to `1.0` (inclusive).
-    It helps to adjust the threshold score used during
-    [prediction of `action_unlikely_intent`](./policies.mdx#prediction-of-action_unlikely_intent)
-    at inference time.
+- `tolerance`:
+  The `tolerance` parameter is a number that ranges from `0.0` to `1.0` (inclusive).
+  It helps to adjust the threshold score used during
+  [prediction of `action_unlikely_intent`](./policies.mdx#prediction-of-action_unlikely_intent)
+  at inference time.
 
-    Here, `0.0` means that the threshold score will be adjusted in such a way that `0%` of negative
-    examples encountered during training are predicted with a score lower than the threshold score.
-    Hence, conversation contexts from all negative examples will trigger an `action_unlikely_intent` action.
+  Here, `0.0` means that the threshold score will be adjusted in such a way that `0%` of negative
+  examples encountered during training are predicted with a score lower than the threshold score.
+  Hence, conversation contexts from all negative examples will trigger an `action_unlikely_intent` action.
 
-    A tolerance of `0.1` means that the threshold score will be adjusted in a way such that 10% of negative
-    examples encountered during training are predicted with a score lower than the threshold score.
+  A tolerance of `0.1` means that the threshold score will be adjusted in a way such that 10% of negative
+  examples encountered during training are predicted with a score lower than the threshold score.
 
-    A tolerance of `1.0` means that the threshold score is so low that `UnexpecTEDIntentPolicy` would not
-    trigger `action_unlikely_intent` for any of the negative examples that it has encountered
-    during training.
+  A tolerance of `1.0` means that the threshold score is so low that `UnexpecTEDIntentPolicy` would not
+  trigger `action_unlikely_intent` for any of the negative examples that it has encountered
+  during training.
 
-* `use_gpu`:
-  This parameter defines whether a GPU (if available) will be used training. By default, `UnexpecTEDIntentPolicy` will be trained on GPU 
+- `use_gpu`:
+  This parameter defines whether a GPU (if available) will be used training. By default, `UnexpecTEDIntentPolicy` will be trained on GPU
   if a GPU is available (i.e. `use_gpu` is `True`). To enforce that `UnexpecTEDIntentPolicy` uses only the CPU for training, set `use_gpu` to `False`.
 
 The above configuration parameters are the ones you should try tweaking according to your use case and training data.
@@ -740,7 +744,7 @@ However, additional parameters exist that you could adapt.
 
 #### Tuning the tolerance parameter
 
-When [reviewing real conversations](./conversation-driven-development.mdx#review), we encourage you
+When reviewing real conversations, we encourage you
 to tune the `tolerance` parameter in `UnexpecTEDIntentPolicy`'s configuration to reduce the number
 of false warnings (intents that actually are likely given the conversation context).
 As you increase the value of `tolerance` from `0` to `1` in steps of `0.05`,
@@ -769,12 +773,12 @@ assistant performed before waiting for the next message.
 
 You can configure the number of turns the `MemoizationPolicy` should use in your
 configuration:
+
 ```yaml title="config.yml"
 policies:
   - name: "MemoizationPolicy"
     max_history: 3
 ```
-
 
 ### Augmented Memoization Policy
 
@@ -793,7 +797,6 @@ make sure to add the relevant stories without slots to your training
 data as well.
 
 :::
-
 
 ## Rule-based Policies
 
@@ -816,92 +819,93 @@ policies:
     check_for_contradictions: true
 ```
 
-* `core_fallback_threshold` (default: `0.3`): Please see the
-   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
-   further information.
-* `core_fallback_action_name` (default: `action_default_fallback`): Please see the
-   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
-   further information.
-* `enable_fallback_prediction` (default: `true`): Please see the
-   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
-   further information.
-* `check_for_contradictions` (default: `true`):
-   Before training, the RulePolicy will perform a check to make sure that
-   slots and active loops set by actions are defined consistently for all rules.
-   The following snippet contains an example of an incomplete rule:
+- `core_fallback_threshold` (default: `0.3`): Please see the
+  [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
+  further information.
+- `core_fallback_action_name` (default: `action_default_fallback`): Please see the
+  [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
+  further information.
+- `enable_fallback_prediction` (default: `true`): Please see the
+  [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
+  further information.
+- `check_for_contradictions` (default: `true`):
+  Before training, the RulePolicy will perform a check to make sure that
+  slots and active loops set by actions are defined consistently for all rules.
+  The following snippet contains an example of an incomplete rule:
 
-   ```yaml-rasa
-   rules:
-   - rule: complete rule
-     steps:
-     - intent: search_venues
-     - action: action_search_venues
-     - slot_was_set:
-       - venues: [{"name": "Big Arena", "reviews": 4.5}]
+  ```yaml-rasa
+  rules:
+  - rule: complete rule
+    steps:
+    - intent: search_venues
+    - action: action_search_venues
+    - slot_was_set:
+      - venues: [{"name": "Big Arena", "reviews": 4.5}]
 
-   - rule: incomplete rule
-     steps:
-     - intent: search_venues
-     - action: action_search_venues
-   ```
+  - rule: incomplete rule
+    steps:
+    - intent: search_venues
+    - action: action_search_venues
+  ```
 
-   In the second `incomplete rule`, `action_search_venues` should set
-   the `venues` slot because it is set in `complete rule`, but this event is missing.
-   There are several possible ways to fix this rule.
+  In the second `incomplete rule`, `action_search_venues` should set
+  the `venues` slot because it is set in `complete rule`, but this event is missing.
+  There are several possible ways to fix this rule.
 
-   In the case when `action_search_venues` can't find
-   a venue and the `venues` slot should not be set,
-   you should explicitly set the value of the slot to `null`.
-   In the following story `RulePolicy` will predict `utter_venues_not_found`
-   only if the slot `venues` is not set:
+  In the case when `action_search_venues` can't find
+  a venue and the `venues` slot should not be set,
+  you should explicitly set the value of the slot to `null`.
+  In the following story `RulePolicy` will predict `utter_venues_not_found`
+  only if the slot `venues` is not set:
 
-   ```yaml-rasa
-   rules:
-   - rule: fixes incomplete rule
-     steps:
-     - intent: search_venues
-     - action: action_search_venues
-     - slot_was_set:
-       - venues: null
-     - action: utter_venues_not_found
-   ```
+  ```yaml-rasa
+  rules:
+  - rule: fixes incomplete rule
+    steps:
+    - intent: search_venues
+    - action: action_search_venues
+    - slot_was_set:
+      - venues: null
+    - action: utter_venues_not_found
+  ```
 
-   If you want the slot setting to be handled by a different rule or story,
-   you should add `wait_for_user_input: false` to the end of the rule snippet:
+  If you want the slot setting to be handled by a different rule or story,
+  you should add `wait_for_user_input: false` to the end of the rule snippet:
 
-   ```yaml-rasa
-   rules:
-   - rule: incomplete rule
-     steps:
-     - intent: search_venues
-     - action: action_search_venues
-     wait_for_user_input: false
-   ```
+  ```yaml-rasa
+  rules:
+  - rule: incomplete rule
+    steps:
+    - intent: search_venues
+    - action: action_search_venues
+    wait_for_user_input: false
+  ```
 
-   After training, the RulePolicy will check that none of the rules or stories contradict
-   each other. The following snippet is an example of two contradicting rules:
+  After training, the RulePolicy will check that none of the rules or stories contradict
+  each other. The following snippet is an example of two contradicting rules:
 
-    ```yaml-rasa
-    rules:
-    - rule: Chitchat
-      steps:
-      - intent: chitchat
-      - action: utter_chitchat
+  ```yaml-rasa
+  rules:
+  - rule: Chitchat
+    steps:
+    - intent: chitchat
+    - action: utter_chitchat
 
-    - rule: Greet instead of chitchat
-      steps:
-      - intent: chitchat
-      - action: utter_greet  # `utter_greet` contradicts `utter_chitchat` from the rule above
-    ```
- * `restrict_rules` (default: `true`): Rules are restricted to one user turn, but
-    there can be multiple bot events, including e.g. a form being filled and its subsequent submission.
-    Changing this parameter to `false` may result in unexpected behavior.
+  - rule: Greet instead of chitchat
+    steps:
+    - intent: chitchat
+    - action: utter_greet  # `utter_greet` contradicts `utter_chitchat` from the rule above
+  ```
 
-  :::caution Overusing rules
-    Overusing rules for purposes outside of the [recommended use cases](rules.mdx)
-    will make it very hard to maintain your assistant as the complexity grows.
+- `restrict_rules` (default: `true`): Rules are restricted to one user turn, but
+  there can be multiple bot events, including e.g. a form being filled and its subsequent submission.
+  Changing this parameter to `false` may result in unexpected behavior.
 
-  :::
+:::caution Overusing rules
+Overusing rules for purposes outside of the [recommended use cases](rules.mdx)
+will make it very hard to maintain your assistant as the complexity grows.
+
+:::
 
 ## Configuring Policies
 
@@ -1028,32 +1032,32 @@ of the tracker has two steps:
 
 1. **Tracker provides a bag of active features**:
 
-    * features indicating intents and entities, if this is the first
+   - features indicating intents and entities, if this is the first
      state in a turn, e.g. it's the first action we will take after
      parsing the user's message. (e.g.
      `[intent_restaurant_search, entity_cuisine]` )
 
-    * features indicating which slots are currently defined, e.g.
+   - features indicating which slots are currently defined, e.g.
      `slot_location` if the user previously mentioned the area
      they're searching for restaurants.
 
-    * features indicating the results of any API calls stored in
+   - features indicating the results of any API calls stored in
      slots, e.g. `slot_matches`
 
-    * features indicating what the last bot action or bot utterance was (e.g.
+   - features indicating what the last bot action or bot utterance was (e.g.
      `prev_action_listen`)
 
-    * features indicating if any loop is active and which one
+   - features indicating if any loop is active and which one
 
 2. **Convert all the features into numeric vectors**:
 
-    `SingleStateFeaturizer` uses the Rasa NLU pipeline to convert the intent and
-    bot action names or bot utterances into numeric vectors.
-    See the [NLU Model Configuration](./model-configuration.mdx) documentation
-    for the details on how to configure Rasa NLU pipeline.
+   `SingleStateFeaturizer` uses the Rasa NLU pipeline to convert the intent and
+   bot action names or bot utterances into numeric vectors.
+   See the [NLU Model Configuration](./model-configuration.mdx) documentation
+   for the details on how to configure Rasa NLU pipeline.
 
-    Entities, slots and active loops are featurized as one-hot encodings
-    to indicate their presence.
+   Entities, slots and active loops are featurized as one-hot encodings
+   to indicate their presence.
 
 :::note
 If the domain defines the possible `actions`,
@@ -1090,7 +1094,6 @@ context of the conversation.
 The `TrackerFeaturizer` iterates over tracker
 states and calls a `SingleStateFeaturizer` for each state to create numeric input features for a policy.
 
-
 ##### 2. Max History
 
 `MaxHistoryTrackerFeaturizer` operates very similarly to `FullDialogueTrackerFeaturizer` as
@@ -1120,7 +1123,6 @@ indices - `[0, 2, 4]`, then the featurizer will yield three pairs of featurized 
 The featurized trackers will be identical to each other but the target labels in each pair will be
 `[0, 2, 4]`, `[4, 0, 2]`, `[2, 4, 0]`.
 
-
 ## Custom Policies
 
 :::info New in 3.0
@@ -1132,10 +1134,9 @@ step-by-step guide for the migration.
 
 :::
 
-
 You can also write custom policies and reference them in your configuration. In the example below, the
 last two lines show how to use a custom policy class and pass arguments to it.
-See the [guide on custom graph components](custom-graph-components.mdx) for a complete guide on custom policies.
+See the [guide on custom graph components](../building-assistants/custom-graph-components.mdx) for a complete guide on custom policies.
 
 ```yaml-rasa {9-10}
 policies:
@@ -1146,4 +1147,3 @@ policies:
   - name: "path.to.your.policy.class"
     arg1: "..."
 ```
-

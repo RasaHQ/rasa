@@ -4,7 +4,8 @@ sidebar_label: Fallback and Human Handoff
 title: Fallback and Human Handoff
 abstract: This is a guide on how to handle various failures of your assistant.
 ---
-import useBaseUrl from '@docusaurus/useBaseUrl';
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
 
 Even if you design your bot perfectly, users will inevitably say things to your
 assistant that you did not anticipate. In these cases, your assistant will fail,
@@ -14,7 +15,6 @@ and it's important you ensure it does so gracefully.
 
 To avoid user frustration, you can handle questions you know your users may ask,
 but for which you haven't implemented a user goal yet.
-
 
 ### 1. Creating an Out-of-scope Intent
 
@@ -31,8 +31,7 @@ nlu:
 ```
 
 As with every intent, you should source the majority of your examples
-[from real conversations](conversation-driven-development.mdx "Learning from real conversations via conversation-driven development").
-
+from real conversations.
 
 ### 2. Defining the response message
 
@@ -68,7 +67,6 @@ if the user asks “I want to apply for a job at Rasa”, we can then reply with
 Similar to the `out_of_scope` intent example, you'll need to create a new intent with
 training examples, define the response message, and create a rule.
 
-
 ## Fallbacks
 
 Although Rasa will generalize to unseen messages, some
@@ -76,7 +74,6 @@ messages might receive a low classification confidence. Using Fallbacks will
 help ensure that these low confidence messages are handled gracefully, giving your
 assistant the option to either respond with a default message or attempt to disambiguate
 the user input.
-
 
 ### NLU Fallback
 
@@ -122,7 +119,6 @@ rules:
   - action: utter_please_rephrase
 ```
 
-
 ### Handling Low Action Confidence
 
 As users might send unexpected messages,
@@ -138,7 +134,6 @@ confidence above a configurable threshold.
 
 You can configure the action that is run in case low of action confidence as well as
 the corresponding confidence threshold using the following steps:
-
 
 #### 1. Updating the configuration
 
@@ -156,8 +151,6 @@ policies:
   enable_fallback_prediction: True
 ```
 
-
-
 #### 2. Defining the default response message
 
 To define what your bot will say when action confidence is below the threshold,
@@ -173,7 +166,6 @@ When an action confidence is below the threshold, Rasa will run the action
 `action_default_fallback`. This will send the response `utter_default` and revert back to the
 state of the conversation before the user message that caused the
 fallback, so it will not influence the prediction of future actions.
-
 
 #### 3. Customizing the default action (optional)
 
@@ -210,8 +202,6 @@ class ActionDefaultFallback(Action):
         return [UserUtteranceReverted()]
 ```
 
-
-
 ### Two-Stage Fallback
 
 To give the bot a chance to figure out what the user wants, you will usually want it to attempt to disambiguate the user's message by asking
@@ -219,24 +209,23 @@ clarifying questions. The Two-Stage Fallback is made to handle low NLU confidenc
 using the following sequence:
 
 1. A user message is classified with low confidence
-    - The user is asked to confirm the intent
+   - The user is asked to confirm the intent
 2. The user confirms or denies the intent
-    - If they confirm, the conversation continues as if the intent was classified
-      with high confidence from the beginning. No further fallback steps are taken.
-    - If they deny, the user is asked to rephrase their message.
+   - If they confirm, the conversation continues as if the intent was classified
+     with high confidence from the beginning. No further fallback steps are taken.
+   - If they deny, the user is asked to rephrase their message.
 3. The user rephrases their intent
-    - If the message is classified with high confidence, the conversation
-      continues as if the user had this intent from the beginning.
-    - If the rephrased user message still has low confidence, the user
-      is asked to confirm the intent.
+   - If the message is classified with high confidence, the conversation
+     continues as if the user had this intent from the beginning.
+   - If the rephrased user message still has low confidence, the user
+     is asked to confirm the intent.
 4. The user confirms or denies the rephrased intent
-    - If they confirm, the conversation continues as if the user had this intent from the beginning.
-    - If they deny, an ultimate fallback action is triggered (e.g. a handoff to a human). The default ultimate 
-    fallback action is to call  `action_default_fallback`. This action causes the bot to utter the `utter_default` 
-    response and to reset the state of the conversation as if the turns that happened during the Two-Stage Fallback did not occur.
+   - If they confirm, the conversation continues as if the user had this intent from the beginning.
+   - If they deny, an ultimate fallback action is triggered (e.g. a handoff to a human). The default ultimate
+     fallback action is to call `action_default_fallback`. This action causes the bot to utter the `utter_default`
+     response and to reset the state of the conversation as if the turns that happened during the Two-Stage Fallback did not occur.
 
 The Two-Stage-Fallback can be enabled using the following steps:
-
 
 #### 1. Updating the configuration
 
@@ -246,20 +235,19 @@ to your policy configuration:
 ```yaml title="config.yml"
 recipe: default.v1
 pipeline:
-# other components
-- name: FallbackClassifier
-  threshold: 0.7
+  # other components
+  - name: FallbackClassifier
+    threshold: 0.7
 
 policies:
-# other policies
-- RulePolicy
+  # other policies
+  - RulePolicy
 ```
-
 
 #### 2. Defining the fallback responses
 
 To define how your bot asks the user to rephrase their message,
-define  the response `utter_ask_rephrase`:
+define the response `utter_ask_rephrase`:
 
 ```yaml-rasa title="domain.yml"
 responses:
@@ -269,7 +257,7 @@ responses:
 
 Rasa provides default implementations for asking which intent the user
 meant and for asking the user to rephrase. To customize the behavior of these actions,
-see the documentation on [default actions](default-actions.mdx).
+see the documentation on [default actions](../building-assistants/default-actions.mdx).
 
 #### 3. Defining a Two-Stage Fallback rule
 
@@ -296,7 +284,7 @@ responses:
   - text: I'm sorry, I can't help you.
 ```
 
-Or, you can customize `action_default_fallback` for more complex behavior by writing a [Custom Action](./actions.mdx#custom-actions). 
+Or, you can customize `action_default_fallback` for more complex behavior by writing a [Custom Action](./actions.mdx#custom-actions).
 For example, if you want the bot to call a human and stop interacting with the user:
 
 ```python title="actions.py"
@@ -319,24 +307,23 @@ class ActionDefaultFallback(Action):
 
         # tell the user they are being passed to a customer service agent
         dispatcher.utter_message(text="I am passing you to a human...")
-        
+
         # assume there's a function to call customer service
         # pass the tracker so that the agent has a record of the conversation between the user
         # and the bot for context
         call_customer_service(tracker)
-     
+
         # pause the tracker so that the bot stops responding to user input
         return [ConversationPaused(), UserUtteranceReverted()]
 ```
 
 :::caution Events Returned By A Custom Ultimate Fallback Action
-  You should include `UserUtteranceReverted()` as one of the events returned by your custom
-  `action_default_fallback`. Not including this event will cause the tracker to include all events that happened
-  during the Two-Stage Fallback process which could interfere with subsequent action predictions from the bot's policy
-  pipeline. It is better to treat events that occurred during the Two-Stage Fallback process as if they did not happen
-  so that your bot can apply its rules or memorized stories to correctly predict the next action.
+You should include `UserUtteranceReverted()` as one of the events returned by your custom
+`action_default_fallback`. Not including this event will cause the tracker to include all events that happened
+during the Two-Stage Fallback process which could interfere with subsequent action predictions from the bot's policy
+pipeline. It is better to treat events that occurred during the Two-Stage Fallback process as if they did not happen
+so that your bot can apply its rules or memorized stories to correctly predict the next action.
 :::
-
 
 ## Human Handoff
 
@@ -360,8 +347,6 @@ in the [Financial Demo](https://github.com/RasaHQ/financial-demo) and
 [Helpdesk-Assistant](https://github.com/RasaHQ/helpdesk-assistant)
 starterpacks.
 
-
-
 ## Summary
 
 To let your assistant gracefully handle failures, you should handle known
@@ -371,30 +356,35 @@ set up.
 Here's a summary of changes you need to make for each method:
 
 For out-of-scope intents:
-  - [ ] Add training examples for each out-of-scope intent to your NLU data
-  - [ ] Define the out-of-scope response or action
-  - [ ] Define rules for each out-of-scope intent
-  - [ ] Add the RulePolicy to config.yml
+
+- [ ] Add training examples for each out-of-scope intent to your NLU data
+- [ ] Define the out-of-scope response or action
+- [ ] Define rules for each out-of-scope intent
+- [ ] Add the RulePolicy to config.yml
 
 For single stage NLU fallback:
-  - [ ] Add FallbackClassifier to your pipeline in config.yml
-  - [ ] Define the fallback response or action
-  - [ ] Define a rule for the `nlu_fallback` intent
-  - [ ] Add the RulePolicy to config.yml
+
+- [ ] Add FallbackClassifier to your pipeline in config.yml
+- [ ] Define the fallback response or action
+- [ ] Define a rule for the `nlu_fallback` intent
+- [ ] Add the RulePolicy to config.yml
 
 For handling low core confidence:
-  - [ ] Configure the RulePolicy for core fallback in config.yml
-  - [ ] Optionally customize the fallback action you configure
-  - [ ] Define an `utter_default` response
+
+- [ ] Configure the RulePolicy for core fallback in config.yml
+- [ ] Optionally customize the fallback action you configure
+- [ ] Define an `utter_default` response
 
 For Two-Stage Fallback:
-  - [ ] Add FallbackClassifier to your pipeline in `config.yml`
-  - [ ] Define a rule for the `nlu_fallback` intent that triggers the `action_two_stage_fallback` action
-  - [ ] Define an out-of-scope intent in your domain
-  - [ ] Add RulePolicy to config.yml
+
+- [ ] Add FallbackClassifier to your pipeline in `config.yml`
+- [ ] Define a rule for the `nlu_fallback` intent that triggers the `action_two_stage_fallback` action
+- [ ] Define an out-of-scope intent in your domain
+- [ ] Add RulePolicy to config.yml
 
 For handing off to a human:
-  - [ ] Configure your front end to switch hosts
-  - [ ] Write a custom action (which could be your fallback action) to send the handoff payload
-  - [ ] Add a rule for triggering handoff (if not part of fallback)
-  - [ ] Add RulePolicy to config.yml
+
+- [ ] Configure your front end to switch hosts
+- [ ] Write a custom action (which could be your fallback action) to send the handoff payload
+- [ ] Add a rule for triggering handoff (if not part of fallback)
+- [ ] Add RulePolicy to config.yml

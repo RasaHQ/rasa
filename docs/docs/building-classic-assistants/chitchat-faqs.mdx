@@ -5,21 +5,24 @@ title: Chitchat and FAQs
 abstract: FAQ assistants are the simplest assistants to build and typically the first kind of assistant anyone builds. This page is a guide to the concepts and training data you need to handle non-contextual questions like FAQs and chitchat.
 ---
 
-
-[FAQs](./glossary.mdx#faqs) and [chitchat](./glossary.mdx#chitchat) are two cases where the conversational assistant responds with a fixed set of messages, and the assistant should always answer the same way,
+[FAQs](../building-assistants/glossary.mdx#faqs) and [chitchat](../building-assistants/glossary.mdx#chitchat) are two cases where the conversational assistant responds with a fixed set of messages, and the assistant should always answer the same way,
 no matter what has happened previously in the conversation.
 For example, in the following conversation, every question can be asked at any point in the conversation,
 with the answer being independent of anything the user has said previously.
 
 <Chat caption="Chitchat">
-<ChatUserText>What's your name</ChatUserText>
-<ChatBotText>My name is Sara!</ChatBotText>
-<ChatUserText>Which languages can I build assistants in?</ChatUserText>
-<ChatBotText>You can use Rasa to build assistants in any language you want!</ChatBotText>
-<ChatUserText>What’s Rasa X/Enterprise?</ChatUserText>
-<ChatBotText>Rasa X/Enterprise is a tool to learn from real conversations and improve your assistant.</ChatBotText>
+  <ChatUserText>What's your name</ChatUserText>
+  <ChatBotText>My name is Sara!</ChatBotText>
+  <ChatUserText>Which languages can I build assistants in?</ChatUserText>
+  <ChatBotText>
+    You can use Rasa to build assistants in any language you want!
+  </ChatBotText>
+  <ChatUserText>What’s Rasa X/Enterprise?</ChatUserText>
+  <ChatBotText>
+    Rasa X/Enterprise is a tool to learn from real conversations and improve
+    your assistant.
+  </ChatBotText>
 </Chat>
-
 
 ## Step-by-step Guide on Using Response Selector for FAQs and Chitchat
 
@@ -75,8 +78,6 @@ pipeline:
   retrieval_intent: chitchat
 ```
 
-
-
 ### 2. Defining Retrieval Intents and the ResponseSelector
 
 Consider an example where you have 20 different FAQs. Although each question is represented as an individual intent, all FAQ intents are handled the same way in the dialogue. For each FAQ intent, the assistant **retrieves** the proper response depending on which question has been asked.
@@ -87,7 +88,6 @@ called e.g. `faq`.
 The single action uses the output of the
 [ResponseSelector](./components.mdx#responseselector) to return
 the correct response for the specific FAQ that the user asked.
-
 
 ### 3. Creating rules
 
@@ -139,7 +139,6 @@ intents:
 # other intents
 - chitchat
 ```
-
 
 ### 5. Defining the responses
 

@@ -22,7 +22,6 @@ If you have feedback (positive or negative) please share it with us on the [Rasa
 
 :::
 
-
 ## Differences with Default Recipe
 
 There are some differences between the default recipe and the new graph recipe. Main differences are:
@@ -46,6 +45,7 @@ Graph recipes share `recipe` and `language` keys with the same meaning. Similari
 Here's an example graph recipe:
 
 ```yaml-rasa (../data/test_config/graph_config_short.yml)
+
 ```
 
 :::note graph targets
@@ -60,10 +60,12 @@ In a similar fashion, note that the default resource needed by the first graph n
 As you can see in the example above, graph recipes are very much explicit and you can configure each graph node as you would like. Here is an explanation of what some of the keys mean:
 
 - `needs`: You can define here what data your graph node requires and from which parent node. Key is the data name, whereas the value would refer to the node name.
+
 ```yaml-rasa
 needs:
     messages: nlu_message_converter
 ```
+
 Current graph node needs `messages` which is provided by `nlu_message_converter` node.
 
 - `uses`: You can provide the class used to instantiate this node with this key. Please provide the full path in Python path syntax, eg.
@@ -71,9 +73,10 @@ Current graph node needs `messages` which is provided by `nlu_message_converter`
 ```yaml-rasa
 uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
 ```
+
 You are not required to use Rasa internal graph component classes and you
 can use your own components here. Refer to [custom graph
-components](custom-graph-components.mdx) pages to find out how to write your
+components](../building-assistants/custom-graph-components.mdx) pages to find out how to write your
 own graph components.
 
 - `constructor_name`: This is the constructor used to instantiate your component. Example:
@@ -97,11 +100,10 @@ config:
 ```
 
 - `eager`: This determines if your component should be eagerly loaded
-when the graph is constructed or if it should wait until the
-runtime (this is called lazy instantiation). Usually we always
-instantiate lazily during training and eagerly during inference (to
-avoid slow first prediction).
-
+  when the graph is constructed or if it should wait until the
+  runtime (this is called lazy instantiation). Usually we always
+  instantiate lazily during training and eagerly during inference (to
+  avoid slow first prediction).
 
 ```yaml-rasa
 eager: true
@@ -115,19 +117,19 @@ resource:
 ```
 
 - `is_target`: Boolean value, if `True` then this node can't be pruned
-during fingerprinting (it might be replaced with a cached value
-though). This
-is e.g. used for all components which train as their result always needs
-to be added to the model archive so that the data is available during
-inference.
+  during fingerprinting (it might be replaced with a cached value
+  though). This
+  is e.g. used for all components which train as their result always needs
+  to be added to the model archive so that the data is available during
+  inference.
 
 ```yaml-rasa
 is_target: false
 ```
 
 - `is_input`: Boolean value; nodes with `is_input` are _always_ run (also during the
-fingerprint run). This makes sure that we e.g. detect changes in file
-contents.
+  fingerprint run). This makes sure that we e.g. detect changes in file
+  contents.
 
 ```yaml-rasa
  is_input: false

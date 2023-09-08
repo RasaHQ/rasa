@@ -10,20 +10,23 @@ from the user before doing something for them. For example, a restaurant search 
 about the user's preferences to find them a suitable restaurant:
 
 <Chat caption="Finding a restaurant">
-<ChatUserText>Help me find a restaurant</ChatUserText>
-<ChatBotText>What cuisine?</ChatBotText>
-<ChatUserText>I'm looking for Tuscan food</ChatUserText>
-<ChatBotText>How many people?</ChatBotText>
-<ChatUserText>5</ChatUserText>
-<ChatBotText>Do you want to sit outside?</ChatBotText>
-<ChatUserText>Yes</ChatUserText>
-<ChatBotText>All done!</ChatBotText>
-<ChatBotText>I am going to run a restaurant search using the following parameters:</ChatBotText>
-<ChatBotText><p>- cuisine: Tuscan</p>
-<p>- num_people: 5</p>
-<p>- outdoor_seating: True</p></ChatBotText>
+  <ChatUserText>Help me find a restaurant</ChatUserText>
+  <ChatBotText>What cuisine?</ChatBotText>
+  <ChatUserText>I'm looking for Tuscan food</ChatUserText>
+  <ChatBotText>How many people?</ChatBotText>
+  <ChatUserText>5</ChatUserText>
+  <ChatBotText>Do you want to sit outside?</ChatBotText>
+  <ChatUserText>Yes</ChatUserText>
+  <ChatBotText>All done!</ChatBotText>
+  <ChatBotText>
+    I am going to run a restaurant search using the following parameters:
+  </ChatBotText>
+  <ChatBotText>
+    <p>- cuisine: Tuscan</p>
+    <p>- num_people: 5</p>
+    <p>- outdoor_seating: True</p>
+  </ChatBotText>
 </Chat>
-
 
 This page is a guide on handling the **business logic** of collecting user information to fulfill a request.
 In the example above, business logic includes needing to know the user's preferred cuisine, party size, and seating preference.
@@ -31,17 +34,16 @@ The examples on this page come from the [formbot example bot](https://github.com
 
 ## Step-by-step Guide on Using Forms to Handle Business Logic
 
-[Forms](forms.mdx) work by prompting the user for information until it has gathered all required information.
+[Forms](./building-classic-assistants/forms.mdx) work by prompting the user for information until it has gathered all required information.
 The information is stored in [slots](domain.mdx#slots). Once all the required slots are filled,
 the bot fulfills the user's original request.
-
 
 ### 1. Defining the form
 
 To define a form, you will need to define:
 
-* Slot mappings: The required info to collect
-* Responses: How your bot should ask for each piece of information
+- Slot mappings: The required info to collect
+- Responses: How your bot should ask for each piece of information
 
 #### Slot Mappings
 
@@ -51,7 +53,6 @@ from the user:
 - cuisine
 - number of people
 - whether they want to sit outside or not
-
 
 You define a form in your domain by specifying a list of required slots under the form name:
 
@@ -101,7 +102,7 @@ slots:
 ```
 
 The `number` slot is filled from an entity. Entities like numbers
-can be extracted by [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add  DucklingEntityExtractor
+can be extracted by [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add DucklingEntityExtractor
 to your NLU pipeline:
 
 ```yaml-rasa title="config.yml"
@@ -116,13 +117,12 @@ pipeline:
 
 The `outdoor_seating` slot is
 filled based on the user's intent: If it is `affirm`, it'll be `true`, if it is
-`deny`, it'll be `false`. 
+`deny`, it'll be `false`.
 
 However, the slot should only be set to `true` or `false` if the user was responding to the question, `Do you want to sit outside?`.
-To enforce this condition, the `conditions` for the `outdoor_seating` slot requires that `restaurant_form` is active and that the requested slot is `outdoor_seating`. 
+To enforce this condition, the `conditions` for the `outdoor_seating` slot requires that `restaurant_form` is active and that the requested slot is `outdoor_seating`.
 If there were no conditions and the user had sent a message with the `affirm` or `deny` intent earlier in the conversation,
-the `outdoor_seating` slot would already be filled when the form was activated. Therefore the form would not prompt the user for their outdoor seating preference. See [mapping conditions](./domain.mdx#mapping-conditions) for more information.
-
+the `outdoor_seating` slot would already be filled when the form was activated. Therefore the form would not prompt the user for their outdoor seating preference. See [mapping conditions](../building-assistants/domain.mdx#mapping-conditions) for more information.
 
 #### Validating Slots
 
@@ -147,7 +147,6 @@ responses:
     - text: "Do you want to sit outside?"
 ```
 
-
 ### 2. Updating the configuration
 
 A form's [happy path](glossary.mdx#happy--unhappy-paths) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](policies.mdx#rule-policy)
@@ -168,7 +167,6 @@ For the restaurant search example, in real life the assistant would look up
 a restaurant based on the user's preferences.
 In this case, the bot will utter a response with the details
 that would be used for a search.
-
 
 ```yaml-rasa title="rules.yml"
 rules:
@@ -192,7 +190,6 @@ By splitting up the activation and submission of the form,
 the rules will still apply if the user provides
 [unexpected input](unexpected-input.mdx) or interrupts
 the form with [chitchat](chitchat-faqs.mdx).
-
 
 ### 4. Updating the NLU training data
 
@@ -235,7 +232,6 @@ to annotate the `cuisine` entity so that DIETClassifier can
 learn to extract it. You don't need to annotate the `number` entity since DucklingEntityExtractor is a rule-based extractors
 that isn't trained on your training data. Only a few examples are shown for each intent;
 for your bot to work well, you should add more training data than is shown here:
-
 
 ```yaml-rasa title="nlu.yml"
 nlu:
@@ -311,4 +307,4 @@ example above, this is a summary of what you'll need to do:
 To try out your newly defined form, retrain the bot's model by running `rasa train` and start `rasa shell`.
 Because the DucklingEntityExtractor is being used to extract
 entities, you'll need to start Duckling in the background as well
-(see the [instructions for running Duckling](components.mdx#DucklingEntityExtractor)).
+(see the [instructions for running Duckling](./components.mdx#DucklingEntityExtractor)).

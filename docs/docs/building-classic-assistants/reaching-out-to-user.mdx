@@ -5,7 +5,6 @@ title: Reaching Out to the User
 abstract: Sometimes you want your assistant to reach out to the user without the user's prompting. For example, you might want the assistant to send a message when the user opens the chat window, or you might want to prompt the user if they haven't sent a message for a while. This page is a guide to enabling your assistant to reach out to the user proactively.
 ---
 
-
 ## Reaching out first
 
 In most use cases, when the user opens the chat window with your assistant, you will want the
@@ -14,7 +13,6 @@ can or can't do and set them up to have a more successful conversation.
 Some [messaging or voice channels](./messaging-and-voice-channels.mdx) have existing configuration
 options to send a payload to the assistant when the user first starts the conversation,
 but you can also add this option to your [own custom channel](./connectors/your-own-website.mdx).
-
 
 Once you've configured your channel to send a payload, you will need to specify how the
 assistant should react and greet the user. You can either re-use an existing intent's behavior
@@ -26,7 +24,7 @@ welcome rule.
 Since you are using a rule for this behavior, you need to add the [RulePolicy](./policies.mdx#rule-policy)
 to your configuration file:
 
-```yaml-rasa  title="config.yml"
+```yaml-rasa title="config.yml"
 policies:
   # other policies
   - name: RulePolicy
@@ -37,7 +35,7 @@ policies:
 To have the assistant respond to the intent `greet` with a welcome message
 only at the beginning of a conversation, add the following rule:
 
-```yaml-rasa  title="rules.yml"
+```yaml-rasa title="rules.yml"
 rules:
   - rule: welcome user
     conversation_start: true  # this rule only applies at the beginning of a conversation
@@ -74,7 +72,6 @@ The `trigger_intent` endpoint injects a user intent (possibly with entities) int
 For Rasa, it is as if you entered a message that got classified with that specific intent and entities.
 The assistant will then predict and execute the next action as usual.
 
-
 For example, the following post request would inject the intent `EXTERNAL_dry_plant` and the `plant` entity
 into the conversation with id `user123`:
 
@@ -98,7 +95,7 @@ In the dry plant example, your Raspberry Pi needs to send a message with the int
 `EXTERNAL_dry_plant` to the `trigger_intent` endpoint. This intent will be reserved for use by the Raspberry Pi, so
 there won't be any NLU training examples for it.
 
-```yaml-rasa  title="domain.yml"
+```yaml-rasa title="domain.yml"
 intents:
   - EXTERNAL_dry_plant
 ```
@@ -113,7 +110,7 @@ easier to see which intents are expected to come from external devices when work
 To tell the assistant which plant needs watering, you can define an entity that you'll post along with the intent.
 To be able to use the entity value directly in a response, define a `from_entity` slot mapping for the `plant` slot:
 
-```yaml-rasa  title="domain.yml"
+```yaml-rasa title="domain.yml"
 entities:
   - plant
 
@@ -142,7 +139,7 @@ rules:
 
 You'll need to define the response text for `utter_warn_dry`:
 
-```yaml-rasa  title="domain.yml"
+```yaml-rasa title="domain.yml"
 responses:
   utter_warn_dry:
   - text: "Your {plant} needs some water!"
@@ -179,7 +176,7 @@ You should see the bot respond in your channel:
 
 ## Reminders
 
-You can have your assistant reach out to the user after a set amount of time by using [Reminders](./action-server/events.mdx#reminder).
+You can have your assistant reach out to the user after a set amount of time by using [Reminders](../action-server/events.mdx#reminder).
 The examples below are from the [reminderbot example bot](https://github.com/RasaHQ/rasa/blob/main/examples/reminderbot).
 You can clone it and follow the instructions in `README` to try out the full version.
 
@@ -191,7 +188,7 @@ To schedule a reminder, you need to define a custom action that returns
 the `ReminderScheduled` event. For example, the following custom action
 schedules a reminder for five minutes from now:
 
-```python  title="actions.py"
+```python title="actions.py"
 import datetime
 from rasa_sdk.events import ReminderScheduled
 from rasa_sdk import Action
@@ -252,7 +249,6 @@ rules:
   - action: action_set_reminder
 ```
 
-
 #### 3. Add Training Data
 
 You should add NLU training examples for scheduling the reminder:
@@ -270,7 +266,7 @@ nlu:
 
 You should also add it to your domain:
 
-```yaml-rasa  title="domain.yml"
+```yaml-rasa title="domain.yml"
 intents:
   - ask_remind_call
 ```
@@ -280,7 +276,7 @@ intents:
 By adding SpacyNLP and SpacyEntityExtractor to your pipeline in config.yml, you won't need to annotate any of the
 names in your training data, since Spacy has a `PERSON` dimension:
 
-```yaml-rasa  title="config.yml"
+```yaml-rasa title="config.yml"
 pipeline:
 # other components
 - name: SpacyNLP
@@ -288,7 +284,6 @@ pipeline:
 - name: SpacyEntityExtractor
   dimensions: ["PERSON"]
 ```
-
 
 ### Reacting to Reminders
 
@@ -343,11 +338,10 @@ rules:
 You'll need to define the intent that triggers reacting to the reminder. You don't need to add any training examples,
 since the intent is reserved for the reminder.
 
-```yaml-rasa  title="domain.yml"
+```yaml-rasa title="domain.yml"
 intents:
 - intent: EXTERNAL_reminder
 ```
-
 
 ### Cancelling Reminders
 
@@ -359,13 +353,12 @@ that returns the `ReminderCancelled()` event.
 Returning `ReminderCancelled()` cancels all the reminders that are currently scheduled.
 If you only want to cancel certain reminders, you can specify some parameters by which to narrow down the scheduled reminders:
 
-* `ReminderCancelled(intent="EXTERNAL_greet")` cancels all reminders with intent `EXTERNAL_greet`
+- `ReminderCancelled(intent="EXTERNAL_greet")` cancels all reminders with intent `EXTERNAL_greet`
 
-* `ReminderCancelled(entities={})` cancels all reminders with the given entities
+- `ReminderCancelled(entities={})` cancels all reminders with the given entities
 
-* `ReminderCancelled("...")` cancels the one unique reminder with the given name “`...`” that you supplied
+- `ReminderCancelled("...")` cancels the one unique reminder with the given name “`...`” that you supplied
   during its creation
-
 
 For the call reminder example, you can define a custom action `action_forget_reminders` that cancels
 all reminders:
@@ -387,7 +380,6 @@ class ForgetReminders(Action):
         return [ReminderCancelled()]
 ```
 
-
 :::caution
 All reminders are cancelled whenever you shutdown your Rasa server.
 :::
@@ -396,7 +388,7 @@ All reminders are cancelled whenever you shutdown your Rasa server.
 
 You'll need to add a rule for cancelling a reminder.
 
-```yaml-rasa  title="rules.yml"
+```yaml-rasa title="rules.yml"
 rules:
 - rule: Cancel a reminder
   steps:
@@ -404,13 +396,11 @@ rules:
   - action: action_forget_reminders
 ```
 
-
 #### 3. Add Training Data
 
 You'll need to define an intent that triggers cancelling the reminder.
 
-
-```yaml-rasa  title="nlu.yml"
+```yaml-rasa title="nlu.yml"
 nlu:
 - intent: ask_forget_reminders
   examples: |
@@ -421,12 +411,11 @@ nlu:
 ```
 
 You should also add it to domain.yml:
-```yaml-rasa  title="domain.yml"
+
+```yaml-rasa title="domain.yml"
 intents:
 - intent: ask_forget_reminders
 ```
-
-
 
 ### Try it Out
 

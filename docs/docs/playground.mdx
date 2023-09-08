@@ -42,7 +42,7 @@ messages like “Hi”, “Hey”, and “good morning”.
 
 Intents and their examples are used as training data for the assistant's Natural Language Understanding (NLU) model.
 
-[Learn more about NLU data and its format](./training-data-format.mdx)
+[Learn more about NLU data and its format](./building-classic-assistants/training-data-format.mdx)
 
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
@@ -84,7 +84,7 @@ Now that the assistant understands a few messages users might say, it needs resp
 In the code block below, we have listed some responses and added one or more text
 options for each of them. If a response has multiple text options, one of these options will be chosen at random whenever that response is predicted.
 
-[Learn more about responses](./responses.mdx)
+[Learn more about responses](./building-assistants/responses.mdx)
 
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
@@ -112,14 +112,12 @@ responses:
 <AssistantBuilder.Section value="stories">
 <AssistantBuilder.Text>
 
-[Stories](./stories.mdx) are example conversations that train an assistant to respond correctly depending on what the user has said previously in the conversation.
+[Stories](./building-classic-assistants/stories.mdx) are example conversations that train an assistant to respond correctly depending on what the user has said previously in the conversation.
 The story format shows the intent of the user message followed by the assistant’s action or response.
 
 Your first story should show a conversation flow where the assistant helps the user accomplish their goal in a straightforward way. Later, you can add stories for situations where the user doesn't want to provide their information or switches to another topic.
 
 In the code block below, we have added a story where the user and assistant exchange greetings, the user asks to subscribe to the newsletter, and the assistant starts collecting the information it needs through the newsletter_form. You will learn about forms in the next step.
-
-[Learn more about stories](./writing-stories.mdx)
 
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
@@ -146,7 +144,7 @@ There are many situations where an assistant needs to collect information from t
 You can do this in Rasa using a form. In the code block below, we added the
 `newsletter_form` and used it to collect an email address from the user.
 
-[Learn more about forms here](./forms.mdx)
+[Learn more about forms here](./building-classic-assistants/forms.mdx)
 
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
@@ -183,7 +181,7 @@ required information has been provided.
 The second rule only applies when the `newsletter_form` is active to begin with; once
 it is no longer active (`active_loop: null`), the form is complete.
 
-[Learn more about rules and how to write them.](./rules.mdx)
+[Learn more about rules and how to write them.](./building-classic-assistants/rules.mdx)
 
 Now that you've gone through all the steps, scroll down to talk to your assistant.
 
@@ -259,9 +257,9 @@ stories:
 ```
 
 Check out other docs pages to learn more about
-[Rasa’s CLI](./command-line-interface.mdx),
-[Domains](./domain.mdx),
-[Actions](./actions.mdx),
-and your config’s [Pipeline](./tuning-your-model.mdx) and [Policies](./policies.mdx).
+[Rasa’s CLI](./building-assistants/command-line-interface.mdx),
+[Domains](./building-assistants/domain.mdx),
+[Actions](./building-assistants/actions.mdx),
+and your config’s [Pipeline](./building-classic-assistants/tuning-your-model.mdx) and [Policies](./building-classic-assistants/policies.mdx).
 
 </Prototyper>

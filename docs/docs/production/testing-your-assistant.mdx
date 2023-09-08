@@ -2,12 +2,14 @@
 id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
-abstract: Rasa lets you validate and test dialogues end-to-end by running through
+abstract:
+  Rasa lets you validate and test dialogues end-to-end by running through
   test stories. In addition, you can
   also test the dialogue management and the message processing (NLU)
   separately.
 ---
-import useBaseUrl from '@docusaurus/useBaseUrl';
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
 
 import RasaProLabel from "@theme/RasaProLabel";
 
@@ -34,12 +36,12 @@ always good to run this check before training a model. By including the
 `--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
 
 :::note
-Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories.
+Running `rasa data validate` does **not** test if your [rules](../building-classic-assistants/rules.mdx) are consistent with your stories.
 However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
 :::
 
 To read more about the validator and all of the available options, see [the documentation for
-`rasa data validate`](./command-line-interface.mdx#rasa-data-validate).
+`rasa data validate`](../building-assistants/command-line-interface.mdx#rasa-data-validate).
 
 ## Writing Test Stories
 
@@ -58,142 +60,141 @@ Here are some examples:
 <Tabs values={[{"label": "Basics", "value": "basics"}, {"label": "Button Payload", "value": "buttons"}, {"label": "Custom Actions", "value": "customactions"}, {"label": "Forms Happy Path", "value": "formshappypath"}, {"label": "Forms Unhappy Path", "value": "formsunhappypath"}]} defaultValue="basics">
   <TabItem value="basics">
 
-  ```yaml-rasa title="tests/test_stories.yml" {5,9,13}
-  stories:
-  - story: A basic story test
-    steps:
-    - user: |
-        hello
-      intent: greet
-    - action: utter_ask_howcanhelp
-    - user: |
-       show me [chinese]{"entity": "cuisine"} restaurants
-      intent: inform
-    - action: utter_ask_location
-    - user: |
-        in [Paris]{"entity": "location"}
-      intent: inform
-    - action: utter_ask_price
-  ```
+```yaml-rasa title="tests/test_stories.yml" {5,9,13}
+stories:
+- story: A basic story test
+  steps:
+  - user: |
+      hello
+    intent: greet
+  - action: utter_ask_howcanhelp
+  - user: |
+     show me [chinese]{"entity": "cuisine"} restaurants
+    intent: inform
+  - action: utter_ask_location
+  - user: |
+      in [Paris]{"entity": "location"}
+    intent: inform
+  - action: utter_ask_price
+```
 
   </TabItem>
   <TabItem value="buttons">
 
-  ```yaml-rasa title="tests/test_stories.yml" {8,11}
-  stories:
-  - story: A test where a user clicks on a button with payload
-    steps:
-    - user: |
-        hello
-      intent: greet
-    - action: utter_ask_howcanhelp
-    - user: /inform{{"cuisine":"chinese"}}
-      intent: inform
-    - action: utter_ask_location
-    - user: /inform{{"location":"Paris"}}
-      intent: inform
-    - action: utter_ask_price
-  ```
-
+```yaml-rasa title="tests/test_stories.yml" {8,11}
+stories:
+- story: A test where a user clicks on a button with payload
+  steps:
+  - user: |
+      hello
+    intent: greet
+  - action: utter_ask_howcanhelp
+  - user: /inform{{"cuisine":"chinese"}}
+    intent: inform
+  - action: utter_ask_location
+  - user: /inform{{"location":"Paris"}}
+    intent: inform
+  - action: utter_ask_price
+```
 
   </TabItem>
   <TabItem value="customactions">
 
-  ```yaml-rasa title="tests/test_stories.yml" {5,12}
-  stories:
-  - story: A test where a custom action returns events
-    steps:
-    - user: |
-        hey
-      intent: greet
-    - action: my_custom_action
-    - slot_was_set:
-      - my_slot: "value added by custom action"
-    - action: utter_ask_age
-    - user: |
-        thanks
-      intent: thankyou
-    - action: utter_no_worries
-  ```
-
+```yaml-rasa title="tests/test_stories.yml" {5,12}
+stories:
+- story: A test where a custom action returns events
+  steps:
+  - user: |
+      hey
+    intent: greet
+  - action: my_custom_action
+  - slot_was_set:
+    - my_slot: "value added by custom action"
+  - action: utter_ask_age
+  - user: |
+      thanks
+    intent: thankyou
+  - action: utter_no_worries
+```
 
   </TabItem>
   <TabItem value="formshappypath">
 
-  ```yaml-rasa title="tests/test_stories.yml" {5,9,14,20}
-  stories:
-  - story: A test story with a form
-    steps:
-    - user: |
-        hi
-      intent: greet
-    - action: utter_greet
-    - user: |
-        im looking for a restaurant
-      intent: request_restaurant
-    - action: restaurant_form
-    - active_loop: restaurant_form
-    - user: |
-        [afghan](cuisine) food
-      intent: inform
-    - action: restaurant_form
-    - active_loop: null
-    - action: utter_slots_values
-    - user: |
-        thanks
-      intent: thankyou
-    - action: utter_no_worries
-  ```
+```yaml-rasa title="tests/test_stories.yml" {5,9,14,20}
+stories:
+- story: A test story with a form
+  steps:
+  - user: |
+      hi
+    intent: greet
+  - action: utter_greet
+  - user: |
+      im looking for a restaurant
+    intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
+  - user: |
+      [afghan](cuisine) food
+    intent: inform
+  - action: restaurant_form
+  - active_loop: null
+  - action: utter_slots_values
+  - user: |
+      thanks
+    intent: thankyou
+  - action: utter_no_worries
+```
 
   </TabItem>
   <TabItem value="formsunhappypath">
 
-  ```yaml-rasa title="tests/test_stories.yml" {5,9,14,21}
-  stories:
-  - story: A test story with unexpected input during a form
-    steps:
-    - user: |
-        hi
-      intent: greet
-    - action: utter_greet
-    - user: |
-        im looking for a restaurant
-      intent: request_restaurant
-    - action: restaurant_form
-    - active_loop: restaurant_form
-    - user: |
-        How's the weather?
-      intent: chitchat
-    - action: utter_chitchat
-    - action: restaurant_form
-    - active_loop: null
-    - action: utter_slots_values
-    - user: |
-        thanks
-      intent: thankyou
-    - action: utter_no_worries
-  ```
+```yaml-rasa title="tests/test_stories.yml" {5,9,14,21}
+stories:
+- story: A test story with unexpected input during a form
+  steps:
+  - user: |
+      hi
+    intent: greet
+  - action: utter_greet
+  - user: |
+      im looking for a restaurant
+    intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
+  - user: |
+      How's the weather?
+    intent: chitchat
+  - action: utter_chitchat
+  - action: restaurant_form
+  - active_loop: null
+  - action: utter_slots_values
+  - user: |
+      thanks
+    intent: thankyou
+  - action: utter_no_worries
+```
 
   </TabItem>
   <TabItem value="entities">
 
-  ```yaml-rasa title="tests/test_stories.yml" {5,9,13}
-  stories:
-  - story: A basic test story with multiple entities for a single token
-    steps:
-    - user: |
-        hello
-      intent: greet
-    - action: utter_ask_howcanhelp
-    - user: |
-       show me [chinese]{"entity": "cuisine"} restaurants
-      intent: inform
-    - action: utter_ask_location
-    - user: |
-        in [Paris][{"entity": "location"}, {"entity": "city"}]
-      intent: inform
-    - action: utter_ask_price
-  ```
+```yaml-rasa title="tests/test_stories.yml" {5,9,13}
+stories:
+- story: A basic test story with multiple entities for a single token
+  steps:
+  - user: |
+      hello
+    intent: greet
+  - action: utter_ask_howcanhelp
+  - user: |
+     show me [chinese]{"entity": "cuisine"} restaurants
+    intent: inform
+  - action: utter_ask_location
+  - user: |
+      in [Paris][{"entity": "location"}, {"entity": "city"}]
+    intent: inform
+  - action: utter_ask_price
+```
+
   </TabItem>
 </Tabs>
 
@@ -210,11 +211,11 @@ cases you include, so you should continue to grow your set of test stories
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test stories
 to be representative of the true distribution of real conversations.
 
-See the [CLI documentation on `rasa test`](./command-line-interface.mdx#rasa-test) for
+See the [CLI documentation on `rasa test`](../building-assistants/command-line-interface.mdx#rasa-test) for
 more configuration options.
 
 :::caution Testing Custom Actions
-[Custom Actions](./custom-actions.mdx) are not executed as part of test stories. If your custom
+[Custom Actions](../building-assistants/custom-actions.mdx) are not executed as part of test stories. If your custom
 actions append any events to the conversation, this has to be reflected in your test story
 (e.g. by adding `slot_was_set` events to your test story).
 
@@ -230,19 +231,19 @@ Once your assistant is deployed in the real world, it will be processing message
 in the training data. To simulate this, you should always set aside some part of your data for testing.
 You can either:
 
-1) [use a held out test set](#using-a-held-out-test-set) by shuffling and splitting your NLU data
+1. [use a held out test set](#using-a-held-out-test-set) by shuffling and splitting your NLU data
 
-2) [use cross-validation](#using-cross-validation), which automatically creates
-multiple train/test splits
+2. [use cross-validation](#using-cross-validation), which automatically creates
+   multiple train/test splits
 
 ### Using a Held-Out Test Set
 
 If you use the train-test
-set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#rasa-data-split)
+set approach, it is best to [shuffle and split your data](../building-assistants/command-line-interface.mdx#rasa-data-split)
 using `rasa data split` every time you evaluate your model, as
 opposed to using a static NLU test set, which can easily become outdated.
 
-You can split your NLU data into train and test sets using: 
+You can split your NLU data into train and test sets using:
 
 ```bash
 rasa data split nlu
@@ -256,7 +257,6 @@ rasa test nlu
     --nlu train_test_split/test_data.yml
 ```
 
-
 ### Using Cross-Validation
 
 If you've made significant changes to your NLU training data (e.g.
@@ -266,8 +266,7 @@ multiple train/test splits and averages the results of evaluations on each train
 This means all your data is evaluated during cross-validation, making cross-validation the most
 thorough way to automatically test your NLU model.
 
-
-To run NLU testing in cross-validation mode run: 
+To run NLU testing in cross-validation mode run:
 
 ```bash {3}
 rasa test nlu
@@ -276,7 +275,6 @@ rasa test nlu
 ```
 
 You can specify the number of test/train splits used with the `-f/--folds` flag:
-
 
 ```bash {4}
 rasa test nlu
@@ -299,7 +297,6 @@ To further improve your model check out this
 [tutorial on hyperparameter tuning](https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/).
 :::
 
-
 ### Comparing NLU Pipelines
 
 To get the most out of your training data, you should train and evaluate your model on different pipelines
@@ -313,6 +310,7 @@ rasa test nlu --nlu data/nlu.yml
 ```
 
 This performs several steps:
+
 1. Create a global 80% train / 20% test split from `data/nlu.yml`.
 2. Exclude a certain percentage of data from the global train split.
 3. Train models for each configuration on remaining training data.
@@ -356,16 +354,26 @@ as well as providing an overall average. You can save these reports as JSON file
 
 The confusion matrix shows which intents are mistaken for others.
 Any samples which have been incorrectly predicted are logged and saved to a file called `errors.json` for easier debugging.
+
 <div align="center">
-    <img alt="image" src={useBaseUrl("/img/intent_confusion_matrix_example.png")} width="70%" />
+  <img
+    alt="image"
+    src={useBaseUrl("/img/intent_confusion_matrix_example.png")}
+    width="70%"
+  />
 </div>
 
 The histogram allows you to visualize the confidence for all predictions,
 with the correct and incorrect predictions being displayed by blue and red bars respectively.
 Improving the quality of your training data will move the blue histogram bars up the plot and the
 red histogram bars down the plot. It should also help in reducing the number of red histogram bars itself.
+
 <div align="center">
-    <img alt="image" src={useBaseUrl("/img/intent_histogram_example.png")} width="70%" />
+  <img
+    alt="image"
+    src={useBaseUrl("/img/intent_histogram_example.png")}
+    width="70%"
+  />
 </div>
 
 #### Response Selectors
@@ -376,7 +384,7 @@ confidence histogram (`response_selection_histogram.png`) and errors (`response_
 If your pipeline includes multiple response selectors, they are evaluated in a single report.
 
 The report logs precision, recall and f1 measure for
-each sub-intent of a [retrieval intent](./glossary.mdx#retrieval-intent) and provides an overall average.
+each sub-intent of a [retrieval intent](../building-assistants/glossary.mdx#retrieval-intent) and provides an overall average.
 You can save these reports as JSON files using the `--report` argument.
 
 #### Entity Extraction
@@ -393,12 +401,12 @@ you can use a list notation in the test files, such as
 
 ```yaml
 stories:
-- story: A basic test story with multiple entities for a single token
-  steps:
-    - user: |
-        I like [ice cream][{\"entity\": \"food\"}, {\"entity\": \"desert\"}]
-      intent: inform
-    # ...
+  - story: A basic test story with multiple entities for a single token
+    steps:
+      - user: |
+          I like [ice cream][{\"entity\": \"food\"}, {\"entity\": \"desert\"}]
+        intent: inform
+      # ...
 ```
 
 :::caution incorrect entity annotations
@@ -413,7 +421,7 @@ multiple tokens.
 #### Entity Scoring
 
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider
-[BILOU tags](nlu-training-data.mdx#bilou-entity-tagging) exactly, but only the
+[BILOU tags](../building-classic-assistants/nlu-training-data.mdx#bilou-entity-tagging) exactly, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
 expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`.
 
@@ -429,14 +437,13 @@ BILOU-based one.
 
 Here's a comparison between the two scoring mechanisms for the phrase “near Alexanderplatz tonight”:
 
-|                     extracted                      |Simple tags (score) |  BILOU tags (score)   |
-|----------------------------------------------------|--------------------|-----------------------|
-|`[near Alexanderplatz](loc) [tonight](time)`        |loc loc time (3)    |B-loc L-loc U-time (3) |
-|`[near](loc) [Alexanderplatz](loc) [tonight](time)` |loc loc time (3)    |U-loc U-loc U-time (1) |
-|`near [Alexanderplatz](loc) [tonight](time)`        |O   loc time (2)    |O     U-loc U-time (1) |
-|`[near](loc) Alexanderplatz [tonight](time)`        |loc O   time (2)    |U-loc O     U-time (1) |
-|`[near Alexanderplatz tonight](loc)`                |loc loc loc  (2)    |B-loc I-loc L-loc  (1) |
-
+| extracted                                           | Simple tags (score) | BILOU tags (score)     |
+| --------------------------------------------------- | ------------------- | ---------------------- |
+| `[near Alexanderplatz](loc) [tonight](time)`        | loc loc time (3)    | B-loc L-loc U-time (3) |
+| `[near](loc) [Alexanderplatz](loc) [tonight](time)` | loc loc time (3)    | U-loc U-loc U-time (1) |
+| `near [Alexanderplatz](loc) [tonight](time)`        | O loc time (2)      | O U-loc U-time (1)     |
+| `[near](loc) Alexanderplatz [tonight](time)`        | loc O time (2)      | U-loc O U-time (1)     |
+| `[near Alexanderplatz tonight](loc)`                | loc loc loc (2)     | B-loc I-loc L-loc (1)  |
 
 ## Evaluating a Dialogue Model
 
@@ -458,15 +465,15 @@ incorrect action was predicted instead.
 ### Interpreting the generated warnings
 
 The test script will also generate a warnings file called `results/stories_with_warnings.yml`.
-This file contains all test stories for which [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
+This file contains all test stories for which [`action_unlikely_intent`](../building-assistants/default-actions.mdx#action_unlikely_intent)
 was predicted at any conversation turn but all actions from the original story were predicted correctly.
 However, if a test story originally included an `action_unlikely_intent`, for example to ensure [a rule is designed to
-trigger the conversation path after an `action_unlikely_intent`](./default-actions.mdx#customization-1) but the ensemble of
+trigger the conversation path after an `action_unlikely_intent`](../building-assistants/default-actions.mdx#customization-1) but the ensemble of
 policies failed to do so, then the corresponding story will end up in `results/failed_test_stories.yml` as
 a failed story.
 
 The stories are sorted by the severity of `action_unlikely_intent`'s prediction.
-This severity is calculated by [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy) itself at prediction time.
+This severity is calculated by [`UnexpecTEDIntentPolicy`](../building-classic-assistants/policies.mdx#unexpected-intent-policy) itself at prediction time.
 The higher the severity, the more unlikely is the intent and hence reviewing that particular
 conversation path becomes more critical.
 
@@ -496,7 +503,7 @@ rasa train core -c config_1.yml config_2.yml \
   --out comparison_models --runs 3 --percentages 0 5 25 50 70 95
 ```
 
-Similar to how the [NLU model was evaluated](./testing-your-assistant.mdx#comparing-nlu-pipelines), the above
+Similar to how the [NLU model was evaluated](../production/testing-your-assistant.mdx#comparing-nlu-pipelines), the above
 command trains the dialogue model on multiple configurations and different amounts of training data.
 For each config file provided, Rasa will train dialogue models
 with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
@@ -533,7 +540,6 @@ include these tests in your CI pipeline so that they run each time you make chan
 If you have any questions or problems, please share them with us in the dedicated
 [testing section on our forum](https://forum.rasa.com/tags/testing)!
 
-
 ## End-To-End Testing
 
 <RasaProLabel />
@@ -547,18 +553,19 @@ You can now use end-to-end testing to test your assistant as a whole, including 
 :::
 
 End-to-end testing is an enhanced and comprehensive CLI-based testing tool that allows you to test conversation scenarios
-with different pre-configured contexts, execute [custom actions](./action-server/actions.mdx), verify [response](./responses.mdx)
-texts or names, and assert when [slots](./domain.mdx#slots) are filled.
+with different pre-configured contexts, execute [custom actions](../action-server/actions.mdx), verify [response](../building-assistants/responses.mdx)
+texts or names, and assert when [slots](../building-assistants/domain.mdx#slots) are filled.
 
 End-to-end testing is not limited to testing only the NLU or the dialogue model and allows you to design
 effective acceptance or integration tests. The main features of end-to-end testing are:
-- integration with the [action server](./action-server/running-action-server.mdx): you can execute custom actions in your
-tests; the prerequisite is to start the action server in the background.
+
+- integration with the [action server](../action-server/running-action-server.mdx): you can execute custom actions in your
+  tests; the prerequisite is to start the action server in the background.
 - test parametrization (e.g. different user profiles or other external factors): you can define multiple test fixtures
-with different pre-filled slots and re-use them in your tests.
-- verifying response texts or names: you can assert that the bot response text (including [interpolated responses](./responses.mdx#using-variables-in-responses)
-with slot values and [conditional response variations](./responses.mdx#conditional-response-variations)) or `utter` name
-is as expected.
+  with different pre-filled slots and re-use them in your tests.
+- verifying response texts or names: you can assert that the bot response text (including [interpolated responses](../building-assistants/responses.mdx#using-variables-in-responses)
+  with slot values and [conditional response variations](../building-assistants/responses.mdx#conditional-response-variations)) or `utter` name
+  is as expected.
 - asserting that the bot sets the slot value as expected.
 
 ### How to write test cases
@@ -587,47 +594,47 @@ The following example shows a test case file with fixtures and two test cases th
 
 ```yaml
 fixtures:
- - premium:  # name of the fixture must be provided and be unique
-   - membership_type: premium  # every fixture can contain multiple slot key-value pairs
-   - logged_in: True
- - standard:
-   - logged_in: True
-   - membership_type: standard
+  - premium: # name of the fixture must be provided and be unique
+      - membership_type: premium # every fixture can contain multiple slot key-value pairs
+      - logged_in: True
+  - standard:
+      - logged_in: True
+      - membership_type: standard
 
 test_cases:
- - test_case: "test_premium_booking"
-   fixtures:
-    - premium  # re-use the name of the fixture provided in fixtures section
-   steps:
-    - user: "Hi!"
-    - bot: "Welcome back! How can I help you?"
-    - user: "I want to book a trip."
-    - utter: utter_ask_location
-    - user: "I would like to travel to Lisbon."
-    - slot_was_set:
-      - location: "Lisbon"
-    - utter: utter_ask_date
-    - user: "I would like to travel on 22nd of June."
-    - slot_was_set:
-      - travel_date: "2023-06-22"
-    - bot: "Great! I will book your trip to Lisbon on 22nd of June."
-    - bot: "You saved 20% by being a premium member."
+  - test_case: "test_premium_booking"
+    fixtures:
+      - premium # re-use the name of the fixture provided in fixtures section
+    steps:
+      - user: "Hi!"
+      - bot: "Welcome back! How can I help you?"
+      - user: "I want to book a trip."
+      - utter: utter_ask_location
+      - user: "I would like to travel to Lisbon."
+      - slot_was_set:
+          - location: "Lisbon"
+      - utter: utter_ask_date
+      - user: "I would like to travel on 22nd of June."
+      - slot_was_set:
+          - travel_date: "2023-06-22"
+      - bot: "Great! I will book your trip to Lisbon on 22nd of June."
+      - bot: "You saved 20% by being a premium member."
 
- - test_case: "test_anonymous_booking"
-   steps:
-    - user: "Hi!"
-    - bot: "Hey! How can I help you?"
-    - user: "I want to book a trip."
-    - utter: utter_ask_location
-    - user: "I would like to travel to Paris."
-    - slot_was_set:
-      - location: "Paris"
-    - utter: utter_ask_date
-    - user: "I would like to travel on 2nd of April."
-    - slot_was_set:
-      - travel_date: "2023-04-02"
-    - bot: "Great! I will book your trip to Paris on 2nd of April."
-    - bot: "You can also choose to save 20% by becoming a premium member."
+  - test_case: "test_anonymous_booking"
+    steps:
+      - user: "Hi!"
+      - bot: "Hey! How can I help you?"
+      - user: "I want to book a trip."
+      - utter: utter_ask_location
+      - user: "I would like to travel to Paris."
+      - slot_was_set:
+          - location: "Paris"
+      - utter: utter_ask_date
+      - user: "I would like to travel on 2nd of April."
+      - slot_was_set:
+          - travel_date: "2023-04-02"
+      - bot: "Great! I will book your trip to Paris on 2nd of April."
+      - bot: "You can also choose to save 20% by becoming a premium member."
 ```
 
 :::note
@@ -639,10 +646,11 @@ match the order in which the slots are filled in the dialogue.
 
 ### How to run the tests
 
-To run the end-to-end tests locally or in the CI pipeline, use the [`rasa test e2e` command](./command-line-interface.mdx#rasa-test-e2e).
+To run the end-to-end tests locally or in the CI pipeline, use the [`rasa test e2e` command](../building-assistants/command-line-interface.mdx#rasa-test-e2e).
 The command takes the following arguments:
+
 - positional argument for the path to the test cases file or directory containing the test cases: `rasa test e2e <path>`
-If unspecified, the default path is `tests/e2e_test_cases.yml`.
+  If unspecified, the default path is `tests/e2e_test_cases.yml`.
 - optional argument for the trained model: `--model <path>`
 - optional argument for retrieving the trained model from [remote storage](./model-storage.mdx#load-model-from-cloud): `--remote-storage <remote-storage-location>`
 - optional argument for the `endpoints.yml` file: `--endpoints <path>`
@@ -665,11 +673,12 @@ or `1` (in case of test failures).
 The output style is inspired by `pytest`:
 
 - Failed test cases will be stacked, each highlighting the difference in identified mismatches in similar style to `git diff`:
-expected messages will be preceded by `+` prefix, while actual messages will be preceded by `-` prefix.
+  expected messages will be preceded by `+` prefix, while actual messages will be preceded by `-` prefix.
 - The short test summary includes a list of every failed test case name and file location in a new line.
 
 If `-o` flag is specified in the command, the results are also written to the `tests/e2e_results.yml` file, which will
 contain a list of test results with the following keys:
+
 - `name`: the name of the test case
 - `pass_status`: the status of the test case, either `True` or `False`
 - `expected_steps`: the expected test steps

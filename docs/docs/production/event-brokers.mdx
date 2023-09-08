@@ -7,7 +7,7 @@ description: Find out how open source chatbot framework Rasa allows you to strea
 
 An event broker allows you to connect your running assistant to other services that process the data coming
 in from conversations. The event broker publishes messages to a message streaming service,
-also known as a message broker, to forward Rasa [Events](./action-server/events.mdx) from the Rasa server to other services.
+also known as a message broker, to forward Rasa [Events](../action-server/events.mdx) from the Rasa server to other services.
 
 ## Format
 
@@ -29,7 +29,7 @@ tracker looks like this:
 ```
 
 The `event` field takes the event's `type_name` (for more on event
-types, check out the [events](./action-server/events.mdx) docs).
+types, check out the [events](../action-server/events.mdx) docs).
 
 ## Pika Event Broker
 
@@ -43,6 +43,7 @@ You can instruct Rasa to stream all events to your Pika event broker by adding a
 `endpoints.yml`:
 
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/pika_endpoint.yml)
+
 ```
 
 A comprehensive list of all arguments that can be customized in the `endpoints.yml` file can be found in the [reference documentation](https://rasa.com/docs/rasa/reference/rasa/core/brokers/pika/#__init__).
@@ -51,6 +52,7 @@ Rasa will automatically start streaming events when you restart the Rasa server.
 ### Adding SSL options to the Pika Event Broker
 
 You can create RabbitMQ SSL options by setting the following required environment variables:
+
 - `RABBITMQ_SSL_CLIENT_CERTIFICATE`: path to the SSL client certificate
 - `RABBITMQ_SSL_CLIENT_KEY`: path to the SSL client key
 
@@ -127,7 +129,7 @@ You will need a running Kafka server.
 
 Rasa's Kafka producer can optionally be configured to partition messages by conversation ID.
 This can be configured by setting `partition_by_sender` in the `endpoints.yml` file to True.
-By default, this parameter is set to `False` and the producer will randomly assign a partition to each message.  
+By default, this parameter is set to `False` and the producer will randomly assign a partition to each message.
 
 ```yaml-rasa title="endpoints.yml"
 event_broker:
@@ -178,29 +180,33 @@ You can instruct Rasa to stream all events to your Kafka event broker by adding 
 Using the `SASL_PLAINTEXT` protocol the endpoints file must have the following entries:
 
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml)
+
 ```
 
 Using the `PLAINTEXT` protocol the endpoints file must have the following entries:
 
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml)
+
 ```
 
 If using the `SSL` protocol, the endpoints file should look like:
 
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml)
+
 ```
 
 If using the `SASL_SSL` protocol, the endpoints file should look like:
 
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_sasl_ssl_endpoint.yml)
+
 ```
 
 ### Sending Events to Multiple Queues
 
-Kafka does not allow you to configure multiple topics. 
+Kafka does not allow you to configure multiple topics.
 
 However, multiple consumers can read from the same queue as long as they are in different consumer groups.
-Each consumer group will process all events independent of each other 
+Each consumer group will process all events independent of each other
 (in a sense, each group has their own reference to the last event they have processed). [Kafka: The Definitive Guide](https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html#:~:text=Kafka%20consumers%20are%20typically%20part,the%20partitions%20in%20the%20topic.)
 
 ## SQL Event Broker
@@ -252,10 +258,11 @@ If you need an event broker which is not available out of the box, you can imple
 This is done by extending the base class `EventBroker`.
 
 Your custom event broker class must also implement the following base class methods:
+
 - `from_endpoint_config`: creates an `EventBroker` object from the endpoint configuration.
-[(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L45).
+  [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L45).
 - `publish`: publishes a json-formatted [Rasa event](https://rasa.com/docs/rasa/reference/rasa/shared/core/events/) into an event queue.
-[(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L63).
+  [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L63).
 - `is_ready`: determine whether or not the event broker is ready. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L67).
 - `close`: close the connection to an event broker. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/brokers/broker.py#L75).
 
@@ -263,10 +270,10 @@ Your custom event broker class must also implement the following base class meth
 
 Put the module path to your custom event broker and the parameters you require in your `endpoints.yml`:
 
- ```yaml-rasa title="endpoints.yml"
- event_broker:
-   type: path.to.your.module.Class
-   url: localhost
-   a_parameter: a value
-   another_parameter: another value
- ```
+```yaml-rasa title="endpoints.yml"
+event_broker:
+  type: path.to.your.module.Class
+  url: localhost
+  a_parameter: a value
+  another_parameter: another value
+```

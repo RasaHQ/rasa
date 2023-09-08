@@ -19,7 +19,7 @@ policies:
 
 ### Defining a Form
 
-Define a form by adding it to the `forms` section in your [domain](./domain.mdx).
+Define a form by adding it to the `forms` section in your [domain](../building-assistants/domain.mdx).
 The name of the form is also the name of the action which you can use in
 [stories](./stories.mdx) or [rules](./rules.mdx) to handle form executions.
 You will need to specify a list of slot names to the mandatory `required_slots` key.
@@ -49,7 +49,7 @@ forms:
         - num_people
 ```
 
-You can define a list of intents to ignore for the whole form under the 
+You can define a list of intents to ignore for the whole form under the
 `ignored_intents` key. Intents listed under `ignored_intents` will be added to the
 `not_intent` key of each slot mapping.
 
@@ -74,7 +74,7 @@ slots:
       entity: number
 forms:
   restaurant_form:
-    ignored_intents: 
+    ignored_intents:
     - chitchat
     required_slots:
         - cuisine
@@ -83,7 +83,7 @@ forms:
 
 Once the form action gets called for the first time, the form gets activated and will
 prompt the user for the next required slot value. It does this by
-looking for a [response](./responses.mdx) called
+looking for a [response](../building-assistants/responses.mdx) called
 `utter_ask_<form_name>_<slot_name>` or `utter_ask_<slot_name>` if the former isn't
 found. Make sure to define these responses in your domain file for
 each required slot.
@@ -141,29 +141,29 @@ write stories or rules for this case.
 ### Slot Mappings
 
 :::caution Changed in 3.0
-As of 3.0, [slot mappings](./domain.mdx#slot-mappings) are defined in the `slots` section of the domain.
+As of 3.0, [slot mappings](../building-assistants/domain.mdx#slot-mappings) are defined in the `slots` section of the domain.
 This change allows the same slot mapping to be reused across multiple forms, removing any unnecessary duplication.
 Please follow the [migration guide](./migration-guide.mdx#slot-mappings) to update your assistant.
 
-Note specifically the role of [Mapping Conditions](./domain.mdx#mapping-conditions) and the
-[unique entity mapping](./domain.mdx#unique-from_entity-mapping-matching) constraint.
+Note specifically the role of [Mapping Conditions](../building-assistants/domain.mdx#mapping-conditions) and the
+[unique entity mapping](../building-assistants/domain.mdx#unique-from_entity-mapping-matching) constraint.
 :::
 
 ### Writing Stories / Rules for Unhappy Form Paths
 
 Your users will not always respond with the information you ask of them.
 Typically, users will ask questions, make chitchat, change their mind, or otherwise
-stray from the happy path. 
+stray from the happy path.
 
-While a form is active, if a user's input does not fill the requested slot, the execution of 
-the form action will be rejected i.e. the form will automatically raise an `ActionExecutionRejection`. 
+While a form is active, if a user's input does not fill the requested slot, the execution of
+the form action will be rejected i.e. the form will automatically raise an `ActionExecutionRejection`.
 These are the specific scenarios in which a form will raise an `ActionExecutionRejection`:
 
-* a slot was requested, but the user didn't fill the slot with their last message and
+- a slot was requested, but the user didn't fill the slot with their last message and
   you didn't define a custom action for
   [validating slots](forms.mdx#validating-form-input) or
   [extracting slots](forms.mdx#custom-slot-mappings).
-* a slot was requested, but your custom action for
+- a slot was requested, but your custom action for
   [validating slots](forms.mdx#validating-form-input) or
   [extracting slots](forms.mdx#custom-slot-mappings) didn't return any `SlotSet` events.
 
@@ -291,7 +291,7 @@ The `slots_mapped_in_domain` argument provided to the `required_slots` method of
 has been replaced by the `domain_slots` argument, please update your custom actions to the new argument name.
 :::
 
-If none of the predefined [Slot Mappings](./domain.mdx#slot-mappings) fit your use
+If none of the predefined [Slot Mappings](../building-assistants/domain.mdx#slot-mappings) fit your use
 case, you can use the
 [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>` to write your own
 extraction code. Rasa will trigger this action when the form is run.
@@ -423,12 +423,12 @@ class ValidateBookingForm(FormValidationAction):
 The slot `requested_slot` is automatically added to the domain as a
 slot of type [`text`](domain.mdx#text-slot). The value of the `requested_slot` will be
 ignored during conversations. If you want to change this behavior, you need to add
-the `requested_slot`  to your domain file as a categorical slot with
+the `requested_slot` to your domain file as a categorical slot with
 `influence_conversation` set to `true`.
 You might want to do this if you
 want to handle your unhappy paths differently, depending on what slot is
 currently being asked from the user. For example, if your users respond
-to one of the bot's questions with another question, like *why do you need to know that?*
+to one of the bot's questions with another question, like _why do you need to know that?_
 The response to this `explain` intent depends on where we are in the story.
 In the restaurant case, your stories would look something like this:
 
@@ -498,4 +498,3 @@ If there is more than one asking option for the slot, Rasa prioritizes in the fo
 2. `utter_ask_<form_name>_<slot_name>`
 3. `action_ask_<slot_name>`
 4. `utter_ask_<slot_name>`
-

@@ -6,12 +6,12 @@ description: |
   Information about changes between major versions of chatbot framework Rasa Core
   and how you can migrate from one version to another.
 ---
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
 
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
-
 
 ## Rasa 3.0 to 3.1
 
@@ -30,7 +30,7 @@ Please check whether your trained model still performs as expected and retrain i
 
 ### NLU JSON Format
 
-[NLU training data](nlu-training-data.mdx) in JSON format is deprecated and will be
+[NLU training data](./building-classic-assistants/nlu-training-data.mdx) in JSON format is deprecated and will be
 removed in Rasa 4.0.
 Please use `rasa data convert nlu -f yaml --data <path to NLU data>` to convert your
 NLU JSON data to YAML format before support for NLU JSON data is removed.
@@ -60,33 +60,35 @@ to specify `recipe: "default.v1"` at the top of your model configuration:
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-config" defaultValue="new">
   <TabItem value="old">
 
-  ```yaml-rasa
-  language: en
+```yaml-rasa
+language: en
 
-  pipeline:
-    ...
-  policies:
-    ...
-  ```
+pipeline:
+  ...
+policies:
+  ...
+```
+
   </TabItem>
   <TabItem value="new">
 
-  ```yaml-rasa {1}
-  recipe: default.v1
+```yaml-rasa {1}
+recipe: default.v1
 
-  language: en
+language: en
 
-  pipeline:
-    ...
-  policies:
-    ...
-  ```
+pipeline:
+  ...
+policies:
+  ...
+```
+
   </TabItem>
 </Tabs>
 
 ### Custom Policies and Custom Components
 
-Rasa 3.0 changed the way [NLU components](components.mdx) and
+Rasa 3.0 changed the way [NLU components](./building-classic-assistants/components.mdx) and
 [policies](policies.mdx) are trained and run during inference. As part of these changes
 the interfaces for NLU components and policies have been unified and adapted.
 
@@ -95,7 +97,7 @@ and policies with Rasa 3.0.
 
 :::caution
 
-Please read the updated guide on custom graph components [here](custom-graph-components.mdx) before
+Please read the updated guide on custom graph components [here](./building-assistants/custom-graph-components.mdx) before
 continuing to follow the step-by-step guide to migrate your own custom graph components.
 :::
 
@@ -107,7 +109,7 @@ It is now required to use
 [type annotations](https://docs.python.org/3/library/typing.html) in custom NLU
 components and policies. Rasa uses these type annotations to validate that
 your graph components are compatible and correctly configured. As outlined in the custom
-[components guide](custom-graph-components.mdx) it is not allowed to use
+[components guide](./building-assistants/custom-graph-components.mdx) it is not allowed to use
 [forward references](https://www.python.org/dev/peps/pep-0484/#forward-references).
 
 :::info Forward References with Python 3.7
@@ -116,45 +118,44 @@ Use the
 import to avoid using forward references with Python 3.7.
 :::
 
-
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-type-annotations" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from typing import List, Any
-  from rasa.core.policies.policy import Policy
+```python
+from typing import List, Any
+from rasa.core.policies.policy import Policy
 
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List["TrackerWithCachedStates"],
-          domain,
-          **kwargs: Any,
-      ):
-          ...
-  ```
+class MyPolicy(Policy):
+    def train(
+        self,
+        training_trackers: List["TrackerWithCachedStates"],
+        domain,
+        **kwargs: Any,
+    ):
+        ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from __future__ import annotations
-  from typing import List, Any
+```python
+from __future__ import annotations
+from typing import List, Any
 
-  from rasa.core.policies.policy import Policy
-  from rasa.engine.storage.resource import Resource
-  from rasa.shared.core.domain import Domain
-  from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.core.policies.policy import Policy
+from rasa.engine.storage.resource import Resource
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.generator import TrackerWithCachedStates
 
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List[TrackerWithCachedStates],
-          domain: Domain,
-          **kwargs: Any,
-      ) -> Resource:
-          ...
-  ```
+class MyPolicy(Policy):
+    def train(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        **kwargs: Any,
+    ) -> Resource:
+        ...
+```
 
   </TabItem>
 </Tabs>
@@ -165,7 +166,8 @@ import to avoid using forward references with Python 3.7.
 
 NLU components which previously inherited from one of the following classes additionally
 need to inherit from the
-[`GraphComponent` interface](custom-graph-components.mdx#the-graphcomponent-interface):
+[`GraphComponent` interface](./building-assistants/custom-graph-components.mdx#the-graphcomponent-interface):
+
 - `SparseFeaturizer`
 - `DenseFeaturizer`
 - `IntentClassifier`
@@ -177,23 +179,23 @@ This snippet shows the required changes:
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-parent-class" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
+```python
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 
-  class MyNLUComponent(SparseFeaturizer):
-      ...
-  ```
+class MyNLUComponent(SparseFeaturizer):
+    ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python {3}
-  from rasa.engine.graph import GraphComponent
-  from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
+```python {3}
+from rasa.engine.graph import GraphComponent
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 
-  class MyNLUComponent(GraphComponent, SparseFeaturizer):
-      ...
-  ```
+class MyNLUComponent(GraphComponent, SparseFeaturizer):
+    ...
+```
 
   </TabItem>
 </Tabs>
@@ -205,78 +207,76 @@ The `EntityExtractor` class was renamed to `EntityExtractorMixin`:
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-entity-extractor" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from rasa.nlu.extractors.extractor import EntityExtractor
+```python
+from rasa.nlu.extractors.extractor import EntityExtractor
 
-  class MyNLUComponent(EntityExtractor):
-      ...
-  ```
+class MyNLUComponent(EntityExtractor):
+    ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python {2,4}
-  from rasa.engine.graph import GraphComponent
-  from rasa.nlu.extractors.extractor import EntityExtractorMixin
+```python {2,4}
+from rasa.engine.graph import GraphComponent
+from rasa.nlu.extractors.extractor import EntityExtractorMixin
 
-  class MyNLUComponent(GraphComponent, EntityExtractorMixin):
-      ...
-  ```
+class MyNLUComponent(GraphComponent, EntityExtractorMixin):
+    ...
+```
 
   </TabItem>
 </Tabs>
-
 
 **Instantiating a NLU Component for Training**
 
 NLU components are no longer instantiated via their constructor. Instead, all NLU
 components have to override the `create` method of the
-[`GraphComponent` interface](custom-graph-components.mdx#the-graphcomponent-interface). The
+[`GraphComponent` interface](./building-assistants/custom-graph-components.mdx#the-graphcomponent-interface). The
 passed in configuration is your NLU component's default configuration including any updates
 from your model configuration file.
-
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-init" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from typing import Optional, Dict, Text, Any
-  from rasa.nlu.classifiers.classifier import IntentClassifier
+```python
+from typing import Optional, Dict, Text, Any
+from rasa.nlu.classifiers.classifier import IntentClassifier
 
-  class MyNLUComponent(IntentClassifier):
+class MyNLUComponent(IntentClassifier):
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        super().__init__(component_config)
-        ...
-  ```
+  def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+      super().__init__(component_config)
+      ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from typing import Dict, Text, Any
+```python
+from typing import Dict, Text, Any
 
-  from rasa.engine.graph import GraphComponent, ExecutionContext
-  from rasa.engine.storage.resource import Resource
-  from rasa.engine.storage.storage import ModelStorage
-  from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.classifiers.classifier import IntentClassifier
 
-  class MyNLUComponent(GraphComponent, IntentClassifier):
+class MyNLUComponent(GraphComponent, IntentClassifier):
 
-    def __init__(self, component_config: Dict[Text, Any]) -> None:
-        self.component_config = component_config
-      ...
+  def __init__(self, component_config: Dict[Text, Any]) -> None:
+      self.component_config = component_config
+    ...
 
-    @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> GraphComponent:
-        return cls(config)
-  ```
+  @classmethod
+  def create(
+      cls,
+      config: Dict[Text, Any],
+      model_storage: ModelStorage,
+      resource: Resource,
+      execution_context: ExecutionContext,
+  ) -> GraphComponent:
+      return cls(config)
+```
 
   </TabItem>
 </Tabs>
@@ -289,64 +289,63 @@ With Rasa 3.0 NLU components are responsible for persisting themselves.
 Use the provided `model_storage` and `resource` parameters
 to persist your NLU component at the end of the training and then return the `resource`
 as result of your NLU component's `train` method.
-See [component persistence](custom-graph-components.mdx#model-persistence) for more details.
+See [component persistence](./building-assistants/custom-graph-components.mdx#model-persistence) for more details.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-persistence" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from pathlib import Path
-  from typing import Optional, Any, Text, Dict
+```python
+from pathlib import Path
+from typing import Optional, Any, Text, Dict
 
-  from rasa.nlu.classifiers.classifier import IntentClassifier
-  from rasa.nlu.config import RasaNLUModelConfig
-  from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
-  class MyNLUComponent(IntentClassifier):
-      def train(
-          self,
-          training_data: TrainingData,
-          config: Optional[RasaNLUModelConfig] = None,
-          **kwargs: Any,
-      ) -> None:
-          ...
+class MyNLUComponent(IntentClassifier):
+    def train(
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        ...
 
-      def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
-          file_path = Path(model_dir) / "{file_name}.model_data.json"
-          rasa.shared.utils.io.create_directory_for_file(file_path)
-          rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
-              self.get_model_data())
+    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+        file_path = Path(model_dir) / "{file_name}.model_data.json"
+        rasa.shared.utils.io.create_directory_for_file(file_path)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
+            self.get_model_data())
 
-          return {"file": file_name}
-      ...
-  ```
+        return {"file": file_name}
+    ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from rasa.engine.graph import GraphComponent
-  from rasa.engine.storage.resource import Resource
-  from rasa.nlu.classifiers.classifier import IntentClassifier
-  from rasa.shared.nlu.training_data.training_data import TrainingData
+```python
+from rasa.engine.graph import GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
-  class MyNLUComponent(GraphComponent, IntentClassifier):
-      def train(self, training_data: TrainingData) -> Resource:
-          ...
-          self.persist()
-          return self._resource
+class MyNLUComponent(GraphComponent, IntentClassifier):
+    def train(self, training_data: TrainingData) -> Resource:
+        ...
+        self.persist()
+        return self._resource
 
-      def persist(self) -> None:
-          with self._model_storage.write_to(self._resource) as directory:
-              model_data_file = directory / "model_data.json"
-              rasa.shared.utils.io.dump_obj_as_json_to_file(model_data_file,
-                  self.get_model_data())
-      ...
-  ```
+    def persist(self) -> None:
+        with self._model_storage.write_to(self._resource) as directory:
+            model_data_file = directory / "model_data.json"
+            rasa.shared.utils.io.dump_obj_as_json_to_file(model_data_file,
+                self.get_model_data())
+    ...
+```
 
   </TabItem>
 </Tabs>
-
 
 **Instantiating a Trained NLU Component**
 
@@ -355,79 +354,79 @@ into `load` will automatically contain the configuration which your model was tr
 To instantiate a persisted NLU component, you need to use `model_storage` and `resource` in your NLU component's
 `load` method.
 
-
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-loading" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  import json
-  from pathlib import Path
-  from typing import Text, Dict, Any, Optional
+```python
+import json
+from pathlib import Path
+from typing import Text, Dict, Any, Optional
 
-  from rasa.nlu.classifiers.classifier import IntentClassifier
-  from rasa.nlu.model import Metadata
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.model import Metadata
 
-  class MyNLUComponent(IntentClassifier):
-      @classmethod
-      def load(
-          cls,
-          meta: Dict[Text, Any],
-          model_dir: Text,
-          model_metadata: Metadata = None,
-          cached_component: Optional["DIETClassifier"] = None,
-          should_finetune: bool = False,
-          **kwargs: Any,
-      ) -> "MyNLUComponent":
-          file_name = meta.get("file")
-          file_path = Path(model_dir) / "{file_name}.model_data.json"
-          model_data = json.loads(rasa.shared.utils.io.read_file(file_path))
+class MyNLUComponent(IntentClassifier):
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Text,
+        model_metadata: Metadata = None,
+        cached_component: Optional["DIETClassifier"] = None,
+        should_finetune: bool = False,
+        **kwargs: Any,
+    ) -> "MyNLUComponent":
+        file_name = meta.get("file")
+        file_path = Path(model_dir) / "{file_name}.model_data.json"
+        model_data = json.loads(rasa.shared.utils.io.read_file(file_path))
 
-          return cls(model_data)
-      ...
-  ```
+        return cls(model_data)
+    ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from __future__ import annotations
-  import json
-  from typing import Any, Text, Dict
+```python
+from __future__ import annotations
+import json
+from typing import Any, Text, Dict
 
-  from rasa.engine.graph import GraphComponent, ExecutionContext
-  from rasa.engine.storage.resource import Resource
-  from rasa.engine.storage.storage import ModelStorage
-  from rasa.nlu.classifiers.classifier import IntentClassifier
-  from rasa.shared.exceptions import FileIOException
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.shared.exceptions import FileIOException
 
-  class MyNLUComponent(GraphComponent, IntentClassifier):
-      @classmethod
-      def load(
-          cls,
-          config: Dict[Text, Any],
-          model_storage: ModelStorage,
-          resource: Resource,
-          execution_context: ExecutionContext,
-          **kwargs: Any,
-      ) -> MyNLUComponent:
-          model_data = {}
+class MyNLUComponent(GraphComponent, IntentClassifier):
+    @classmethod
+    def load(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> MyNLUComponent:
+        model_data = {}
 
-          try:
-              with model_storage.read_from(resource) as path:
+        try:
+            with model_storage.read_from(resource) as path:
 
-                  model_data_file = path / "model_data.json"
-                  model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+                model_data_file = path / "model_data.json"
+                model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
 
-          except (ValueError, FileNotFoundError, FileIOException):
-              logger.debug(
-                  f"Couldn't load metadata for component '{cls.__name__}' as the persisted "
-                  f"model data couldn't be loaded."
-              )
+        except (ValueError, FileNotFoundError, FileIOException):
+            logger.debug(
+                f"Couldn't load metadata for component '{cls.__name__}' as the persisted "
+                f"model data couldn't be loaded."
+            )
 
-          return cls(
-              config, model_data=model_data
-          )
-  ```
+        return cls(
+            config, model_data=model_data
+        )
+```
+
   </TabItem>
 </Tabs>
 
@@ -439,41 +438,41 @@ by the static method `get_default_config`:
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-default-config" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from rasa.nlu.classifiers.classifier import IntentClassifier
+```python
+from rasa.nlu.classifiers.classifier import IntentClassifier
 
-  class MyNLUComponent(IntentClassifier):
-      ...
-      defaults = {"key1": "value1"}
-  ```
+class MyNLUComponent(IntentClassifier):
+    ...
+    defaults = {"key1": "value1"}
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from typing import Text, Any, Dict
+```python
+from typing import Text, Any, Dict
 
-  from rasa.engine.graph import GraphComponent
-  from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.engine.graph import GraphComponent
+from rasa.nlu.classifiers.classifier import IntentClassifier
 
-  class MyNLUComponent(GraphComponent, IntentClassifier):
-      ...
-      @staticmethod
-      def get_default_config() -> Dict[Text, Any]:
-          return {"key1": "value1"}
+class MyNLUComponent(GraphComponent, IntentClassifier):
+    ...
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        return {"key1": "value1"}
 
-  ```
+```
 
   </TabItem>
 </Tabs>
 
 **Augmenting Training Data in an NLU Component**
 
-NLU Components like [tokenizers](components.mdx#tokenizers) or
-[featurizers](components.mdx#featurizers) augment the training data with their
+NLU Components like [tokenizers](./building-classic-assistants/components.mdx#tokenizers) or
+[featurizers](./building-classic-assistants/components.mdx#featurizers) augment the training data with their
 output during the model training. Their output is required by NLU components later in the
-pipeline. Typically, featurizers require *tokenized* messages and intent
-classifiers require *featurized* training data to train themselves. Rasa
+pipeline. Typically, featurizers require _tokenized_ messages and intent
+classifiers require _featurized_ training data to train themselves. Rasa
 3.0 makes these different purposes explicit. Previously both NLU component training and
 training data augmentation were done as part of the `train` method. In Rasa
 3.0 they are split into `train` and `process_training_data`:
@@ -481,48 +480,49 @@ training data augmentation were done as part of the `train` method. In Rasa
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-component-train-process-split" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from typing import Optional, Any
+```python
+from typing import Optional, Any
 
-  from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
-  from rasa.nlu.config import RasaNLUModelConfig
-  from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
-  class MyNLUComponent(SparseFeaturizer):
-      def train(
-          self,
-          training_data: TrainingData,
-          config: Optional[RasaNLUModelConfig] = None,
-          **kwargs: Any,
-      ) -> None:
-          self.train_featurizer(training_data)
+class MyNLUComponent(SparseFeaturizer):
+    def train(
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        self.train_featurizer(training_data)
 
-          for message in training_data.training_examples:
-              self.add_features(message)
-  ```
+        for message in training_data.training_examples:
+            self.add_features(message)
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from rasa.engine.graph import GraphComponent
-  from rasa.engine.storage.resource import Resource
-  from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
-  from rasa.shared.nlu.training_data.training_data import TrainingData
+```python
+from rasa.engine.graph import GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
-  class MyNLUComponent(GraphComponent, SparseFeaturizer):
-      def train(self, training_data: TrainingData) -> Resource:
-          self.train_featurizer(training_data)
+class MyNLUComponent(GraphComponent, SparseFeaturizer):
+    def train(self, training_data: TrainingData) -> Resource:
+        self.train_featurizer(training_data)
 
-          self.persist()
-          return self._resource
+        self.persist()
+        return self._resource
 
-      def process_training_data(self, training_data: TrainingData) -> TrainingData:
-          for message in training_data.training_examples:
-              self.add_features(message)
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
+        for message in training_data.training_examples:
+            self.add_features(message)
 
-          return training_data
-  ```
+        return training_data
+```
+
   </TabItem>
 </Tabs>
 
@@ -537,37 +537,37 @@ message objects at the end of the `process` method.
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-component-process-messages-split" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from typing import Any
+```python
+from typing import Any
 
-  from rasa.nlu.classifiers.classifier import IntentClassifier
-  from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.shared.nlu.training_data.message import Message
 
-  class MyNLUComponent(IntentClassifier):
-      def process(self, message: Message, **kwargs: Any) -> None:
-        self.predict(message)
-  ```
+class MyNLUComponent(IntentClassifier):
+    def process(self, message: Message, **kwargs: Any) -> None:
+      self.predict(message)
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from typing import List
+```python
+from typing import List
 
-  from rasa.engine.graph import GraphComponent
-  from rasa.nlu.classifiers.classifier import IntentClassifier
-  from rasa.shared.nlu.training_data.message import Message
+from rasa.engine.graph import GraphComponent
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.shared.nlu.training_data.message import Message
 
-  class MyNLUComponent(GraphComponent, IntentClassifier):
-      def process(self, messages: List[Message]) -> List[Message]:
-          for message in messages:
-              self.predict(message)
+class MyNLUComponent(GraphComponent, IntentClassifier):
+    def process(self, messages: List[Message]) -> List[Message]:
+        for message in messages:
+            self.predict(message)
 
-          return messages
-  ```
+        return messages
+```
+
   </TabItem>
 </Tabs>
-
 
 **Registering your NLU Component**
 
@@ -575,49 +575,48 @@ Before you can use your custom NLU component you have to register your NLU compo
 `DefaultV1Recipe.register` decorator. The NLU component types correspond to the existing
 parent classes:
 
-* `Tokenizer`: `ComponentType.MESSAGE_TOKENIZER`
-* `SparseFeaturizer` / `DenseFeaturizer`: `ComponentType.MESSAGE_FEATURIZER`
-* `IntentClassifier`: `ComponentType.INTENT_CLASSIFIER`
-* `EntityExtractor`: `ComponentType.ENTITY_EXTRACTOR`
-* If your NLU component provides a pretrained model which should be used by other
+- `Tokenizer`: `ComponentType.MESSAGE_TOKENIZER`
+- `SparseFeaturizer` / `DenseFeaturizer`: `ComponentType.MESSAGE_FEATURIZER`
+- `IntentClassifier`: `ComponentType.INTENT_CLASSIFIER`
+- `EntityExtractor`: `ComponentType.ENTITY_EXTRACTOR`
+- If your NLU component provides a pretrained model which should be used by other
   NLU components during training and inference use `ComponentType.MODEL_LOADER`
 
 Specify `is_trainable=True` if the `train` method of your component should be called
 during training.
 
-
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-register" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from rasa.nlu.classifiers.classifier import IntentClassifier
+```python
+from rasa.nlu.classifiers.classifier import IntentClassifier
 
-  class MyNLUComponent(IntentClassifier):
-      ...
-  ```
+class MyNLUComponent(IntentClassifier):
+    ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python {5-7}
-  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-  from rasa.nlu.classifiers.classifier import IntentClassifier
-  from rasa.engine.graph import GraphComponent
+```python {5-7}
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.engine.graph import GraphComponent
 
-  @DefaultV1Recipe.register(
-      DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
-  )
-  class MyNLUComponent(GraphComponent, IntentClassifier):
-      ...
-  ```
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
+class MyNLUComponent(GraphComponent, IntentClassifier):
+    ...
+```
 
   </TabItem>
 </Tabs>
 
 **Using a Model Provider with your NLU Component**
 
-If your NLU component requires a pretrained model such as a [Spacy](components.mdx#spacynlp) or
-[Mitie](components.mdx#mitienlp) language model you have to specify the NLU component which
+If your NLU component requires a pretrained model such as a [Spacy](./building-classic-assistants/components.mdx#spacynlp) or
+[Mitie](./building-classic-assistants/components.mdx#mitienlp) language model you have to specify the NLU component which
 provides this model in your model's pipeline before the NLU component which requires
 the model. In addition to this you now also need to specify the model loading component in the `model_from`
 parameter in the `register` decorator. The model will then be passed to your model's
@@ -626,62 +625,63 @@ parameter in the `register` decorator. The model will then be passed to your mod
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-model-provider" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from typing import Optional, Any
+```python
+from typing import Optional, Any
 
-  from rasa.nlu.config import RasaNLUModelConfig
-  from rasa.nlu.classifiers.classifier import IntentClassifier
-  from rasa.shared.nlu.training_data.message import Message
-  from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
-  class MyNLUComponent(IntentClassifier):
-      def train(
-          self,
-          training_data: TrainingData,
-          cfg: Optional[RasaNLUModelConfig] = None,
-          **kwargs: Any,
-      ) -> None:
-          """Train the featurizer."""
-          spacy_nlp = kwargs.get("spacy_nlp")
-          ...
+class MyNLUComponent(IntentClassifier):
+    def train(
+        self,
+        training_data: TrainingData,
+        cfg: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Train the featurizer."""
+        spacy_nlp = kwargs.get("spacy_nlp")
+        ...
 
-      def process(self, message: Message, **kwargs: Any) -> None:
-          spacy_nlp = kwargs.get("spacy_nlp", None)
-          ...
-  ```
+    def process(self, message: Message, **kwargs: Any) -> None:
+        spacy_nlp = kwargs.get("spacy_nlp", None)
+        ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from typing import List
+```python
+from typing import List
 
-  from rasa.engine.graph import GraphComponent
-  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-  from rasa.engine.storage.resource import Resource
-  from rasa.nlu.classifiers.classifier import IntentClassifier
-  from rasa.nlu.utils.spacy_utils import SpacyModel
-  from rasa.shared.nlu.training_data.message import Message
-  from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.engine.graph import GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.utils.spacy_utils import SpacyModel
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
-  @DefaultV1Recipe.register(
-      DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True, model_from="SpacyNLP"
-  )
-  class MyNLUComponent(GraphComponent, IntentClassifier):
-      def train(
-          self, training_data: TrainingData, model: SpacyModel) -> Resource:
-          spacy_nlp = model.model
-          ...
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True, model_from="SpacyNLP"
+)
+class MyNLUComponent(GraphComponent, IntentClassifier):
+    def train(
+        self, training_data: TrainingData, model: SpacyModel) -> Resource:
+        spacy_nlp = model.model
+        ...
 
-      def process(self, messages: List[Message], model: SpacyModel) -> List[Message]:
-          spacy_nlp = model.model
-          ...
-  ```
+    def process(self, messages: List[Message], model: SpacyModel) -> List[Message]:
+        spacy_nlp = model.model
+        ...
+```
 
   </TabItem>
 </Tabs>
 
 #### Changes to Custom Policies
+
 This guide leads you through the migration of a custom policy step by step.
 
 **Instantiating a Policy for Training**
@@ -697,63 +697,63 @@ featurizers itself.
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-init" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from typing import Optional, Any
+```python
+from typing import Optional, Any
 
-  from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-  from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-  from rasa.core.policies.policy import Policy
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.policies.policy import Policy
 
-  class MyPolicy(Policy):
-      def __init__(
-          self,
-          featurizer: Optional[TrackerFeaturizer] = None,
-          priority: int = DEFAULT_POLICY_PRIORITY,
-          max_history: Optional[int] = None,
-          **kwargs: Any
-      ) -> None:
-          super().__init__(featurizer, priority, **kwargs)
-          ...
-  ```
+class MyPolicy(Policy):
+    def __init__(
+        self,
+        featurizer: Optional[TrackerFeaturizer] = None,
+        priority: int = DEFAULT_POLICY_PRIORITY,
+        max_history: Optional[int] = None,
+        **kwargs: Any
+    ) -> None:
+        super().__init__(featurizer, priority, **kwargs)
+        ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from typing import Optional, Dict, Text, Any
+```python
+from typing import Optional, Dict, Text, Any
 
-  from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-  from rasa.core.policies.policy import Policy
-  from rasa.engine.graph import ExecutionContext
-  from rasa.engine.storage.resource import Resource
-  from rasa.engine.storage.storage import ModelStorage
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.policies.policy import Policy
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 
-  class MyPolicy(Policy):
-      def __init__(
-          self,
-          config: Dict[Text, Any],
-          model_storage: ModelStorage,
-          resource: Resource,
-          execution_context: ExecutionContext,
-          featurizer: Optional[TrackerFeaturizer] = None,
-      ) -> None:
-          super().__init__(
-            config, model_storage, resource, execution_context, featurizer
-          )
-          ...
-      ...
-
-    @classmethod
-    def create(
-        cls,
+class MyPolicy(Policy):
+    def __init__(
+        self,
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> MyPolicy:
-        return cls(config, model_storage, resource, execution_context)
+        featurizer: Optional[TrackerFeaturizer] = None,
+    ) -> None:
+        super().__init__(
+          config, model_storage, resource, execution_context, featurizer
+        )
+        ...
+    ...
 
-  ```
+  @classmethod
+  def create(
+      cls,
+      config: Dict[Text, Any],
+      model_storage: ModelStorage,
+      resource: Resource,
+      execution_context: ExecutionContext,
+  ) -> MyPolicy:
+      return cls(config, model_storage, resource, execution_context)
+
+```
 
   </TabItem>
 </Tabs>
@@ -764,73 +764,73 @@ Policies used to be persisted by a call to the policy's `persist` method from ou
 With Rasa 3.0 policies are responsible for persisting themselves.
 Use the provided `model_storage` and `resource` parameters
 to persist your graph component at the end of the training and then return the `resource`
-as result of your policy's `train` method. See [graph component persistence](custom-graph-components.mdx#model-persistence) for more details.
+as result of your policy's `train` method. See [graph component persistence](./building-assistants/custom-graph-components.mdx#model-persistence) for more details.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-persistence" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from pathlib import Path
-  from typing import List, Any, Union, Text
+```python
+from pathlib import Path
+from typing import List, Any, Union, Text
 
-  from rasa.core.policies.policy import Policy
-  from rasa.shared.core.domain import Domain
-  from rasa.shared.core.generator import TrackerWithCachedStates
-  from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.core.policies.policy import Policy
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List[TrackerWithCachedStates],
-          domain: Domain,
-          interpreter: NaturalLanguageInterpreter,
-          **kwargs: Any,
-      ) -> None:
-          ...
+class MyPolicy(Policy):
+    def train(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
+        ...
 
-      def persist(self, path: Union[Text, Path]) -> None:
-          if self.featurizer is not None:
-              self.featurizer.persist(path)
+    def persist(self, path: Union[Text, Path]) -> None:
+        if self.featurizer is not None:
+            self.featurizer.persist(path)
 
-          file_path = Path(path) / "model_data.json"
-          rasa.shared.utils.io.create_directory_for_file(file_path)
-          rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
-              self.get_model_data())
-      ...
-  ```
+        file_path = Path(path) / "model_data.json"
+        rasa.shared.utils.io.create_directory_for_file(file_path)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
+            self.get_model_data())
+    ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from typing import List, Any
+```python
+from typing import List, Any
 
-  from rasa.core.policies.policy import Policy
-  from rasa.engine.storage.resource import Resource
-  from rasa.shared.core.domain import Domain
-  from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.core.policies.policy import Policy
+from rasa.engine.storage.resource import Resource
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.generator import TrackerWithCachedStates
 
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List[TrackerWithCachedStates],
-          domain: Domain,
-          **kwargs: Any,
-      ) -> Resource:
-          ...
-          self.persist()
-          return self._resource
+class MyPolicy(Policy):
+    def train(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        **kwargs: Any,
+    ) -> Resource:
+        ...
+        self.persist()
+        return self._resource
 
-      def persist(self) -> None:
-          with self._model_storage.write_to(self._resource) as directory:
-              if self.featurizer is not None:
-                  self.featurizer.persist(directory)
+    def persist(self) -> None:
+        with self._model_storage.write_to(self._resource) as directory:
+            if self.featurizer is not None:
+                self.featurizer.persist(directory)
 
-              file_path = directory / "model_data.json"
-              rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
-                  self.get_model_data())
-      ...
-  ```
+            file_path = directory / "model_data.json"
+            rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
+                self.get_model_data())
+    ...
+```
 
   </TabItem>
 </Tabs>
@@ -846,76 +846,76 @@ To instantiate a persisted policy, you need to use `model_storage` and `resource
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-loading" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  import json
-  from pathlib import Path
-  from types import Union
-  from typing import Text, Any
+```python
+import json
+from pathlib import Path
+from types import Union
+from typing import Text, Any
 
-  from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy
 
-  class MyPolicy(Policy):
-      @classmethod
-      def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
-          featurizer = None
-          if (Path(path) / FEATURIZER_FILE).is_file():
-              featurizer = TrackerFeaturizer.load(path)
+class MyPolicy(Policy):
+    @classmethod
+    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
+        featurizer = None
+        if (Path(path) / FEATURIZER_FILE).is_file():
+            featurizer = TrackerFeaturizer.load(path)
 
-          model_data = {}
-          model_data_file = Path(path) / "model_data.json"
-          if metadata_file.is_file():
-              model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+        model_data = {}
+        model_data_file = Path(path) / "model_data.json"
+        if metadata_file.is_file():
+            model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
 
-          return cls(model_data, featurizer)
-      ...
-  ```
+        return cls(model_data, featurizer)
+    ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  import json
-  from typing import Dict, Text, Any
+```python
+import json
+from typing import Dict, Text, Any
 
-  from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-  from rasa.core.policies.policy import Policy
-  from rasa.engine.graph import ExecutionContext
-  from rasa.engine.storage.resource import Resource
-  from rasa.engine.storage.storage import ModelStorage
-  from rasa.shared.exceptions import FileIOException
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.policies.policy import Policy
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.exceptions import FileIOException
 
-  class MyPolicy(Policy):
-      @classmethod
-      def load(
-          cls,
-          config: Dict[Text, Any],
-          model_storage: ModelStorage,
-          resource: Resource,
-          execution_context: ExecutionContext,
-          **kwargs: Any,
-      ) -> MyPolicy:
-          featurizer = None
-          model_data = {}
+class MyPolicy(Policy):
+    @classmethod
+    def load(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> MyPolicy:
+        featurizer = None
+        model_data = {}
 
-          try:
-              with model_storage.read_from(resource) as path:
-                  if (Path(path) / FEATURIZER_FILE).is_file():
-                      featurizer = TrackerFeaturizer.load(path)
+        try:
+            with model_storage.read_from(resource) as path:
+                if (Path(path) / FEATURIZER_FILE).is_file():
+                    featurizer = TrackerFeaturizer.load(path)
 
-                  model_data_file = path / "model_data.json"
-                  model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+                model_data_file = path / "model_data.json"
+                model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
 
-          except (ValueError, FileNotFoundError, FileIOException):
-              logger.debug(
-                  f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
-                  f"metadata couldn't be loaded."
-              )
+        except (ValueError, FileNotFoundError, FileIOException):
+            logger.debug(
+                f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
+                f"metadata couldn't be loaded."
+            )
 
-          return cls(
-              config, model_storage, resource, execution_context,
-              featurizer=featurizer, model_data=model_data
-          )
-  ```
+        return cls(
+            config, model_storage, resource, execution_context,
+            featurizer=featurizer, model_data=model_data
+        )
+```
 
   </TabItem>
 </Tabs>
@@ -928,32 +928,32 @@ constructor but instead returned by the static method `get_default_config`:
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-default-config" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from typing import Text
-  from rasa.core.policies.policy import Policy
+```python
+from typing import Text
+from rasa.core.policies.policy import Policy
 
-  class MyPolicy(Policy):
+class MyPolicy(Policy):
 
-      def __init__(key1: Text = "value1") -> None:
-          ...
-  ```
+    def __init__(key1: Text = "value1") -> None:
+        ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python
-  from typing import Dict, Text, Any
-  from rasa.core.policies.policy import Policy
+```python
+from typing import Dict, Text, Any
+from rasa.core.policies.policy import Policy
 
-  class MyPolicy(Policy):
+class MyPolicy(Policy):
 
-      def __init__(self, config: Dict[Text, Any]) -> None:
-          ...
+    def __init__(self, config: Dict[Text, Any]) -> None:
+        ...
 
-      @staticmethod
-      def get_default_config() -> Dict[Text, Any]:
-          return {"key1": "value1"}
-  ```
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        return {"key1": "value1"}
+```
 
   </TabItem>
 </Tabs>
@@ -963,7 +963,7 @@ constructor but instead returned by the static method `get_default_config`:
 To use a custom [end-to-end policy](stories.mdx#end-to-end-training) in Rasa
 Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
 events manually. In Rasa 3.0,
-you need to [register](custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
+you need to [register](./building-assistants/custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
 will be precomputed and passed into your policy during training and inference.
 
 :::caution
@@ -974,87 +974,87 @@ data actually contains [end-to-end training data](stories.mdx#end-to-end-trainin
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from typing import List, Any
+```python
+from typing import List, Any
 
-  from rasa.core.policies.policy import Policy, PolicyPrediction
-  from rasa.shared.core.domain import Domain
-  from rasa.shared.core.generator import TrackerWithCachedStates
-  from rasa.shared.core.trackers import DialogueStateTracker
-  from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.core.policies.policy import Policy, PolicyPrediction
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List[TrackerWithCachedStates],
-          domain: Domain,
-          interpreter: NaturalLanguageInterpreter,
-          **kwargs: Any,
-      ) -> None:
-          ...
-          model_data, label_ids = self._prepare_for_training(
-              training_trackers, domain, interpreter, **kwargs
-          )
-          ...
+class MyPolicy(Policy):
+    def train(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
+        ...
+        model_data, label_ids = self._prepare_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
+        ...
 
-      def predict_action_probabilities(
-          self,
-          tracker: DialogueStateTracker,
-          domain: Domain,
-          interpreter: NaturalLanguageInterpreter,
-          **kwargs: Any,
-      ) -> PolicyPrediction:
-          ...
-          tracker_state_features = self._featurize_tracker_for_e2e(
-              tracker, domain, interpreter
-          )
-          ...
-  ```
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> PolicyPrediction:
+        ...
+        tracker_state_features = self._featurize_tracker_for_e2e(
+            tracker, domain, interpreter
+        )
+        ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python {12,19,23,31,37}
-  from typing import List, Optional, Dict, Text, Any
+```python {12,19,23,31,37}
+from typing import List, Optional, Dict, Text, Any
 
-  from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
-  from rasa.core.policies.policy import PolicyPrediction, Policy
-  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-  from rasa.engine.storage.resource import Resource
-  from rasa.shared.core.domain import Domain
-  from rasa.shared.core.generator import TrackerWithCachedStates
-  from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from rasa.core.policies.policy import PolicyPrediction, Policy
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
 
-  @DefaultV1Recipe.register(
-      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
-  )
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List[TrackerWithCachedStates],
-          domain: Domain,
-          precomputations: Optional[MessageContainerForCoreFeaturization] = None,
-      ) -> Resource:
-          ...
-          model_data, label_ids = self._prepare_for_training(
-            training_trackers, domain, precomputations,
-          )
-          ...
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+)
+class MyPolicy(Policy):
+    def train(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+    ) -> Resource:
+        ...
+        model_data, label_ids = self._prepare_for_training(
+          training_trackers, domain, precomputations,
+        )
+        ...
 
-      def predict_action_probabilities(
-          self,
-          tracker: DialogueStateTracker,
-          domain: Domain,
-          precomputations: Optional[MessageContainerForCoreFeaturization] = None,
-          rule_only_data: Optional[Dict[Text, Any]] = None,
-          **kwargs: Any,
-      ) -> PolicyPrediction:
-          ...
-          tracker_state_features = self._featurize_tracker(
-              tracker, domain, precomputations, rule_only_data=rule_only_data
-          )
-          ...
-  ```
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        **kwargs: Any,
+    ) -> PolicyPrediction:
+        ...
+        tracker_state_features = self._featurize_tracker(
+            tracker, domain, precomputations, rule_only_data=rule_only_data
+        )
+        ...
+```
 
   </TabItem>
 </Tabs>
@@ -1068,38 +1068,37 @@ specify the graph component type `POLICY_WITH_END_TO_END_SUPPORT`. Otherwise, us
 method of your policy should be called during the training. If your policy is only
 used during inference use `is_trainable=False`.
 
-
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-register" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from rasa.core.policies.policy import Policy
+```python
+from rasa.core.policies.policy import Policy
 
-  class MyPolicy(Policy):
-      ...
-  ```
+class MyPolicy(Policy):
+    ...
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python {4-6}
-  from rasa.core.policies.policy import Policy
-  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+```python {4-6}
+from rasa.core.policies.policy import Policy
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 
-  @DefaultV1Recipe.register(
-      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT,
-      is_trainable=True
-  )
-  class MyPolicy(Policy):
-      ...
-  ```
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT,
+    is_trainable=True
+)
+class MyPolicy(Policy):
+    ...
+```
 
   </TabItem>
 </Tabs>
 
 **Providing Rule-only Data to a Policy**
 
-Rasa allows excluding [forms](forms.mdx) or [slots](domain.mdx#slots) which
+Rasa allows excluding [forms](./building-classic-assistants/forms.mdx) or [slots](domain.mdx#slots) which
 are completely handled by
 [rules](rules.mdx) from becoming features in other policies.
 In Rasa 2 this information was passed onto the
@@ -1112,36 +1111,36 @@ configuration.
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-rule-only-data" defaultValue="new">
   <TabItem value="old">
 
-  ```python
-  from rasa.core.policies.policy import Policy
-  from typing import Any
+```python
+from rasa.core.policies.policy import Policy
+from typing import Any
 
-  class MyPolicy(Policy):
+class MyPolicy(Policy):
 
-      def set_shared_policy_states(self, **kwargs: Any) -> None:
-          """Sets policy's shared states for correct featurization."""
-          self._rule_only_data = kwargs.get("rule_only_data", {})
-  ```
+    def set_shared_policy_states(self, **kwargs: Any) -> None:
+        """Sets policy's shared states for correct featurization."""
+        self._rule_only_data = kwargs.get("rule_only_data", {})
+```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python {12}
-  from typing import Optional, Dict, Text, Any
+```python {12}
+from typing import Optional, Dict, Text, Any
 
-  from rasa.core.policies.policy import Policy, PolicyPrediction
-  from rasa.shared.core.domain import Domain
-  from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.core.policies.policy import Policy, PolicyPrediction
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.trackers import DialogueStateTracker
 
-  class MyPolicy(Policy):
-      def predict_action_probabilities(
-          self,
-          tracker: DialogueStateTracker,
-          domain: Domain,
-          rule_only_data: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyPrediction:
-        ...
-  ```
+class MyPolicy(Policy):
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+  ) -> PolicyPrediction:
+      ...
+```
 
   </TabItem>
 </Tabs>
@@ -1230,13 +1229,14 @@ class TrainingDataImporter:
 ### Training
 
 #### `rasa train --dry-run`
+
 Due to changes in the model architecture the behavior of `rasa train --dry-run` changed.
 The exit codes now have the following meaning:
 
-* `0` means that the model does not require an expensive retraining. However, the
+- `0` means that the model does not require an expensive retraining. However, the
   responses might still require updating by running `rasa train`
-* `1` means that one or multiple components require to be retrained.
-* `8` means that the `--force` flag was used and hence any cached results are ignored
+- `1` means that one or multiple components require to be retrained.
+- `8` means that the `--force` flag was used and hence any cached results are ignored
   and the entire model is retrained.
 
 ### Machine Learning Components
@@ -1291,7 +1291,7 @@ The `auto_fill` key in the domain is no longer available, as well as the `auto_f
 the `Slot` class.
 
 While forms continue to request the next slot, slot extraction is now delegated to the default
-action [`action_extract_slots`](./default-actions.mdx#action_extract_slots). This action runs in the background
+action [`action_extract_slots`](./building-assistants/default-actions.mdx#action_extract_slots). This action runs in the background
 automatically after each user turn. Like `action_listen`, it should not be included in stories.
 
 Each slot in the `slots` section must include the `mappings` key. The same keys used for predefined mappings in 2.0 are
@@ -1303,8 +1303,8 @@ slots:
   is_existing_customer:
     type: bool
     mappings:
-    - type: custom
-      action: action_verify_customer_status
+      - type: custom
+        action: action_verify_customer_status
 ```
 
 You can use [slot validation actions](./slot-validation-actions.mdx) to either validate slots with predefined
@@ -1319,7 +1319,7 @@ slots:
     type: bool
     initial_value: false
     mappings:
-    - type: custom
+      - type: custom
 ```
 
 This slot's value will only change when a custom action is predicted that sets it. This mapping maintains the behavior
@@ -1347,7 +1347,7 @@ provided instead.
 
 To maintain the behavior of forms in the 2.0 format, all migrated slot mappings will include mapping conditions for
 each form. This can be changed manually according to your use case.
-See the docs on [mapping conditions](./domain.mdx#mapping-conditions) for more information.
+See the docs on [mapping conditions](./building-assistants/domain.mdx#mapping-conditions) for more information.
 
 #### Manually migrating from 2.0 domain format to the 3.0 format
 
@@ -1358,89 +1358,89 @@ Let's consider the following 2.0 domain file:
 
 ```yaml
 entities:
- - cuisine
- - number
+  - cuisine
+  - number
 slots:
-   cuisine:
-     type: text
-   num_people:
-     type: float
-   outdoor_seating:
-     type: bool
+  cuisine:
+    type: text
+  num_people:
+    type: float
+  outdoor_seating:
+    type: bool
 forms:
-   restaurant_form:
-     required_slots:
-         cuisine:
-           - type: from_entity
-             entity: cuisine
-         num_people:
-           - type: from_entity
-             entity: number
-         outdoor_seating:
-           - type: from_intent
-             intent: affirm
-             value: true
-           - type: from_intent
-             intent: deny
-             value: false
+  restaurant_form:
+    required_slots:
+      cuisine:
+        - type: from_entity
+          entity: cuisine
+      num_people:
+        - type: from_entity
+          entity: number
+      outdoor_seating:
+        - type: from_intent
+          intent: affirm
+          value: true
+        - type: from_intent
+          intent: deny
+          value: false
 ```
 
 The initial result of migrating this domain to 3.0 format would look like this:
 
 ```yaml
 entities:
- - cuisine
- - number
+  - cuisine
+  - number
 slots:
-   cuisine:
-     type: text
-     mappings:
-     - type: from_entity
-       entity: cuisine
-   num_people:
-     type: float
-     mappings:
-     - type: from_entity
-       entity: number
-   outdoor_seating:
-     type: bool
-     mappings:
-     - type: from_intent
-       intent: affirm
-       value: true
-     - type: from_intent
-       intent: deny
-       value: false
+  cuisine:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: cuisine
+  num_people:
+    type: float
+    mappings:
+      - type: from_entity
+        entity: number
+  outdoor_seating:
+    type: bool
+    mappings:
+      - type: from_intent
+        intent: affirm
+        value: true
+      - type: from_intent
+        intent: deny
+        value: false
 forms:
-   restaurant_form:
-     required_slots:
-     - cuisine
-     - num_people
-     - outdoor_seating
+  restaurant_form:
+    required_slots:
+      - cuisine
+      - num_people
+      - outdoor_seating
 ```
 
-For slots that should be filled only in the context of a form, add [mapping conditions](./domain.mdx#mapping-conditions)
+For slots that should be filled only in the context of a form, add [mapping conditions](./building-assistants/domain.mdx#mapping-conditions)
 to specify which form(s) should be active, as well as indicate if the `requested_slot` should be the same slot.
 Adding `conditions` is required to preserve the behavior of slot mappings from 2.0, since without them
 the mappings will be applied on each user turn regardless of whether a form is active or not.
 
 ```yaml
- slots:
-   outdoor_seating:
-     type: bool
-     mappings:
-     - type: from_intent
-       intent: affirm
-       value: true
-       conditions:
-       - active_loop: restaurant_form
-         requested_slot: outdoor_seating
-     - type: from_intent
-       intent: deny
-       value: false
-       conditions:
-       - active_loop: restaurant_form
-         requested_slot: outdoor_seating
+slots:
+  outdoor_seating:
+    type: bool
+    mappings:
+      - type: from_intent
+        intent: affirm
+        value: true
+        conditions:
+          - active_loop: restaurant_form
+            requested_slot: outdoor_seating
+      - type: from_intent
+        intent: deny
+        value: false
+        conditions:
+          - active_loop: restaurant_form
+            requested_slot: outdoor_seating
 ```
 
 #### Rasa-SDK Modifications
@@ -1453,15 +1453,15 @@ If you have been dynamically filling slots not present in the form's `required_s
 file, note that this behaviour is no longer supported in 3.x. Any dynamic slots with custom mappings, which are set in
 the last user turn, will be filled **only if** they are returned by the `required_slots` method of the custom action
 inheriting from `FormValidationAction`. To maintain the 2.x behaviour, you must now override the `required_slots` method
-of this custom action as per the strong recommendation listed in the [dynamic form documentation](./forms.mdx#dynamic-form-behavior).
+of this custom action as per the strong recommendation listed in the [dynamic form documentation](./building-classic-assistants/forms.mdx#dynamic-form-behavior).
 
-To extract custom slots that are not defined in any form's `required_slots`, you should now use a global [custom slot mapping](./domain.mdx#custom-slot-mappings)
+To extract custom slots that are not defined in any form's `required_slots`, you should now use a global [custom slot mapping](./building-assistants/domain.mdx#custom-slot-mappings)
 and extend the [ValidationAction class](./action-server/validation-action.mdx#validationaction-class).
 
 :::note
 If you have custom validation actions extending `FormValidationAction` which override `required_slots` method, you should
 double-check the dynamic form behavior of your migrated assistant. Slots set by the default action
-[`action_extract_slots`](./default-actions.mdx#action_extract_slots) may need to be reset within the context of your
+[`action_extract_slots`](./building-assistants/default-actions.mdx#action_extract_slots) may need to be reset within the context of your
 form by the custom validation actions for the form's required slots. For example, if your form dynamically adds a required
 slot after the first slot is filled, you may want to reset the potential required slot as part of the first required slot's
 validation method to ensure it will be empty when added.
@@ -1496,7 +1496,6 @@ If you had a custom tracker featurizer which relied on this method from any of t
 `encode_all_actions` method of `SingleStateFeaturizer` class is deprecated and will be removed in Rasa 3.0 .
 It is recommended to use the method `encode_all_labels` instead.
 
-
 ### Incremental Training
 
 Users don't need to specify an additional buffer size for sparse featurizers anymore during incremental training.
@@ -1506,21 +1505,23 @@ models - `DIETClassifier`, `ResponseSelector`. In other words, no extra buffer i
 advance for additional vocabulary items and space will be dynamically allocated for them inside the model.
 
 This means there's no need to specify `additional_vocabulary_size` for
-[`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) or
-`number_additional_patterns` for [`RegexFeaturizer`](./components.mdx#regexfeaturizer).
+[`CountVectorsFeaturizer`](./building-classic-assistants/components.mdx#countvectorsfeaturizer) or
+`number_additional_patterns` for [`RegexFeaturizer`](./building-classic-assistants/components.mdx#regexfeaturizer).
 These parameters are now deprecated.
 
 **Before**
+
 ```yaml
 pipeline:
   - name: "WhitespaceTokenizer"
   - name: "RegexFeaturizer"
     number_additional_patterns: 100
   - name: "CountVectorsFeaturizer"
-    additional_vocabulary_size: {text: 100, response: 20}
+    additional_vocabulary_size: { text: 100, response: 20 }
 ```
 
 **Now**
+
 ```yaml
 pipeline:
   - name: "WhitespaceTokenizer"
@@ -1538,7 +1539,7 @@ Based on user feedback, we have identified multiple problems with this option.
 Therefore, `model_confidence=linear_norm` is now deprecated and
 will be removed in Rasa `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
 we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
-we also recommend to [re-tune the thresholds for fallback components](./fallback-handoff.mdx#fallbacks).
+we also recommend to [re-tune the thresholds for fallback components](./building-classic-assistants/fallback-handoff.mdx#fallbacks).
 
 ## Rasa 2.5 to 2.6
 
@@ -1548,7 +1549,7 @@ we also recommend to [re-tune the thresholds for fallback components](./fallback
 
 There is a new parameter under Forms called `ignored_intents`. This parameter
 can be used to prevent any required slots in a form from being filled with the specified
-intent or intents. Please see the [Forms documentation](forms.mdx) for examples and more
+intent or intents. Please see the [Forms documentation](./building-classic-assistants/forms.mdx) for examples and more
 information on how to use it in your `domain.yml` file.
 
 Before, if a user did not want to fill any slots of a form with a specified intent
@@ -1594,7 +1595,6 @@ forms:
       - type: from_text
 ```
 
-
 ## Rasa 2.4 to 2.5
 
 ### Machine Learning Components
@@ -1626,7 +1626,7 @@ to pick up the correct model from the `language` parameter.
 language: en
 
 pipeline:
-   - name: SpacyNLP
+  - name: SpacyNLP
 ```
 
 **Now**
@@ -1637,8 +1637,8 @@ This behavior will be deprecated and instead you'll want to be explicit in `conf
 language: en
 
 pipeline:
-   - name: SpacyNLP
-     model: en_core_web_md
+  - name: SpacyNLP
+    model: en_core_web_md
 ```
 
 **Fallback**
@@ -1648,31 +1648,37 @@ a compatible language is configured for the entire pipeline in `config.yml`, eve
 specify a `model`. This fallback behavior is temporary and will be deprecated in Rasa 3.0.0.
 
 We've updated our docs to reflect these changes. All examples now show a direct link to the
-correct spaCy model. We've also added a warning to the [SpaCyNLP](components.mdx#spacynlp)
+correct spaCy model. We've also added a warning to the [SpaCyNLP](./building-classic-assistants/components.mdx#spacynlp)
 docs that explains the fallback behavior.
 
 ## Rasa 2.3 to Rasa 2.4
 
 ### Deprecating `template` for `response`
+
 NLG Server
+
 - Changed request format to send `response` as well as `template` as a field. The `template` field will be removed in Rasa 3.0.0.
 
 `rasa.core.agent`
+
 - The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa 3.0.0. Please see [here](./nlg.mdx) for more details.
 
 `rasa.core.nlg.generator`
-- `generate()` now takes in  `utter_action` as a parameter.
+
+- `generate()` now takes in `utter_action` as a parameter.
 - The terminology `template` is deprecated and replaced by `response`. Support for `template` in the `NaturalLanguageGenerator` will be removed in Rasa 3.0.0.
 
 `rasa.shared.core.domain`
+
 - The property `templates` is deprecated. Use `responses` instead. It will be removed in Rasa 3.0.0.
 - `retrieval_intent_templates` will be removed in Rasa 3.0.0. Please use `retrieval_intent_responses` instead.
 - `is_retrieval_intent_template` will be removed in Rasa 3.0.0. Please use `is_retrieval_intent_response` instead.
 - `check_missing_templates` will be removed in Rasa 3.0.0. Please use `check_missing_responses` instead.
 
 Response Selector
-- The field `template_name` will be deprecated in Rasa 3.0.0. Please use `utter_action` instead. Please see [here](./components.mdx#selectors) for more details.
-- The field `response_templates` will be deprecated in Rasa 3.0.0. Please use `responses` instead. Please see [here](./components.mdx#selectors) for more details.
+
+- The field `template_name` will be deprecated in Rasa 3.0.0. Please use `utter_action` instead. Please see [here](./building-classic-assistants/components.mdx#selectors) for more details.
+- The field `response_templates` will be deprecated in Rasa 3.0.0. Please use `responses` instead. Please see [here](./building-classic-assistants/components.mdx#selectors) for more details.
 
 ## Rasa 2.3.3 to Rasa 2.3.4
 
@@ -1691,6 +1697,7 @@ Rasa `2.3.0` introduced the option of using cosine similarities for model confid
 the logic of assistants in various other places.
 
 We encourage you to try `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. This can be done with the following config:
+
 ```
 - name: DIETClassifier
   model_confidence: linear_norm
@@ -1699,7 +1706,6 @@ We encourage you to try `model_confidence=linear_norm` which will produce a line
 
 If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
 
-
 ## Rasa 2.2 to Rasa 2.3
 
 ### General
@@ -1707,31 +1713,34 @@ If you trained a model with `model_confidence=cosine` or `model_confidence=inner
 If you want to use Tensorboard for `DIETClassifier`, `ResponseSelector`, or `TEDPolicy` and log metrics after
 every (mini)batch, please use 'batch' instead of 'minibatch' as 'tensorboard_log_level'.
 
-
 ### Machine Learning Components
 
 A few changes have been made to the loss function inside machine learning (ML)
 components `DIETClassifier`, `ResponseSelector` and `TEDPolicy`. These include:
+
 1. Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa 3.0.0. Use `loss_type=cross_entropy` instead.
 2. The default loss function (`loss_type=cross_entropy`) can add an optional sigmoid cross-entropy loss of all similarity values to constrain
-them to an approximate range. You can turn on this option by setting `constrain_similarities=True`. This should help the models to perform better on real world test sets.
+   them to an approximate range. You can turn on this option by setting `constrain_similarities=True`. This should help the models to perform better on real world test sets.
 
 A new option `model_confidence` has been added to each ML component. It affects how the model's confidence for each label is computed during inference. It can take one of three values:
+
 1. `softmax` - Dot product similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
 2. `cosine` - Cosine similarity between input and label embeddings. Confidence for each label will be in the range `[-1,1]`.
 3. `linear_norm` - Dot product similarities between input and label embeddings are post-processed with a linear normalization function. Confidence for each label will be in the range `[0,1]`.
 
-The default value is `softmax`, but we recommend trying `linear_norm`. This should make it easier to [tune thresholds for triggering fallback](./fallback-handoff.mdx#fallbacks).
+The default value is `softmax`, but we recommend trying `linear_norm`. This should make it easier to [tune thresholds for triggering fallback](./building-classic-assistants/fallback-handoff.mdx#fallbacks).
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier`.
 
 We encourage you to try both the above recommendations. This can be done with the following config:
+
 ```
 - name: DIETClassifier
   model_confidence: linear_norm
   constrain_similarities: True
   ...
 ```
-Once the assistant is re-trained with the above configuration, users should also [tune fallback confidence thresholds](./fallback-handoff.mdx#fallbacks).
+
+Once the assistant is re-trained with the above configuration, users should also [tune fallback confidence thresholds](./building-classic-assistants/fallback-handoff.mdx#fallbacks).
 
 **EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa version `2.3.4`.
 
@@ -1739,20 +1748,20 @@ Once the assistant is re-trained with the above configuration, users should also
 
 ### General
 
-`TEDPolicy`'s  `transformer_size`, `number_of_transformer_layers`,
+`TEDPolicy`'s `transformer_size`, `number_of_transformer_layers`,
 and `dense_dimensions` parameters have been renamed.
 Please update your configuration files using the following mapping:
 
-|      Old Model Parameter    |                 New Model Parameter                    |
-|-----------------------------|--------------------------------------------------------|
-|`transformer_size`           |dictionary `transformer_size` with keys                 |
-|                             |`text`, `action_text`, `label_action_text`, `dialogue`  |
-|`number_of_transformer_layers`|dictionary `number_of_transformer_layers` with keys    |
-|                             |`text`, `action_text`, `label_action_text`, `dialogue`  |
-|`dense_dimension`            |dictionary `dense_dimension` with keys                  |
-|                             |`text`, `action_text`, `label_action_text`, `intent`,   |
-|                             |`action_name`, `label_action_name`, `entities`, `slots`,|
-|                             |`active_loop`                                           |
+| Old Model Parameter            | New Model Parameter                                      |
+| ------------------------------ | -------------------------------------------------------- |
+| `transformer_size`             | dictionary `transformer_size` with keys                  |
+|                                | `text`, `action_text`, `label_action_text`, `dialogue`   |
+| `number_of_transformer_layers` | dictionary `number_of_transformer_layers` with keys      |
+|                                | `text`, `action_text`, `label_action_text`, `dialogue`   |
+| `dense_dimension`              | dictionary `dense_dimension` with keys                   |
+|                                | `text`, `action_text`, `label_action_text`, `intent`,    |
+|                                | `action_name`, `label_action_name`, `entities`, `slots`, |
+|                                | `active_loop`                                            |
 
 For example:
 
@@ -1781,11 +1790,12 @@ policies:
       active_loop: 20
 ```
 
-
 ### Deprecations
 
 #### Markdown Data
+
 Training and test data in Markdown format is now deprecated. This includes:
+
 - reading and writing of story files in Markdown format
 - reading and writing of NLU data in Markdown format
 - reading and writing of retrieval intent data in Markdown format
@@ -1795,28 +1805,25 @@ Support for Markdown data will be removed entirely in Rasa 3.0.0.
 Please convert your existing Markdown data by using the commands
 described [here](./migration-guide.mdx#training-data-files).
 
-
 ### Policies
 
-[Policies](./policies.mdx) now require a `**kwargs` argument in their constructor and `load` method.
+[Policies](./building-classic-assistants/policies.mdx) now require a `**kwargs` argument in their constructor and `load` method.
 Policies without `**kwargs` will be supported until Rasa version `3.0.0`.
-However when using [incremental training](./command-line-interface.mdx#incremental-training)
+However when using [incremental training](./building-assistants/command-line-interface.mdx#incremental-training)
 `**kwargs` **must** be included.
-
 
 #### Other
 
-* `Domain.random_template_for` is deprecated and will be removed in Rasa
-   3.0.0. You can alternatively use the `TemplatedNaturalLanguageGenerator`.
-* `Domain.action_names` is deprecated and will be removed in Rasa
-   3.0.0. Please use `Domain.action_names_or_texts` instead.
-
+- `Domain.random_template_for` is deprecated and will be removed in Rasa
+  3.0.0. You can alternatively use the `TemplatedNaturalLanguageGenerator`.
+- `Domain.action_names` is deprecated and will be removed in Rasa
+  3.0.0. Please use `Domain.action_names_or_texts` instead.
 
 ## Rasa 2.0 to Rasa 2.1
 
 ### Deprecations
 
-`ConveRTTokenizer` is now deprecated. [ConveRTFeaturizer](./components.mdx#convertfeaturizer) now implements
+`ConveRTTokenizer` is now deprecated. [ConveRTFeaturizer](./building-classic-assistants/components.mdx#convertfeaturizer) now implements
 its behaviour. To migrate, replace `ConveRTTokenizer` with any other tokenizer, for e.g.:
 
 ```yaml
@@ -1828,7 +1835,7 @@ pipeline:
 ```
 
 `HFTransformersNLP` and `LanguageModelTokenizer` components are now deprecated.
-[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) now implements their behaviour.
+[LanguageModelFeaturizer](./building-classic-assistants/components.mdx#languagemodelfeaturizer) now implements their behaviour.
 To migrate, replace both the above components with any tokenizer and specify the model architecture and model weights
 as part of `LanguageModelFeaturizer`, for e.g.:
 
@@ -1873,14 +1880,13 @@ some additional changes will need to be made as described in their respective se
 
 ### Policies
 
-With the introduction of [rules](./rules.mdx) and the [RulePolicy](./policies.mdx#rule-policy),
+With the introduction of [rules](./building-classic-assistants/rules.mdx) and the [RulePolicy](./building-classic-assistants/policies.mdx#rule-policy),
 the following policies are deprecated:
 
 - [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy)
 - [Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#fallback-policy)
 - [Two-Stage Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#two-stage-fallback-policy)
 - [Form Policy](https://rasa.com/docs/rasa/2.x/policies#form-policy)
-
 
 To migrate the policies automatically, you can run the following command:
 
@@ -1928,7 +1934,7 @@ intents:
 ```
 
 Finally, you can replace the Mapping Policy with the
-[Rule Policy](./policies.mdx#rule-policy) in your model configuration:
+[Rule Policy](./building-classic-assistants/policies.mdx#rule-policy) in your model configuration:
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -1967,7 +1973,7 @@ policies:
     core_fallback_action_name: "action_default_fallback"
 ```
 
-In addition, you need to add a [rule](./rules.mdx) to specify which action to run
+In addition, you need to add a [rule](./building-classic-assistants/rules.mdx) to specify which action to run
 in case of low NLU confidence:
 
 ```yaml-rasa title="rules.yml"
@@ -1978,7 +1984,7 @@ rules:
     - action: utter_please_rephrase
 ```
 
-See the documentation on [fallback](./fallback-handoff.mdx#fallbacks) for more
+See the documentation on [fallback](./building-classic-assistants/fallback-handoff.mdx#fallbacks) for more
 information.
 
 #### Manually migrating from the Two-Stage-Fallback Policy
@@ -2015,7 +2021,7 @@ policies:
     core_fallback_action_name: "action_default_fallback"
 ```
 
-In addition you need to add a [rule](./rules.mdx) to activate the Two-Stage Fallback for
+In addition you need to add a [rule](./building-classic-assistants/rules.mdx) to activate the Two-Stage Fallback for
 messages with low NLU confidence.
 
 ```yaml-rasa title="rules.yml"
@@ -2034,18 +2040,18 @@ Note that the previous parameters `fallback_nlu_action_name` and
 `deny_suggestion_intent_name` are no longer configurable and have the fixed values
 `action_default_fallback` and `out_of_scope`.
 
-See the [fallback](./fallback-handoff.mdx#fallbacks) documentation for more
+See the [fallback](./building-classic-assistants/fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
 ### Forms
 
-As of version 2.0 the logic for [forms](./forms.mdx) has been moved from the
+As of version 2.0 the logic for [forms](./building-classic-assistants/forms.mdx) has been moved from the
 Rasa SDK to Rasa to simplify implementation and make it easier to write
 action servers in other languages.
 
 This means that forms are no longer implemented using a `FormAction`, but instead
 defined in the domain. Any customizations around requesting slots or
-[slot validation](./forms.mdx#validating-form-input) can be handled with a `FormValidationAction`.
+[slot validation](./building-classic-assistants/forms.mdx#validating-form-input) can be handled with a `FormValidationAction`.
 
 Consider a custom form action from 1.x like this:
 
@@ -2106,7 +2112,7 @@ class RestaurantForm(FormAction):
         return []
 ```
 
-Start the migration by removing the FormPolicy and adding the [RulePolicy](./policies.mdx#rule-policy)
+Start the migration by removing the FormPolicy and adding the [RulePolicy](./building-classic-assistants/policies.mdx#rule-policy)
 (if not there already) to your model configuration:
 
 ```yaml-rasa title="config.yml"
@@ -2117,7 +2123,7 @@ policies:
 ```
 
 Then you need to define the form, required slots and their slot mappings
-in the domain as described in the documentation on [forms](./forms.mdx#defining-a-form):
+in the domain as described in the documentation on [forms](./building-classic-assistants/forms.mdx#defining-a-form):
 
 ```yaml-rasa title="domain.yml"
 forms:
@@ -2127,6 +2133,7 @@ forms:
       entity: cuisine
       not_intent: chitchat
 ```
+
 If you ran the command to [convert your stories](./migration-guide.mdx#training-data-Files),
 you will have a story that handles form activation and deactivation like this:
 
@@ -2227,7 +2234,7 @@ forms:
  my_form:
 ```
 
-See the [forms](./forms.mdx) documentation for more details.
+See the [forms](./building-classic-assistants/forms.mdx) documentation for more details.
 
 ### Response Selectors
 
@@ -2252,6 +2259,7 @@ stories:
     - intent: chitchat
     - action: respond_chitchat
 ```
+
 becomes
 
 ```yaml-rasa
@@ -2291,7 +2299,6 @@ list in your domain.
 This behavior will work fine when defined as a story, but even better when defined
 as a rule. You should consider transferring your retrieval stories to rules. More information
 on what that looks like in the [chitchat and FAQs documentation](./chitchat-faqs.mdx).
-
 
 Response Selectors are now trained on retrieval intent labels by default instead
 of the actual response text. For most models, this should improve training time
@@ -2342,18 +2349,21 @@ The output schema of `ResponseSelector` has changed. An example output looks lik
   }
 }
 ```
+
 As a result of this, if you were previously querying for the key `full_retrieval_intent` as:
+
 ```python {2}
 response_selector_output.get("default")
                         .get("full_retrieval_intent")
 ```
+
 you should instead now do this:
+
 ```python {2-3}
 response_selector_output.get("default")
                         .get("response")
                         .get("intent_response_key")
 ```
-
 
 ### Unfeaturized Slots
 
@@ -2396,7 +2406,7 @@ Please see the updated [slots documentation](domain.mdx#slots) for more informat
 ### Conversation sessions
 
 [Conversation sessions](domain.mdx#session-configuration) are now enabled by default
-if your [Domain](domain.mdx) does not contain a session configuration. Previously a
+if your [Domain](./building-assistants/domain.mdx) does not contain a session configuration. Previously a
 missing session configuration was treated as if conversation sessions were disabled.
 You can explicitly disable conversation sessions using the following snippet:
 
@@ -2407,10 +2417,9 @@ session_config:
   session_expiration_time: 0
 ```
 
-
 ### Dialogue Featurization
 
-This section is only relevant if you explicitly defined [featurizers](./policies.mdx#featurizers)
+This section is only relevant if you explicitly defined [featurizers](./building-classic-assistants/policies.mdx#featurizers)
 in your policy configuration.
 
 LabelTokenizerSingleStateFeaturizer is deprecated and will be removed in the future.
@@ -2419,6 +2428,7 @@ Add a `Tokenizer` with the option `intent_tokenization_flag: True` and `CountVec
 to the NLU pipeline.
 
 For example:
+
 ```yaml-rasa {3-5}
 language: en
 pipeline:
@@ -2439,6 +2449,7 @@ You should replace it with `SingleStateFeaturizer` and a NLU pipeline
 where `intent_tokenization_flag` of a Tokenizer is set to `False`.
 
 For example:
+
 ```yaml-rasa {4}
 language: en
 pipeline:
@@ -2455,22 +2466,23 @@ policies:
 
 ### Deprecations
 
-The deprecated [event brokers](./event-brokers.mdx) FileProducer, KafkaProducer, PikaProducer
+The deprecated [event brokers](./production/event-brokers.mdx) FileProducer, KafkaProducer, PikaProducer
 and SQLProducer have been removed. If you used these brokers in your
 `endpoints.yml` make sure to use the renamed variants instead:
-  - FileProducer became FileEventBroker
-  - KafkaProducer became KafkaEventBroker
-  - PikaProducer became PikaEventBroker
-  - SQLProducer became  SQLEventBroker
+
+- FileProducer became FileEventBroker
+- KafkaProducer became KafkaEventBroker
+- PikaProducer became PikaEventBroker
+- SQLProducer became SQLEventBroker
 
 The deprecated EmbeddingIntentClassifier has been removed. If you used this
 component in your pipeline configuration (`config.yml`) you can replace it
-with [DIETClassifier](./components.mdx#dietclassifier).
+with [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier).
 It accepts the same configuration parameters.
 
 The deprecated KerasPolicy has been removed. If you used this
 component in your policies configuration (`config.yml`) you can replace it
-with [TEDPolicy](./policies.mdx#ted-policy). It accepts the same configuration parameters.
+with [TEDPolicy](./building-classic-assistants/policies.mdx#ted-policy). It accepts the same configuration parameters.
 
 ## Rasa 1.7 to Rasa 1.8
 
@@ -2483,10 +2495,10 @@ model before trying to use it with this improved version.
 
 ### General
 
-* The [TED Policy](./policies.mdx#ted-policy) replaced the `keras_policy` as recommended machine
+- The [TED Policy](./building-classic-assistants/policies.mdx#ted-policy) replaced the `keras_policy` as recommended machine
   learning policy. New projects generated with `rasa init` will automatically use
   this policy. In case you want to change your existing model configuration to use the
-  [TED Policy](./policies.mdx#ted-policy) add this to the `policies` section in your `config.yml`
+  [TED Policy](./building-classic-assistants/policies.mdx#ted-policy) add this to the `policies` section in your `config.yml`
   and remove potentially existing `KerasPolicy` entries:
 
   ```yaml-rasa
@@ -2499,45 +2511,45 @@ model before trying to use it with this improved version.
 
   The given snippet specifies default values for the parameters `max_history` and
   `epochs`. `max_history` is particularly important and strongly depends on your stories.
-  Please see the docs of the [TED Policy](./policies.mdx#ted-policy) if you want to customize them.
+  Please see the docs of the [TED Policy](./building-classic-assistants/policies.mdx#ted-policy) if you want to customize them.
 
-* All pre-defined pipeline templates are deprecated. **Any templates you use will be
+- All pre-defined pipeline templates are deprecated. **Any templates you use will be
   mapped to the new configuration, but the underlying architecture is the same**.
-  Take a look at [Tuning Your Model](./tuning-your-model.mdx) to decide on what components you should use
+  Take a look at [Tuning Your Model](./building-classic-assistants/tuning-your-model.mdx) to decide on what components you should use
   in your configuration file.
 
-* The Embedding Policy was renamed to [TED Policy](./policies.mdx#ted-policy). The functionality of the policy stayed the same.
+- The Embedding Policy was renamed to [TED Policy](./building-classic-assistants/policies.mdx#ted-policy). The functionality of the policy stayed the same.
   Please update your configuration files to use `TEDPolicy` instead of `EmbeddingPolicy`.
 
-* Most of the model options for `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` got
+- Most of the model options for `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` got
   renamed. Please update your configuration files using the following mapping:
 
-  |      Old model option       |                  New model option                   |
-  |-----------------------------|-----------------------------------------------------|
-  |hidden_layers_sizes_a        |dictionary “hidden_layers_sizes” with key “text”     |
-  |hidden_layers_sizes_b        |dictionary “hidden_layers_sizes” with key “label”    |
-  |hidden_layers_sizes_pre_dial |dictionary “hidden_layers_sizes” with key “dialogue” |
-  |hidden_layers_sizes_bot      |dictionary “hidden_layers_sizes” with key “label”    |
-  |num_transformer_layers       |number_of_transformer_layers                         |
-  |num_heads                    |number_of_attention_heads                            |
-  |max_seq_length               |maximum_sequence_length                              |
-  |dense_dim                    |dense_dimension                                      |
-  |embed_dim                    |embedding_dimension                                  |
-  |num_neg                      |number_of_negative_examples                          |
-  |mu_pos                       |maximum_positive_similarity                          |
-  |mu_neg                       |maximum_negative_similarity                          |
-  |use_max_sim_neg              |use_maximum_negative_similarity                      |
-  |C2                           |regularization_constant                              |
-  |C_emb                        |negative_margin_scale                                |
-  |droprate_a                   |droprate_dialogue                                    |
-  |droprate_b                   |droprate_label                                       |
-  |evaluate_every_num_epochs    |evaluate_every_number_of_epochs                      |
-  |evaluate_on_num_examples     |evaluate_on_number_of_examples                       |
+  | Old model option             | New model option                                     |
+  | ---------------------------- | ---------------------------------------------------- |
+  | hidden_layers_sizes_a        | dictionary “hidden_layers_sizes” with key “text”     |
+  | hidden_layers_sizes_b        | dictionary “hidden_layers_sizes” with key “label”    |
+  | hidden_layers_sizes_pre_dial | dictionary “hidden_layers_sizes” with key “dialogue” |
+  | hidden_layers_sizes_bot      | dictionary “hidden_layers_sizes” with key “label”    |
+  | num_transformer_layers       | number_of_transformer_layers                         |
+  | num_heads                    | number_of_attention_heads                            |
+  | max_seq_length               | maximum_sequence_length                              |
+  | dense_dim                    | dense_dimension                                      |
+  | embed_dim                    | embedding_dimension                                  |
+  | num_neg                      | number_of_negative_examples                          |
+  | mu_pos                       | maximum_positive_similarity                          |
+  | mu_neg                       | maximum_negative_similarity                          |
+  | use_max_sim_neg              | use_maximum_negative_similarity                      |
+  | C2                           | regularization_constant                              |
+  | C_emb                        | negative_margin_scale                                |
+  | droprate_a                   | droprate_dialogue                                    |
+  | droprate_b                   | droprate_label                                       |
+  | evaluate_every_num_epochs    | evaluate_every_number_of_epochs                      |
+  | evaluate_on_num_examples     | evaluate_on_number_of_examples                       |
 
   Old configuration options will be mapped to the new names, and a warning will be thrown.
   However, these will be deprecated in a future release.
 
-* The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier](./components.mdx#dietclassifier)
+- The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier)
   in the future.
   `DIETClassfier` performs intent classification as well as entity recognition.
   If you want to get the same model behavior as the current `EmbeddingIntentClassifier`, you can use
@@ -2561,11 +2573,11 @@ model before trying to use it with this improved version.
     # ... any other parameters
   ```
 
-  See [DIETClassifier](./components.mdx#dietclassifier) for more information about the new component.
+  See [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier) for more information about the new component.
   Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, and results in
   the same behaviour within the same Rasa version.
 
-* `CRFEntityExtractor` is now deprecated and will be replaced by `DIETClassifier` in the future. If you want to
+- `CRFEntityExtractor` is now deprecated and will be replaced by `DIETClassifier` in the future. If you want to
   get the same model behavior as the current `CRFEntityExtractor`, you can use the following configuration:
 
   ```yaml-rasa
@@ -2598,14 +2610,14 @@ model before trying to use it with this improved version.
   ```
 
   `CRFEntityExtractor` featurizes user messages on its own, it does not depend on any featurizer.
-  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer). Thus,
+  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer](./building-classic-assistants/components.mdx#lexicalsyntacticfeaturizer). Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
-  [DIETClassifier](./components.mdx#dietclassifier).
+  [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier).
   Specifying `CRFEntityExtractor` in the configuration maps to the above component definition, the behavior
   is unchanged from previous versions.
 
-* If your pipeline contains `CRFEntityExtractor` and `EmbeddingIntentClassifier` you can substitute both
-  components with [DIETClassifier](./components.mdx#dietclassifier). You can use the following pipeline for that:
+- If your pipeline contains `CRFEntityExtractor` and `EmbeddingIntentClassifier` you can substitute both
+  components with [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier). You can use the following pipeline for that:
 
   ```yaml-rasa
   pipeline:
@@ -2637,7 +2649,7 @@ model before trying to use it with this improved version.
 
 ### General
 
-* By default, the `EmbeddingIntentClassifier`, `EmbeddingPolicy`, and `ResponseSelector` will
+- By default, the `EmbeddingIntentClassifier`, `EmbeddingPolicy`, and `ResponseSelector` will
   now normalize the top 10 confidence results if the `loss_type` is `"softmax"` (which has been
   default since 1.3, see [Rasa 1.2 to Rasa 1.3](./migration-guide.mdx#rasa-12-to-rasa-13)). This is configurable via the `ranking_length`
   configuration parameter; to turn off normalization to match the previous behavior, set `ranking_length: 0`.
@@ -2653,10 +2665,10 @@ model before trying to use it with this improved version.
 
 ### General
 
-* Default parameters of `EmbeddingIntentClassifier` are changed. See
+- Default parameters of `EmbeddingIntentClassifier` are changed. See
   the Components page for details.
   Architecture implementation is changed as well, so **old trained models cannot be loaded**.
-  Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./policies.mdx) for details.
+  Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./building-classic-assistants/policies.mdx) for details.
   It uses transformer instead of lstm. **Old trained models cannot be loaded**.
   They use `inner` similarity and `softmax` loss by default instead of
   `cosine` similarity and `margin` loss (can be set in config file).
@@ -2666,28 +2678,27 @@ model before trying to use it with this improved version.
   We suggest to set it to zero (default) if data set contains a lot of unique examples of dialogue turns.
   Removed `label_tokenization_flag` and `label_split_symbol` from component. Instead moved intent splitting to `Tokenizer` components via `intent_tokenization_flag` and `intent_split_symbol` flag.
 
-* Default `max_history` for `EmbeddingPolicy` is `None` which means it'll use
+- Default `max_history` for `EmbeddingPolicy` is `None` which means it'll use
   the `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to
   some finite value in order to use `MaxHistoryTrackerFeaturizer`
-  for **faster training**. See [Featurizers](./policies.mdx#featurizers) for details.
+  for **faster training**. See [Featurizers](./building-classic-assistants/policies.mdx#featurizers) for details.
   We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
   (e.g. `"batch_size": [32, 64]`)
 
-* **Compare** mode of `rasa train core` allows the whole core config comparison.
+- **Compare** mode of `rasa train core` allows the whole core config comparison.
   Therefore, we changed the naming of trained models. They are named by config file
   name instead of policy name. Old naming style will not be read correctly when
   creating **compare** plots (`rasa test core`). Please remove old trained models
   in comparison folder and retrain. Normal core training is unaffected.
 
-* We updated the **evaluation metric** for our **NER**. We report the weighted precision and f1-score.
+- We updated the **evaluation metric** for our **NER**. We report the weighted precision and f1-score.
   So far we included `no-entity` in this report. However, as most of the tokens actually don't have
   an entity set, this will influence the weighted precision and f1-score quite a bit. From now on we
   exclude `no-entity` from the evaluation. The overall metrics now only include proper entities. You
   might see a drop in the performance scores when running the evaluation again.
 
-* `/` is reserved as a delimiter token to distinguish between retrieval intent and the corresponding response text
+- `/` is reserved as a delimiter token to distinguish between retrieval intent and the corresponding response text
   identifier. Make sure you don't include `/` symbol in the name of your intents.
-
 
 ## Rasa NLU 0.14.x and Rasa Core 0.13.x to Rasa 1.0
 
@@ -2700,39 +2711,39 @@ model before trying to use it with this improved version.
 
 ### General
 
-* The scripts in `rasa.core` and `rasa.nlu` can no longer be executed. To train, test, run, … an NLU or Core
+- The scripts in `rasa.core` and `rasa.nlu` can no longer be executed. To train, test, run, … an NLU or Core
   model, you should now use the command line interface `rasa`. The functionality is, for the most part, the same as before.
   Some changes in commands reflect the combined training and running of NLU and Core models, but NLU and Core can still
   be trained and used individually. If you attempt to run one of the old scripts in `rasa.core` or `rasa.nlu`,
   an error is thrown that points you to the command you
-  should use instead. See all the new commands at [Command Line Interface](./command-line-interface.mdx).
+  should use instead. See all the new commands at [Command Line Interface](./building-assistants/command-line-interface.mdx).
 
-* If you have written a custom output channel, all `send_` methods subclassed
+- If you have written a custom output channel, all `send_` methods subclassed
   from the `OutputChannel` class need to take an additional `\*\*kwargs`
   argument. You can use these keyword args from your custom action code or the
   templates in your domain file to send any extra parameters used in your
   channel's send methods.
 
-* If you were previously importing the `Button` or `Element` classes from
+- If you were previously importing the `Button` or `Element` classes from
   `rasa_core.dispatcher`, these are now to be imported from `rasa_sdk.utils`.
 
-* Rasa NLU and Core previously used <a href="https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1" target="_blank" rel="nofollow noopener noreferrer">separate configuration files</a>.
+- Rasa NLU and Core previously used <a href="https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1" target="_blank" rel="nofollow noopener noreferrer">separate configuration files</a>.
   These two files should be merged into a single file either named `config.yml`, or passed via the `--config` parameter.
 
 ### Script parameters
 
-* All script parameter names have been unified to follow the same schema.
+- All script parameter names have been unified to follow the same schema.
   Any underscores (`_`) in arguments have been replaced with dashes (`-`).
   For example: `--max_history` has been changed to `--max-history`. You can
   see all of the script parameters in the `--help` output of the commands
-  in the [Command Line Interface](./command-line-interface.mdx).
+  in the [Command Line Interface](./building-assistants/command-line-interface.mdx).
 
-* The `--num_threads` parameter was removed from the `run` command. The
+- The `--num_threads` parameter was removed from the `run` command. The
   server will always run single-threaded, but will now run asynchronously. If you want to
   make use of multiple processes, feel free to check out the [Sanic server
   documentation](https://sanicframework.org/en/guide/deployment/running.html#gunicorn).
 
-* To avoid conflicts in script parameter names, connectors in the `run` command now need to be specified with
+- To avoid conflicts in script parameter names, connectors in the `run` command now need to be specified with
   `--connector`, as `-c` is no longer supported. The maximum history in the `rasa visualize` command needs to be
   defined with `--max-history`. Output paths and log files cannot be specified with `-o` anymore; `--out` and
   `--log-file` should be used. NLU data has been standarized to be `--nlu` and the name of
@@ -2740,4 +2751,4 @@ model before trying to use it with this improved version.
 
 ### HTTP API
 
-* There are numerous HTTP API endpoint changes which can be found [here](./http-api.mdx).
+- There are numerous HTTP API endpoint changes which can be found [here](./http-api.mdx).

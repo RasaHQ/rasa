@@ -4,8 +4,8 @@ sidebar_label: Tuning Your NLU Model
 title: Tuning Your NLU Model
 abstract: Rasa will provide you with a suggested NLU config on initialization of the project, but as your project grows, it's likely that you will need to adjust your config to suit your training data.
 ---
-import useBaseUrl from '@docusaurus/useBaseUrl';
 
+import useBaseUrl from "@docusaurus/useBaseUrl";
 
 ## How to Choose a Pipeline
 
@@ -38,9 +38,10 @@ If you are getting started with a one of [spaCy's supported languages](https://s
 we recommend the following pipeline:
 
 ```yaml-rasa (docs/sources/data/configs_for_docs/default_spacy_config.yml)
+
 ```
 
-It uses the [SpacyFeaturizer](./components.mdx#spacyfeaturizer), which provides 
+It uses the [SpacyFeaturizer](./components.mdx#spacyfeaturizer), which provides
 pre-trained word embeddings (see [Language Models](./components.mdx#language-models)).
 
 If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
@@ -50,18 +51,18 @@ If there are no word embeddings for your language or you have very domain specif
 we recommend using the following pipeline:
 
 ```yaml-rasa (docs/sources/data/configs_for_docs/default_config.yml)
+
 ```
 
 This pipeline uses the [CountVectorsFeaturizer](./components.mdx#countvectorsfeaturizer) to train
 on only the training data you provide. This pipeline can handle any language in which words are
-separated by spaces. If this is not the case for your language, check out [alternatives to the 
+separated by spaces. If this is not the case for your language, check out [alternatives to the
 WhitespaceTokenizer](./components.mdx#tokenizers).
 
 :::note
 If you want to use custom components in your pipeline, see [Custom NLU Components](./components.mdx).
 
 :::
-
 
 ### Component Lifecycle
 
@@ -75,22 +76,22 @@ For example, for the sentence `"I am looking for Chinese food"`, the output is:
 
 ```json
 {
-    "text": "I am looking for Chinese food",
-    "entities": [
-        {
-            "start": 8,
-            "end": 15,
-            "value": "chinese",
-            "entity": "cuisine",
-            "extractor": "DIETClassifier",
-            "confidence": 0.864
-        }
-    ],
-    "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
-    "intent_ranking": [
-        {"confidence": 0.6485910906220309, "name": "restaurant_search"},
-        {"confidence": 0.1416153159565678, "name": "affirm"}
-    ]
+  "text": "I am looking for Chinese food",
+  "entities": [
+    {
+      "start": 8,
+      "end": 15,
+      "value": "chinese",
+      "entity": "cuisine",
+      "extractor": "DIETClassifier",
+      "confidence": 0.864
+    }
+  ],
+  "intent": { "confidence": 0.6485910906220309, "name": "restaurant_search" },
+  "intent_ranking": [
+    { "confidence": 0.6485910906220309, "name": "restaurant_search" },
+    { "confidence": 0.1416153159565678, "name": "affirm" }
+  ]
 }
 ```
 
@@ -125,9 +126,13 @@ pipeline:
 
 The image below shows the call order during the training of this pipeline:
 
-import componentLifecycleImg from './component-lifecycle-img.png';
+import componentLifecycleImg from "./component-lifecycle-img.png";
 
-<Image img={componentLifecycleImg} caption="Component Lifecycle" alt="The component lifecycle during training. Components are processed in the order they're listed in the configuration file. All components are created and initialized in order before they are trained in order and then persisted in order." />
+<Image
+  img={componentLifecycleImg}
+  caption="Component Lifecycle"
+  alt="The component lifecycle during training. Components are processed in the order they're listed in the configuration file. All components are created and initialized in order before they are trained in order and then persisted in order."
+/>
 
 Before the first component is created using the `create` function, a so
 called `context` is created (which is nothing more than a python dict).
@@ -148,9 +153,9 @@ You can use multi-intent classification to predict multiple intents (e.g. `check
 To do multi-intent classification, you need to use the [DIETClassifier](./components.mdx#dietclassifier) in your pipeline.
 You'll also need to define these flags in whichever tokenizer you are using:
 
-* `intent_tokenization_flag`: Set it to `True`, so that intent labels are tokenized.
+- `intent_tokenization_flag`: Set it to `True`, so that intent labels are tokenized.
 
-* `intent_split_symbol`: Set it to the delimiter string that splits the intent labels. In this case `+`, default `_`.
+- `intent_split_symbol`: Set it to the delimiter string that splits the intent labels. In this case `+`, default `_`.
 
 Here's an example configuration:
 
@@ -164,7 +169,6 @@ pipeline:
 - name: "CountVectorsFeaturizer"
 - name: "DIETClassifier"
 ```
-
 
 #### When to Use Multi-Intents
 
@@ -186,7 +190,9 @@ nlu:
 However, your bot receives incoming messages like this one, which combine both intents:
 
 <Chat caption="User wants to know balance in order to transfer money">
-<ChatUserText>How much money do I have? I want to transfer some to savings.</ChatUserText>
+  <ChatUserText>
+    How much money do I have? I want to transfer some to savings.
+  </ChatUserText>
 </Chat>
 
 If you see enough of these examples, you can create a new intent multi-intent `check_balances+transfer_money` and add the incoming examples to it, for example:
@@ -199,18 +205,16 @@ nlu:
     - What's the balance on my account? I need to transfer some so I want to know how much I have
 ```
 
-
 :::note
 The model will not predict any combination of intents for which examples are not explicitly given in training data. As accounting for every possible intent combination would result in combinatorial explosion of the number of intents, you should only add those combinations of intents for which you see enough examples coming in from real users.
 
 :::
 
-
 #### How to Use Multi-Intents for Dialogue Management
 
-Multi-intent classification is intended to help with the downstream task of action prediction *after* a multi-intent. There are two complementary ways to use multi intents in dialogue training data:
+Multi-intent classification is intended to help with the downstream task of action prediction _after_ a multi-intent. There are two complementary ways to use multi intents in dialogue training data:
 
-1) Add regular stories or rules for the multi-intent. For example, given the following two rules for each individual intent: 
+1. Add regular stories or rules for the multi-intent. For example, given the following two rules for each individual intent:
 
 ```yaml-rasa
 rules:
@@ -235,15 +239,14 @@ rules:
   - action: action_transfer_money
 ```
 
-2) Allow a machine-learning policy to generalize to the multi-intent scenario from single-intent stories.
+2. Allow a machine-learning policy to generalize to the multi-intent scenario from single-intent stories.
 
 When using a multi-intent, the intent is featurized for machine learning policies using multi-hot encoding. That means the featurization of `check_balances+transfer_money` will overlap with the featurization of each individual intent. Machine learning policies (like [TEDPolicy](./policies.mdx#ted-policy)) can then make a prediction based on the multi-intent even if it does not explicitly appear in any stories. It will typically act as if only one of the individual intents was present, however, so it is always a good idea to write a specific story or rule that deals with the multi-intent case.
-
 
 ### Comparing Pipelines
 
 Rasa gives you the tools to compare the performance of multiple pipelines on your data directly.
-See [Comparing NLU Pipelines](./testing-your-assistant.mdx#comparing-nlu-pipelines) for more information.
+See [Comparing NLU Pipelines](../production/testing-your-assistant.mdx#comparing-nlu-pipelines) for more information.
 
 ## Choosing the Right Components
 
@@ -344,6 +347,7 @@ Here is an example configuration file where the `DIETClassifier` is using all av
 `ResponseSelector` is just using the features from the `ConveRTFeaturizer` and the `CountVectorsFeaturizer`.
 
 ```yaml-rasa (docs/sources/data/configs_for_docs/config_featurizers.yml)
+
 ```
 
 ### Entity Extraction
@@ -352,14 +356,14 @@ Entity extraction involves parsing user messages for required pieces of informat
 provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
 Here is a summary of the available extractors and what they are best used for:
 
-|       Component          |     Requires     |                      Model                      |              Notes               |
-|--------------------------|------------------|-------------------------------------------------|----------------------------------|
-|`DIETClassifier`          | N/A              |conditional random field on top of a transformer |good for training custom entities |
-|`CRFEntityExtractor`      |sklearn-crfsuite  |conditional random field                         |good for training custom entities |
-|`SpacyEntityExtractor`    |spaCy             |averaged perceptron                              |provides pre-trained entities     |
-|`DucklingEntityExtractor` |running duckling  |context-free grammar                             |provides pre-trained entities     |
-|`MitieEntityExtractor`    |MITIE             |structured SVM                                   |good for training custom entities |
-|`EntitySynonymMapper`     |existing entities |N/A                                              |maps known synonyms               |
+| Component                 | Requires          | Model                                            | Notes                             |
+| ------------------------- | ----------------- | ------------------------------------------------ | --------------------------------- |
+| `DIETClassifier`          | N/A               | conditional random field on top of a transformer | good for training custom entities |
+| `CRFEntityExtractor`      | sklearn-crfsuite  | conditional random field                         | good for training custom entities |
+| `SpacyEntityExtractor`    | spaCy             | averaged perceptron                              | provides pre-trained entities     |
+| `DucklingEntityExtractor` | running duckling  | context-free grammar                             | provides pre-trained entities     |
+| `MitieEntityExtractor`    | MITIE             | structured SVM                                   | good for training custom entities |
+| `EntitySynonymMapper`     | existing entities | N/A                                              | maps known synonyms               |
 
 ## Improving Performance
 
@@ -390,7 +394,7 @@ and [Prediction](./reference/rasa/core/policies/policy.md#policyprediction-objec
 information about attention weights and other intermediate results of the inference computation.
 You can use this information for debugging and fine-tuning, e.g. with [RasaLit](https://github.com/RasaHQ/rasalit).
 
-After you've [trained a model](.//command-line-interface.mdx#rasa-train), you can access diagnostic data for DIET, 
+After you've [trained a model](.//command-line-interface.mdx#rasa-train), you can access diagnostic data for DIET,
 given a processed message, like this:
 
 ```python
@@ -414,7 +418,6 @@ prediction = policy.predict_action_probabilities(
 )
 print(f"{prediction.diagnostic_data.get('attention_weights')}")
 ```
-
 
 ## Configuring Tensorflow
 

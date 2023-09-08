@@ -120,17 +120,17 @@ The `next` field can also be omitted. In this case, the flow will end.
 
 Steps can manifest in one of the following types:
 
-- [entry prompt step](./flows.mdx#entry-prompt): an LLM prompt that will be used
+- [entry prompt step](#entry-prompt): an LLM prompt that will be used
   to determine if the flow should start
-- [action step](./flows.mdx#action): a custom action or utterance action to be
+- [action step](#action): a custom action or utterance action to be
   run by the flow
-- [branch step](./flows.mdx#branch): a step to branch based on a condition
-- [generation prompt step](./flows.mdx#generation-prompt): a prompt to generate
+- [branch step](#branch): a step to branch based on a condition
+- [generation prompt step](#generation-prompt): a prompt to generate
   a message that will be sent to the user
-- [set slots step](./flows.mdx#set-slots): a step to set slots
-- [collect information step](./flows.mdx#collect-information): a question to be 
+- [set slots step](#set-slots): a step to set slots
+- [collect information step](#collect-information): a question to be
   asked to the user to collect user input in a slot
-- [link step](./flows.mdx#link): a step to link to another flow
+- [link step](#link): a step to link to another flow
 
 ### Branching Conditions
 
@@ -138,9 +138,10 @@ A branching condition can be used in the `next` property of a step.
 
 Conditions in flows are written using natural language that can include
 logical operators, conditional operators and other constructs. They are evaluated
-with the [pypred](https://github.com/armon/pypred) library. 
+with the [pypred](https://github.com/armon/pypred) library.
 
 These conditions support the following operators,
+
 - `not`: Negates a condition.
 - `and`: Combines two conditions with logical AND.
 - `or`: Combines two conditions with logical OR.
@@ -156,6 +157,7 @@ These conditions support the following operators,
 - `matches`: Uses regular expressions to match strings.
 
 #### Parentheses
+
 Use parentheses to group expressions and control the order of evaluation. For example:
 
 ```yaml
@@ -170,6 +172,7 @@ Use parentheses to group expressions and control the order of evaluation. For ex
 ```
 
 #### Sets
+
 Sets can be used to check for multiple conditions. For example:
 
 ```yaml
@@ -189,7 +192,7 @@ Sets can be used to check for multiple conditions. For example:
 
 #### Regular Expressions
 
-When using the `matches` operator, you can include regular expression modifiers. 
+When using the `matches` operator, you can include regular expression modifiers.
 The regex modifier should be enclosed in quotes. For example, this flow step checks if
 the `zipcode` slot contains a United States zip code :
 
@@ -205,7 +208,7 @@ the `zipcode` slot contains a United States zip code :
 
 #### Examples
 
-Here are some examples of conditions that demonstrate the use of different constructs. 
+Here are some examples of conditions that demonstrate the use of different constructs.
 
 ```yaml
 # Simple conditions
@@ -231,7 +234,7 @@ each flow is very important for the LLM Command Generator, as it uses the
 description to determine which flow to trigger.
 
 An Alternative way to trigger flows is using an
-[entry prompt step](./flows.mdx#entry-prompt). Entry prompts trigger an LLM call
+[entry prompt step](#entry-prompt). Entry prompts trigger an LLM call
 with the given context and a yes/no question to determine whether to start the
 flow.
 
@@ -322,7 +325,7 @@ responses.
 
 ### Branch
 
-A `branch` step allows you to branch the logic of a flow based on a condition. 
+A `branch` step allows you to branch the logic of a flow based on a condition.
 Here is an example:
 
 ```yaml
@@ -344,7 +347,6 @@ step based on a condition.
 
 :::
 
-
 ### Generation Prompt
 
 A `generation_prompt` step contains a prompt that is used to generate a message
@@ -353,7 +355,7 @@ using an LLM. The message is then sent to the user. Here is an example:
 ```yaml
 - id: "a_generation_step"
   generation_prompt: |
-    You are an incredibly friendly assistant. Generate a short 
+    You are an incredibly friendly assistant. Generate a short
     response to the user's comment in simple english.
 
     User: {{latest_user_message}}
@@ -389,7 +391,7 @@ step and another provider, e.g. `cohere` can be used:
 ```yaml
 - id: "a_generation_step"
   generation_prompt: |
-    You are an incredibly friendly assistant. Generate a short 
+    You are an incredibly friendly assistant. Generate a short
     response to the user's comment in simple english.
 
     User: {{latest_user_message}}
@@ -448,8 +450,8 @@ For the `slot_type`, it's recommended to use `text` slots in Flows.
 
 #### Always Asking Questions
 
-By default, a `collect_information` step is skipped if the slot is already filled. 
-If a `collect_information` step should always be asked, no matter if the underlying slot 
+By default, a `collect_information` step is skipped if the slot is already filled.
+If a `collect_information` step should always be asked, no matter if the underlying slot
 is already filled, you can set `ask_before_filling: true` on the `collect_information` step:
 
 ```yaml
@@ -459,7 +461,7 @@ is already filled, you can set `ask_before_filling: true` on the `collect_inform
 ```
 
 If the "final_confirmation" slot is already filled, the bot will clear it, ask
-the `collect_information` step and fill the slot again. This ensures the confirmation 
+the `collect_information` step and fill the slot again. This ensures the confirmation
 `collect_information` step is always asked.
 
 #### Scopes
@@ -472,7 +474,7 @@ scopes available:
 - **global**: The variable persists across flows until it is explicitly changed.
 
 The slot can also be configured to be cleared at the end of the flow execution.
-The following configuration would clear the answer to the `collect_information` step when a 
+The following configuration would clear the answer to the `collect_information` step when a
 flow is completed.
 
 ```yaml

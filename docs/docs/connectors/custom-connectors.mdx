@@ -5,18 +5,16 @@ title: Custom Connectors
 description: Deploy and Run a Rasa Chat Bot on a custom chat interface
 ---
 
-
 You can implement your own custom channel connector as a python class. You can
-use the `rasa.core.channels.rest.RestInput` class as a template. 
+use the `rasa.core.channels.rest.RestInput` class as a template.
 
 A custom connector class must subclass `rasa.core.channels.channel.InputChannel`
-and implement at least a `blueprint` and `name` method. 
-
+and implement at least a `blueprint` and `name` method.
 
 ## The `name` method
 
-The `name` method defines the url prefix for the connector's webhook. It also defines the channel name you should use 
-in any [channel specific response variations](../responses.mdx#channel-specific-response-variations) and the name you
+The `name` method defines the url prefix for the connector's webhook. It also defines the channel name you should use
+in any [channel specific response variations](../building-assistants/responses.mdx#channel-specific-response-variations) and the name you
 should pass to the `output_channel` query parameter on the [trigger intent endpoint](https://www.rasa.com/docs/rasa/pages/http-api#operation/triggerConversationIntent).
 
 For example, if your custom channel is named `myio`, you would define the `name` method as:
@@ -30,7 +28,7 @@ class MyIO(InputChannel):
         return "myio"
 ```
 
-You would write a response variation specific to the `myio` channel  as:
+You would write a response variation specific to the `myio` channel as:
 
 ```yaml-rasa title="domain.yml"
 responses:
@@ -41,20 +39,19 @@ responses:
 ```
 
 The webhook you give to the custom channel to call would be
-`http://<host>:<port>/webhooks/myio/webhook`, replacing 
+`http://<host>:<port>/webhooks/myio/webhook`, replacing
 the host and port with the appropriate values from your running Rasa server.
-
 
 ## The `blueprint` method
 
 The `blueprint` method
 needs to create a [sanic blueprint](https://sanicframework.org/en/guide/best-practices/blueprints.html#overview)
-that can be attached to a sanic server. 
+that can be attached to a sanic server.
 Your blueprint should have at least the two routes: `health` on the route `/`,
 and `receive` on the route `/webhook` (see example custom channel below).
 
 As part of your implementation of the `receive` endpoint, you will need to tell
-Rasa to handle the user message. You do this by calling 
+Rasa to handle the user message. You do this by calling
 
 ```python
     on_new_message(
@@ -70,11 +67,11 @@ Calling `on_new_message` will send the user message to the [`handle_message`](ht
 
 See more details on the `UserMessage` object [here](https://www.rasa.com/docs/rasa/reference/rasa/core/channels/channel#usermessage-objects).
 
-The `output_channel` argument refers to an output channel implementing the 
+The `output_channel` argument refers to an output channel implementing the
 [`OutputChannel`](https://www.rasa.com/docs/rasa/reference/rasa/core/channels/channel#outputchannel-objects) class. You can
 either implement your own output channel class with the methods for your particular chat channel
 (e.g. methods to send text and images) or you can use the
-[`CollectingOutputChannel`](https://www.rasa.com/docs/rasa/reference/rasa/core/channels/channel#collectingoutputchannel-objects) 
+[`CollectingOutputChannel`](https://www.rasa.com/docs/rasa/reference/rasa/core/channels/channel#collectingoutputchannel-objects)
 to collect the bot responses Rasa creates while the bot is processing your messages and return
 them as part of your endpoint response. This is the way the `RestInput`
 channel is implemented. For examples on how to create and use your own output
@@ -118,13 +115,13 @@ class MyIO(InputChannel):
 
         @custom_webhook.route("/webhook", methods=["POST"])
         async def receive(request: Request) -> HTTPResponse:
-            sender_id = request.json.get("sender") # method to get sender_id 
+            sender_id = request.json.get("sender") # method to get sender_id
             text = request.json.get("text") # method to fetch text
             input_channel = self.name() # method to fetch input channel
             metadata = self.get_metadata(request) # method to get metadata
 
             collector = CollectingOutputChannel()
-            
+
             # include exception handling
 
             await on_new_message(
@@ -149,7 +146,7 @@ actions, you can pass this information using the `metadata` key of your user
 message. This information will accompany the user message through the Rasa
 server into the action server when applicable, where you can find it stored in
 the `tracker`. Message metadata will not directly affect NLU classification
-or action prediction. 
+or action prediction.
 
 The `InputChannel` class's default implementation of `get_metadata` **ignores all metadata**.
 To extract metadata in a custom connector, implement the `get_metadata` method.
@@ -158,11 +155,11 @@ The `SlackInput` channel provides one example of a `get_metadata` method that ex
 ## Credentials for Custom Channels
 
 To use a custom channel, you need to supply credentials for it in a credentials configuration file
-called `credentials.yml`. 
+called `credentials.yml`.
 This credentials file has to contain the **module path** (not the channel name) of your custom channel and
-any required configuration parameters. 
+any required configuration parameters.
 
-For example, for a custom connector class called `MyIO` saved in a file `addons/custom_channel.py`, 
+For example, for a custom connector class called `MyIO` saved in a file `addons/custom_channel.py`,
 the module path would be `addons.custom_channel.MyIO`, and the credentials could look like:
 
 ```yaml-rasa title="credentials.yml"
@@ -174,16 +171,15 @@ addons.custom_channel.MyIO:
 To make the Rasa
 server aware of your custom channel, specify the path to `credentials.yml` to the Rasa server at startup with the command line argument `--credentials` .
 
-
 ## Testing the Custom Connector Webhook
 
 To test your custom connector, you can `POST` messages to the webhook using a json body with the following format:
 
 ```json
 {
-  "sender": "test_user",  // sender ID of the user sending the message
+  "sender": "test_user", // sender ID of the user sending the message
   "message": "Hi there!",
-  "metadata": {}  // optional, any extra info you want to add for processing in NLU or custom actions
+  "metadata": {} // optional, any extra info you want to add for processing in NLU or custom actions
 }
 ```
 
@@ -199,5 +195,3 @@ curl --request POST \
             "metadata": {}
           }'
 ```
-
-

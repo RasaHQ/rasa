@@ -2,48 +2,38 @@
 id: components
 sidebar_label: Pipeline Components
 title: Components
-abstract: Components make up your NLU pipeline and work sequentially to process user input
+abstract:
+  Components make up your NLU pipeline and work sequentially to process user input
   into structured output. There are components for entity extraction, for intent classification, response selection,
   pre-processing, and more.
 ---
-
 
 ## Language Models
 
 The following components load pre-trained models that are needed if you want to use pre-trained
 word vectors in your pipeline.
 
-
 ### MitieNLP
 
-
-* **Short**
+- **Short**
 
   MITIE initializer
 
-
-
-* **Outputs**
+- **Outputs**
 
   Nothing
 
-
-
-* **Requires**
+- **Requires**
 
   Nothing
 
-
-
-* **Description**
+- **Description**
 
   Initializes MITIE structures. Every MITIE component relies on this,
   hence this should be put at the beginning
   of every pipeline that uses any MITIE components.
 
-
-
-* **Configuration**
+- **Configuration**
 
   The MITIE library needs a language model file, that **must** be specified in
   the configuration:
@@ -58,7 +48,6 @@ word vectors in your pipeline.
   For more information where to get that file from, head over to
   [installing MITIE](./installation/installing-rasa-open-source.mdx#dependencies-for-mitie).
 
-
   You can also pre-train your own word vectors from a language corpus using MITIE. To do so:
 
   1. Get a clean language corpus (a Wikipedia dump works) as a set of text files.
@@ -71,40 +60,29 @@ word vectors in your pipeline.
      [configuration](./model-configuration.mdx) file.
 
   For a full example of how to train MITIE word vectors, check out
-  [用Rasa NLU构建自己的中文NLU系统](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html),
+  [用 Rasa NLU 构建自己的中文 NLU 系统](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html),
   a blogpost that goes through creating a MITIE model from a Chinese Wikipedia dump.
-
-
 
 ### SpacyNLP
 
-
-* **Short**
+- **Short**
 
   spaCy language initializer
 
-
-
-* **Outputs**
+- **Outputs**
 
   Nothing
 
-
-
-* **Requires**
+- **Requires**
 
   Nothing
 
-
-
-* **Description**
+- **Description**
 
   Initializes spaCy structures. Every spaCy component relies on this, hence this should be put at the beginning
   of every pipeline that uses any spaCy components.
 
-
-
-* **Configuration**
+- **Configuration**
 
   You need to specify the language model to use. The name will be passed to `spacy.load(name)`.
   You can find more information on the available models on the [spaCy documentation](https://spacy.io/usage/models).
@@ -135,61 +113,56 @@ Tokenizers split text into tokens.
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
 modeling hierarchical intent structure, use the following flags with any tokenizer:
 
-* `intent_tokenization_flag` indicates whether to tokenize intent labels or not. Set it to `True`, so that intent
+- `intent_tokenization_flag` indicates whether to tokenize intent labels or not. Set it to `True`, so that intent
   labels are tokenized.
 
-* `intent_split_symbol` sets the delimiter string to split the intent labels, default is underscore
+- `intent_split_symbol` sets the delimiter string to split the intent labels, default is underscore
   (`_`).
-
 
 ### WhitespaceTokenizer
 
-
-* **Short**
+- **Short**
 
   Tokenizer using whitespaces as a separator
 
-
-
-* **Outputs**
+- **Outputs**
 
   `tokens` for user messages, responses (if present), and intents (if specified)
 
-
-
-* **Requires**
+- **Requires**
 
   Nothing
 
-
-
-* **Description**
+- **Description**
 
   Creates a token for every whitespace separated character sequence.
 
   Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
   splitting on whitespace if the character fulfills any of the following conditions:
+
   - the character follows a whitespace: `" !word"` &#8594; `"word"`
   - the character precedes a whitespace: `"word! "` &#8594; `"word"`
   - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
   - the character is at the end of the string: `"word!"` &#8594; `"word"`
 
   Note that:
+
   - `"wo!rd"` &#8594; `"wo!rd"`
 
   In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
   substituted with whitespace before splitting on whitespace if the character is not
   between numbers:
-  - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
-  - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
+
+  - `"twenty{one"` &#8594; `"twenty"`, `"one"` ("{"` is not between numbers)
+  - `"20{1"` &#8594; `"20{1"` ("{"` _is_ between numbers)
 
   Note that:
+
   - `"name@example.com"` &#8594; `"name@example.com"`
   - `"10,000.1"` &#8594; `"10,000.1"`
   - `"1 - 2"` &#8594; `"1"`,`"2"`
 
-
-* **Configuration**
+- **Configuration**
 
   ```yaml-rasa
   pipeline:
@@ -202,29 +175,21 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
     "token_pattern": None
   ```
 
-
 ### JiebaTokenizer
 
-
-* **Short**
+- **Short**
 
   Tokenizer using Jieba for Chinese language
 
-
-
-* **Outputs**
+- **Outputs**
 
   `tokens` for user messages, responses (if present), and intents (if specified)
 
-
-
-* **Requires**
+- **Requires**
 
   Nothing
 
-
-
-* **Description**
+- **Description**
 
   Creates tokens using the Jieba tokenizer specifically for Chinese
   language. It will only work for the Chinese language.
@@ -234,9 +199,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 
   :::
 
-
-
-* **Configuration**
+- **Configuration**
 
   User's custom dictionary files can be auto loaded by specifying the files' directory path via `dictionary_path`.
   If the `dictionary_path` is `None` (the default), then no custom dictionary will be used.
@@ -253,35 +216,25 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
     "token_pattern": None
   ```
 
-
 ### MitieTokenizer
 
-
-* **Short**
+- **Short**
 
   Tokenizer using MITIE
 
-
-
-* **Outputs**
+- **Outputs**
 
   `tokens` for user messages, responses (if present), and intents (if specified)
 
-
-
-* **Requires**
+- **Requires**
 
   [MitieNLP](./components.mdx#mitienlp)
 
-
-
-* **Description**
+- **Description**
 
   Creates tokens using the MITIE tokenizer.
 
-
-
-* **Configuration**
+- **Configuration**
 
   ```yaml-rasa
   pipeline:
@@ -294,35 +247,25 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
     "token_pattern": None
   ```
 
-
 ### SpacyTokenizer
 
-
-* **Short**
+- **Short**
 
   Tokenizer using spaCy
 
-
-
-* **Outputs**
+- **Outputs**
 
   `tokens` for user messages, responses (if present), and intents (if specified)
 
-
-
-* **Requires**
+- **Requires**
 
   [SpacyNLP](./components.mdx#spacynlp)
 
-
-
-* **Description**
+- **Description**
 
   Creates tokens using the spaCy tokenizer.
 
-
-
-* **Configuration**
+- **Configuration**
 
   ```yaml-rasa
   pipeline:
@@ -334,7 +277,6 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
     # Regular expression to detect tokens
     "token_pattern": None
   ```
-
 
 ## Featurizers
 
@@ -356,32 +298,23 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 ### MitieFeaturizer
 
-
-* **Short**
+- **Short**
 
   Creates a vector representation of user message and response (if specified) using the MITIE featurizer.
 
-
-
-* **Outputs**
+- **Outputs**
 
   `dense_features` for user messages and responses
 
-
-
-* **Requires**
+- **Requires**
 
   [MitieNLP](./components.mdx#mitienlp)
 
-
-
-* **Type**
+- **Type**
 
   Dense featurizer
 
-
-
-* **Description**
+- **Description**
 
   Creates features for entity extraction, intent classification, and response classification using the MITIE
   featurizer.
@@ -392,9 +325,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   :::
 
-
-
-* **Configuration**
+- **Configuration**
 
   The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
   mean or via max pooling. You can specify the pooling method in your configuration file with the option `pooling`.
@@ -408,42 +339,30 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "pooling": "mean"
   ```
 
-
 ### SpacyFeaturizer
 
-
-* **Short**
+- **Short**
 
   Creates a vector representation of user message and response (if specified) using the spaCy featurizer.
 
-
-
-* **Outputs**
+- **Outputs**
 
   `dense_features` for user messages and responses
 
-
-
-* **Requires**
+- **Requires**
 
   [SpacyNLP](./components.mdx#spacynlp)
 
-
-
-* **Type**
+- **Type**
 
   Dense featurizer
 
-
-
-* **Description**
+- **Description**
 
   Creates features for entity extraction, intent classification, and response classification using the spaCy
   featurizer.
 
-
-
-* **Configuration**
+- **Configuration**
 
   The sentence vector, i.e. the vector of the complete utterance, can be calculated in two different ways, either via
   mean or via max pooling. You can specify the pooling method in your configuration file with the option `pooling`.
@@ -457,30 +376,22 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "pooling": "mean"
   ```
 
-
 ### ConveRTFeaturizer
 
-
-* **Short**
+- **Short**
 
   Creates a vector representation of user message and response (if specified) using
   [ConveRT](https://github.com/PolyAI-LDN/polyai-models) model.
 
-
-
-* **Outputs**
+- **Outputs**
 
   `dense_features` for user messages and responses
 
-
-
-* **Type**
+- **Type**
 
   Dense featurizer
 
-
-
-* **Description**
+- **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
   It uses the [default signature](https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures) to compute vector
@@ -493,14 +404,12 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   :::
 
   :::note
-  Note that this component cannot currently run on MacOS using M1 / M2 architecture. 
+  Note that this component cannot currently run on MacOS using M1 / M2 architecture.
   More information on this limitation is available [here](./installation/environment-set-up.mdx#m1--m2-apple-silicon-limitations).
-  
+
   :::
 
-
-
-* **Configuration**
+- **Configuration**
 
   ```yaml-rasa
   pipeline:
@@ -519,25 +428,19 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 ### LanguageModelFeaturizer
 
-
-* **Short**
+- **Short**
 
   Creates a vector representation of user message and response (if specified) using a pre-trained language model.
 
-
-
-* **Outputs**
+- **Outputs**
 
   `dense_features` for user messages and responses
 
-
-* **Type**
+- **Type**
 
   Dense featurizer
 
-
-
-* **Description**
+- **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
   Uses a pre-trained language model to compute vector representations of input text.
@@ -548,9 +451,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   :::
 
-
-
-* **Configuration**
+- **Configuration**
 
   Include a [Tokenizer](./components.mdx#tokenizers) component before this component.
 
@@ -583,10 +484,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   [HuggingFace models](https://huggingface.co/models) provided the following conditions are met (the mentioned
   files can be found in the "Files and versions" section of the model website):
 
-  * The model architecture is one of the supported language models (check that the `model_type` in `config.json` is
+  - The model architecture is one of the supported language models (check that the `model_type` in `config.json` is
     listed in the table's column `model_name`)
-  * The model has pretrained Tensorflow weights (check that the file `tf_model.h5` exists)
-  * The model uses the default tokenizer (`config.json` should not contain a custom `tokenizer_class` setting)
+  - The model has pretrained Tensorflow weights (check that the file `tf_model.h5` exists)
+  - The model uses the default tokenizer (`config.json` should not contain a custom `tokenizer_class` setting)
 
   :::note
   The `LaBSE` weights that are loaded as default for the `bert` architecture provide a multi-lingual model trained on
@@ -594,7 +495,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   [paper](https://arxiv.org/pdf/2007.01852.pdf)). We strongly encourage using this as a baseline and testing your bot
   end-to-end before trying to optimize this component with other weights/architectures.
   :::
-
 
   The following configuration loads the language model BERT with `rasa/LaBSE` weights, which can be found
   [here](https://huggingface.co/rasa/LaBSE/tree/main):
@@ -621,32 +521,23 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 ### RegexFeaturizer
 
-
-* **Short**
+- **Short**
 
   Creates a vector representation of user message using regular expressions.
 
-
-
-* **Outputs**
+- **Outputs**
 
   `sparse_features` for user messages and `tokens.pattern`
 
-
-
-* **Requires**
+- **Requires**
 
   `tokens`
 
-
-
-* **Type**
+- **Type**
 
   Sparse featurizer
 
-
-
-* **Description**
+- **Description**
 
   Creates features for entity extraction and intent classification.
   During training the `RegexFeaturizer` creates a list of regular expressions defined in the training
@@ -657,9 +548,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](./components.mdx#crfentityextractor) and the
   [DIETClassifier](./components.mdx#dietclassifier) components!
 
-
-
-* **Configuration**
+- **Configuration**
 
   Make the featurizer case insensitive by adding the `case_sensitive: False` option, the default being
   `case_sensitive: True`.
@@ -679,7 +568,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   **Configuring for incremental training**
 
   To ensure that `sparse_features` are of fixed size during
-  [incremental training](./command-line-interface.mdx#incremental-training), the
+  [incremental training](../building-assistants/command-line-interface.mdx#incremental-training), the
   component should be configured to account for additional patterns that may be
   added to the training data in future. To do so, configure the `number_additional_patterns`
   parameter while training the base model from scratch:
@@ -699,44 +588,32 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   and not considered during featurization. At this point, it is advisable
   to retrain a new model from scratch.
 
-
 ### CountVectorsFeaturizer
 
-
-* **Short**
+- **Short**
 
   Creates bag-of-words representation of user messages, intents, and responses.
 
-
-
-* **Outputs**
+- **Outputs**
 
   `sparse_features` for user messages, intents, and responses
 
-
-
-* **Requires**
+- **Requires**
 
   `tokens`
 
-
-
-* **Type**
+- **Type**
 
   Sparse featurizer
 
-
-
-* **Description**
+- **Description**
 
   Creates features for intent classification and response selection.
   Creates bag-of-words representation of user message, intent, and response using
   [sklearn's CountVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html).
   All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
-
-
-* **Configuration**
+- **Configuration**
 
   See [sklearn's CountVectorizer docs](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html)
   for detailed description of the configuration parameters.
@@ -782,12 +659,12 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   You can either set the `OOV_token` or a list of words `OOV_words`:
 
-  * `OOV_token` set a keyword for unseen words; if training data contains `OOV_token` as words in some
+  - `OOV_token` set a keyword for unseen words; if training data contains `OOV_token` as words in some
     messages, during prediction the words that were not seen during training will be substituted with
     provided `OOV_token`; if `OOV_token=None` (default behavior) words that were not seen during
     training will be ignored during prediction time;
 
-  * `OOV_words` set a list of words to be treated as `OOV_token` during training; if a list of words
+  - `OOV_words` set a list of words to be treated as `OOV_token` during training; if a list of words
     that should be treated as Out-Of-Vocabulary is known, it can be set to `OOV_words` instead of manually
     changing it in training data or using custom preprocessor.
 
@@ -825,9 +702,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   **Configuring for incremental training**
 
-
   To ensure that `sparse_features` are of fixed size during
-  [incremental training](./command-line-interface.mdx#incremental-training), the
+  [incremental training](../building-assistants/command-line-interface.mdx#incremental-training), the
   component should be configured to account for additional vocabulary tokens
   that may be added as part of new training examples in the future.
   To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
@@ -851,7 +727,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   slots too frequently during incremental training. Once the component runs out of additional vocabulary slots,
   the new vocabulary tokens are dropped and not considered during featurization. At this point,
   it is advisable to retrain a new model from scratch.
-
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
@@ -913,43 +788,31 @@ However, additional parameters exist that can be adapted.
 
 </details>
 
-
 ### LexicalSyntacticFeaturizer
 
-
-* **Short**
+- **Short**
 
   Creates lexical and syntactic features for a user message to support entity extraction.
 
-
-
-* **Outputs**
+- **Outputs**
 
   `sparse_features` for user messages
 
-
-
-* **Requires**
+- **Requires**
 
   `tokens`
 
-
-
-* **Type**
+- **Type**
 
   Sparse featurizer
 
-
-
-* **Description**
+- **Description**
 
   Creates features for entity extraction.
   Moves with a sliding window over every token in the user message and creates features according to the
   configuration (see below). As a default configuration is present, you don't need to specify a configuration.
 
-
-
-* **Configuration**
+- **Configuration**
 
   You can configure what kind of lexical and syntactic features the featurizer should extract.
   The following features are available:
@@ -1006,37 +869,28 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 ### MitieIntentClassifier
 
-
-* **Short**
+- **Short**
 
   MITIE intent classifier (using a
   [text categorizer](https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py))
 
-
-
-* **Outputs**
+- **Outputs**
 
   `intent`
 
-
-
-* **Requires**
+- **Requires**
 
   `tokens` for user message and [MitieNLP](./components.mdx#mitienlp)
 
-
-
-* **Output-Example**
+- **Output-Example**
 
   ```json
   {
-      "intent": {"name": "greet", "confidence": 0.98343}
+    "intent": { "name": "greet", "confidence": 0.98343 }
   }
   ```
 
-
-
-* **Description**
+- **Description**
 
   This classifier uses MITIE to perform intent classification. The underlying classifier
   is using a multi-class linear SVM with a sparse linear kernel (see `train_text_categorizer_classifier` function at the
@@ -1047,60 +901,50 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
   :::
 
-
-
-* **Configuration**
+- **Configuration**
 
   ```yaml-rasa
   pipeline:
   - name: "MitieIntentClassifier"
   ```
 
-
 ### LogisticRegressionClassifier
 
-* **Short**
+- **Short**
 
   Logistic regression intent classifier, using the [scikit-learn implementation](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
 
-
-
-* **Outputs**
+- **Outputs**
 
   `intent` and `intent_ranking`
 
+- **Requires**
 
+  Either `sparse_features` or `dense_features` need to be present.
 
-* **Requires** 
-
-  Either `sparse_features` or `dense_features` need to be present. 
-
-
-
-* **Output-Example** 
+- **Output-Example**
 
 ```json
 {
-    "intent": {"name": "greet", "confidence": 0.780},
-    "intent_ranking": [
-        {
-            "confidence": 0.780,
-            "name": "greet"
-        },
-        {
-            "confidence": 0.140,
-            "name": "goodbye"
-        },
-        {
-            "confidence": 0.080,
-            "name": "restaurant_search"
-        }
-    ]
+  "intent": { "name": "greet", "confidence": 0.78 },
+  "intent_ranking": [
+    {
+      "confidence": 0.78,
+      "name": "greet"
+    },
+    {
+      "confidence": 0.14,
+      "name": "goodbye"
+    },
+    {
+      "confidence": 0.08,
+      "name": "restaurant_search"
+    }
+  ]
 }
 ```
 
-
-* **Description**
+- **Description**
 
   This classifier uses scikit-learn's logistic regression implementation to perform intent classification.
   It's able to use only sparse features, but will also pick up any dense features that are present. In general,
@@ -1108,23 +952,21 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   a lightweight benchmark. Our implementation uses the base settings from scikit-learn, with the exception
   of the `class_weight` parameter where we assume the `"balanced"` setting.
 
-
-
-* **Configuration**
+- **Configuration**
 
 An example configuration with all the defaults can be found below.
 
 ```yaml
 pipeline:
-- name: LogisticRegressionClassifier
-  max_iter: 100
-  solver: lbfgs
-  tol: 0.0001
-  random_state: 42
-  ranking_length: 10
+  - name: LogisticRegressionClassifier
+    max_iter: 100
+    solver: lbfgs
+    tol: 0.0001
+    random_state: 42
+    ranking_length: 10
 ```
 
-There configuration parameters are briefly explained below. 
+There configuration parameters are briefly explained below.
 
 - `max_iter`: Maximum number of iterations taken for the solvers to converge.
 - `solver`: Solver to be used. For very small datasets you might consider `liblinear`.
@@ -1134,54 +976,43 @@ There configuration parameters are briefly explained below.
 
 More details on the parameters can be found on the [scikit-learn documentation page](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
 
-
-
 ### SklearnIntentClassifier
 
-
-* **Short**
+- **Short**
 
   Sklearn intent classifier
 
-
-
-* **Outputs**
+- **Outputs**
 
   `intent` and `intent_ranking`
 
-
-
-* **Requires**
+- **Requires**
 
   `dense_features` for user messages
 
-
-
-* **Output-Example**
+- **Output-Example**
 
   ```json
   {
-      "intent": {"name": "greet", "confidence": 0.7800},
-      "intent_ranking": [
-          {
-              "confidence": 0.7800,
-              "name": "greet"
-          },
-          {
-              "confidence": 0.1400,
-              "name": "goodbye"
-          },
-          {
-              "confidence": 0.0800,
-              "name": "restaurant_search"
-          }
-      ]
+    "intent": { "name": "greet", "confidence": 0.78 },
+    "intent_ranking": [
+      {
+        "confidence": 0.78,
+        "name": "greet"
+      },
+      {
+        "confidence": 0.14,
+        "name": "goodbye"
+      },
+      {
+        "confidence": 0.08,
+        "name": "restaurant_search"
+      }
+    ]
   }
   ```
 
-
-
-* **Description**
+- **Description**
 
   The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. It also provides
   rankings of the labels that did not “win”. The `SklearnIntentClassifier` needs to be preceded by a dense
@@ -1190,9 +1021,7 @@ More details on the parameters can be found on the [scikit-learn documentation p
   [GridSearchCV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html)
   documentation.
 
-
-
-* **Configuration**
+- **Configuration**
 
   During the training of the SVM a hyperparameter search is run to find the best parameter set.
   In the configuration you can specify the parameters that will get tried.
@@ -1217,39 +1046,29 @@ More details on the parameters can be found on the [scikit-learn documentation p
     "scoring_function": "f1_weighted"
   ```
 
-
 ### KeywordIntentClassifier
 
-
-* **Short**
+- **Short**
 
   Simple keyword matching intent classifier, intended for small, short-term projects.
 
-
-
-* **Outputs**
+- **Outputs**
 
   `intent`
 
-
-
-* **Requires**
+- **Requires**
 
   Nothing
 
-
-
-* **Output-Example**
+- **Output-Example**
 
   ```json
   {
-      "intent": {"name": "greet", "confidence": 1.0}
+    "intent": { "name": "greet", "confidence": 1.0 }
   }
   ```
 
-
-
-* **Description**
+- **Description**
 
   This classifier works by searching a message for keywords.
   The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user
@@ -1264,9 +1083,7 @@ More details on the parameters can be found on the [scikit-learn documentation p
 
   :::
 
-
-
-* **Configuration**
+- **Configuration**
 
   ```yaml-rasa
   pipeline:
@@ -1274,61 +1091,53 @@ More details on the parameters can be found on the [scikit-learn documentation p
     case_sensitive: True
   ```
 
-
 ### DIETClassifier
 
-
-* **Short**
+- **Short**
 
   Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction
 
-
-
-* **Outputs**
+- **Outputs**
 
   `entities`, `intent` and `intent_ranking`
 
-
-
-* **Requires**
+- **Requires**
 
   `dense_features` and/or `sparse_features` for user message and optionally the intent
 
-
-
-* **Output-Example**
+- **Output-Example**
 
   ```json
   {
-      "intent": {"name": "greet", "confidence": 0.7800},
-      "intent_ranking": [
-          {
-              "confidence": 0.7800,
-              "name": "greet"
-          },
-          {
-              "confidence": 0.1400,
-              "name": "goodbye"
-          },
-          {
-              "confidence": 0.0800,
-              "name": "restaurant_search"
-          }
-      ],
-      "entities": [{
-          "end": 53,
-          "entity": "time",
-          "start": 48,
-          "value": "2017-04-10T00:00:00.000+02:00",
-          "confidence": 1.0,
-          "extractor": "DIETClassifier"
-      }]
+    "intent": { "name": "greet", "confidence": 0.78 },
+    "intent_ranking": [
+      {
+        "confidence": 0.78,
+        "name": "greet"
+      },
+      {
+        "confidence": 0.14,
+        "name": "goodbye"
+      },
+      {
+        "confidence": 0.08,
+        "name": "restaurant_search"
+      }
+    ],
+    "entities": [
+      {
+        "end": 53,
+        "entity": "time",
+        "start": 48,
+        "value": "2017-04-10T00:00:00.000+02:00",
+        "confidence": 1.0,
+        "extractor": "DIETClassifier"
+      }
+    ]
   }
   ```
 
-
-
-* **Description**
+- **Description**
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
   recognition. The architecture is based on a transformer which is shared for both tasks.
@@ -1352,7 +1161,7 @@ More details on the parameters can be found on the [scikit-learn documentation p
 
   :::
 
-* **Configuration**
+- **Configuration**
 
   If you want to use the `DIETClassifier` just for intent classification, set `entity_recognition` to `False`.
   If you want to do only entity recognition, set `intent_classification` to `False`.
@@ -1362,14 +1171,14 @@ More details on the parameters can be found on the [scikit-learn documentation p
   You can define a number of hyperparameters to adapt the model.
   If you want to adapt your model, start by modifying the following parameters:
 
-  * `epochs`:
+  - `epochs`:
     This parameter sets the number of times the algorithm will see the training data (default: `300`).
     One `epoch` is equals to one forward pass and one backward pass of all the training examples.
     Sometimes the model needs more epochs to properly learn.
     Sometimes more epochs don't influence the performance.
     The lower the number of epochs the faster the model is trained.
 
-  * `hidden_layers_sizes`:
+  - `hidden_layers_sizes`:
     This parameter allows you to define the number of feed forward layers and their output
     dimensions for user messages and intents (default: `text: [], label: []`).
     Every entry in the list corresponds to a feed forward layer.
@@ -1382,49 +1191,50 @@ More details on the parameters can be found on the [scikit-learn documentation p
     Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
     value before.
 
-  * `embedding_dimension`:
+  - `embedding_dimension`:
     This parameter defines the output dimension of the embedding layers used inside the model (default: `20`).
     We are using multiple embeddings layers inside the model architecture.
     For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
     they are compared and the loss is calculated.
 
-  * `number_of_transformer_layers`:
+  - `number_of_transformer_layers`:
     This parameter sets the number of transformer layers to use (default: `2`).
     The number of transformer layers corresponds to the transformer blocks to use for the model.
 
-  * `transformer_size`:
+  - `transformer_size`:
     This parameter sets the number of units in the transformer (default: `256`).
     The vectors coming out of the transformers will have the given `transformer_size`.
     The `transformer_size` should be a multiple of the `number_of_attention_heads` parameter,
     the training exits with an error otherwise.
 
-  * `connection_density`:
+  - `connection_density`:
     This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
     layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
     to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
     set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
-  * `constrain_similarities`:
+  - `constrain_similarities`:
     This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
     This helps in keeping similarities between input and negative labels to smaller values.
     This should help in better generalization of the model to real world test sets.
 
-  * `model_confidence`:
-    This parameter allows the user to configure how confidences are computed during inference. It can take only 
-    one value as input which is `softmax`[^1]. In `softmax`, confidences are in the range `[0, 1]`. The computed 
+  - `model_confidence`:
+    This parameter allows the user to configure how confidences are computed during inference. It can take only
+    one value as input which is `softmax`[^1]. In `softmax`, confidences are in the range `[0, 1]`. The computed
     similarities are normalized with the `softmax` activation function.
-    
-[^1]: Note that `model_confidence: cosine`is deprecated in 2.3.4 (see [changelog](./changelog.mdx#234---2021-02-26))
+
+[^1]:
+    Note that `model_confidence: cosine`is deprecated in 2.3.4 (see [changelog](./changelog.mdx#234---2021-02-26))
     and cannot be specified in the config, however `model_confidence: cosine` will be used regardless of the config
-    if `loss_type: margin` is specified. 
+    if `loss_type: margin` is specified.
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
 <details><summary>More configurable parameters</summary>
 
-```
+````
 +---------------------------------+------------------+--------------------------------------------------------------+
 | Parameter                       | Default Value    | Description                                                  |
 +=================================+==================+==============================================================+
@@ -1579,7 +1389,7 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | This parameter does not affect the confidence for entity     |
 |                                 |                  | prediction.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
-```
+````
 
 :::note
 Parameter `maximum_negative_similarity` is set to a negative value to mimic the original
@@ -1593,150 +1403,145 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 ### FallbackClassifier
 
-* **Short**
+- **Short**
 
   Classifies a message with the intent `nlu_fallback` if the NLU intent classification
   scores are ambiguous. The confidence is set to be the same as the `fallback threshold`.
 
-* **Outputs**
+- **Outputs**
 
   `entities`, `intent` and `intent_ranking`
 
-* **Requires**
+- **Requires**
 
   `intent` and `intent_ranking` output from a previous intent classifier
 
-* **Output-Example**
+- **Output-Example**
 
-    ```json
+  ```json
+  {
+    "intent": { "name": "nlu_fallback", "confidence": 0.7183846840434321 },
+    "intent_ranking": [
+      {
+        "confidence": 0.7183846840434321,
+        "name": "nlu_fallback"
+      },
+      {
+        "confidence": 0.28161531595656784,
+        "name": "restaurant_search"
+      }
+    ],
+    "entities": [
+      {
+        "end": 53,
+        "entity": "time",
+        "start": 48,
+        "value": "2017-04-10T00:00:00.000+02:00",
+        "confidence": 1.0,
+        "extractor": "DIETClassifier"
+      }
+    ]
+  }
+  ```
 
-        {
-            "intent": {"name": "nlu_fallback", "confidence": 0.7183846840434321},
-            "intent_ranking": [
-                {
-                    "confidence": 0.7183846840434321,
-                    "name": "nlu_fallback"
-                },
-                {
-                    "confidence": 0.28161531595656784,
-                    "name": "restaurant_search"
-                }
-            ],
-            "entities": [{
-                "end": 53,
-                "entity": "time",
-                "start": 48,
-                "value": "2017-04-10T00:00:00.000+02:00",
-                "confidence": 1.0,
-                "extractor": "DIETClassifier"
-            }]
-        }
-    ```
+- **Description**
 
-* **Description**
+  The `FallbackClassifier` classifies a user message with the intent `nlu_fallback`
+  in case the previous intent classifier wasn't
+  able to classify an intent with a confidence greater or equal than the `threshold`
+  of the `FallbackClassifier`. It can also predict the fallback intent in the
+  case when the confidence scores of the two top ranked intents are closer than the the
+  `ambiguity_threshold`.
 
-    The `FallbackClassifier` classifies a user message with the intent `nlu_fallback`
-    in case the previous intent classifier wasn't
-    able to classify an intent with a confidence greater or equal than the `threshold`
-    of the `FallbackClassifier`. It can also predict the fallback intent in the
-    case when the confidence scores of the two top ranked intents are closer than the the
-    `ambiguity_threshold`.
+  You can use the `FallbackClassifier` to implement a
+  [Fallback Action](./fallback-handoff.mdx#fallbacks) which handles message with uncertain
+  NLU predictions.
 
-    You can use the `FallbackClassifier` to implement a
-    [Fallback Action](./fallback-handoff.mdx#fallbacks) which handles message with uncertain
-    NLU predictions.
+  ```yaml-rasa
+  rules:
 
-    ```yaml-rasa
-    rules:
+  - rule: Ask the user to rephrase in case of low NLU confidence
+    steps:
+    - intent: nlu_fallback
+    - action: utter_please_rephrase
+  ```
 
-    - rule: Ask the user to rephrase in case of low NLU confidence
-      steps:
-      - intent: nlu_fallback
-      - action: utter_please_rephrase
-    ```
-* **Configuration**
+- **Configuration**
 
-    The `FallbackClassifier` will only add its prediction for the `nlu_fallback`
-    intent in case no other intent was predicted with a confidence greater or equal
-    than `threshold`.
+  The `FallbackClassifier` will only add its prediction for the `nlu_fallback`
+  intent in case no other intent was predicted with a confidence greater or equal
+  than `threshold`.
 
-    - `threshold`:
-      This parameter sets the threshold for predicting the `nlu_fallback` intent.
-      If no intent predicted by a previous
-      intent classifier has a confidence
-      level greater or equal than `threshold` the `FallbackClassifier` will add
-      a prediction of the `nlu_fallback` intent with a confidence `1.0`.
-    - `ambiguity_threshold`: If you configure an `ambiguity_threshold`, the
-      `FallbackClassifier` will also predict the `nlu_fallback` intent in case
-      the difference of the confidence scores for the two highest ranked intents is
-      smaller than the `ambiguity_threshold`.
-
+  - `threshold`:
+    This parameter sets the threshold for predicting the `nlu_fallback` intent.
+    If no intent predicted by a previous
+    intent classifier has a confidence
+    level greater or equal than `threshold` the `FallbackClassifier` will add
+    a prediction of the `nlu_fallback` intent with a confidence `1.0`.
+  - `ambiguity_threshold`: If you configure an `ambiguity_threshold`, the
+    `FallbackClassifier` will also predict the `nlu_fallback` intent in case
+    the difference of the confidence scores for the two highest ranked intents is
+    smaller than the `ambiguity_threshold`.
 
 ## Entity Extractors
 
 Entity extractors extract entities, such as person names or locations, from the user message.
 
 :::note
-  If you use multiple entity extractors, we advise that each extractor targets an exclusive
-  set of entity types. For example, use [Duckling](components.mdx#ducklingentityextractor) to extract dates and times, and
-  [DIETClassifier](components.mdx#dietclassifier-1) to extract person names. Otherwise, if multiple extractors
-  target the same entity types, it is very likely that entities will be extracted multiple times.
+If you use multiple entity extractors, we advise that each extractor targets an exclusive
+set of entity types. For example, use [Duckling](./components.mdx#ducklingentityextractor) to extract dates and times, and
+[DIETClassifier](./components.mdx#dietclassifier-1) to extract person names. Otherwise, if multiple extractors
+target the same entity types, it is very likely that entities will be extracted multiple times.
 
-  For example, if you use two or more general purpose extractors like [MitieEntityExtractor](components.mdx#mitieentityextractor),
-  [DIETClassifier](components.mdx#dietclassifier-1), or [CRFEntityExtractor](components.mdx#crfentityextractor),
-  the entity types in your training data will be found and
-  extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type `text`,
-  then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
-  will be added to the list, including duplicates.
+For example, if you use two or more general purpose extractors like [MitieEntityExtractor](./components.mdx#mitieentityextractor),
+[DIETClassifier](./components.mdx#dietclassifier-1), or [CRFEntityExtractor](./components.mdx#crfentityextractor),
+the entity types in your training data will be found and
+extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type `text`,
+then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
+will be added to the list, including duplicates.
 
-  Another, less obvious case of duplicate/overlapping extraction can happen even if extractors focus on different
-  entity types. Imagine a food delivery bot and a user message like `I would like to order the Monday special`.
-  Hypothetically, if your time extractor's performance isn't very good, it might extract `Monday` here as a time for the order,
-  and your other extractor might extract `Monday special` as the meal.
-  If you struggle with overlapping entities of this sort, it might make sense to add additional training data
-  to improve your extractor. If that does not suffice, you can add a
-  [custom component](components.mdx#custom-components) that resolves conflicts in entity
-  extraction according to your own logic.
+Another, less obvious case of duplicate/overlapping extraction can happen even if extractors focus on different
+entity types. Imagine a food delivery bot and a user message like `I would like to order the Monday special`.
+Hypothetically, if your time extractor's performance isn't very good, it might extract `Monday` here as a time for the order,
+and your other extractor might extract `Monday special` as the meal.
+If you struggle with overlapping entities of this sort, it might make sense to add additional training data
+to improve your extractor. If that does not suffice, you can add a
+[custom component](./components.mdx#custom-components) that resolves conflicts in entity
+extraction according to your own logic.
 :::
+
 ### MitieEntityExtractor
 
-
-* **Short**
+- **Short**
 
   MITIE entity extraction (using a [MITIE NER trainer](https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp))
 
-
-
-* **Outputs**
+- **Outputs**
 
   `entities`
 
-
-
-* **Requires**
+- **Requires**
 
   [MitieNLP](./components.mdx#mitienlp) and `tokens`
 
-
-
-* **Output-Example**
+- **Output-Example**
 
   ```json
   {
-      "entities": [{
-          "value": "New York City",
-          "start": 20,
-          "end": 33,
-          "confidence": null,
-          "entity": "city",
-          "extractor": "MitieEntityExtractor"
-      }]
+    "entities": [
+      {
+        "value": "New York City",
+        "start": 20,
+        "end": 33,
+        "confidence": null,
+        "entity": "city",
+        "extractor": "MitieEntityExtractor"
+      }
+    ]
   }
   ```
 
-
-
-* **Description**
+- **Description**
 
   `MitieEntityExtractor` uses the MITIE entity extraction to find entities in a message. The underlying classifier
   is using a multi class linear SVM with a sparse linear kernel and custom features.
@@ -1747,55 +1552,45 @@ Entity extractors extract entities, such as person names or locations, from the 
 
   :::
 
-
-
-* **Configuration**
+- **Configuration**
 
   ```yaml-rasa
   pipeline:
   - name: "MitieEntityExtractor"
   ```
 
-
 ### SpacyEntityExtractor
 
-
-* **Short**
+- **Short**
 
   spaCy entity extraction
 
-
-
-* **Outputs**
+- **Outputs**
 
   `entities`
 
-
-
-* **Requires**
+- **Requires**
 
   [SpacyNLP](./components.mdx#spacynlp)
 
-
-
-* **Output-Example**
+- **Output-Example**
 
   ```json
   {
-      "entities": [{
-          "value": "New York City",
-          "start": 20,
-          "end": 33,
-          "confidence": null,
-          "entity": "city",
-          "extractor": "SpacyEntityExtractor"
-      }]
+    "entities": [
+      {
+        "value": "New York City",
+        "start": 20,
+        "end": 33,
+        "confidence": null,
+        "entity": "city",
+        "extractor": "SpacyEntityExtractor"
+      }
+    ]
   }
   ```
 
-
-
-* **Description**
+- **Description**
 
   Using spaCy this component predicts the entities of a message. spaCy uses a statistical BILOU transition model.
   As of now, this component can only use the spaCy builtin entity extraction models and can not be retrained.
@@ -1809,7 +1604,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 :::
 
-* **Configuration**
+- **Configuration**
 
   Configure which dimensions, i.e. entity types, the spaCy component
   should extract. A full list of available dimensions can be found in
@@ -1823,53 +1618,44 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     dimensions: ["PERSON", "LOC", "ORG", "PRODUCT"]
   ```
 
-
 ### CRFEntityExtractor
 
-
-* **Short**
+- **Short**
 
   Conditional random field (CRF) entity extraction
 
-
-
-* **Outputs**
+- **Outputs**
 
   `entities`
 
-
-
-* **Requires**
+- **Requires**
 
   `tokens` and `dense_features` (optional)
 
-
-
-* **Output-Example**
+- **Output-Example**
 
   ```json
   {
-      "entities": [{
-          "value": "New York City",
-          "start": 20,
-          "end": 33,
-          "entity": "city",
-          "confidence": 0.874,
-          "extractor": "CRFEntityExtractor"
-      }]
+    "entities": [
+      {
+        "value": "New York City",
+        "start": 20,
+        "end": 33,
+        "entity": "city",
+        "confidence": 0.874,
+        "extractor": "CRFEntityExtractor"
+      }
+    ]
   }
   ```
 
-
-
-* **Description**
+- **Description**
 
   This component implements a conditional random fields (CRF) to do named entity recognition.
   CRFs can be thought of as an undirected Markov chain where the time steps are words
   and the states are entity classes. Features of the words (capitalization, POS tagging,
   etc.) give probabilities to certain entity classes, as are transitions between
   neighbouring entity tags: the most likely set of tags is then calculated and returned.
-
 
   If you want to pass custom features, such as pre-trained word embeddings, to `CRFEntityExtractor`, you can
   add any dense featurizer to the pipeline before the `CRFEntityExtractor` and subsequently configure
@@ -1881,9 +1667,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   In case dense features are present, `CRFEntityExtractor` will pass the dense features to `sklearn_crfsuite`
   and use them for training.
 
-
-
-* **Configuration**
+- **Configuration**
 
   `CRFEntityExtractor` has a list of default features to use.
   However, you can overwrite the default configuration.
@@ -1919,7 +1703,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   Additional you can set a flag to determine whether to use the BILOU tagging schema or not.
 
-  * `BILOU_flag` determines whether to use BILOU tagging or not. Default `True`.
+  - `BILOU_flag` determines whether to use BILOU tagging or not. Default `True`.
 
   ```yaml-rasa
   pipeline:
@@ -1978,44 +1762,37 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 ### DucklingEntityExtractor
 
-
-* **Short**
+- **Short**
 
   Duckling lets you extract common entities like dates,
   amounts of money, distances, and others in a number of languages.
 
-
-
-* **Outputs**
+- **Outputs**
 
   `entities`
 
-
-
-* **Requires**
+- **Requires**
 
   Nothing
 
-
-
-* **Output-Example**
+- **Output-Example**
 
   ```json
   {
-      "entities": [{
-          "end": 53,
-          "entity": "time",
-          "start": 48,
-          "value": "2017-04-10T00:00:00.000+02:00",
-          "confidence": 1.0,
-          "extractor": "DucklingEntityExtractor"
-      }]
+    "entities": [
+      {
+        "end": 53,
+        "entity": "time",
+        "start": 48,
+        "value": "2017-04-10T00:00:00.000+02:00",
+        "confidence": 1.0,
+        "extractor": "DucklingEntityExtractor"
+      }
+    ]
   }
   ```
 
-
-
-* **Description**
+- **Description**
 
   To use this component you need to run a duckling server. The easiest
   option is to spin up a docker container using
@@ -2037,9 +1814,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   The list of supported languages can be found in the
   [Duckling GitHub repository](https://github.com/facebook/duckling/tree/master/Duckling/Dimensions).
 
-
-
-* **Configuration**
+- **Configuration**
 
   Configure which dimensions, i.e. entity types, the duckling component
   should extract. A full list of available dimensions can be found in
@@ -2064,40 +1839,32 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     timeout : 3
   ```
 
-
 ### DIETClassifier
 
-
-* **Short**
+- **Short**
 
   Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction
 
-
-
-* **Description**
+- **Description**
 
   You can find the detailed description of the [DIETClassifier](./components.mdx#dietclassifier) under the section
   Intent Classifiers.
 
-
 ### RegexEntityExtractor
 
-* **Short**
+- **Short**
 
   Extracts entities using the lookup tables and/or regexes defined in the training data
 
-
-* **Outputs**
+- **Outputs**
 
   `entities`
 
-
-* **Requires**
+- **Requires**
 
   Nothing
 
-
-* **Description**
+- **Description**
 
   This component extract entities using the [lookup tables](nlu-training-data.mdx#lookup-tables) and [regexes](nlu-training-data.mdx#regular-expressions-for-entity-extraction) defined in the training data.
   The component checks if the user message contains an entry of one of the lookup tables or matches one of the
@@ -2107,11 +1874,11 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   training data. Make sure to annotate at least one example per entity.
 
   :::note
-  When you use this extractor in combination with [MitieEntityExtractor](components.mdx#mitieentityextractor),
-  [CRFEntityExtractor](components.mdx#crfentityextractor), or [DIETClassifier](components.mdx#dietclassifier-1) it can
+  When you use this extractor in combination with [MitieEntityExtractor](./components.mdx#mitieentityextractor),
+  [CRFEntityExtractor](./components.mdx#crfentityextractor), or [DIETClassifier](./components.mdx#dietclassifier-1) it can
   lead to multiple extraction of entities. Especially if many training sentences have entity annotations for
   the entity types for which you also have defined regexes. See the big info box at the start of the
-  [entity extractor section](components.mdx#entity-extractors) for more info on multiple extraction.
+  [entity extractor section](./components.mdx#entity-extractors) for more info on multiple extraction.
 
   In the case where you seem to need both this RegexEntityExtractor and another of the aforementioned
   statistical extractors, we advise you to consider one of the following two options.
@@ -2122,14 +1889,13 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   Option 2 is useful when you want to use regexes matches as additional signal for your statistical extractor,
   but you don't have separate entity types. In this case you will want to 1) add the
-  [RegexFeaturizer](components.mdx#regexfeaturizer) before the extractors in your pipeline 2)
+  [RegexFeaturizer](./components.mdx#regexfeaturizer) before the extractors in your pipeline 2)
   annotate all your entity examples in the training data and 3) remove the RegexEntityExtractor from your pipeline.
   This way, your statistical extractors will receive additional signal about the presence of regex matches
   and will be able to statistically determine when to rely on these matches and when not to.
   :::
 
-
-* **Configuration**
+- **Configuration**
 
   Make the entity extractor case sensitive by adding the `case_sensitive: True` option, the default being
   `case_sensitive: False`.
@@ -2150,55 +1916,51 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         use_word_boundaries: True
   ```
 
-
 ### EntitySynonymMapper
 
-
-* **Short**
+- **Short**
 
   Maps synonymous entity values to the same value.
 
-
-
-* **Outputs**
+- **Outputs**
 
   Modifies existing entities that previous entity extraction components found.
 
-
-
-* **Requires**
+- **Requires**
 
   An extractor from [Entity Extractors](./components.mdx)
 
-
-
-* **Description**
+- **Description**
 
   If the training data contains defined synonyms, this component will make sure that detected entity values will
   be mapped to the same value. For example, if your training data contains the following examples:
 
   ```json
   [
-      {
-        "text": "I moved to New York City",
-        "intent": "inform_relocation",
-        "entities": [{
+    {
+      "text": "I moved to New York City",
+      "intent": "inform_relocation",
+      "entities": [
+        {
           "value": "nyc",
           "start": 11,
           "end": 24,
-          "entity": "city",
-        }]
-      },
-      {
-        "text": "I got a new flat in NYC.",
-        "intent": "inform_relocation",
-        "entities": [{
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "text": "I got a new flat in NYC.",
+      "intent": "inform_relocation",
+      "entities": [
+        {
           "value": "nyc",
           "start": 20,
           "end": 23,
-          "entity": "city",
-        }]
-      }
+          "entity": "city"
+        }
+      ]
+    }
   ]
   ```
 
@@ -2206,9 +1968,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   extraction will return `nyc` even though the message contains `NYC`. When this component changes an
   existing entity, it appends itself to the processor list of this entity.
 
-
-
-* **Configuration**
+- **Configuration**
 
   ```yaml-rasa
   pipeline:
@@ -2221,63 +1981,55 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   :::
 
-
   ## Combined Intent Classifiers and Entity Extractors
 
   ### DIETClassifier
 
-
-  * **Short**
+  - **Short**
 
     Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction
 
-
-
-  * **Outputs**
+  - **Outputs**
 
     `entities`, `intent` and `intent_ranking`
 
-
-
-  * **Requires**
+  - **Requires**
 
     `dense_features` and/or `sparse_features` for user message and optionally the intent
 
-
-
-  * **Output-Example**
+  - **Output-Example**
 
     ```json
     {
-        "intent": {"name": "greet", "confidence": 0.7800},
-        "intent_ranking": [
-            {
-                "confidence": 0.7800,
-                "name": "greet"
-            },
-            {
-                "confidence": 0.1400,
-                "name": "goodbye"
-            },
-            {
-                "confidence": 0.0800,
-                "name": "restaurant_search"
-            }
-        ],
-        "entities": [{
-            "end": 53,
-            "entity": "time",
-            "start": 48,
-            "value": "2017-04-10T00:00:00.000+02:00",
-            "confidence": 1.0,
-            "extractor": "DIETClassifier"
-        }]
+      "intent": { "name": "greet", "confidence": 0.78 },
+      "intent_ranking": [
+        {
+          "confidence": 0.78,
+          "name": "greet"
+        },
+        {
+          "confidence": 0.14,
+          "name": "goodbye"
+        },
+        {
+          "confidence": 0.08,
+          "name": "restaurant_search"
+        }
+      ],
+      "entities": [
+        {
+          "end": 53,
+          "entity": "time",
+          "start": 48,
+          "value": "2017-04-10T00:00:00.000+02:00",
+          "confidence": 1.0,
+          "extractor": "DIETClassifier"
+        }
+      ]
     }
     ```
 
-
-
-  * **Description**
+  - **Description**
 
     DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
     recognition. The architecture is based on a transformer which is shared for both tasks.
@@ -2300,9 +2052,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
     :::
 
-
-
-  * **Configuration**
+  - **Configuration**
 
     If you want to use the `DIETClassifier` just for intent classification, set `entity_recognition` to `False`.
     If you want to do only entity recognition, set `intent_classification` to `False`.
@@ -2312,14 +2062,14 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     You can define a number of hyperparameters to adapt the model.
     If you want to adapt your model, start by modifying the following parameters:
 
-    * `epochs`:
+    - `epochs`:
       This parameter sets the number of times the algorithm will see the training data (default: `300`).
       One `epoch` is equals to one forward pass and one backward pass of all the training examples.
       Sometimes the model needs more epochs to properly learn.
       Sometimes more epochs don't influence the performance.
       The lower the number of epochs the faster the model is trained.
 
-    * `hidden_layers_sizes`:
+    - `hidden_layers_sizes`:
       This parameter allows you to define the number of feed forward layers and their output
       dimensions for user messages and intents (default: `text: [], label: []`).
       Every entry in the list corresponds to a feed forward layer.
@@ -2332,30 +2082,30 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
       Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
       value before.
 
-    * `embedding_dimension`:
+    - `embedding_dimension`:
       This parameter defines the output dimension of the embedding layers used inside the model (default: `20`).
       We are using multiple embeddings layers inside the model architecture.
       For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
       they are compared and the loss is calculated.
 
-    * `number_of_transformer_layers`:
+    - `number_of_transformer_layers`:
       This parameter sets the number of transformer layers to use (default: `2`).
       The number of transformer layers corresponds to the transformer blocks to use for the model.
 
-    * `transformer_size`:
+    - `transformer_size`:
       This parameter sets the number of units in the transformer (default: `256`).
       The vectors coming out of the transformers will have the given `transformer_size`.
       The `transformer_size` should be a multiple of the `number_of_attention_heads` parameter,
       the training exits with an error otherwise.
 
-    * `connection_density`:
+    - `connection_density`:
       This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
       layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
       to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
       set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
       to learn.
 
-    * `BILOU_flag`:
+    - `BILOU_flag`:
       This parameter determines whether to use BILOU tagging or not. Default `True`.
 
   The above configuration parameters are the ones you should configure to fit your model to your data.
@@ -2512,128 +2262,120 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 Selectors predict a bot response from a set of candidate responses.
 
-
 ### ResponseSelector
 
-
-* **Short**
+- **Short**
 
   Response Selector
 
-
-
-* **Outputs**
+- **Outputs**
 
   A dictionary with the key as the retrieval intent of the response selector
-   and value containing predicted responses, confidence and the response key under the retrieval intent
+  and value containing predicted responses, confidence and the response key under the retrieval intent
 
-
-
-* **Requires**
+- **Requires**
 
   `dense_features` and/or `sparse_features` for user messages and response
 
+- **Output-Example**
 
+  The parsed output from NLU will have a property named `response_selector`
+  containing the output for each response selector component. Each response selector is
+  identified by `retrieval_intent` parameter of that response selector
+  and stores two properties:
 
-*   **Output-Example**
-
-    The parsed output from NLU will have a property named `response_selector`
-    containing the output for each response selector component. Each response selector is
-    identified by `retrieval_intent` parameter of that response selector
-    and stores two properties:
-
-    * `response`: The predicted response key under the corresponding retrieval intent,
+  - `response`: The predicted response key under the corresponding retrieval intent,
     prediction's confidence and the associated responses.
 
-    * `ranking`: Ranking with confidences of top 10 candidate response keys.
+  - `ranking`: Ranking with confidences of top 10 candidate response keys.
 
-    Example result:
+  Example result:
 
-    ```json
-    {
-        "response_selector": {
-          "faq": {
-            "response": {
-              "id": 1388783286124361986,
-              "confidence": 0.7,
-              "intent_response_key": "chitchat/ask_weather",
-              "responses": [
-                {
-                  "text": "It's sunny in Berlin today",
-                  "image": "https://i.imgur.com/nGF1K8f.jpg"
-                },
-                {
-                  "text": "I think it's about to rain."
-                }
-              ],
-              "utter_action": "utter_chitchat/ask_weather"
-             },
-            "ranking": [
-              {
-                "id": 1388783286124361986,
-                "confidence": 0.7,
-                "intent_response_key": "chitchat/ask_weather"
-              },
-              {
-                "id": 1388783286124361986,
-                "confidence": 0.3,
-                "intent_response_key": "chitchat/ask_name"
-              }
-            ]
+  ```json
+  {
+    "response_selector": {
+      "faq": {
+        "response": {
+          "id": 1388783286124361986,
+          "confidence": 0.7,
+          "intent_response_key": "chitchat/ask_weather",
+          "responses": [
+            {
+              "text": "It's sunny in Berlin today",
+              "image": "https://i.imgur.com/nGF1K8f.jpg"
+            },
+            {
+              "text": "I think it's about to rain."
+            }
+          ],
+          "utter_action": "utter_chitchat/ask_weather"
+        },
+        "ranking": [
+          {
+            "id": 1388783286124361986,
+            "confidence": 0.7,
+            "intent_response_key": "chitchat/ask_weather"
+          },
+          {
+            "id": 1388783286124361986,
+            "confidence": 0.3,
+            "intent_response_key": "chitchat/ask_name"
           }
-        }
+        ]
+      }
     }
-    ```
+  }
+  ```
 
-    If the `retrieval_intent` parameter of a particular response selector was left to its default value,
-    the corresponding response selector will be identified as `default` in the returned output.
+  If the `retrieval_intent` parameter of a particular response selector was left to its default value,
+  the corresponding response selector will be identified as `default` in the returned output.
 
-    ```json {3}
-    {
-        "response_selector": {
-          "default": {
-            "response": {
-              "id": 1388783286124361986,
-              "confidence": 0.7,
-              "intent_response_key": "chitchat/ask_weather",
-              "responses": [
-                {
-                  "text": "It's sunny in Berlin today",
-                  "image": "https://i.imgur.com/nGF1K8f.jpg"
-                },
-                {
-                  "text": "I think it's about to rain."
-                }
-              ],
-              "utter_action": "utter_chitchat/ask_weather"
-             },
-            "ranking": [
-              {
-                "id": 1388783286124361986,
-                "confidence": 0.7,
-                "intent_response_key": "chitchat/ask_weather"
-              },
-              {
-                "id": 1388783286124361986,
-                "confidence": 0.3,
-                "intent_response_key": "chitchat/ask_name"
-              }
-            ]
+  ```json {3}
+  {
+    "response_selector": {
+      "default": {
+        "response": {
+          "id": 1388783286124361986,
+          "confidence": 0.7,
+          "intent_response_key": "chitchat/ask_weather",
+          "responses": [
+            {
+              "text": "It's sunny in Berlin today",
+              "image": "https://i.imgur.com/nGF1K8f.jpg"
+            },
+            {
+              "text": "I think it's about to rain."
+            }
+          ],
+          "utter_action": "utter_chitchat/ask_weather"
+        },
+        "ranking": [
+          {
+            "id": 1388783286124361986,
+            "confidence": 0.7,
+            "intent_response_key": "chitchat/ask_weather"
+          },
+          {
+            "id": 1388783286124361986,
+            "confidence": 0.3,
+            "intent_response_key": "chitchat/ask_name"
           }
-        }
+        ]
+      }
     }
-    ```
+  }
+  ```
 
-* **Description**
+- **Description**
 
   Response Selector component can be used to build a response retrieval model to directly predict a bot response from
   a set of candidate responses. The prediction of this model is used by the dialogue manager to utter the predicted responses.
   It embeds user inputs and response labels into the same space and follows the exact same
   neural network architecture and optimization as the [DIETClassifier](./components.mdx#dietclassifier).
 
-  To use this component, your training data should contain [retrieval intents](./glossary.mdx#retrieval-intent). To define these,
+  To use this component, your training data should contain [retrieval intents](../building-assistants/glossary.mdx#retrieval-intent). To define these,
   checkout [documentation on NLU training examples](./training-data-format.mdx#training-examples) and
-  [documentation on defining response utterances for retrieval intents](./responses.mdx#defining-responses).
+  [documentation on defining response utterances for retrieval intents](../building-assistants/responses.mdx#defining-responses).
 
   :::note
   If during prediction time a message contains **only** words unseen during training
@@ -2644,21 +2386,19 @@ Selectors predict a bot response from a set of candidate responses.
 
   :::
 
-
-
-* **Configuration**
+- **Configuration**
 
   The algorithm includes almost all the hyperparameters that [DIETClassifier](./components.mdx#dietclassifier) uses.
   If you want to adapt your model, start by modifying the following parameters:
 
-  * `epochs`:
+  - `epochs`:
     This parameter sets the number of times the algorithm will see the training data (default: `300`).
     One `epoch` is equals to one forward pass and one backward pass of all the training examples.
     Sometimes the model needs more epochs to properly learn.
     Sometimes more epochs don't influence the performance.
     The lower the number of epochs the faster the model is trained.
 
-  * `hidden_layers_sizes`:
+  - `hidden_layers_sizes`:
     This parameter allows you to define the number of feed forward layers and their output
     dimensions for user messages and intents (default: `text: [256, 128], label: [256, 128]`).
     Every entry in the list corresponds to a feed forward layer.
@@ -2671,37 +2411,37 @@ Selectors predict a bot response from a set of candidate responses.
     Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
     value before.
 
-  * `embedding_dimension`:
+  - `embedding_dimension`:
     This parameter defines the output dimension of the embedding layers used inside the model (default: `20`).
     We are using multiple embeddings layers inside the model architecture.
     For example, the vector of the complete utterance and the intent is passed on to an embedding layer before
     they are compared and the loss is calculated.
 
-  * `number_of_transformer_layers`:
+  - `number_of_transformer_layers`:
     This parameter sets the number of transformer layers to use (default: `0`).
     The number of transformer layers corresponds to the transformer blocks to use for the model.
 
-  * `transformer_size`:
+  - `transformer_size`:
     This parameter sets the number of units in the transformer (default: `None`).
     The vectors coming out of the transformers will have the given `transformer_size`.
     The `transformer_size` should be a multiple of the `number_of_attention_heads` parameter,
     the training exits with an error otherwise.
 
-  * `connection_density`:
+  - `connection_density`:
     This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
     layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
     to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
     set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
-  * `constrain_similarities`:
+  - `constrain_similarities`:
     This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
     This helps in keeping similarities between input and negative labels to smaller values.
     This should help in better generalization of the model to real world test sets.
 
-  * `model_confidence`:
-      This parameter allows the user to configure how confidences are computed during inference. It can take only 
-    one value as input which is `softmax`. In `softmax`, confidences are in the range `[0, 1]`. The computed 
+  - `model_confidence`:
+    This parameter allows the user to configure how confidences are computed during inference. It can take only
+    one value as input which is `softmax`. In `softmax`, confidences are in the range `[0, 1]`. The computed
     similarities are normalized with the `softmax` activation function.
 
   The component can also be configured to train a response selector for a particular retrieval intent.
@@ -2718,7 +2458,6 @@ Selectors predict a bot response from a set of candidate responses.
   how you can use the `ResponseSelector` component in your assistant. Additionally, you will find this tutorial on
   [handling FAQs](./chitchat-faqs.mdx) using a `ResponseSelector` useful as well.
   :::
-
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
@@ -2880,8 +2619,8 @@ and `use_maximum_negative_similarity = False`.
 See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 :::
-  </details>
 
+  </details>
 
 ## Custom Components
 
@@ -2905,6 +2644,5 @@ pipeline:
 - name: "sentiment.SentimentAnalyzer"
 ```
 
-See the [guide on custom graph components](custom-graph-components.mdx) for a complete guide on custom components.
+See the [guide on custom graph components](../building-assistants/custom-graph-components.mdx) for a complete guide on custom components.
 Also be sure to read the section on the [Component Lifecycle](./tuning-your-model.mdx#component-lifecycle).
-

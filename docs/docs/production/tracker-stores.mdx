@@ -9,7 +9,8 @@ abstract: Your assistant's conversations are stored within a tracker store.
 ---
 
 <!-- this file is version specific, do not use `@site/...` syntax -->
-import variables from './variables.json';
+
+import variables from "./variables.json";
 
 ## InMemoryTrackerStore (default)
 
@@ -21,12 +22,9 @@ As this store keeps all history in memory, the entire history is lost if you res
 
 :::
 
-
-
 ### **Configuration**
 
 No configuration is needed to use the `InMemoryTrackerStore`.
-
 
 ## SQLTrackerStore
 
@@ -38,77 +36,76 @@ To set up Rasa with SQL the following steps are required:
 
 1. Add required configuration to your `endpoints.yml`:
 
- ```yaml-rasa title="endpoints.yml"
- tracker_store:
-     type: SQL
-     dialect: "postgresql"  # the dialect used to interact with the db
-     url: ""  # (optional) host of the sql db, e.g. "localhost"
-     db: "rasa"  # path to your db
-     username:  # username used for authentication
-     password:  # password used for authentication
-     query: # optional dictionary to be added as a query string to the connection URL
-       driver: my-driver
- ```
+```yaml-rasa title="endpoints.yml"
+tracker_store:
+    type: SQL
+    dialect: "postgresql"  # the dialect used to interact with the db
+    url: ""  # (optional) host of the sql db, e.g. "localhost"
+    db: "rasa"  # path to your db
+    username:  # username used for authentication
+    password:  # password used for authentication
+    query: # optional dictionary to be added as a query string to the connection URL
+      driver: my-driver
+```
 
 2. To start the Rasa server using your SQL backend,
- add the `--endpoints` flag, e.g.:
+   add the `--endpoints` flag, e.g.:
 
- ```bash
- rasa run -m models --endpoints endpoints.yml
- ```
+```bash
+rasa run -m models --endpoints endpoints.yml
+```
 
 3. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
 
- ```yaml-rasa title="docker-compose.yml"
- postgres:
-   image: postgres:latest
- ```
+```yaml-rasa title="docker-compose.yml"
+postgres:
+  image: postgres:latest
+```
 
- To route requests to the new service, make sure that the `url` in your `endpoints.yml`
- references the service name:
+To route requests to the new service, make sure that the `url` in your `endpoints.yml`
+references the service name:
 
- ```yaml-rasa {4} title="endpoints.yml"
-   tracker_store:
-       type: SQL
-       dialect: "postgresql"  # the dialect used to interact with the db
-       url: "postgres"
-       db: "rasa"  # path to your db
-       username:  # username used for authentication
-       password:  # password used for authentication
-       query: # optional dictionary to be added as a query string to the connection URL
-         driver: my-driver
- ```
+```yaml-rasa {4} title="endpoints.yml"
+  tracker_store:
+      type: SQL
+      dialect: "postgresql"  # the dialect used to interact with the db
+      url: "postgres"
+      db: "rasa"  # path to your db
+      username:  # username used for authentication
+      password:  # password used for authentication
+      query: # optional dictionary to be added as a query string to the connection URL
+        driver: my-driver
+```
 
 #### Configuration Parameters
 
-* `domain` (default: `None`): Domain object associated with this tracker store
+- `domain` (default: `None`): Domain object associated with this tracker store
 
-* `dialect` (default: `sqlite`): The dialect used to communicate with your SQL backend.  Consult the [SQLAlchemy docs](https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls) for available dialects.
+- `dialect` (default: `sqlite`): The dialect used to communicate with your SQL backend. Consult the [SQLAlchemy docs](https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls) for available dialects.
 
-* `url` (default: `None`): URL of your SQL server
+- `url` (default: `None`): URL of your SQL server
 
-* `port` (default: `None`): Port of your SQL server
+- `port` (default: `None`): Port of your SQL server
 
-* `db` (default: `rasa.db`): The path to the database to be used
+- `db` (default: `rasa.db`): The path to the database to be used
 
-* `username` (default: `None`): The username which is used for authentication
+- `username` (default: `None`): The username which is used for authentication
 
-* `password` (default: `None`): The password which is used for authentication
+- `password` (default: `None`): The password which is used for authentication
 
-* `event_broker` (default: `None`): Event broker to publish events to
+- `event_broker` (default: `None`): Event broker to publish events to
 
-* `login_db` (default: `None`): Alternative database name to which initially  connect, and create the database specified by `db` (PostgreSQL only)
+- `login_db` (default: `None`): Alternative database name to which initially connect, and create the database specified by `db` (PostgreSQL only)
 
-* `query` (default: `None`): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect
-
-
+- `query` (default: `None`): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect
 
 #### Compatible Databases
 
 The following databases are officially compatible with the `SQLTrackerStore`:
-  * PostgreSQL
-  * Oracle > 11.0
-  * SQLite
+
+- PostgreSQL
+- Oracle > 11.0
+- SQLite
 
 #### Configuring Oracle
 
@@ -126,8 +123,9 @@ First download the [Oracle Instant Client](https://www.oracle.com/database/techn
 rename it to `oracle.rpm` and store it in the directory from where you'll be building the docker image.
 Copy the following into a file called `Dockerfile`:
 
-<pre><code parentName="pre" className="language-bash">
-{`FROM rasa/rasa:${variables.release}-full
+<pre>
+  <code parentName="pre" className="language-bash">
+    {`FROM rasa/rasa:${variables.release}-full
 
 # Switch to root user to install packages
 USER root
@@ -145,26 +143,26 @@ RUN pip install cx-Oracle
 RUN alien -i oracle.rpm
 
 USER 1001`}
-</code></pre>
+  </code>
+</pre>
 
 Then build the docker image:
 
-<pre><code parentName="pre" className="language-bash">
-{`docker build . -t rasa-oracle:${variables.release}-oracle-full`}
-</code></pre>
+<pre>
+  <code parentName="pre" className="language-bash">
+    {`docker build . -t rasa-oracle:${variables.release}-oracle-full`}
+  </code>
+</pre>
 
 Now you can configure the tracker store in the `endpoints.yml` as described above,
 and start the container. The `dialect` parameter with this setup will be `oracle+cx_oracle`.
-Read more about [Deploying a Rasa Assistant](./deploy/introduction.mdx).
-
+Read more about [Deploying a Rasa Assistant](../deploy/introduction.mdx).
 
 ## RedisTrackerStore
 
 You can store your assistant's conversation history in [Redis](https://redis.io/) by using the
 `RedisTrackerStore`.
 Redis is a fast in-memory key-value store which can optionally also persist data.
-
-
 
 ### Configuration
 
@@ -174,60 +172,59 @@ To set up Rasa with Redis the following steps are required:
 
 2. Add required configuration to your `endpoints.yml`:
 
- ```yaml-rasa title="endpoints.yml"
+```yaml-rasa title="endpoints.yml"
+tracker_store:
+    type: redis
+    url: <url of the redis instance, e.g. localhost>
+    port: <port of your redis instance, usually 6379>
+    key_prefix: <alphanumeric value to prepend to tracker store keys>
+    db: <number of your database within redis, e.g. 0>
+    password: <password used for authentication>
+    use_ssl: <whether or not the communication is encrypted, default `false`>
+```
+
+```bash
+rasa run -m models --endpoints endpoints.yml
+```
+
+4. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
+
+```yaml-rasa title="docker-compose.yml"
+redis:
+  image: redis:latest
+```
+
+To route requests to the new service, make sure that the `url` in your `endpoints.yml`
+references the service name:
+
+```yaml-rasa {3} title="endpoints.yml"
  tracker_store:
      type: redis
      url: <url of the redis instance, e.g. localhost>
      port: <port of your redis instance, usually 6379>
-     key_prefix: <alphanumeric value to prepend to tracker store keys>
      db: <number of your database within redis, e.g. 0>
+     key_prefix: <alphanumeric value to prepend to tracker store keys>
      password: <password used for authentication>
      use_ssl: <whether or not the communication is encrypted, default `false`>
- ```
+```
 
- ```bash
- rasa run -m models --endpoints endpoints.yml
- ```
+- `url` (default: `localhost`): The url of your redis instance
 
-4. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
+- `port` (default: `6379`): The port which redis is running on
 
- ```yaml-rasa title="docker-compose.yml"
- redis:
-   image: redis:latest
- ```
+- `db` (default: `0`): The number of your redis database
 
- To route requests to the new service, make sure that the `url` in your `endpoints.yml`
- references the service name:
+- `key_prefix` (default: `None`): The prefix to prepend to tracker store keys. Must
+  be alphanumeric
 
- ```yaml-rasa {3} title="endpoints.yml"
-  tracker_store:
-      type: redis
-      url: <url of the redis instance, e.g. localhost>
-      port: <port of your redis instance, usually 6379>
-      db: <number of your database within redis, e.g. 0>
-      key_prefix: <alphanumeric value to prepend to tracker store keys>
-      password: <password used for authentication>
-      use_ssl: <whether or not the communication is encrypted, default `false`>
- ```
+- `password` (default: `None`): Password used for authentication
+  (`None` equals no authentication)
 
-* `url` (default: `localhost`): The url of your redis instance
+- `record_exp` (default: `None`): Record expiry in seconds
 
-* `port` (default: `6379`): The port which redis is running on
-
-* `db` (default: `0`): The number of your redis database
-
-* `key_prefix` (default: `None`): The prefix to prepend to tracker store keys. Must
-    be alphanumeric
-
-* `password` (default: `None`): Password used for authentication
-(`None` equals no authentication)
-
-* `record_exp` (default: `None`): Record expiry in seconds
-
-* `use_ssl` (default: `False`): whether or not to use SSL for transit encryption
+- `use_ssl` (default: `False`): whether or not to use SSL for transit encryption
 
 ## MongoTrackerStore
-
 
 You can store your assistant's conversation history in [MongoDB](https://www.mongodb.com/) using the `MongoTrackerStore`.
 MongoDB is a free and open-source cross-platform document-oriented NoSQL database.
@@ -238,73 +235,70 @@ MongoDB is a free and open-source cross-platform document-oriented NoSQL databas
 
 2. Add required configuration to your `endpoints.yml`:
 
- ```yaml-rasa title="endpoints.yml"
+```yaml-rasa title="endpoints.yml"
+tracker_store:
+    type: mongod
+    url: <url to your mongo instance, e.g. mongodb://localhost:27017>
+    db: <name of the db within your mongo instance, e.g. rasa>
+    username: <username used for authentication>
+    password: <password used for authentication>
+    auth_source: <database name associated with the user's credentials>
+```
+
+You can also add more advanced configurations (like enabling ssl) by appending
+a parameter to the url field, e.g. `mongodb://localhost:27017/?ssl=true`.
+
+3. To start the Rasa server using your configured MongoDB instance,
+   add the `--endpoints` flag, for example:
+
+```bash
+rasa run -m models --endpoints endpoints.yml
+```
+
+4. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
+
+```yaml-rasa title="docker-compose.yml"
+mongo:
+  image: mongo
+  environment:
+    MONGO_INITDB_ROOT_USERNAME: rasa
+    MONGO_INITDB_ROOT_PASSWORD: example
+mongo-express:  # this service is a MongoDB UI, and is optional
+  image: mongo-express
+  ports:
+    - 8081:8081
+  environment:
+    ME_CONFIG_MONGODB_ADMINUSERNAME: rasa
+    ME_CONFIG_MONGODB_ADMINPASSWORD: example
+```
+
+To route requests to this database, make sure to set the `url` in your `endpoints.yml` as the service name,
+and specify the user and password:
+
+```yaml-rasa {3,5,6} title="endpoints.yml"
  tracker_store:
      type: mongod
-     url: <url to your mongo instance, e.g. mongodb://localhost:27017>
+     url: mongodb://mongo:27017
      db: <name of the db within your mongo instance, e.g. rasa>
      username: <username used for authentication>
      password: <password used for authentication>
      auth_source: <database name associated with the user's credentials>
- ```
-
- You can also add more advanced configurations (like enabling ssl) by appending
- a parameter to the url field, e.g. `mongodb://localhost:27017/?ssl=true`.
-
-3. To start the Rasa server using your configured MongoDB instance,
- add the `--endpoints` flag, for example:
-
- ```bash
- rasa run -m models --endpoints endpoints.yml
- ```
-
-4. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
-
- ```yaml-rasa title="docker-compose.yml"
- mongo:
-   image: mongo
-   environment:
-     MONGO_INITDB_ROOT_USERNAME: rasa
-     MONGO_INITDB_ROOT_PASSWORD: example
- mongo-express:  # this service is a MongoDB UI, and is optional
-   image: mongo-express
-   ports:
-     - 8081:8081
-   environment:
-     ME_CONFIG_MONGODB_ADMINUSERNAME: rasa
-     ME_CONFIG_MONGODB_ADMINPASSWORD: example
- ```
-
- To route requests to this database, make sure to set the `url` in your `endpoints.yml` as the service name,
- and specify the user and password:
-
- ```yaml-rasa {3,5,6} title="endpoints.yml"
-  tracker_store:
-      type: mongod
-      url: mongodb://mongo:27017
-      db: <name of the db within your mongo instance, e.g. rasa>
-      username: <username used for authentication>
-      password: <password used for authentication>
-      auth_source: <database name associated with the user's credentials>
- ```
-
-
+```
 
 #### Configuration Parameters
 
-* `url` (default: `mongodb://localhost:27017`): URL of your MongoDB
+- `url` (default: `mongodb://localhost:27017`): URL of your MongoDB
 
-* `db` (default: `rasa`): The database name which should be used
+- `db` (default: `rasa`): The database name which should be used
 
-* `username` (default: `0`): The username which is used for authentication
+- `username` (default: `0`): The username which is used for authentication
 
-* `password` (default: `None`): The password which is used for authentication
+- `password` (default: `None`): The password which is used for authentication
 
-* `auth_source` (default: `admin`): database name associated with the user's credentials.
+- `auth_source` (default: `admin`): database name associated with the user's credentials.
 
-* `collection` (default: `conversations`): The collection name which is
-used to store the conversations
-
+- `collection` (default: `conversations`): The collection name which is
+  used to store the conversations
 
 ## DynamoTrackerStore
 
@@ -312,34 +306,31 @@ You can store your assistant's conversation history in
 [DynamoDB](https://aws.amazon.com/dynamodb/) by using a `DynamoTrackerStore`.
 DynamoDB is a hosted NoSQL database offered by Amazon Web Services (AWS).
 
-
 ### Configuration
 
 1. Start your DynamoDB instance.
 
 2. Add required configuration to your `endpoints.yml`:
 
- ```yaml-rasa title="endpoints.yml"
- tracker_store:
-     type: dynamo
-     table_name: <name of the table to create, e.g. rasa>
-     region: <name of the region associated with the client>
- ```
+```yaml-rasa title="endpoints.yml"
+tracker_store:
+    type: dynamo
+    table_name: <name of the table to create, e.g. rasa>
+    region: <name of the region associated with the client>
+```
 
 3. To start the Rasa server using your configured `DynamoDB` instance,
- add the `--endpoints` flag, e.g.:
+   add the `--endpoints` flag, e.g.:
 
- ```bash
- rasa run -m models --endpoints endpoints.yml
- ```
-
+```bash
+rasa run -m models --endpoints endpoints.yml
+```
 
 #### Configuration Parameters
 
-* `table_name` (default: `states`): name of the DynamoDB table
+- `table_name` (default: `states`): name of the DynamoDB table
 
-* `region` (default: `us-east-1`): name of the region associated with the client
-
+- `region` (default: `us-east-1`): name of the region associated with the client
 
 ## Custom Tracker Store
 
@@ -356,6 +347,7 @@ super().__init__(domain, event_broker, **kwargs)
 ```
 
 Your custom tracker store class must also implement the following three methods:
+
 - `save`: saves the conversation to the tracker store. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L243).
 - `retrieve`: retrieves tracker for the latest conversation session. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L261).
 - `keys`: returns the set of values for the tracker store's primary key. [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/tracker_store.py#L319).
@@ -364,36 +356,36 @@ Your custom tracker store class must also implement the following three methods:
 
 Put the module path to your custom tracker store and the parameters you require in your `endpoints.yml`:
 
- ```yaml-rasa title="endpoints.yml"
- tracker_store:
-   type: path.to.your.module.Class
-   url: localhost
-   a_parameter: a value
-   another_parameter: another value
- ```
+```yaml-rasa title="endpoints.yml"
+tracker_store:
+  type: path.to.your.module.Class
+  url: localhost
+  a_parameter: a value
+  another_parameter: another value
+```
 
 If you are deploying in Docker Compose, you have two options to add this store to Rasa:
 extending the Rasa image to include the module, or mounting the module as volume.
 
- Make sure to add the corresponding service as well. For example, mounting it as a volume would look like so:
+Make sure to add the corresponding service as well. For example, mounting it as a volume would look like so:
 
- ```yaml {5,6,7} title="docker-compose.yml"
- rasa:
-   <existing rasa service configuration>
-   volumes:
-     - <existing volume mappings, if there are any>
-     - ./path/to/your/module.py:/app/path/to/your/module.py
- custom-tracker-store:
-   image: custom-image:tag
- ```
+```yaml {5,6,7} title="docker-compose.yml"
+rasa:
+  <existing rasa service configuration>
+  volumes:
+    - <existing volume mappings, if there are any>
+    - ./path/to/your/module.py:/app/path/to/your/module.py
+custom-tracker-store:
+  image: custom-image:tag
+```
 
- ```yaml-rasa {3} title="endpoints.yml"
- tracker_store:
-   type: path.to.your.module.Class
-   url: custom-tracker-store
-   a_parameter: a value
-   another_parameter: another value
- ```
+```yaml-rasa {3} title="endpoints.yml"
+tracker_store:
+  type: path.to.your.module.Class
+  url: custom-tracker-store
+  a_parameter: a value
+  another_parameter: another value
+```
 
 ## Fallback Tracker Store
 

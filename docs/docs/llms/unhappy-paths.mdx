@@ -12,15 +12,14 @@ import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 
 ## Overview
 
-[Flows](../flows.mdx) offer structured way to design conversation-driven business logic. While 
-flow designers primarily focus on linear [happy paths](../glossary.mdx#happy--unhappy-paths), 
+[Flows](../building-assistants/flows.mdx) offer structured way to design conversation-driven business logic. While
+flow designers primarily focus on linear [happy paths](../building-assistants/glossary.mdx#happy--unhappy-paths),
 Rasa provides a robust way to manage deviations, simplifying design complexity.
 
 ### Default Behaviors
 
-Rasa ships a **default behavior for every unhappy path**. Override 
+Rasa ships a **default behavior for every unhappy path**. Override
 defaults by creating a flows with the same name of a pattern, like `pattern_correction`.
-
 
 ## Unhappy Path Types
 
@@ -36,7 +35,9 @@ Digressions arise when a user shifts from one flow to another.
   <ChatUserText>Ah wait, how much money do I have?</ChatUserText>
   <ChatBotText>You currently have 4021.20$ in your account.</ChatBotText>
   <ChatBotText>Let's continue with sending money to Sudarshana.</ChatBotText>
-  <ChatBotText>How much money do you want to send to Sudarshana then?</ChatBotText>
+  <ChatBotText>
+    How much money do you want to send to Sudarshana then?
+  </ChatBotText>
   <ChatUserText>...</ChatUserText>
 </Chat>
 
@@ -59,7 +60,7 @@ Corrections occur when users modify input data or rectify mistakes.
 
 :::important
 
-Upon correction, the flow retraces to align with the updated data. User 
+Upon correction, the flow retraces to align with the updated data. User
 might witness an alternate flow based on changes.
 
 :::
@@ -73,7 +74,9 @@ Cancellations happen when users halt a flow midway.
 <Chat caption="User cancels a transfer">
   <ChatUserText>I want to send some money to Dimitri</ChatUserText>
   <ChatBotText>How much money do you want to send?</ChatBotText>
-  <ChatUserText>Ah, nevermind. I see I have already sent it earlier.</ChatUserText>
+  <ChatUserText>
+    Ah, nevermind. I see I have already sent it earlier.
+  </ChatUserText>
   <ChatBotText>Okay, I am cancelling the transfer.</ChatBotText>
   <ChatUserText>...</ChatUserText>
 </Chat>
@@ -112,7 +115,10 @@ potentially matches multiple flows.
 
 <Chat caption="Flow completion">
   <ChatUserText>cash</ChatUserText>
-  <ChatBotText>I'm not sure what you'd like to achieve. Do you want to check your balance or transfer money?</ChatBotText>
+  <ChatBotText>
+    I'm not sure what you'd like to achieve. Do you want to check your balance
+    or transfer money?
+  </ChatBotText>
 </Chat>
 
 ### 7. Internal Errors
@@ -123,12 +129,14 @@ Errors arise from unexpected system or flow issues.
 
 <Chat caption="Example showcasing internal error">
   <ChatUserText>Hey, how much money do I have?</ChatUserText>
-  <ChatBotText>Sorry, I am having trouble with that. Please try again later.</ChatBotText>
+  <ChatBotText>
+    Sorry, I am having trouble with that. Please try again later.
+  </ChatBotText>
 </Chat>
 
 ## Configurations
 
-Each of these unhappy paths can be configured using Rasa's YAML-based 
+Each of these unhappy paths can be configured using Rasa's YAML-based
 domain and flow system. You can overwrite a default behavior by creating
 a flow with the same name as the pattern:
 
@@ -144,7 +152,7 @@ The syntax for each of these flows is the same as any other flow.
 
 :::info
 
-Since mose of these patterns interrupt another flow, they should be 
+Since mose of these patterns interrupt another flow, they should be
 kept short and simple.
 
 :::
@@ -173,8 +181,8 @@ Here are some common modifications to the default behavior.
 
 ### Requiring Confirmation
 
-You can change the default implemenation for a correction and require a 
-confirmation from the user before a slot is updated, e.g. this would 
+You can change the default implemenation for a correction and require a
+confirmation from the user before a slot is updated, e.g. this would
 result in a conversation like this:
 
 <Chat caption="A common correction scenario">
@@ -183,13 +191,14 @@ result in a conversation like this:
   <ChatUserText>50$</ChatUserText>
   <ChatBotText>Do you want to send 50$ to Joe? (Yes/No)</ChatBotText>
   <ChatUserText>Oh wait!! I meant to say to John, not Joe!</ChatUserText>
-  <ChatBotText>Do you want to update the recipient to John? (Yes/No)</ChatBotText>
+  <ChatBotText>
+    Do you want to update the recipient to John? (Yes/No)
+  </ChatBotText>
   <ChatUserText>Yes!</ChatUserText>
   <ChatBotText>Updated recipient to John</ChatBotText>
   <ChatBotText>Do you want to send 50$ to John? (Yes/No)</ChatBotText>
   <ChatUserText>...</ChatUserText>
 </Chat>
-
 
 To achieve the above confirmation, create a flow cancelled
 `pattern_correction` which is defined as follows:
@@ -225,7 +234,6 @@ flows:
 Also make sure to add the used responses and slots to your domain file:
 
 ```yaml title="domain.yml"
-
 slots:
   confirm_slot_correction:
     type: bool
@@ -240,13 +248,13 @@ responses:
           title: Yes
         - payload: no
           title: No, please keep the previous information
-      metadata: 
+      metadata:
         rephrase: True
         template: jinja
-  
+
   utter_not_corrected_previous_input:
     - text: "Ok, I did not correct the previous input."
-      metadata: 
+      metadata:
         rephrase: True
 ```
 
@@ -263,10 +271,10 @@ flows:
 
     steps:
       - id: "decide_cancel_step"
-        next: 
-        - if: "context.canceled_name == 'transfer_money'"
-          then: "inform_user"
-        - else: "cancel_flow"  # skips the inform step
+        next:
+          - if: "context.canceled_name == 'transfer_money'"
+            then: "inform_user"
+          - else: "cancel_flow" # skips the inform step
       - id: "inform_user"
         action: utter_flow_cancelled_rasa
         next: "cancel_flow"
@@ -284,15 +292,15 @@ For reference, here is the complete default configuration for unhappy paths:
 ```yaml title="flows.yml"
 version: "3.1"
 responses:
-  utter_flow_continue_interrupted: 
+  utter_flow_continue_interrupted:
     - text: Let's continue with the topic {{ context.previous_flow_name }}.
-      metadata: 
+      metadata:
         rephrase: True
         template: jinja
-  
+
   utter_corrected_previous_input:
     - text: "Ok, I corrected the {{ context.corrected_slots.keys()|join(', ') }}."
-      metadata: 
+      metadata:
         rephrase: True
         template: jinja
 
@@ -304,7 +312,7 @@ responses:
 
   utter_can_do_something_else:
     - text: "Is there anything else I can help you with?"
-      metadata: 
+      metadata:
         rephrase: True
 
   utter_internal_error_rasa:
@@ -316,21 +324,20 @@ responses:
         rephrase: True
         template: jinja
 
-
 slots:
   confirm_correction:
     type: bool
     mappings:
       - type: custom
 
-flows:  
+flows:
   pattern_continue_interrupted:
-    description: A flow that should will be started to continue an interrupted flow. 
+    description: A flow that should will be started to continue an interrupted flow.
 
     steps:
       - id: "0"
         action: utter_flow_continue_interrupted
-  
+
   pattern_correction:
     description: Handle a correction of a slot value.
 
@@ -363,7 +370,7 @@ flows:
     steps:
       - id: "0"
         action: utter_internal_error_rasa
-  
+
   pattern_completed:
     description: a flow has been completed and there is nothing else to be done
     steps:
@@ -375,7 +382,7 @@ flows:
     steps:
       - id: "0"
         generation_prompt: |
-          You are an incredibly friendly assistant. Generate a short 
+          You are an incredibly friendly assistant. Generate a short
           response to the user's comment in simple english.
 
           User: {{latest_user_message}}
@@ -398,10 +405,10 @@ flows:
         next: "validate"
       - id: "validate"
         action: validate_{{context.collect_information}}
-        next: 
-        - if: "{{context.collect_information}} is not null"
-          then: "done"
-        - else: "ask_collect_information"
+        next:
+          - if: "{{context.collect_information}} is not null"
+            then: "done"
+          - else: "ask_collect_information"
       - id: "ask_collect_information"
         action: utter_ask_{{context.collect_information}}
         next: "listen"

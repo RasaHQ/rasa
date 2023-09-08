@@ -8,7 +8,7 @@ abstract: Spaces are a way to modularize your assistant that increases isolation
 
 import RasaProLabel from "@theme/RasaProLabel";
 import RasaProBanner from "@theme/RasaProBanner";
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import useBaseUrl from "@docusaurus/useBaseUrl";
 
 <RasaProLabel />
 
@@ -32,9 +32,8 @@ Spaces are activated when certain designated intents, called entry intents, are
 predicted. With the activation of a Space, all the primitives for the Space become
 available for subsequent interactions with the user. Good ways to think about spaces are
 
-* that they allow you to specify follow-up primitives, which only become accessible after another intent has come beforehand
-* that they are like multiple sub-bots merged into one with the possibility of sharing primitives
-
+- that they allow you to specify follow-up primitives, which only become accessible after another intent has come beforehand
+- that they are like multiple sub-bots merged into one with the possibility of sharing primitives
 
 ## When to use Spaces
 
@@ -65,11 +64,10 @@ Currently, the only entity extractor that is works with the boundaries that spac
 create, is an adapted version of the `CRFEntityExtractor`. You can find more on this
 in the following sections.
 
-
 ## An example spaces bot
+
 We have created a bot using spaces for you to look at, learn from and experiment with.
 It features three different spaces in the financial domain. [Here is the repository](https://github.com/RasaHQ/financial-spaces-bot)
-
 
 ## How to use spaces
 
@@ -143,7 +141,6 @@ pipeline:
 
 policies:
   - name: RulePolicy
-
 ```
 
 In the above config file, you can see the Spaces definition with the main space, which
@@ -179,6 +176,7 @@ only train one specific subspace:
 Other commands were not adjusted as they use trained assistants as inputs.
 
 ## How do spaces work?
+
 In the following we'll look at how things work under the hood in spaces to give you a
 better understanding of what is happening in case you should need it.
 
@@ -187,7 +185,10 @@ is the main space which contains shared primitives that should be usable by all 
 The main space is always active. Anything that is defined in a subspace, can
 only be used by that space and not by other subspaces or the main space.
 
-<img alt="two layer space hierarchy" src={useBaseUrl("/img/spaces_hierarchy.png")} />
+<img
+  alt="two layer space hierarchy"
+  src={useBaseUrl("/img/spaces_hierarchy.png")}
+/>
 
 ### What happens during the assembly?
 
@@ -217,7 +218,7 @@ generated during assembly.
 ### How does filter and rerank work?
 
 The filter and rerank component post-processes the intent ranking of the [intent
-classification components](./components.mdx#intent-classifiers). It accesses the [tracker](./action-server/sdk-tracker.mdx)
+classification components](../building-classic-assistants/components.mdx#intent-classifiers). It accesses the [tracker](./action-server/sdk-tracker.mdx)
 and checks which space are active or would be activated, in case an entry intent is at the top.
 
 It then removes any intents from the ranking that are not possible. Further it also
@@ -251,17 +252,17 @@ config you'll need to set `investment.investment_faq` as the retrieval intent. I
 retrieval intent belongs to the main space, no prefix is added. That's why
 , in this case, during the definition of the retrieval intent, no prefixing is necessary.
 
-
 ### Lookup tables and Synonyms
 
 [Lookup Tables](./training-data-format.mdx#lookup-tables) and
 [Synonyms](./training-data-format.mdx#synonyms) work with spaces. However, they are not
 truly isolated between spaces. So there can be some unanticipated interactions.
 For synonyms, specifically:
-* Assume two spaces define the same synonym. Space A: "IB" -> "Instant banking".
-Space B: "IB"-> "iron bank". A warning is given that one value overwrites the other.
-* A similar thing can happen if "IB" is an entity in both spaces but only one
-defines it a synonym. Any entity with value IB will always be mapped to that synonym
-no matter which space is active.
+
+- Assume two spaces define the same synonym. Space A: "IB" -> "Instant banking".
+  Space B: "IB"-> "iron bank". A warning is given that one value overwrites the other.
+- A similar thing can happen if "IB" is an entity in both spaces but only one
+  defines it a synonym. Any entity with value IB will always be mapped to that synonym
+  no matter which space is active.
 
 For lookup tables no adverse interactions are known.

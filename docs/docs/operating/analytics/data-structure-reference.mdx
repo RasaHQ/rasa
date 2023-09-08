@@ -43,7 +43,7 @@ change without notice.
   ends when the session either has been timed out or explicitly ended.
   If a session is interrupted by a longer period of inactivity new
   activity will trigger a new session to be created ([configurable
-  through the session timeout](../../domain.mdx#session-configuration)).
+  through the session timeout](../.../../building-assistants/domain.mdx#session-configuration)).
 - **a turn** always starts with a message from a sender and ends right before
   the next message from the sender. A turn can also end with a session
   being timed out or explicitly ended. A turn will usually contain at least
@@ -117,7 +117,7 @@ The `rasa_session` table contains information about all conversation
 sessions that users started with the assistant. New sessions are created
 for every new user and for users who return to the assistant. The
 conditions that trigger a new session to start can be
-configured in the [Rasa Domain](../../domain.mdx#session-configuration).
+configured in the [Rasa Domain](../.../../building-assistants/domain.mdx#session-configuration).
 
 <div align="center">
   <img
@@ -237,7 +237,7 @@ The sequence number of the last event in this turn.
 The `rasa_event` table contains all events that an assistant created. Events
 are created for every user message, bot response, and action that is executed
 as well as for a lot of internal changes to a conversation session.
-[Overview of all Rasa Events](../../action-server/events.mdx).
+[Overview of all Rasa Events](../.../action-server/events.mdx).
 
 <div align="center">
   <img
@@ -784,7 +784,7 @@ Time of the last update of the slot in this session. The timestamp is a UTC.
 ### rasa_patterns
 
 Patterns are marker definitions that have been received from Rasa. This table is called `patterns`
-to distinguish them from extracted markers which are stored in `rasa_markers` table. It 
+to distinguish them from extracted markers which are stored in `rasa_markers` table. It
 stores the configuration of markers (which can be thought of as a pattern
 of conversational events) along with their metadata.
 
@@ -893,7 +893,6 @@ Time of creation of this marker. The timestamp is a UTC.
 
 - Type: `DateTime`
 - Example: `2022-06-21 02:15:49.326936`
-
 
 ## Internal Tables
 
