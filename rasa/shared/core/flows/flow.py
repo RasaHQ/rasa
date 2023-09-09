@@ -291,7 +291,7 @@ class Flow:
             return None
         return self.steps[0]
 
-    def previously_asked_collect_information(
+    def previous_collect_information_steps(
         self, step_id: Optional[str]
     ) -> List[CollectInformationFlowStep]:
         """Returns the collect informations asked before the given step.

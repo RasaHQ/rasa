@@ -62,9 +62,9 @@ class Command:
         Returns:
             The converted dictionary.
         """
-        dump = dataclasses.asdict(self)
-        dump["command"] = self.command()
-        return dump
+        data = dataclasses.asdict(self)
+        data["command"] = self.command()
+        return data
 
     def run_command_on_tracker(
         self,

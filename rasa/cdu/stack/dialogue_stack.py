@@ -51,7 +51,7 @@ class DialogueStack:
         Args:
             frame: The frame to push onto the stack.
             index: The index to insert the frame at. If `None`, the frame
-                is put ontop of the stack.
+                is put on top of the stack.
         """
         if index is None:
             self.frames.append(frame)

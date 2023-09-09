@@ -53,7 +53,6 @@ class CancelFlowCommand(Command):
             The events to apply to the tracker.
         """
         original_dialogue_stack = DialogueStack.from_tracker(original_tracker)
-        original_stack_dump = original_dialogue_stack.as_dict()
 
         dialogue_stack = DialogueStack.from_tracker(tracker)
         current_user_frame = top_user_flow_frame(dialogue_stack)
@@ -67,13 +66,12 @@ class CancelFlowCommand(Command):
             return []
 
         canceled_frames = []
-        original_frames = DialogueStack.from_dict(original_stack_dump).frames
         # we need to go through the original stack dump in reverse order
         # to find the frames that were canceled. we cancel everthing from
         # the top of the stack until we hit the user flow that was canceled.
         # this will also cancel any patterns put ontop of that user flow,
         # e.g. corrections.
-        for frame in reversed(original_frames):
+        for frame in reversed(original_dialogue_stack.frames):
             canceled_frames.append(frame.frame_id)
             if (
                 current_user_frame

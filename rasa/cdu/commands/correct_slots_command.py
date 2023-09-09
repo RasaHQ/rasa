@@ -45,7 +45,7 @@ def _find_earliest_updated_collect_info(
         return None
     flow = current_user_flow_frame.flow(all_flows)
     step = current_user_flow_frame.step(all_flows)
-    asked_collect_info_steps = flow.previously_asked_collect_information(step.id)
+    asked_collect_info_steps = flow.previous_collect_information_steps(step.id)
 
     for collect_info_step in reversed(asked_collect_info_steps):
         if collect_info_step.collect_information in updated_slots:
@@ -108,7 +108,7 @@ class CorrectSlotsCommand(Command):
         top_non_collect_info_frame = top_flow_frame(dialogue_stack)
         if not top_non_collect_info_frame:
             # we shouldn't end up here as a correction shouldn't be triggered
-            # if there is nothing to correct. but just in case we do, we
+            # if we are not in any flow. but just in case we do, we
             # just skip the command.
             structlogger.warning(
                 "command_executor.correct_slots.no_active_flow", command=self

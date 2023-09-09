@@ -37,16 +37,16 @@ class DialogueStackFrame:
             The `DialogueStackFrame` as a dictionary.
         """
 
-        def custom_asdict_factory(data: List[Tuple[str, Any]]) -> Dict[str, Any]:
+        def custom_asdict_factory(fields: List[Tuple[str, Any]]) -> Dict[str, Any]:
             """Converts enum values to their value."""
             return {
                 field: value.value if isinstance(value, Enum) else value
-                for field, value in data
+                for field, value in fields
             }
 
-        dump = dataclasses.asdict(self, dict_factory=custom_asdict_factory)
-        dump["type"] = self.type()
-        return dump
+        data = dataclasses.asdict(self, dict_factory=custom_asdict_factory)
+        data["type"] = self.type()
+        return data
 
     @classmethod
     def type(cls) -> str:

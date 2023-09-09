@@ -14,7 +14,7 @@ def top_flow_frame(
     """Returns the topmost flow frame from the tracker.
 
     By default, the topmost flow frame is ignored if it is the
-    `pattern_collect_infomration`. This is because the `pattern_collect_information`
+    `pattern_collect_information`. This is because the `pattern_collect_information`
     is a special flow frame that is used to collect information from the user
     and commonly, is not what you are looking for when you want the topmost frame.
 
@@ -69,14 +69,14 @@ def filled_slots_for_active_flow(
     Returns:
     All slots that have been filled for the current flow.
     """
-    asked_collect_information = set()
+    filled_slots = set()
 
     for frame in reversed(dialogue_stack.frames):
         if not isinstance(frame, BaseFlowStackFrame):
             break
         flow = frame.flow(all_flows)
-        for q in flow.previously_asked_collect_information(frame.step_id):
-            asked_collect_information.add(q.collect_information)
+        for q in flow.previous_collect_information_steps(frame.step_id):
+            filled_slots.add(q.collect_information)
 
         if isinstance(frame, UserFlowStackFrame):
             # as soon as we hit the first stack frame that is a "normal"
@@ -85,4 +85,4 @@ def filled_slots_for_active_flow(
             # current flow.
             break
 
-    return asked_collect_information
+    return filled_slots
