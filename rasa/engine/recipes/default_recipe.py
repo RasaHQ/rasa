@@ -14,7 +14,7 @@ from rasa.core.featurizers.precomputation import (
     CoreFeaturizationCollector,
 )
 from rasa.graph_components.providers.flows_provider import FlowsProvider
-from rasa.cdu.command_processor_component import CommandProcessorComponent
+from rasa.cdu.processor.command_processor_component import CommandProcessorComponent
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
@@ -743,7 +743,6 @@ class DefaultV1Recipe(Recipe):
         plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
             predict_nodes=predict_nodes
         )
-        # LLMFlowClassifier needs flows
         predict_nodes["flows_provider"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
             needs={},

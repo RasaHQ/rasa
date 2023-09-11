@@ -4,7 +4,10 @@ import copy
 import logging
 from enum import Enum
 from pathlib import Path
-from rasa.cdu.dialogue_stack import DialogueStack, StackFrameType
+from rasa.cdu.stack.dialogue_stack import (
+    DialogueStack,
+    DialogueStackFrame,
+)
 from rasa.shared.core.events import Event
 from typing import (
     Any,
@@ -107,9 +110,9 @@ class Policy(GraphComponent):
         return SupportedData.ML_DATA
 
     @staticmethod
-    def supported_stack_frames() -> List[StackFrameType]:
+    def does_support_stack_frame(frame: DialogueStackFrame) -> bool:
         """Returns the stack frames supported by the policy."""
-        return []
+        return False
 
     def supports_current_stack_frame(
         self, tracker: DialogueStateTracker, only_after_user_message: bool = True
@@ -118,7 +121,7 @@ class Policy(GraphComponent):
         dialogue_stack = DialogueStack.from_tracker(tracker)
 
         if top_frame := dialogue_stack.top():
-            return top_frame.frame_type in self.supported_stack_frames()
+            return self.does_support_stack_frame(top_frame)
         elif only_after_user_message and len(tracker.events) > 0:
             return not tracker.has_action_after_latest_user_message()
         else:
