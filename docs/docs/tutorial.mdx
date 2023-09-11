@@ -56,7 +56,7 @@ Here are some of the conversations your assistant will be able to handle:
 
 ## Setup
 
-If you haven't installed Rasa yet, go to the installation page (link) and then return here. 
+If you haven't installed Rasa yet, go to the [installation page](./llms/llm-installation.dx) and then return here. 
 To code along with this tutorial, first create an empty folder for your project, open it in your terminal, and run:
 
 ```bash
@@ -96,7 +96,7 @@ In this tutorial you will primarily work with the following files:
 
 * `data/flows.yml`
 * `domain.yml`
-* `actions/actions.py`
+* `actions.py`
 
 ## Testing your money transfer skill
 
@@ -119,13 +119,15 @@ Tell the bot that you'd like to transfer some money to a friend.
 The file `data/flows.yml` contains the definition of a `flow` called `transfer_money`. 
 Let's look at this definition to see what is going on:
 
-```yaml
+```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
-    description: This flow lets users send money to friends and family.
+    description: |
+      This flow lets users send money to friends
+      and family, in US Dollars.
     steps:
       - id: "ask_recipient"
-        collect_information: recipientgi
+        collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
@@ -152,7 +154,7 @@ A `collect_information` step sends a message to the user requesting information,
 `Slots` are a key-value memory store used during a conversation.
 Slots are defined in your `domain.yml` file. For example, the definition of your `recipient` slot looks like this:
 
-```yaml
+```yaml-rasa title="domain.yml"
 slots:
   recipient:
     type: text
@@ -164,7 +166,7 @@ They can be used to store information provided to you by the user or fetched via
 First, you're going to see how to store information provided by the end user in a slot.
 To do this, you define a `collect_information` step like the first step in your flow above.
 
-```yaml
+```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
     description: This flow lets users send money to friends and family.
@@ -183,19 +185,24 @@ flows:
 Rasa will look for a  `response` called `utter_ask_recipient` in your domain file and use this to 
 phrase the question to the user. It will then wait for a response. 
 
-```yaml
+```yaml-rasa title="domain.yml"
 responses:
   utter_ask_recipient:
     - text: "Who would you like to send money to?"
 ```
 
 Rasa will try to use this answer to fill the slot `recipient`.
-Read about slot validation (link) to learn more about how to check the value of the slot is OK,
-and how to handle the case when it isn't.
+Read about slot validation (link) to learn more about how to run additional checks on slot values.
 
-<img alt="explanation of how slots are used in flows" src={useBaseUrl("/img/slots_in_flows.png")} />
+The diagram below summarizes how slot values are used to collect and store information,
+and how they can be used to create branching logic.
 
-## Steps that do not Collect Information
+<img
+  alt="explanation of how slots are used in flows" 
+  src={useBaseUrl("/img/slots_in_flows.png")} 
+/>
+
+## Action Steps
 
 The third `step` in your `transfer_money` flow is not a `collect_information` step but an `action` step.
 When you reach an action step in a flow, your assistant will execute the corresponding action and then 
@@ -203,17 +210,17 @@ proceed to the next step.
 It will not stop to wait for the user's next message. 
 For now, this is the final step in the flow, so there is no next step to execute and the flow completes. 
 
-## Adding a Confirmation Step
+## Branching Logic
 
 Slots are also used to build branching logic in flows.
 
-You're going to introduce an extra step, asking the user to confirm the amount and the recipient before 
-sending the transfer. 
+You're going to introduce an extra step to your flow, asking the user to confirm the amount 
+and the recipient before sending the transfer. 
 Since you are asking a yes/no question, you can store the result in a boolean `slot`.
 
-In your domain file, add the definition of this slot and the corresponding response:
+In your domain file, add the definition of this slot and the corresponding responses:
 
-```yaml
+```yaml-rasa title="domain.yml"
 slots:
   recipient:
     type: Text
@@ -228,7 +235,7 @@ slots:
   // highlight-end
 ```
 
-```yaml
+```yaml-rasa title="domain.yml"
 responses:
   utter_ask_recipient:
     - text: "Who would you like to send money to?"
@@ -236,6 +243,9 @@ responses:
   // highlight-start      
   utter_ask_final_confirmation:
     - text: "Please confirm: you want to transfer {amount} to {recipient}?"
+  
+  utter_transfer_cancelled:
+    - text: "Your transfer has been cancelled."
   // highlight-end    
 ```
 
@@ -245,7 +255,7 @@ Add a `collect_information` step to your flow and give it the id `confirm_transf
 Also change the `next` attribute of the `ask_amount` step to match the `id` of your newly created step: `confirm_transfer`.
 
 
-```yaml
+```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
     description: This flow lets users send money to friends and family.
@@ -262,16 +272,20 @@ flows:
         next:
           - if: final_confirmation
             then: "transfer_successful"
+          - else: "transfer_cancelled"
+      - id: "transfer_cancelled"
+        action: utter_transfer_cancelled          
         // highlight-end
       - id: "transfer_successful"
         action: utter_transfer_complete
+
 ```
 
 The `next` attribute of your `confirm_transfer` step includes a `condition`.
 The expression after the `if:` key will be evaluated and return `True` or `False`.
 In this case, we're using the value of the boolean slot `final_confirmation`. 
 Conditions can be used to create branching logic, including logical operators like `and`, `or`, etc.
-Learn more about conditions here (link). 
+You can learn more about conditions and advanced logic here (link). 
 
 To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your bot.
 It should now ask you to confirm before completing the transfer. 
@@ -291,12 +305,12 @@ The second type of `action` is a custom action. The name of a custom action star
 You are going to create a custom action, `action_check_balance`, to check whether the user has enough money
 to make the transfer, and then add logic to your flow to handle both cases.
 
-You are going to create your custom action by editing the `actions/actions.py` file.
-To learn more about custom actions, including how to build custom actions in languages other than python, go here (link). 
+Your custom action is defined in the file `actions.py`.
+To learn more about custom actions, go here (link). 
 
-Replace your `actions/actions.py` file with the following code:
+Your `actions.py` file should look like this:
 
-```python
+```python title="actions.py"
 from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
@@ -326,23 +340,38 @@ and you pass information back to the conversation by returning a `SlotSet` event
 <img alt="diagram of how slots are used with custom actions" src={useBaseUrl("/img/slot-communication-customaction.png")} />
 
 
-Now add the action and the corresponding slot following to your `domain.yml`, so that your assistant knows it can use this action:
+Now you are going to make three additions to your domain.yml
+You will add a top-level section listing your custom actions. 
+You will add the new boolean slot `has_sufficient_funds`, and you will
+add a new response to send to the user in case they do not have sufficient funds. 
 
-```yaml
+```yaml-rasa title="domain.yml"
+// highlight-start
 actions:
-  - action_sufficient_balance
+  - action_sufficient_funds
+// highlight-end
 
 slots:
+  ...
+  // highlight-start
   - has_sufficient_funds:
     type: bool
     mappings:
       - type: custom
+  // highlight-end
+
+responses:
+  ...
+  // highlight-start
+  utter_transfer_funds:
+    text: "You do not have enough funds to make this transaction."
+  // highlight-end
 ```
 
 Now you are going to update your flow logic to handle the cases where the user does or does not have
  enough money in their account to make the transfer. 
 
-```yaml
+```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
     description: This flow lets users send money to friends and family.
@@ -352,16 +381,16 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        // highlight-start        
-        next: "check_balance"
-      - id: "check_balance"
-        action: check_balance
+        // highlight-start
+        next: "check_funds"
+      - id: "check_funds"
+        action: action_sufficient_funds
         next:
           - if: has_sufficient_funds
             then: "confirm_transfer"
           - else: "insufficient_funds"
       - id: "insufficient_funds"
-        action: utter_transfer_money_insufficient_funds      
+        action: utter_insufficient_funds      
         // highlight-end      
       - id: "confirm_transfer"
         collect_information: final_confirmation
@@ -372,6 +401,25 @@ flows:
       - id: "transfer_successful"
         action: utter_transfer_complete
 ```
+
+## Testing your Custom Action
+
+Custom actions are run as a separate server to the main Rasa assistant. 
+To start your custom action server, create a new terminal tab and run:
+
+```
+rasa run actions
+```
+
+Double check that in the file `endpoints.yml`, that the section for your custom action server is uncommented:
+
+```yaml title="endpoints.yml"
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+```
+
+Then re-start your bot by running `rasa shell`.
+When you reach the `"check_funds"` step in your flow, Rasa will call the custom action `action_sufficient_funds`
 
 # How-to Guides for Advanced Topics
 
