@@ -5,10 +5,6 @@
       "id": "version-2.x/introduction"
     },
     {
-      "type": "doc",
-      "id": "version-2.x/playground"
-    },
-    {
       "collapsed": false,
       "type": "category",
       "label": "Building Assistants",

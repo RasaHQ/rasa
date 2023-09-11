@@ -9,10 +9,6 @@
       "id": "version-3.x/rasa-pro"
     },
     {
-      "type": "doc",
-      "id": "version-3.x/playground"
-    },
-    {
       "collapsed": true,
       "type": "category",
       "label": "Installation",
