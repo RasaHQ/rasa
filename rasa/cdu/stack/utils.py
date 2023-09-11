@@ -60,7 +60,12 @@ def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStack
 def filled_slots_for_active_flow(
     dialogue_stack: DialogueStack, all_flows: FlowsList
 ) -> Set[str]:
-    """Get all slots that have been filled for the current flow.
+    """Get all slots that have been filled for the 'current user flow'.
+
+    The 'current user flow' is the top-most flow that is user created. All
+    patterns that sit ontop of that user flow, are also included. So any
+    collect information step that is part of a pattern that is part of the
+    current user flow is also included.
 
     Args:
         tracker: The tracker to get the filled slots from.
@@ -73,7 +78,9 @@ def filled_slots_for_active_flow(
 
     for frame in reversed(dialogue_stack.frames):
         if not isinstance(frame, BaseFlowStackFrame):
-            break
+            # we skip all frames that are not flows, e.g. chitchat / search
+            # frames, because they don't have slots.
+            continue
         flow = frame.flow(all_flows)
         for q in flow.previous_collect_information_steps(frame.step_id):
             filled_slots.add(q.collect_information)
