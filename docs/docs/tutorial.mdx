@@ -67,24 +67,24 @@ By default, this tutorial uses the OpenAI API.
 If you'd like to use a different LLM, follow the instructions [here](./llms/llm-configuration.mdx#other-llmsembeddings)
 To set your OpenAI API key, run the following command:
 
-   <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
-     <TabItem value="unix">
+<Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+  <TabItem value="unix">
 
-     ```shell
-     export OPENAI_API_KEY=<your-api-key>
-     ```
+  ```shell
+  export OPENAI_API_KEY=<your-api-key>
+  ```
 
-     </TabItem>
-     <TabItem value="windows">
+  </TabItem>
+  <TabItem value="windows">
 
-      ```shell
-      setx OPENAI_API_KEY <your-api-key>
-      ```
+    ```shell
+    setx OPENAI_API_KEY <your-api-key>
+    ```
 
-      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+    This will apply to future cmd prompt window, so you will need to open a new one to use that variable
 
-     </TabItem>
-   </Tabs>
+  </TabItem>
+</Tabs>
 
 Replacing `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
 
@@ -320,7 +320,7 @@ class ActionSufficientBalance(Action):
 
 Slots are the primary way to pass information to and from custom actions.
 In the `run()` method above, you access the value of the `amount` slot that was set during the conversation,
-and you pass information back to the conversation by returning a `SlotSet` event.
+and you pass information back to the conversation by returning a `SlotSet` event to update the `has_sufficient_funds` slot.
 
 
 <img alt="diagram of how slots are used with custom actions" src={useBaseUrl("/img/slot-communication-customaction.png")} />
