@@ -86,27 +86,24 @@ To configure the API token, follow these steps:
 3.  To set the API key as an environment variable, you can use the following command in a
     terminal or command prompt:
 
-         <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+    <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+      <TabItem value="unix">
 
-    <TabItem value="unix">
+      ```shell
+      export OPENAI_API_KEY=<your-api-key>
+      ```
 
-    ```shell
-    export OPENAI_API_KEY=<your-api-key>
-    ```
+      </TabItem>
+      <TabItem value="windows">
 
-           </TabItem>
+      ```shell
+      setx OPENAI_API_KEY <your-api-key>
+      ```
 
-        <TabItem value="windows">
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
 
-    ```shell
-    setx OPENAI_API_KEY <your-api-key>
-    ```
-
-    This will apply to future cmd prompt window, so you will need to open a new one to use that variable
-
-           </TabItem>
-
-      </Tabs>
+      </TabItem>
+    </Tabs>
 
     Replace `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
 
@@ -141,51 +138,45 @@ To configure these parameters, follow these steps:
 
 1.  To configure the `openai.api_type` as an environment variable:
 
-         <Tabs groupId="os-dist-api-type" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+    <Tabs groupId="os-dist-api-type" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+      <TabItem value="unix">
 
-    <TabItem value="unix">
+      ```shell
+      export OPENAI_API_TYPE="azure"
+      ```
 
-    ```shell
-    export OPENAI_API_TYPE="azure"
-    ```
+      </TabItem>
+      <TabItem value="windows">
 
-           </TabItem>
+      ```shell
+      setx OPENAI_API_TYPE "azure"
+      ```
 
-        <TabItem value="windows">
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
 
-    ```shell
-    setx OPENAI_API_TYPE "azure"
-    ```
-
-    This will apply to future cmd prompt window, so you will need to open a new one to use that variable
-
-           </TabItem>
-
-      </Tabs>
+      </TabItem>
+    </Tabs>
 
 2.  To configure the `openai.api_base` as an environment variable:
 
-         <Tabs groupId="os-dist-api-base" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+    <Tabs groupId="os-dist-api-base" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+      <TabItem value="unix">
 
-    <TabItem value="unix">
+      ```shell
+      export OPENAI_API_BASE=<your-azure-openai-instance-url>
+      ```
 
-    ```shell
-    export OPENAI_API_BASE=<your-azure-openai-instance-url>
-    ```
+      </TabItem>
+      <TabItem value="windows">
 
-           </TabItem>
+      ```shell
+      setx OPENAI_API_BASE <your-azure-openai-instance-url>
+      ```
 
-        <TabItem value="windows">
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
 
-    ```shell
-    setx OPENAI_API_BASE <your-azure-openai-instance-url>
-    ```
-
-    This will apply to future cmd prompt window, so you will need to open a new one to use that variable
-
-           </TabItem>
-
-      </Tabs>
+      </TabItem>
+    </Tabs>
 
 3.  To configure the `deployment` in the config.yml file, add it in the pipeline component like this:
 
