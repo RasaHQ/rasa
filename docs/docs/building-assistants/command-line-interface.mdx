@@ -331,8 +331,8 @@ The following arguments can be used to configure your Rasa server:
 
 ```
 
-For more information on the additional parameters, see [Model Storage](./model-storage.mdx).
-See the Rasa [HTTP API](./http-api.mdx) page for detailed documentation of all the endpoints.
+For more information on the additional parameters, see [Model Storage](../production/model-storage.mdx).
+See the Rasa [HTTP API](../http-api.mdx) page for detailed documentation of all the endpoints.
 
 ## rasa run actions
 
@@ -391,8 +391,8 @@ rasa test nlu
 ```
 
 You can find more details on specific arguments for each testing type in
-[Evaluating an NLU Model](./testing-your-assistant.mdx#evaluating-an-nlu-model) and
-[Evaluating a Dialogue Management Model](./testing-your-assistant.mdx#evaluating-a-dialogue-model).
+[Evaluating an NLU Model](../production/testing-your-assistant.mdx#evaluating-an-nlu-model) and
+[Evaluating a Dialogue Management Model](../production/testing-your-assistant.mdx#evaluating-a-dialogue-model).
 
 The following arguments are available for `rasa test`:
 
@@ -412,7 +412,7 @@ You can now use end-to-end testing to test your assistant as a whole, including 
 
 :::
 
-To run [end-to-end testing](./testing-your-assistant.mdx#end-to-end-testing) on your trained model, run:
+To run [end-to-end testing](../production/testing-your-assistant.mdx#end-to-end-testing) on your trained model, run:
 
 ```bash
 rasa test e2e
@@ -635,8 +635,8 @@ This feature is currently experimental and might change or be removed in the fut
 
 :::
 
-The following command applies the [markers](./markers.mdx) you defined in your marker configuration file,
-to pre-existing dialogues stored in your [tracker store](./production/tracker-stores.mdx), and produces `.csv` files containing
+The following command applies the [markers](../production/markers.mdx) you defined in your marker configuration file,
+to pre-existing dialogues stored in your [tracker store](../production/tracker-stores.mdx), and produces `.csv` files containing
 the extracted markers and summary statistics:
 
 ```bash
@@ -686,7 +686,7 @@ Python Logging Options:
 This command is available from Rasa Pro 3.6.0 and requires [Rasa Analytics Data Pipeline](../operating/analytics/getting-started-with-analytics.mdx)
 :::
 
-This command applies to [markers](./markers.mdx) and their [real-time processing](../operating/analytics/realtime-markers.mdx).
+This command applies to [markers](../production/markers.mdx) and their [real-time processing](../operating/analytics/realtime-markers.mdx).
 Running this command validates the marker configuration file against the domain file and uploads the configuration to Analytics Data Pipeline
 
 ```

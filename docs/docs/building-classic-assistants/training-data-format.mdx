@@ -20,8 +20,8 @@ The training data parser determines the training data type using top level keys.
 The [domain](../building-assistants/glossary.mdx#domain) uses
 the same YAML format as the training data and can also be split across
 multiple files or combined in one file. The domain includes
-the definitions for [responses](./responses.mdx) and [forms](./building-classic-assistants/forms.mdx).
-See the [documentation for the domain](./building-assistants/domain.mdx) for information on how to format your domain file.
+the definitions for [responses](../building-assistants/responses.mdx) and [forms](./forms.mdx).
+See the [documentation for the domain](../building-assistants/domain.mdx) for information on how to format your domain file.
 
 :::note Legacy Formats
 Looking for Markdown data format? It's removed in Rasa 3.0, but
@@ -461,7 +461,7 @@ A [form](../building-assistants/glossary.mdx#form) is a specific kind of custom 
 a set of required slots and ask the user for this information. You
 [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
 Once defined, you should specify the [happy path](../building-assistants/glossary.mdx#happy--unhappy-paths)
-for a form as a [rule](./building-classic-assistants/forms.mdx). You should include interruptions of forms or
+for a form as a [rule](./forms.mdx). You should include interruptions of forms or
 other "unhappy paths" in stories so that the model can
 generalize to unseen conversation sequences.
 As a step in a story, a form takes the following format:
@@ -706,7 +706,7 @@ rasa test
 ```
 
 If you want to know more about testing head over to
-[Testing Your Assistant](testing-your-assistant.mdx).
+[Testing Your Assistant](../production/testing-your-assistant.mdx).
 
 ## End-to-end Training
 

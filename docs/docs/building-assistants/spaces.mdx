@@ -218,7 +218,7 @@ generated during assembly.
 ### How does filter and rerank work?
 
 The filter and rerank component post-processes the intent ranking of the [intent
-classification components](../building-classic-assistants/components.mdx#intent-classifiers). It accesses the [tracker](./action-server/sdk-tracker.mdx)
+classification components](../building-classic-assistants/components.mdx#intent-classifiers). It accesses the [tracker](../action-server/sdk-tracker.mdx)
 and checks which space are active or would be activated, in case an entry intent is at the top.
 
 It then removes any intents from the ranking that are not possible. Further it also

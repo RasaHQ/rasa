@@ -27,7 +27,7 @@ requirements:
 
 ## Graph Components
 
-Rasa uses the passed in [model configuration](model-configuration.mdx) to build a
+Rasa uses the passed in [model configuration](../building-classic-assistants/model-configuration.mdx) to build a
 [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
 This graph describes the dependencies between the items in your model configuration and
 how data flows between them. This has two major benefits:
@@ -440,7 +440,7 @@ to specify the following details:
 ## Using Custom Components in your Model Configuration
 
 You can use custom graph components like any other NLU component or policy within your
-[model configuration](model-configuration.mdx). The only change is that you have to specify
+[model configuration](../building-classic-assistants/model-configuration.mdx). The only change is that you have to specify
 the full module name instead of the class name only. The full module name depends on
 your module's location in relation to the specified
 [PYTHONPATH](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH).

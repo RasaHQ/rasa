@@ -23,7 +23,7 @@ or filter conversations for Conversation Driven Development
 
 :::
 
-In Rasa Pro, [Markers](../../markers.mdx) are a powerful feature that allows
+In Rasa Pro, [Markers](../../production/markers.mdx) are a powerful feature that allows
 you to track and extract custom conversational events. With the Analytics
 Data Pipeline, you can now process these markers in real-time, enabling
 you to gain valuable insights and enhance the performance of your Rasa
@@ -37,7 +37,7 @@ analysis of markers to track solution and abandonment rates in your conversation
 
 ## Defining Markers
 
-Please consult the [Markers](../../markers.mdx/#defining-markers) section of Rasa documentation
+Please consult the [Markers](../../production/markers.mdx/#defining-markers) section of Rasa documentation
 for details about defining markers.
 
 ## Enable Real-time Processing
@@ -89,7 +89,7 @@ in the `rasa_marker` table.
 
 The evaluation of Markers in the Pipeline is similar to the `rasa evaluate markers`
 command which can be used to process Markers from the conversations in Tracker Store.
-Read more about it [here](../../markers.mdx/#extracting-markers)
+Read more about it [here](../../production/markers.mdx/#extracting-markers)
 
 Extracted markers are added to the `rasa_markers` table in the database
 immediately once they are processed. Each row in this table contains

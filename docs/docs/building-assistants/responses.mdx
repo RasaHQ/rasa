@@ -61,7 +61,7 @@ filled with `None`.
 Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
 In your custom action code, you can supply values to a response to fill in specific variables.
 If you're using the Rasa SDK for your action server,
-you can pass a value for the variable as a keyword argument to [`dispatcher.utter_message`](./action-server/sdk-dispatcher.mdx):
+you can pass a value for the variable as a keyword argument to [`dispatcher.utter_message`](../action-server/sdk-dispatcher.mdx):
 
 ```python {3}
 dispatcher.utter_message(
@@ -70,7 +70,7 @@ dispatcher.utter_message(
 )
 ```
 
-If you use a [different custom action server](./action-server/index.mdx#other-action-servers),
+If you use a [different custom action server](../action-server/index.mdx#other-action-servers),
 supply the values by adding extra parameters to the responses your server returns:
 
 ```json {8}
@@ -106,7 +106,7 @@ of the two response variations to use.
 
 :::note New in Rasa 3.6
 You can now set an ID for any response.
-This is useful when you want to use the [NLG server](./nlg.mdx) to generate the response.
+This is useful when you want to use the [NLG server](../production/nlg.mdx) to generate the response.
 
 Type for ID is string.
 
@@ -378,7 +378,7 @@ as a JSON payload.
 
 Here's an example of how to send a
 [date picker](https://api.slack.com/reference/block-kit/block-elements#datepicker) to the
-[Slack Output Channel](connectors/slack.mdx):
+[Slack Output Channel](../connectors/slack.mdx):
 
 ```yaml-rasa {3-14} title="domain.yml"
 responses:
@@ -447,7 +447,7 @@ class ActionGreet(Action):
 ```
 
 If you use a
-[different custom action server](./action-server/index.mdx#other-action-servers),
+[different custom action server](../action-server/index.mdx#other-action-servers),
 your server should return the following JSON to call the `utter_greet` response:
 
 ```json {5}

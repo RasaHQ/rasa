@@ -298,7 +298,7 @@ module.exports = {
       label: "Next-Gen Assistants",
       collapsed: false,
       items: [
-        "flows", // MOVED
+        "building-assistants/flows", // MOVED
         "llms/unhappy-paths",
         "llms/llm-detector",
       ],
