@@ -419,7 +419,13 @@ action_endpoint:
 ```
 
 Then re-start your bot by running `rasa shell`.
-When you reach the `"check_funds"` step in your flow, Rasa will call the custom action `action_sufficient_funds`
+When you reach the `"check_funds"` step in your flow, Rasa will call the custom action `action_sufficient_funds`.
+We have hardcoded the user's balance to be `1000`, so if you try to send more, the assistant will tell you that
+you don't have enough funds in your account. 
+
+At this point you have experience using some of the key concepts involved in building with Rasa.
+Congratulations! Take some time to look over these more advanced topics to learn even more.
+
 
 # How-to Guides for Advanced Topics
 
