@@ -160,6 +160,7 @@ slots:
     type: text
     mappings:
       - type: custom
+  ...
 ```
 
 They can be used to store information provided to you by the user or fetched via an API call.
@@ -183,7 +184,7 @@ flows:
 ```
 
 Rasa will look for a  `response` called `utter_ask_recipient` in your domain file and use this to 
-phrase the question to the user. It will then wait for a response. 
+phrase the question to the user. 
 
 ```yaml-rasa title="domain.yml"
 responses:
@@ -191,7 +192,8 @@ responses:
     - text: "Who would you like to send money to?"
 ```
 
-Rasa will try to use this answer to fill the slot `recipient`.
+After sending this message, Rasa will wait for a response from the user.
+When the user responds, Rasa will try to use their answer to fill the slot `recipient`.
 Read about slot validation (link) to learn more about how to run additional checks on slot values.
 
 The diagram below summarizes how slot values are used to collect and store information,
@@ -210,15 +212,33 @@ proceed to the next step.
 It will not stop to wait for the user's next message. 
 For now, this is the final step in the flow, so there is no next step to execute and the flow completes. 
 
+```yaml-rasa title="flows.yml"
+flows:
+  transfer_money:
+    description: This flow lets users send money to friends and family.
+    steps:
+      - id: "ask_recipient"
+        collect_information: recipient
+        next: "ask_amount"
+      - id: "ask_amount"
+        collect_information: amount
+        next: "transfer_complete"
+      - id: "transfer_complete"
+        // highlight-next-line      
+        action: utter_transfer_complete        
+```
+
 ## Branching Logic
 
 Slots are also used to build branching logic in flows.
 
 You're going to introduce an extra step to your flow, asking the user to confirm the amount 
 and the recipient before sending the transfer. 
-Since you are asking a yes/no question, you can store the result in a boolean `slot`.
+Since you are asking a yes/no question, you can store the result in a boolean `slot` 
+which you will call `final_confirmation`. 
 
-In your domain file, add the definition of this slot and the corresponding responses:
+In your domain file, add the definition of the `final_confirmation` slot 
+and the corresponding response: `utter_ask_final_confirmation`.
 
 ```yaml-rasa title="domain.yml"
 slots:
@@ -243,9 +263,6 @@ responses:
   // highlight-start      
   utter_ask_final_confirmation:
     - text: "Please confirm: you want to transfer {amount} to {recipient}?"
-  
-  utter_transfer_cancelled:
-    - text: "Your transfer has been cancelled."
   // highlight-end    
 ```
 
@@ -271,10 +288,7 @@ flows:
         collect_information: final_confirmation
         next:
           - if: final_confirmation
-            then: "transfer_successful"
-          - else: "transfer_cancelled"
-      - id: "transfer_cancelled"
-        action: utter_transfer_cancelled          
+            then: "transfer_successful"        
         // highlight-end
       - id: "transfer_successful"
         action: utter_transfer_complete
@@ -284,7 +298,7 @@ flows:
 The `next` attribute of your `confirm_transfer` step includes a `condition`.
 The expression after the `if:` key will be evaluated and return `True` or `False`.
 In this case, we're using the value of the boolean slot `final_confirmation`. 
-Conditions can be used to create branching logic, including logical operators like `and`, `or`, etc.
+Conditions can be used to create branching logic, including logical operators like `AND`, `OR`, etc.
 You can learn more about conditions and advanced logic here (link). 
 
 To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your bot.
@@ -328,7 +342,7 @@ class ActionSufficientBalance(Action):
         # result = requests.get("https://example.com/api/balance")
         # balance = result.json()["balance"]
         transfer_amount = tracker.get_slot("amount")
-        has_sufficient_funds = transfer_amount < balance
+        has_sufficient_funds = transfer_amount <= balance
         return [SlotSet("has_sufficient_funds", has_sufficient_funds)]
 ```
 
@@ -340,7 +354,7 @@ and you pass information back to the conversation by returning a `SlotSet` event
 <img alt="diagram of how slots are used with custom actions" src={useBaseUrl("/img/slot-communication-customaction.png")} />
 
 
-Now you are going to make three additions to your domain.yml
+Now you are going to make three additions to your `domain.yml`.
 You will add a top-level section listing your custom actions. 
 You will add the new boolean slot `has_sufficient_funds`, and you will
 add a new response to send to the user in case they do not have sufficient funds. 
@@ -354,7 +368,7 @@ actions:
 slots:
   ...
   // highlight-start
-  - has_sufficient_funds:
+  has_sufficient_funds:
     type: bool
     mappings:
       - type: custom
@@ -363,7 +377,7 @@ slots:
 responses:
   ...
   // highlight-start
-  utter_transfer_funds:
+  utter_insufficient_funds:
     text: "You do not have enough funds to make this transaction."
   // highlight-end
 ```
@@ -397,7 +411,9 @@ flows:
         next:
           - if: final_confirmation
             then: "transfer_successful"
-
+          - else: "transfer_cancelled"
+      - id: "transfer_cancelled"
+        action: utter_transfer_cancelled
       - id: "transfer_successful"
         action: utter_transfer_complete
 ```
