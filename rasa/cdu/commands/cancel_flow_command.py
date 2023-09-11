@@ -11,7 +11,7 @@ from rasa.cdu.stack.dialogue_stack import DialogueStack
 from rasa.cdu.stack.frames.flow_frame import BaseFlowStackFrame
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flow import Flow, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.cdu.stack.utils import top_user_flow_frame
 
@@ -36,6 +36,37 @@ class CancelFlowCommand(Command):
         """
         return CancelFlowCommand()
 
+    @staticmethod
+    def select_canceled_frames(stack: DialogueStack, current_flow: Flow) -> List[str]:
+        """Selects the frames that were canceled.
+
+        Args:
+            dialogue_stack: The dialogue stack.
+            current_flow: The current flow.
+
+        Returns:
+            The frames that were canceled."""
+        canceled_frames = []
+        # we need to go through the original stack dump in reverse order
+        # to find the frames that were canceled. we cancel everthing from
+        # the top of the stack until we hit the user flow that was canceled.
+        # this will also cancel any patterns put ontop of that user flow,
+        # e.g. corrections.
+        for frame in reversed(stack.frames):
+            canceled_frames.append(frame.frame_id)
+            if (
+                isinstance(frame, BaseFlowStackFrame)
+                and frame.flow_id == current_flow.id
+            ):
+                return canceled_frames
+        else:
+            # we should never get here as we should always find the user flow
+            # that was canceled.
+            raise ValueError(
+                f"Could not find the user flow '{current_flow.id}' "
+                f"on the stack. Current stack: {stack}."
+            )
+
     def run_command_on_tracker(
         self,
         tracker: DialogueStateTracker,
@@ -52,40 +83,27 @@ class CancelFlowCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        original_dialogue_stack = DialogueStack.from_tracker(original_tracker)
 
-        dialogue_stack = DialogueStack.from_tracker(tracker)
-        current_user_frame = top_user_flow_frame(dialogue_stack)
-        current_top_flow = (
-            current_user_frame.flow(all_flows) if current_user_frame else None
-        )
-        if not current_top_flow:
+        stack = DialogueStack.from_tracker(tracker)
+        original_stack = DialogueStack.from_tracker(original_tracker)
+        user_frame = top_user_flow_frame(original_stack)
+        current_flow = user_frame.flow(all_flows) if user_frame else None
+
+        if not current_flow:
             structlogger.debug(
                 "command_executor.skip_cancel_flow.no_active_flow", command=self
             )
             return []
 
-        canceled_frames = []
-        # we need to go through the original stack dump in reverse order
-        # to find the frames that were canceled. we cancel everthing from
-        # the top of the stack until we hit the user flow that was canceled.
-        # this will also cancel any patterns put ontop of that user flow,
-        # e.g. corrections.
-        for frame in reversed(original_dialogue_stack.frames):
-            canceled_frames.append(frame.frame_id)
-            if (
-                current_user_frame
-                and isinstance(frame, BaseFlowStackFrame)
-                and frame.flow_id == current_user_frame.flow_id
-            ):
-                break
+        # we pass in the original dialogue stack (before any of the currently
+        # predicted commands were applied) to make sure we don't cancel any
+        # frames that were added by the currently predicted commands.
+        canceled_frames = self.select_canceled_frames(original_stack, current_flow)
 
-        dialogue_stack.push(
+        stack.push(
             CancelPatternFlowStackFrame(
-                canceled_name=current_user_frame.flow(all_flows).readable_name()
-                if current_user_frame
-                else None,
+                canceled_name=current_flow.readable_name(),
                 canceled_frames=canceled_frames,
             )
         )
-        return [SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack.as_dict())]
+        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]

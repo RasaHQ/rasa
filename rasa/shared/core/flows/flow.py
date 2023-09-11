@@ -173,6 +173,16 @@ class FlowsList:
         for flow in self.underlying_flows:
             flow.validate()
 
+    def non_pattern_flows(self) -> List[str]:
+        """Get all flows that can be started.
+
+        Args:
+            all_flows: All flows.
+
+        Returns:
+            All flows that can be started."""
+        return [f.id for f in self.underlying_flows if not f.is_handling_pattern()]
+
 
 @dataclass
 class Flow:

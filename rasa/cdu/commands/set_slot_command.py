@@ -33,7 +33,10 @@ class SetSlotCommand(Command):
         Returns:
             The converted dictionary.
         """
-        return SetSlotCommand(name=data["name"], value=data["value"])
+        try:
+            return SetSlotCommand(name=data["name"], value=data["value"])
+        except KeyError as e:
+            raise ValueError(f"Missing key when parsing SetSlotCommand: {e}") from e
 
     def run_command_on_tracker(
         self,
@@ -51,8 +54,8 @@ class SetSlotCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        dialogue_stack = DialogueStack.from_tracker(tracker)
-        slots_so_far = filled_slots_for_active_flow(dialogue_stack, all_flows)
+        stack = DialogueStack.from_tracker(tracker)
+        slots_so_far = filled_slots_for_active_flow(stack, all_flows)
         if tracker.get_slot(self.name) == self.value:
             # value hasn't changed, skip this one
             structlogger.debug(

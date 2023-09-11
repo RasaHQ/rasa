@@ -33,7 +33,12 @@ class ClarifyCommand(Command):
         Returns:
             The converted dictionary.
         """
-        return ClarifyCommand(options=data["options"])
+        try:
+            return ClarifyCommand(options=data["options"])
+        except KeyError as e:
+            raise ValueError(
+                f"Missing parameter '{e}' while parsing ClarifyCommand."
+            ) from e
 
     def run_command_on_tracker(
         self,
@@ -67,8 +72,8 @@ class ClarifyCommand(Command):
             )
             return []
 
-        dialogue_stack = DialogueStack.from_tracker(tracker)
+        stack = DialogueStack.from_tracker(tracker)
         relevant_flows = [all_flows.flow_by_id(opt) for opt in clean_options]
         names = [flow.readable_name() for flow in relevant_flows if flow is not None]
-        dialogue_stack.push(ClarifyPatternFlowStackFrame(names=names))
-        return [SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack.as_dict())]
+        stack.push(ClarifyPatternFlowStackFrame(names=names))
+        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]

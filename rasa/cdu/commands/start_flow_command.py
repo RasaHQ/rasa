@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List
 
 import structlog
 from rasa.cdu.commands import Command
 from rasa.cdu.stack.dialogue_stack import DialogueStack
 from rasa.cdu.stack.frames.flow_frame import FlowStackFrameType, UserFlowStackFrame
-from rasa.cdu.stack.utils import top_user_flow_frame
+from rasa.cdu.stack.utils import top_user_flow_frame, user_flows_on_the_stack
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import FlowsList
@@ -34,33 +34,12 @@ class StartFlowCommand(Command):
         Returns:
             The converted dictionary.
         """
-        return StartFlowCommand(flow=data["flow"])
-
-    @staticmethod
-    def _all_user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:
-        """Get all user flows that are currently on the stack.
-
-        Args:
-            dialogue_stack: The dialogue stack.
-
-        Returns:
-            All user flows that are currently on the stack."""
-        return {
-            f.flow_id
-            for f in dialogue_stack.frames
-            if isinstance(f, UserFlowStackFrame)
-        }
-
-    @staticmethod
-    def _all_startable_flows(all_flows: FlowsList) -> List[str]:
-        """Get all flows that can be started.
-
-        Args:
-            all_flows: All flows.
-
-        Returns:
-            All flows that can be started."""
-        return [f.id for f in all_flows.underlying_flows if not f.is_handling_pattern()]
+        try:
+            return StartFlowCommand(flow=data["flow"])
+        except KeyError as e:
+            raise ValueError(
+                f"Missing parameter '{e}' while parsing StartFlowCommand."
+            ) from e
 
     def run_command_on_tracker(
         self,
@@ -78,21 +57,21 @@ class StartFlowCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        dialogue_stack = DialogueStack.from_tracker(tracker)
-        original_dialogue_stack = DialogueStack.from_tracker(original_tracker)
+        stack = DialogueStack.from_tracker(tracker)
+        original_stack = DialogueStack.from_tracker(original_tracker)
 
-        if self.flow in self._all_user_flows_on_the_stack(dialogue_stack):
+        if self.flow in user_flows_on_the_stack(stack):
             structlogger.debug(
                 "command_executor.skip_command.already_started_flow", command=self
             )
             return []
-        elif self.flow not in self._all_startable_flows(all_flows):
+        elif self.flow not in all_flows.non_pattern_flows():
             structlogger.debug(
                 "command_executor.skip_command.start_invalid_flow_id", command=self
             )
             return []
 
-        original_user_frame = top_user_flow_frame(original_dialogue_stack)
+        original_user_frame = top_user_flow_frame(original_stack)
         original_top_flow = (
             original_user_frame.flow(all_flows) if original_user_frame else None
         )
@@ -102,7 +81,5 @@ class StartFlowCommand(Command):
             else FlowStackFrameType.REGULAR
         )
         structlogger.debug("command_executor.start_flow", command=self)
-        dialogue_stack.push(
-            UserFlowStackFrame(flow_id=self.flow, frame_type=frame_type)
-        )
-        return [SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack.as_dict())]
+        stack.push(UserFlowStackFrame(flow_id=self.flow, frame_type=frame_type))
+        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]

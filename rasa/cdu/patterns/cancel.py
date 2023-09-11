@@ -43,7 +43,7 @@ class CancelPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_cancel"
+        return "pattern_cancel_flow"
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> CancelPatternFlowStackFrame:

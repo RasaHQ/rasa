@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 from rasa.cdu.commands import FreeFormAnswerCommand
 from rasa.cdu.stack.dialogue_stack import DialogueStack
-from rasa.cdu.stack.frames.chitchat_frame import ChitChatStackFrame
+from rasa.cdu.stack.frames.chit_chat_frame import ChitChatStackFrame
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import FlowsList
@@ -45,6 +45,6 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
         Returns:
             The events to apply to the tracker.
         """
-        dialogue_stack = DialogueStack.from_tracker(tracker)
-        dialogue_stack.push(ChitChatStackFrame())
-        return [SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack.as_dict())]
+        stack = DialogueStack.from_tracker(tracker)
+        stack.push(ChitChatStackFrame())
+        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]

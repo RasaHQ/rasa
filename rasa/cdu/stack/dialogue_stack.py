@@ -46,7 +46,7 @@ class DialogueStack:
         """Pushes a new frame onto the stack.
 
         If the frame shouldn't be put on top of the stack, the index can be
-        specified. Not specifying an index equals `push(frame, index=-1)`.
+        specified. Not specifying an index equals `push(frame, index=len(frames))`.
 
         Args:
             frame: The frame to push onto the stack.

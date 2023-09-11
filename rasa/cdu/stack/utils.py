@@ -86,3 +86,16 @@ def filled_slots_for_active_flow(
             break
 
     return filled_slots
+
+
+def user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:
+    """Get all user flows that are currently on the stack.
+
+    Args:
+        dialogue_stack: The dialogue stack.
+
+    Returns:
+        All user flows that are currently on the stack."""
+    return {
+        f.flow_id for f in dialogue_stack.frames if isinstance(f, UserFlowStackFrame)
+    }
