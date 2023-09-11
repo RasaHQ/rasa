@@ -7,7 +7,19 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        next: "transfer_complete"
-      - id: "transfer_complete"
+        next: "check_funds"
+      - id: "check_funds"
+        action: action_sufficient_funds
+        next:
+          - if: has_sufficient_funds
+            then: "confirm_transfer"
+          - else: "insufficient_funds"
+      - id: "insufficient_funds"
+        action: utter_insufficient_funds      
+      - id: "confirm_transfer"
+        collect_information: final_confirmation
+        next:
+          - if: final_confirmation
+            then: "transfer_successful"
+      - id: "transfer_successful"
         action: utter_transfer_complete
- 
