@@ -4,7 +4,8 @@ sidebar_label: Knowledge Base Actions
 title: Knowledge Base Actions
 abstract: Leverage information from knowledge bases inside conversations using `ActionQueryKnowledgeBase` in open source bot framework Rasa.
 ---
-import useBaseUrl from '@docusaurus/useBaseUrl';
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
 
 :::caution
 This feature is experimental.
@@ -15,8 +16,6 @@ If you have feedback (positive or negative) please share it with us on the [foru
 :::
 
 Knowledge base actions enable you to handle the following kind of conversations:
-
-
 
 <img alt="image" src={useBaseUrl("/img/knowledge-base-example.png")} />
 
@@ -40,7 +39,12 @@ for implementing this custom action below.
 
 ## Using `ActionQueryKnowledgeBase`
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="create-knowledge-base"></a>
+<a
+  aria-hidden="true"
+  tabIndex="-1"
+  className="anchor enhancedAnchor"
+  id="create-knowledge-base"
+></a>
 
 ### Create a Knowledge Base
 
@@ -57,61 +61,61 @@ Every object type maps to a list of objects – here we have a list of 3 restaur
 
 ```json
 {
-    "restaurant": [
-        {
-            "id": 0,
-            "name": "Donath",
-            "cuisine": "Italian",
-            "outside-seating": true,
-            "price-range": "mid-range"
-        },
-        {
-            "id": 1,
-            "name": "Berlin Burrito Company",
-            "cuisine": "Mexican",
-            "outside-seating": false,
-            "price-range": "cheap"
-        },
-        {
-            "id": 2,
-            "name": "I due forni",
-            "cuisine": "Italian",
-            "outside-seating": true,
-            "price-range": "mid-range"
-        }
-    ],
-    "hotel": [
-        {
-            "id": 0,
-            "name": "Hilton",
-            "price-range": "expensive",
-            "breakfast-included": true,
-            "city": "Berlin",
-            "free-wifi": true,
-            "star-rating": 5,
-            "swimming-pool": true
-        },
-        {
-            "id": 1,
-            "name": "Hilton",
-            "price-range": "expensive",
-            "breakfast-included": true,
-            "city": "Frankfurt am Main",
-            "free-wifi": true,
-            "star-rating": 4,
-            "swimming-pool": false
-        },
-        {
-            "id": 2,
-            "name": "B&B",
-            "price-range": "mid-range",
-            "breakfast-included": false,
-            "city": "Berlin",
-            "free-wifi": false,
-            "star-rating": 1,
-            "swimming-pool": false
-        },
-    ]
+  "restaurant": [
+    {
+      "id": 0,
+      "name": "Donath",
+      "cuisine": "Italian",
+      "outside-seating": true,
+      "price-range": "mid-range"
+    },
+    {
+      "id": 1,
+      "name": "Berlin Burrito Company",
+      "cuisine": "Mexican",
+      "outside-seating": false,
+      "price-range": "cheap"
+    },
+    {
+      "id": 2,
+      "name": "I due forni",
+      "cuisine": "Italian",
+      "outside-seating": true,
+      "price-range": "mid-range"
+    }
+  ],
+  "hotel": [
+    {
+      "id": 0,
+      "name": "Hilton",
+      "price-range": "expensive",
+      "breakfast-included": true,
+      "city": "Berlin",
+      "free-wifi": true,
+      "star-rating": 5,
+      "swimming-pool": true
+    },
+    {
+      "id": 1,
+      "name": "Hilton",
+      "price-range": "expensive",
+      "breakfast-included": true,
+      "city": "Frankfurt am Main",
+      "free-wifi": true,
+      "star-rating": 4,
+      "swimming-pool": false
+    },
+    {
+      "id": 2,
+      "name": "B&B",
+      "price-range": "mid-range",
+      "breakfast-included": false,
+      "city": "Berlin",
+      "free-wifi": false,
+      "star-rating": 1,
+      "swimming-pool": false
+    }
+  ]
 }
 ```
 
@@ -125,12 +129,12 @@ If it doesn't, you'll have to [customize your InMemoryKnowledgeBase](./knowledge
 
 In this section:
 
-* we will introduce a new intent, `query_knowledge_base`
+- we will introduce a new intent, `query_knowledge_base`
 
-* we will annotate `mention` entities so that our model detects indirect mentions of objects like “the
+- we will annotate `mention` entities so that our model detects indirect mentions of objects like “the
   first one”
 
-* we will use [synonyms](../training-data-format.mdx#synonyms) extensively
+- we will use [synonyms](../../building-classic-assistants/training-data-format.mdx#synonyms) extensively
 
 For the bot to understand that the user wants to retrieve information from the knowledge base, you need to define
 a new intent. We will call it `query_knowledge_base`.
@@ -165,15 +169,15 @@ You should add examples for every object type that exists in your knowledge base
 In addition to adding a variety of training examples for each query type,
 you need to specify and annotate the following entities in your training examples:
 
-* `object_type`: Whenever a training example references a specific object type from your knowledge base, the object type should
-  be marked as an entity. Use [synonyms](../training-data-format.mdx#synonyms) to map e.g. `restaurants` to `restaurant`, the correct
+- `object_type`: Whenever a training example references a specific object type from your knowledge base, the object type should
+  be marked as an entity. Use [synonyms](../../building-classic-assistants/training-data-format.mdx#synonyms) to map e.g. `restaurants` to `restaurant`, the correct
   object type listed as a key in the knowledge base.
 
-* `mention`: If the user refers to an object via “the first one”, “that one”, or “it”, you should mark those terms
+- `mention`: If the user refers to an object via “the first one”, “that one”, or “it”, you should mark those terms
   as `mention`. We also use synonyms to map some of the mentions to symbols. You can learn about that
   in [resolving mentions](./knowledge-base-actions.mdx#resolve-mentions).
 
-* `attribute`: All attribute names defined in your knowledge base should be identified as `attribute` in the
+- `attribute`: All attribute names defined in your knowledge base should be identified as `attribute` in the
   NLU data. Again, use synonyms to map variations of an attribute name to the one used in the
   knowledge base.
 
@@ -206,7 +210,12 @@ slots:
       entity: attribute
 ```
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="create-action-query-knowledge-base"></a>
+<a
+  aria-hidden="true"
+  tabIndex="-1"
+  className="anchor enhancedAnchor"
+  id="create-action-query-knowledge-base"
+></a>
 
 ### Create an Action to Query your Knowledge Base
 
@@ -315,7 +324,7 @@ attribute of interest.
 
 :::info New in 3.6
 The user is not required to query the knowledge base to list any kind of object prior to this.
-The `ActionQueryKnowledgeBase` will extract the object type from the user's request and query the knowledge base for an attribute of the object. 
+The `ActionQueryKnowledgeBase` will extract the object type from the user's request and query the knowledge base for an attribute of the object.
 :::
 
 For example, if the user asks something like:
@@ -337,7 +346,12 @@ intents:
 Make sure to add the object type, “restaurant,” to the domain file as entity and slot. This will support `ActionQueryKnowledgeBase`
 to extract the object type of the object the user is interested in.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="resolve-mentions"></a>
+<a
+  aria-hidden="true"
+  tabIndex="-1"
+  className="anchor enhancedAnchor"
+  id="resolve-mentions"
+></a>
 
 ### Resolve Mentions
 
@@ -355,11 +369,11 @@ mentions such as “it” or “that one”.
 
 When a user refers to an object by its position in a list, it is called an ordinal mention. Here's an example:
 
-* User: What restaurants in Berlin do you know?
+- User: What restaurants in Berlin do you know?
 
-* Bot: Found the following objects of type 'restaurant':  1: I due forni  2: PastaBar  3: Berlin Burrito Company
+- Bot: Found the following objects of type 'restaurant': 1: I due forni 2: PastaBar 3: Berlin Burrito Company
 
-* User: Does the first one have outside seating?
+- User: Does the first one have outside seating?
 
 The user referred to “I due forni” by the term “the first one”.
 Other ordinal mentions might include “the second one,” “the last one,” “any,” or “3”.
@@ -390,7 +404,7 @@ The ordinal mention mapping maps a string, such as “1”, to the object in a l
 object at index `0`.
 
 As the ordinal mention mapping does not, for example, include an entry for “the first one”,
-it is important that you use [Entity Synonyms](../training-data-format.mdx#synonyms) to map “the first one” in your NLU data to “1”:
+it is important that you use [Entity Synonyms](../../building-classic-assistants/training-data-format.mdx#synonyms) to map “the first one” in your NLU data to “1”:
 
 ```yaml-rasa
 intents:
@@ -410,15 +424,15 @@ You can overwrite the ordinal mention mapping by calling the function `set_ordin
 
 Take a look at the following conversation:
 
-* User: What is the cuisine of PastaBar?
+- User: What is the cuisine of PastaBar?
 
-* Bot: PastaBar has an Italian cuisine.
+- Bot: PastaBar has an Italian cuisine.
 
-* User: Does it have wifi?
+- User: Does it have wifi?
 
-* Bot: Yes.
+- Bot: Yes.
 
-* User: Can you give me an address?
+- User: Can you give me an address?
 
 In the question “Does it have wifi?”, the user refers to “PastaBar” by the word “it”.
 If the NER detected “it” as the entity `mention`, the knowledge base action would resolve it to the last mentioned
@@ -438,9 +452,9 @@ You can disable this behavior by setting `use_last_object_mention` to `False` wh
 You can overwrite the following two functions of `ActionQueryKnowledgeBase` if you'd like to customize what the bot
 says to the user:
 
-* `utter_objects()`
+- `utter_objects()`
 
-* `utter_attribute_value()`
+- `utter_attribute_value()`
 
 `utter_objects()` is used when the user has requested a list of objects.
 Once the bot has retrieved the objects from the knowledge base, it will respond to the user by default with a message, formatted like:
@@ -481,9 +495,9 @@ how to use knowledge bases in custom actions. The tutorial explains the implemen
 `ActionQueryKnowledgeBase` should allow you to easily get started with integrating knowledge bases into your actions.
 However, the action can only handle two kind of user requests:
 
-* the user wants to get a list of objects from the knowledge base
+- the user wants to get a list of objects from the knowledge base
 
-* the user wants to get the value of an attribute for a specific object
+- the user wants to get the value of an attribute for a specific object
 
 The action is not able to compare objects or consider relations between objects in your knowledge base.
 Furthermore, resolving any mention to the last mentioned object in the conversation might not always be optimal.
@@ -498,28 +512,33 @@ alongside your new custom action.
 If you write a knowledge base action that tackles one of the above use cases or a new one, be sure to tell us about
 it on the [forum](https://forum.rasa.com)!
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="customizing-the-inmemoryknowledgebase"></a>
+<a
+  aria-hidden="true"
+  tabIndex="-1"
+  className="anchor enhancedAnchor"
+  id="customizing-the-inmemoryknowledgebase"
+></a>
 
 ### Customizing the `InMemoryKnowledgeBase`
 
 The class `InMemoryKnowledgeBase` inherits `KnowledgeBase`.
 You can customize your `InMemoryKnowledgeBase` by overwriting the following functions:
 
-* `get_key_attribute_of_object()`: To keep track of what object the user was talking about last, we store the value
+- `get_key_attribute_of_object()`: To keep track of what object the user was talking about last, we store the value
   of the key attribute in a specific slot. Every object should have a key attribute that is unique,
   similar to the primary key in a relational database. By default, the name of the key attribute for every object type
   is set to `id`. You can overwrite the name of the key attribute for a specific object type by calling
   `set_key_attribute_of_object()`.
 
-* `get_representation_function_of_object()`: Let's focus on the following restaurant:
+- `get_representation_function_of_object()`: Let's focus on the following restaurant:
 
   ```json
   {
-      "id": 0,
-      "name": "Donath",
-      "cuisine": "Italian",
-      "outside-seating": true,
-      "price-range": "mid-range"
+    "id": 0,
+    "name": "Donath",
+    "cuisine": "Italian",
+    "outside-seating": true,
+    "price-range": "mid-range"
   }
   ```
 
@@ -540,7 +559,7 @@ You can customize your `InMemoryKnowledgeBase` by overwriting the following func
   ambiguous, you should set a new lambda function for that object type by calling
   `set_representation_function_of_object()`.
 
-* `set_ordinal_mention_mapping()`: The ordinal mention mapping is needed to resolve an ordinal mention, such as
+- `set_ordinal_mention_mapping()`: The ordinal mention mapping is needed to resolve an ordinal mention, such as
   “second one,” to an object in a list. By default, the ordinal mention mapping looks like this:
 
   ```python
@@ -569,7 +588,12 @@ to overwrite the default representation of the object type “hotel.”
 The implementation of the `InMemoryKnowledgeBase` itself can be found in the
 [rasa-sdk](https://github.com/RasaHQ/rasa-sdk/tree/main/rasa_sdk/knowledge_base/) package.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="custom-knowledge-base"></a>
+<a
+  aria-hidden="true"
+  tabIndex="-1"
+  className="anchor enhancedAnchor"
+  id="custom-knowledge-base"
+></a>
 
 ### Creating Your Own Knowledge Base
 

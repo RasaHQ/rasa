@@ -3,7 +3,8 @@ id: training-data-importers
 sidebar_label: Importers
 title: Training Data Importers
 description: Change the way Rasa imports training data by replacing the default importer or writing your own importer.
-abstract: Rasa has built-in logic to collect and load training data written in Rasa format, but
+abstract:
+  Rasa has built-in logic to collect and load training data written in Rasa format, but
   you can also customize how your training data gets imported using custom training data importers.
 ---
 
@@ -14,9 +15,9 @@ them to train your assistant.
 If needed, you can also customize how Rasa imports training data.
 Potential use cases for this might be:
 
-* using a custom parser to load training data in other formats
+- using a custom parser to load training data in other formats
 
-* using different approaches to collect training data (e.g. loading them from different resources)
+- using different approaches to collect training data (e.g. loading them from different resources)
 
 You can [write a custom importer](#writing-a-custom-importer) and instruct Rasa to use it by adding the section
 `importers` to your configuration file and specifying the importer with its
@@ -37,7 +38,7 @@ parameters are passed as constructor arguments to the loaded importer.
 `TrainingDataImporter` and its subclasses contain no async methods since Rasa 3.0.
 In order to migrate your custom importers and make them work with Rasa 3.0, you also need to
 replace your async methods with synchronized ones.
-Please see the [migration guide](migration-guide.mdx#rasa-2x-to-30) for more information.
+Please see the [migration guide](../migration-guide.mdx#rasa-2x-to-30) for more information.
 :::
 
 :::tip
@@ -145,7 +146,7 @@ their training data will be combined.
 ## Writing a Custom Importer
 
 If you are writing a custom importer, this importer has to implement the interface of
-[`TrainingDataImporter`](reference/rasa/shared/importers/importer.md#trainingdataimporter-objects):
+[`TrainingDataImporter`](../reference/rasa/shared/importers/importer.md#trainingdataimporter-objects):
 
 ```python
 from typing import Optional, Text, Dict, List, Union

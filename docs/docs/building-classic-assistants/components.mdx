@@ -1225,7 +1225,7 @@ More details on the parameters can be found on the [scikit-learn documentation p
     similarities are normalized with the `softmax` activation function.
 
 [^1]:
-    Note that `model_confidence: cosine`is deprecated in 2.3.4 (see [changelog](./changelog.mdx#234---2021-02-26))
+    Note that `model_confidence: cosine`is deprecated in 2.3.4 (see [changelog](../changelog.mdx#234---2021-02-26))
     and cannot be specified in the config, however `model_confidence: cosine` will be used regardless of the config
     if `loss_type: margin` is specified.
 
@@ -1496,7 +1496,7 @@ target the same entity types, it is very likely that entities will be extracted 
 For example, if you use two or more general purpose extractors like [MitieEntityExtractor](./components.mdx#mitieentityextractor),
 [DIETClassifier](./components.mdx#dietclassifier-1), or [CRFEntityExtractor](./components.mdx#crfentityextractor),
 the entity types in your training data will be found and
-extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type `text`,
+extracted by all of them. If the [slots](../building-assistants/domain.mdx#slots) you are filling with your entity types are of type `text`,
 then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
 will be added to the list, including duplicates.
 
@@ -2628,7 +2628,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 Rasa 3.0 unified the implementation of NLU components and policies.
 This requires changes to custom components written for earlier versions of Rasa Open
 Source. Please see the
-[migration guide](migration-guide.mdx#custom-policies-and-custom-components) for a
+[migration guide](../migration-guide.mdx#custom-policies-and-custom-components) for a
 step-by-step guide for the migration.
 
 :::

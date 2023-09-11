@@ -405,7 +405,7 @@ to specify the following details:
 
   - `ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT`: Component type for
     [policies](policies.mdx) which don't require additional end-to-end features
-    (see [end-to-end training](stories.mdx#end-to-end-training) for more information).
+    (see [end-to-end training](../building-classic-assistants/stories.mdx#end-to-end-training) for more information).
     This graph component is run only during training if `is_trainable=True`.
     The graph component is always run during inference.
     Rasa will use the graph component's `train` method if
@@ -415,7 +415,7 @@ to specify the following details:
 
   - `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`: Component type for
     [policies](policies.mdx) which require additional end-to-end features
-    (see [end-to-end training](stories.mdx#end-to-end-training) for more information).
+    (see [end-to-end training](../building-classic-assistants/stories.mdx#end-to-end-training) for more information).
     The end-to-end features are passed into the graph component's `train` and
     `predict_action_probabilities` as `precomputations` parameter.
     This graph component is run only during training if `is_trainable=True`.
@@ -468,7 +468,7 @@ policies:
 
 ### Message Metadata
 
-When you [define metadata for your intent examples in your training data](./training-data-format.mdx#training-examples),
+When you [define metadata for your intent examples in your training data](../building-classic-assistants/training-data-format.mdx#training-examples),
 your NLU component can access both the intent metadata and the intent example metadata during processing:
 
 ```python

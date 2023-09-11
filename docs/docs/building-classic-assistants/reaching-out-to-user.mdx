@@ -10,9 +10,9 @@ abstract: Sometimes you want your assistant to reach out to the user without the
 In most use cases, when the user opens the chat window with your assistant, you will want the
 assistant to send the first message. Doing this can give the user an idea of what the bot
 can or can't do and set them up to have a more successful conversation.
-Some [messaging or voice channels](./messaging-and-voice-channels.mdx) have existing configuration
+Some [messaging or voice channels](../connectors/messaging-and-voice-channels.mdx) have existing configuration
 options to send a payload to the assistant when the user first starts the conversation,
-but you can also add this option to your [own custom channel](./connectors/your-own-website.mdx).
+but you can also add this option to your [own custom channel](../connectors/your-own-website.mdx).
 
 Once you've configured your channel to send a payload, you will need to specify how the
 assistant should react and greet the user. You can either re-use an existing intent's behavior
@@ -149,12 +149,12 @@ The response will use the value from the slot `plant` to warn about the specific
 
 ### Try it out
 
-To try out the dry plant notification example, you'll need to start a [CallbackChannel](./connectors/your-own-website.mdx#callbackinput).
+To try out the dry plant notification example, you'll need to start a [CallbackChannel](../connectors/your-own-website.mdx#callbackinput).
 
 :::caution
 External Events and Reminders don't work in request-response channels like the `rest` channel or `rasa shell`.
 Custom connectors for assistants implementing reminders or external events should be built
-off of the [CallbackInput channel](./connectors/your-own-website.mdx#callbackinput) instead of the RestInput channel.
+off of the [CallbackInput channel](../connectors/your-own-website.mdx#callbackinput) instead of the RestInput channel.
 
 See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/main/examples/reminderbot/README.md)
 for instructions on how to test your reminders locally.
@@ -419,7 +419,7 @@ intents:
 
 ### Try it Out
 
-To try out reminders you'll need to start a [CallbackChannel](./connectors/your-own-website.mdx#callbackinput).
+To try out reminders you'll need to start a [CallbackChannel](../connectors/your-own-website.mdx#callbackinput).
 You'll also need to start the action server to schedule, react to, and cancel your reminders.
 See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/main/examples/reminderbot) for details.
 

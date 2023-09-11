@@ -89,7 +89,7 @@ impacted.
 ## How to Use Rephrasing in Your Bot
 
 The following assumes that you have already
-[configured your NLG server](../nlg.mdx).
+[configured your NLG server](../production/nlg.mdx).
 
 To use rephrasing, add the following lines to your `endpoints.yml` file:
 
@@ -148,7 +148,7 @@ You can specify the openai model to use for rephrasing by setting the
 ```yaml-rasa title="endpoints.yml"
 nlg:
   type: rasa_plus.ml.LLMResponseRephraser
-  llm: 
+  llm:
     model_name: text-davinci-003
 ```
 
@@ -163,15 +163,15 @@ section.
 
 :::info Using Other LLMs
 
-By default, OpenAI is used as the underlying LLM provider. 
+By default, OpenAI is used as the underlying LLM provider.
 
 The used LLM provider provider can be configured in the
-`endpoints.yml` file to use another provider, e.g. `cohere`: 
+`endpoints.yml` file to use another provider, e.g. `cohere`:
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
   type: rasa_plus.ml.LLMResponseRephraser
-  llm: 
+  llm:
     type: "cohere"
 ```
 

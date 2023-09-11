@@ -3,7 +3,8 @@ id: rules
 sidebar_label: Rules
 title: Rules
 description: Use Rasa rules to respond to FAQs, fill forms, or handle fallbacks gracefully.
-abstract: Rules are a type of training data used to train your assistant's dialogue management model.
+abstract:
+  Rules are a type of training data used to train your assistant's dialogue management model.
   Rules describe short pieces of conversations that should always follow the same path.
 ---
 
@@ -11,9 +12,6 @@ abstract: Rules are a type of training data used to train your assistant's dialo
 unlike [stories](./stories.mdx), rules don't have the power to generalize to unseen conversation
 paths. Combine rules and stories to make your assistant robust and able to handle
 real user behavior.
-
-If you can't decide whether to write a story or a rule to implement a certain behavior, see the
-best practices for [Writing Conversation Data](./writing-stories.mdx)).
 
 For additional examples on implementing rules in a Rasa assistant, refer to
 our [Rules example bot](https://github.com/RasaHQ/rasa/tree/main/examples/rules).
@@ -68,7 +66,6 @@ stories:
 For example if you define the greeting rule as above and don't add it to any of your stories,
 after `RulePolicy` predicts `utter_greet`, `TEDPolicy` will
 make predictions as if the `greet, utter_greet` turn did not occur.
-
 
 ### Rules for the Conversation Start
 
@@ -191,5 +188,5 @@ how the form is defined, ignoring rules. Rules become applicable again if:
 
 - the form fills all required slots
 - the form rejects its execution (see
-[Handling Unhappy Paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths) for
- more details)
+  [Handling Unhappy Paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths) for
+  more details)

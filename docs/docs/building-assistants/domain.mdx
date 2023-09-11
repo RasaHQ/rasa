@@ -27,7 +27,7 @@ rasa train --domain path_to_domain_directory
 ## Intents
 
 The `intents` key in your domain file lists all intents
-used in your [NLU data](<(../building-classic-assistants/nlu-training-data.mdx)>) and [conversation training data](./training-data-format.mdx#conversation-training-data).
+used in your [NLU data](<(../building-classic-assistants/nlu-training-data.mdx)>) and [conversation training data](../building-classic-assistants/training-data-format.mdx#conversation-training-data).
 
 ### Ignoring Entities for Certain Intents
 
@@ -159,8 +159,8 @@ as well as information gathered about the outside world (e.g. the result of a
 database query).
 
 Slots are defined in the slots section of your domain with their name,
-[type](domain.mdx#slot-types) and if and how they should [influence the assistant's
-behavior](domain.mdx#slots-and-conversation-behavior).
+[type](./domain.mdx#slot-types) and if and how they should [influence the assistant's
+behavior](./domain.mdx#slots-and-conversation-behavior).
 The following example defines a slot with name "slot_name", type `text` and
 predefined slot mapping `from_entity`.
 
@@ -200,7 +200,7 @@ The way the slot influences the conversation
 will depend on its [slot type](./domain.mdx#slot-types).
 
 The following example defines a slot `home_city` that influences the conversation.
-A [`text` slot](domain.mdx#text-slot) will
+A [`text` slot](./domain.mdx#text-slot) will
 influence the assistant's behavior depending on whether the slot has a value.
 The specific value of a `text` slot (e.g. _Bangalore_ or _New York_ or _Hong Kong_)
 doesn't make any difference.
@@ -415,7 +415,7 @@ information before it is able to predict the weather.
   Slots of type `any` are always ignored during conversations. The property
   `influence_conversation` cannot be set to `true` for this slot type. If you want to
   store a custom data structure which should influence the conversation, use a
-  [custom slot type](domain.mdx#custom-slot-types).
+  [custom slot type](./domain.mdx#custom-slot-types).
 
 #### Custom Slot Types
 
@@ -520,7 +520,7 @@ As of 3.0, slot mappings are defined in the `slots` section of the domain.
 This change removes the implicit mechanism of setting slots via auto-fill and replaces it with a new explicit
 mechanism of setting slots after every user message.
 You will need to explicitly define slot mappings for each slot in the `slots` section of `domain.yml`.
-If you are migrating from an earlier version, please read through the [migration guide](./migration-guide.mdx#slot-mappings)
+If you are migrating from an earlier version, please read through the [migration guide](../migration-guide.mdx#slot-mappings)
 to update your assistant.
 
 :::
@@ -818,7 +818,7 @@ action_endpoint:
 
 **After selective domain for custom actions is enabled, domain will be sent only to
 those custom actions which have specifically stated that they need it.**
-Custom actions inheriting from rasa-sdk [`FormValidationAction`](./action-server/validation-action.mdx#formvalidationaction-class)
+Custom actions inheriting from rasa-sdk [`FormValidationAction`](../action-server/validation-action.mdx#formvalidationaction-class)
 parent class are an exception to this rule as they will always have the domain sent to them.
 To specify if an action needs the domain add `{send_domain: true}` to custom action in the list
 of actions in `domain.yml`:
@@ -894,5 +894,5 @@ config:
 
 :::note looking for config.yml?
 If you're looking for information on the `config.yml` file, check out the docs on
-[Model Configuration](./model-configuration.mdx).
+[Model Configuration](../building-classic-assistants/model-configuration.mdx).
 :::

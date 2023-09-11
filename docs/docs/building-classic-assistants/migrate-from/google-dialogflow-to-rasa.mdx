@@ -3,7 +3,8 @@ sidebar_label: Rasa as open source alternative to Google Dialogflow - Migration 
 title: Rasa as open source alternative to Google Dialogflow - Migration Guide
 description: Open source alternative to Google Dialogflow for conversational bots and NLP
 ---
-import useBaseUrl from '@docusaurus/useBaseUrl';
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
 
 Let's get started with migrating your application from Dialogflow to Rasa (you can find a more detailed
 tutorial <a className="reference external" href="http://blog.rasa.com/how-to-migrate-your-existing-google-dialogflow-assistant-to-rasa/" target="_blank">here</a>):
@@ -12,16 +13,24 @@ tutorial <a className="reference external" href="http://blog.rasa.com/how-to-mig
 
 Navigate to your agent's settings by clicking the gear icon.
 
-import dialogflowExport1 from './dialogflow_export.png';
+import dialogflowExport1 from "./dialogflow_export.png";
 
-<Image img={dialogflowExport1} width="240" caption="Selecting settings" alt="In Dialogflow, the gear icon that indicates settings sits next to the dropdown menu for choosing between projects." />
-
+<Image
+  img={dialogflowExport1}
+  width="240"
+  caption="Selecting settings"
+  alt="In Dialogflow, the gear icon that indicates settings sits next to the dropdown menu for choosing between projects."
+/>
 
 Click on the 'Export and Import' tab and click on the 'Export as ZIP' button.
 
-import dialogflowExport2 from './dialogflow_export_2.png';
+import dialogflowExport2 from "./dialogflow_export_2.png";
 
-<Image img={dialogflowExport2} caption="Selecting Export and Import" alt="The Settings page will let you select from multiple headers, of which you want to select Export and Import." />
+<Image
+  img={dialogflowExport2}
+  caption="Selecting Export and Import"
+  alt="The Settings page will let you select from multiple headers, of which you want to select Export and Import."
+/>
 
 This will download a file with a `.zip` extension. Unzip this file to create a folder.
 
@@ -89,6 +98,6 @@ You can also leave it out to get the result in the usual Rasa format.
 ## Terminology:
 
 The words `intent`, `entity`, and `utterance` have the same meaning in Rasa as they do in Dialogflow.
-In Dialogflow, there is a concept called `Fulfillment`. In Rasa we call this a [Custom Action](../actions.mdx#custom-actions).
+In Dialogflow, there is a concept called `Fulfillment`. In Rasa we call this a [Custom Action](.../building-assistants/actions.mdx#custom-actions).
 
 Join the [Rasa Community Forum](https://forum.rasa.com/) and let us know how your migration went!

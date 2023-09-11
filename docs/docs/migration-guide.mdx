@@ -52,7 +52,7 @@ to convert your data from Markdown to YAML. Please use the commands described
 ### Model Configuration
 
 It is required to specify the used `recipe` within the
-[model configuration](model-configuration.mdx). As of now Rasa only supports
+[model configuration](./building-classic-assistants/model-configuration.mdx). As of now Rasa only supports
 the `default.v1` recipe and will continue using it even if you don't specify a recipe
 in the model configuration. To avoid breaking changes in the future you should
 to specify `recipe: "default.v1"` at the top of your model configuration:
@@ -89,7 +89,7 @@ policies:
 ### Custom Policies and Custom Components
 
 Rasa 3.0 changed the way [NLU components](./building-classic-assistants/components.mdx) and
-[policies](policies.mdx) are trained and run during inference. As part of these changes
+[policies](./building-classic-assistants/policies.mdx) are trained and run during inference. As part of these changes
 the interfaces for NLU components and policies have been unified and adapted.
 
 The next sections outline which adaptions are required to run your custom NLU components
@@ -688,7 +688,7 @@ This guide leads you through the migration of a custom policy step by step.
 
 Policies are no longer instantiated via their constructor. Instead, all policies have
 to implement a `create` method. During the policy instantiation the configuration from
-the [model configuration](model-configuration.mdx) is passed in as a dictionary instead
+the [model configuration](./building-classic-assistants/model-configuration.mdx) is passed in as a dictionary instead
 of as separate parameters. Similarly, the`featurizers` are no longer instantiated
 outside of policies.
 Instead, the super class `rasa.core.policies.policy.Policy` instantiates the
@@ -960,7 +960,7 @@ class MyPolicy(Policy):
 
 **Using End-To-End Features in a Policy**
 
-To use a custom [end-to-end policy](stories.mdx#end-to-end-training) in Rasa
+To use a custom [end-to-end policy](./building-classic-assistants/stories.mdx#end-to-end-training) in Rasa
 Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
 events manually. In Rasa 3.0,
 you need to [register](./building-assistants/custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
@@ -968,7 +968,7 @@ will be precomputed and passed into your policy during training and inference.
 
 :::caution
 End-To-End features will only be computed and provided to your policy if your training
-data actually contains [end-to-end training data](stories.mdx#end-to-end-training).
+data actually contains [end-to-end training data](./building-classic-assistants/stories.mdx#end-to-end-training).
 :::
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
@@ -1098,14 +1098,14 @@ class MyPolicy(Policy):
 
 **Providing Rule-only Data to a Policy**
 
-Rasa allows excluding [forms](./building-classic-assistants/forms.mdx) or [slots](domain.mdx#slots) which
+Rasa allows excluding [forms](./building-classic-assistants/forms.mdx) or [slots](./building-assistants/domain.mdx#slots) which
 are completely handled by
-[rules](rules.mdx) from becoming features in other policies.
+[rules](./building-assistants/rules.mdx) from becoming features in other policies.
 In Rasa 2 this information was passed onto the
 policies using the `set_shared_policy_states` method which set the policy attribute
 `_rule_only_data`. Rasa passes the names of rule-only slots and forms via the
 `predict_action_probabilities` method. The passed `rule_only_data` can be `None`
-in case the [`RulePolicy`](policies.mdx#rule-policy) is not part of your model
+in case the [`RulePolicy`](./building-classic-assistants/policies.mdx#rule-policy) is not part of your model
 configuration.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-rule-only-data" defaultValue="new">
@@ -1307,7 +1307,7 @@ slots:
         action: action_verify_customer_status
 ```
 
-You can use [slot validation actions](./slot-validation-actions.mdx) to either validate slots with predefined
+You can use [slot validation actions](./building-assistants/slot-validation-actions.mdx) to either validate slots with predefined
 mappings, or to both extract and validate slots with custom mappings.
 
 Slots which will be filled by arbitrary custom actions in the course of the conversation, and which should not be updated
@@ -1661,7 +1661,7 @@ NLG Server
 
 `rasa.core.agent`
 
-- The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa 3.0.0. Please see [here](./nlg.mdx) for more details.
+- The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa 3.0.0. Please see [here](./production/nlg.mdx) for more details.
 
 `rasa.core.nlg.generator`
 
@@ -1907,7 +1907,7 @@ You can also migrate the individual policies manually, if you don't want to use 
 #### Manually migrating from the Mapping Policy
 
 If you previously used the [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy), you
-can follow the documentation on [FAQs](./chitchat-faqs.mdx) to convert your mapped
+can follow the documentation on [FAQs](./building-classic-assistants/chitchat-faqs.mdx) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
 ```yaml-rasa title="domain.yml"
@@ -2298,7 +2298,7 @@ list in your domain.
 
 This behavior will work fine when defined as a story, but even better when defined
 as a rule. You should consider transferring your retrieval stories to rules. More information
-on what that looks like in the [chitchat and FAQs documentation](./chitchat-faqs.mdx).
+on what that looks like in the [chitchat and FAQs documentation](./building-classic-assistants/chitchat-faqs.mdx).
 
 Response Selectors are now trained on retrieval intent labels by default instead
 of the actual response text. For most models, this should improve training time
@@ -2367,7 +2367,7 @@ response_selector_output.get("default")
 
 ### Unfeaturized Slots
 
-[Slots](domain.mdx#slots) of type `unfeaturized` are
+[Slots](./building-assistants/domain.mdx#slots) of type `unfeaturized` are
 deprecated and will be removed in version 3.0. To ignore slot values during
 a conversation, set the `influence_conversation` property of the slot to `false`.
 
@@ -2392,7 +2392,7 @@ slots:
 ```
 
 If you don't require the slot to have a specific data type, you can use the new slot
-type [any](domain.mdx#any-slot). This slot type is always ignored during a conversation
+type [any](./building-assistants/domain.mdx#any-slot). This slot type is always ignored during a conversation
 and does not make any assumptions regarding the data type of the slot value.
 
 ```yaml-rasa
@@ -2401,11 +2401,11 @@ slots:
     type: any
 ```
 
-Please see the updated [slots documentation](domain.mdx#slots) for more information.
+Please see the updated [slots documentation](./building-assistants/domain.mdx#slots) for more information.
 
 ### Conversation sessions
 
-[Conversation sessions](domain.mdx#session-configuration) are now enabled by default
+[Conversation sessions](./building-assistants/domain.mdx#session-configuration) are now enabled by default
 if your [Domain](./building-assistants/domain.mdx) does not contain a session configuration. Previously a
 missing session configuration was treated as if conversation sessions were disabled.
 You can explicitly disable conversation sessions using the following snippet:

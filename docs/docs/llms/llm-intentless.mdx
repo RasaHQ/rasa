@@ -4,7 +4,7 @@ sidebar_label: Intentless Dialogues with LLMs
 title: Intentless Policy - LLMs for intentless dialogues
 abstract: |
   The intentless policy uses large language models to drive a conversation
-  forward without relying on intent predictions. 
+  forward without relying on intent predictions.
 ---
 
 import RasaLabsLabel from "@theme/RasaLabsLabel";
@@ -24,8 +24,8 @@ existing rasa components and make it easier:
   [don't fit into intents](https://rasa.com/blog/were-a-step-closer-to-getting-rid-of-intents/)
   and conversation context is necessary to choose a course of action.
 
-Using the `IntentlessPolicy`, a 
-question-answering bot can already understanding many different ways 
+Using the `IntentlessPolicy`, a
+question-answering bot can already understanding many different ways
 that users could phrase their questions - even across a series of user messages:
 
 <Image
@@ -36,10 +36,11 @@ that users could phrase their questions - even across a series of user messages:
 
 This only requires appropriate responses to be defined in the domain file.
 
-To eliminate hallucinations, the policy only chooses which response from 
-your domain file to send. It does not generate new text. 
+To eliminate hallucinations, the policy only chooses which response from
+your domain file to send. It does not generate new text.
 
 In addition, you can control the LLM by:
+
 - providing example conversations (end-to-end stories) which will be used in the prompt.
 - setting the confidence threshold to determine when the intentless policy should kick in.
 
@@ -69,14 +70,15 @@ policies:
 ## Customization
 
 ### Combining with NLU predictions
-The intentless policy can be combined with NLU components which predict 
+
+The intentless policy can be combined with NLU components which predict
 intents. This is useful if you want to use the intentless policy for
 some parts of your bot, but still want to use the traditional NLU components for
-other intents. 
+other intents.
 
-The `nlu_abstention_threshold` can be set to a value between 0 and 1. If 
-the NLU prediction confidence is below this threshold, the intentless policy 
-will be used if it's confidence is higher than the NLU prediction. Above the 
+The `nlu_abstention_threshold` can be set to a value between 0 and 1. If
+the NLU prediction confidence is below this threshold, the intentless policy
+will be used if it's confidence is higher than the NLU prediction. Above the
 threshold, the NLU prediction will always be used.
 
 The following example shows the default configuration in the `config.yml`:
@@ -95,6 +97,7 @@ If unset, `nlu_abstention_threshold` defaults to `0.9`.
 You can customize the openai models used for generation and embedding.
 
 #### Embedding Model
+
 By default, OpenAI will be used for embeddings. You can configure the
 `embeddings.model_name` property in the `config.yml` file to change the used
 embedding model:
@@ -103,7 +106,7 @@ embedding model:
 policies:
   # ... any other policies you have
   - name: rasa_plus.ml.IntentlessPolicy
-    embeddings: 
+    embeddings:
       model_name: text-embedding-ada-002
 ```
 
@@ -120,9 +123,10 @@ OpenAI model to use:
 policies:
   # ... any other policies you have
   - name: rasa_plus.ml.IntentlessPolicy
-    llm: 
+    llm:
       model_name: text-davinci-003
 ```
+
 Defaults to `text-davinci-003`. The model name needs to be set to an
 [available GPT-3 LLM model](https://platform.openai.com/docs/models/gpt-3).
 
@@ -133,16 +137,16 @@ section.
 
 #### Other LLMs / Embeddings
 
-By default, OpenAI is used as the underlying LLM and embedding provider. 
+By default, OpenAI is used as the underlying LLM and embedding provider.
 
 The used LLM provider and embeddings provider can be configured in the
-`config.yml` file to use another provider, e.g. `cohere`: 
+`config.yml` file to use another provider, e.g. `cohere`:
 
 ```yaml-rasa title="config.yml"
 policies:
   # ... any other policies you have
   - name: rasa_plus.ml.IntentlessPolicy
-    llm: 
+    llm:
       type: "cohere"
     embeddings:
       type: "cohere"
@@ -223,7 +227,7 @@ utter_faq_6:
 Beyond having the `utter_` prefix, the naming of the utterances is not relevant.
 
 The second step is to add
-[end-to-end stories](../training-data-format.mdx#end-to-end-training)
+[end-to-end stories](../building-classic-assistants/training-data-format.mdx#end-to-end-training)
 to `data/e2e_stories.yml`. These stories teach the LLM about your domain, so it
 can figure out when to say what.
 
@@ -256,6 +260,7 @@ The policy is a usual Rasa Policy and can be tested in the same way as any other
 policy.
 
 ### Testing interactively
+
 Once trained, you can test your assistant interactively by running the following
 command:
 
@@ -298,16 +303,16 @@ beta feature flag for E2E testing in your current shell with
 
 ## Security Considerations
 
-The intentless policy uses the OpenAI API to create responses. 
+The intentless policy uses the OpenAI API to create responses.
 This means that your users conversations are sent to OpenAI's servers.
 
-The response generated by OpenAI is not send back to the bot's user. However, 
+The response generated by OpenAI is not send back to the bot's user. However,
 the user can craft messages that will misslead the intentless policy. These
 cases are handled gracefully and fallbacks are triggered.
 
 The prompt used for classification won't be exposed to the user using prompt
 injection. This is because the generated response from the LLM is mapped to
-one of the existing responses from the domain, 
+one of the existing responses from the domain,
 preventing any leakage of the prompt to the user.
 
 More detailed information can be found in Rasa's webinar on

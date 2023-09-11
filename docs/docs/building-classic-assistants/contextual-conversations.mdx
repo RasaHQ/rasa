@@ -21,28 +21,35 @@ the bot responds differently based on whether or not they like music:
 A conversation with a user who likes music:
 
 <Chat caption="User likes music">
-<ChatUserText>How can I get started ?</ChatUserText>
-<ChatBotText>I can help you find concerts and venues. Do you like music?</ChatBotText>
-<ChatUserText>yes</ChatUserText>
-<ChatBotText>Awesome! You can ask me things like "Find me some concerts" or "What's a good venue"</ChatBotText>
+  <ChatUserText>How can I get started ?</ChatUserText>
+  <ChatBotText>
+    I can help you find concerts and venues. Do you like music?
+  </ChatBotText>
+  <ChatUserText>yes</ChatUserText>
+  <ChatBotText>
+    Awesome! You can ask me things like "Find me some concerts" or "What's a
+    good venue"
+  </ChatBotText>
 </Chat>
 
 A conversation with a user who doesn't like music:
 
 <Chat caption="User doesn't like music">
-<ChatUserText>How can I get started ?</ChatUserText>
-<ChatBotText>I can help you find concerts and venues. Do you like music?</ChatBotText>
-<ChatUserText>no</ChatUserText>
-<ChatBotText>Oh no!</ChatBotText>
+  <ChatUserText>How can I get started ?</ChatUserText>
+  <ChatBotText>
+    I can help you find concerts and venues. Do you like music?
+  </ChatBotText>
+  <ChatUserText>no</ChatUserText>
+  <ChatBotText>Oh no!</ChatBotText>
 </Chat>
 
 ## Step-by-step Guide on Creating Contextual Conversation Patterns
 
 ### 1. Defining Slots
 
-[Slots](domain.mdx#slots) are your assistant's memory. Slots store pieces of information that your
+[Slots](../building-assistants/domain.mdx#slots) are your assistant's memory. Slots store pieces of information that your
 assistant needs to refer to later and can direct the flow of the conversation
-based on `slot_was_set` events. There are different [types of slots](domain.mdx#slot-types),
+based on `slot_was_set` events. There are different [types of slots](../building-assistants/domain.mdx#slot-types),
 and each affects the conversation flow in its own way.
 
 In the concert bot example, the `likes_music` slot is a boolean slot. If it is true, the bot sends an intro message. If it is false, the bot sends a different message.
@@ -140,18 +147,17 @@ to your training data to continuously improve your bot and help the model genera
 better in future. [Rasa X/Enterprise](https://rasa.com/docs/rasa-enterprise/) is a tool that can help
 you improve your bot and make it more contextual.
 
-
 #### Setting `max_history`
 
 Usually, only a certain amount of context is relevant to your assistant.
-[`max_history`](policies.mdx#max-history) is a hyperparameter for Rasa dialogue management policies
+[`max_history`](./policies.mdx#max-history) is a hyperparameter for Rasa dialogue management policies
 that controls how many steps in a dialogue the model looks at to decide which
 action to take next.
 
 In the story below, the user asks for help three times in a row. The first two times,
 the bot sends the same message, but the third time, it hands them off to a human
 
-```yaml-rasa  title="stories.yml"
+```yaml-rasa title="stories.yml"
 stories:
   - story: user persists in asking for help
     steps:
@@ -168,7 +174,6 @@ four steps i.e. `max_history` of four. If `max_history` were 3, the model would 
 enough context to see that the user had already sent two help requests, and would never
 predict the human handoff action.
 
-
 You can set the `max_history` by passing it to your policy's settings
 in your config file, for example:
 
@@ -181,7 +186,7 @@ policies:
 You want to make sure `max_history` is set high enough
 to account for the most context your assistant will need to make an accurate
 prediction about what to do next.
-For more details see the docs on [featurizers](policies.mdx#featurizers).
+For more details see the docs on [featurizers](./policies.mdx#featurizers).
 
 ## Summary
 

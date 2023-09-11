@@ -17,7 +17,7 @@ You can split the training data over any number of YAML files,
 and each file can contain any combination of NLU data, stories, and rules.
 The training data parser determines the training data type using top level keys.
 
-The [domain](glossary.mdx#domain) uses
+The [domain](../building-assistants/glossary.mdx#domain) uses
 the same YAML format as the training data and can also be split across
 multiple files or combined in one file. The domain includes
 the definitions for [responses](./responses.mdx) and [forms](./building-classic-assistants/forms.mdx).
@@ -27,7 +27,7 @@ See the [documentation for the domain](./building-assistants/domain.mdx) for inf
 Looking for Markdown data format? It's removed in Rasa 3.0, but
 you can still find the documentation for <a href="https://legacy-docs-v1.rasa.com/nlu/training-data-format/" target="_blank" rel="nofollow noopener noreferrer">markdown NLU data</a> and <a href="https://legacy-docs-v1.rasa.com/core/stories/" target="_blank" rel="nofollow noopener noreferrer">markdown stories</a>.
 If you still have your training data in Markdown format then the recommended approach is to use Rasa 2.x
-to convert your data from Markdown to YAML. [The migration guide](./migration-guide.mdx#training-data-files)
+to convert your data from Markdown to YAML. [The migration guide](../migration-guide.mdx#training-data-files)
 explains how to do this.
 :::
 
@@ -113,8 +113,8 @@ training examples.
 
 ## NLU Training Data
 
-[NLU](glossary.mdx#nlu) training data consists of example user utterances categorized by
-[intent](glossary.mdx#intent). Training examples can also include [entities](glossary.mdx#entity). Entities are structured
+[NLU](../building-assistants/glossary.mdx#nlu) training data consists of example user utterances categorized by
+[intent](../building-assistants/glossary.mdx#intent). Training examples can also include [entities](../building-assistants/glossary.mdx#entity). Entities are structured
 pieces of information that can be extracted from a user's message. You can also
 add extra information such as regular expressions and lookup tables to your
 training data to help the model identify intents and entities correctly.
@@ -164,7 +164,7 @@ nlu:
 
 ### Training Examples
 
-Training examples are grouped by [intent](glossary.mdx#intent) and listed under the
+Training examples are grouped by [intent](../building-assistants/glossary.mdx#intent) and listed under the
 `examples` key. Usually, you'll list one example per line as follows:
 
 ```yaml-rasa
@@ -211,7 +211,7 @@ nlu:
 
 In this case, the content of the `metadata` key is passed to every intent example.
 
-If you want to specify [retrieval intents](glossary.mdx#retrieval-intent), then your NLU examples will look as follows:
+If you want to specify [retrieval intents](../building-assistants/glossary.mdx#retrieval-intent), then your NLU examples will look as follows:
 
 ```yaml-rasa
 nlu:
@@ -243,7 +243,7 @@ name of your intents.
 
 ### Entities
 
-[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message.
+[Entities](../building-assistants/glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message.
 
 Entities are annotated in training examples with the entity's name.
 In addition to the entity name, you can annotate an entity with [synonyms](nlu-training-data.mdx#synonyms), [roles, or groups](nlu-training-data.mdx#entities-roles-and-groups).
@@ -350,7 +350,7 @@ model. [Stories](stories.mdx) are used to train a machine learning model
 to identify patterns in conversations and generalize to unseen conversation paths.
 [Rules](rules.mdx) describe small pieces of conversations that should always
 follow the same path and are used to train the
-[RulePolicy](policies.mdx#rule-policy).
+[RulePolicy](./policies.mdx#rule-policy).
 
 ### Stories
 
@@ -433,7 +433,7 @@ All actions executed by the bot are specified with the `action:` key followed
 by the name of the action.
 While writing stories, you will encounter two types of actions:
 
-1. [Responses](domain.mdx#responses): start with `utter_` and
+1. [Responses](../building-assistants/domain.mdx#responses): start with `utter_` and
    send a specific message to the user. e.g.
 
 ```yaml-rasa {5}
@@ -457,10 +457,10 @@ stories:
 
 #### Forms
 
-A [form](glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
+A [form](../building-assistants/glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. You
 [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
-Once defined, you should specify the [happy path](glossary.mdx#happy--unhappy-paths)
+Once defined, you should specify the [happy path](../building-assistants/glossary.mdx#happy--unhappy-paths)
 for a form as a [rule](./building-classic-assistants/forms.mdx). You should include interruptions of forms or
 other "unhappy paths" in stories so that the model can
 generalize to unseen conversation sequences.
@@ -505,7 +505,7 @@ stories:
 A slot event is specified under the key `slot_was_set:` with the
 slot name and optionally the slot's value.
 
-**[Slots](domain.mdx#slots)** act as the bots memory.
+**[Slots](../building-assistants/domain.mdx#slots)** act as the bots memory.
 Slots are **set** by either the default action [`action_extract_slots`](../building-assistants/default-actions.mdx#action_extract_slots) according to the
 [slot mappings](../building-assistants/domain.mdx#slot-mappings) specified in the domain, or by custom actions.
 They are **referenced** by stories in `slot_was_set` steps. For example:
@@ -524,7 +524,7 @@ This means the story requires that the current value for the `feedback_value`
 slot be `positive` for the conversation to continue as specified.
 
 Whether or not you need to include the slot's value depends on the
-[slot type](domain.mdx#slot-types) and whether the value can or should
+[slot type](../building-assistants/domain.mdx#slot-types) and whether the value can or should
 influence the dialogue. If the value doesn't matter, as is the case for e.g. `text` slots,
 you can list only the slot's name:
 

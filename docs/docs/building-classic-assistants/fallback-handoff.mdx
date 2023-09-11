@@ -171,7 +171,7 @@ fallback, so it will not influence the prediction of future actions.
 
 `action_default_fallback` is a default action in Rasa that sends the
 `utter_default` response to the user. You can create your own custom action to use as a
-fallback (see [Custom Actions](./actions.mdx#custom-actions) for more info on custom actions).
+fallback (see [Custom Actions](../building-assistants/actions.mdx#custom-actions) for more info on custom actions).
 The following snippet is an implementation of a custom action which does the same as
 `action_default_fallback` but dispatches a different template
 `utter_fallback_template`:
@@ -284,7 +284,7 @@ responses:
   - text: I'm sorry, I can't help you.
 ```
 
-Or, you can customize `action_default_fallback` for more complex behavior by writing a [Custom Action](./actions.mdx#custom-actions).
+Or, you can customize `action_default_fallback` for more complex behavior by writing a [Custom Action](../building-assistants/actions.mdx#custom-actions).
 For example, if you want the bot to call a human and stop interacting with the user:
 
 ```python title="actions.py"
@@ -330,7 +330,7 @@ so that your bot can apply its rules or memorized stories to correctly predict t
 As part of your fallback action, you may want the bot to hand over to a human agent
 e.g. as the final action in Two-Stage-Fallback, or when the user explicitly asks
 for a human. A straightforward way to achieve human handoff is to configure your
-[messaging or voice channel](messaging-and-voice-channels.mdx) to switch
+[messaging or voice channel](../connectors/messaging-and-voice-channels.mdx) to switch
 which host it listens to based on a specific bot or user message.
 
 For example, as the final action of Two-Stage-Fallback, the bot could ask the user,

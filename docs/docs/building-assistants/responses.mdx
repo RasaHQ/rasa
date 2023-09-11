@@ -4,8 +4,8 @@ sidebar_label: Responses
 title: Responses
 abstract: Responses are messages that your assistant sends to the user. A response is usually only text, but can also include content like images and buttons.
 ---
-## Defining Responses
 
+## Defining Responses
 
 Responses go under the `responses` key in your domain file or in a separate "responses.yml" file. Each response name should start with `utter_`.
 For example, you could add responses for greeting and saying goodbye under the response names `utter_greet` and `utter_bye`:
@@ -37,10 +37,10 @@ responses:
 ```
 
 :::note
-Notice the special format of response names for retrieval intents. Each name starts with `utter_`, 
-followed by the retrieval intent's name (here `chitchat`) and finally a suffix specifying 
-the different response keys (here `ask_name` and `ask_weather`). See [the documentation for NLU 
-training examples](./training-data-format.mdx#training-examples) to learn more.
+Notice the special format of response names for retrieval intents. Each name starts with `utter_`,
+followed by the retrieval intent's name (here `chitchat`) and finally a suffix specifying
+the different response keys (here `ask_name` and `ask_weather`). See [the documentation for NLU
+training examples](../building-classic-assistants/training-data-format.mdx#training-examples) to learn more.
 :::
 
 ### Using Variables in Responses
@@ -54,12 +54,12 @@ responses:
   - text: "Hey, {name}. How are you?"
 ```
 
-When the `utter_greet` response is used, Rasa automatically fills in the variable with the 
+When the `utter_greet` response is used, Rasa automatically fills in the variable with the
 value found in the slot called `name`. If such a slot doesn't exist or is empty, the variable gets
 filled with `None`.
 
 Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
-In your custom action code, you can supply values to a response to fill in specific variables. 
+In your custom action code, you can supply values to a response to fill in specific variables.
 If you're using the Rasa SDK for your action server,
 you can pass a value for the variable as a keyword argument to [`dispatcher.utter_message`](./action-server/sdk-dispatcher.mdx):
 
@@ -87,18 +87,19 @@ supply the values by adding extra parameters to the responses your server return
 }
 ```
 
-
 ### Response Variations
 
-You can make your assistant's replies more interesting if you provide multiple response variations 
+You can make your assistant's replies more interesting if you provide multiple response variations
 to choose from for a given response name:
+
 ```yaml-rasa {3-4} title="domain.yml"
 responses:
   utter_greet:
   - text: "Hey, {name}. How are you?"
   - text: "Hey, {name}. How is your day going?"
 ```
-In this example, when `utter_greet` gets predicted as the next action, Rasa will randomly pick one 
+
+In this example, when `utter_greet` gets predicted as the next action, Rasa will randomly pick one
 of the two response variations to use.
 
 #### IDs for Responses
@@ -112,6 +113,7 @@ Type for ID is string.
 :::
 
 Example of response variations with ID:
+
 ```yaml-rasa {3-4} title="domain.yml"
 responses:
   utter_greet:
@@ -126,7 +128,7 @@ responses:
 To specify different response variations depending on which channel
 the user is connected to, use channel-specific response variations.
 
-In the following example, the `channel` key makes the first response variation channel-specific for 
+In the following example, the `channel` key makes the first response variation channel-specific for
 the `slack` channel while the second variation is not channel-specific:
 
 ```yaml-rasa {4} title="domain.yml"
@@ -138,12 +140,12 @@ responses:
 ```
 
 :::note
-Make sure the value of the `channel` key matches the value returned by the `name()` method of your 
+Make sure the value of the `channel` key matches the value returned by the `name()` method of your
 input channel. If you are using a built-in channel, this value will also match the channel name used
 in your `credentials.yml` file.
 :::
 
-When your assistant looks for suitable response variations under a given response name, it will first 
+When your assistant looks for suitable response variations under a given response name, it will first
 try to choose from channel-specific variations for the current channel.
 If there are no such variations, the assistant will choose from any response variations which are not
 channel-specific.
@@ -153,10 +155,9 @@ your assistant for all channels other than `slack`.
 
 :::caution
 For each response, try to have at least one response variation without the `channel` key.
-This allows your assistant to properly respond in all environments, such as in new channels, 
+This allows your assistant to properly respond in all environments, such as in new channels,
 in the shell and in interactive learning.
 :::
-
 
 ### Conditional Response Variations
 
@@ -215,7 +216,7 @@ stories:
   - action: utter_greet
 ```
 
-In the example above, the first response variation (``"Hey, {name}. Nice to see you again! How are you?"``)
+In the example above, the first response variation (`"Hey, {name}. Nice to see you again! How are you?"`)
 will be used whenever the `utter_greet` action is executed and the `logged_in` slot is set to `true`.
 The second variation, which has no condition, will be treated as the default and used whenever
 `logged_in` is not equal to `true`.
@@ -285,7 +286,6 @@ Rasa will prioritize the selection of responses in the following order:
 3. conditional response variations with no matching channel
 4. default responses with no matching channel
 
-
 ## Rich Responses
 
 You can make responses rich by adding visual and interactive elements.
@@ -307,8 +307,9 @@ responses:
 ```
 
 Each button in the list of `buttons` should have two keys:
-* `title`: The text displayed on the buttons that the user sees.
-* `payload`: The message sent from the user to the assistant when the button is clicked.
+
+- `title`: The text displayed on the buttons that the user sees.
+- `payload`: The message sent from the user to the assistant when the button is clicked.
 
 If you would like the buttons to also pass entities to the assistant:
 
@@ -348,7 +349,7 @@ The `RegexInterpreter` will classify the message above with the intent `inform` 
 
 :::note escaping curly braces in domain.yml
 You need to write the `/intent{entities}` shorthand response with double curly braces in domain.yml so that the assistant does not
-treat it as a [variable in a response](#using-variables-in-responses) and interpolate the content within the curly braces. 
+treat it as a [variable in a response](#using-variables-in-responses) and interpolate the content within the curly braces.
 :::
 
 :::caution Check your channel
@@ -404,7 +405,6 @@ If the name of the response starts with `utter_`, the response can
 directly be used as an action, without being listed in the `actions` section of your domain. You would add the response
 to the domain:
 
-
 ```yaml-rasa title="domain.yml"
 responses:
   utter_greet:
@@ -431,9 +431,8 @@ you need to retrain the assistant before these changes will be picked up.
 
 ### Calling Responses from Custom Actions
 
-
 You can use the responses to generate response messages from your
-custom actions. If you're using Rasa SDK as your action server, you can use the dispatcher to generate the response message, for example: 
+custom actions. If you're using Rasa SDK as your action server, you can use the dispatcher to generate the response message, for example:
 
 ```python {8} title="actions.py"
 from rasa_sdk.interfaces import Action
@@ -453,10 +452,10 @@ your server should return the following JSON to call the `utter_greet` response:
 
 ```json {5}
 {
-  "events":[],
-  "responses":[
+  "events": [],
+  "responses": [
     {
-      "template":"utter_greet"
+      "template": "utter_greet"
     }
   ]
 }

@@ -43,7 +43,7 @@ change without notice.
   ends when the session either has been timed out or explicitly ended.
   If a session is interrupted by a longer period of inactivity new
   activity will trigger a new session to be created ([configurable
-  through the session timeout](../.../../building-assistants/domain.mdx#session-configuration)).
+  through the session timeout](../../../building-assistants/domain.mdx#session-configuration)).
 - **a turn** always starts with a message from a sender and ends right before
   the next message from the sender. A turn can also end with a session
   being timed out or explicitly ended. A turn will usually contain at least
@@ -117,7 +117,7 @@ The `rasa_session` table contains information about all conversation
 sessions that users started with the assistant. New sessions are created
 for every new user and for users who return to the assistant. The
 conditions that trigger a new session to start can be
-configured in the [Rasa Domain](../.../../building-assistants/domain.mdx#session-configuration).
+configured in the [Rasa Domain](../../../building-assistants/domain.mdx#session-configuration).
 
 <div align="center">
   <img
@@ -237,7 +237,7 @@ The sequence number of the last event in this turn.
 The `rasa_event` table contains all events that an assistant created. Events
 are created for every user message, bot response, and action that is executed
 as well as for a lot of internal changes to a conversation session.
-[Overview of all Rasa Events](../.../action-server/events.mdx).
+[Overview of all Rasa Events](../../action-server/events.mdx).
 
 <div align="center">
   <img

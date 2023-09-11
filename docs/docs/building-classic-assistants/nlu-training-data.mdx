@@ -6,8 +6,8 @@ description: Read more about how to format training data with Rasa NLU for open 
 abstract: NLU training data stores structured information about user messages.
 ---
 
-The goal of NLU (Natural Language Understanding) is to extract structured information from user messages. This usually includes the user's [intent](glossary.mdx#intent) and any
-[entities](glossary.mdx#entity) their message contains. You can
+The goal of NLU (Natural Language Understanding) is to extract structured information from user messages. This usually includes the user's [intent](../building-assistants/glossary.mdx#intent) and any
+[entities](../building-assistants/glossary.mdx#entity) their message contains. You can
 add extra information such as [regular expressions](#regular-expressions) and [lookup tables](#lookup-tables) to your
 training data to help the model identify intents and entities correctly.
 
@@ -18,14 +18,14 @@ intent.
 To make it easier to use your intents, give them names that relate to what the user wants to accomplish with that intent, keep them in lowercase, and avoid spaces and special characters.
 
 :::note
-The `/` symbol is reserved as a delimiter to separate [retrieval intents](glossary.mdx#retrieval-intent) from response text identifiers. Make sure not
+The `/` symbol is reserved as a delimiter to separate [retrieval intents](../building-assistants/glossary.mdx#retrieval-intent) from response text identifiers. Make sure not
 to use it in the name of your intents.
 
 :::
 
 ## Entities
 
-[Entities](glossary.mdx#entity) are structured pieces of information inside a user message.
+[Entities](../building-assistants/glossary.mdx#entity) are structured pieces of information inside a user message.
 For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](./components.mdx#regexentityextractor) based on a character pattern.
 
 When deciding which entities you need to extract, think about what information your assistant needs for its user goals. The user might provide additional pieces of information that you don't need for any user goal; you don't need to extract these as entities.

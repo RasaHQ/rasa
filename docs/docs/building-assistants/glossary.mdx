@@ -26,11 +26,11 @@ This is done to protect the privacy of users.
 
 Conditions that need to be fulfilled due to business requirements. For example: requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based actions like [forms](../building-classic-assistants/forms.mdx).
 
-## [Chitchat](./chitchat-faqs.mdx)
+## [Chitchat](../building-classic-assistants/chitchat-faqs.mdx)
 
 A conversation pattern where the user says something that isn't directly related to their goal.
 This can include things like greetings, asking how you are etc.
-Read about handling [Chitchat and FAQs](./chitchat-faqs.mdx) to learn how to implement this with Rasa.
+Read about handling [Chitchat and FAQs](../building-classic-assistants/chitchat-faqs.mdx) to learn how to implement this with Rasa.
 
 ## CMS
 
@@ -46,7 +46,7 @@ Modified story format that includes the full text of the user message in additio
 
 ## [Component](../building-classic-assistants/components.mdx)
 
-An element in the an assistant's [NLU pipeline](../building-classic-assistants/tuning-your-model.mdx#how-to-choose-a-pipeline) in the [Model Configuration](./model-configuration.mdx).
+An element in the an assistant's [NLU pipeline](../building-classic-assistants/tuning-your-model.mdx#how-to-choose-a-pipeline) in the [Model Configuration](../building-classic-assistants/model-configuration.mdx).
 
 Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
 
@@ -72,7 +72,7 @@ Defines the inputs and outputs of an assistant.
 
 It includes a list of all the intents, entities, slots, actions, and forms that the assistant knows about.
 
-## [Entity](./training-data-format.mdx#entities)
+## [Entity](../building-classic-assistants/training-data-format.mdx#entities)
 
 Keywords that can be extracted from a user message. For example: a telephone number, a person's name, a location, the name of a product
 
@@ -84,7 +84,7 @@ Something that happens in a conversation. For instance, a `UserUttered` event re
 
 Frequently asked questions (FAQs) are common questions that your users ask. In the context of building an assistant,
 this typically means the user sends a message and the assistant send a response without needing to consider the context of the conversation.
-Read about handling [Chitchat and FAQs](./chitchat-faqs.mdx) to learn how to implement this with Rasa.
+Read about handling [Chitchat and FAQs](../building-classic-assistants/chitchat-faqs.mdx) to learn how to implement this with Rasa.
 
 ## [Form](../building-classic-assistants/forms.mdx)
 
@@ -100,7 +100,7 @@ Terms used to describe whether the user’s input is expected or unexpected. If 
 
 In a given user message, the thing that a user is trying to convey or accomplish (e,g., greeting, specifying a location).
 
-## [Interactive Learning](./writing-stories.mdx#using-interactive-learning)
+## Interactive Learning
 
 In the Rasa CLI, a training mode where the developer corrects and validates the assistant’s predictions at every step of the conversation. The conversation can be saved to the story format and added to the assistant’s training data.
 
@@ -112,7 +112,7 @@ A queryable database that represents complex relationships and hierarchies betwe
 
 An assistant that can handle conversations more complex than simple back-and-forth exchanges. Level 3 assistants are capable of using the context of previous conversation turns to choose the appropriate next action.
 
-## [Messaging Channels](./messaging-and-voice-channels.mdx)
+## [Messaging Channels](../connectors/messaging-and-voice-channels.mdx)
 
 Connectors that integrate Rasa with external messaging platforms, where end-users can send and receive messages. Rasa includes built-in messaging channels like Slack, Facebook Messenger, and web chat, as well as the ability to create custom connectors.
 
@@ -158,11 +158,11 @@ An element in the Rasa NLU pipeline (see [Pipeline](#pipeline)) that processes i
 
 A tool for conversation-driven development. Rasa X/Enterprise helps teams share and test an assistant built with Rasa, annotate user messages, and view conversations.
 
-## [Retrieval Intent](./chitchat-faqs.mdx)
+## [Retrieval Intent](../building-classic-assistants/chitchat-faqs.mdx)
 
 A special type of intent that can be divided into smaller sub-intents. For example, an FAQ retrieval intent has sub-intents that represent each individual question the assistant knows how to answer.
 
-## [REST Channel](./connectors/your-own-website.mdx)
+## [REST Channel](../connectors/your-own-website.mdx)
 
 A messaging channel used to build custom connectors. Includes an input channel, where user messages can be posted to Rasa, and the ability to specify a callback URL, where the bot’s response actions will be sent.
 
