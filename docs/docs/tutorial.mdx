@@ -131,8 +131,8 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        next: "transfer_complete"
-      - id: "transfer_complete"
+        next: "transfer_successful"
+      - id: "transfer_successful"
         action: utter_transfer_complete        
 ```
 
@@ -178,8 +178,8 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        next: "transfer_complete"
-      - id: "transfer_complete"
+        next: "transfer_successful"
+      - id: "transfer_successful"
         action: utter_transfer_complete        
 ```
 
@@ -222,8 +222,8 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        next: "transfer_complete"
-      - id: "transfer_complete"
+        next: "transfer_successful"
+      - id: "transfer_successful"
         // highlight-next-line      
         action: utter_transfer_complete        
 ```
