@@ -9,22 +9,22 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 
 @dataclass
-class CanNotHandleCommand(Command):
+class CannotHandleCommand(Command):
     """A command to indicate that the bot can't handle the user's input."""
 
     @classmethod
     def command(cls) -> str:
         """Returns the command type."""
-        return "cant handle"
+        return "cannot handle"
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> CanNotHandleCommand:
+    def from_dict(cls, data: Dict[str, Any]) -> CannotHandleCommand:
         """Converts the dictionary to a command.
 
         Returns:
             The converted dictionary.
         """
-        return CanNotHandleCommand()
+        return CannotHandleCommand()
 
     def run_command_on_tracker(
         self,

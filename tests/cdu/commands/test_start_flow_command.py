@@ -3,7 +3,7 @@ from rasa.cdu.commands.start_flow_command import StartFlowCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.utilities import flows_from_yaml
+from tests.utilities import flows_from_str
 
 
 def test_command_name():
@@ -22,7 +22,7 @@ def test_from_dict_fails_if_parameter_is_missing():
 
 
 def test_run_command_on_tracker():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:
@@ -51,7 +51,7 @@ def test_run_command_on_tracker():
 
 
 def test_run_start_flow_that_does_not_exist():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:
@@ -69,7 +69,7 @@ def test_run_start_flow_that_does_not_exist():
 
 
 def test_run_start_flow_that_is_already_on_the_stack():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:
@@ -101,7 +101,7 @@ def test_run_start_flow_that_is_already_on_the_stack():
 
 
 def test_run_start_flow_which_is_a_pattern():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           pattern_foo:
@@ -119,7 +119,7 @@ def test_run_start_flow_which_is_a_pattern():
 
 
 def test_run_start_flow_interrupting_existing_flow():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:
@@ -166,7 +166,7 @@ def test_run_start_flow_interrupting_existing_flow():
 
 
 def test_run_start_flow_with_multiple_flows():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:

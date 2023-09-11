@@ -3,7 +3,7 @@ from rasa.cdu.commands.clarify_command import ClarifyCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.utilities import flows_from_yaml
+from tests.utilities import flows_from_str
 
 
 def test_command_name():
@@ -31,7 +31,7 @@ def test_run_command_skips_if_no_options():
 
 
 def test_run_command_skips_if_only_non_existant_flows():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:
@@ -48,7 +48,7 @@ def test_run_command_skips_if_only_non_existant_flows():
 
 
 def test_run_command_ignores_non_existant_flows():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:
@@ -77,7 +77,7 @@ def test_run_command_ignores_non_existant_flows():
 
 
 def test_run_command_uses_name_of_flow():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:

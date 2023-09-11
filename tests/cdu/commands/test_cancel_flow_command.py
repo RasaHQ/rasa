@@ -8,7 +8,7 @@ from rasa.cdu.stack.frames.flow_frame import UserFlowStackFrame
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.utilities import flows_from_yaml
+from tests.utilities import flows_from_str
 
 
 def test_command_name():
@@ -29,7 +29,7 @@ def test_run_command_on_tracker_without_flows():
 
 
 def test_run_command_on_tracker():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:
@@ -89,21 +89,7 @@ def test_select_canceled_frames_cancels_patterns():
         ]
     )
 
-    all_flows = flows_from_yaml(
-        """
-        flows:
-          foo:
-            name: foo flow
-            steps:
-            - id: first_step
-              action: action_listen
-        """
-    )
-
-    foo_flow = all_flows.flow_by_id("foo")
-    assert foo_flow is not None
-
-    canceled_frames = CancelFlowCommand.select_canceled_frames(stack, foo_flow)
+    canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
     assert len(canceled_frames) == 2
     assert canceled_frames[0] == "some-other-id"
     assert canceled_frames[1] == "some-frame-id"
@@ -121,26 +107,7 @@ def test_select_canceled_frames_cancels_only_top_user_flow():
         ]
     )
 
-    all_flows = flows_from_yaml(
-        """
-        flows:
-          foo:
-            name: foo flow
-            steps:
-            - id: first_step
-              action: action_listen
-          bar:
-            name: bar flow
-            steps:
-            - id: first_step
-              action: action_listen
-        """
-    )
-
-    foo_flow = all_flows.flow_by_id("foo")
-    assert foo_flow is not None
-
-    canceled_frames = CancelFlowCommand.select_canceled_frames(stack, foo_flow)
+    canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
     assert len(canceled_frames) == 1
     assert canceled_frames[0] == "some-foo-id"
 
@@ -148,51 +115,17 @@ def test_select_canceled_frames_cancels_only_top_user_flow():
 def test_select_canceled_frames_empty_stack():
     stack = DialogueStack(frames=[])
 
-    all_flows = flows_from_yaml(
-        """
-        flows:
-          foo:
-            name: foo flow
-            steps:
-            - id: first_step
-              action: action_listen
-        """
-    )
-
-    foo_flow = all_flows.flow_by_id("foo")
-    assert foo_flow is not None
-
     with pytest.raises(ValueError):
         # this shouldn't actually, happen. if the stack is empty we shouldn't
         # try to cancel anything.
-        CancelFlowCommand.select_canceled_frames(stack, foo_flow)
+        CancelFlowCommand.select_canceled_frames(stack)
 
 
 def test_select_canceled_frames_raises_if_frame_not_found():
-    stack = DialogueStack(
-        frames=[
-            UserFlowStackFrame(
-                flow_id="bar", step_id="first_step", frame_id="some-bar-id"
-            ),
-        ]
-    )
-
-    all_flows = flows_from_yaml(
-        """
-        flows:
-          foo:
-            name: foo flow
-            steps:
-            - id: first_step
-              action: action_listen
-        """
-    )
-
-    foo_flow = all_flows.flow_by_id("foo")
-    assert foo_flow is not None
+    stack = DialogueStack(frames=[])
 
     with pytest.raises(ValueError):
-        # can't cacenl if the current flow is not on the stack. in reality
+        # can't cacenl if there is no user flow on the stack. in reality
         # this should never happen as the flow should always be on the stack
         # when this command is executed.
-        CancelFlowCommand.select_canceled_frames(stack, foo_flow)
+        CancelFlowCommand.select_canceled_frames(stack)

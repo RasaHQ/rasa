@@ -1,9 +1,9 @@
 from rasa.shared.core.flows.flow import FlowsList
-from tests.utilities import flows_from_yaml
+from tests.utilities import flows_from_str
 
 
 def test_non_pattern_flows():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           foo:
@@ -24,7 +24,7 @@ def test_non_pattern_handles_empty():
 
 
 def test_non_pattern_flows_handles_patterns_only():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
           pattern_bar:

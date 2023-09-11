@@ -109,6 +109,17 @@ class CorrectSlotsCommand(Command):
         """
         flow = user_frame.flow(all_flows)
         step = user_frame.step(all_flows)
+        # TODO: DM2 rethink the jumping back behaviour we use for corrections.
+        #   Currently we move backwards from a given step id but this could
+        #   technically result in wrong results in cases of branches merging
+        #   again. If you call this method on a merge step or after it, you'll
+        #   get all slots from both branches, although there was only one taken.
+        #   You could get this in our verify account flow if you call this on the
+        #   final confirm step. I think you'll get the income question even
+        #   if you went the not based in ca route. Maybe it's not a problem.
+        #   The way to get the exact set of slots would probably simulate the
+        #   flow forwards from the starting step. Given the current slots you
+        #   could chart the path to the current step id.
         asked_collect_info_steps = flow.previous_collect_information_steps(step.id)
 
         for collect_info_step in reversed(asked_collect_info_steps):

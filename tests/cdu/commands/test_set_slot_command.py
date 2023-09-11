@@ -4,7 +4,7 @@ from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.utilities import flows_from_yaml
+from tests.utilities import flows_from_str
 
 
 def test_command_name():
@@ -42,7 +42,7 @@ def test_run_command_skips_if_slot_is_set_to_same_value():
 
 
 def test_run_command_sets_slot_if_asked_for():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
             my_flow:
@@ -78,7 +78,7 @@ def test_run_command_sets_slot_if_asked_for():
 
 
 def test_run_command_skips_set_slot_if_slot_was_not_asked_for():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
             my_flow:
@@ -116,7 +116,7 @@ def test_run_command_skips_set_slot_if_slot_was_not_asked_for():
 
 
 def test_run_command_can_set_slots_before_asking():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
             my_flow:
@@ -154,7 +154,7 @@ def test_run_command_can_set_slots_before_asking():
 
 
 def test_run_command_can_set_slot_that_was_already_asked_in_the_past():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
             my_flow:
@@ -184,14 +184,16 @@ def test_run_command_can_set_slot_that_was_already_asked_in_the_past():
         ],
     )
     # set the slot for a collect information that was asked in the past
+    # this isn't how we'd usually use this command as this should be converted
+    # to a "correction" to trigger a correction pattern rather than directly
+    # setting the slot.
     command = SetSlotCommand(name="foo", value="foofoo")
-
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
     assert events == [SlotSet("foo", "foofoo")]
 
 
 def test_run_command_skips_setting_unknown_slot():
-    all_flows = flows_from_yaml(
+    all_flows = flows_from_str(
         """
         flows:
             my_flow:

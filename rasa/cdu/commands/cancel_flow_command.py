@@ -8,10 +8,10 @@ import structlog
 from rasa.cdu.commands import Command
 from rasa.cdu.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.cdu.stack.dialogue_stack import DialogueStack
-from rasa.cdu.stack.frames.flow_frame import BaseFlowStackFrame
+from rasa.cdu.stack.frames import UserFlowStackFrame
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.flow import Flow, FlowsList
+from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.cdu.stack.utils import top_user_flow_frame
 
@@ -37,7 +37,7 @@ class CancelFlowCommand(Command):
         return CancelFlowCommand()
 
     @staticmethod
-    def select_canceled_frames(stack: DialogueStack, current_flow: Flow) -> List[str]:
+    def select_canceled_frames(stack: DialogueStack) -> List[str]:
         """Selects the frames that were canceled.
 
         Args:
@@ -54,17 +54,14 @@ class CancelFlowCommand(Command):
         # e.g. corrections.
         for frame in reversed(stack.frames):
             canceled_frames.append(frame.frame_id)
-            if (
-                isinstance(frame, BaseFlowStackFrame)
-                and frame.flow_id == current_flow.id
-            ):
+            if isinstance(frame, UserFlowStackFrame):
                 return canceled_frames
         else:
             # we should never get here as we should always find the user flow
             # that was canceled.
             raise ValueError(
-                f"Could not find the user flow '{current_flow.id}' "
-                f"on the stack. Current stack: {stack}."
+                f"Could not find a user flow frame to cancel. "
+                f"Current stack: {stack}."
             )
 
     def run_command_on_tracker(
@@ -98,7 +95,7 @@ class CancelFlowCommand(Command):
         # we pass in the original dialogue stack (before any of the currently
         # predicted commands were applied) to make sure we don't cancel any
         # frames that were added by the currently predicted commands.
-        canceled_frames = self.select_canceled_frames(original_stack, current_flow)
+        canceled_frames = self.select_canceled_frames(original_stack)
 
         stack.push(
             CancelPatternFlowStackFrame(

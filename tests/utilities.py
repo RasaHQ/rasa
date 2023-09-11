@@ -12,6 +12,6 @@ def json_of_latest_request(r):
     return r[-1].kwargs["json"]
 
 
-def flows_from_yaml(yaml_str: str) -> FlowsList:
+def flows_from_str(yaml_str: str) -> FlowsList:
     """Reads flows from a YAML string."""
     return YAMLFlowsReader.read_from_string(textwrap.dedent(yaml_str))

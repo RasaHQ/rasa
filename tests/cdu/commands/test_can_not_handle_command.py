@@ -1,4 +1,4 @@
-from rasa.cdu.commands.can_not_handle_command import CanNotHandleCommand
+from rasa.cdu.commands.can_not_handle_command import CannotHandleCommand
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -6,11 +6,11 @@ from rasa.shared.core.trackers import DialogueStateTracker
 def test_name_of_command():
     # names of commands should not change as they are part of persisted
     # trackers
-    assert CanNotHandleCommand.command() == "cant handle"
+    assert CannotHandleCommand.command() == "cannot handle"
 
 
 def test_from_dict():
-    assert CanNotHandleCommand.from_dict({}) == CanNotHandleCommand()
+    assert CannotHandleCommand.from_dict({}) == CannotHandleCommand()
 
 
 def test_run_command_on_tracker():
@@ -20,6 +20,6 @@ def test_run_command_on_tracker():
             UserUttered("hi", {"name": "greet"}),
         ],
     )
-    command = CanNotHandleCommand()
+    command = CannotHandleCommand()
 
     assert command.run_command_on_tracker(tracker, [], tracker) == []
