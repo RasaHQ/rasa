@@ -10,10 +10,9 @@ class ActionSufficientFunds(Action):
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        balance = 1000 # hard-coded for tutorial purposes
-        # a real api call would look something like
-        # result = requests.get("https://example.com/api/balance")
-        # balance = result.json()["balance"]
+        # hard-coded balance for tutorial purposes. in production this 
+        # would be retrieved from a database or an API
+        balance = 1000 
         transfer_amount = tracker.get_slot("amount")
         has_sufficient_funds = transfer_amount <= balance
         return [SlotSet("has_sufficient_funds", has_sufficient_funds)]
