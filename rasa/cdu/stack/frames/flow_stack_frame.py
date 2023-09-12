@@ -5,6 +5,19 @@ from typing import Any, Dict, Optional
 
 from rasa.cdu.stack.frames import DialogueStackFrame
 from rasa.shared.core.flows.flow import START_STEP, Flow, FlowStep, FlowsList
+from rasa.shared.exceptions import RasaException
+
+
+class InvalidFlowStackFrameType(RasaException):
+    """Raised if the stack frame type is invalid."""
+
+    def __init__(self, frame_type: Optional[str]) -> None:
+        """Creates a `InvalidFlowStackFrameType`.
+
+        Args:
+            frame_type: The invalid stack frame type.
+        """
+        super().__init__(f"Invalid stack frame type '{frame_type}'.")
 
 
 class FlowStackFrameType(str, Enum):
@@ -26,7 +39,13 @@ class FlowStackFrameType(str, Enum):
 
     @staticmethod
     def from_str(typ: Optional[str]) -> "FlowStackFrameType":
-        """Creates a `StackFrameType` from a string."""
+        """Creates a `FlowStackFrameType` from a string.
+
+        Args:
+            typ: The string to create the `FlowStackFrameType` from.
+
+        Returns:
+            The created `FlowStackFrameType`."""
         if typ is None:
             return FlowStackFrameType.REGULAR
         elif typ == FlowStackFrameType.INTERRUPT.value:
@@ -36,7 +55,7 @@ class FlowStackFrameType(str, Enum):
         elif typ == FlowStackFrameType.REGULAR.value:
             return FlowStackFrameType.REGULAR
         else:
-            raise NotImplementedError
+            raise InvalidFlowStackFrameType(typ)
 
 
 class InvalidFlowIdException(Exception):
@@ -72,7 +91,13 @@ class BaseFlowStackFrame(DialogueStackFrame):
     """The ID of the current step."""
 
     def flow(self, all_flows: FlowsList) -> Flow:
-        """Returns the current flow."""
+        """Returns the current flow.
+
+        Args:
+            all_flows: All flows in the assistant.
+
+        Returns:
+            The current flow."""
         flow = all_flows.flow_by_id(self.flow_id)
         if not flow:
             # we shouldn't ever end up with a frame that belongs to a non
@@ -81,7 +106,13 @@ class BaseFlowStackFrame(DialogueStackFrame):
         return flow
 
     def step(self, all_flows: FlowsList) -> FlowStep:
-        """Returns the current flow step."""
+        """Returns the current flow step.
+
+        Args:
+            all_flows: All flows in the assistant.
+
+        Returns:
+            The current flow step."""
         flow = self.flow(all_flows)
         step = flow.step_by_id(self.step_id)
         if not step:

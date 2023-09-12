@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Any, Dict, List, Tuple
 
 import structlog
+from rasa.shared.exceptions import RasaException
 
 import rasa.shared.utils.common
 from rasa.shared.utils.io import random_string
@@ -21,6 +22,18 @@ def generate_stack_frame_id() -> str:
         The generated stack frame ID.
     """
     return random_string(8)
+
+
+class InvalidStackFrameType(RasaException):
+    """Raised if a stack frame type is invalid."""
+
+    def __init__(self, frame_type: str) -> None:
+        """Creates a `InvalidStackFrameType`.
+
+        Args:
+            frame_type: The invalid frame type.
+        """
+        super().__init__(f"Invalid stack frame type '{frame_type}'.")
 
 
 @dataclass
@@ -81,14 +94,15 @@ class DialogueStackFrame:
         Returns:
             The created `DialogueStackFrame`.
         """
-        for cls in rasa.shared.utils.common.all_subclasses(DialogueStackFrame):
+        typ = data.get("type")
+        for clazz in rasa.shared.utils.common.all_subclasses(DialogueStackFrame):
             try:
-                if data.get("type") == cls.type():
-                    return cls.from_dict(data)
+                if typ == clazz.type():
+                    return clazz.from_dict(data)
             except NotImplementedError:
                 # we don't want to raise an error if the frame type is not
                 # implemented, as this is ok to be raised by an abstract class
                 pass
         else:
             structlogger.warning("dialogue_stack.frame.unknown_type", data=data)
-            raise NotImplementedError
+            raise InvalidStackFrameType(typ)

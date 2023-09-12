@@ -6,7 +6,10 @@ from typing import Any, Dict, List
 import structlog
 from rasa.cdu.commands import Command
 from rasa.cdu.stack.dialogue_stack import DialogueStack
-from rasa.cdu.stack.frames.flow_frame import FlowStackFrameType, UserFlowStackFrame
+from rasa.cdu.stack.frames.flow_stack_frame import (
+    FlowStackFrameType,
+    UserFlowStackFrame,
+)
 from rasa.cdu.stack.utils import top_user_flow_frame, user_flows_on_the_stack
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import Event, SlotSet

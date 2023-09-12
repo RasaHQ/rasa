@@ -2,7 +2,10 @@ from typing import Any, Dict, Optional, Text, List
 
 import structlog
 from rasa.cdu.stack.dialogue_stack import DialogueStack
-from rasa.cdu.stack.frames.flow_frame import FlowStackFrameType, UserFlowStackFrame
+from rasa.cdu.stack.frames.flow_stack_frame import (
+    FlowStackFrameType,
+    UserFlowStackFrame,
+)
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
 from rasa.shared.constants import FLOW_PREFIX
