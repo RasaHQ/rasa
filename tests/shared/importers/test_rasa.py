@@ -9,7 +9,6 @@ from rasa.shared.constants import (
     DEFAULT_CONVERSATION_TEST_PATH,
 )
 from rasa.shared.core.constants import (
-    COUNTER_UTTER_ASK_SLOT,
     DEFAULT_ACTION_NAMES,
     DEFAULT_INTENTS,
     SESSION_START_METADATA_SLOT,
@@ -35,7 +34,6 @@ def test_rasa_file_importer(project: Text):
         SESSION_START_METADATA_SLOT: None,
         DIALOGUE_STACK_SLOT: None,
         RETURN_VALUE_SLOT: None,
-        COUNTER_UTTER_ASK_SLOT: 0.0,
     }
 
     for slot in domain.slots:

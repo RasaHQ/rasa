@@ -87,12 +87,10 @@ ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 REQUESTED_SLOT = "requested_slot"
 DIALOGUE_STACK_SLOT = "dialogue_stack"
 RETURN_VALUE_SLOT = "return_value"
-COUNTER_UTTER_ASK_SLOT = "counter_utter_ask"
 
 FLOW_SLOT_NAMES = [
     DIALOGUE_STACK_SLOT,
     RETURN_VALUE_SLOT,
-    COUNTER_UTTER_ASK_SLOT,
 ]
 
 # slots for knowledge base

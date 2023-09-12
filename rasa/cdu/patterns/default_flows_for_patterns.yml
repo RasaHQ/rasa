@@ -112,18 +112,18 @@ flows:
       - id: "start"
         action: action_extract_slots
         next:
-          - if: "{{context.collect_information}} is null and counter_utter_ask < 2"
+          - if: "{{context.collect_information}} is null and {{context.number_of_retries}} < 2"
             then: "ask_collect_information"
           - if: "{{context.validation.condition}}"
             then: "valid_message"
-          - else: "{{context.validation.invalid_message}}"
+          - else: "invalid_message"
       - id: "valid_message"
         action: "{{context.validation.valid_message}}"
         next: "validate"
-      - id: "{{context.validation.invalid_message}}"
+      - id: "invalid_message"
         action: "{{context.validation.invalid_message}}"
         next:
-            - if: counter_utter_ask < 2
+            - if: "{{context.number_of_retries}} < 2"
               then: "ask_collect_information"
             - else: "done"
       - id: "validate"

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from rasa.cdu.stack.dialogue_stack import DialogueStackFrame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.cdu.stack.frames import PatternFlowStackFrame
@@ -20,6 +20,10 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
     collect_information: str = ""
     """The information that should be collected from the user.
     this corresponds to the slot that will be filled."""
+    number_of_retries: int = 0
+    """The number of times the question is being re-asked to fill the slot."""
+    validation: Optional[Dict[str, Any]] = None
+    """The predicate validation that should be applied to the collected information."""
 
     @classmethod
     def type(cls) -> str:
@@ -40,6 +44,8 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
             data["frame_id"],
             step_id=data["step_id"],
             collect_information=data["collect_information"],
+            number_of_retries=data.get("number_of_retries", 0),
+            validation=data.get("validation"),
         )
 
     def context_as_dict(

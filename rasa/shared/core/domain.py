@@ -55,7 +55,6 @@ import rasa.shared.utils.common
 import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import (
-    FloatSlot,
     Slot,
     CategoricalSlot,
     TextSlot,
@@ -976,10 +975,6 @@ class Domain:
     def _add_flow_slots(self) -> None:
         """Adds the slots needed for the conversation flows.
 
-        Add a slot called `counter_utter_ask` to the list of slots. The value of
-        this slot will hold the number of times the same collect_information utterance
-        is asked. It gets reset before every collect information step is run.
-
         Add a slot called `dialogue_stack_slot` to the list of slots. The value of
         this slot will be a call stack of the flow ids.
         """
@@ -989,19 +984,9 @@ class Domain:
 
         for flow_slot in FLOW_SLOT_NAMES:
             if flow_slot not in slot_names:
-                if flow_slot == rasa.shared.core.constants.COUNTER_UTTER_ASK_SLOT:
-                    self.slots.append(
-                        FloatSlot(
-                            flow_slot,
-                            mappings=[],
-                            influence_conversation=False,
-                            initial_value=0.0,
-                        )
-                    )
-                else:
-                    self.slots.append(
-                        AnySlot(flow_slot, mappings=[], influence_conversation=False)
-                    )
+                self.slots.append(
+                    AnySlot(flow_slot, mappings=[], influence_conversation=False)
+                )
             else:
                 # TODO: figure out what to do here.
                 logger.warning(

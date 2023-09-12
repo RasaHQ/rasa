@@ -34,7 +34,6 @@ from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SEND_TEXT_NAME,
-    COUNTER_UTTER_ASK_SLOT,
     DIALOGUE_STACK_SLOT,
 )
 from rasa.shared.core.events import Event, SlotSet
@@ -241,8 +240,9 @@ class FlowExecutor:
         """Initializes the `FlowExecutor`.
 
         Args:
-            dialogue_stack_frame: State of the flow.
+            dialogue_stack: State of the flow.
             all_flows: All flows.
+            domain: The domain.
         """
         self.dialogue_stack = dialogue_stack
         self.all_flows = all_flows
@@ -257,6 +257,7 @@ class FlowExecutor:
         Args:
             tracker: The tracker to create the `FlowExecutor` from.
             flows: The flows to use.
+            domain: The domain to use.
 
         Returns:
         The created `FlowExecutor`.
@@ -269,7 +270,6 @@ class FlowExecutor:
 
         Args:
             tracker: The tracker containing the conversation history up to now.
-            flows: The flows to use.
 
         Returns:
             The predicted action and the events to run.
@@ -578,30 +578,32 @@ class FlowExecutor:
             # be skipped
             slot = tracker.slots.get(step.collect_information, None)
 
-            # reset the counter slot for each collect information step
-            events = [SlotSet(COUNTER_UTTER_ASK_SLOT, 0.0)]
             if slot and slot.has_been_set and step.ask_before_filling:
-                events += [SlotSet(step.collect_information, slot.initial_value)]
+                events = [SlotSet(step.collect_information, slot.initial_value)]
+            else:
+                events = []
 
             return ContinueFlowWithNextStep(events=events)
 
         elif isinstance(step, ActionFlowStep):
             if not step.action:
                 raise FlowException(f"Action not specified for step {step}")
-            context = {"context": self.dialogue_stack.current_context()}
+
+            top_frame_context = self.dialogue_stack.current_context()
+            context = {"context": top_frame_context}
             action_name = self.render_template_variables(step.action, context)
+
             if action_name in self.domain.action_names_or_texts:
                 structlogger.debug("flow.step.run.action", context=context)
 
                 if action_name.startswith("utter_ask_"):
-                    counter_value = tracker.get_slot(COUNTER_UTTER_ASK_SLOT)
+                    number_of_retries = top_frame_context.get("number_of_retries", 0)
+                    top_frame_context["number_of_retries"] = number_of_retries + 1
+                    top_frame = CollectInformationPatternFlowStackFrame.from_dict(
+                        top_frame_context
+                    )
 
-                    if counter_value is None:
-                        counter_value = 1.0
-                    else:
-                        counter_value += 1
-
-                    tracker.update(SlotSet(COUNTER_UTTER_ASK_SLOT, counter_value))
+                    self.dialogue_stack.update(top_frame)
 
                 return PauseFlowReturnPrediction(ActionPrediction(action_name, 1.0))
             else:
@@ -714,7 +716,7 @@ class FlowExecutor:
         validation: Optional[Dict[Text, Any]],
     ) -> None:
         context = self.dialogue_stack.current_context().copy()
-        context["collect_information"] = collect_information
+        number_of_retries = context.get("number_of_retries", 0)
 
         if validation and "valid_message" not in validation:
             validation["valid_message"] = "null"
@@ -725,11 +727,13 @@ class FlowExecutor:
             "invalid_message": "null",
         }
 
-        context["validation"] = validation if validation else default_validation
+        step_validation = validation if validation else default_validation
 
         self.dialogue_stack.push(
             CollectInformationPatternFlowStackFrame(
-                collect_information=collect_information
+                collect_information=collect_information,
+                number_of_retries=number_of_retries,
+                validation=step_validation,
             )
         )
 

@@ -891,7 +891,6 @@ def test_domain_from_multiple_files():
     expected_slots = [
         "activate_double_simulation",
         "activate_simulation",
-        "counter_utter_ask",
         "dialogue_stack",
         "display_cure_method",
         "display_drum_cure_horns",
