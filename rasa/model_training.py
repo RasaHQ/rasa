@@ -205,7 +205,7 @@ def train(
         and flows.is_empty()
     ):
         rasa.shared.utils.cli.print_warning(
-            "No NLU data present. Just a Rasa Core model will be trained."
+            "No NLU data present. No NLU model will be trained."
         )
         training_type = TrainingType.CORE
 
