@@ -202,18 +202,11 @@ Adding optional keyword arguments for task calls are also allowed by adding the 
 event_broker:
   type: celery
   broker_url: rediss://:password@localhost:6379/0
-  task_name: tasks.event_logger
+  queue_task_name: tasks.event_logger
   countdown: 2
   priority: 1
 ```
-#### Rasa has access to the task code 
-```yaml-rasa title="endpoints.yml"
-event_broker:
-  type: celery
-  task_name: tasks.event_logger
-  countdown: 2
-  priority: 1
-```
+
 
 
 ## SQL Event Broker

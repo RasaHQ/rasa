@@ -1,13 +1,13 @@
 import logging
 from functools import partial
 from asyncio import AbstractEventLoop
-from typing import Dict, Text, Callable, Any, Optional, Union
+from typing import Dict, Text, Any, Optional
 
 from celery import Celery
 
-import rasa.shared.utils.common
 from rasa.core.brokers.broker import EventBroker
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -20,24 +20,13 @@ class CeleryEventBroker(EventBroker):
         **kwargs: Dict[Text, Any],
     ) -> None:
         """Initializes `CeleryBrokerEvent`."""
-        self._task = self._get_task(broker_url, task_queue_name)
-        self._task_kwargs: Dict[Text, Any] = kwargs
+        if not broker_url:
+            raise RasaException(
+                "A broker_url must be provided for Celery event broker to work."
+            )
 
-    def _get_task(
-        self, broker_url: Optional[Text], task_name: Text
-    ) -> Callable[..., None]:
-        """Return the task based on the provided broker_url and task_name."""
-        if broker_url:
-            task_instance: Celery = Celery("rasa_event_broker", broker=broker_url)
-            task_callable = partial(task_instance.send_task, task_name)
-        else:
-            task_instance = rasa.shared.utils.common.class_from_module_path(task_name)
-            task_callable = partial(task_instance.apply_async)
-
-        if not task_callable:
-            raise ValueError("Task is not defined")
-
-        return task_callable
+        task_instance: Celery = Celery("rasa_event_broker", broker=broker_url)
+        self._task = partial(task_instance.send_task, task_queue_name, **kwargs)
 
     @classmethod
     async def from_endpoint_config(
@@ -53,4 +42,4 @@ class CeleryEventBroker(EventBroker):
 
     def publish(self, event: Dict[Text, Any]) -> None:
         """Publishes a dict-formatted Rasa Core event into an event queue."""
-        self._task([event], **self._task_kwargs)
+        self._task(args=[event])
