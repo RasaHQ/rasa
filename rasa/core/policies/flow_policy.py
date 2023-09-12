@@ -595,7 +595,9 @@ class FlowExecutor:
             if action_name in self.domain.action_names_or_texts:
                 structlogger.debug("flow.step.run.action", context=context)
 
-                if action_name.startswith("utter_ask_"):
+                if step.id == "ask_collect_information":
+                    # increment number of retries to keep track of how many times
+                    # the question has been asked
                     top_frame = self.dialogue_stack.top()
                     if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
                         top_frame.number_of_retries = top_frame.number_of_retries + 1
