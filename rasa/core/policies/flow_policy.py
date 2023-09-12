@@ -589,21 +589,16 @@ class FlowExecutor:
             if not step.action:
                 raise FlowException(f"Action not specified for step {step}")
 
-            top_frame_context = self.dialogue_stack.current_context()
-            context = {"context": top_frame_context}
+            context = {"context": self.dialogue_stack.current_context()}
             action_name = self.render_template_variables(step.action, context)
 
             if action_name in self.domain.action_names_or_texts:
                 structlogger.debug("flow.step.run.action", context=context)
 
                 if action_name.startswith("utter_ask_"):
-                    number_of_retries = top_frame_context.get("number_of_retries", 0)
-                    top_frame_context["number_of_retries"] = number_of_retries + 1
-                    top_frame = CollectInformationPatternFlowStackFrame.from_dict(
-                        top_frame_context
-                    )
-
-                    self.dialogue_stack.update(top_frame)
+                    top_frame = self.dialogue_stack.top()
+                    if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
+                        top_frame.number_of_retries = top_frame.number_of_retries + 1
 
                 return PauseFlowReturnPrediction(ActionPrediction(action_name, 1.0))
             else:

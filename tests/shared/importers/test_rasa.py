@@ -16,6 +16,7 @@ from rasa.shared.core.constants import (
     RETURN_VALUE_SLOT,
 )
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.slots import AnySlot
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 
@@ -29,16 +30,11 @@ def test_rasa_file_importer(project: Text):
 
     domain = importer.get_domain()
     assert len(domain.intents) == 7 + len(DEFAULT_INTENTS)
-
-    expected_slots = {
-        SESSION_START_METADATA_SLOT: None,
-        DIALOGUE_STACK_SLOT: None,
-        RETURN_VALUE_SLOT: None,
-    }
-
-    for slot in domain.slots:
-        assert slot.name in expected_slots
-        assert slot.value == expected_slots[slot.name]
+    assert domain.slots == [
+        AnySlot(DIALOGUE_STACK_SLOT, mappings=[{}]),
+        AnySlot(RETURN_VALUE_SLOT, mappings=[{}]),
+        AnySlot(SESSION_START_METADATA_SLOT, mappings=[{}]),
+    ]
 
     assert domain.entities == []
     assert len(domain.action_names_or_texts) == 6 + len(DEFAULT_ACTION_NAMES)
