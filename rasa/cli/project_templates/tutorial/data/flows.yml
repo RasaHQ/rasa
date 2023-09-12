@@ -1,0 +1,12 @@
+flows:
+  transfer_money:
+    description: This flow lets users send money to friends and family.
+    steps:
+      - id: "ask_recipient"
+        collect_information: recipient
+        next: "ask_amount"
+      - id: "ask_amount"
+        collect_information: amount
+        next: "transfer_successful"
+      - id: "transfer_successful"
+        action: utter_transfer_complete
