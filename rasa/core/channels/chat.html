@@ -95,7 +95,6 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Type</th>
               <th>Flow</th>
               <th>Step Id</th>
             </tr>
@@ -288,13 +287,13 @@
         if (!stackFrames.length) {
           stackEl.insertAdjacentHTML(
             "afterbegin",
-            `<tr><td colspan=4 class="empty-row">-</td></tr>`
+            `<tr><td colspan=3 class="empty-row">-</td></tr>`
           );
         } else {
           stackFrames.forEach((frame, i) => {
             stackEl.insertAdjacentHTML(
               "afterbegin",
-              `<tr><td class="tiny">${frame.frame_id}</td><td>${frame.frame_type}</td><td>${
+              `<tr><td class="tiny">${frame.frame_id}</td><td>${
                 frame.flow_id
               }</td><td>${frame.step_id}</td></tr>`
             );

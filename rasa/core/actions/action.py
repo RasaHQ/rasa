@@ -97,11 +97,9 @@ logger = logging.getLogger(__name__)
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
     from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
-    from rasa.core.actions.flows import (
-        ActionCancelFlow,
-        ActionCorrectFlowSlot,
-        ActionClarifyFlows,
-    )
+    from rasa.cdu.patterns.correction import ActionCorrectFlowSlot
+    from rasa.cdu.patterns.cancel import ActionCancelFlow
+    from rasa.cdu.patterns.clarify import ActionClarifyFlows
 
     return [
         ActionListen(),

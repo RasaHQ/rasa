@@ -247,7 +247,7 @@ nodes:
       needs:
           tracker: __tracker__
           flows: flows_provider
-      uses: rasa.cdu.command_processor_component.CommandProcessorComponent
+      uses: rasa.cdu.processor.command_processor_component.CommandProcessorComponent
       constructor_name: load
       fn: execute_commands
       config: { }

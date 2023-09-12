@@ -1,4 +1,3 @@
-import dataclasses
 from typing import List, Optional
 from rasa.cdu.commands import Command
 from rasa.shared.core.flows.flow import FlowsList
@@ -17,33 +16,42 @@ class CommandGenerator:
     def process(
         self,
         messages: List[Message],
+        flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
-        flows: Optional[FlowsList] = None,
     ) -> List[Message]:
         """Process a list of messages. For each message predict commands.
 
         The result of the generation is added to the message as a list of
         commands.
+
+        Args:
+            messages: The messages to process.
+            tracker: The tracker containing the conversation history up to now.
+            flows: The flows to use for command prediction.
+
+        Returns:
+        The processed messages (usually this is just one during prediction).
         """
         for message in messages:
-            commands = self.predict_commands(message, tracker, flows)
-            commands_dicts = [dataclasses.asdict(command) for command in commands]
+            commands = self.predict_commands(message, flows, tracker)
+            commands_dicts = [command.as_dict() for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
         return messages
 
     def predict_commands(
         self,
         message: Message,
+        flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
-        flows: Optional[FlowsList] = None,
     ) -> List[Command]:
         """Predict commands for a single message.
 
         Args:
             message: The message to predict commands for.
-            tracker: The tracker containing the conversation history up to now.
             flows: The flows to use for command prediction.
+            tracker: The tracker containing the conversation history up to now.
 
         Returns:
-            The predicted commands."""
+        The predicted commands.
+        """
         raise NotImplementedError()

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Text
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
 
@@ -21,7 +20,7 @@ class FlowsProvider(GraphComponent):
         self,
         model_storage: ModelStorage,
         resource: Resource,
-        flows: Optional[FlowsList] = None,
+        flows: FlowsList,
     ) -> None:
         """Creates flows provider."""
         self._model_storage = model_storage
@@ -37,7 +36,7 @@ class FlowsProvider(GraphComponent):
         execution_context: ExecutionContext,
     ) -> FlowsProvider:
         """Creates component (see parent class for full docstring)."""
-        return cls(model_storage, resource)
+        return cls(model_storage, resource, flows=FlowsList([]))
 
     @classmethod
     def load(
@@ -71,11 +70,4 @@ class FlowsProvider(GraphComponent):
 
     def provide_inference(self) -> FlowsList:
         """Provides the flows configuration during inference."""
-        if self._flows is None:
-            # This can't really happen but if it happens then we fail early
-            raise InvalidConfigException(
-                "No flows configuration was found. This is required for "
-                "making model predictions. Please make sure to "
-                "provide a the flows configuration during training."
-            )
         return self._flows

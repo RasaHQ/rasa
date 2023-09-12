@@ -531,7 +531,7 @@ def test_train_validation_warnings(
     assert result.ret == 0
     for warning in [
         "The intent 'goodbye' is not used in any story or rule.",
-        "The utterance 'utter_chatter' is not used in any story or rule.",
+        "The utterance 'utter_chatter' is not used in any story, rule or flow.",
     ]:
         assert warning in str(result.stderr)
 
