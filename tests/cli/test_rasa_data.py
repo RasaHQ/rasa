@@ -204,7 +204,7 @@ def test_data_validate_not_used_warning(
 
     for warning in [
         "The intent 'goodbye' is not used in any story or rule.",
-        "The utterance 'utter_chatter' is not used in any story or rule.",
+        "The utterance 'utter_chatter' is not used in any story, rule or flow.",
     ]:
         assert warning in str(result.stderr)
 

@@ -291,7 +291,7 @@ def test_verify_logging_message_for_unused_utterance(
         # force validator to not ignore warnings (default is True)
         validator_under_test.verify_utterances_in_dialogues(ignore_warnings=False)
 
-    assert "The utterance 'utter_chatter' is not used in any story or rule." in (
+    assert "The utterance 'utter_chatter' is not used in any story, rule or flow." in (
         m.message.args[0] for m in record
     )
 
