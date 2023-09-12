@@ -176,9 +176,9 @@ def train(
         rasa.shared.utils.common.mark_as_experimental_feature("end-to-end training")
         training_type = TrainingType.END_TO_END
 
-    if stories.is_empty() and nlu_data.contains_no_pure_nlu_data():
+    if stories.is_empty() and nlu_data.contains_no_pure_nlu_data() and flows.is_empty():
         rasa.shared.utils.cli.print_error(
-            "No training data given. Please provide stories and NLU data in "
+            "No training data given. Please provide stories, flows or NLU data in "
             "order to train a Rasa model using the '--data' argument."
         )
         return TrainingResult(code=1)
@@ -199,7 +199,11 @@ def train(
         training_type = TrainingType.NLU
 
     # We will train nlu if there are any nlu example, including from e2e stories.
-    elif nlu_data.contains_no_pure_nlu_data() and not nlu_data.has_e2e_examples():
+    elif (
+        nlu_data.contains_no_pure_nlu_data()
+        and not nlu_data.has_e2e_examples()
+        and flows.is_empty()
+    ):
         rasa.shared.utils.cli.print_warning(
             "No NLU data present. Just a Rasa Core model will be trained."
         )

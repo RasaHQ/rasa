@@ -3,6 +3,11 @@ from collections import defaultdict
 from typing import Set, Text, Optional, Dict, Any, List
 
 import rasa.core.training.story_conflict
+from rasa.shared.core.flows.flow import (
+    ActionFlowStep,
+    CollectInformationFlowStep,
+    FlowsList,
+)
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
@@ -10,6 +15,7 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
+    UTTER_ASK_PREFIX,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
@@ -37,6 +43,7 @@ class Validator:
         domain: Domain,
         intents: TrainingData,
         story_graph: StoryGraph,
+        flows: FlowsList,
         config: Optional[Dict[Text, Any]],
     ) -> None:
         """Initializes the Validator object.
@@ -50,6 +57,7 @@ class Validator:
         self.domain = domain
         self.intents = intents
         self.story_graph = story_graph
+        self.flows = flows
         self.config = config or {}
 
     @classmethod
@@ -59,8 +67,9 @@ class Validator:
         story_graph = importer.get_stories()
         intents = importer.get_nlu_data()
         config = importer.get_config()
+        flows = importer.get_flows()
 
-        return cls(domain, intents, story_graph, config)
+        return cls(domain, intents, story_graph, flows, config)
 
     def _non_default_intents(self) -> List[Text]:
         return [
@@ -172,15 +181,25 @@ class Validator:
         }
         return domain_responses.union(data_responses)
 
-    def verify_utterances_in_stories(self, ignore_warnings: bool = True) -> bool:
-        """Verifies usage of utterances in stories.
+    def _does_story_only_use_valid_actions(
+        self, used_utterances_in_stories: Set[str], utterance_actions: List[str]
+    ) -> bool:
+        """Checks if all utterances used in stories are valid."""
+        has_no_warnings = True
+        for used_utterance in used_utterances_in_stories:
+            if used_utterance not in utterance_actions:
+                rasa.shared.utils.io.raise_warning(
+                    f"The action '{used_utterance}' is used in the stories, "
+                    f"but is not a valid utterance action. Please make sure "
+                    f"the action is listed in your domain and there is a "
+                    f"template defined with its name.",
+                    docs=DOCS_URL_ACTIONS + "#utterance-actions",
+                )
+                has_no_warnings = False
+        return has_no_warnings
 
-        Checks whether utterances used in the stories are valid,
-        and whether all valid utterances are used in stories.
-        """
-        everything_is_alright = True
-
-        utterance_actions = self._gather_utterance_actions()
+    def _utterances_used_in_stories(self) -> Set[str]:
+        """Return all utterances which are used in stories."""
         stories_utterances = set()
 
         for story in self.story_graph.story_steps:
@@ -199,21 +218,50 @@ class Validator:
                     # we already processed this one before, we only want to warn once
                     continue
 
-                if event.action_name not in utterance_actions:
-                    rasa.shared.utils.io.raise_warning(
-                        f"The action '{event.action_name}' is used in the stories, "
-                        f"but is not a valid utterance action. Please make sure "
-                        f"the action is listed in your domain and there is a "
-                        f"template defined with its name.",
-                        docs=DOCS_URL_ACTIONS + "#utterance-actions",
-                    )
-                    everything_is_alright = ignore_warnings
                 stories_utterances.add(event.action_name)
+        return stories_utterances
+
+    def _utterances_used_in_flows(self) -> Set[str]:
+        """Return all utterances which are used in flows."""
+        flow_utterances = set()
+
+        for flow in self.flows.underlying_flows:
+            for step in flow.steps:
+                if isinstance(step, ActionFlowStep) and step.action.startswith(
+                    UTTER_PREFIX
+                ):
+                    flow_utterances.add(step.action)
+                if isinstance(step, CollectInformationFlowStep):
+                    flow_utterances.add(UTTER_ASK_PREFIX + step.collect_information)
+        return flow_utterances
+
+    def verify_utterances_in_dialogues(self, ignore_warnings: bool = True) -> bool:
+        """Verifies usage of utterances in stories or flows.
+
+        Checks whether utterances used in the stories are valid,
+        and whether all valid utterances are used in stories.
+        """
+        everything_is_alright = True
+
+        utterance_actions = self._gather_utterance_actions()
+
+        stories_utterances = self._utterances_used_in_stories()
+        flow_utterances = self._utterances_used_in_flows()
+
+        all_used_utterances = flow_utterances.union(stories_utterances)
+
+        everything_is_alright = (
+            ignore_warnings
+            or self._does_story_only_use_valid_actions(
+                stories_utterances, utterance_actions
+            )
+        )
 
         for utterance in utterance_actions:
-            if utterance not in stories_utterances:
+            if utterance not in all_used_utterances:
                 rasa.shared.utils.io.raise_warning(
-                    f"The utterance '{utterance}' is not used in any story or rule."
+                    f"The utterance '{utterance}' is not used in "
+                    f"any story, rule or flow."
                 )
                 everything_is_alright = ignore_warnings or everything_is_alright
 
@@ -332,7 +380,7 @@ class Validator:
         )
 
         logger.info("Validating utterances...")
-        stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
+        stories_are_valid = self.verify_utterances_in_dialogues(ignore_warnings)
         return intents_are_valid and stories_are_valid and there_is_no_duplication
 
     def verify_form_slots(self) -> bool:
