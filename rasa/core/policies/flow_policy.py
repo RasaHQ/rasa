@@ -4,20 +4,24 @@ from dataclasses import dataclass
 from typing import Any, Dict, Text, List, Optional, Union
 
 from jinja2 import Template
-from rasa.cdu.conversation_patterns import (
-    FLOW_PATTERN_COLLECT_INFORMATION,
-    FLOW_PATTERN_CLARIFICATION,
-    FLOW_PATTERN_COMPLETED,
-    FLOW_PATTERN_CONTINUE_INTERRUPTED,
-)
 from structlog.contextvars import (
     bound_contextvars,
 )
-from rasa.cdu.dialogue_stack import (
-    DialogueStack,
+from rasa.cdu.stack.dialogue_stack import DialogueStack
+from rasa.cdu.stack.frames import (
+    BaseFlowStackFrame,
     DialogueStackFrame,
-    StackFrameType,
+    UserFlowStackFrame,
 )
+from rasa.cdu.patterns.collect_information import (
+    CollectInformationPatternFlowStackFrame,
+)
+from rasa.cdu.patterns.completed import CompletedPatternFlowStackFrame
+from rasa.cdu.patterns.continue_interrupted import (
+    ContinueInterruptedPatternFlowStackFrame,
+)
+from rasa.cdu.stack.frames.flow_frame import FlowStackFrameType
+from rasa.cdu.stack.utils import top_user_flow_frame
 
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
@@ -89,13 +93,9 @@ class FlowPolicy(Policy):
     """
 
     @staticmethod
-    def supported_stack_frames() -> List[StackFrameType]:
-        return [
-            StackFrameType.INTERRUPT,
-            StackFrameType.LINK,
-            StackFrameType.REGULAR,
-            StackFrameType.REMARK,
-        ]
+    def does_support_stack_frame(frame: DialogueStackFrame) -> bool:
+        """Checks if the policy supports the given stack frame."""
+        return isinstance(frame, BaseFlowStackFrame)
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -487,7 +487,8 @@ class FlowExecutor:
         number_of_initial_events = len(tracker.events)
 
         while isinstance(step_result, ContinueFlowWithNextStep):
-            if not (current_flow := self.dialogue_stack.top_flow(self.all_flows)):
+            active_frame = self.dialogue_stack.top()
+            if not isinstance(active_frame, BaseFlowStackFrame):
                 # If there is no current flow, we assume that all flows are done
                 # and there is nothing to do. The assumption here is that every
                 # flow ends with an action listen.
@@ -495,28 +496,17 @@ class FlowExecutor:
                     ActionPrediction(ACTION_LISTEN_NAME, 1.0)
                 )
             else:
-                with bound_contextvars(flow_id=current_flow.id):
-                    if not (
-                        previous_step := self.dialogue_stack.top_flow_step(
-                            self.all_flows
-                        )
-                    ):
-                        raise FlowException(
-                            "The current flow is set, but there is no current step. "
-                            "This should not happen, if a flow is started it should "
-                            "be set to __start__ if it ended it should be popped "
-                            "from the stack."
-                        )
-
+                with bound_contextvars(flow_id=active_frame.flow_id):
                     structlogger.debug(
-                        "flow.execution.loop", previous_step_id=previous_step.id
+                        "flow.execution.loop", previous_step_id=active_frame.step_id
                     )
+                    current_flow = active_frame.flow(self.all_flows)
                     current_step = self._select_next_step(
-                        tracker, previous_step, current_flow
+                        tracker, active_frame.step(self.all_flows), current_flow
                     )
 
                     if current_step:
-                        self.dialogue_stack.advance_top_flow(current_step.id)
+                        self._advance_top_flow_on_stack(current_step.id)
 
                         with bound_contextvars(step_id=current_step.id):
                             step_result = self._run_step(
@@ -534,6 +524,10 @@ class FlowExecutor:
         else:
             structlogger.warning("flow.step.execution.no_action")
             return ActionPrediction(None, 0.0)
+
+    def _advance_top_flow_on_stack(self, updated_id: str) -> None:
+        if (top := self.dialogue_stack.top()) and isinstance(top, BaseFlowStackFrame):
+            top.step_id = updated_id
 
     def _reset_scoped_slots(
         self, current_flow: Flow, tracker: DialogueStateTracker
@@ -617,9 +611,9 @@ class FlowExecutor:
         elif isinstance(step, LinkFlowStep):
             structlogger.debug("flow.step.run.link")
             self.dialogue_stack.push(
-                DialogueStackFrame(
+                UserFlowStackFrame(
                     flow_id=step.link,
-                    frame_type=StackFrameType.LINK,
+                    frame_type=FlowStackFrameType.LINK,
                 ),
                 # push this below the current stack frame so that we can
                 # complete the current flow first and then continue with the
@@ -674,40 +668,43 @@ class FlowExecutor:
     ) -> None:
         """Trigger the pattern to continue an interrupted flow if needed."""
         # get previously started user flow that will be continued
-        (
-            previous_user_flow_step,
-            previous_user_flow,
-        ) = self.dialogue_stack.topmost_user_frame(self.all_flows)
+        previous_user_flow_frame = top_user_flow_frame(self.dialogue_stack)
+        previous_user_flow_step = (
+            previous_user_flow_frame.step(self.all_flows)
+            if previous_user_flow_frame
+            else None
+        )
+        previous_user_flow = (
+            previous_user_flow_frame.flow(self.all_flows)
+            if previous_user_flow_frame
+            else None
+        )
+
         if (
-            current_frame.frame_type == StackFrameType.INTERRUPT
+            isinstance(current_frame, UserFlowStackFrame)
             and previous_user_flow_step
             and previous_user_flow
+            and current_frame.frame_type == FlowStackFrameType.INTERRUPT
             and not self.is_step_end_of_flow(previous_user_flow_step)
         ):
             self.dialogue_stack.push(
-                DialogueStackFrame(
-                    flow_id=FLOW_PATTERN_CONTINUE_INTERRUPTED,
-                    frame_type=StackFrameType.REMARK,
-                    context={"previous_flow_name": previous_user_flow.readable_name()},
+                ContinueInterruptedPatternFlowStackFrame(
+                    previous_flow_name=previous_user_flow.readable_name(),
                 )
             )
 
     def trigger_pattern_completed(self, current_frame: DialogueStackFrame) -> None:
         """Trigger the pattern indicating that the stack is empty, if needed."""
-        if (
-            self.dialogue_stack.is_empty()
-            and current_frame.flow_id != FLOW_PATTERN_COMPLETED
-            and current_frame.flow_id != FLOW_PATTERN_CLARIFICATION
+        if self.dialogue_stack.is_empty() and isinstance(
+            current_frame, UserFlowStackFrame
         ):
             completed_flow = current_frame.flow(self.all_flows)
             completed_flow_name = (
                 completed_flow.readable_name() if completed_flow else None
             )
             self.dialogue_stack.push(
-                DialogueStackFrame(
-                    flow_id=FLOW_PATTERN_COMPLETED,
-                    frame_type=StackFrameType.REMARK,
-                    context={"previous_flow_name": completed_flow_name},
+                CompletedPatternFlowStackFrame(
+                    previous_flow_name=completed_flow_name,
                 )
             )
 
@@ -731,10 +728,8 @@ class FlowExecutor:
         context["validation"] = validation if validation else default_validation
 
         self.dialogue_stack.push(
-            DialogueStackFrame(
-                flow_id=FLOW_PATTERN_COLLECT_INFORMATION,
-                frame_type=StackFrameType.REMARK,
-                context=context,
+            CollectInformationPatternFlowStackFrame(
+                collect_information=collect_information
             )
         )
 

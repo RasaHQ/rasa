@@ -173,6 +173,16 @@ class FlowsList:
         for flow in self.underlying_flows:
             flow.validate()
 
+    def non_pattern_flows(self) -> List[str]:
+        """Get all flows that can be started.
+
+        Args:
+            all_flows: All flows.
+
+        Returns:
+            All flows that can be started."""
+        return [f.id for f in self.underlying_flows if not f.is_handling_pattern()]
+
 
 @dataclass
 class Flow:
@@ -291,7 +301,7 @@ class Flow:
             return None
         return self.steps[0]
 
-    def previously_asked_collect_information(
+    def previous_collect_information_steps(
         self, step_id: Optional[str]
     ) -> List[CollectInformationFlowStep]:
         """Returns the collect informations asked before the given step.

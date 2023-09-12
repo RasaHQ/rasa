@@ -379,31 +379,31 @@ class PassThroughImporter(TrainingDataImporter):
         return self._importer.get_nlu_data(language)
 
 
-DEFAULT_FLOW_FILE_NAME = "default_flows.yml"
-
-
-def load_default_flows() -> FlowsList:
-    """Loads the default flows from the file system."""
-    from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
-
-    default_flows_file = pkg_resources.resource_filename(
-        "rasa.core.policies", DEFAULT_FLOW_FILE_NAME
-    )
-
-    return YAMLFlowsReader.read_from_file(default_flows_file)
-
-
-def load_default_flows_domain() -> Domain:
-    """Loads the default flows from the file system."""
-    default_flows_file = pkg_resources.resource_filename(
-        "rasa.core.policies", DEFAULT_FLOW_FILE_NAME
-    )
-
-    return Domain.from_path(default_flows_file)
+DEFAULT_PATTERN_FLOWS_FILE_NAME = "default_flows_for_patterns.yml"
 
 
 class FlowSyncImporter(PassThroughImporter):
     """Importer that syncs `flows` between Domain and flow training data."""
+
+    @staticmethod
+    def load_default_pattern_flows() -> FlowsList:
+        """Loads the default flows from the file system."""
+        from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
+
+        default_flows_file = pkg_resources.resource_filename(
+            "rasa.cdu.patterns", DEFAULT_PATTERN_FLOWS_FILE_NAME
+        )
+
+        return YAMLFlowsReader.read_from_file(default_flows_file)
+
+    @staticmethod
+    def load_default_pattern_flows_domain() -> Domain:
+        """Loads the default flows from the file system."""
+        default_flows_file = pkg_resources.resource_filename(
+            "rasa.cdu.patterns", DEFAULT_PATTERN_FLOWS_FILE_NAME
+        )
+
+        return Domain.from_path(default_flows_file)
 
     @rasa.shared.utils.common.cached_method
     def get_flows(self) -> FlowsList:
@@ -413,7 +413,7 @@ class FlowSyncImporter(PassThroughImporter):
             # if there are no flows, we don't need to add the default flows either
             return flows
 
-        default_flows = load_default_flows()
+        default_flows = self.load_default_pattern_flows()
 
         user_flow_ids = [flow.id for flow in flows.underlying_flows]
         missing_default_flows = [
@@ -435,7 +435,7 @@ class FlowSyncImporter(PassThroughImporter):
             # if there are no flows, we don't need to add the default flows either
             return domain
 
-        default_flows_domain = load_default_flows_domain()
+        default_flows_domain = self.load_default_pattern_flows_domain()
 
         flow_names = [
             rasa.shared.constants.FLOW_PREFIX + flow.id

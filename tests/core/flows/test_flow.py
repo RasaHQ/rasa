@@ -1,0 +1,36 @@
+from rasa.shared.core.flows.flow import FlowsList
+from tests.utilities import flows_from_str
+
+
+def test_non_pattern_flows():
+    all_flows = flows_from_str(
+        """
+        flows:
+          foo:
+            steps:
+              - id: first
+                action: action_listen
+          pattern_bar:
+            steps:
+            - id: first
+              action: action_listen
+        """
+    )
+    assert all_flows.non_pattern_flows() == ["foo"]
+
+
+def test_non_pattern_handles_empty():
+    assert FlowsList(flows=[]).non_pattern_flows() == []
+
+
+def test_non_pattern_flows_handles_patterns_only():
+    all_flows = flows_from_str(
+        """
+        flows:
+          pattern_bar:
+            steps:
+            - id: first
+              action: action_listen
+        """
+    )
+    assert all_flows.non_pattern_flows() == []
