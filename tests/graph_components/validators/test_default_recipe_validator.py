@@ -1015,7 +1015,9 @@ def test_nlu_training_data_validation():
 
 
 def test_no_warnings_with_default_project(tmp_path: Path):
-    rasa.utils.common.copy_directory(Path("rasa/cli/initial_project"), tmp_path)
+    rasa.utils.common.copy_directory(
+        Path("rasa/cli/project_templates/default/"), tmp_path
+    )
 
     importer = TrainingDataImporter.load_from_config(
         config_path=str(tmp_path / "config.yml"),
