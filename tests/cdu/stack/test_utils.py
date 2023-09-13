@@ -194,7 +194,7 @@ def test_filled_slots_for_active_flow_only_collects_till_top_most_user_flow_fram
         flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
     )
     another_user_frame = UserFlowStackFrame(
-        flow_id="my_other_flow", step_id="collect_bar", frame_id="some-other-id"
+        flow_id="my_other_flow", step_id="collect_bar2", frame_id="some-other-id"
     )
     stack = DialogueStack(frames=[another_user_frame, user_frame])
 
