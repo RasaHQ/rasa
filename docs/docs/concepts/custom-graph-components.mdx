@@ -46,7 +46,7 @@ While there is a distinction between policies and NLU components in your model
 configuration, the distinction is abstracted away when they are placed within the graph.
 At this point policies and NLU components become abstract _graph components_.
 In practice this is represented by the
-[`GraphComponent`](../building-assistants/custom-graph-components.mdx#the-graphcomponent-interface)
+[`GraphComponent`](../concepts/custom-graph-components.mdx#the-graphcomponent-interface)
 interface: Both policies and NLU components have to inherit from this interface to
 become compatible and executable for Rasa's graph.
 
@@ -346,7 +346,7 @@ class MyComponent(GraphComponent):
 To make your graph component available to Rasa you may have to register your
 graph component with a recipe. Rasa uses recipes to translate the content
 of your model configuration to executable
-[graphs](../building-assistants/custom-graph-components.mdx#graph-components).
+[graphs](../concepts/custom-graph-components.mdx#graph-components).
 Currently, Rasa supports the `default.v1` and the experimental `graph.v1` recipes.
 For `default.v1` recipe, you need to register your graph component by using the `DefaultV1Recipe.register`
 decorator:

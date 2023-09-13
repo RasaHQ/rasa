@@ -171,7 +171,7 @@ fallback, so it will not influence the prediction of future actions.
 
 `action_default_fallback` is a default action in Rasa that sends the
 `utter_default` response to the user. You can create your own custom action to use as a
-fallback (see [Custom Actions](../building-assistants/actions.mdx#custom-actions) for more info on custom actions).
+fallback (see [Custom Actions](../concepts/actions.mdx#custom-actions) for more info on custom actions).
 The following snippet is an implementation of a custom action which does the same as
 `action_default_fallback` but dispatches a different template
 `utter_fallback_template`:
@@ -257,7 +257,7 @@ responses:
 
 Rasa provides default implementations for asking which intent the user
 meant and for asking the user to rephrase. To customize the behavior of these actions,
-see the documentation on [default actions](../building-assistants/default-actions.mdx).
+see the documentation on [default actions](../concepts/default-actions.mdx).
 
 #### 3. Defining a Two-Stage Fallback rule
 
@@ -284,7 +284,7 @@ responses:
   - text: I'm sorry, I can't help you.
 ```
 
-Or, you can customize `action_default_fallback` for more complex behavior by writing a [Custom Action](../building-assistants/actions.mdx#custom-actions).
+Or, you can customize `action_default_fallback` for more complex behavior by writing a [Custom Action](../concepts/actions.mdx#custom-actions).
 For example, if you want the bot to call a human and stop interacting with the user:
 
 ```python title="actions.py"

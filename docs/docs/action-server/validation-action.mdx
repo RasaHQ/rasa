@@ -23,7 +23,7 @@ can be set or updated outside of a form context.
 :::note
 `ValidationAction` is intended for extracting slots **outside** the context of a form.
 It will ignore extraction and validation methods for any slots that have a form specified under the
-[slot mapping's `conditions`](../building-assistants/domain.mdx#mapping-conditions).
+[slot mapping's `conditions`](../concepts/domain.mdx#mapping-conditions).
 It will not run these methods when the specified form is active nor when no form is active.
 Please extend the [`FormValidationAction`](./validation-action.mdx#formvalidationaction-class) class to apply
 custom slot mappings only within the context of a form.
@@ -39,8 +39,8 @@ original name is hardcoded in the call that the default action `action_extract_s
 You should create only one subclass of `ValidationAction` which should contain all extraction and validation
 methods for different slots according to your use-case.
 
-With this option, you do not need to specify the `action` key in the [custom slot mapping](../building-assistants/domain.mdx#custom-slot-mappings),
-since the default action [`action_extract_slots`](../building-assistants/default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
+With this option, you do not need to specify the `action` key in the [custom slot mapping](../concepts/domain.mdx#custom-slot-mappings),
+since the default action [`action_extract_slots`](../concepts/default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
 automatically if present in the `actions` section of the domain.
 
 #### Validation of Slots with Predefined Mappings

@@ -19,7 +19,7 @@ logic with machine learning capabilities.
 The Flow Policy oversees your bot's state, handles state transitions, and
 triggers new flows when needed. The "Dialogue Stack" represents all started but
 incomplete flows and refers to steps defined in the
-[flows specification](../building-assistants/flows.mdx).
+[flows specification](../concepts/flows.mdx).
 
 <Image
   img={dialogueStackOverview}
@@ -32,7 +32,7 @@ guiding the conversation based on user input and system response. Other
 classifiers adjust the underlying state machine to handle edge cases.
 
 For more detailed information on defining flows, refer to the
-[flows specification](../building-assistants/flows.mdx).
+[flows specification](../concepts/flows.mdx).
 
 ## Adding the FlowPolicy to your bot
 
@@ -48,7 +48,7 @@ involves two steps:
    # - ...
    ```
 
-2. Add flows to your bot as per the [flows specification](../building-assistants/flows.mdx). This
+2. Add flows to your bot as per the [flows specification](../concepts/flows.mdx). This
    step involves defining the states and transitions that your bot should
    recognize and react to.
 
@@ -128,7 +128,7 @@ A flow can be started in several ways:
   example, the [LLM Command Generator](./llm-command-generator.mdx) puts a flow
   on the stack when it determines that a flow would be a good fit for the
   current conversation.
-- One flow can ["link" to another flow](../building-assistants/flows.mdx#link), which will initiate
+- One flow can ["link" to another flow](../concepts/flows.mdx#link), which will initiate
   the linked flow and return to the original flow once the linked flow
   completes.
 - Flows, which are conversational patterns (e.g. correction, resume flow), are

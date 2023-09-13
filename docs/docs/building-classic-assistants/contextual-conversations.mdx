@@ -47,9 +47,9 @@ A conversation with a user who doesn't like music:
 
 ### 1. Defining Slots
 
-[Slots](../building-assistants/domain.mdx#slots) are your assistant's memory. Slots store pieces of information that your
+[Slots](../concepts/domain.mdx#slots) are your assistant's memory. Slots store pieces of information that your
 assistant needs to refer to later and can direct the flow of the conversation
-based on `slot_was_set` events. There are different [types of slots](../building-assistants/domain.mdx#slot-types),
+based on `slot_was_set` events. There are different [types of slots](../concepts/domain.mdx#slot-types),
 and each affects the conversation flow in its own way.
 
 In the concert bot example, the `likes_music` slot is a boolean slot. If it is true, the bot sends an intro message. If it is false, the bot sends a different message.

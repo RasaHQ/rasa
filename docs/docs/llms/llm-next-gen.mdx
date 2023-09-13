@@ -36,9 +36,9 @@ and the control needed for business logic. This innovative blend enables you to
 manage both the flexible and predictable aspects of dialogues within your
 chatbot.
 
-By utilizing LLMs, we can effectively handle ["unhappy paths"—instances](../building-assistants/glossary.mdx#happy--unhappy-paths) where
+By utilizing LLMs, we can effectively handle ["unhappy paths"—instances](../concepts/glossary.mdx#happy--unhappy-paths) where
 user interactions diverge from the expected or desired course. Meanwhile,
-business logic or 'Flows' are used to manage ["happy paths"—scenarios](../building-assistants/glossary.mdx#happy--unhappy-paths) where
+business logic or 'Flows' are used to manage ["happy paths"—scenarios](../concepts/glossary.mdx#happy--unhappy-paths) where
 interactions proceed as anticipated.
 
 ### Bring your own LLM
@@ -82,7 +82,7 @@ Here's a breakdown of our approach:
 
 - We specify 'happy paths' using business logic. This means setting out clear,
   pre-defined paths that the conversation should follow under ideal
-  circumstances using [Flows](../building-assistants/flows.mdx).
+  circumstances using [Flows](../concepts/flows.mdx).
 - We identify patterns of 'unhappy paths' and specify these using separate
   Flows. These [conversational patterns](./unhappy-paths.mdx) define how the
   chatbot should respond when the user's input doesn't match the expected course
@@ -100,7 +100,7 @@ Here's a breakdown of our approach:
 This section of the documentation guides you through the diverse ways you can
 integrate LLMs into Rasa. We will delve into the following topics:
 
-1. [Business Logic with Flows](../building-assistants/flows.mdx)
+1. [Business Logic with Flows](../concepts/flows.mdx)
 2. [Handling Unhappy Paths](./unhappy-paths.mdx)
 3. [Configuring other LLMs](./llm-configuration.mdx)
 

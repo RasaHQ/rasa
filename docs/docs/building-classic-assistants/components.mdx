@@ -568,7 +568,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   **Configuring for incremental training**
 
   To ensure that `sparse_features` are of fixed size during
-  [incremental training](../building-assistants/command-line-interface.mdx#incremental-training), the
+  [incremental training](../concepts/command-line-interface.mdx#incremental-training), the
   component should be configured to account for additional patterns that may be
   added to the training data in future. To do so, configure the `number_additional_patterns`
   parameter while training the base model from scratch:
@@ -703,7 +703,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   **Configuring for incremental training**
 
   To ensure that `sparse_features` are of fixed size during
-  [incremental training](../building-assistants/command-line-interface.mdx#incremental-training), the
+  [incremental training](../concepts/command-line-interface.mdx#incremental-training), the
   component should be configured to account for additional vocabulary tokens
   that may be added as part of new training examples in the future.
   To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
@@ -1496,7 +1496,7 @@ target the same entity types, it is very likely that entities will be extracted 
 For example, if you use two or more general purpose extractors like [MitieEntityExtractor](./components.mdx#mitieentityextractor),
 [DIETClassifier](./components.mdx#dietclassifier-1), or [CRFEntityExtractor](./components.mdx#crfentityextractor),
 the entity types in your training data will be found and
-extracted by all of them. If the [slots](../building-assistants/domain.mdx#slots) you are filling with your entity types are of type `text`,
+extracted by all of them. If the [slots](../concepts/domain.mdx#slots) you are filling with your entity types are of type `text`,
 then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
 will be added to the list, including duplicates.
 
@@ -2373,9 +2373,9 @@ Selectors predict a bot response from a set of candidate responses.
   It embeds user inputs and response labels into the same space and follows the exact same
   neural network architecture and optimization as the [DIETClassifier](./components.mdx#dietclassifier).
 
-  To use this component, your training data should contain [retrieval intents](../building-assistants/glossary.mdx#retrieval-intent). To define these,
+  To use this component, your training data should contain [retrieval intents](../concepts/glossary.mdx#retrieval-intent). To define these,
   checkout [documentation on NLU training examples](./training-data-format.mdx#training-examples) and
-  [documentation on defining response utterances for retrieval intents](../building-assistants/responses.mdx#defining-responses).
+  [documentation on defining response utterances for retrieval intents](../concepts/responses.mdx#defining-responses).
 
   :::note
   If during prediction time a message contains **only** words unseen during training
@@ -2644,5 +2644,5 @@ pipeline:
 - name: "sentiment.SentimentAnalyzer"
 ```
 
-See the [guide on custom graph components](../building-assistants/custom-graph-components.mdx) for a complete guide on custom components.
+See the [guide on custom graph components](../concepts/custom-graph-components.mdx) for a complete guide on custom components.
 Also be sure to read the section on the [Component Lifecycle](./tuning-your-model.mdx#component-lifecycle).

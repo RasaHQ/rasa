@@ -41,7 +41,7 @@ However, during training, the `RulePolicy` checks for conflicts between rules an
 :::
 
 To read more about the validator and all of the available options, see [the documentation for
-`rasa data validate`](../building-assistants/command-line-interface.mdx#rasa-data-validate).
+`rasa data validate`](../concepts/command-line-interface.mdx#rasa-data-validate).
 
 ## Writing Test Stories
 
@@ -211,11 +211,11 @@ cases you include, so you should continue to grow your set of test stories
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test stories
 to be representative of the true distribution of real conversations.
 
-See the [CLI documentation on `rasa test`](../building-assistants/command-line-interface.mdx#rasa-test) for
+See the [CLI documentation on `rasa test`](../concepts/command-line-interface.mdx#rasa-test) for
 more configuration options.
 
 :::caution Testing Custom Actions
-[Custom Actions](../building-assistants/custom-actions.mdx) are not executed as part of test stories. If your custom
+[Custom Actions](../concepts/custom-actions.mdx) are not executed as part of test stories. If your custom
 actions append any events to the conversation, this has to be reflected in your test story
 (e.g. by adding `slot_was_set` events to your test story).
 
@@ -239,7 +239,7 @@ You can either:
 ### Using a Held-Out Test Set
 
 If you use the train-test
-set approach, it is best to [shuffle and split your data](../building-assistants/command-line-interface.mdx#rasa-data-split)
+set approach, it is best to [shuffle and split your data](../concepts/command-line-interface.mdx#rasa-data-split)
 using `rasa data split` every time you evaluate your model, as
 opposed to using a static NLU test set, which can easily become outdated.
 
@@ -384,7 +384,7 @@ confidence histogram (`response_selection_histogram.png`) and errors (`response_
 If your pipeline includes multiple response selectors, they are evaluated in a single report.
 
 The report logs precision, recall and f1 measure for
-each sub-intent of a [retrieval intent](../building-assistants/glossary.mdx#retrieval-intent) and provides an overall average.
+each sub-intent of a [retrieval intent](../concepts/glossary.mdx#retrieval-intent) and provides an overall average.
 You can save these reports as JSON files using the `--report` argument.
 
 #### Entity Extraction
@@ -465,10 +465,10 @@ incorrect action was predicted instead.
 ### Interpreting the generated warnings
 
 The test script will also generate a warnings file called `results/stories_with_warnings.yml`.
-This file contains all test stories for which [`action_unlikely_intent`](../building-assistants/default-actions.mdx#action_unlikely_intent)
+This file contains all test stories for which [`action_unlikely_intent`](../concepts/default-actions.mdx#action_unlikely_intent)
 was predicted at any conversation turn but all actions from the original story were predicted correctly.
 However, if a test story originally included an `action_unlikely_intent`, for example to ensure [a rule is designed to
-trigger the conversation path after an `action_unlikely_intent`](../building-assistants/default-actions.mdx#customization-1) but the ensemble of
+trigger the conversation path after an `action_unlikely_intent`](../concepts/default-actions.mdx#customization-1) but the ensemble of
 policies failed to do so, then the corresponding story will end up in `results/failed_test_stories.yml` as
 a failed story.
 
@@ -553,8 +553,8 @@ You can now use end-to-end testing to test your assistant as a whole, including 
 :::
 
 End-to-end testing is an enhanced and comprehensive CLI-based testing tool that allows you to test conversation scenarios
-with different pre-configured contexts, execute [custom actions](../action-server/actions.mdx), verify [response](../building-assistants/responses.mdx)
-texts or names, and assert when [slots](../building-assistants/domain.mdx#slots) are filled.
+with different pre-configured contexts, execute [custom actions](../action-server/actions.mdx), verify [response](../concepts/responses.mdx)
+texts or names, and assert when [slots](../concepts/domain.mdx#slots) are filled.
 
 End-to-end testing is not limited to testing only the NLU or the dialogue model and allows you to design
 effective acceptance or integration tests. The main features of end-to-end testing are:
@@ -563,8 +563,8 @@ effective acceptance or integration tests. The main features of end-to-end testi
   tests; the prerequisite is to start the action server in the background.
 - test parametrization (e.g. different user profiles or other external factors): you can define multiple test fixtures
   with different pre-filled slots and re-use them in your tests.
-- verifying response texts or names: you can assert that the bot response text (including [interpolated responses](../building-assistants/responses.mdx#using-variables-in-responses)
-  with slot values and [conditional response variations](../building-assistants/responses.mdx#conditional-response-variations)) or `utter` name
+- verifying response texts or names: you can assert that the bot response text (including [interpolated responses](../concepts/responses.mdx#using-variables-in-responses)
+  with slot values and [conditional response variations](../concepts/responses.mdx#conditional-response-variations)) or `utter` name
   is as expected.
 - asserting that the bot sets the slot value as expected.
 
@@ -646,7 +646,7 @@ match the order in which the slots are filled in the dialogue.
 
 ### How to run the tests
 
-To run the end-to-end tests locally or in the CI pipeline, use the [`rasa test e2e` command](../building-assistants/command-line-interface.mdx#rasa-test-e2e).
+To run the end-to-end tests locally or in the CI pipeline, use the [`rasa test e2e` command](../concepts/command-line-interface.mdx#rasa-test-e2e).
 The command takes the following arguments:
 
 - positional argument for the path to the test cases file or directory containing the test cases: `rasa test e2e <path>`

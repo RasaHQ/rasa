@@ -55,7 +55,7 @@ dispatcher.utter_message(text = "Hey there")
 dispatcher.utter_message(image = "https://i.imgur.com/nGF1K8f.jpg")
 ```
 
-- `json_message`: A custom json payload as a dictionary. It can be used to send [channel specific responses](../building-assistants/responses.mdx).
+- `json_message`: A custom json payload as a dictionary. It can be used to send [channel specific responses](../concepts/responses.mdx).
   The following example would return a date picker in Slack:
 
 ```python
@@ -84,7 +84,7 @@ dispatcher.utter_message(json_message = date_picker)
 ```
 
 - `response`: The name of a response to return to the user. This response should
-  be specified in your assistants [domain](../building-assistants/domain.mdx).
+  be specified in your assistants [domain](../concepts/domain.mdx).
 
 ```python
 dispatcher.utter_message(response = "utter_greet")
@@ -114,7 +114,7 @@ dispatcher.utter_message(buttons = [
   of expected format see [Facebook's documentation](https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic/)
 
 - `**kwargs`: arbitrary keyword arguments, which can be
-  used to specify values for [variable interpolation in response variations](../building-assistants/responses.mdx). For example,
+  used to specify values for [variable interpolation in response variations](../concepts/responses.mdx). For example,
   given the following response:
 
 ```yaml

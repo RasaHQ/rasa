@@ -32,39 +32,39 @@ module.exports = {
     },
     {
       type: "category",
-      label: "Building Assistants",
+      label: "Key concepts",
       collapsed: true,
       items: [
-        "building-assistants/flows",
-        "building-assistants/domain",
+        "concepts/flows",
+        "concepts/domain",
         {
           type: "category",
           label: "Actions",
           items: [
-            "building-assistants/actions",
-            "building-assistants/custom-actions",
-            "building-assistants/default-actions",
-            "building-assistants/slot-validation-actions",
+            "concepts/actions",
+            "concepts/custom-actions",
+            "concepts/default-actions",
+            "concepts/slot-validation-actions",
           ],
         },
-        "building-assistants/llm-command-generator",
-        "building-assistants/responses",
+        "concepts/llm-command-generator",
+        "concepts/responses",
         {
           type: "category",
           label: "Config",
           items: [
-            "building-assistants/llm-configuration",
-            "building-assistants/custom-graph-components",
-            "building-assistants/training-data-importers",
-            "building-assistants/graph-recipe",
-            "building-assistants/spaces",
+            "concepts/llm-configuration",
+            "concepts/custom-graph-components",
+            "concepts/training-data-importers",
+            "concepts/graph-recipe",
+            "concepts/spaces",
           ],
         },
-        "building-assistants/policies", // TODO: create-task
+        "concepts/policies", // TODO: create-task
         // TODO: create-task spit CLI docs
-        "building-assistants/command-line-interface",
+        "concepts/command-line-interface",
         // TODO: create-task add how-to-guides
-        "building-assistants/glossary",
+        "concepts/glossary",
         {
           type: "category",
           label: "Building Classic Assistants",
@@ -73,7 +73,7 @@ module.exports = {
             // TODO: we'll need something for DM2 at some point
             "building-classic-assistants/migrate-from",
             // TODO: create-task spit CLI docs
-            "building-assistants/command-line-interface",
+            "concepts/command-line-interface",
             {
               type: "category",
               label: "Conversation Patterns",
@@ -298,7 +298,7 @@ module.exports = {
       label: "Next-Gen Assistants",
       collapsed: false,
       items: [
-        "building-assistants/flows", // MOVED
+        "concepts/flows", // MOVED
         "llms/unhappy-paths",
         "llms/llm-detector",
       ],

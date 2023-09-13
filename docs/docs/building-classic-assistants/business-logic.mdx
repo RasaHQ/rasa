@@ -35,7 +35,7 @@ The examples on this page come from the [formbot example bot](https://github.com
 ## Step-by-step Guide on Using Forms to Handle Business Logic
 
 [Forms](./forms.mdx) work by prompting the user for information until it has gathered all required information.
-The information is stored in [slots](../building-assistants/domain.mdx#slots). Once all the required slots are filled,
+The information is stored in [slots](../concepts/domain.mdx#slots). Once all the required slots are filled,
 the bot fulfills the user's original request.
 
 ### 1. Defining the form
@@ -65,7 +65,7 @@ forms:
         - outdoor_seating
 ```
 
-These slots need to be added to your domain's `slots` section, along with [slot mappings](../building-assistants/domain.mdx#slot-mappings) which define how the slots can be filled. For any slot filled `from_entity`, the entity also needs to be added
+These slots need to be added to your domain's `slots` section, along with [slot mappings](../concepts/domain.mdx#slot-mappings) which define how the slots can be filled. For any slot filled `from_entity`, the entity also needs to be added
 to the domain. Slots filled by forms should usually not influence
 the conversation, so set `influence_conversation` to `false:
 
@@ -122,7 +122,7 @@ filled based on the user's intent: If it is `affirm`, it'll be `true`, if it is
 However, the slot should only be set to `true` or `false` if the user was responding to the question, `Do you want to sit outside?`.
 To enforce this condition, the `conditions` for the `outdoor_seating` slot requires that `restaurant_form` is active and that the requested slot is `outdoor_seating`.
 If there were no conditions and the user had sent a message with the `affirm` or `deny` intent earlier in the conversation,
-the `outdoor_seating` slot would already be filled when the form was activated. Therefore the form would not prompt the user for their outdoor seating preference. See [mapping conditions](../building-assistants/domain.mdx#mapping-conditions) for more information.
+the `outdoor_seating` slot would already be filled when the form was activated. Therefore the form would not prompt the user for their outdoor seating preference. See [mapping conditions](../concepts/domain.mdx#mapping-conditions) for more information.
 
 #### Validating Slots
 
@@ -135,7 +135,7 @@ about validation actions.
 #### Requesting Slots
 
 To specify how the bot should ask for the required information,
-you define [`responses`](../building-assistants/domain.mdx#responses) called `utter_ask_{slotname}` in your domain:
+you define [`responses`](../concepts/domain.mdx#responses) called `utter_ask_{slotname}` in your domain:
 
 ```yaml-rasa title="domain.yml"
 responses:
@@ -149,7 +149,7 @@ responses:
 
 ### 2. Updating the configuration
 
-A form's [happy path](../building-assistants/glossary.mdx#happy--unhappy-paths) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](./policies.mdx#rule-policy)
+A form's [happy path](../concepts/glossary.mdx#happy--unhappy-paths) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](./policies.mdx#rule-policy)
 to your policies:
 
 ```yaml-rasa title="config.yml"
