@@ -25,7 +25,7 @@ const defaultOptions = {
     pathPrefix: '../',
 };
 
-const _getIncludedSourceRe = (sourceDir) => `\`\`\`([a-z\-]+) \\(${sourceDir}/([^\\]\\s]+)\\)\n\`\`\``;
+const _getIncludedSourceRe = (sourceDir) => `\`\`\`([a-z\-]+) \\(${sourceDir}/([^\\]\\s]+)\\)(\n)+\`\`\``;
 
 /**
     This function is used copy the included sources
