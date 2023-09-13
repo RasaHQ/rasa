@@ -70,8 +70,6 @@ module.exports = {
           label: "Building Classic Assistants",
           collapsed: true,
           items: [
-            // TODO: we'll need something for DM2 at some point
-            "building-classic-assistants/migrate-from",
             // TODO: create-task spit CLI docs
             "concepts/command-line-interface",
             {

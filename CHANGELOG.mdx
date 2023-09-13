@@ -2792,9 +2792,6 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Note that the `FallbackClassifier` predictions still apply to
   [test stories](./production/testing-your-assistant.mdx#writing-test-stories).
 - [#6474](https://github.com/rasahq/rasa/issues/6474): Adapt the training data reader and emulator for wit.ai to their latest format.
-  Update the instructions in the
-  [migrate from wit.ai documentation](./building-classic-assistants/migrate-from/facebook-wit-ai-to-rasa.mdx)
-  to run Rasa Open Source in wit.ai emulation mode.
 - [#6498](https://github.com/rasahq/rasa/issues/6498): Adding configurable prefixes to Redis [Tracker](./production/tracker-stores.mdx) and [Lock Stores](./production/lock-stores.mdx) so that a single Redis instance (and logical DB) can support multiple conversation trackers and locks.
   By default, conversations will be prefixed with `tracker:...` and all locks prefixed with `lock:...`. Additionally, you can add an alphanumeric-only `prefix: value` in `endpoints.yml` such that keys in redis will take the form `value:tracker:...` and `value:lock:...` respectively.
 - [#6571](https://github.com/rasahq/rasa/issues/6571): Log the model's relative path when using CLI commands.
@@ -2894,10 +2891,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to
   [their latest format](https://westcentralus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0/)
   and add support for roles.
-  Update the instructions in the
-  ["Migrate from LUIS" documentation page](./building-classic-assistants/migrate-from/microsoft-luis-to-rasa.mdx)
-  to reflect the recent changes made to the UI of LUIS.
-- [#7160](https://github.com/rasahq/rasa/issues/7160): Adapt the [training data reader and emulator for DialogFlow](./building-classic-assistants/migrate-from/google-dialogflow-to-rasa.mdx) to
+- [#7160](https://github.com/rasahq/rasa/issues/7160): Adapt the training data reader and emulator for DialogFlow to
   [their latest format](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)
   and add support for regex entities.
 - [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](./production/event-brokers.mdx#pika-event-broker) was reimplemented with
