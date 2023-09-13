@@ -201,7 +201,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
         slot = tracker.slots[slot_name]
         if isinstance(slot, BooleanSlot):
-            return bool_from_any(nullable_value)
+            try:
+                return bool_from_any(nullable_value)
+            except (ValueError, TypeError) as e:
+                return None
         elif isinstance(slot, FloatSlot):
             try:
                 return float(nullable_value)
