@@ -6,7 +6,7 @@ from rasa.cdu.patterns.collect_information import (
 )
 from rasa.cdu.patterns.correction import CorrectionPatternFlowStackFrame
 from rasa.cdu.stack.dialogue_stack import DialogueStack
-from rasa.cdu.stack.frames.flow_frame import UserFlowStackFrame
+from rasa.cdu.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
