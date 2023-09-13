@@ -35,6 +35,8 @@ module.exports = {
       label: "Key concepts",
       collapsed: true,
       items: [
+        // TODO: create-task spit CLI docs
+        "concepts/command-line-interface",
         "concepts/flows",
         "concepts/domain",
         {
@@ -61,8 +63,6 @@ module.exports = {
           ],
         },
         "concepts/policies", // TODO: create-task
-        // TODO: create-task spit CLI docs
-        "concepts/command-line-interface",
         // TODO: create-task add how-to-guides
         "concepts/glossary",
         {
@@ -70,8 +70,6 @@ module.exports = {
           label: "Building Classic Assistants",
           collapsed: true,
           items: [
-            // TODO: create-task spit CLI docs
-            "concepts/command-line-interface",
             {
               type: "category",
               label: "Conversation Patterns",
