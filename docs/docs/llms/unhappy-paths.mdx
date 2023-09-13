@@ -289,7 +289,7 @@ was interrupted is called `transfer_money`.
 
 For reference, here is the complete default configuration for unhappy paths:
 
-```yaml title="flows.yml"
+```yaml title="Default Patterns"
 version: "3.1"
 responses:
   utter_flow_continue_interrupted:
@@ -323,12 +323,6 @@ responses:
       metadata:
         rephrase: True
         template: jinja
-
-slots:
-  confirm_correction:
-    type: bool
-    mappings:
-      - type: custom
 
 flows:
   pattern_continue_interrupted:

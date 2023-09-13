@@ -89,7 +89,7 @@ In this tutorial you will primarily work with the following files:
 * `domain.yml`
 * `actions.py`
 
-## Testing your money transfer skill
+## Testing your money transfer flow
 
 Train your assistant by running:
 
@@ -105,7 +105,7 @@ rasa shell
 
 Tell the bot that you'd like to transfer some money to a friend.
 
-## Understanding your money transfer skill.
+## Understanding your money transfer flow.
 
 The file `data/flows.yml` contains the definition of a `flow` called `transfer_money`.
 Let's look at this definition to see what is going on:
@@ -128,8 +128,8 @@ flows:
 ```
 
 The two key attributes of the `transfer_money` flow are the `description` and the `steps`.
-The `description` is helpful for anyone who inspects your code to understand what is going on.
-But it is also used to help decide _when_ to activate this flow.
+The `description` is used to help decide _when_ to activate this flow.
+But it is also helpful for anyone who inspects your code to understand what is going on.
 If a user says "I need to transfer some money", the description helps Rasa understand that this is the relevant flow.
 The `steps` describe the business logic required to do what the user asked for.
 
@@ -321,17 +321,16 @@ from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 
-class ActionSufficientBalance(Action):
+class ActionSufficientFunds(Action):
     def name(self) -> Text:
-        return "action_sufficient_balance"
+        return "action_sufficient_funds"
 
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        balance = 1000 # hard-coded for tutorial purposes
-        # a real api call would look something like
-        # result = requests.get("https://example.com/api/balance")
-        # balance = result.json()["balance"]
+        # hard-coded balance for tutorial purposes. in production this 
+        # would be retrieved from a database or an API
+        balance = 1000 
         transfer_amount = tracker.get_slot("amount")
         has_sufficient_funds = transfer_amount <= balance
         return [SlotSet("has_sufficient_funds", has_sufficient_funds)]
@@ -369,7 +368,7 @@ responses:
   # ...
   // highlight-start
   utter_insufficient_funds:
-    text: "You do not have enough funds to make this transaction."
+    - text: "You do not have enough funds to make this transaction."
   // highlight-end
 ```
 
@@ -402,9 +401,6 @@ flows:
         next:
           - if: final_confirmation
             then: "transfer_successful"
-          - else: "transfer_cancelled"
-      - id: "transfer_cancelled"
-        action: utter_transfer_cancelled
       - id: "transfer_successful"
         action: utter_transfer_complete
 ```
