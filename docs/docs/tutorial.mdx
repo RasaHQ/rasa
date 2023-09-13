@@ -321,17 +321,16 @@ from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 
-class ActionSufficientBalance(Action):
+class ActionSufficientFunds(Action):
     def name(self) -> Text:
-        return "action_sufficient_balance"
+        return "action_sufficient_funds"
 
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        balance = 1000 # hard-coded for tutorial purposes
-        # a real api call would look something like
-        # result = requests.get("https://example.com/api/balance")
-        # balance = result.json()["balance"]
+        # hard-coded balance for tutorial purposes. in production this 
+        # would be retrieved from a database or an API
+        balance = 1000 
         transfer_amount = tracker.get_slot("amount")
         has_sufficient_funds = transfer_amount <= balance
         return [SlotSet("has_sufficient_funds", has_sufficient_funds)]
@@ -369,7 +368,7 @@ responses:
   ...
   // highlight-start
   utter_insufficient_funds:
-    text: "You do not have enough funds to make this transaction."
+    - text: "You do not have enough funds to make this transaction."
   // highlight-end
 ```
 
@@ -402,9 +401,6 @@ flows:
         next:
           - if: final_confirmation
             then: "transfer_successful"
-          - else: "transfer_cancelled"
-      - id: "transfer_cancelled"
-        action: utter_transfer_cancelled
       - id: "transfer_successful"
         action: utter_transfer_complete
 ```
