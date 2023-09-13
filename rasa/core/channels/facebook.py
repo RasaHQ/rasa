@@ -1,3 +1,4 @@
+import copy
 import hashlib
 import hmac
 import logging
@@ -126,7 +127,9 @@ class Messenger:
             attachment = message["message"]["attachments"][0]
             text = attachment["payload"]["url"]
         else:
-            structlogger.warning("facebook.message.handle", message=message)
+            structlogger.warning(
+                "facebook.message.cannot.handle", message=copy.deepcopy(message)
+            )
             return
 
         await self._handle_user_message(text, self.get_user_id(), metadata)

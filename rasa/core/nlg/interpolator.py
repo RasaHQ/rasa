@@ -1,3 +1,4 @@
+import copy
 import re
 import logging
 import structlog
@@ -37,10 +38,16 @@ def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text:
 
         return text
     except KeyError as e:
+        event_info = (
+            "The specified slot name does not exist, "
+            "and no explicit value was provided during the response invocation. "
+            "Return the response without populating it."
+        )
         structlogger.exception(
             "interpolator.interpolate.text",
-            response=response,
+            response=copy.deepcopy(response),
             placeholder_key=e.args[0],
+            event_info=event_info,
         )
         return response
 

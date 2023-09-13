@@ -107,6 +107,7 @@ excluded_words:
   - knowledgebase
   - knowledgebasebot
   - linenos
+  - llm
   - luis
   - matmul
   - mattermost
@@ -198,5 +199,12 @@ excluded_words:
   - rustc
   - conftest
   - winpty
+  - pii-management
+  - anonymization
+  - anonymized
+  - dslim
+  - pluggy
+  - HookimplMarker
+  - hookimpl
 
 spellcheck_filenames: false

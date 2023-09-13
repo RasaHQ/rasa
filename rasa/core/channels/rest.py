@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import inspect
 import json
 import logging
@@ -165,12 +166,18 @@ class RestInput(InputChannel):
                             sender_id,
                             input_channel=input_channel,
                             metadata=metadata,
+                            headers=request.headers,
                         )
                     )
                 except CancelledError:
-                    structlogger.error("rest.message.received", text=text)
+                    structlogger.error(
+                        "rest.message.received.timeout", text=copy.deepcopy(text)
+                    )
                 except Exception:
-                    structlogger.exception("rest.message.received.failure", text=text)
+                    structlogger.exception(
+                        "rest.message.received.failure", text=copy.deepcopy(text)
+                    )
+
                 return response.json(collector.messages)
 
         return custom_webhook

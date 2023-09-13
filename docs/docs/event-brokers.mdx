@@ -112,6 +112,11 @@ if __name__ == "__main__":
     channel.start_consuming()
 ```
 
+### Sending Events to Multiple Queues
+
+You can specify multiple event queues to publish events to.
+This should work for all event brokers supported by Pika (e.g. RabbitMQ)
+
 ## Kafka Event Broker
 
 While RabbitMQ is the default event broker, it is possible to use [Kafka](https://kafka.apache.org/) as the main broker for your
@@ -190,6 +195,14 @@ If using the `SASL_SSL` protocol, the endpoints file should look like:
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_sasl_ssl_endpoint.yml)
 ```
 
+### Sending Events to Multiple Queues
+
+Kafka does not allow you to configure multiple topics. 
+
+However, multiple consumers can read from the same queue as long as they are in different consumer groups.
+Each consumer group will process all events independent of each other 
+(in a sense, each group has their own reference to the last event they have processed). [Kafka: The Definitive Guide](https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html#:~:text=Kafka%20consumers%20are%20typically%20part,the%20partitions%20in%20the%20topic.)
+
 ## Celery Event Broker
 
 It is possible to use an celery as an event broker. Connections to message brokers are established 
@@ -206,8 +219,6 @@ event_broker:
   countdown: 2
   priority: 1
 ```
-
-
 
 ## SQL Event Broker
 

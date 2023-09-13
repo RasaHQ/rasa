@@ -121,12 +121,8 @@ endif
 	rm data/MITIE*.bz2
 
 prepare-transformers:
-	if [ $(OS) = "Windows_NT" ]; then HOME_DIR="$(HOMEDRIVE)$(HOMEPATH)"; else HOME_DIR=$(HOME); fi;\
-	CACHE_DIR=$$HOME_DIR/.cache/torch/transformers;\
-	mkdir -p "$$CACHE_DIR";\
-	i=0;\
-	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget -nv $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
-
+	while read -r MODEL; do poetry run python scripts/download_transformer_model.py $$MODEL ; done < data/test/hf_transformers_models.txt
+	if ! [ $(CI) ]; then poetry run python scripts/download_transformer_model.py rasa/LaBSE; fi
 prepare-tests-macos:
 	brew install wget graphviz || true
 
@@ -156,41 +152,45 @@ else
 	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup && set +o allexport
 endif
 
-test-cli: PYTEST_MARKER=category_cli and (not flaky)
+test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance)
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker
 
-test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky)
+test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky) and (not acceptance)
 test-core-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-core-featurizers: test-marker
 
-test-policies: PYTEST_MARKER=category_policies and (not flaky)
+test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance)
 test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker
 
-test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky)
+test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance)
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: prepare-spacy prepare-mitie prepare-transformers test-marker
 
-test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky)
+test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance)
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: prepare-spacy prepare-mitie test-marker
 
-test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky)
+test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
-test-full-model-training: prepare-spacy prepare-mitie test-marker
+test-full-model-training: prepare-spacy prepare-mitie prepare-transformers test-marker
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky)
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: prepare-spacy prepare-mitie test-marker
 
-test-performance: PYTEST_MARKER=category_performance and (not flaky)
+test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance)
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker
 
-test-flaky: PYTEST_MARKER=flaky
+test-flaky: PYTEST_MARKER=flaky and (not acceptance)
 test-flaky: DD_ARGS := $(or $(DD_ARGS),)
 test-flaky: prepare-spacy prepare-mitie test-marker
+
+test-acceptance: PYTEST_MARKER=acceptance and (not flaky)
+test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
+test-acceptance: prepare-spacy prepare-mitie test-marker
 
 test-gh-actions:
 	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest .github/tests --cov .github/scripts
@@ -198,7 +198,7 @@ test-gh-actions:
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
+	TRANSFORMERS_OFFLINE=1 OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"

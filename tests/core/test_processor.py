@@ -28,6 +28,7 @@ from rasa.core.actions.action import (
     ActionBotResponse,
     ActionListen,
     ActionExecutionRejection,
+    ActionSendText,
     ActionUnlikelyIntent,
 )
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
@@ -77,6 +78,7 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
     ACTION_EXTRACT_SLOTS,
     ACTION_RESTART_NAME,
+    ACTION_SEND_TEXT_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
     DEFAULT_INTENTS,
     ACTION_LISTEN_NAME,
@@ -989,6 +991,30 @@ async def test_action_unlikely_intent_metadata(default_processor: MessageProcess
     assert applied_events == [
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME, metadata=metadata),
+    ]
+    assert applied_events[1].metadata == metadata
+
+
+async def test_action_send_text_metadata(default_processor: MessageProcessor):
+    tracker = DialogueStateTracker.from_events(
+        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    domain = Domain.empty()
+    metadata = {"message": {"text": "foobar"}}
+
+    await default_processor._run_action(
+        ActionSendText(),
+        tracker,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        PolicyPrediction([], "some policy", action_metadata=metadata),
+    )
+
+    applied_events = tracker.applied_events()
+    assert applied_events == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_SEND_TEXT_NAME, "some policy", metadata=metadata),
+        BotUttered("foobar"),
     ]
     assert applied_events[1].metadata == metadata
 
