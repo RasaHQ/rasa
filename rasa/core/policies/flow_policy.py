@@ -20,7 +20,7 @@ from rasa.cdu.patterns.completed import CompletedPatternFlowStackFrame
 from rasa.cdu.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
 )
-from rasa.cdu.stack.frames.flow_frame import FlowStackFrameType
+from rasa.cdu.stack.frames.flow_stack_frame import FlowStackFrameType
 from rasa.cdu.stack.utils import top_user_flow_frame
 
 from rasa.core.constants import (
