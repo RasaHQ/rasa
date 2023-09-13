@@ -203,12 +203,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if isinstance(slot, BooleanSlot):
             try:
                 return bool_from_any(nullable_value)
-            except (ValueError, TypeError) as e:
+            except (ValueError, TypeError):
                 return None
         elif isinstance(slot, FloatSlot):
             try:
                 return float(nullable_value)
-            except (ValueError, TypeError) as e:
+            except (ValueError, TypeError):
                 return None
         else:
             return nullable_value
