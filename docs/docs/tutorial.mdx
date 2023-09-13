@@ -151,7 +151,7 @@ slots:
     type: text
     mappings:
       - type: custom
-  ...
+  # ...
 ```
 
 They can be used to store information provided to you by the user or fetched via an API call.
@@ -237,7 +237,7 @@ slots:
     type: Text
     mappings:
       - type: custom
-  ...
+  # ...
   // highlight-start
   final_confirmation:
     type: bool
@@ -250,7 +250,7 @@ slots:
 responses:
   utter_ask_recipient:
     - text: "Who would you like to send money to?"
-  ...
+  # ...
   // highlight-start
   utter_ask_final_confirmation:
     - text: "Please confirm: you want to transfer {amount} to {recipient}?"
@@ -357,7 +357,7 @@ actions:
 // highlight-end
 
 slots:
-  ...
+  # ...
   // highlight-start
   has_sufficient_funds:
     type: bool
@@ -366,7 +366,7 @@ slots:
   // highlight-end
 
 responses:
-  ...
+  # ...
   // highlight-start
   utter_insufficient_funds:
     text: "You do not have enough funds to make this transaction."
@@ -434,7 +434,7 @@ At this point you have experience using some of the key concepts involved in bui
 Congratulations! Take some time to look over these more advanced topics to learn even more.
 
 
-# How-to Guides for Advanced Topics
+## How-to Guides for Advanced Topics
 
 ### Slot Validation
 Use custom logic to determine whether to accept or reject the value of a slot provided by the user.

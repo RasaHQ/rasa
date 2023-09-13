@@ -123,9 +123,8 @@ First download the [Oracle Instant Client](https://www.oracle.com/database/techn
 rename it to `oracle.rpm` and store it in the directory from where you'll be building the docker image.
 Copy the following into a file called `Dockerfile`:
 
-<pre>
-  <code parentName="pre" className="language-bash">
-    {`FROM rasa/rasa:${variables.release}-full
+<pre><code parentName="pre" className="language-bash">
+{`FROM rasa/rasa:${variables.release}-full
 
 # Switch to root user to install packages
 USER root
@@ -143,16 +142,13 @@ RUN pip install cx-Oracle
 RUN alien -i oracle.rpm
 
 USER 1001`}
-  </code>
-</pre>
+</code></pre>
 
 Then build the docker image:
 
-<pre>
-  <code parentName="pre" className="language-bash">
-    {`docker build . -t rasa-oracle:${variables.release}-oracle-full`}
-  </code>
-</pre>
+<pre><code parentName="pre" className="language-bash">
+{`docker build . -t rasa-oracle:${variables.release}-oracle-full`}
+</code></pre>
 
 Now you can configure the tracker store in the `endpoints.yml` as described above,
 and start the container. The `dialect` parameter with this setup will be `oracle+cx_oracle`.
