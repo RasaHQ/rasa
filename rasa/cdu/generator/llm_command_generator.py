@@ -205,7 +205,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         elif isinstance(slot, FloatSlot):
             try:
                 return float(nullable_value)
-            except ValueError:
+            except (ValueError, TypeError) as e:
                 return None
         else:
             return nullable_value
