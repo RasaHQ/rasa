@@ -401,9 +401,6 @@ flows:
         next:
           - if: final_confirmation
             then: "transfer_successful"
-          - else: "transfer_cancelled"
-      - id: "transfer_cancelled"
-        action: utter_transfer_cancelled
       - id: "transfer_successful"
         action: utter_transfer_complete
 ```
