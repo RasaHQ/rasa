@@ -32,7 +32,6 @@ class ActionGreetUser(Action):
         return []
 ```
 
-
 ### CollectingDispatcher.utter_message
 
 The `utter_message` method can be used to return any type
@@ -44,91 +43,91 @@ The `utter_message` method takes the following optional arguments.
 Passing no arguments will result in an empty message being returned to the user.
 Passing multiple arguments will result in a rich response (e.g. text and buttons) being returned to the user.
 
-  - `text`: The text to return to the user.
+- `text`: The text to return to the user.
 
-  ```python
-  dispatcher.utter_message(text = "Hey there")
-  ```
+```python
+dispatcher.utter_message(text = "Hey there")
+```
 
-  - `image`: An image URL or file path that will be used to display an image to the user.
+- `image`: An image URL or file path that will be used to display an image to the user.
 
-  ```python
-  dispatcher.utter_message(image = "https://i.imgur.com/nGF1K8f.jpg")
-  ```
+```python
+dispatcher.utter_message(image = "https://i.imgur.com/nGF1K8f.jpg")
+```
 
-  - `json_message`: A custom json payload as a dictionary. It can be used to send [channel specific responses](../responses.mdx).
-                  The following example would return a date picker in Slack:
+- `json_message`: A custom json payload as a dictionary. It can be used to send [channel specific responses](../concepts/responses.mdx).
+  The following example would return a date picker in Slack:
 
-  ```python
-  date_picker = {
-    "blocks":[
+```python
+date_picker = {
+  "blocks":[
+    {
+      "type": "section",
+      "text":{
+        "text": "Make a bet on when the world will end:",
+        "type": "mrkdwn"
+      },
+      "accessory":
       {
-        "type": "section",
-        "text":{
-          "text": "Make a bet on when the world will end:",
-          "type": "mrkdwn"
-        },
-        "accessory":
+        "type": "datepicker",
+        "initial_date": "2019-05-21",
+        "placeholder":
         {
-          "type": "datepicker",
-          "initial_date": "2019-05-21",
-          "placeholder":
-          {
-            "type": "plain_text",
-            "text": "Select a date"
-          }
+          "type": "plain_text",
+          "text": "Select a date"
         }
       }
-    ]
-  }
-  dispatcher.utter_message(json_message = date_picker)
-  ```
+    }
+  ]
+}
+dispatcher.utter_message(json_message = date_picker)
+```
 
-  - `response`: The name of a response to return to the user. This response should
-              be specified in your assistants [domain](../domain.mdx).
+- `response`: The name of a response to return to the user. This response should
+  be specified in your assistants [domain](../concepts/domain.mdx).
 
-  ```python
-  dispatcher.utter_message(response = "utter_greet")
-  ```
+```python
+dispatcher.utter_message(response = "utter_greet")
+```
 
-  - `attachment`: A URL or file path of an attachment to return to the user.
+- `attachment`: A URL or file path of an attachment to return to the user.
 
-  ```python
-  dispatcher.utter_message(attachment = "")
-  ```
+```python
+dispatcher.utter_message(attachment = "")
+```
 
-  - `buttons`: A list of buttons to return to the user.
-             Each button is a dictionary and should have a `title` and a `payload` key.
-             A button can include other keys, but these will only be used if
-             a specific channel looks for them.
-             The button's `payload` will be sent as a user message if the user
-             clicks the button.
+- `buttons`: A list of buttons to return to the user.
+  Each button is a dictionary and should have a `title` and a `payload` key.
+  A button can include other keys, but these will only be used if
+  a specific channel looks for them.
+  The button's `payload` will be sent as a user message if the user
+  clicks the button.
 
-  ```
-  dispatcher.utter_message(buttons = [
-                  {"payload": "/affirm", "title": "Yes"},
-                  {"payload": "/deny", "title": "No"},
-              ])
-  ```
+```
+dispatcher.utter_message(buttons = [
+                {"payload": "/affirm", "title": "Yes"},
+                {"payload": "/deny", "title": "No"},
+            ])
+```
 
-  - `elements`: These are specific to using Facebook as a messaging channel. For details
-              of expected format see [Facebook's documentation](https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic/)
+- `elements`: These are specific to using Facebook as a messaging channel. For details
+  of expected format see [Facebook's documentation](https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic/)
 
-  - `**kwargs`: arbitrary keyword arguments, which can be
-              used to specify values for [variable interpolation in response variations](../responses.mdx). For example,
-              given the following response:
+- `**kwargs`: arbitrary keyword arguments, which can be
+  used to specify values for [variable interpolation in response variations](../concepts/responses.mdx). For example,
+  given the following response:
 
-  ```yaml
-  responses:
-    utter_greet_name:
+```yaml
+responses:
+  utter_greet_name:
     - text: Hi {name}!
-  ```
+```
 
-  You could specify the name with:
+You could specify the name with:
 
-  ```python
-  dispatcher.utter_message(response = "utter_greet_name", name = "Aimee")
-  ```
+```python
+dispatcher.utter_message(response = "utter_greet_name", name = "Aimee")
+```
 
 #### **Return type**
 

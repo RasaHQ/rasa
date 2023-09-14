@@ -1,0 +1,208 @@
+---
+id: llm-command-generator
+sidebar_label: Command Generation with LLMs
+title: Command Generation with LLMs
+abstract: |
+  LLM command generation component for believe state updates and flow
+  control.
+---
+
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
+
+<RasaLabsLabel />
+
+<RasaLabsBanner version="3.7.0b2" />
+
+## LLMCommandGenerator
+
+The `LLMCommandGenerator` is a standalone NLU component that handles all the
+interactions that users might have with flows. For that purpose, it recognizes
+both intents and entities to start and advance flows. It does so without needing
+any NLU training data. Instead, it leverages a zero-shot prompt in the background, which
+contains the relevant flows, their slots and a number of data points on the current
+conversation context.
+
+## Key Features
+1. **Zero shot learning**: This classifier can be trained without any NLU examples for
+    intents or entities. Instead, it uses the description of flows.
+2. **Flexible slot mapping**: The classifier can oftentimes determine which slot
+    should be filled from the given context, as opposed to only extracting a generic
+    entity.
+3. **Linguistic Ability**: The classifier can handle more complex linguistic scenarios
+    such as negations or pronoun references, and it does not need all entities to be
+    explicitly spelled out in a user message.
+4. **No Training**: The classifier does not involve any up-front training.
+5. **Multilingual**: The classifier works with different languages, depending on the
+    underlying LLM.
+
+## Demo
+
+TODO
+
+## Using the LLMCommandGenerator in Your Bot
+
+To use this LLM-based  classifier in your bot, you need to add the
+`LLMCommandGenerator` to your NLU pipeline in the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: LLMCommandGenerator
+# - ...
+```
+
+The `LLMCommandGenerator` requires access to an LLM API. You can use any
+OpenAI model that supports the `/chat` endpoint such as "gpt-3.5-turbo" or "gpt-4".
+We are working on expanding the list of supported models and model providers.
+
+## How does the classification work
+
+The zero-shot prompt is assembled from the definitions of all available flows, the
+conversation context and current slots, as well as a number of rules for the LLM. Based
+on this prompt, the LLM produces a list of actions in a domain specific language,
+such as `StartFlow(transfer_money)` or `SetSlot(recipient, John)`.
+We then parse and validate this list and turn it into a classification of intents
+and extracted entities.
+
+Here is a prompt filled with current conversation context:
+```
+Your task is to analyze the current conversation context and start new business processes that we call flows and to extract slots to advance active flows.
+
+These are the flows that can be started, with their description and slots:
+
+- transfer_money: This flow let's users send money to friends and family. (slots: ['transfer_money_recipient', 'transfer_money_amount_of_money', 'transfer_money_final_confirmation'])
+- transaction_search: lists the last transactions of the user account (slots: [])
+- check_balance: This flow lets users check their account balance. (slots: [])
+- add_contact: add a contact to your contact list (slots: ['add_contact_handle', 'add_contact_name'])
+- remove_contact: remove a contact from your contact list (slots: ['remove_contact_handle', 'remove_contact_name'])
+- list_contacts: show your contact list (slots: [])
+- restaurant_book: This flow books a restaurant (slots: ['restaurant_name', 'restaurant_book_time', 'restaurant_book_size', 'restaurant_confirm_booking'])
+- hotel_search: search for hotels (slots: [])
+
+Here is what happened previously in the conversation:
+USER: I want to send some money to Joe
+AI: How much money do you want to transfer?
+USER: 40$
+
+
+You are currently in the flow "transfer_money".
+You have just asked the user for the slot "transfer_money_amount_of_money".
+
+
+Here are the slots of the currently active flow with their names and values:
+
+- transfer_money_recipient: Joe
+
+- transfer_money_amount_of_money: undefined
+
+- transfer_money_final_confirmation: undefined
+
+
+
+If you start a flow, you can already fill that flow's slots with information the user provided for starting the flow.
+
+The user just said """40$""".
+
+Based on this information generate a list of actions you want to take. Your job is to start flows and to fill slots where appropriate. Any logic of what happens afterwards is handled by the flow engine. These are your available actions:
+* Slot setting, described by "SetSlot(slot_name, slot_value)". An example would be "SetSlot(recipient, Freddy)"
+* Starting another flow, described by "StartFlow(flow_name)". An example would be "StartFlow(transfer_money)"
+* Cancelling the current flow, describe by "CancelFlow()"
+
+Write out the actions you want to take for the last user message, one per line.
+Do not prematurely fill slots with abstract values.
+Only use information provided by the user.
+Strictly adhere to the provided action types above for starting flows and setting slots.
+Focus on the last message and take it one step at a time.
+Use the previous conversation steps only to aid understanding.
+The action list:
+```
+
+The LLM might reply to this prompt with:
+```
+SetSlot(transfer_money_amount_of_money, 40$)
+```
+Which we would then turn into an `inform` intent, since no other flow needs to be
+started and the information belongs to the question that was just asked. The
+`transfer_money_amount_of_money` entity would also be detected.
+
+If the user had said "Sorry, I meant to John" instead, the LLM might have replied with
+```
+SetSlot(transfer_money_recipient, John)
+```
+Which would then be turned into a `correction` intent, since it tries to set a slot that
+was asked earlier in the flow. The `transfer_money_recipient` entity would also be
+detected.
+
+If the user had said "How much do I still have in my account" instead, the LLM might
+have replied with
+```
+StartFlow(check_balance)
+```
+Which we then would turn into a `check_balance` intent.
+
+It is also possible to return multiple actions at the same time for the LLM, if the
+user for example says "I want to send 40$ to John", the LLM should reply:
+```
+StartFlow(transfer_money)
+SetSlot(transfer_money_recipient, John)
+SetSlot(transfer_money_amount_of_money, 40$)
+```
+
+which would then be turned into the `transfer_money` intent as well as two entities.
+
+### Too complex requests
+
+Some requests from the user and responses by the LLM are currently deemed as too complex
+and classified as such based on the composition of the action list.
+
+## Customization
+
+### LLM configuration
+
+You can specify the openai model to used for the `LLMCommandGenerator` by setting the
+`llm.model_name` property in the `config.yml` file:
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: LLMCommandGenerator
+    llm:
+      model_name: "gpt-4"
+      request_timeout: 7
+      temperature: 0.0
+# - ...
+```
+
+The `model_name` defaults to `gpt-4`. The model name should be set 
+to a chat model of [OpenAI](https://platform.openai.com/docs/guides/gpt/chat-completions-api).
+
+Similarly, you can specify the `request_timeout` and 
+`temperature` parameters for the LLM. The `request_timeout` 
+defaults to `7` seconds and the `temperature` defaults to `0.0`.
+
+If you want to use Azure OpenAI Service, you can configure the necessary
+parameters as described in the
+[Azure OpenAI Service](./llm-configuration.mdx#additional-configuration-for-azure-openai-service)
+section.
+
+:::info Using Other LLMs
+
+By default, OpenAI is used as the underlying LLM provider. 
+
+The used LLM provider provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: LLMCommandGenerator
+    llm:
+      type: "cohere"
+# - ...
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llm-configuration.mdx#other-llmsembeddings)
+
+:::

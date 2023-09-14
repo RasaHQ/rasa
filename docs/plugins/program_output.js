@@ -30,7 +30,7 @@ const exec = promisify(require('child_process').exec);
 const { readFile, writeFile } = fs.promises;
 
 
-const PROGRAM_OUTPUT_RE = /```[a-z]+ \[([^\]]+)\]\n```/;
+const PROGRAM_OUTPUT_RE = /```[a-z]+ \[([^\]]+)\](\n)+```/;
 
 const VERSIONED_DOCS_PATH_RE = /(\/versioned_docs\/version-\d+\.x)\//;
 
