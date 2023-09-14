@@ -6,7 +6,7 @@ module.exports = {
       label: "Getting started",
       collapsed: false,
       items: [
-        "conversational-ai-with-rasa", // TODO: create-task
+        "conversational-ai-with-rasa", // TODO: ENG-517
         {
           type: "category",
           label: "Installation",
@@ -26,8 +26,8 @@ module.exports = {
           ],
         },
         "tutorial",
-        "dm2-vs-intent-based-systems", // TODO: create-task
-        "dm2-vs-llm-chaining", // TODO: create-task
+        "dm2-vs-intent-based-systems", // TODO: ENG-517
+        "dm2-vs-llm-chaining", // TODO: ENG-517
       ],
     },
     {
@@ -35,7 +35,7 @@ module.exports = {
       label: "Key concepts",
       collapsed: true,
       items: [
-        // TODO: create-task spit CLI docs
+        // TODO: ENG-537
         "concepts/command-line-interface",
         "concepts/flows",
         "concepts/domain",
@@ -62,14 +62,14 @@ module.exports = {
             "concepts/spaces",
           ],
         },
-        "concepts/policies", // TODO: create-task
-        // TODO: create-task add how-to-guides
+        "concepts/policies", // TODO: ENG-538
         "concepts/glossary",
         {
           type: "category",
           label: "Building Classic Assistants",
           collapsed: true,
           items: [
+            // TODO: ENG-537
             {
               type: "category",
               label: "Conversation Patterns",
@@ -88,8 +88,8 @@ module.exports = {
               label: "Config",
               items: [
                 "building-classic-assistants/model-configuration",
-                "building-classic-assistants/components",
-                "building-classic-assistants/policies",
+                "building-classic-assistants/components", // TODO: ENG-538
+                "building-classic-assistants/policies", // TODO: ENG-538
                 "building-classic-assistants/language-support",
               ],
             },
@@ -104,6 +104,7 @@ module.exports = {
         },
       ],
     },
+    // TODO: ENG-539
     {
       type: "category",
       label: "Testing & Deploying to Production",
@@ -122,7 +123,7 @@ module.exports = {
             "production/nlg",
           ],
         },
-        // TODO: create-task change content to remove DM1 topics
+        // TODO: ENG-540
         "production/testing-your-assistant",
         {
           type: "category",
@@ -217,7 +218,7 @@ module.exports = {
       label: "Security & Compliance",
       collapsed: true,
       items: [
-        "security/llm-guardrails", // TODO: create-task
+        "security/llm-guardrails", // TODO: ENG-541
         "security/pii-management",
       ],
     },
@@ -284,9 +285,9 @@ module.exports = {
       collapsed: false,
 
       items: [
-        "llms/llm-installation", // DOESN'T NEED TO STAY
-        "llms/llm-next-gen", // TODO: reuse content
-        "llms/llm-configuration", // MOVED
+        "llms/llm-installation",
+        "llms/llm-next-gen",
+        "llms/llm-configuration",
       ],
     },
     {
@@ -294,7 +295,7 @@ module.exports = {
       label: "Next-Gen Assistants",
       collapsed: false,
       items: [
-        "concepts/flows", // MOVED
+        "concepts/flows",
         "llms/unhappy-paths",
         "llms/llm-detector",
       ],
@@ -305,7 +306,7 @@ module.exports = {
       collapsed: false,
       items: [
         "llms/llm-intent",
-        "llms/llm-command-generator", // DONE
+        "llms/llm-command-generator",
         "llms/llm-nlg",
         "llms/llm-docsearch",
         "llms/llm-intentless",
