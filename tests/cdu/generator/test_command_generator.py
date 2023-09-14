@@ -1,5 +1,7 @@
 from typing import Optional, List
 
+import pytest
+
 from rasa.cdu.commands import Command
 from rasa.cdu.generator.command_generator import CommandGenerator
 from rasa.cdu.commands.chit_chat_answer_command import ChitChatAnswerCommand
@@ -31,3 +33,10 @@ def test_command_generator_catches_processing_errors():
     assert len(commands[0]) == 0
     assert len(commands[1]) == 1
     assert commands[1][0]["command"] == ChitChatAnswerCommand.command()
+
+
+def test_command_generator_still_throws_not_implemented_error():
+    # This test can be removed if the predict_commands method stops to be abstract
+    generator = CommandGenerator()
+    with pytest.raises(NotImplementedError):
+        generator.process([Message.build("test")], FlowsList([]))
