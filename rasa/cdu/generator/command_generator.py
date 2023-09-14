@@ -1,9 +1,12 @@
 from typing import List, Optional
+import structlog
 from rasa.cdu.commands import Command
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import COMMANDS
+
+structlogger = structlog.get_logger()
 
 
 class CommandGenerator:
@@ -33,7 +36,13 @@ class CommandGenerator:
         The processed messages (usually this is just one during prediction).
         """
         for message in messages:
-            commands = self.predict_commands(message, flows, tracker)
+            try:
+                commands = self.predict_commands(message, flows, tracker)
+            except Exception as e:
+                if isinstance(e, NotImplementedError):
+                    raise e
+                structlogger.error("command_generator.predict.error", error=e)
+                commands = []
             commands_dicts = [command.as_dict() for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
         return messages
