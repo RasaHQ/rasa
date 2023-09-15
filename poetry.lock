@@ -1510,14 +1510,14 @@ testing = ["pre-commit"]
 
 [[package]]
 name = "fakeredis"
-version = "2.16.0"
+version = "2.18.1"
 description = "Python implementation of redis API, can be used for testing purposes."
 category = "dev"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "fakeredis-2.16.0-py3-none-any.whl", hash = "sha256:188514cbd7120ff28c88f2a31e2fddd18fb1b28504478dfa3669c683134c4d82"},
-    {file = "fakeredis-2.16.0.tar.gz", hash = "sha256:5abdd734de4ead9d6c7acbd3add1c4aa9b3ab35219339530472d9dd2bdf13057"},
+    {file = "fakeredis-2.18.1-py3-none-any.whl", hash = "sha256:d780da2519b2e9d741056cf2b68604a4e59286bc6fde78b40a2b2b1367a51b30"},
+    {file = "fakeredis-2.18.1.tar.gz", hash = "sha256:9742d6d4673df0f5f6ade4e4eee763b7f3517178ffa82508310325a6305651ec"},
 ]
 
 [package.dependencies]
@@ -1526,7 +1526,7 @@ sortedcontainers = ">=2,<3"
 
 [package.extras]
 json = ["jsonpath-ng (>=1.5,<2.0)"]
-lua = ["lupa (>=1.14,<2.0)"]
+lua = ["lupa (>=1.14,<3.0)"]
 
 [[package]]
 name = "fbmessenger"
@@ -1837,14 +1837,14 @@ uritemplate = ">=3.0.0"
 
 [[package]]
 name = "gitpython"
-version = "3.1.32"
+version = "3.1.35"
 description = "GitPython is a Python library used to interact with Git repositories"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "GitPython-3.1.32-py3-none-any.whl", hash = "sha256:e3d59b1c2c6ebb9dfa7a184daf3b6dd4914237e7488a1730a6d8f6f5d0b4187f"},
-    {file = "GitPython-3.1.32.tar.gz", hash = "sha256:8d9b8cb1e80b9735e8717c9362079d3ce4c6e5ddeebedd0361b228c3a67a62f6"},
+    {file = "GitPython-3.1.35-py3-none-any.whl", hash = "sha256:c19b4292d7a1d3c0f653858db273ff8a6614100d1eb1528b014ec97286193c09"},
+    {file = "GitPython-3.1.35.tar.gz", hash = "sha256:9cbefbd1789a5fe9bcf621bb34d3f441f3a90c8461d377f84eda73e721d9b06b"},
 ]
 
 [package.dependencies]
@@ -4798,7 +4798,6 @@ prompt-toolkit = ">=3.0,<3.0.29"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
 sanic = ">=21.12.0,<22.0.0"
 Sanic-Cors = ">=2.0.0,<3.0.0"
-setuptools = ">=65.5.1"
 typing-extensions = ">=4.1.1,<5.0.0"
 websockets = ">=10.0,<12.0"
 
@@ -5310,39 +5309,42 @@ tests = ["black (>=22.3.0)", "flake8 (>=3.8.2)", "matplotlib (>=3.1.2)", "mypy (
 
 [[package]]
 name = "scipy"
-version = "1.8.1"
-description = "SciPy: Scientific Library for Python"
+version = "1.10.1"
+description = "Fundamental algorithms for scientific computing in Python"
 category = "main"
 optional = false
-python-versions = ">=3.8,<3.11"
+python-versions = "<3.12,>=3.8"
 files = [
-    {file = "scipy-1.8.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:65b77f20202599c51eb2771d11a6b899b97989159b7975e9b5259594f1d35ef4"},
-    {file = "scipy-1.8.1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:e013aed00ed776d790be4cb32826adb72799c61e318676172495383ba4570aa4"},
-    {file = "scipy-1.8.1-cp310-cp310-macosx_12_0_universal2.macosx_10_9_x86_64.whl", hash = "sha256:02b567e722d62bddd4ac253dafb01ce7ed8742cf8031aea030a41414b86c1125"},
-    {file = "scipy-1.8.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1da52b45ce1a24a4a22db6c157c38b39885a990a566748fc904ec9f03ed8c6ba"},
-    {file = "scipy-1.8.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a0aa8220b89b2e3748a2836fbfa116194378910f1a6e78e4675a095bcd2c762d"},
-    {file = "scipy-1.8.1-cp310-cp310-win_amd64.whl", hash = "sha256:4e53a55f6a4f22de01ffe1d2f016e30adedb67a699a310cdcac312806807ca81"},
-    {file = "scipy-1.8.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:28d2cab0c6ac5aa131cc5071a3a1d8e1366dad82288d9ec2ca44df78fb50e649"},
-    {file = "scipy-1.8.1-cp38-cp38-macosx_12_0_arm64.whl", hash = "sha256:6311e3ae9cc75f77c33076cb2794fb0606f14c8f1b1c9ff8ce6005ba2c283621"},
-    {file = "scipy-1.8.1-cp38-cp38-macosx_12_0_universal2.macosx_10_9_x86_64.whl", hash = "sha256:3b69b90c9419884efeffaac2c38376d6ef566e6e730a231e15722b0ab58f0328"},
-    {file = "scipy-1.8.1-cp38-cp38-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:6cc6b33139eb63f30725d5f7fa175763dc2df6a8f38ddf8df971f7c345b652dc"},
-    {file = "scipy-1.8.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9c4e3ae8a716c8b3151e16c05edb1daf4cb4d866caa385e861556aff41300c14"},
-    {file = "scipy-1.8.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:23b22fbeef3807966ea42d8163322366dd89da9bebdc075da7034cee3a1441ca"},
-    {file = "scipy-1.8.1-cp38-cp38-win32.whl", hash = "sha256:4b93ec6f4c3c4d041b26b5f179a6aab8f5045423117ae7a45ba9710301d7e462"},
-    {file = "scipy-1.8.1-cp38-cp38-win_amd64.whl", hash = "sha256:70ebc84134cf0c504ce6a5f12d6db92cb2a8a53a49437a6bb4edca0bc101f11c"},
-    {file = "scipy-1.8.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:f3e7a8867f307e3359cc0ed2c63b61a1e33a19080f92fe377bc7d49f646f2ec1"},
-    {file = "scipy-1.8.1-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:2ef0fbc8bcf102c1998c1f16f15befe7cffba90895d6e84861cd6c6a33fb54f6"},
-    {file = "scipy-1.8.1-cp39-cp39-macosx_12_0_universal2.macosx_10_9_x86_64.whl", hash = "sha256:83606129247e7610b58d0e1e93d2c5133959e9cf93555d3c27e536892f1ba1f2"},
-    {file = "scipy-1.8.1-cp39-cp39-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:93d07494a8900d55492401917a119948ed330b8c3f1d700e0b904a578f10ead4"},
-    {file = "scipy-1.8.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d3b3c8924252caaffc54d4a99f1360aeec001e61267595561089f8b5900821bb"},
-    {file = "scipy-1.8.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:70de2f11bf64ca9921fda018864c78af7147025e467ce9f4a11bc877266900a6"},
-    {file = "scipy-1.8.1-cp39-cp39-win32.whl", hash = "sha256:1166514aa3bbf04cb5941027c6e294a000bba0cf00f5cdac6c77f2dad479b434"},
-    {file = "scipy-1.8.1-cp39-cp39-win_amd64.whl", hash = "sha256:9dd4012ac599a1e7eb63c114d1eee1bcfc6dc75a29b589ff0ad0bb3d9412034f"},
-    {file = "scipy-1.8.1.tar.gz", hash = "sha256:9e3fb1b0e896f14a85aa9a28d5f755daaeeb54c897b746df7a55ccb02b340f33"},
+    {file = "scipy-1.10.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e7354fd7527a4b0377ce55f286805b34e8c54b91be865bac273f527e1b839019"},
+    {file = "scipy-1.10.1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:4b3f429188c66603a1a5c549fb414e4d3bdc2a24792e061ffbd607d3d75fd84e"},
+    {file = "scipy-1.10.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1553b5dcddd64ba9a0d95355e63fe6c3fc303a8fd77c7bc91e77d61363f7433f"},
+    {file = "scipy-1.10.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4c0ff64b06b10e35215abce517252b375e580a6125fd5fdf6421b98efbefb2d2"},
+    {file = "scipy-1.10.1-cp310-cp310-win_amd64.whl", hash = "sha256:fae8a7b898c42dffe3f7361c40d5952b6bf32d10c4569098d276b4c547905ee1"},
+    {file = "scipy-1.10.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:0f1564ea217e82c1bbe75ddf7285ba0709ecd503f048cb1236ae9995f64217bd"},
+    {file = "scipy-1.10.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:d925fa1c81b772882aa55bcc10bf88324dadb66ff85d548c71515f6689c6dac5"},
+    {file = "scipy-1.10.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:aaea0a6be54462ec027de54fca511540980d1e9eea68b2d5c1dbfe084797be35"},
+    {file = "scipy-1.10.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:15a35c4242ec5f292c3dd364a7c71a61be87a3d4ddcc693372813c0b73c9af1d"},
+    {file = "scipy-1.10.1-cp311-cp311-win_amd64.whl", hash = "sha256:43b8e0bcb877faf0abfb613d51026cd5cc78918e9530e375727bf0625c82788f"},
+    {file = "scipy-1.10.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:5678f88c68ea866ed9ebe3a989091088553ba12c6090244fdae3e467b1139c35"},
+    {file = "scipy-1.10.1-cp38-cp38-macosx_12_0_arm64.whl", hash = "sha256:39becb03541f9e58243f4197584286e339029e8908c46f7221abeea4b749fa88"},
+    {file = "scipy-1.10.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bce5869c8d68cf383ce240e44c1d9ae7c06078a9396df68ce88a1230f93a30c1"},
+    {file = "scipy-1.10.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:07c3457ce0b3ad5124f98a86533106b643dd811dd61b548e78cf4c8786652f6f"},
+    {file = "scipy-1.10.1-cp38-cp38-win_amd64.whl", hash = "sha256:049a8bbf0ad95277ffba9b3b7d23e5369cc39e66406d60422c8cfef40ccc8415"},
+    {file = "scipy-1.10.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:cd9f1027ff30d90618914a64ca9b1a77a431159df0e2a195d8a9e8a04c78abf9"},
+    {file = "scipy-1.10.1-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:79c8e5a6c6ffaf3a2262ef1be1e108a035cf4f05c14df56057b64acc5bebffb6"},
+    {file = "scipy-1.10.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:51af417a000d2dbe1ec6c372dfe688e041a7084da4fdd350aeb139bd3fb55353"},
+    {file = "scipy-1.10.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1b4735d6c28aad3cdcf52117e0e91d6b39acd4272f3f5cd9907c24ee931ad601"},
+    {file = "scipy-1.10.1-cp39-cp39-win_amd64.whl", hash = "sha256:7ff7f37b1bf4417baca958d254e8e2875d0cc23aaadbe65b3d5b3077b0eb23ea"},
+    {file = "scipy-1.10.1.tar.gz", hash = "sha256:2cf9dfb80a7b4589ba4c40ce7588986d6d5cebc5457cad2c2880f6bc2d42f3a5"},
 ]
 
 [package.dependencies]
-numpy = ">=1.17.3,<1.25.0"
+numpy = ">=1.19.5,<1.27.0"
+
+[package.extras]
+dev = ["click", "doit (>=0.36.0)", "flake8", "mypy", "pycodestyle", "pydevtool", "rich-click", "typing_extensions"]
+doc = ["matplotlib (>2)", "numpydoc", "pydata-sphinx-theme (==0.9.0)", "sphinx (!=4.1.0)", "sphinx-design (>=0.2.0)"]
+test = ["asv", "gmpy2", "mpmath", "pooch", "pytest", "pytest-cov", "pytest-timeout", "pytest-xdist", "scikit-umfpack", "threadpoolctl"]
 
 [[package]]
 name = "sentencepiece"
@@ -6759,14 +6761,14 @@ files = [
 
 [[package]]
 name = "types-redis"
-version = "4.6.0.2"
+version = "4.6.0.5"
 description = "Typing stubs for redis"
 category = "dev"
 optional = false
 python-versions = "*"
 files = [
-    {file = "types-redis-4.6.0.2.tar.gz", hash = "sha256:d0efcd96f65fd2036437c29d8c12566cfdc549345d73eddacb0488b81aff9f9e"},
-    {file = "types_redis-4.6.0.2-py3-none-any.whl", hash = "sha256:a98f3386f44d045057696f3efc8869c53dda0060610e0fe3d8a4d391e2a8916a"},
+    {file = "types-redis-4.6.0.5.tar.gz", hash = "sha256:5f179d10bd3ca995a8134aafcddfc3e12d52b208437c4529ef27e68acb301f38"},
+    {file = "types_redis-4.6.0.5-py3-none-any.whl", hash = "sha256:4f662060247a2363c7a8f0b7e52915d68960870ff16a749a891eabcf87ed0be4"},
 ]
 
 [package.dependencies]
@@ -7468,4 +7470,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "fc18a426fdee095f6db39860dad769054861b71bbe52b74666e1248fedcef825"
+content-hash = "0e75fc02296707b1b066835582885f8da368da37666445cd7cf2b7ef47e5dc53"
