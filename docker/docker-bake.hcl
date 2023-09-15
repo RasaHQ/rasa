@@ -114,7 +114,7 @@ target "full" {
 
 target "mitie-en" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_mitie_en"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-mitie-en", , "${IMAGE_TAG_PREFIX}:${IMAGE_TAG}-mitie-en"]
+  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-mitie-en", "${IMAGE_TAG_PREFIX}:${IMAGE_TAG}-mitie-en"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
