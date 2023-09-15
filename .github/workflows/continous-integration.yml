@@ -1023,7 +1023,7 @@ jobs:
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
       BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
-
+      RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
     strategy:
       matrix:
         image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
@@ -1067,9 +1067,9 @@ jobs:
       - name: Echo Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
 
-      - name: Login to DockerHub Registry 🔢
-        if: needs.changes.outputs.docker == 'true'
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
+      # - name: Login to DockerHub Registry 🔢
+      #   if: needs.changes.outputs.docker == 'true'
+      #   run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
       - name: Copy Segment write key to the package
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
@@ -1083,6 +1083,18 @@ jobs:
         if: needs.changes.outputs.docker == 'true'
         run: |
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+
+      # Authenticate and push to the release registry
+      - id: 'auth-release'
+        name: Authenticate with gcloud for dev registry 🎫
+        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        with:
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+
+      - name: Authenticate docker for dev registry 🎫
+        run: |
+          # Set up docker to authenticate via gcloud command-line tool.
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
 
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
@@ -1108,8 +1120,8 @@ jobs:
 
             LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
 
-            docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
-            docker push rasa/rasa:${LATEST_TAG}
+            docker tag ${{env.RELEASE_REGISTRY}}/rasa:${RELEASE_TAG} ${{env.RELEASE_REGISTRY}}/rasa:${LATEST_TAG}
+            docker push ${{env.RELEASE_REGISTRY}}/rasa:${LATEST_TAG}
           fi
 
   deploy:
