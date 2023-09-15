@@ -2,10 +2,6 @@ variable "IMAGE_NAME" {
   default = "rasa/rasa"
 }
 
-variable "IMAGE_TAG_PREFIX" {
-  default = "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa"
-}
-
 variable "IMAGE_TAG" {
   default = "localdev"
 }
@@ -75,7 +71,7 @@ target "base-builder" {
 
 target "default" {
   dockerfile = "Dockerfile"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}", "${IMAGE_TAG_PREFIX}:${IMAGE_TAG}"]
+  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -94,7 +90,7 @@ target "default" {
 
 target "full" {
   dockerfile = "docker/Dockerfile.full"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-full", "${IMAGE_TAG_PREFIX}:${IMAGE_TAG}-full"]
+  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-full"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -114,7 +110,7 @@ target "full" {
 
 target "mitie-en" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_mitie_en"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-mitie-en", "${IMAGE_TAG_PREFIX}:${IMAGE_TAG}-mitie-en"]
+  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-mitie-en"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -135,7 +131,7 @@ target "mitie-en" {
 
 target "spacy-de" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_de"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-de", "${IMAGE_TAG_PREFIX}:${IMAGE_TAG}-spacy-de"]
+  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-de"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -154,7 +150,7 @@ target "spacy-de" {
 
 target "spacy-it" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_it"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-it", "${IMAGE_TAG_PREFIX}:${IMAGE_TAG}-spacy-it"]
+  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-it"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -173,7 +169,7 @@ target "spacy-it" {
 
 target "spacy-en" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_en"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-en", "${IMAGE_TAG_PREFIX}:${IMAGE_TAG}-spacy-en"]
+  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-en"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"

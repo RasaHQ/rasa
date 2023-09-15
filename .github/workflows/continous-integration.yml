@@ -1099,16 +1099,21 @@ jobs:
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+          docker tag rasa/rasa:${IMAGE_TAG} ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
+          docker push ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
 
       - name: Push image with ${{github.ref}} tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
         run: |
           IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
           docker buildx bake --set *.platform=linux/amd64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
           docker buildx bake --set *.platform=linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
+
+          docker tag rasa/rasa:${IMAGE_TAG} ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
+          docker push ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
 
           # Tag the image as latest
           if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
@@ -1120,7 +1125,7 @@ jobs:
 
             LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
 
-            docker tag ${{env.RELEASE_REGISTRY}}/rasa:${RELEASE_TAG} ${{env.RELEASE_REGISTRY}}/rasa:${LATEST_TAG}
+            docker tag rasa/rasa:${RELEASE_TAG} ${{env.RELEASE_REGISTRY}}/rasa:${LATEST_TAG}
             docker push ${{env.RELEASE_REGISTRY}}/rasa:${LATEST_TAG}
           fi
 
