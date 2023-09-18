@@ -14,7 +14,9 @@ from rasa.core.featurizers.precomputation import (
     CoreFeaturizationCollector,
 )
 from rasa.graph_components.providers.flows_provider import FlowsProvider
-from rasa.cdu.processor.command_processor_component import CommandProcessorComponent
+from rasa.dialogue_understanding.processor.command_processor_component import (
+    CommandProcessorComponent,
+)
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble

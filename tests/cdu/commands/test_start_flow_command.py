@@ -1,5 +1,5 @@
 import pytest
-from rasa.cdu.commands.start_flow_command import StartFlowCommand
+from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker

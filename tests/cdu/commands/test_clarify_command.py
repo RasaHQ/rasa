@@ -1,5 +1,5 @@
 import pytest
-from rasa.cdu.commands.clarify_command import ClarifyCommand
+from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker

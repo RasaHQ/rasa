@@ -1,27 +1,29 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Text, List, Optional, Union
+from typing import Any, Dict, Text, List, Optional
 
 from jinja2 import Template
 from structlog.contextvars import (
     bound_contextvars,
 )
-from rasa.cdu.stack.dialogue_stack import DialogueStack
-from rasa.cdu.stack.frames import (
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
     DialogueStackFrame,
     UserFlowStackFrame,
 )
-from rasa.cdu.patterns.collect_information import (
+from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.cdu.patterns.completed import CompletedPatternFlowStackFrame
-from rasa.cdu.patterns.continue_interrupted import (
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
 )
-from rasa.cdu.stack.frames.flow_stack_frame import FlowStackFrameType
-from rasa.cdu.stack.utils import top_user_flow_frame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
+from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
