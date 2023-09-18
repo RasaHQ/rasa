@@ -171,6 +171,7 @@ class FlowPolicy(Policy):
             domain: The model's domain.
             rule_only_data: Slots and loops which are specific to rules and hence
                 should be ignored by this policy.
+            flows: The flows to use.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 
@@ -208,7 +209,7 @@ class FlowPolicy(Policy):
             domain: The model's domain.
             score: The score of the predicted action.
 
-        Resturns:
+        Returns:
             The prediction result where the score is used for one hot encoding.
         """
         result = self._default_predictions(domain)
@@ -372,7 +373,7 @@ class FlowExecutor:
         return Template(text).render(context)
 
     def _slot_for_collect_information(self, collect_information: Text) -> Slot:
-        """Find the slot for a collect information."""
+        """Find the slot for the collect information step."""
         for slot in self.domain.slots:
             if slot.name == collect_information:
                 return slot
@@ -416,7 +417,6 @@ class FlowExecutor:
 
         Args:
             tracker: The tracker to get the next action for.
-            domain: The domain to get the next action for.
 
         Returns:
         The predicted action and the events to run.
@@ -457,7 +457,6 @@ class FlowExecutor:
 
         Args:
             tracker: The tracker to get the next action for.
-            domain: The domain to get the next action for.
 
         Returns:
             The next action to execute, the events that should be applied to the
@@ -554,7 +553,7 @@ class FlowExecutor:
         if isinstance(step, CollectInformationFlowStep):
             structlogger.debug("flow.step.run.collect_information")
             self.trigger_pattern_ask_collect_information(
-                step.collect_information, step.validation
+                step.collect_information, step.rejections
             )
 
             # reset the slot if its already filled and the collect information shouldn't
@@ -583,7 +582,7 @@ class FlowExecutor:
                     # the question has been asked
                     top_frame = self.dialogue_stack.top()
                     if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
-                        top_frame.number_of_retries = top_frame.number_of_retries + 1
+                        top_frame.number_of_tries = top_frame.number_of_tries + 1
 
                 return PauseFlowReturnPrediction(ActionPrediction(action_name, 1.0))
             else:
@@ -693,27 +692,18 @@ class FlowExecutor:
     def trigger_pattern_ask_collect_information(
         self,
         collect_information: str,
-        validation: Optional[Dict[Text, Any]],
+        rejections: Optional[List[Dict[Text, Any]]],
     ) -> None:
         context = self.dialogue_stack.current_context().copy()
-        number_of_retries = context.get("number_of_retries", 0)
+        number_of_tries = context.get("number_of_tries", 0)
 
-        if validation and "valid_message" not in validation:
-            validation["valid_message"] = "null"
-
-        default_validation = {
-            "condition": "true",
-            "valid_message": "null",
-            "invalid_message": "null",
-        }
-
-        step_validation = validation if validation else default_validation
+        slot_value_rejections = rejections if rejections else []
 
         self.dialogue_stack.push(
             CollectInformationPatternFlowStackFrame(
                 collect_information=collect_information,
-                number_of_retries=number_of_retries,
-                validation=step_validation,
+                number_of_tries=number_of_tries,
+                rejections=slot_value_rejections,
             )
         )
 

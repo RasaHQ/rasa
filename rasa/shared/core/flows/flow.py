@@ -991,7 +991,7 @@ class CollectInformationFlowStep(FlowStep):
     """Whether to always ask the question even if the slot is already filled."""
     scope: CollectInformationScope = CollectInformationScope.FLOW
     """how the question is scoped, determines when to reset its value."""
-    validation: Optional[Dict[Text, Any]] = None
+    rejections: Optional[List[Dict[Text, Any]]] = None
     """how the slot value is validated using predicate evaluation."""
 
     @classmethod
@@ -1009,7 +1009,7 @@ class CollectInformationFlowStep(FlowStep):
             collect_information=flow_step_config.get("collect_information", ""),
             ask_before_filling=flow_step_config.get("ask_before_filling", False),
             scope=CollectInformationScope.from_str(flow_step_config.get("scope")),
-            validation=flow_step_config.get("validation"),
+            rejections=flow_step_config.get("rejections"),
             **base.__dict__,
         )
 
@@ -1023,7 +1023,7 @@ class CollectInformationFlowStep(FlowStep):
         dump["collect_information"] = self.collect_information
         dump["ask_before_filling"] = self.ask_before_filling
         dump["scope"] = self.scope.value
-        dump["validation"] = self.validation
+        dump["rejections"] = self.rejections
 
         return dump
 
