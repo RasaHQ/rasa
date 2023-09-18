@@ -307,7 +307,7 @@ module.exports = {
       items: [
         "llms/llm-intent",
         "llms/llm-command-generator",
-        "llms/llm-nlg",
+        "llms/contextual-response-rephraser",
         "llms/llm-docsearch",
         "llms/llm-intentless",
         "llms/flow-policy",
