@@ -251,7 +251,9 @@ def test_segment_gets_called(monkeypatch: MonkeyPatch):
     with responses.RequestsMock() as rsps:
         rsps.add(responses.POST, "https://api.segment.io/v1/track", json={})
 
-        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
+        telemetry._track(
+            "test event", {"foo": "bar"}, {"foobar": "baz", "license_hash": "foobar"}
+        )
 
         assert len(rsps.calls) == 1
         r = rsps.calls[0]
@@ -274,9 +276,25 @@ def test_segment_does_not_raise_exception_on_failure(monkeypatch: MonkeyPatch):
         rsps.add(responses.POST, "https://api.segment.io/v1/track", body="", status=505)
 
         # this call should complete without throwing an exception
-        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
+        telemetry._track(
+            "test event", {"foo": "bar"}, {"foobar": "baz", "license_hash": "foobar"}
+        )
 
         assert rsps.assert_call_count("https://api.segment.io/v1/track", 1)
+
+
+def test_segment_does_not_get_called_without_license(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
+    monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
+    telemetry.initialize_telemetry()
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(responses.POST, "https://api.segment.io/v1/track", body="", status=505)
+
+        # this call should complete without throwing an exception
+        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
+
+        assert rsps.assert_call_count("https://api.segment.io/v1/track", 0)
 
 
 def test_environment_write_key_overwrites_key_file(monkeypatch: MonkeyPatch):
