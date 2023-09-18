@@ -6,11 +6,15 @@ abstract: |
   This is a guide to implementing and managing conversational flows using the FlowPolicy.
 ---
 
-import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 import dialogueStackEvolution from "./dialogue_stack_evolution.png";
 import dialogueStackOverview from "./dialogue_stack.png";
 
-<RasaDiscoveryBanner />
+:::info New in 3.7
+
+The *Flow Policy* is part of Rasa's new 
+Conversational AI with Language Models (CALM) approach and available starting
+with version `3.7.0`.
+:::
 
 Rasa's Flow Policy is a state machine that allows you to manage and control your
 chatbot's conversational flows. It facilitates the integration of your business
@@ -125,7 +129,7 @@ completing the action and incorporating its result, it moves to the next state.
 A flow can be started in several ways:
 
 - A flow is started when a Rasa component puts the flow on the stack. For
-  example, the [LLM Command Generator](./llm-command-generator.mdx) puts a flow
+  example, the [LLM Command Generator](../concepts/llm-command-generator.mdx) puts a flow
   on the stack when it determines that a flow would be a good fit for the
   current conversation.
 - One flow can ["link" to another flow](../concepts/flows.mdx#link), which will initiate
@@ -144,7 +148,7 @@ which digressions and interruptions the flow policy can handle, refer to
 
 For example, the user message _"oh sorry I meant John"_ is a correction to a
 prior input. The `FlowPolicy` depends on another component, like the
-[LLM Command Generator](./llm-command-generator.mdx), to identify it as a
+[LLM Command Generator](../concepts/llm-command-generator.mdx), to identify it as a
 correction and set the corresponding slots. Based on this, the `FlowPolicy`
 initiates the correction flow.
 
