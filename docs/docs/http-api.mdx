@@ -3,11 +3,12 @@ id: http-api
 sidebar_label: HTTP API
 title: Rasa HTTP API
 description: Read about Rasa's HTTP API that has endpoints for conversations, training models, and configuring your bot.
-abstract: You can use the HTTP API to interact with a running Rasa server. With the API, you can train models,
+abstract:
+  You can use the HTTP API to interact with a running Rasa server. With the API, you can train models,
   send messages, run tests, and more.
 ---
 
-:::tip Looking for API endpoints? 
+:::tip Looking for API endpoints?
 Check out the [API Spec](/pages/http-api) for all of the available endpoints as well as their request and response formats.
 
 :::
@@ -28,7 +29,6 @@ Note that you start the server with an NLU-only model, not all the available end
 can be called. Some endpoints will return a 409 status code, as a trained
 dialogue model is needed to process the request.
 
-
 :::caution
 Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
 by enabling an authentication method. See [Security Considerations](./http-api.mdx#security-considerations).
@@ -41,10 +41,10 @@ recommended that you set the number of workers to the number of available CPU co
 (check out the
 [Sanic docs](https://sanicframework.org/en/guide/deployment/running.html#workers)
 for more details). This will only work in combination with the
-`RedisLockStore` (see [Lock Stores](./lock-stores.mdx).
+`RedisLockStore` (see [Lock Stores](./production/lock-stores.mdx).
 
 :::caution
-The [SocketIO channel](./connectors/your-own-website.mdx#websocket-channel) does not support multiple worker processes. 
+The [SocketIO channel](./connectors/your-own-website.mdx#websocket-channel) does not support multiple worker processes.
 
 :::
 
@@ -77,7 +77,6 @@ curl -XGET localhost:5005/conversations/default/tracker?token=thisismysecret
 
 To use JWT based authentication, specify the JWT secret in the argument `--jwt-secret thisismysecret`
 on startup of the server:
-
 
 ```bash
 rasa run \
@@ -114,10 +113,10 @@ The following is an example payload for a JWT token:
 
 ```json
 {
-    "user": {
-        "username": "<sender_id>",
-        "role": "user"
-    }
+  "user": {
+    "username": "<sender_id>",
+    "role": "user"
+  }
 }
 ```
 
@@ -133,4 +132,3 @@ rasa run \
 ```
 
 To create and encode the token, you can use tools such as the [JWT Debugger](https://jwt.io/), or a Python module such as [PyJWT](https://pyjwt.readthedocs.io/en/latest/).
-

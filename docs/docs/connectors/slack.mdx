@@ -4,14 +4,15 @@ sidebar_label: Slack
 title: Slack
 description: Build a Rasa Chat Bot on Slack
 ---
-import createAppImg from './img/slack-create-app.png';
-import eventsImg from './img/slack-events.png';
-import installAppImg from './img/slack-install-app.png';
-import interactivityImg from './img/slack-interactivity.png';
-import requestUrlImg from './img/slack-request-url.png';
-import scopesImg from './img/slack-scopes.png';
-import secretImg from './img/slack-secret.png';
-import appHomeImg from './img/slack-create-app.png';
+
+import createAppImg from "./img/slack-create-app.png";
+import eventsImg from "./img/slack-events.png";
+import installAppImg from "./img/slack-install-app.png";
+import interactivityImg from "./img/slack-interactivity.png";
+import requestUrlImg from "./img/slack-request-url.png";
+import scopesImg from "./img/slack-scopes.png";
+import secretImg from "./img/slack-secret.png";
+import appHomeImg from "./img/slack-create-app.png";
 
 Connecting a bot to Slack requires you to configure it to send messages
 (using API credentials) and to receive messages (using a webhook).
@@ -31,7 +32,7 @@ slack:
 
 The `slack_channel` can be a channel or an individual person that the bot should
 listen to for communications, in addition to the default behavior of listening
-for direct messages and app mentions, i.e. *@app_name*.
+for direct messages and app mentions, i.e. _@app_name_.
 To get a channel id, right click on the channel in Slack and choose **Copy Link**.
 The id will be the last component in the URL.
 
@@ -41,7 +42,12 @@ In the next couple steps, you'll create a Slack App to get the values for
 1. To create the app go to [Your Apps](https://api.slack.com/apps "The Your Apps section of your Slack interface") and click
    on **Create New App**.
 
-   <Image img={createAppImg} caption="Create New App" alt="Create New Slack App Screenshot" max-width="500px"/>
+   <Image
+     img={createAppImg}
+     caption="Create New App"
+     alt="Create New Slack App Screenshot"
+     max-width="500px"
+   />
 
    Fill out your **App Name** and select the **Development Workspace** where
    you'll play around and build your app.
@@ -50,6 +56,7 @@ In the next couple steps, you'll create a Slack App to get the values for
    your app permission to do things in your workspace.
 
    To get started, you should at least add the following scopes:
+
    - `app_mentions:read`,
    - `channels:history`,
    - `chat:write`,
@@ -58,7 +65,12 @@ In the next couple steps, you'll create a Slack App to get the values for
    - `mpim:history` and
    - `reactions:write`.
 
-   <Image img={scopesImg} caption="Set up Slack Permissions" alt="Set up Slack Permissions Screenshot" max-width="500px" />
+   <Image
+     img={scopesImg}
+     caption="Set up Slack Permissions"
+     alt="Set up Slack Permissions Screenshot"
+     max-width="500px"
+   />
 
    In Slacks API documentation you can find a
    [list and explanation of all available scopes](https://api.slack.com/scopes).
@@ -66,7 +78,12 @@ In the next couple steps, you'll create a Slack App to get the values for
 3. On the **OAuth & Permissions** page, click **Install App to Workspace** to add
    the bot to your workspace.
 
-   <Image img={installAppImg} caption="Install Slack App" alt="Install Slack App Screenshot" max-width="500px"/>
+   <Image
+     img={installAppImg}
+     caption="Install Slack App"
+     alt="Install Slack App Screenshot"
+     max-width="500px"
+   />
 
    Once added, Slack will show you a **Bot User OAuth Access Token** which you'll
    need to add to your `credentials.yml` as the value for `slack_token`:
@@ -82,7 +99,12 @@ In the next couple steps, you'll create a Slack App to get the values for
 
 4. Head over to **Basic Information** to gather the **Signing Secret**.
 
-   <Image img={secretImg} caption="Signing Secret" alt="Signing Secret Screenshot" max-width="500px"/>
+   <Image
+     img={secretImg}
+     caption="Signing Secret"
+     alt="Signing Secret Screenshot"
+     max-width="500px"
+   />
 
    Copy the signing secret into your `credentials.yml` as the value for `slack_signing_secret`:
 
@@ -97,17 +119,20 @@ This setup will allow your bot to send messages. Now let's head over to the setu
 for receiving and reacting to messages.
 
 ## Receiving Messages
+
 Before continuing, make sure you have configured a Slack App for [Sending Messages](./slack.mdx#sending-messages) and have added Slack credentials to your `credentials.yml` file.
 
 To receive messages, you will need a publicly available URL for Slack to reach
 your bot and tell you about new messages. If you are running locally, you can
-[test channels using ngrok](../messaging-and-voice-channels.mdx#testing-channels-on-your-local-machine)
+[test channels using ngrok](./messaging-and-voice-channels.mdx#testing-channels-on-your-local-machine)
 
 1. To configure your bot to receive messages, your bot needs to be running.
    Start your bot e.g. using
+
    ```bash
    rasa run
    ```
+
    If you are running locally, make sure ngrok (or another tool to retrieve a public
    url) is running as well.
 
@@ -117,7 +142,12 @@ your bot and tell you about new messages. If you are running locally, you can
 
    You might have to quit the Slack app and re-open it before your changes take effect.
 
-   <Image img={appHomeImg} caption="Messages Tab" alt="Allow users to send Slash commands and messages from the messages tab" max-width="500px"/>
+   <Image
+     img={appHomeImg}
+     caption="Messages Tab"
+     alt="Allow users to send Slash commands and messages from the messages tab"
+     max-width="500px"
+   />
 
 3. Configure the webhook by heading to **Event Subscriptions** and
    turning **Enable Events** on.
@@ -128,16 +158,27 @@ your bot and tell you about new messages. If you are running locally, you can
 
    You won't be able to use a `localhost` url.
 
-   <Image img={requestUrlImg} caption="Request URL" alt="Request URL Screenshot" max-width="500px"/>
+   <Image
+     img={requestUrlImg}
+     caption="Request URL"
+     alt="Request URL Screenshot"
+     max-width="500px"
+   />
 
 4. As a last step, you'll need to **Subscribe to bot events** on the same page.
    You'll need to add the following events:
+
    - `message.channels`,
    - `message.groups`,
    - `message.im` and
    - `message.mpim`.
 
-   <Image img={eventsImg} caption="Subscribe to Bot Events" alt="Subscribe to Bot Events Screenshot" max-width="500px"/>
+   <Image
+     img={eventsImg}
+     caption="Subscribe to Bot Events"
+     alt="Subscribe to Bot Events Screenshot"
+     max-width="500px"
+   />
 
    Make sure to hit **Save Changes** at the bottom of the page after you've added these events.
 
@@ -152,7 +193,9 @@ by using `/invite` in the channel.
 :::
 
 Your bot is now ready to go and will receive webhook notifications about new messages.
+
 ## Optional: Interactive Components
+
 After you've completed [Sending Messages](./slack.mdx#sending-messages) and
 [Receiving Messages](./slack.mdx#receiving-messages) your bot is ready to go. If you
 want to use Slack's [interactive components](https://api.slack.com/block-kit/interactivity) (buttons or menus), you'll need to do
@@ -162,7 +205,12 @@ Open the **Interactivity & Shortcuts** page and toggle **Interactivity** to be o
 Afterwards, you'll need to enter the same url into the **Request URL** field which
 you used in Step 2 of [Receiving Messages](./slack.mdx#receiving-messages), e.g. `https://<host>/webhooks/slack/webhook`.
 
-<Image img={interactivityImg} caption="Enabling Interactivity" alt="Interactivity Screenshot" max-width="500px"/>
+<Image
+  img={interactivityImg}
+  caption="Enabling Interactivity"
+  alt="Interactivity Screenshot"
+  max-width="500px"
+/>
 
 ## Additional Slack Options
 

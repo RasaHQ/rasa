@@ -19,7 +19,7 @@ the host and port with the appropriate values from your running Rasa server.
 :::note configure https
 Hangouts Chat only forwards
 messages to endpoints via `https`, so take appropriate measures to add
-it to your setup. For local testing of your bot, see [Testing Channels on Your Local Machine](../messaging-and-voice-channels.mdx#testing-channels-on-your-local-machine).
+it to your setup. For local testing of your bot, see [Testing Channels on Your Local Machine](./messaging-and-voice-channels.mdx#testing-channels-on-your-local-machine).
 :::
 
 In the Google Developer console, obtain your project id (also known as project number or app ID), which determines the scope for the OAuth2 authorization in case you
@@ -45,7 +45,6 @@ If you want to use OAuth2, add the project id obtained from the Google Developer
 hangouts:
   project_id: "12345678901"
 ```
-
 
 Restart your Rasa server
 to make the new channel endpoint available for Google Hangouts to send messages to.

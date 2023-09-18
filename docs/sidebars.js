@@ -1,152 +1,135 @@
 module.exports = {
   default: [
-    "introduction",
-    "rasa-pro",
+    "introduction", // TODO: ENG-516
     {
       type: "category",
-      label: "Installation",
-      collapsed: true,
-      items: [
-        "installation/environment-set-up",
-        "installation/installing-rasa-open-source",
-        {
-          label: "Installing Rasa Pro",
-          collapsed: true,
-          type: "category",
-          items: [
-            "installation/rasa-pro/rasa-pro-artifacts",
-            "installation/rasa-pro/installation",
-          ],
-        },
-      ],
-    },
-    {
-      type: "category",
-      label: "Building Assistants",
+      label: "Getting started",
       collapsed: false,
       items: [
-        "migrate-from",
-        "command-line-interface",
+        "conversational-ai-with-rasa", // TODO: ENG-517
         {
           type: "category",
-          label: "Best Practices",
+          label: "Installation",
           collapsed: true,
           items: [
-            "conversation-driven-development",
-            "generating-nlu-data",
-            "writing-stories",
+            "installation/environment-set-up",
+            "installation/installing-rasa-open-source",
+            {
+              label: "Installing Rasa Pro",
+              collapsed: true,
+              type: "category",
+              items: [
+                "installation/rasa-pro/rasa-pro-artifacts",
+                "installation/rasa-pro/installation",
+              ],
+            },
           ],
         },
-        {
-          type: "category",
-          label: "Conversation Patterns",
-          collapsed: true,
-          items: [
-            "chitchat-faqs",
-            "business-logic",
-            "fallback-handoff",
-            "unexpected-input",
-            "contextual-conversations",
-            "reaching-out-to-user",
-          ],
-        },
-        {
-          type: "category",
-          label: "Preparing For Production",
-          collapsed: true,
-          items: [
-            "messaging-and-voice-channels",
-            "tuning-your-model",
-            "testing-your-assistant",
-            "setting-up-ci-cd",
-          ],
-        },
-        "glossary",
+        "tutorial",
+        "dm2-vs-intent-based-systems", // TODO: ENG-517
+        "dm2-vs-llm-chaining", // TODO: ENG-517
       ],
     },
     {
       type: "category",
-      label: "Deploying Assistants",
+      label: "Key concepts",
       collapsed: true,
       items: [
-        "deploy/introduction",
-        "deploy/deploy-rasa",
-        "deploy/deploy-action-server",
-        "deploy/deploy-rasa-pro-services",
-      ],
-    },
-    {
-      type: "category",
-      label: "Monitoring and Analyzing Assistants",
-      collapsed: true,
-      items: [
-        {
-          type: "category",
-          label: "Analytics",
-          collapsed: true,
-          items: [
-            "monitoring/analytics/getting-started-with-analytics",
-            "monitoring/analytics/realtime-markers",
-            "monitoring/analytics/example-queries",
-            "monitoring/analytics/data-structure-reference",
-          ],
-        },
-        "monitoring/tracing",
-        "monitoring/load-testing-guidelines",
-      ],
-    },
-    "pii-management",
-    {
-      type: "category",
-      label: "Concepts",
-      collapsed: false,
-      items: [
-        {
-          type: "category",
-          label: "Training Data",
-          items: [
-            "training-data-format",
-            "nlu-training-data",
-            "stories",
-            "rules",
-          ],
-        },
-        "domain",
-        {
-          type: "category",
-          label: "Config",
-          items: [
-            "model-configuration",
-            "components",
-            "policies",
-            "custom-graph-components",
-            "training-data-importers",
-            "language-support",
-            "graph-recipe",
-            "spaces",
-          ],
-        },
+        // TODO: ENG-537
+        "concepts/command-line-interface",
+        "concepts/flows",
+        "concepts/domain",
         {
           type: "category",
           label: "Actions",
           items: [
-            "actions",
-            "responses",
-            "custom-actions",
-            "forms",
-            "default-actions",
-            "slot-validation-actions",
+            "concepts/actions",
+            "concepts/custom-actions",
+            "concepts/default-actions",
+            "concepts/slot-validation-actions",
           ],
         },
+        "concepts/llm-command-generator",
+        "concepts/responses",
         {
           type: "category",
-          label: "Evaluation",
-          items: ["markers"],
+          label: "Config",
+          items: [
+            "concepts/llm-configuration",
+            "concepts/custom-graph-components",
+            "concepts/training-data-importers",
+            "concepts/graph-recipe",
+            "concepts/spaces",
+          ],
         },
+        "concepts/policies", // TODO: ENG-538
+        "concepts/glossary",
+        {
+          type: "category",
+          label: "Building Classic Assistants",
+          collapsed: true,
+          items: [
+            // TODO: ENG-537
+            {
+              type: "category",
+              label: "Conversation Patterns",
+              collapsed: true,
+              items: [
+                "building-classic-assistants/chitchat-faqs",
+                "building-classic-assistants/business-logic",
+                "building-classic-assistants/fallback-handoff",
+                "building-classic-assistants/unexpected-input",
+                "building-classic-assistants/contextual-conversations",
+                "building-classic-assistants/reaching-out-to-user",
+              ],
+            },
+            {
+              type: "category",
+              label: "Config",
+              items: [
+                "building-classic-assistants/model-configuration",
+                "building-classic-assistants/components", // TODO: ENG-538
+                "building-classic-assistants/policies", // TODO: ENG-538
+                "building-classic-assistants/language-support",
+              ],
+            },
+            "building-classic-assistants/rules",
+            "building-classic-assistants/stories",
+            "building-classic-assistants/forms",
+            "building-classic-assistants/training-data-format",
+            "building-classic-assistants/nlu-training-data",
+            "building-classic-assistants/tuning-your-model",
+            "building-classic-assistants/nlu-only",
+          ],
+        },
+      ],
+    },
+    // TODO: ENG-539
+    {
+      type: "category",
+      label: "Testing & Deploying to Production",
+      collapsed: true,
+      items: [
+        {
+          type: "category",
+          label: "Architecture",
+          items: [
+            "production/arch-overview",
+            "production/tracker-stores",
+            "production/event-brokers",
+            "production/model-storage",
+            "production/lock-stores",
+            "production/secrets-managers",
+            "production/nlg",
+          ],
+        },
+        // TODO: ENG-540
+        "production/testing-your-assistant",
         {
           type: "category",
           label: "Channel Connectors",
           items: [
+            "connectors/messaging-and-voice-channels",
             {
               type: "category",
               label: "Text & Chat",
@@ -172,69 +155,98 @@ module.exports = {
         },
         {
           type: "category",
-          label: "Architecture", // name still confusing with architecture page elsewhere
+          label: "Action Server",
+          collapsed: true,
           items: [
-            "arch-overview",
-            "tracker-stores",
-            "event-brokers",
-            "model-storage",
-            "lock-stores",
-            "secrets-managers",
-            "nlu-only",
-            "nlg",
+            "action-server/index",
+            {
+              "Action Server Fundamentals": [
+                "action-server/actions",
+                "action-server/events",
+              ],
+            },
+            {
+              "Using the Rasa SDK": [
+                "action-server/running-action-server",
+                {
+                  type: "category",
+                  label: "Writing Custom Actions",
+                  collapsed: true,
+                  items: [
+                    "action-server/sdk-actions",
+                    "action-server/sdk-tracker",
+                    "action-server/sdk-dispatcher",
+                    "action-server/sdk-events",
+                    {
+                      type: "category",
+                      label: "Special Action Types",
+                      collapsed: true,
+                      items: [
+                        "action-server/knowledge-bases",
+                        "action-server/validation-action",
+                      ],
+                    },
+                  ],
+                },
+                "action-server/sanic-extensions",
+              ],
+            },
           ],
         },
+        "production/setting-up-ci-cd",
+        {
+          type: "category",
+          label: "Evaluation",
+          items: ["production/markers"],
+        },
+        {
+          type: "category",
+          label: "Deploying Assistants",
+          collapsed: true,
+          items: [
+            "deploy/introduction",
+            "deploy/deploy-rasa",
+            "deploy/deploy-action-server",
+            "deploy/deploy-rasa-pro-services",
+          ],
+        },
+        "production/load-testing-guidelines",
       ],
     },
     {
       type: "category",
-      label: "Action Server",
+      label: "Security & Compliance",
       collapsed: true,
       items: [
-        "action-server/index",
+        "security/llm-guardrails", // TODO: ENG-541
+        "security/pii-management",
+      ],
+    },
+    {
+      type: "category",
+      label: "Operating at scale",
+      collapsed: true,
+      items: [
+        "operating/llm-cost-optimizations",
         {
-          "Action Server Fundamentals": [
-            "action-server/actions",
-            "action-server/events",
+          type: "category",
+          label: "Analytics",
+          collapsed: true,
+          items: [
+            "operating/analytics/getting-started-with-analytics",
+            "operating/analytics/realtime-markers",
+            "operating/analytics/example-queries",
+            "operating/analytics/data-structure-reference",
           ],
         },
-        {
-          "Using the Rasa SDK": [
-            "action-server/running-action-server",
-            {
-              type: "category",
-              label: "Writing Custom Actions",
-              collapsed: true,
-              items: [
-                "action-server/sdk-actions",
-                "action-server/sdk-tracker",
-                "action-server/sdk-dispatcher",
-                "action-server/sdk-events",
-                {
-                  type: "category",
-                  label: "Special Action Types",
-                  collapsed: true,
-                  items: [
-                    "action-server/knowledge-bases",
-                    "action-server/validation-action",
-                  ],
-                },
-              ],
-            },
-            "action-server/sanic-extensions",
-          ],
-        },
+        "operating/tracing",
       ],
     },
     {
       type: "category",
       label: "APIs",
       collapsed: true,
-      items: [
-        "http-api",
-        "nlu-only-server",
-        // 'jupyter-notebooks',
-      ],
+      items: ["http-api", "nlu-only-server"],
     },
     {
       type: "category",
@@ -264,43 +276,43 @@ module.exports = {
       ],
     },
   ],
-  "llms": [
-    'start-here',
-    'tutorial',
+  llms: [
+    "start-here",
+    "tutorial",
     {
-      type: 'category',
-      label: 'Getting Started',
+      type: "category",
+      label: "Getting Started",
       collapsed: false,
 
       items: [
-        'llms/llm-installation',
-        'llms/llm-next-gen',
-        'llms/llm-configuration',
-      ]
+        "llms/llm-installation",
+        "llms/llm-next-gen",
+        "llms/llm-configuration",
+      ],
     },
     {
-      type: 'category',
-      label: 'Next-Gen Assistants',
+      type: "category",
+      label: "Next-Gen Assistants",
       collapsed: false,
-
       items: [
-        'flows',
-        'llms/unhappy-paths',
-        'llms/llm-detector',
-      ]
+        "concepts/flows",
+        "llms/unhappy-paths",
+        "llms/llm-detector",
+      ],
     },
     {
-      type: 'category',
-      label: 'Components',
+      type: "category",
+      label: "Components",
       collapsed: false,
       items: [
-        'llms/llm-intent',
-        'llms/llm-command-generator',
-        'llms/llm-nlg',
-        'llms/llm-docsearch',
-        'llms/llm-intentless',
-        'llms/flow-policy',
-      ]
-    }
+        "llms/llm-intent",
+        "concepts/llm-command-generator",
+        "llms/contextual-response-rephraser",
+        "llms/llm-docsearch",
+        "llms/llm-intentless",
+        "llms/flow-policy",
+      ],
+    },
+    "llms/llm-custom",
   ],
 };

@@ -40,14 +40,14 @@ You need to set up a Facebook app and a page.
    **messaging_postback** subscriptions. Insert your callback URL, which will
    look like `https://<host>:<port>/webhooks/facebook/webhook`, replacing
    the host and port with the appropriate values from your running Rasa server.
-   
+
    Insert the **Verify Token** which has to match the `verify`
    entry in your `credentials.yml`.
 
 :::note configure https
 Facebook Messenger only forwards
 messages to endpoints via `https`, so take appropriate measures to add
-it to your setup. For local testing of your bot, see [Testing Channels on Your Local Machine](../messaging-and-voice-channels.mdx#testing-channels-on-your-local-machine).
+it to your setup. For local testing of your bot, see [Testing Channels on Your Local Machine](./messaging-and-voice-channels.mdx#testing-channels-on-your-local-machine).
 :::
 
 For more detailed steps, visit the
@@ -64,22 +64,20 @@ facebook:
   page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
 ```
 
-
 Restart your Rasa server
 to make the new channel endpoint available for Facebook Messenger to send messages to.
-
 
 ## Supported response attachments
 
 In addition to typical text, image, and custom responses, the Facebook Messenger
 channel supports the following additional response attachments:
 
-* [Buttons](https://developers.facebook.com/docs/messenger-platform/send-messages/buttons)
+- [Buttons](https://developers.facebook.com/docs/messenger-platform/send-messages/buttons)
   are structured the same as other Rasa buttons. Facebook API limits the amount of
   buttons you can sent in a message to 3. If more than 3 buttons are provided in a
   message, Rasa will ignore all provided buttons.
 
-* [Quick Replies](https://developers.facebook.com/docs/messenger-platform/send-messages/quick-replies)
+- [Quick Replies](https://developers.facebook.com/docs/messenger-platform/send-messages/quick-replies)
   provide a way to present a set of up to 13 buttons in-conversation that contain a
   title and optional image, and appear prominently above the composer. You can also
   use quick replies to request a person's email address or phone number.
@@ -105,12 +103,11 @@ channel supports the following additional response attachments:
   ```
 
 :::note
-Both Quick Reply and Button titles in Facebook Messenger have a character limit of
-20. Titles longer than 20 characters will be truncated.
+Both Quick Reply and Button titles in Facebook Messenger have a character limit of 20. Titles longer than 20 characters will be truncated.
 
 :::
 
-* [Elements](https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic)
+- [Elements](https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic)
   provide a way to create a horizontally scrollable list up to 10 content elements that
   integrate buttons, images, and more alongside text a single message.
 

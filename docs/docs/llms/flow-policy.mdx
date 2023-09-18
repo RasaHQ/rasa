@@ -6,11 +6,15 @@ abstract: |
   This is a guide to implementing and managing conversational flows using the FlowPolicy.
 ---
 
-import RasaDiscoveryBanner from "@theme/RasaDiscoveryBanner";
 import dialogueStackEvolution from "./dialogue_stack_evolution.png";
 import dialogueStackOverview from "./dialogue_stack.png";
 
-<RasaDiscoveryBanner />
+:::info New in 3.7
+
+The *Flow Policy* is part of Rasa's new 
+Conversational AI with Language Models (CALM) approach and available starting
+with version `3.7.0`.
+:::
 
 Rasa's Flow Policy is a state machine that allows you to manage and control your
 chatbot's conversational flows. It facilitates the integration of your business
@@ -19,7 +23,7 @@ logic with machine learning capabilities.
 The Flow Policy oversees your bot's state, handles state transitions, and
 triggers new flows when needed. The "Dialogue Stack" represents all started but
 incomplete flows and refers to steps defined in the
-[flows specification](../flows.mdx).
+[flows specification](../concepts/flows.mdx).
 
 <Image
   img={dialogueStackOverview}
@@ -32,11 +36,11 @@ guiding the conversation based on user input and system response. Other
 classifiers adjust the underlying state machine to handle edge cases.
 
 For more detailed information on defining flows, refer to the
-[flows specification](../flows.mdx).
+[flows specification](../concepts/flows.mdx).
 
 ## Adding the FlowPolicy to your bot
 
-The Flow Policy can be integrated like [any other policy](../policies.mdx). It
+The Flow Policy can be integrated like [any other policy](../building-classic-assistants/policies.mdx). It
 involves two steps:
 
 1. Configure the `FlowPolicy` in your `config.yml` file:
@@ -48,7 +52,7 @@ involves two steps:
    # - ...
    ```
 
-2. Add flows to your bot as per the [flows specification](../flows.mdx). This
+2. Add flows to your bot as per the [flows specification](../concepts/flows.mdx). This
    step involves defining the states and transitions that your bot should
    recognize and react to.
 
@@ -105,7 +109,7 @@ and `correction` flows in [Handling Unhappy Paths](./unhappy-paths.mdx).
 
 Upon completion of the `resume_flow` flow, the `transfer_money` flow resumes,
 and the bot returns to the state before the correction flow started. The
-`transfer_money` flow will re-ask the interrupted question of a 
+`transfer_money` flow will re-ask the interrupted question of a
 `collect_information` step.
 
 The `resume_flow` and `correction` flows are conversational patterns not
@@ -125,10 +129,10 @@ completing the action and incorporating its result, it moves to the next state.
 A flow can be started in several ways:
 
 - A flow is started when a Rasa component puts the flow on the stack. For
-  example, the [LLM Command Generator](./llm-command-generator.mdx) puts a flow
+  example, the [LLM Command Generator](../concepts/llm-command-generator.mdx) puts a flow
   on the stack when it determines that a flow would be a good fit for the
   current conversation.
-- One flow can ["link" to another flow](../flows.mdx#link), which will initiate
+- One flow can ["link" to another flow](../concepts/flows.mdx#link), which will initiate
   the linked flow and return to the original flow once the linked flow
   completes.
 - Flows, which are conversational patterns (e.g. correction, resume flow), are
@@ -144,7 +148,7 @@ which digressions and interruptions the flow policy can handle, refer to
 
 For example, the user message _"oh sorry I meant John"_ is a correction to a
 prior input. The `FlowPolicy` depends on another component, like the
-[LLM Command Generator](./llm-command-generator.mdx), to identify it as a
+[LLM Command Generator](../concepts/llm-command-generator.mdx), to identify it as a
 correction and set the corresponding slots. Based on this, the `FlowPolicy`
 initiates the correction flow.
 

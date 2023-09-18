@@ -3,8 +3,8 @@ id: llm-configuration
 sidebar_label: Configuration
 title: Configuration
 abstract: |
-  Instructions on how to setup and configure Large Language Models from 
-  OpenAI, Cohere, and other providers. 
+  Instructions on how to setup and configure Large Language Models from
+  OpenAI, Cohere, and other providers.
   Here you'll learn what you need to configure and how you can customize LLMs to work
   efficiently with your specific use case.
 ---
@@ -19,8 +19,8 @@ import RasaLabsBanner from "@theme/RasaLabsBanner";
 ## Overview
 
 This guide will walk you through the process of configuring Rasa to connect to an
-LLM, including deployments that rely on Azure OpenAI service. Instructions for 
-other LLM providers are further down the page. 
+LLM, including deployments that rely on Azure OpenAI service. Instructions for
+other LLM providers are further down the page.
 
 ## Assitant Configration
 
@@ -43,21 +43,21 @@ endpoint configuration:
 
 ```yaml title="endpoints.yml"
 nlg:
-  type: rasa_plus.ml.LLMResponseRephraser
+  type: rasa_plus.ml.ContextualResponseRephraser
 ```
 
 Additional configuration parameters are explained in detail in the documentation
 pages for each of these components:
-- [LLMCommandGenerator](./llm-command-generator.mdx)
-- [FlowPolicy](./flow-policy.mdx)
-- [Docseach](./llm-docsearch.mdx)
-- [LLMResponseRephraser](./llm-nlg.mdx) 
 
+- [LLMCommandGenerator](../concepts/llm-command-generator.mdx)
+- [FlowPolicy](../llms/flow-policy.mdx)
+- [Docseach](../llms/llm-docsearch.mdx)
+- [ContextualResponseRephraser](../llms/contextual-response-rephraser.mdx)
 
 ## OpenAI Configuration
 
-The configuration describes in detail how to connect to OpenAI. Rasa is LLM agnostic and 
-can be configured with different LLMs, but OpenAI is the default. 
+The configuration describes in detail how to connect to OpenAI. Rasa is LLM agnostic and
+can be configured with different LLMs, but OpenAI is the default.
 
 If you want to configure your assistant with a different LLM, you can find
 instructions for other LLM providers further down the page.
@@ -77,24 +77,24 @@ interaction between the two.
 
 To configure the API token, follow these steps:
 
-1. If you haven't already, sign up for an account on the OpenAI platform.
+1.  If you haven't already, sign up for an account on the OpenAI platform.
 
-2. Navigate to the [OpenAI Key Management page](https://platform.openai.com/account/api-keys),
-   and click on the "Create New Secret Key" button to initiate the process of
-   obtaining your API key.
+2.  Navigate to the [OpenAI Key Management page](https://platform.openai.com/account/api-keys),
+    and click on the "Create New Secret Key" button to initiate the process of
+    obtaining your API key.
 
-3. To set the API key as an environment variable, you can use the following command in a
-   terminal or command prompt:
+3.  To set the API key as an environment variable, you can use the following command in a
+    terminal or command prompt:
 
-   <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
-     <TabItem value="unix">
+    <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+      <TabItem value="unix">
 
-     ```shell
-     export OPENAI_API_KEY=<your-api-key>
-     ```
+      ```shell
+      export OPENAI_API_KEY=<your-api-key>
+      ```
 
-     </TabItem>
-     <TabItem value="windows">
+      </TabItem>
+      <TabItem value="windows">
 
       ```shell
       setx OPENAI_API_KEY <your-api-key>
@@ -102,10 +102,10 @@ To configure the API token, follow these steps:
 
       This will apply to future cmd prompt window, so you will need to open a new one to use that variable
 
-     </TabItem>
-   </Tabs>
+      </TabItem>
+    </Tabs>
 
-   Replace `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
+    Replace `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
 
 ### Model Configuration
 
@@ -115,10 +115,10 @@ you might use one model for intent classification and another for rephrasing.
 To configure models per component, follow these steps described on the
 pages for each component:
 
-1. [intent classification instructions](./llm-intent.mdx#llm--embeddings)
-2. [rephrasing instructions](./llm-nlg.mdx#llm-configuration)
-3. [intentless policy instructions](./llm-intentless.mdx#llm--embeddings)
-4. [docsearch instructions](./llm-docsearch.mdx#llm--embeddings)
+1. [intent classification instructions](../llms/llm-intent.mdx#llm--embeddings)
+2. [rephrasing instructions](../llms/contextual-response-rephraser.mdx#llm-configuration)
+3. [intentless policy instructions](../llms/llm-intentless.mdx#llm--embeddings)
+4. [docsearch instructions](../llms/llm-docsearch.mdx#llm--embeddings)
 
 ### Additional Configuration for Azure OpenAI Service
 
@@ -131,22 +131,22 @@ to be configured:
   example might look like this: "https://docs-test-001.openai.azure.com/".
 - `engine`: For the `llm` part, provide the name of the deployment in the `config.yml` using `engine` parameter. If you are using the chat models, you must also create a new openAI deployment
   on azure OpenAI.
-- `deployment`: For `embeddings` part, you must also add `deployment` parameter to the `config.yml`. Note that you you must create a deployment on azure for using embeddings with azure OpenAI. 
-- `chunk_size`: Some azure plans might restrict you from sending larger chunks of text for embeddings. If you see an an error that says `Too many inputs`, you should decrease your `chunk_size`. By default, `chunk_size` is 1000 but this can be configured to a lower value under the `embeddings` portion  in the `config.yml`
+- `deployment`: For `embeddings` part, you must also add `deployment` parameter to the `config.yml`. Note that you you must create a deployment on azure for using embeddings with azure OpenAI.
+- `chunk_size`: Some azure plans might restrict you from sending larger chunks of text for embeddings. If you see an an error that says `Too many inputs`, you should decrease your `chunk_size`. By default, `chunk_size` is 1000 but this can be configured to a lower value under the `embeddings` portion in the `config.yml`
 
 To configure these parameters, follow these steps:
 
-1. To configure the `openai.api_type` as an environment variable:
+1.  To configure the `openai.api_type` as an environment variable:
 
-   <Tabs groupId="os-dist-api-type" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
-     <TabItem value="unix">
+    <Tabs groupId="os-dist-api-type" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+      <TabItem value="unix">
 
-     ```shell
-     export OPENAI_API_TYPE="azure"
-     ```
+      ```shell
+      export OPENAI_API_TYPE="azure"
+      ```
 
-     </TabItem>
-     <TabItem value="windows">
+      </TabItem>
+      <TabItem value="windows">
 
       ```shell
       setx OPENAI_API_TYPE "azure"
@@ -154,20 +154,20 @@ To configure these parameters, follow these steps:
 
       This will apply to future cmd prompt window, so you will need to open a new one to use that variable
 
-     </TabItem>
-   </Tabs>
+      </TabItem>
+    </Tabs>
 
-2. To configure the `openai.api_base` as an environment variable:
+2.  To configure the `openai.api_base` as an environment variable:
 
-   <Tabs groupId="os-dist-api-base" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
-     <TabItem value="unix">
+    <Tabs groupId="os-dist-api-base" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+      <TabItem value="unix">
 
       ```shell
       export OPENAI_API_BASE=<your-azure-openai-instance-url>
       ```
 
-     </TabItem>
-     <TabItem value="windows">
+      </TabItem>
+      <TabItem value="windows">
 
       ```shell
       setx OPENAI_API_BASE <your-azure-openai-instance-url>
@@ -175,10 +175,10 @@ To configure these parameters, follow these steps:
 
       This will apply to future cmd prompt window, so you will need to open a new one to use that variable
 
-     </TabItem>
-   </Tabs>
+      </TabItem>
+    </Tabs>
 
-3. To configure the `deployment` in the config.yml file, add it in the pipeline component like this:
+3.  To configure the `deployment` in the config.yml file, add it in the pipeline component like this:
 
     ```yaml title="config.yml"
     - name: rasa_plus.ml.LLMIntentClassifier
@@ -188,8 +188,8 @@ To configure these parameters, follow these steps:
         deployment: <name_of_deployment_on_azure>
     ```
 
-4. To configure the `engine` in the config file, add it in the pipeline component like this: 
-  
+4.  To configure the `engine` in the config file, add it in the pipeline component like this:
+
     ```yaml title="config.yml"
     - name: LLMCommandGenerator
       llm:
@@ -197,25 +197,25 @@ To configure these parameters, follow these steps:
         engine: <name_of_deployment_on_azure>
     ```
 
-5. To configure `chunk_size` in the config file, add it in the pipeline components under `llm` object like this:
+5.  To configure `chunk_size` in the config file, add it in the pipeline components under `llm` object like this:
 
     ```yaml title="config.yml"
     - name: rasa_plus.ml.LLMIntentClassifier
       fallback_intent: "out_of_scope"
       embeddings:
-        model: text-embedding-ada-002 
+        model: text-embedding-ada-002
         deployment: <name_of_deployment_on_azure>
         chunk_size: 16
     ```
 
 ## Other LLMs/Embeddings
 
-The LLM and embeddings provider can be configured separately for each 
+The LLM and embeddings provider can be configured separately for each
 component. All components default to using OpenAI.
 
 :::important
 
-If you switch to a different LLM / embedding provider, you need to go through 
+If you switch to a different LLM / embedding provider, you need to go through
 additional installation and setup. Please note the mentioned
 additional requirements for each provider in their respective section.
 
@@ -224,13 +224,14 @@ additional requirements for each provider in their respective section.
 :::caution
 
 We are currently working on adding support for other LLM providers. We support
-configuring alternative LLM and embedding providers, but we have tested the 
-functionality with OpenAI only. 
+configuring alternative LLM and embedding providers, but we have tested the
+functionality with OpenAI only.
 
 :::
 
 ### Configuring an LLM provider
-The LLM provider can be configured using the `llm` property of each component. 
+
+The LLM provider can be configured using the `llm` property of each component.
 The `llm.type` property specifies the LLM provider to use.
 
 ```yaml title="config.yml"
@@ -240,7 +241,7 @@ pipeline:
       type: "cohere"
 ```
 
-The above configuration specifies that the [LLMIntentClassifier](./llm-intent.mdx)
+The above configuration specifies that the [LLMIntentClassifier](../llms/llm-intent.mdx)
 should use the [Cohere](https://cohere.ai/) LLM provider rather than OpenAI.
 
 :::important
@@ -257,6 +258,7 @@ temperature for the new provider.
 The following LLM providers are supported:
 
 #### OpenAI
+
 Default LLM provider. Requires the `OPENAI_API_KEY` environment variable to be set.
 The model cam be configured as an optional parameter
 
@@ -266,7 +268,6 @@ llm:
   model_name: "text-davinci-003"
   temperature: 0.7
 ```
-
 
 #### Cohere
 
@@ -282,8 +283,8 @@ llm:
 
 #### Vertex AI
 
-To use Vertex AI you need to install `pip install google-cloud-aiplatform` 
-The credentials for Vertex AI can be configured as described in the 
+To use Vertex AI you need to install `pip install google-cloud-aiplatform`
+The credentials for Vertex AI can be configured as described in the
 [google auth documentation](https://googleapis.dev/python/google-auth/latest/reference/google.auth.html#module-google.auth).
 
 ```yaml
@@ -297,7 +298,7 @@ llm:
 
 The Hugging Face Hub LLM uses models from Hugging Face.
 It requires additional packages to be installed: `pip install huggingface_hub`.
-The environment variable `HUGGINGFACEHUB_API_TOKEN` needs to be set to a 
+The environment variable `HUGGINGFACEHUB_API_TOKEN` needs to be set to a
 valid API token.
 
 ```yaml
@@ -311,8 +312,7 @@ llm:
 
 To use the llama-cpp language model, you should install the required python library
 `pip install llama-cpp-python`. A path to the Llama model must be provided.
-For more details, check out the [llama-cpp project]( 
-https://github.com/abetlen/llama-cpp-python).
+For more details, check out the [llama-cpp project](https://github.com/abetlen/llama-cpp-python).
 
 ```yaml
 llm:
@@ -324,9 +324,10 @@ llm:
 #### Other LLM providers
 
 If you want to use a different LLM provider, you can specify the name of the
-provider in the `llm.type` property accoring to [this mapping](https://github.com/hwchase17/langchain/blob/ecee4d6e9268d71322bbf31fd16c228be304d45d/langchain/llms/__init__.py#L110). 
+provider in the `llm.type` property accoring to [this mapping](https://github.com/hwchase17/langchain/blob/ecee4d6e9268d71322bbf31fd16c228be304d45d/langchain/llms/__init__.py#L110).
 
 ### Configuring an embeddings provider
+
 The embeddings provider can be configured using the `embeddings` property of each
 component. The `embeddings.type` property specifies the embeddings provider to use.
 
@@ -337,13 +338,13 @@ pipeline:
       type: "cohere"
 ```
 
-The above configuration specifies that the [LLMIntentClassifier](./llm-intent.mdx)
+The above configuration specifies that the [LLMIntentClassifier](../llms/llm-intent.mdx)
 should use the [Cohere](https://cohere.ai/) embeddings provider rather than OpenAI.
 
 :::note Only Some Components need Embeddings
 
-Not every component uses embeddings. For example, the 
-[LLMResponseRephraser](./llm-nlg.mdx) component does not use embeddings. 
+Not every component uses embeddings. For example, the
+[ContextualResponseRephraser](../llms/contextual-response-rephraser.mdx) component does not use embeddings.
 For these components, no `embeddings` property is needed.
 
 :::
@@ -351,6 +352,7 @@ For these components, no `embeddings` property is needed.
 The following embeddings providers are supported:
 
 #### OpenAI
+
 Default embeddings. Requires the `OPENAI_API_KEY` environment variable to be set.
 The model cam be configured as an optional parameter
 
@@ -363,8 +365,8 @@ embeddings:
 #### Cohere
 
 Embeddings from [Cohere](https://cohere.ai/). Requires the python package
-for cohere to be installed, e.g. uing `pip install cohere`. The 
-`COHERE_API_KEY` environment variable must be set. The model 
+for cohere to be installed, e.g. uing `pip install cohere`. The
+`COHERE_API_KEY` environment variable must be set. The model
 can be configured as an optional parameter.
 
 ```yaml
@@ -375,7 +377,7 @@ embeddings:
 
 #### spaCy
 
-The spacy embeddings provider uses `en_core_web_sm` model to generate 
+The spacy embeddings provider uses `en_core_web_sm` model to generate
 embeddings. The model needs to be installed separately, e.g. using
 `python -m spacy download en_core_web_sm`.
 
@@ -386,8 +388,8 @@ embeddings:
 
 #### Vertex AI
 
-To use Vertex AI you need to install `pip install google-cloud-aiplatform` 
-The credentials for Vertex AI can be configured as described in the 
+To use Vertex AI you need to install `pip install google-cloud-aiplatform`
+The credentials for Vertex AI can be configured as described in the
 [google auth documentation](https://googleapis.dev/python/google-auth/latest/reference/google.auth.html#module-google.auth).
 
 ```yaml
@@ -411,7 +413,7 @@ embeddings:
 
 The Hugging Face Hub embeddings provider uses models from Hugging Face.
 It requires additional packages to be installed: `pip install huggingface_hub`.
-The environment variable `HUGGINGFACEHUB_API_TOKEN` needs to be set to a 
+The environment variable `HUGGINGFACEHUB_API_TOKEN` needs to be set to a
 valid API token.
 
 ```yaml
@@ -422,10 +424,10 @@ embeddings:
 ```
 
 #### llama-cpp
+
 To use the llama-cpp embeddings, you should install the required python library
 `pip install llama-cpp-python`. A path to the Llama model must be provided.
-For more details, check out the [llama-cpp project]( 
-https://github.com/abetlen/llama-cpp-python).
+For more details, check out the [llama-cpp project](https://github.com/abetlen/llama-cpp-python).
 
 ```yaml
 embeddings:

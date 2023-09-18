@@ -14,13 +14,12 @@ import RasaLabsBanner from "@theme/RasaLabsBanner";
 
 <RasaLabsBanner version="3.7.0b1" />
 
-As part of a beta release, we have released multiple components 
+As part of a beta release, we have released multiple components
 which make use of the latest generation of Large Language Models (LLMs).
 This document offers an overview of what you can do with them.
 We encourage you to experiment with these components and share your findings with us.
 We are working on some larger changes to the platform that leverage LLMs natively.
 Please reach out to us if you'd like to learn more about upcoming changes.
-
 
 ## LLMs go beyond NLU
 
@@ -37,24 +36,24 @@ and the control needed for business logic. This innovative blend enables you to
 manage both the flexible and predictable aspects of dialogues within your
 chatbot.
 
-By utilizing LLMs, we can effectively handle ["unhappy paths"—instances](../glossary.mdx#happy--unhappy-paths) where
+By utilizing LLMs, we can effectively handle ["unhappy paths"—instances](../concepts/glossary.mdx#happy--unhappy-paths) where
 user interactions diverge from the expected or desired course. Meanwhile,
-business logic or 'Flows' are used to manage ["happy paths"—scenarios](../glossary.mdx#happy--unhappy-paths) where
+business logic or 'Flows' are used to manage ["happy paths"—scenarios](../concepts/glossary.mdx#happy--unhappy-paths) where
 interactions proceed as anticipated.
 
 ### Bring your own LLM
 
 Just like our NLU pipeline, the LLM components here can be configured to use different
 LLMs. There is no one-size-fits-all best model, and new models are being released every
-week. We encourage you to try out different models and evaluate their performance on 
+week. We encourage you to try out different models and evaluate their performance on
 different languages in terms of fluency, accuracy, and latency.
 
 ### Adjustable risk profile
 
-The potential and risks of LLMs vary per use case. For customer-facing use cases, 
-you may not ever want to send generated text to your users. Rasa gives you full 
+The potential and risks of LLMs vary per use case. For customer-facing use cases,
+you may not ever want to send generated text to your users. Rasa gives you full
 control over where and when you want to make use of LLMs. You can use LLMs for NLU and
-dialogue, and still only send messages that were authored by a human. 
+dialogue, and still only send messages that were authored by a human.
 You can also allow an LLM to rephrase your existing messages to account for context.
 
 It's essential that your system provides full
@@ -83,7 +82,7 @@ Here's a breakdown of our approach:
 
 - We specify 'happy paths' using business logic. This means setting out clear,
   pre-defined paths that the conversation should follow under ideal
-  circumstances using [Flows](../flows.mdx).
+  circumstances using [Flows](../concepts/flows.mdx).
 - We identify patterns of 'unhappy paths' and specify these using separate
   Flows. These [conversational patterns](./unhappy-paths.mdx) define how the
   chatbot should respond when the user's input doesn't match the expected course
@@ -92,7 +91,7 @@ Here's a breakdown of our approach:
   know where we are in the dialogue and what's been covered.
 - We employ LLMs to update the state of these Flows. These language models
   process user input, adjusting the conversation's course as needed.
-- We use LLMs to [improve the chatbot's responses](./llm-nlg.mdx). These
+- We use LLMs to [improve the chatbot's responses](./contextual-response-rephraser.mdx). These
   language models generate the chatbot's responses, ensuring they feel natural and
   fluent.
 
@@ -101,7 +100,7 @@ Here's a breakdown of our approach:
 This section of the documentation guides you through the diverse ways you can
 integrate LLMs into Rasa. We will delve into the following topics:
 
-1. [Business Logic with Flows](../flows.mdx)
+1. [Business Logic with Flows](../concepts/flows.mdx)
 2. [Handling Unhappy Paths](./unhappy-paths.mdx)
 3. [Configuring other LLMs](./llm-configuration.mdx)
 
