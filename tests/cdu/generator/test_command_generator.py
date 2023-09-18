@@ -2,9 +2,11 @@ from typing import Optional, List
 
 import pytest
 
-from rasa.cdu.commands import Command
-from rasa.cdu.generator.command_generator import CommandGenerator
-from rasa.cdu.commands.chit_chat_answer_command import ChitChatAnswerCommand
+from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
+from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
+    ChitChatAnswerCommand,
+)
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, COMMANDS
