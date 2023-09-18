@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.6.6"
+version = "3.6.9"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -155,6 +155,8 @@ structlog-sentry = "^2.0.2"
 # in order to fix https://rasahq.atlassian.net/browse/ATO-1419
 dnspython = "2.3.0"
 wheel = ">=0.38.1"
+certifi = ">=2023.7.22"
+cryptography = ">=41.0.2"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
 markers = "sys_platform == 'win32'"
@@ -193,7 +195,7 @@ version = ">=1.4.1,<1.7.3"
 python = "~=3.7.0"
 
 [[tool.poetry.dependencies.scipy]]
-version = ">=1.4.1,<1.9.0"
+version = ">=1.10.0"
 python = ">=3.8,<3.11"
 
 [[tool.poetry.dependencies.scikit-learn]]
