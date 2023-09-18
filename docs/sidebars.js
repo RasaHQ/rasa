@@ -306,7 +306,7 @@ module.exports = {
       collapsed: false,
       items: [
         "llms/llm-intent",
-        "llms/llm-command-generator",
+        "concepts/llm-command-generator",
         "llms/contextual-response-rephraser",
         "llms/llm-docsearch",
         "llms/llm-intentless",
