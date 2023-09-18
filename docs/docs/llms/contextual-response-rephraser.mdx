@@ -1,5 +1,5 @@
 ---
-id: llm-nlg
+id: contextual-response-rephraser
 sidebar_label: NLG using LLMs
 title: LLMs for Natural Language Generation
 abstract: |
@@ -95,7 +95,7 @@ To use rephrasing, add the following lines to your `endpoints.yml` file:
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
-  type: rasa_plus.ml.LLMResponseRephraser
+  type: rasa_plus.ml.ContextualResponseRephraser
 ```
 
 By default, rephrasing is only enabled for responses that specify
@@ -115,7 +115,7 @@ If you want to enable rephrasing for all responses, you can set the
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
-  type: rasa_plus.ml.LLMResponseRephraser
+  type: rasa_plus.ml.ContextualResponseRephraser
   rephrase_all: true
 ```
 
@@ -131,7 +131,7 @@ by setting the `rephrase_all` property to `true` in the `endpoints.yml` file:
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
-  type: rasa_plus.ml.LLMResponseRephraser
+  type: rasa_plus.ml.ContextualResponseRephraser
   rephrase_all: true
 ```
 
@@ -147,7 +147,7 @@ You can specify the openai model to use for rephrasing by setting the
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
-  type: rasa_plus.ml.LLMResponseRephraser
+  type: rasa_plus.ml.ContextualResponseRephraser
   llm:
     model_name: text-davinci-003
 ```
@@ -170,7 +170,7 @@ The used LLM provider provider can be configured in the
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
-  type: rasa_plus.ml.LLMResponseRephraser
+  type: rasa_plus.ml.ContextualResponseRephraser
   llm:
     type: "cohere"
 ```
@@ -188,7 +188,7 @@ You can specify the temperature to use for rephrasing by setting the
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
-  type: rasa_plus.ml.LLMResponseRephraser
+  type: rasa_plus.ml.ContextualResponseRephraser
   llm:
     temperature: 0.3
 ```
@@ -241,7 +241,7 @@ property in the `endpoints.yml` file:
 
 ```yaml-rasa title="endpoints.yml"
 nlg:
-  type: rasa_plus.ml.LLMResponseRephraser
+  type: rasa_plus.ml.ContextualResponseRephraser
   prompt: |
     The following is a conversation with
     an AI assistant. The assistant is helpful, creative, clever, and very friendly.

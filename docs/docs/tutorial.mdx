@@ -164,7 +164,7 @@ flows:
     description: This flow lets users send money to friends and family.
     steps:
       - id: "ask_recipient"
-        // highlight-next-line
+        # highlight-next-line
         collect_information: recipient
         next: "ask_amount"
       - id: "ask_amount"
@@ -215,7 +215,7 @@ flows:
         collect_information: amount
         next: "transfer_successful"
       - id: "transfer_successful"
-        // highlight-next-line
+        # highlight-next-line
         action: utter_transfer_complete
 ```
 
@@ -238,12 +238,12 @@ slots:
     mappings:
       - type: custom
   # ...
-  // highlight-start
+  # highlight-start
   final_confirmation:
     type: bool
     mappings:
       - type: custom
-  // highlight-end
+  # highlight-end
 ```
 
 ```yaml-rasa title="domain.yml"
@@ -251,10 +251,10 @@ responses:
   utter_ask_recipient:
     - text: "Who would you like to send money to?"
   # ...
-  // highlight-start
+  # highlight-start
   utter_ask_final_confirmation:
     - text: "Please confirm: you want to transfer {amount} to {recipient}?"
-  // highlight-end
+  # highlight-end
 ```
 
 Notice that your confirmation question uses curly brackets `{}` to include slot values in your response.
@@ -273,14 +273,14 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        // highlight-start
+        # highlight-start
         next: "confirm_transfer"
       - id: "confirm_transfer"
         collect_information: final_confirmation
         next:
           - if: final_confirmation
             then: "transfer_successful"
-        // highlight-end
+        # highlight-end
       - id: "transfer_successful"
         action: utter_transfer_complete
 
@@ -350,26 +350,26 @@ You will add the new boolean slot `has_sufficient_funds`, and you will
 add a new response to send to the user in case they do not have sufficient funds.
 
 ```yaml-rasa title="domain.yml"
-// highlight-start
+# highlight-start
 actions:
   - action_sufficient_funds
-// highlight-end
+# highlight-end
 
 slots:
   # ...
-  // highlight-start
+  # highlight-start
   has_sufficient_funds:
     type: bool
     mappings:
       - type: custom
-  // highlight-end
+  # highlight-end
 
 responses:
   # ...
-  // highlight-start
+  # highlight-start
   utter_insufficient_funds:
     - text: "You do not have enough funds to make this transaction."
-  // highlight-end
+  # highlight-end
 ```
 
 Now you are going to update your flow logic to handle the cases where the user does or does not have
@@ -385,7 +385,7 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        // highlight-start
+        # highlight-start
         next: "check_funds"
       - id: "check_funds"
         action: action_sufficient_funds
@@ -395,7 +395,7 @@ flows:
           - else: "insufficient_funds"
       - id: "insufficient_funds"
         action: utter_insufficient_funds
-        // highlight-end
+        # highlight-end
       - id: "confirm_transfer"
         collect_information: final_confirmation
         next:
