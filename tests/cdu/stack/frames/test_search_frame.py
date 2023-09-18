@@ -1,4 +1,4 @@
-from rasa.cdu.stack.frames.search_frame import SearchStackFrame
+from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
 
 
 def test_search_frame_type():

@@ -1,4 +1,4 @@
-from rasa.cdu.stack.frames.chit_chat_frame import ChitChatStackFrame
+from rasa.dialogue_understanding.stack.frames.chit_chat_frame import ChitChatStackFrame
 
 
 def test_chit_chat_frame_type():

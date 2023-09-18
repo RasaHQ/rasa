@@ -1,12 +1,17 @@
 from typing import Any, Dict, List
 import pytest
-from rasa.cdu.commands.correct_slots_command import CorrectSlotsCommand, CorrectedSlot
-from rasa.cdu.patterns.collect_information import (
+from rasa.dialogue_understanding.commands.correct_slots_command import (
+    CorrectSlotsCommand,
+    CorrectedSlot,
+)
+from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.cdu.patterns.correction import CorrectionPatternFlowStackFrame
-from rasa.cdu.stack.dialogue_stack import DialogueStack
-from rasa.cdu.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.dialogue_understanding.patterns.correction import (
+    CorrectionPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker

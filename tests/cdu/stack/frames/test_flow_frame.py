@@ -1,5 +1,5 @@
 import pytest
-from rasa.cdu.stack.frames.flow_stack_frame import (
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     InvalidFlowIdException,
     InvalidFlowStackFrameType,
     InvalidFlowStepIdException,
