@@ -73,7 +73,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         **kwargs: Any,
     ) -> Dict[Text, Any]:
         """Retrieve a named response from the domain using an endpoint."""
-        domain_responses = kwargs.pop("domain_responses")
+        domain_responses = kwargs.pop("domain_responses", None)
         response_id = self.fetch_response_id(
             utter_action, tracker, output_channel, domain_responses
         )
