@@ -294,30 +294,11 @@ class FlowExecutor:
     ) -> bool:
         """Evaluate a predicate condition."""
 
-        def get_value(
-            initial_value: Union[Text, None]
-        ) -> Union[Text, float, bool, None]:
-            if initial_value is None or isinstance(initial_value, (bool, float)):
-                return initial_value
-
-            # if this isn't a bool or float, it's something else
-            # the below is a best effort to convert it to something we can
-            # use for the predicate evaluation
-            initial_value = str(initial_value)  # make sure it's a string
-
-            if initial_value.lower() in ["true", "false"]:
-                return initial_value.lower() == "true"
-
-            if initial_value.isnumeric():
-                return float(initial_value)
-
-            return initial_value
-
         # attach context to the predicate evaluation to allow coditions using it
         context = {"context": DialogueStack.from_tracker(tracker).current_context()}
         document: Dict[str, Any] = context.copy()
         for slot in self.domain.slots:
-            document[slot.name] = get_value(tracker.get_slot(slot.name))
+            document[slot.name] = tracker.get_slot(slot.name)
         p = Predicate(self.render_template_variables(predicate, context))
         try:
             return p.evaluate(document)
