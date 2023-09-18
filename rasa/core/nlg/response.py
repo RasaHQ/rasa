@@ -1,6 +1,6 @@
 import copy
 import logging
-from rasa.cdu.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.core.constants import DEFAULT_TEMPLATE_ENGINE, TEMPLATE_ENGINE_CONFIG_KEY
 
 from rasa.shared.core.trackers import DialogueStateTracker

@@ -1,27 +1,29 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Text, List, Optional, Union
+from typing import Any, Dict, Text, List, Optional
 
 from jinja2 import Template
 from structlog.contextvars import (
     bound_contextvars,
 )
-from rasa.cdu.stack.dialogue_stack import DialogueStack
-from rasa.cdu.stack.frames import (
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
     DialogueStackFrame,
     UserFlowStackFrame,
 )
-from rasa.cdu.patterns.collect_information import (
+from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.cdu.patterns.completed import CompletedPatternFlowStackFrame
-from rasa.cdu.patterns.continue_interrupted import (
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
 )
-from rasa.cdu.stack.frames.flow_frame import FlowStackFrameType
-from rasa.cdu.stack.utils import top_user_flow_frame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
+from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
@@ -295,30 +297,11 @@ class FlowExecutor:
     ) -> bool:
         """Evaluate a predicate condition."""
 
-        def get_value(
-            initial_value: Union[Text, None]
-        ) -> Union[Text, float, bool, None]:
-            if initial_value is None or isinstance(initial_value, (bool, float)):
-                return initial_value
-
-            # if this isn't a bool or float, it's something else
-            # the below is a best effort to convert it to something we can
-            # use for the predicate evaluation
-            initial_value = str(initial_value)  # make sure it's a string
-
-            if initial_value.lower() in ["true", "false"]:
-                return initial_value.lower() == "true"
-
-            if initial_value.isnumeric():
-                return float(initial_value)
-
-            return initial_value
-
         # attach context to the predicate evaluation to allow conditions using it
         context = {"context": DialogueStack.from_tracker(tracker).current_context()}
         document: Dict[str, Any] = context.copy()
         for slot in self.domain.slots:
-            document[slot.name] = get_value(tracker.get_slot(slot.name))
+            document[slot.name] = tracker.get_slot(slot.name)
         p = Predicate(self.render_template_variables(predicate, context))
         try:
             return p.evaluate(document)

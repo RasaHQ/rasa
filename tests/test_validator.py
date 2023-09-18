@@ -100,7 +100,7 @@ def test_verify_valid_responses():
         ],
     )
     validator = Validator.from_importer(importer)
-    assert validator.verify_utterances_in_stories()
+    assert validator.verify_utterances_in_dialogues()
 
 
 def test_verify_valid_responses_in_rules(nlu_data_path: Text):
@@ -113,7 +113,7 @@ def test_verify_valid_responses_in_rules(nlu_data_path: Text):
     )
     validator = Validator.from_importer(importer)
     # force validator to not ignore warnings (default is True)
-    assert not validator.verify_utterances_in_stories(ignore_warnings=False)
+    assert not validator.verify_utterances_in_dialogues(ignore_warnings=False)
 
 
 def test_verify_story_structure(stories_path: Text):
@@ -289,9 +289,9 @@ def test_verify_logging_message_for_unused_utterance(
     caplog.clear()
     with pytest.warns(UserWarning) as record:
         # force validator to not ignore warnings (default is True)
-        validator_under_test.verify_utterances_in_stories(ignore_warnings=False)
+        validator_under_test.verify_utterances_in_dialogues(ignore_warnings=False)
 
-    assert "The utterance 'utter_chatter' is not used in any story or rule." in (
+    assert "The utterance 'utter_chatter' is not used in any story, rule or flow." in (
         m.message.args[0] for m in record
     )
 
@@ -451,7 +451,7 @@ def test_response_selector_responses_in_domain_no_errors():
     )
     validator = Validator.from_importer(importer)
     # force validator to not ignore warnings (default is True)
-    assert validator.verify_utterances_in_stories(ignore_warnings=False)
+    assert validator.verify_utterances_in_dialogues(ignore_warnings=False)
 
 
 def test_invalid_domain_mapping_policy():
@@ -829,9 +829,9 @@ def test_verify_utterances_does_not_error_when_no_utterance_template_provided(
 
     validator = Validator.from_importer(importer)
     # force validator to not ignore warnings (default is True)
-    assert not validator.verify_utterances_in_stories(ignore_warnings=False)
+    assert not validator.verify_utterances_in_dialogues(ignore_warnings=False)
     # test whether ignoring warnings actually works
-    assert validator.verify_utterances_in_stories(ignore_warnings=True)
+    assert validator.verify_utterances_in_dialogues(ignore_warnings=True)
 
 
 @pytest.mark.parametrize(

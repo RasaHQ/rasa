@@ -1,4 +1,5 @@
 import argparse
+from enum import Enum
 import os
 import sys
 from typing import List, Text
@@ -14,6 +15,17 @@ from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_MODELS_PATH,
 )
+
+
+class ProjectTemplateName(Enum):
+    """Enum of the different project templates."""
+
+    DEFAULT = "default"
+    TUTORIAL = "tutorial"
+    DM2 = "dm2"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 def add_subparser(
@@ -43,9 +55,11 @@ def add_subparser(
         help="Directory where your project should be initialized.",
     )
     scaffold_parser.add_argument(
-        "--dm2",
-        action="store_true",
-        help="Temporary. Whether to create a DM2 project or a classic one",
+        "--template",
+        type=ProjectTemplateName,
+        choices=list(ProjectTemplateName),
+        default=ProjectTemplateName.DEFAULT,
+        help="Select the template to use for the project.",
     )
     scaffold_parser.set_defaults(func=run)
 
@@ -131,24 +145,27 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
 def init_project(args: argparse.Namespace, path: Text) -> None:
     """Inits project."""
     os.chdir(path)
-    create_initial_project(".", args.dm2)
+    create_initial_project(".", args.template)
     print(f"Created project directory at '{os.getcwd()}'.")
     print_train_or_instructions(args)
 
 
-def create_initial_project(path: Text, is_dm2: bool = False) -> None:
+def create_initial_project(
+    path: Text, template: ProjectTemplateName = ProjectTemplateName.DEFAULT
+) -> None:
     """Creates directory structure and templates for initial project."""
     from distutils.dir_util import copy_tree
 
-    copy_tree(scaffold_path(is_dm2), path)
+    copy_tree(scaffold_path(template), path)
 
 
-def scaffold_path(is_dm2: bool = False) -> Text:
+def scaffold_path(template: ProjectTemplateName) -> Text:
     import pkg_resources
+    import rasa.cli.project_templates
 
-    if is_dm2:
-        return pkg_resources.resource_filename(__name__, "initial_project_dm2")
-    return pkg_resources.resource_filename(__name__, "initial_project")
+    template_module = rasa.cli.project_templates.__name__
+
+    return pkg_resources.resource_filename(template_module, template.value)
 
 
 def print_cancel() -> None:

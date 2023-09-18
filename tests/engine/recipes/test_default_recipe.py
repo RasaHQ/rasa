@@ -528,7 +528,10 @@ def test_train_core_without_nlu_pipeline():
 @pytest.mark.parametrize(
     "config_path, expected_keys_to_configure",
     [
-        (Path("rasa/cli/initial_project/config.yml"), {"pipeline", "policies"}),
+        (
+            Path("rasa/cli/project_templates/default/config.yml"),
+            {"pipeline", "policies"},
+        ),
         (CONFIG_FOLDER / "config_policies_empty.yml", {"policies"}),
         (CONFIG_FOLDER / "config_pipeline_empty.yml", {"pipeline"}),
         (CONFIG_FOLDER / "config_policies_missing.yml", {"policies"}),

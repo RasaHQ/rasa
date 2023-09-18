@@ -1,5 +1,5 @@
 import pytest
-from rasa.cdu.commands.set_slot_command import SetSlotCommand
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows.flow import FlowsList

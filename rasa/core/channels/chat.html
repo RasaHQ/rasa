@@ -316,7 +316,7 @@
 
       function firstNonPatternFrame(stackFrames) {
         let frameIndex = stackFrames.length - 1;
-        while (frameIndex >= 0 && stackFrames[frameIndex]?.flow_id.startsWith("pattern_")) {
+        while (frameIndex >= 0 && stackFrames[frameIndex]?.flow_id?.startsWith("pattern_")) {
           frameIndex--;
         }
         return frameIndex;
@@ -329,7 +329,7 @@
         let frameIndex = excludePatterns ? firstNonPatternFrame(stackFrames) : stackFrames.length - 1;
         let activeFlow = stackFrames[frameIndex]?.flow_id;
         let activeStep = stackFrames[frameIndex]?.step_id;
-        let currentContext = stackFrames[frameIndex]?.context;
+        let currentContext = stackFrames[frameIndex];
         let flows = await flowsData;
         // find flow by going through array and checking for the id field
         let flow = flows.find((flow) => flow.id === activeFlow);

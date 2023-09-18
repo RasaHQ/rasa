@@ -443,8 +443,7 @@ thus validating compatibility between Rasa and Rasa X/Enterprise.
 Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.
 
 ## License
-Licensed under the Apache License, Version 2.0.
-Copyright 2022 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Copyright 2022 Rasa Technologies GmbH.
 
 A list of the Licenses of the dependencies of the project can be found at
 the bottom of the
