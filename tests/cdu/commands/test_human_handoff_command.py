@@ -1,4 +1,6 @@
-from rasa.cdu.commands.human_handoff_command import HumanHandoffCommand
+from rasa.dialogue_understanding.commands.human_handoff_command import (
+    HumanHandoffCommand,
+)
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
