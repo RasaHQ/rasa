@@ -196,3 +196,16 @@ jobs:
         with:
           args: "⛔️ *Rasa nightly release* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+      - name: Dispatch event for rasa plus nightly run
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const result = await github.rest.repos.createDispatchEvent({
+              owner: 'RasaHQ',
+              repo: 'rasa-plus',
+              event_type: 'nightly_release',
+              client_payload: {"version": "${IMAGE_TAG}"}
+            })
+            console.log(result);
+
