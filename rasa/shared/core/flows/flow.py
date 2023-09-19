@@ -301,7 +301,7 @@ class Flow:
             return None
         return self.steps[0]
 
-    def previous_collect_information_steps(
+    def previous_collect_steps(
         self, step_id: Optional[str]
     ) -> List[CollectInformationFlowStep]:
         """Returns the collect informations asked before the given step.
@@ -311,7 +311,7 @@ class Flow:
         in the flow the order is not guaranteed to be exactly reverse.
         """
 
-        def _previously_asked_collect_information(
+        def _previously_asked_collect(
             current_step_id: str, visited_steps: Set[str]
         ) -> List[CollectInformationFlowStep]:
             """Returns the collect informations asked before the given step.
@@ -320,13 +320,13 @@ class Flow:
             """
             current_step = self.step_by_id(current_step_id)
 
-            collect_informations: List[CollectInformationFlowStep] = []
+            collects: List[CollectInformationFlowStep] = []
 
             if not current_step:
-                return collect_informations
+                return collects
 
             if isinstance(current_step, CollectInformationFlowStep):
-                collect_informations.append(current_step)
+                collects.append(current_step)
 
             visited_steps.add(current_step.id)
 
@@ -336,14 +336,14 @@ class Flow:
                         continue
                     if previous_step.id in visited_steps:
                         continue
-                    collect_informations.extend(
-                        _previously_asked_collect_information(
+                    collects.extend(
+                        _previously_asked_collect(
                             previous_step.id, visited_steps
                         )
                     )
-            return collect_informations
+            return collects
 
-        return _previously_asked_collect_information(step_id or START_STEP, set())
+        return _previously_asked_collect(step_id or START_STEP, set())
 
     def is_handling_pattern(self) -> bool:
         """Returns whether the flow is handling a pattern."""
@@ -373,13 +373,13 @@ class Flow:
         """Test whether something is a rasa default flow."""
         return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
 
-    def get_collect_information_steps(self) -> List[CollectInformationFlowStep]:
+    def get_collect_steps(self) -> List[CollectInformationFlowStep]:
         """Return the collect information steps of the flow."""
-        collect_information_steps = []
+        collect_steps = []
         for step in self.steps:
             if isinstance(step, CollectInformationFlowStep):
-                collect_information_steps.append(step)
-        return collect_information_steps
+                collect_steps.append(step)
+        return collect_steps
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
@@ -395,7 +395,7 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         return ActionFlowStep.from_json(flow_step_config)
     if "intent" in flow_step_config:
         return UserMessageStep.from_json(flow_step_config)
-    if "collect_information" in flow_step_config:
+    if "collect" in flow_step_config:
         return CollectInformationFlowStep.from_json(flow_step_config)
     if "link" in flow_step_config:
         return LinkFlowStep.from_json(flow_step_config)
@@ -985,7 +985,7 @@ class CollectInformationScope(str, Enum):
 class CollectInformationFlowStep(FlowStep):
     """Represents the configuration of a collect information flow step."""
 
-    collect_information: Text
+    collect: Text
     """The collect information of the flow step."""
     ask_before_filling: bool = False
     """Whether to always ask the question even if the slot is already filled."""
@@ -1004,7 +1004,7 @@ class CollectInformationFlowStep(FlowStep):
         """
         base = super()._from_json(flow_step_config)
         return CollectInformationFlowStep(
-            collect_information=flow_step_config.get("collect_information", ""),
+            collect=flow_step_config.get("collect", ""),
             ask_before_filling=flow_step_config.get("ask_before_filling", False),
             scope=CollectInformationScope.from_str(flow_step_config.get("scope")),
             **base.__dict__,
@@ -1017,7 +1017,7 @@ class CollectInformationFlowStep(FlowStep):
             The flow step as a dictionary.
         """
         dump = super().as_json()
-        dump["collect_information"] = self.collect_information
+        dump["collect"] = self.collect
         dump["ask_before_filling"] = self.ask_before_filling
         dump["scope"] = self.scope.value
 

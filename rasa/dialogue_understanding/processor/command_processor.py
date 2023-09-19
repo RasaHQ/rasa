@@ -163,7 +163,7 @@ def remove_duplicated_set_slots(events: List[Event]) -> List[Event]:
     return list(reversed(optimized_events))
 
 
-def get_current_collect_information(
+def get_current_collect_step(
     dialogue_stack: DialogueStack, all_flows: FlowsList
 ) -> Optional[CollectInformationFlowStep]:
     """Get the current collect information if the conversation is currently in one.
@@ -193,7 +193,7 @@ def get_current_collect_information(
         # for some reason only the collect information pattern step is on the stack
         # but no flow that triggered it. this should never happen.
         structlogger.warning(
-            "command_executor.get_current_collect information.no_flow_on_stack",
+            "command_executor.get_current_collect_step.no_flow_on_stack",
             stack=dialogue_stack,
         )
         return None
@@ -203,7 +203,7 @@ def get_current_collect_information(
         # this is a failure, if there is a frame, we should be able to get the
         # step from it
         structlogger.warning(
-            "command_executor.get_current_collect_information.no_step_for_frame",
+            "command_executor.get_current_collect_step.no_step_for_frame",
             frame=frame_that_triggered_collect_infos,
         )
         return None
@@ -216,7 +216,7 @@ def get_current_collect_information(
         # this should never happen as we only push collect information patterns
         # onto the stack if there is a collect information step
         structlogger.warning(
-            "command_executor.get_current_collect_information.step_not_collect_information",
+            "command_executor.get_current_collect_step.step_not_collect",
             step=step,
         )
         return None
@@ -246,14 +246,9 @@ def clean_up_commands(
 
     for command in commands:
         if isinstance(command, SetSlotCommand) and command.name in slots_so_far:
-            current_collect_info = get_current_collect_information(
-                dialogue_stack, all_flows
-            )
+            current_collect_info = get_current_collect_step(dialogue_stack, all_flows)
 
-            if (
-                current_collect_info
-                and current_collect_info.collect_information == command.name
-            ):
+            if current_collect_info and current_collect_info.collect == command.name:
                 # not a correction but rather an answer to the current collect info
                 clean_commands.append(command)
                 continue

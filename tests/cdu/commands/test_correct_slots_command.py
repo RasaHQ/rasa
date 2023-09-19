@@ -60,10 +60,10 @@ def test_run_command_on_tracker_correcting_previous_flow():
             name: foo flow
             steps:
             - id: collect_foo
-              collect_information: foo
+              collect: foo
               next: collect_bar
             - id: collect_bar
-              collect_information: bar
+              collect: bar
         """
     )
 
@@ -117,10 +117,10 @@ def test_run_command_on_tracker_correcting_current_flow():
             name: foo flow
             steps:
             - id: collect_foo
-              collect_information: foo
+              collect: foo
               next: collect_bar
             - id: collect_bar
-              collect_information: bar
+              collect: bar
         """
     )
 
@@ -174,10 +174,10 @@ def test_run_command_on_tracker_correcting_during_a_correction():
             name: foo flow
             steps:
             - id: collect_foo
-              collect_information: foo
+              collect: foo
               next: collect_bar
             - id: collect_bar
-              collect_information: bar
+              collect: bar
         """
     )
 
@@ -245,7 +245,7 @@ def test_index_for_correction_frame_handles_empty_stack():
 
 def test_index_for_correction_handles_non_correction_pattern_at_the_top_of_stack():
     top_flow_frame = CollectInformationPatternFlowStackFrame(
-        collect_information="foo", frame_id="some-other-id"
+        collect="foo", frame_id="some-other-id"
     )
     stack = DialogueStack(
         frames=[
@@ -323,13 +323,13 @@ def test_find_earliest_updated_collect_info(
             name: foo flow
             steps:
             - id: collect_foo
-              collect_information: foo
+              collect: foo
               next: collect_bar
             - id: collect_bar
-              collect_information: bar
+              collect: bar
               next: collect_baz
             - id: collect_baz
-              collect_information: baz
+              collect: baz
         """
     )
 
@@ -362,11 +362,11 @@ def test_are_all_slots_reset_only(proposed_slots: Dict[str, Any], expected: bool
             name: foo flow
             steps:
             - id: collect_foo
-              collect_information: foo
+              collect: foo
               ask_before_filling: true
               next: collect_bar
             - id: collect_bar
-              collect_information: bar
+              collect: bar
         """
     )
     assert (

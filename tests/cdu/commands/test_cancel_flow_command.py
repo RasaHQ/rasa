@@ -84,7 +84,7 @@ def test_select_canceled_frames_cancels_patterns():
                 flow_id="foo", step_id="first_step", frame_id="some-frame-id"
             ),
             CollectInformationPatternFlowStackFrame(
-                collect_information="bar", frame_id="some-other-id"
+                collect="bar", frame_id="some-other-id"
             ),
         ]
     )

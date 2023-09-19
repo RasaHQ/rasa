@@ -370,23 +370,12 @@ class FlowExecutor:
         """Replace context variables in a text."""
         return Template(text).render(context)
 
-    def _slot_for_collect_information(self, collect_information: Text) -> Slot:
-        """Find the slot for a collect information."""
-        for slot in self.domain.slots:
-            if slot.name == collect_information:
-                return slot
-        else:
-            raise FlowException(
-                f"Collect Information '{collect_information}' does not map to "
-                f"an existing slot."
-            )
-
     def _is_step_completed(
         self, step: FlowStep, tracker: "DialogueStateTracker"
     ) -> bool:
         """Check if a step is completed."""
         if isinstance(step, CollectInformationFlowStep):
-            return tracker.get_slot(step.collect_information) is not None
+            return tracker.get_slot(step.collect) is not None
         else:
             return True
 
@@ -522,9 +511,9 @@ class FlowExecutor:
                 isinstance(step, CollectInformationFlowStep)
                 and step.scope == CollectInformationScope.FLOW
             ):
-                slot = tracker.slots.get(step.collect_information, None)
+                slot = tracker.slots.get(step.collect, None)
                 initial_value = slot.initial_value if slot else None
-                events.append(SlotSet(step.collect_information, initial_value))
+                events.append(SlotSet(step.collect, initial_value))
         return events
 
     def _run_step(
@@ -551,14 +540,14 @@ class FlowExecutor:
         A result of running the step describing where to transition to.
         """
         if isinstance(step, CollectInformationFlowStep):
-            structlogger.debug("flow.step.run.collect_information")
-            self.trigger_pattern_ask_collect_information(step.collect_information)
+            structlogger.debug("flow.step.run.collect")
+            self.trigger_pattern_collect_information(step.collect)
 
             # reset the slot if its already filled and the collect infomation shouldn't
             # be skipped
-            slot = tracker.slots.get(step.collect_information, None)
+            slot = tracker.slots.get(step.collect, None)
             if slot and slot.has_been_set and step.ask_before_filling:
-                events = [SlotSet(step.collect_information, slot.initial_value)]
+                events = [SlotSet(step.collect, slot.initial_value)]
             else:
                 events = []
 
@@ -676,11 +665,9 @@ class FlowExecutor:
                 )
             )
 
-    def trigger_pattern_ask_collect_information(self, collect_information: str) -> None:
+    def trigger_pattern_collect_information(self, collect: str) -> None:
         self.dialogue_stack.push(
-            CollectInformationPatternFlowStackFrame(
-                collect_information=collect_information
-            )
+            CollectInformationPatternFlowStackFrame(collect=collect)
         )
 
     @staticmethod

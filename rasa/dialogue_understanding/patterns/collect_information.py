@@ -7,7 +7,7 @@ from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 
 FLOW_PATTERN_COLLECT_INFORMATION = (
-    RASA_DEFAULT_FLOW_PATTERN_PREFIX + "ask_collect_information"
+    RASA_DEFAULT_FLOW_PATTERN_PREFIX + "collect_information"
 )
 
 
@@ -17,7 +17,7 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
 
     flow_id: str = FLOW_PATTERN_COLLECT_INFORMATION
     """The ID of the flow."""
-    collect_information: str = ""
+    collect: str = ""
     """The information that should be collected from the user.
     this corresponds to the slot that will be filled."""
 
@@ -39,7 +39,7 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
         return CollectInformationPatternFlowStackFrame(
             data["frame_id"],
             step_id=data["step_id"],
-            collect_information=data["collect_information"],
+            collect=data["collect"],
         )
 
     def context_as_dict(
