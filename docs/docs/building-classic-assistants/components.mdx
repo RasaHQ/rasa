@@ -1401,6 +1401,68 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 </details>
 
+### LLMIntentClassifier
+
+<RasaLabsLabel />
+
+<RasaLabsBanner version="3.7.0b1" />
+
+The LLM-based intent classifier is a new intent classifier that uses large
+language models (LLMs) to classify intents. The LLM-based intent classifier
+relies on a method called retrieval augmented generation (RAG), which combines
+the benefits of retrieval-based and generation-based approaches. 
+
+During training, the classifier
+
+1. embeds all intent examples and 
+2. stores their embeddings in a vector store.
+
+During prediction the classifier
+
+1. embeds the current message and
+2. uses the embedding to find similar intent examples in the vector store.
+3. The retrieved examples are ranked based on similarity to the current message and
+4. the most similar ones are included in an LLM prompt. The prompt guides the LLM to
+   predict the intent of the message.
+5. LLM predicts an intent label. 
+6. The generated label is mapped to an intent of the domain. The LLM can also
+   predict a label that is not part of the training data. In this case, the
+   intent from the domain with the most similar embedding is predicted.
+
+## Using the LLM-based Intent Classifier in Your Bot
+
+To use the LLM-based intent classifier in your bot, you need to add the
+`LLMIntentClassifier` to your NLU pipeline in the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+# - ...
+```
+
+## Customizing
+
+You can customize the LLM by modifying the following parameters in the
+`config.yml` file. **All of the parameters are optional.**
+See other LLM Components for how to customize the LLM parameters.
+
+### Fallback Intent
+
+The fallback intent is used when the LLM predicts an intent that wasn't part of
+the training data. You can set the fallback intent by adding the following
+parameter to the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    fallback_intent: "out_of_scope"
+# - ...
+```
+
+
+
 ### FallbackClassifier
 
 - **Short**
