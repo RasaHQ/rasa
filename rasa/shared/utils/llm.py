@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional, Text, Type
 import warnings
 
 import structlog
-from langchain.embeddings.base import Embeddings
+from langchain.schema.embeddings import Embeddings
 from langchain.llms.base import BaseLLM
 from langchain.llms.loading import load_llm_from_config
 from langchain.cache import SQLiteCache
