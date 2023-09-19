@@ -124,6 +124,28 @@ def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
     return None
 
 
+def _check_restricted_slots(domain: Domain) -> None:
+    """Checks if there are any restricted slots.
+
+    Args:
+        domain: The domain.
+
+    Raises:
+        Warn user if there are any restricted slots.
+
+    Returns:
+        `None` if there are no restricted slots.
+    """
+    restricted_slot_names = [rasa.shared.constants.CONTEXT]
+    for slot in domain.slots:
+        if slot.name in restricted_slot_names:
+            rasa.shared.utils.cli.print_warning(
+                f"Slot name - '{slot.name}' is reserved and can not be used. "
+                f"Please use another slot name."
+            )
+    return None
+
+
 def train(
     domain: Text,
     config: Text,
@@ -210,6 +232,7 @@ def train(
         training_type = TrainingType.CORE
 
     _check_unresolved_slots(domain_object, stories)
+    _check_restricted_slots(domain_object)
 
     with telemetry.track_model_training(file_importer, model_type="rasa"):
         return _train_graph(
@@ -393,6 +416,7 @@ def train_core(
         return None
 
     _check_unresolved_slots(domain, stories_data)
+    _check_restricted_slots(domain)
 
     return _train_graph(
         file_importer,
