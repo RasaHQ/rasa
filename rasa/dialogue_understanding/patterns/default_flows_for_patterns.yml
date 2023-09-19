@@ -110,12 +110,6 @@ flows:
     description: flow used to fill a slot
     steps:
       - id: "start"
-        action: action_extract_slots
-        next:
-          - if: "{{context.collect_information}} is null and {{context.number_of_tries}} < 2"
-            then: "ask_collect_information"
-          - else: "evaluate_predicate_rejections"
-      - id: "evaluate_predicate_rejections"
         action: action_evaluate_predicate_rejections
         next: "validate"
       - id: "validate"

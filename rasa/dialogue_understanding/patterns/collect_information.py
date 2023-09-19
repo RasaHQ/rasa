@@ -20,8 +20,6 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
     collect_information: str = ""
     """The information that should be collected from the user.
     this corresponds to the slot that will be filled."""
-    number_of_tries: int = 0
-    """The number of times the question is being asked to fill the slot."""
     rejections: Optional[List[Dict[str, Any]]] = None
     """The predicate check that should be applied to the collected information.
     If a predicate check fails, its `utter` action indicated under rejections
@@ -47,7 +45,6 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
             data["frame_id"],
             step_id=data["step_id"],
             collect_information=data["collect_information"],
-            number_of_tries=data.get("number_of_tries", 0),
             rejections=data.get("rejections"),
         )
 

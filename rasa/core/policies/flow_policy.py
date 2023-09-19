@@ -576,14 +576,6 @@ class FlowExecutor:
 
             if action_name in self.domain.action_names_or_texts:
                 structlogger.debug("flow.step.run.action", context=context)
-
-                if step.id == "ask_collect_information":
-                    # increment number of retries to keep track of how many times
-                    # the question has been asked
-                    top_frame = self.dialogue_stack.top()
-                    if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
-                        top_frame.number_of_tries = top_frame.number_of_tries + 1
-
                 return PauseFlowReturnPrediction(ActionPrediction(action_name, 1.0))
             else:
                 structlogger.warning("flow.step.run.action.unknown", action=action_name)
@@ -694,15 +686,12 @@ class FlowExecutor:
         collect_information: str,
         rejections: Optional[List[Dict[Text, Any]]],
     ) -> None:
-        context = self.dialogue_stack.current_context().copy()
-        number_of_tries = context.get("number_of_tries", 0)
-
+        """Trigger the pattern to ask for a slot value."""
         slot_value_rejections = rejections if rejections else []
 
         self.dialogue_stack.push(
             CollectInformationPatternFlowStackFrame(
                 collect_information=collect_information,
-                number_of_tries=number_of_tries,
                 rejections=slot_value_rejections,
             )
         )

@@ -48,6 +48,18 @@ class ActionEvaluatePredicateRejection(Action):
             return []
 
         slot_name = top_frame.collect_information
+        slot_instance = tracker.slots.get(slot_name)
+        if slot_instance and not slot_instance.has_been_set:
+            # this is the first time the assistant asks for the slot value,
+            # therefore we skip the predicate validation because the slot
+            # value has not been provided
+            structlogger.debug(
+                "first.collect.slot.not.set",
+                slot_name=slot_name,
+                slot_value=slot_instance.value,
+            )
+            return []
+
         slot_value = tracker.get_slot(slot_name)
 
         current_context = dialogue_stack.current_context()
@@ -65,6 +77,7 @@ class ActionEvaluatePredicateRejection(Action):
                 result = predicate.evaluate(document)
                 structlogger.debug(
                     "collect.predicate.result",
+                    predicate=predicate.description(),
                     result=result,
                 )
             except (TypeError, Exception) as e:
@@ -79,9 +92,8 @@ class ActionEvaluatePredicateRejection(Action):
             if result is False:
                 continue
 
-            if current_context.get("number_of_tries", 0) < 2:
-                # reset slot value that was initially filled with an invalid value
-                events.append(SlotSet(top_frame.collect_information, None))
+            # reset slot value that was initially filled with an invalid value
+            events.append(SlotSet(top_frame.collect_information, None))
 
             if utterance is None:
                 structlogger.debug(
