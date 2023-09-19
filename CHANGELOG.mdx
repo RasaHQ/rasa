@@ -2547,7 +2547,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   and continue finetuning the model on the complete dataset consisting of
   new training examples. To do so, use `rasa train --finetune`. For more
   detailed explanation of the command, check out the docs on [incremental
-  training](./concepts/command-line-interface.mdx#incremental-training).
+  training](./command-line-interface.mdx#incremental-training).
 
   Added a configuration parameter `additional_vocabulary_size` to
   [`CountVectorsFeaturizer`](./building-classic-assistants/components.mdx#countvectorsfeaturizer)
@@ -3267,7 +3267,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 - [#4536](https://github.com/rasahq/rasa/issues/4536): Add support for Python 3.8.
 - [#5368](https://github.com/rasahq/rasa/issues/5368): Changed the project structure for Rasa projects initialized with the
-  [CLI](./concepts/command-line-interface.mdx) (using the `rasa init` command):
+  [CLI](./command-line-interface.mdx) (using the `rasa init` command):
   `actions.py` -> `actions/actions.py`. `actions` is now a Python package (it contains
   a file `actions/__init__.py`). In addition, the `__init__.py` at the
   root of the project has been removed.
@@ -3832,7 +3832,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 - [#5521](https://github.com/rasahq/rasa/issues/5521): Responses used in ResponseSelector now support new lines with explicitly adding `\\n` between them.
 
-- [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [`rasa export`](./concepts/command-line-interface.mdx#rasa-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./concepts/domain.mdx#session-configuration).
+- [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [`rasa export`](./command-line-interface.mdx#rasa-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./concepts/domain.mdx#session-configuration).
 
 ## [1.10.1] - 2020-05-15
 
@@ -4253,7 +4253,7 @@ This can help to fix problems when using `rasa shell` with custom actions which 
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
 - [#5225](https://github.com/rasahq/rasa/issues/5225): Added a new CLI command `rasa export` to publish tracker events from a persistent
-  tracker store using an event broker. See [Export Conversations to an Event Broker](./concepts/command-line-interface.mdx#rasa-export), [Tracker Stores](./production/tracker-stores.mdx)
+  tracker store using an event broker. See [Export Conversations to an Event Broker](./command-line-interface.mdx#rasa-export), [Tracker Stores](./production/tracker-stores.mdx)
   and [Event Brokers](./production/event-brokers.mdx) for more details.
 
 - [#5230](https://github.com/rasahq/rasa/issues/5230): Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
@@ -5067,9 +5067,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 - `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 
 - experimental training data importer which supports training with data of multiple
-  sub bots. Please see the
-  [docs](./concepts/training-data-importers.mdx) for more
-  information.
+  sub bots. Please see the docs for more information.
 
 - throw error during training when triggers are defined in the domain without
   `MappingPolicy` being present in the policy ensemble
