@@ -402,6 +402,11 @@ def _send_event(
         logger.debug("Skipping request to external service: telemetry key not set.")
         return
 
+    if "license_hash" not in context:
+        # only send telemetry data for customers
+        logger.debug("Skipping telemetry reporting: no license hash found.")
+        return
+
     headers = segment_request_header(write_key)
 
     resp = requests.post(
