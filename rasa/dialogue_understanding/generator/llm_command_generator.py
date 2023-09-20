@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional, List, Union
 
 from jinja2 import Template
 import structlog
+
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.dialogue_understanding.commands import (
@@ -47,9 +48,6 @@ DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator", "command_prompt_template.jinja2"
 )
 
-structlogger = structlog.get_logger()
-
-
 DEFAULT_LLM_CONFIG = {
     "_type": "openai",
     "request_timeout": 7,
@@ -59,6 +57,8 @@ DEFAULT_LLM_CONFIG = {
 
 LLM_CONFIG_KEY = "llm"
 
+structlogger = structlog.get_logger()
+
 
 @DefaultV1Recipe.register(
     [
@@ -67,6 +67,11 @@ LLM_CONFIG_KEY = "llm"
     is_trainable=True,
 )
 class LLMCommandGenerator(GraphComponent, CommandGenerator):
+    """An LLM based command generator.
+
+     # TODO: add description to the docstring.
+    
+    """
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
@@ -142,6 +147,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
     ) -> List[Command]:
+        """TODO: add docstring"""
         if tracker is None or flows.is_empty():
             # cannot do anything if there are no flows or no tracker
             return []
@@ -164,6 +170,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     @staticmethod
     def is_none_value(value: str) -> bool:
+        """TODO: add docstring"""
         return value in {
             "[missing information]",
             "[missing]",
@@ -217,7 +224,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     def parse_commands(
         cls, actions: Optional[str], tracker: DialogueStateTracker
     ) -> List[Command]:
-        """Parse the actions returned by the llm into intent and entities."""
+        """Parse the actions returned by the llm into intent and entities.
+        #TODO: add arguments and returns.
+        """
         if not actions:
             return [ErrorCommand()]
 
@@ -267,6 +276,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     def create_template_inputs(
         cls, flows: FlowsList, tracker: DialogueStateTracker
     ) -> List[Dict[str, Any]]:
+        """TODO: add docstring."""
         result = []
         for flow in flows.underlying_flows:
             # TODO: check if we should filter more flows; e.g. flows that are
@@ -337,6 +347,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     def render_template(
         self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
     ) -> str:
+        """TODO: add docstring"""
         flows_without_patterns = FlowsList(
             [f for f in flows.underlying_flows if not f.is_handling_pattern()]
         )
