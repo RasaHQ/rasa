@@ -1,7 +1,7 @@
 import * as React from 'react';
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-function RasaCALMBanner() {
+function RasaNLUBasedBanner() {
   return (
     <>
       <div class="mdx-box admonition admonition-tip alert alert--info">
@@ -27,4 +27,4 @@ function RasaCALMBanner() {
   )
 }
 
-export default RasaCALMBanner;
+export default RasaNLUBasedBanner;
