@@ -25,7 +25,10 @@ from rasa.core.lock_store import (
     DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
 )
 from rasa.shared.exceptions import ConnectionException
-from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+
+from typing import Text
+from rasa.shared.core.domain import Domain
 
 
 class FakeRedisLockStore(RedisLockStore):
@@ -384,3 +387,42 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
     with pytest.raises(LockError):
         async with lock_store.lock("some sender"):
             pass
+
+
+def test_tracker_store_endpoint_config_loading(endpoints_path: Text):
+    cfg = read_endpoint_config(endpoints_path, "tracker_store")
+
+    assert cfg == EndpointConfig.from_dict(
+        {
+            "type": "redis",
+            "url": "localhost",
+            "port": 6379,
+            "db": 0,
+            "username": "username",
+            "password": "password",
+            "timeout": 30000,
+            "use_ssl": True,
+            "ssl_keyfile": "keyfile.key",
+            "ssl_certfile": "certfile.crt",
+            "ssl_ca_certs": "my-bundle.ca-bundle",
+        }
+    )
+
+
+def test_create_lock_store_from_endpoint_config(domain: Domain, endpoints_path: Text):
+    store = read_endpoint_config(endpoints_path, "tracker_store")
+    tracker_store = RedisLockStore(
+        domain=domain,
+        host="localhost",
+        port=6379,
+        db=0,
+        username="username",
+        password="password",
+        record_exp=3000,
+        use_ssl=True,
+        ssl_keyfile="keyfile.key",
+        ssl_certfile="certfile.crt",
+        ssl_ca_certs="my-bundle.ca-bundle",
+    )
+
+    assert isinstance(tracker_store, type(LockStore.create(store, domain)))
