@@ -75,9 +75,9 @@ class ActionRunSlotRejections(Action):
             condition = rejection.if_
             utterance = rejection.utter
 
-            rendered_template = Template(condition).render(current_context)
-            predicate = Predicate(rendered_template)
             try:
+                rendered_template = Template(condition).render(current_context)
+                predicate = Predicate(rendered_template)
                 violation = predicate.evaluate(document)
                 structlogger.debug(
                     "collect.predicate.result",
@@ -87,7 +87,7 @@ class ActionRunSlotRejections(Action):
             except (TypeError, Exception) as e:
                 structlogger.error(
                     "collect.predicate.error",
-                    predicate=predicate,
+                    predicate=condition,
                     document=document,
                     error=str(e),
                 )

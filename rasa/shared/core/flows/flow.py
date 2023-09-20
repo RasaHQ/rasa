@@ -1000,9 +1000,6 @@ class SlotRejection:
         Returns:
             The parsed slot rejection.
         """
-        structlogger.debug(
-            "flow.slot_rejection.from_dict", rejection_config=rejection_config
-        )
         return SlotRejection(
             if_=rejection_config.get("if"),
             utter=rejection_config.get("utter"),
