@@ -18,7 +18,7 @@ function RasaNLUBasedBanner() {
       <div class="mdx-box admonition-content">
         <p>
           This page refers to building NLU-based assistants.
-          If you are working with <a href={useBaseUrl("/conversational-ai-with-rasa")}>Conversation AI with Language Models (CALM)</a>,
+          If you are working with <a href={useBaseUrl("/calm")}>Conversational AI with Language Models (CALM)</a>,
           this content may not apply to you.
         </p>
       </div>
