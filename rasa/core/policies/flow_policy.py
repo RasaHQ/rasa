@@ -53,6 +53,7 @@ from rasa.shared.core.flows.flow import (
     IfFlowLink,
     EntryPromptFlowStep,
     CollectInformationScope,
+    SlotRejection,
     StepThatCanStartAFlow,
     UserMessageStep,
     LinkFlowStep,
@@ -684,15 +685,13 @@ class FlowExecutor:
     def trigger_pattern_ask_collect_information(
         self,
         collect_information: str,
-        rejections: Optional[List[Dict[Text, Any]]],
+        rejections: List[SlotRejection],
     ) -> None:
         """Trigger the pattern to ask for a slot value."""
-        slot_value_rejections = rejections if rejections else []
-
         self.dialogue_stack.push(
             CollectInformationPatternFlowStackFrame(
                 collect_information=collect_information,
-                rejections=slot_value_rejections,
+                rejections=rejections,
             )
         )
 

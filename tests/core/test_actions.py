@@ -75,7 +75,7 @@ from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
     ACTION_CLARIFY_FLOWS,
     ACTION_CORRECT_FLOW_SLOT,
-    ACTION_EVALUATE_PREDICATE_REJECTIONS_NAME,
+    ACTION_RUN_SLOT_REJECTIONS_NAME,
     USER_INTENT_SESSION_START,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -164,7 +164,7 @@ def test_domain_action_instantiation():
     assert instantiated_actions[14].name() == ACTION_CANCEL_FLOW
     assert instantiated_actions[15].name() == ACTION_CORRECT_FLOW_SLOT
     assert instantiated_actions[16].name() == ACTION_CLARIFY_FLOWS
-    assert instantiated_actions[17].name() == ACTION_EVALUATE_PREDICATE_REJECTIONS_NAME
+    assert instantiated_actions[17].name() == ACTION_RUN_SLOT_REJECTIONS_NAME
     assert instantiated_actions[18].name() == "my_module.ActionTest"
     assert instantiated_actions[19].name() == "utter_test"
     assert instantiated_actions[20].name() == "utter_chitchat"

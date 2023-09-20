@@ -9,7 +9,7 @@ from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.shared.core.constants import ACTION_EVALUATE_PREDICATE_REJECTIONS_NAME
+from rasa.shared.core.constants import ACTION_RUN_SLOT_REJECTIONS_NAME
 from rasa.shared.core.events import Event, SlotSet
 
 if TYPE_CHECKING:
@@ -21,12 +21,12 @@ if TYPE_CHECKING:
 structlogger = structlog.get_logger()
 
 
-class ActionEvaluatePredicateRejection(Action):
+class ActionRunSlotRejections(Action):
     """Action which evaluates the predicate checks under rejections."""
 
     def name(self) -> Text:
         """Return the name of the action."""
-        return ACTION_EVALUATE_PREDICATE_REJECTIONS_NAME
+        return ACTION_RUN_SLOT_REJECTIONS_NAME
 
     async def run(
         self,
@@ -44,7 +44,7 @@ class ActionEvaluatePredicateRejection(Action):
         if not isinstance(top_frame, CollectInformationPatternFlowStackFrame):
             return []
 
-        if top_frame.rejections is None:
+        if not top_frame.rejections:
             return []
 
         slot_name = top_frame.collect_information
@@ -69,8 +69,9 @@ class ActionEvaluatePredicateRejection(Action):
         document = current_context.copy()
 
         for rejection in top_frame.rejections:
-            check_text = rejection.get("if")
-            utterance = rejection.get("utter")
+            check_text = rejection.if_
+            utterance = rejection.utter
+
             rendered_template = Template(check_text).render(current_context)
             predicate = Predicate(rendered_template)
             try:

@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStackFrame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.shared.core.flows.flow import SlotRejection
 
 FLOW_PATTERN_COLLECT_INFORMATION = (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX + "ask_collect_information"
@@ -20,7 +21,7 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
     collect_information: str = ""
     """The information that should be collected from the user.
     this corresponds to the slot that will be filled."""
-    rejections: Optional[List[Dict[str, Any]]] = None
+    rejections: Optional[List[SlotRejection]] = None
     """The predicate check that should be applied to the collected information.
     If a predicate check fails, its `utter` action indicated under rejections
     will be executed.
@@ -45,7 +46,10 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
             data["frame_id"],
             step_id=data["step_id"],
             collect_information=data["collect_information"],
-            rejections=data.get("rejections"),
+            rejections=[
+                SlotRejection.from_dict(rejection)
+                for rejection in data.get("rejections", [])
+            ],
         )
 
     def context_as_dict(
