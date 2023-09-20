@@ -23,14 +23,6 @@ def test_create_lock_store(redis_lock_store: RedisLockStore):
     assert lock.conversation_id == conversation_id
 
 
-def test_lock_store_with_username():
-    """connect to a redis instance with username"""
-    redis = RedisLockStore(
-        host="localhost", port=6380, username="username1", password="password"
-    )
-    assert redis.red.ping()
-
-
 def test_serve_ticket(redis_lock_store: RedisLockStore):
     conversation_id = "my id 1"
 

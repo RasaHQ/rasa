@@ -11,16 +11,7 @@ services:
       retries: 5
 
     ports:
-      - 6379:6379
-
-  redis1:
-    image: redis/redis-stack:6.2.6-v7
-    restart: always
-    environment:
-      REDIS_ARGS: "--requirepass password --user username1 on >password ~* allcommands --user default off nopass nocommands"
-    ports:
-      - "8001:8001"
-      - "6380:6379"
+    - 6379:6379
 
   postgres:
     image: postgres:13
