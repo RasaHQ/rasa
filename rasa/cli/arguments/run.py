@@ -5,7 +5,13 @@ from typing import Union
 
 from rasa.cli.arguments.default_arguments import add_model_param, add_endpoint_param
 from rasa.core import constants
-from rasa.env import DEFAULT_JWT_METHOD, JWT_METHOD_ENV, JWT_SECRET_ENV, JWT_PRIVATE_KEY_ENV, AUTH_TOKEN_ENV
+from rasa.env import (
+    DEFAULT_JWT_METHOD,
+    JWT_METHOD_ENV,
+    JWT_SECRET_ENV,
+    JWT_PRIVATE_KEY_ENV,
+    AUTH_TOKEN_ENV,
+)
 
 
 def set_run_arguments(parser: argparse.ArgumentParser) -> None:
@@ -105,7 +111,7 @@ def add_server_settings_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=os.getenv(AUTH_TOKEN_ENV),
         help="Enable token based authentication. Requests need to provide "
-             "the token to be accepted.",
+        "the token to be accepted.",
     )
     server_arguments.add_argument(
         "--cors",
@@ -144,13 +150,13 @@ def add_server_settings_arguments(parser: argparse.ArgumentParser) -> None:
     server_arguments.add_argument(
         "--ssl-ca-file",
         help="If your SSL certificate needs to be verified, "
-             "you can specify the CA file "
-             "using this parameter.",
+        "you can specify the CA file "
+        "using this parameter.",
     )
     server_arguments.add_argument(
         "--ssl-password",
         help="If your ssl-keyfile is protected by a password, you can specify it "
-             "using this paramer.",
+        "using this paramer.",
     )
     channel_arguments = parser.add_argument_group("Channels")
     channel_arguments.add_argument(
@@ -177,10 +183,10 @@ def add_jwt_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=os.getenv(JWT_SECRET_ENV),
         help="Public key for asymmetric JWT methods or shared secret"
-             "for symmetric methods. Please also make sure to use "
-             "--jwt-method to select the method of the signature, "
-             "otherwise this argument will be ignored."
-             "Note that this key is meant for securing the HTTP API.",
+        "for symmetric methods. Please also make sure to use "
+        "--jwt-method to select the method of the signature, "
+        "otherwise this argument will be ignored."
+        "Note that this key is meant for securing the HTTP API.",
     )
     jwt_auth.add_argument(
         "--jwt-method",
@@ -193,6 +199,6 @@ def add_jwt_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=os.getenv(JWT_PRIVATE_KEY_ENV),
         help="A private key used for generating web tokens, dependent upon "
-             "which hashing algorithm is used. It must be used together with "
-             "--jwt-secret for providing the public key.",
+        "which hashing algorithm is used. It must be used together with "
+        "--jwt-secret for providing the public key.",
     )
