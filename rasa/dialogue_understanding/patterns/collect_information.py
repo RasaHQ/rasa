@@ -42,14 +42,17 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
         Returns:
             The created `DialogueStackFrame`.
         """
+        rejections = data.get("rejections")
+        if rejections is not None:
+            rejections = [
+                SlotRejection.from_dict(rejection) for rejection in rejections
+            ]
+
         return CollectInformationPatternFlowStackFrame(
             data["frame_id"],
             step_id=data["step_id"],
             collect_information=data["collect_information"],
-            rejections=[
-                SlotRejection.from_dict(rejection)
-                for rejection in data.get("rejections", [])
-            ],
+            rejections=rejections,
         )
 
     def context_as_dict(

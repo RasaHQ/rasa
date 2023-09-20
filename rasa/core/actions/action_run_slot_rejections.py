@@ -38,6 +38,9 @@ class ActionRunSlotRejections(Action):
     ) -> List[Event]:
         """Run the predicate checks."""
         events: List[Event] = []
+        violation = False
+        utterance = None
+        internal_error = False
 
         dialogue_stack = DialogueStack.from_tracker(tracker)
         top_frame = dialogue_stack.top()
@@ -69,17 +72,17 @@ class ActionRunSlotRejections(Action):
         document = current_context.copy()
 
         for rejection in top_frame.rejections:
-            check_text = rejection.if_
+            condition = rejection.if_
             utterance = rejection.utter
 
-            rendered_template = Template(check_text).render(current_context)
+            rendered_template = Template(condition).render(current_context)
             predicate = Predicate(rendered_template)
             try:
-                result = predicate.evaluate(document)
+                violation = predicate.evaluate(document)
                 structlogger.debug(
                     "collect.predicate.result",
                     predicate=predicate.description(),
-                    result=result,
+                    violation=violation,
                 )
             except (TypeError, Exception) as e:
                 structlogger.error(
@@ -88,35 +91,41 @@ class ActionRunSlotRejections(Action):
                     document=document,
                     error=str(e),
                 )
-                continue
+                violation = True
+                internal_error = True
 
-            if result is False:
-                continue
-
-            # reset slot value that was initially filled with an invalid value
-            events.append(SlotSet(top_frame.collect_information, None))
-
-            if utterance is None:
-                structlogger.debug(
-                    "collect.rejection.missing.utter",
-                    predicate=predicate,
-                    document=document,
-                )
+            if violation:
                 break
 
-            message = await nlg.generate(
-                utterance,
-                tracker,
-                output_channel.name(),
+        if not violation:
+            return []
+
+        # reset slot value that was initially filled with an invalid value
+        events.append(SlotSet(top_frame.collect_information, None))
+
+        if internal_error:
+            utterance = "utter_internal_error_rasa"
+
+        if utterance is None:
+            structlogger.error(
+                "collect.rejection.missing.utter",
+                utterance=utterance,
             )
-            if message is None:
-                structlogger.debug(
-                    "collect.rejection.failed.finding.utter",
-                    utterance=utterance,
-                )
-            else:
-                message["utter_action"] = utterance
-                events.append(create_bot_utterance(message))
             return events
+
+        message = await nlg.generate(
+            utterance,
+            tracker,
+            output_channel.name(),
+        )
+
+        if message is None:
+            structlogger.debug(
+                "collect.rejection.failed.finding.utter",
+                utterance=utterance,
+            )
+        else:
+            message["utter_action"] = utterance
+            events.append(create_bot_utterance(message))
 
         return events
