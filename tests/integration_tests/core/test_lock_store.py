@@ -28,7 +28,7 @@ def test_lock_store_with_username():
     redis = RedisLockStore(
         host="localhost", port=6380, username="username1", password="password"
     )
-    assert redis.ping()
+    assert redis.red.ping()
 
 
 def test_serve_ticket(redis_lock_store: RedisLockStore):
