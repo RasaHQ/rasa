@@ -10,7 +10,7 @@ import RasaProLabel from '@theme/RasaProLabel';
 
 In Rasa, policies are the components responsible for dialogue management. 
 In NLU-based assistants, dialogue policies play a larger role. 
-You can read more about those policies and other advanced topics [here](./building-classic-assistants/policies.mdx).
+You can read more about those policies and other advanced topics [here](../building-classic-assistants/policies.mdx).
 
 In a CALM-based assistant, the `FlowPolicy` is responsible for executing your business logic.
 
@@ -31,11 +31,6 @@ policies:
   - name: DocSearchPolicy
 ```
 
-:::tip Starting from scratch?
-
-If you don't know which policies to choose, leave out the `policies` key from your `config.yml` completely.
-If you do, the [Suggested Config](.//model-configuration.mdx#suggested-config)
-feature will provide default policies for you.
 
 :::
 
@@ -167,7 +162,7 @@ completing the action and incorporating its result, it moves to the next state.
 A flow can be started in several ways:
 
 - A flow is started when a Rasa component puts the flow on the stack. For
-  example, the [LLM Command Generator](../concepts/llm-command-generator.mdx) puts a flow
+  example, the [LLM Command Generator](../concepts/dialogue-understanding.mdx) puts a flow
   on the stack when it determines that a flow would be a good fit for the
   current conversation.
 - One flow can ["link" to another flow](../concepts/flows.mdx#link), which will initiate
@@ -186,7 +181,7 @@ which digressions and interruptions the flow policy can handle, refer to
 
 For example, the user message _"oh sorry I meant John"_ is a correction to a
 prior input. The `FlowPolicy` depends on another component, like the
-[LLM Command Generator](../concepts/llm-command-generator.mdx), to identify it as a
+[LLM Command Generator](../concepts/dialogue-understanding.mdx), to identify it as a
 correction and set the corresponding slots. Based on this, the `FlowPolicy`
 initiates the correction flow.
 
@@ -284,7 +279,7 @@ Defaults to `gpt-3.5-turbo`.
 
 If you want to use Azure OpenAI Service, you can configure the necessary 
 parameters as described in the 
-[Azure OpenAI Service](./llm-configuration.mdx#additional-configuration-for-azure-openai-service) 
+[Azure OpenAI Service](../llms/llm-configuration.mdx#additional-configuration-for-azure-openai-service) 
 section.
 
 :::info Using Other LLMs / Embeddings
@@ -306,7 +301,7 @@ policies:
 ```
 
 For more information, see the
-[LLM setup page on llms and embeddings](./llm-configuration.mdx#other-llmsembeddings)
+[LLM setup page on llms and embeddings](../llms/llm-configuration.mdx#other-llmsembeddings)
 
 :::
 
@@ -505,7 +500,7 @@ Defaults to `text-davinci-003`. The model name needs to be set to an
 
 If you want to use Azure OpenAI Service, you can configure the necessary
 parameters as described in the
-[Azure OpenAI Service](./llm-configuration.mdx#additional-configuration-for-azure-openai-service)
+[Azure OpenAI Service](../llms/llm-configuration.mdx#additional-configuration-for-azure-openai-service)
 section.
 
 #### Other LLMs / Embeddings
@@ -526,7 +521,7 @@ policies:
 ```
 
 For more information, see the
-[LLM setup page on llms and embeddings](./llm-configuration.mdx#other-llmsembeddings).
+[LLM setup page on llms and embeddings](../llms/llm-configuration.mdx#other-llmsembeddings).
 
 ### Other Policies
 

@@ -17,7 +17,7 @@ You can split the training data over any number of YAML files,
 and each file can contain any combination of NLU data, stories, and rules.
 The training data parser determines the training data type using top level keys.
 
-The [domain](../concepts/glossary.mdx#domain) uses
+The [domain](../building-classic-assistants/glossary.mdx#domain) uses
 the same YAML format as the training data and can also be split across
 multiple files or combined in one file. The domain includes
 the definitions for [responses](../concepts/responses.mdx) and [forms](./forms.mdx).
@@ -113,8 +113,8 @@ training examples.
 
 ## NLU Training Data
 
-[NLU](../concepts/glossary.mdx#nlu) training data consists of example user utterances categorized by
-[intent](../concepts/glossary.mdx#intent). Training examples can also include [entities](../concepts/glossary.mdx#entity). Entities are structured
+[NLU](../building-classic-assistants/glossary.mdx#nlu) training data consists of example user utterances categorized by
+[intent](../building-classic-assistants/glossary.mdx#intent). Training examples can also include [entities](../building-classic-assistants/glossary.mdx#entity). Entities are structured
 pieces of information that can be extracted from a user's message. You can also
 add extra information such as regular expressions and lookup tables to your
 training data to help the model identify intents and entities correctly.
@@ -164,7 +164,7 @@ nlu:
 
 ### Training Examples
 
-Training examples are grouped by [intent](../concepts/glossary.mdx#intent) and listed under the
+Training examples are grouped by [intent](../building-classic-assistants/glossary.mdx#intent) and listed under the
 `examples` key. Usually, you'll list one example per line as follows:
 
 ```yaml-rasa
@@ -211,7 +211,7 @@ nlu:
 
 In this case, the content of the `metadata` key is passed to every intent example.
 
-If you want to specify [retrieval intents](../concepts/glossary.mdx#retrieval-intent), then your NLU examples will look as follows:
+If you want to specify [retrieval intents](../building-classic-assistants/glossary.mdx#retrieval-intent), then your NLU examples will look as follows:
 
 ```yaml-rasa
 nlu:
@@ -243,7 +243,7 @@ name of your intents.
 
 ### Entities
 
-[Entities](../concepts/glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message.
+[Entities](../building-classic-assistants/glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message.
 
 Entities are annotated in training examples with the entity's name.
 In addition to the entity name, you can annotate an entity with [synonyms](nlu-training-data.mdx#synonyms), [roles, or groups](nlu-training-data.mdx#entities-roles-and-groups).
@@ -457,10 +457,10 @@ stories:
 
 #### Forms
 
-A [form](../concepts/glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
+A [form](../building-classic-assistants/glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. You
 [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
-Once defined, you should specify the [happy path](../concepts/glossary.mdx#happy--unhappy-paths)
+Once defined, you should specify the [happy path](../building-classic-assistants/glossary.mdx#happy--unhappy-paths)
 for a form as a [rule](./forms.mdx). You should include interruptions of forms or
 other "unhappy paths" in stories so that the model can
 generalize to unseen conversation sequences.

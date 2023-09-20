@@ -568,7 +568,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   **Configuring for incremental training**
 
   To ensure that `sparse_features` are of fixed size during
-  [incremental training](../concepts/command-line-interface.mdx#incremental-training), the
+  [incremental training](../command-line-interface.mdx#incremental-training), the
   component should be configured to account for additional patterns that may be
   added to the training data in future. To do so, configure the `number_additional_patterns`
   parameter while training the base model from scratch:
@@ -703,7 +703,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   **Configuring for incremental training**
 
   To ensure that `sparse_features` are of fixed size during
-  [incremental training](../concepts/command-line-interface.mdx#incremental-training), the
+  [incremental training](../command-line-interface.mdx#incremental-training), the
   component should be configured to account for additional vocabulary tokens
   that may be added as part of new training examples in the future.
   To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
@@ -2435,7 +2435,7 @@ Selectors predict a bot response from a set of candidate responses.
   It embeds user inputs and response labels into the same space and follows the exact same
   neural network architecture and optimization as the [DIETClassifier](./components.mdx#dietclassifier).
 
-  To use this component, your training data should contain [retrieval intents](../concepts/glossary.mdx#retrieval-intent). To define these,
+  To use this component, your training data should contain [retrieval intents](./glossary.mdx#retrieval-intent). To define these,
   checkout [documentation on NLU training examples](./training-data-format.mdx#training-examples) and
   [documentation on defining response utterances for retrieval intents](../concepts/responses.mdx#defining-responses).
 
@@ -2706,5 +2706,5 @@ pipeline:
 - name: "sentiment.SentimentAnalyzer"
 ```
 
-See the [guide on custom graph components](../concepts/custom-graph-components.mdx) for a complete guide on custom components.
+See the [guide on custom graph components](../concepts/components/custom-graph-components.mdx) for a complete guide on custom components.
 Also be sure to read the section on the [Component Lifecycle](./tuning-your-model.mdx#component-lifecycle).

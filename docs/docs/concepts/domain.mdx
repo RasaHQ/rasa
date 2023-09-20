@@ -13,7 +13,7 @@ Specifically, it lists:
 * The `slots` that act as your assistant's memory throughout a conversation.
 * Session configuration parameters including inactivity timeout.
 
-If you are building an NLU-based assistant, refer to [this page](./building-classic-assistants/domain.mdx) to see how 
+If you are building an NLU-based assistant, refer to [this page](../building-classic-assistants/domain.mdx) to see how 
 intents, entities, slot mappings, and slot featurization can be configured in 
 your domain. 
 
@@ -22,7 +22,7 @@ your domain.
 The domain can be defined as a single YAML file or split across multiple files in a directory.
 When split across multiple files, the domain contents will be read and automatically merged together.
 
-Using the [command line interface](./command-line-interface.mdx#rasa-train),
+Using the [command line interface](../command-line-interface.mdx#rasa-train),
 you can train a model with split domain files by running:
 
 ```bash
@@ -138,6 +138,11 @@ slots:
     initial_value: 0
 ```
 
+### Slot Mappings
+
+Some info about slot mappings : TODO
+
+#### Custom Slot Mappings
 
 ## Session configuration
 

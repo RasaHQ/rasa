@@ -17,7 +17,7 @@ Here is a full example of a domain, taken from the
 The domain can be defined as a single YAML file or split across multiple files in a directory.
 When split across multiple files, the domain contents will be read and automatically merged together.
 
-Using the [command line interface](./command-line-interface.mdx#rasa-train),
+Using the [command line interface](../command-line-interface.mdx#rasa-train),
 you can train a model with split domain files by running:
 
 ```bash
@@ -733,7 +733,7 @@ if it is empty when the form is activated.
 
 ### Custom Slot Mappings
 
-You can define custom slot mappings using [slot validation actions](./concepts/slot-validation-actions.mdx) when none of the
+You can define custom slot mappings using [slot validation actions](../concepts/slot-validation-actions.mdx) when none of the
 predefined mappings fit your use case. You must define this slot mapping to be of type `custom`, for example:
 
 ```yaml
@@ -776,7 +776,7 @@ slots:
 Responses are actions that send a message to a user without running any custom code or
 returning events. These responses can be defined directly in the domain file under the `responses` key
 and can include rich content such as buttons and attachments. For more information on responses and how to define them,
-see [Responses](./concepts/responses.mdx).
+see [Responses](../concepts/responses.mdx).
 
 ## Forms
 
@@ -786,7 +786,7 @@ For more information on form and how to define them, see [Forms](../building-cla
 
 ## Actions
 
-[Actions](./concepts/actions.mdx) are the things your bot can actually do.
+[Actions](../concepts/actions.mdx) are the things your bot can actually do.
 For example, an action could:
 
 - respond to a user,
@@ -797,7 +797,7 @@ For example, an action could:
 
 - just about anything!
 
-All [custom actions](./concepts/custom-actions.mdx) should be listed in your domain, except responses which need not be listed
+All [custom actions](../concepts/custom-actions.mdx) should be listed in your domain, except responses which need not be listed
 under `actions:` as they are already listed under `responses:`.
 
 ### Select which actions should receive domain
@@ -872,7 +872,7 @@ implementation moves all existing slots into the new session. Note that all
 conversations begin with an `action_session_start`. Overriding this action could
 for instance be used to initialize the tracker with slots from an external API
 call, or to start the conversation with a bot message. The docs on
-[Customizing the session start action](./concepts/default-actions.mdx#customization) shows you how to do that.
+[Customizing the session start action](../concepts/default-actions.mdx#customization) shows you how to do that.
 
 :::
 

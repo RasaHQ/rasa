@@ -97,7 +97,7 @@ and policies with Rasa 3.0.
 
 :::caution
 
-Please read the updated guide on custom graph components [here](./concepts/custom-graph-components.mdx) before
+Please read the updated guide on custom graph components [here](./concepts/components/custom-graph-components.mdx) before
 continuing to follow the step-by-step guide to migrate your own custom graph components.
 :::
 
@@ -109,7 +109,7 @@ It is now required to use
 [type annotations](https://docs.python.org/3/library/typing.html) in custom NLU
 components and policies. Rasa uses these type annotations to validate that
 your graph components are compatible and correctly configured. As outlined in the custom
-[components guide](./concepts/custom-graph-components.mdx) it is not allowed to use
+[components guide](./concepts/components/custom-graph-components.mdx) it is not allowed to use
 [forward references](https://www.python.org/dev/peps/pep-0484/#forward-references).
 
 :::info Forward References with Python 3.7
@@ -166,7 +166,7 @@ class MyPolicy(Policy):
 
 NLU components which previously inherited from one of the following classes additionally
 need to inherit from the
-[`GraphComponent` interface](./concepts/custom-graph-components.mdx#the-graphcomponent-interface):
+[`GraphComponent` interface](./concepts/components/custom-graph-components.mdx#the-graphcomponent-interface):
 
 - `SparseFeaturizer`
 - `DenseFeaturizer`
@@ -232,7 +232,7 @@ class MyNLUComponent(GraphComponent, EntityExtractorMixin):
 
 NLU components are no longer instantiated via their constructor. Instead, all NLU
 components have to override the `create` method of the
-[`GraphComponent` interface](./concepts/custom-graph-components.mdx#the-graphcomponent-interface). The
+[`GraphComponent` interface](./concepts/components/custom-graph-components.mdx#the-graphcomponent-interface). The
 passed in configuration is your NLU component's default configuration including any updates
 from your model configuration file.
 
@@ -289,7 +289,7 @@ With Rasa 3.0 NLU components are responsible for persisting themselves.
 Use the provided `model_storage` and `resource` parameters
 to persist your NLU component at the end of the training and then return the `resource`
 as result of your NLU component's `train` method.
-See [component persistence](./concepts/custom-graph-components.mdx#model-persistence) for more details.
+See [component persistence](./concepts/components/custom-graph-components.mdx#model-persistence) for more details.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-persistence" defaultValue="new">
   <TabItem value="old">
@@ -764,7 +764,7 @@ Policies used to be persisted by a call to the policy's `persist` method from ou
 With Rasa 3.0 policies are responsible for persisting themselves.
 Use the provided `model_storage` and `resource` parameters
 to persist your graph component at the end of the training and then return the `resource`
-as result of your policy's `train` method. See [graph component persistence](./concepts/custom-graph-components.mdx#model-persistence) for more details.
+as result of your policy's `train` method. See [graph component persistence](./concepts/components/custom-graph-components.mdx#model-persistence) for more details.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-persistence" defaultValue="new">
   <TabItem value="old">
@@ -963,7 +963,7 @@ class MyPolicy(Policy):
 To use a custom [end-to-end policy](./building-classic-assistants/stories.mdx#end-to-end-training) in Rasa
 Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
 events manually. In Rasa 3.0,
-you need to [register](./concepts/custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
+you need to [register](./concepts/components/custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
 will be precomputed and passed into your policy during training and inference.
 
 :::caution
@@ -1347,7 +1347,7 @@ provided instead.
 
 To maintain the behavior of forms in the 2.0 format, all migrated slot mappings will include mapping conditions for
 each form. This can be changed manually according to your use case.
-See the docs on [mapping conditions](./concepts/domain.mdx#mapping-conditions) for more information.
+See the docs on [mapping conditions](./building-classic-assistants/domain.mdx#mapping-conditions) for more information.
 
 #### Manually migrating from 2.0 domain format to the 3.0 format
 
@@ -1419,7 +1419,7 @@ forms:
       - outdoor_seating
 ```
 
-For slots that should be filled only in the context of a form, add [mapping conditions](./concepts/domain.mdx#mapping-conditions)
+For slots that should be filled only in the context of a form, add [mapping conditions](./building-classic-assistants/domain.mdx#mapping-conditions)
 to specify which form(s) should be active, as well as indicate if the `requested_slot` should be the same slot.
 Adding `conditions` is required to preserve the behavior of slot mappings from 2.0, since without them
 the mappings will be applied on each user turn regardless of whether a form is active or not.
@@ -1809,7 +1809,7 @@ described [here](./migration-guide.mdx#training-data-files).
 
 [Policies](./building-classic-assistants/policies.mdx) now require a `**kwargs` argument in their constructor and `load` method.
 Policies without `**kwargs` will be supported until Rasa version `3.0.0`.
-However when using [incremental training](./concepts/command-line-interface.mdx#incremental-training)
+However when using [incremental training](./command-line-interface.mdx#incremental-training)
 `**kwargs` **must** be included.
 
 #### Other
@@ -2716,7 +2716,7 @@ model before trying to use it with this improved version.
   Some changes in commands reflect the combined training and running of NLU and Core models, but NLU and Core can still
   be trained and used individually. If you attempt to run one of the old scripts in `rasa.core` or `rasa.nlu`,
   an error is thrown that points you to the command you
-  should use instead. See all the new commands at [Command Line Interface](./concepts/command-line-interface.mdx).
+  should use instead. See all the new commands at [Command Line Interface](./command-line-interface.mdx).
 
 - If you have written a custom output channel, all `send_` methods subclassed
   from the `OutputChannel` class need to take an additional `\*\*kwargs`
@@ -2736,7 +2736,7 @@ model before trying to use it with this improved version.
   Any underscores (`_`) in arguments have been replaced with dashes (`-`).
   For example: `--max_history` has been changed to `--max-history`. You can
   see all of the script parameters in the `--help` output of the commands
-  in the [Command Line Interface](./concepts/command-line-interface.mdx).
+  in the [Command Line Interface](./command-line-interface.mdx).
 
 - The `--num_threads` parameter was removed from the `run` command. The
   server will always run single-threaded, but will now run asynchronously. If you want to

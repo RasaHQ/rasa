@@ -49,10 +49,10 @@ nlg:
 Additional configuration parameters are explained in detail in the documentation
 pages for each of these components:
 
-- [LLMCommandGenerator](../concepts/llm-command-generator.mdx)
-- [FlowPolicy](../llms/flow-policy.mdx)
-- [Docseach](../llms/llm-docsearch.mdx)
-- [ContextualResponseRephraser](../llms/contextual-response-rephraser.mdx)
+- [LLMCommandGenerator](../concepts/dialogue-understanding.mdx)
+- [FlowPolicy](../concepts/policies.mdx#flow-policy)
+- Docseacrh
+- [ContextualResponseRephraser](../concepts/contextual-response-rephraser.mdx)
 
 ## OpenAI Configuration
 
@@ -115,10 +115,10 @@ you might use one model for intent classification and another for rephrasing.
 To configure models per component, follow these steps described on the
 pages for each component:
 
-1. [intent classification instructions](../llms/llm-intent.mdx#llm--embeddings)
-2. [rephrasing instructions](../llms/contextual-response-rephraser.mdx#llm-configuration)
-3. [intentless policy instructions](../llms/llm-intentless.mdx#llm--embeddings)
-4. [docsearch instructions](../llms/llm-docsearch.mdx#llm--embeddings)
+1. [intent classification instructions](../building-classic-assistants/components.mdx#llmintentclassifier)
+2. [rephrasing instructions](../concepts/contextual-response-rephraser.mdx#llm-configuration)
+3. [intentless policy instructions](../concepts/policies.mdx#flow-policy)
+4. docsearch instructions
 
 ### Additional Configuration for Azure OpenAI Service
 
@@ -241,7 +241,7 @@ pipeline:
       type: "cohere"
 ```
 
-The above configuration specifies that the [LLMIntentClassifier](../llms/llm-intent.mdx)
+The above configuration specifies that the LLMIntentClassifier
 should use the [Cohere](https://cohere.ai/) LLM provider rather than OpenAI.
 
 :::important
@@ -338,13 +338,13 @@ pipeline:
       type: "cohere"
 ```
 
-The above configuration specifies that the [LLMIntentClassifier](../llms/llm-intent.mdx)
+The above configuration specifies that the [LLMIntentClassifier](../building-classic-assistants/components.mdx#llmintentclassifier)
 should use the [Cohere](https://cohere.ai/) embeddings provider rather than OpenAI.
 
 :::note Only Some Components need Embeddings
 
 Not every component uses embeddings. For example, the
-[ContextualResponseRephraser](../llms/contextual-response-rephraser.mdx) component does not use embeddings.
+[ContextualResponseRephraser](../concepts/contextual-response-rephraser.mdx) component does not use embeddings.
 For these components, no `embeddings` property is needed.
 
 :::
