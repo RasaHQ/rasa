@@ -243,15 +243,6 @@ class RedisLockStore(LockStore):
             ssl_ca_certs=ssl_ca_certs,
             socket_timeout=socket_timeout,
         )
-        
-        # test connection
-        try:
-            self.red.ping()
-        except redis.exceptions.ConnectionError as e:
-            raise Exception(
-                "Could not connect to Redis. Please make sure Redis is running and "
-                f"configured correctly. Error: {e}"
-            )
 
         self.key_prefix = DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
         if key_prefix:
