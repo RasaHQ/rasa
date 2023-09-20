@@ -13,8 +13,6 @@ from socketio import AsyncServer
 
 logger = logging.getLogger(__name__)
 
-CHAT_TEMPLATE_PATH = "/chat.html"
-
 
 class SocketBlueprint(Blueprint):
     """Blueprint for socketio connections."""
@@ -190,12 +188,6 @@ class SocketIOInput(InputChannel):
             return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
-    def chat_html_path(self) -> Text:
-        """Returns the path to the chat.html file."""
-        import pkg_resources
-
-        return pkg_resources.resource_filename(__name__, CHAT_TEMPLATE_PATH)
-
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -213,10 +205,6 @@ class SocketIOInput(InputChannel):
         @socketio_webhook.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
-
-        @socketio_webhook.route("/chat.html", methods=["GET"])
-        async def chat(_: Request) -> HTTPResponse:
-            return await response.file(self.chat_html_path())
 
         @sio.on("connect", namespace=self.namespace)
         async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:
