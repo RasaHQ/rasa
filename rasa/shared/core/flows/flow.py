@@ -1168,17 +1168,12 @@ class FlowLinks:
         return [link.as_json() for link in self.links]
 
 
-class FlowLink(Protocol):
+@dataclass
+class FlowLink:
     """Represents a flow link."""
 
-    @property
-    def target(self) -> Text:
-        """Returns the target of the flow link.
-
-        Returns:
-            The target of the flow link.
-        """
-        ...
+    target: str
+    """The id of the linked flow."""
 
     def as_json(self) -> Any:
         """Returns the flow link as a dictionary.
@@ -1202,11 +1197,9 @@ class FlowLink(Protocol):
 
 
 @dataclass
-class IfFlowLink:
+class IfFlowLink(FlowLink):
     """Represents the configuration of an if flow link."""
 
-    target: Text
-    """The id of the linked flow."""
     condition: Optional[Text]
     """The condition of the linked flow."""
 
@@ -1235,11 +1228,8 @@ class IfFlowLink:
 
 
 @dataclass
-class ElseFlowLink:
+class ElseFlowLink(FlowLink):
     """Represents the configuration of an else flow link."""
-
-    target: Text
-    """The id of the linked flow."""
 
     @staticmethod
     def from_json(link_config: Dict[Text, Any]) -> ElseFlowLink:
@@ -1263,11 +1253,8 @@ class ElseFlowLink:
 
 
 @dataclass
-class StaticFlowLink:
+class StaticFlowLink(FlowLink):
     """Represents the configuration of a static flow link."""
-
-    target: Text
-    """The id of the linked flow."""
 
     @staticmethod
     def from_json(link_config: Text) -> StaticFlowLink:
