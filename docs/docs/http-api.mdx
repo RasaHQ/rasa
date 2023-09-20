@@ -66,6 +66,21 @@ rasa run \
     --auth-token thisismysecret
 ```
 
+or via environment variable:
+:::tip Security best practice
+
+We recommend that you use environment variables to store
+sensitive information such as tokens and secrets
+as they will not be stored in your shell history.
+
+:::
+
+```bash
+export AUTH_TOKEN=thisismysecret
+rasa run \
+    --enable-api
+```
+
 Any clients sending requests to the server must pass the token
 as a query parameter, or the request will be rejected. For example, to fetch a tracker from the server:
 
@@ -85,6 +100,22 @@ rasa run \
     --jwt-secret thisismysecret
 ```
 
+or via environment variable:
+:::tip Security best practice
+
+We recommend that you use environment variables to store
+sensitive information such as tokens and secrets
+as they will not be stored in your shell history.
+
+:::
+
+
+```bash
+export JWT_SECRET=thisismysecret
+rasa run \
+    --enable-api
+```
+
 If you want to sign a JWT token with asymmetric algorithms, you can specify the JWT private key to the `--jwt-private-key`
 CLI argument. You must pass the public key to the `--jwt-secret` argument, and also specify the algorithm to the
 `--jwt-method` argument:
@@ -95,6 +126,23 @@ rasa run \
     --jwt-secret <public_key> \
     --jwt-private-key <private_key> \
     --jwt-method RS512
+```
+
+or via environment variables:
+:::tip Security best practice
+
+We recommend that you use environment variables to store
+sensitive information such as tokens and secrets
+as they will not be stored in your shell history.
+
+:::
+
+```bash
+export JWT_SECRET=<public_key>
+export JWT_PRIVATE_KEY=<private_key>
+export JWT_METHOD=RS512
+rasa run \
+    --enable-api
 ```
 
 Client requests to the server will need to contain a valid JWT token in
