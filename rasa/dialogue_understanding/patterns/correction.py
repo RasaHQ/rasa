@@ -75,7 +75,7 @@ class CorrectionPatternFlowStackFrame(PatternFlowStackFrame):
             The created `DialogueStackFrame`.
         """
         return CorrectionPatternFlowStackFrame(
-            data["frame_id"],
+            frame_id=data["frame_id"],
             step_id=data["step_id"],
             is_reset_only=data["is_reset_only"],
             corrected_slots=data["corrected_slots"],
