@@ -2788,9 +2788,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 - [#6285](https://github.com/rasahq/rasa/issues/6285): Predictions of the [`FallbackClassifier`](./building-classic-assistants/components.mdx#fallbackclassifier) are
   ignored when
-  [evaluating the NLU model](./production/testing-your-assistant.mdx#evaluating-an-nlu-model)
+  [evaluating the NLU model](./building-classic-assistants/testing-your-assistant.mdx#evaluating-an-nlu-model)
   Note that the `FallbackClassifier` predictions still apply to
-  [test stories](./production/testing-your-assistant.mdx#writing-test-stories).
+  [test stories](./building-classic-assistants/testing-your-assistant.mdx#writing-test-stories).
 - [#6474](https://github.com/rasahq/rasa/issues/6474): Adapt the training data reader and emulator for wit.ai to their latest format.
 - [#6498](https://github.com/rasahq/rasa/issues/6498): Adding configurable prefixes to Redis [Tracker](./production/tracker-stores.mdx) and [Lock Stores](./production/lock-stores.mdx) so that a single Redis instance (and logical DB) can support multiple conversation trackers and locks.
   By default, conversations will be prefixed with `tracker:...` and all locks prefixed with `lock:...`. Additionally, you can add an alphanumeric-only `prefix: value` in `endpoints.yml` such that keys in redis will take the form `value:tracker:...` and `value:lock:...` respectively.
@@ -4164,7 +4164,7 @@ This can help to fix problems when using `rasa shell` with custom actions which 
 
 ### Improved Documentation
 
-- [#2237](https://github.com/rasahq/rasa/issues/2237): Restructure the “Evaluating models” documentation page and rename this page to [Testing Your Assistant](./production/testing-your-assistant.mdx).
+- [#2237](https://github.com/rasahq/rasa/issues/2237): Restructure the “Evaluating models” documentation page and rename this page to [Testing Your Assistant](./building-classic-assistants/testing-your-assistant.mdx).
 
 - [#5302](https://github.com/rasahq/rasa/issues/5302): Improved documentation on how to build and deploy an action server image for use on other servers such as Rasa X deployments.
 
