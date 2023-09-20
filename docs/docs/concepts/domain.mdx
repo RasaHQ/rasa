@@ -212,8 +212,7 @@ parent class are an exception to this rule as they will always have the domain s
 To specify if an action needs the domain add `{send_domain: true}` to custom action in the list
 of actions in `domain.yml`:
 
-```YAML
-# domain.yml
+```yaml-rasa title="domain.yml"
 actions:
   - action_hello_world: {send_domain: True} # will receive domain
   - action_calculate_mass_of_sun # will not receive domain
