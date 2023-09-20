@@ -13,6 +13,12 @@ services:
     ports:
       - 6379:6379
 
+  redis1:
+    image: redis:6
+    command: "--requirepass password --user username1 on >password ~* allcommands --user default off nopass nocommands"
+    ports:
+      - "6379:6380"
+
   postgres:
     image: postgres:13
     # Set health checks to wait until postgres has started
