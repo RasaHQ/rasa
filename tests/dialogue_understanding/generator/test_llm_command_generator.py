@@ -16,12 +16,18 @@ from rasa.dialogue_understanding.commands import (
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
+# from rasa.engine.graph import ExecutionContext
+# from rasa.engine.storage.resource import Resource
+# from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.slots import BooleanSlot, FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.message import Message
+from tests.utilities import flows_from_str
 
+
+TEST_PROMPT_PATH = "./tests/dialogue_understanding/generator/rendered_prompt.txt"
 
 class TestLLMCommandGenerator:
     """Tests for the LLMCommandGenerator."""
@@ -32,64 +38,109 @@ class TestLLMCommandGenerator:
         return LLMCommandGenerator.create(
             config={}, resource=Mock(), model_storage=Mock(), execution_context=Mock())
     
+    # @pytest.fixture
+    # def mock_command_generator(
+    #     self,
+    #     default_model_storage: ModelStorage,
+    #     default_execution_context: ExecutionContext,
+    # ) -> LLMCommandGenerator:
+    #     """Create a patched LLMCommandGenerator."""
+    #     with patch(
+    #         "rasa.shared.utils.llm.llm_factory",
+    #         Mock(return_value=FakeListLLM(responses=["StartFlow(check_balance)"])),
+    #     ) as mock_llm:
+    #         return LLMCommandGenerator.create(
+    #             config=LLMCommandGenerator.get_default_config(),
+    #             model_storage=default_model_storage,
+    #             resource=Resource("llmcommandgenerator"),
+    #             execution_context=default_execution_context)
+    
     @pytest.fixture
-    def mock_command_generator(
-        self,
-        default_model_storage: ModelStorage,
-        default_execution_context: ExecutionContext,
-    ) -> LLMCommandGenerator:
-        """Create a patched LLMCommandGenerator."""
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
-            Mock(return_value=FakeListLLM(responses=["StartFlow(check_balance)"])),
-        ) as mock_llm:
-            return LLMCommandGenerator.create(
-                config=LLMCommandGenerator.get_default_config(),
-                model_storage=default_model_storage,
-                resource=Resource("llmcommandgenerator"),
-                execution_context=default_execution_context)
+    def test_flows(self) -> FlowsList:
+        """Create a FlowsList."""
+        return flows_from_str(
+            """
+            flows:
+              test_flow:
+                steps:
+                - id: first_step
+                  action: action_listen
+            """
+        )
 
-    def test_predict_commands_with_no_flows(self, mock_command_generator: LLMCommandGenerator):
+
+    def test_predict_commands_with_no_flows(
+            self,
+            mock_command_generator: LLMCommandGenerator
+        ):
         """Test that predict_commands returns an empty list when flows is None."""
+        # Given
+        empty_flows = FlowsList([])
         # When
-        predicted_commands = mock_command_generator.predict_commands(Mock(), flows=None, tracker=Mock())
+        predicted_commands = mock_command_generator.predict_commands(
+            Mock(),
+            flows=empty_flows,
+            tracker=Mock()
+        )
         # Then
         assert not predicted_commands
 
-    def test_predict_commands_with_no_tracker(self, mock_command_generator: LLMCommandGenerator):
+    def test_predict_commands_with_no_tracker(
+            self,
+            mock_command_generator: LLMCommandGenerator
+        ):
         """Test that predict_commands returns an empty list when tracker is None."""
         # When
-        predicted_commands = mock_command_generator.predict_commands(Mock(), flows=Mock(), tracker=None)
+        predicted_commands = mock_command_generator.predict_commands(
+            Mock(),
+            flows=Mock(),
+            tracker=None
+        )
         # Then
         assert not predicted_commands
 
-    @patch.object(LLMCommandGenerator, "render_template", Mock(return_value="some prompt"))
+    @patch.object(
+        LLMCommandGenerator,
+        "render_template",
+        Mock(return_value="some prompt")
+    )
     @patch.object(LLMCommandGenerator, "parse_commands", Mock())
-    def test_predict_commands_calls_llm_correctly(self, command_generator: LLMCommandGenerator):
+    def test_predict_commands_calls_llm_correctly(
+        self,
+        command_generator: LLMCommandGenerator,
+        test_flows: FlowsList
+    ):
         """Test that predict_commands calls llm correctly."""
         # When
         mock_llm = Mock()
         with patch(
-            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
-            Mock(return_value=mock_llm),
+            "rasa.shared.utils.llm.llm_factory",
+            Mock(return_value=mock_llm)
         ):
-            command_generator.predict_commands(Mock(), flows=Mock(), tracker=Mock())
+            command_generator.predict_commands(Mock(), flows=test_flows, tracker=Mock())
         # Then
             mock_llm.assert_called_once_with("some prompt")
 
-    @patch.object(LLMCommandGenerator, "render_template", Mock(return_value="some prompt"))
+
+    @patch.object(
+        LLMCommandGenerator,
+        "render_template",
+        Mock(return_value="some prompt")
+    )
     @patch.object(LLMCommandGenerator, "parse_commands", Mock())
-    def test_generate_action_list_catches_llm_exception(self, command_generator: LLMCommandGenerator):
-        """Test that predict_commands calls llm correctly."""
+    def test_generate_action_list_catches_llm_exception(self,
+                                                        command_generator: LLMCommandGenerator,
+                                                        test_flows: FlowsList):
+        """Test that predict_commands catches llm exceptions."""
         # Given
         mock_llm = Mock(side_effect=Exception("some exception"))
         with patch(
-            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+            "rasa.shared.utils.llm.llm_factory",
             Mock(return_value=mock_llm),
         ):
         # When
             with capture_logs() as logs:
-                command_generator.predict_commands(Mock(), flows=Mock(), tracker=Mock())
+                command_generator.predict_commands(Mock(), flows=test_flows, tracker=Mock())
         # Then
             print(logs)
             assert len(logs) == 4
@@ -97,30 +148,40 @@ class TestLLMCommandGenerator:
 
 
 
-    def test_render_template(self, mock_command_generator: LLMCommandGenerator):
+    def test_render_template(self, command_generator: LLMCommandGenerator):
         """Test that render_template renders a template."""
-        pass
-        # # Given
-        # message = Mock()
-
-        # tracker = Mock()
-
-        # flows = Mock()
+        # Given
+        test_message = Message.build(text="some message")
+        test_slot = TextSlot(
+            name="test_slot", mappings=[{}], initial_value=None, influence_conversation=False
+        )
+        test_tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[UserUttered("Hello"), BotUttered("Hi")],
+            slots=[test_slot]
+        )
+        test_flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect_information: test_slot
+            """
+        )
+        with open(TEST_PROMPT_PATH, "r", encoding='unicode_escape') as f:
+            expected_template = f.read()
         # # When
-        # rendered_template = command_generator.render_template()
+        rendered_template = command_generator.render_template(
+            message=test_message,
+            tracker=test_tracker,
+            flows=test_flows
+        )
 
         # # Then
-        # assert rendered_template == "template"
+        assert rendered_template == expected_template
 
-    # def test_generate_action_list_calls_llm_with_correct_promt(self):
-    #     # Given
-    #     prompt = "some prompt"
-    #     with patch(
-    #         "rasa.rasa.shared.utils.llm.llm_factory",
-    #         Mock(return_value=FakeListLLM(responses=["hello"]))
-    #     ) as mock_llm:
-    #         LLMCommandGenerator._generate_action_list(prompt)
-    #         mock_llm.assert_called_once_with(prompt)
     
     @pytest.mark.parametrize(
             "input_action, expected_command",
