@@ -23,7 +23,7 @@ can be set or updated outside of a form context.
 :::note
 `ValidationAction` is intended for extracting slots **outside** the context of a form.
 It will ignore extraction and validation methods for any slots that have a form specified under the
-[slot mapping's `conditions`](../concepts/domain.mdx#mapping-conditions).
+[slot mapping's `conditions`](../building-classic-assistants/domain.mdx#mapping-conditions).
 It will not run these methods when the specified form is active nor when no form is active.
 Please extend the [`FormValidationAction`](./validation-action.mdx#formvalidationaction-class) class to apply
 custom slot mappings only within the context of a form.

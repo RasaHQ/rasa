@@ -41,7 +41,7 @@ However, during training, the `RulePolicy` checks for conflicts between rules an
 :::
 
 To read more about the validator and all of the available options, see [the documentation for
-`rasa data validate`](../concepts/command-line-interface.mdx#rasa-data-validate).
+`rasa data validate`](../command-line-interface.mdx#rasa-data-validate).
 
 ## Writing Test Stories
 
@@ -211,7 +211,7 @@ cases you include, so you should continue to grow your set of test stories
 as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test stories
 to be representative of the true distribution of real conversations.
 
-See the [CLI documentation on `rasa test`](../concepts/command-line-interface.mdx#rasa-test) for
+See the [CLI documentation on `rasa test`](../command-line-interface.mdx#rasa-test) for
 more configuration options.
 
 :::caution Testing Custom Actions
@@ -239,7 +239,7 @@ You can either:
 ### Using a Held-Out Test Set
 
 If you use the train-test
-set approach, it is best to [shuffle and split your data](../concepts/command-line-interface.mdx#rasa-data-split)
+set approach, it is best to [shuffle and split your data](../command-line-interface.mdx#rasa-data-split)
 using `rasa data split` every time you evaluate your model, as
 opposed to using a static NLU test set, which can easily become outdated.
 
@@ -384,7 +384,7 @@ confidence histogram (`response_selection_histogram.png`) and errors (`response_
 If your pipeline includes multiple response selectors, they are evaluated in a single report.
 
 The report logs precision, recall and f1 measure for
-each sub-intent of a [retrieval intent](../concepts/glossary.mdx#retrieval-intent) and provides an overall average.
+each sub-intent of a [retrieval intent](../building-classic-assistants/glossary.mdx#retrieval-intent) and provides an overall average.
 You can save these reports as JSON files using the `--report` argument.
 
 #### Entity Extraction
@@ -646,7 +646,7 @@ match the order in which the slots are filled in the dialogue.
 
 ### How to run the tests
 
-To run the end-to-end tests locally or in the CI pipeline, use the [`rasa test e2e` command](../concepts/command-line-interface.mdx#rasa-test-e2e).
+To run the end-to-end tests locally or in the CI pipeline, use the [`rasa test e2e` command](../command-line-interface.mdx#rasa-test-e2e).
 The command takes the following arguments:
 
 - positional argument for the path to the test cases file or directory containing the test cases: `rasa test e2e <path>`

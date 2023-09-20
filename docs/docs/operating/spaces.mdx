@@ -23,11 +23,11 @@ If you have feedback (positive or negative) please share it with us via your sup
 :::
 
 Spaces are a way to modularize your assistant. As assistants grow in scale and scope, the
-potential for conflicts between intents, entities, and other [primitives](./glossary.mdx#rasa-primitive) grows as well.
+potential for conflicts between intents, entities, and other [primitives](../building-classic-assistants/glossary.mdx#rasa-primitive) grows as well.
 That is because in a regular rasa assistant all intents, entities, and actions are
 available at any time, giving the assistant more choices to distinguish between the more that gets
 added. Spaces provide a basic separation between parts of the bot through the activation
-and deactivation of groups of [rasa primitives](./glossary.mdx#rasa-primitive). Each of these groups is called a Space.
+and deactivation of groups of [rasa primitives](../building-classic-assistants/glossary.mdx#rasa-primitive). Each of these groups is called a Space.
 Spaces are activated when certain designated intents, called entry intents, are
 predicted. With the activation of a Space, all the primitives for the Space become
 available for subsequent interactions with the user. Good ways to think about spaces are

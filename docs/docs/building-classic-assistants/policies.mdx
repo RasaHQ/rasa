@@ -2,13 +2,14 @@
 id: policies
 sidebar_label: Policies
 title: Policies
-abstract: Your assistant uses policies to decide which action to take at each step in a conversation. There are machine-learning and rule-based policies that your assistant can use in tandem.
+abstract: NLU-based Rasa assistants use a variety of policies to decide which action to take at each step in a conversation. There are machine-learning and rule-based policies that your assistant can use in tandem.
 ---
 
 import RasaNLUBasedBanner from "@theme/RasaNLUBasedBanner";
 
 <RasaNLUBasedBanner />
 
+When building an NLU-based assistant in Rasa, there are a number of dialogue policies available to you.
 You can customize the policies your assistant uses by specifying the `policies`
 key in your project's `config.yml`.
 There are different policies to choose from, and you can include
@@ -1140,7 +1141,7 @@ step-by-step guide for the migration.
 
 You can also write custom policies and reference them in your configuration. In the example below, the
 last two lines show how to use a custom policy class and pass arguments to it.
-See the [guide on custom graph components](../concepts/custom-graph-components.mdx) for a complete guide on custom policies.
+See the [guide on custom graph components](../concepts/components/custom-graph-components.mdx) for a complete guide on custom policies.
 
 ```yaml-rasa {9-10}
 policies:

@@ -572,7 +572,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   **Configuring for incremental training**
 
   To ensure that `sparse_features` are of fixed size during
-  [incremental training](../concepts/command-line-interface.mdx#incremental-training), the
+  [incremental training](../command-line-interface.mdx#incremental-training), the
   component should be configured to account for additional patterns that may be
   added to the training data in future. To do so, configure the `number_additional_patterns`
   parameter while training the base model from scratch:
@@ -707,7 +707,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   **Configuring for incremental training**
 
   To ensure that `sparse_features` are of fixed size during
-  [incremental training](../concepts/command-line-interface.mdx#incremental-training), the
+  [incremental training](../command-line-interface.mdx#incremental-training), the
   component should be configured to account for additional vocabulary tokens
   that may be added as part of new training examples in the future.
   To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
@@ -1404,6 +1404,68 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 :::
 
 </details>
+
+### LLMIntentClassifier
+
+<RasaLabsLabel />
+
+<RasaLabsBanner version="3.7.0b1" />
+
+The LLM-based intent classifier is a new intent classifier that uses large
+language models (LLMs) to classify intents. The LLM-based intent classifier
+relies on a method called retrieval augmented generation (RAG), which combines
+the benefits of retrieval-based and generation-based approaches. 
+
+During training, the classifier
+
+1. embeds all intent examples and 
+2. stores their embeddings in a vector store.
+
+During prediction the classifier
+
+1. embeds the current message and
+2. uses the embedding to find similar intent examples in the vector store.
+3. The retrieved examples are ranked based on similarity to the current message and
+4. the most similar ones are included in an LLM prompt. The prompt guides the LLM to
+   predict the intent of the message.
+5. LLM predicts an intent label. 
+6. The generated label is mapped to an intent of the domain. The LLM can also
+   predict a label that is not part of the training data. In this case, the
+   intent from the domain with the most similar embedding is predicted.
+
+## Using the LLM-based Intent Classifier in Your Bot
+
+To use the LLM-based intent classifier in your bot, you need to add the
+`LLMIntentClassifier` to your NLU pipeline in the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+# - ...
+```
+
+## Customizing
+
+You can customize the LLM by modifying the following parameters in the
+`config.yml` file. **All of the parameters are optional.**
+See other LLM Components for how to customize the LLM parameters.
+
+### Fallback Intent
+
+The fallback intent is used when the LLM predicts an intent that wasn't part of
+the training data. You can set the fallback intent by adding the following
+parameter to the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    fallback_intent: "out_of_scope"
+# - ...
+```
+
+
 
 ### FallbackClassifier
 
@@ -2377,7 +2439,7 @@ Selectors predict a bot response from a set of candidate responses.
   It embeds user inputs and response labels into the same space and follows the exact same
   neural network architecture and optimization as the [DIETClassifier](./components.mdx#dietclassifier).
 
-  To use this component, your training data should contain [retrieval intents](../concepts/glossary.mdx#retrieval-intent). To define these,
+  To use this component, your training data should contain [retrieval intents](./glossary.mdx#retrieval-intent). To define these,
   checkout [documentation on NLU training examples](./training-data-format.mdx#training-examples) and
   [documentation on defining response utterances for retrieval intents](../concepts/responses.mdx#defining-responses).
 
@@ -2648,5 +2710,5 @@ pipeline:
 - name: "sentiment.SentimentAnalyzer"
 ```
 
-See the [guide on custom graph components](../concepts/custom-graph-components.mdx) for a complete guide on custom components.
+See the [guide on custom graph components](../concepts/components/custom-graph-components.mdx) for a complete guide on custom components.
 Also be sure to read the section on the [Component Lifecycle](./tuning-your-model.mdx#component-lifecycle).

@@ -62,7 +62,7 @@ The `name` field is a required human readable name for the flow.
 
 The `description` field is a summary of the flow. It is required, and should
 describe the purpose of the flow. Other components, such as the
-[LLMCommandGenerator](../concepts/llm-command-generator.mdx), use the description to
+[LLMCommandGenerator](../concepts/dialogue-understanding.mdx), use the description to
 decide when to start the flow.
 
 ### Steps
@@ -229,7 +229,7 @@ description matches '/error \d{3}/i' and (severity = 'high' or source contains '
 ### Starting a Flow
 
 Flows can be triggered by other Rasa components, e.g. the
-[LLM Command Generator](../concepts/llm-command-generator.mdx). The description of
+[LLM Command Generator](../concepts/dialogue-understanding.mdx). The description of
 each flow is very important for the LLM Command Generator, as it uses the
 description to determine which flow to trigger.
 

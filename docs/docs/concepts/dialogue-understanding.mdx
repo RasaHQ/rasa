@@ -1,0 +1,161 @@
+---
+id: dialogue-understanding
+sidebar_label: Dialogue Understanding
+title: Dialogue Understanding
+abstract: |
+  Dialogue Understanding aims to understand how the end user of an assistant wants 
+  to progress the conversation.
+---
+
+:::info New in 3.7
+
+The *Command Generator* is part of Rasa's new 
+Conversational AI with Language Models (CALM) approach and available starting
+with version `3.7.0`.
+:::
+
+## CommandGenerator
+
+The `CommandGenerator` component performs *Dialogue Understanding*. 
+In the CALM approach, *Dialogue Understanding* aims to represent how the end user
+wants to progress the conversation. 
+There is currently only one command generator available: the `LLMCommandGenerator`
+
+
+## Using the LLMCommandGenerator in Your Bot
+
+To use this component in your bot, you need to add the
+`LLMCommandGenerator` to your NLU pipeline in the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: LLMCommandGenerator
+# - ...
+```
+
+The `LLMCommandGenerator` requires access to an LLM API. You can use any
+OpenAI model that supports the `/chat` endpoint such as "gpt-3.5-turbo" or "gpt-4".
+We are working on expanding the list of supported models and model providers.
+
+## How the LLMCommandGenerator Works
+
+The job of a Command Generator is to ingest information about a conversation so far
+and output a sequence of `commands` which represent _how the user wants to progress the conversation_.
+
+For example, if you have defined a flow called `transfer_money`, and a user starts a conversation
+by saying "I need to transfer some money", then the correct command output would be `StartFlow("transfer_money")`. 
+
+If you have just asked the user a yes/no question (using a `collect` step) and they say _"yes."_
+, the correct command output would be `SetSlot(slot_name, True)`.
+
+If the user answers the question but also requests something new, like _"yes. Oh what's my balance?"_, 
+the command output might be `[SetSlot(slot_name, True), StartFlow("check_balance")]`.
+
+By generating a sequence of commands, Dialogue Understanding has a much richer way to represent
+what the user wants than a classification-based NLU system.
+
+The current implementation of the Command Generator uses _in-context learning_, and uses
+information about the current state of the conversation as well as the flows defined in your bot
+to interpret the user's message in context. 
+
+
+## Customization
+
+You can customize the command generator as much as you wish. 
+
+### LLM configuration
+
+You can specify the openai model to used for the `LLMCommandGenerator` by setting the
+`llm.model_name` property in the `config.yml` file:
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: LLMCommandGenerator
+    llm:
+      model_name: "gpt-4"
+      request_timeout: 7
+      temperature: 0.0
+# - ...
+```
+
+The `model_name` defaults to `gpt-4`. The model name should be set 
+to a chat model of [OpenAI](https://platform.openai.com/docs/guides/gpt/chat-completions-api).
+
+Similarly, you can specify the `request_timeout` and 
+`temperature` parameters for the LLM. The `request_timeout` 
+defaults to `7` seconds and the `temperature` defaults to `0.0`.
+
+If you want to use Azure OpenAI Service, you can configure the necessary
+parameters as described in the
+[Azure OpenAI Service](../llms/llm-configuration.mdx#additional-configuration-for-azure-openai-service)
+section.
+
+:::info Using Other LLMs
+
+By default, OpenAI is used as the underlying LLM provider. 
+
+The used LLM provider provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: LLMCommandGenerator
+    llm:
+      type: "cohere"
+# - ...
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](../llms/llm-configuration.mdx#other-llmsembeddings)
+
+:::
+
+### Customizing The Prompt
+
+Because the `LLMCommandGenerator` uses in-context learning, one of the primary ways
+to tweak or improve performance is to customize the prompt. 
+
+In most cases, you should be able to achieve what you need to by customizing the `description` fields
+in your flows.
+Every flow has its own `description` field, and optionally every `step` in your flow can have one as well.
+If you notice that a flow is being triggered when it shouldn't, or that a slot is not being extracted correctly,
+adding more detail to the description will often solve the issue. 
+
+For example if you have a `transfer_money` flow with a `collect` step for the slot `amount`, you might add a description
+to extract the value more reliably: 
+
+
+```yaml-rasa title="flows.yml"
+flows:
+  transfer_money:
+    description: |
+      This flow lets users send money to friends
+      and family, in US Dollars.
+    steps:
+      - id: "ask_recipient"
+        collect_information: recipient
+        next: "ask_amount"
+      - id: "ask_amount"
+        collect_information: amount
+        // highlight-next-line
+        description: the amount of money to send. extract only the numerical value, ignoring the currency.
+        next: "transfer_successful"
+```
+
+### Customizing The Prompt Template
+
+If you are unable to get something to work via editing your yaml files, you can go one level deeper
+and customise the prompt template used to drive the `LLMCommandGenerator`.
+To do this, you can write your own prompt as a jinja2 template and provide it to the component as a file:
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: LLMCommandGenerator
+    // highlight-next-line
+    prompt: prompts/command-generator.jinja2
+# - ...
+```
