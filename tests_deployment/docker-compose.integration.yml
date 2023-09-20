@@ -17,7 +17,7 @@ services:
     image: redis:6
     command: "--requirepass password --user username1 on >password ~* allcommands --user default off nopass nocommands"
     ports:
-      - "6379:6380"
+      - "6380:6379"
 
   postgres:
     image: postgres:13
