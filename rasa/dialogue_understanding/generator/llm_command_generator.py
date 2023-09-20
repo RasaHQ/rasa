@@ -239,7 +239,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
         chitchat_re = re.compile(r"ChitChat\(\)")
         knowledge_re = re.compile(r"SearchAndReply\(\)")
-        humand_handoff_re = re.compile(r"HumandHandoff\(\)")
+        humand_handoff_re = re.compile(r"HumanHandoff\(\)")
         clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
 
         for action in actions.strip().splitlines():
