@@ -21,6 +21,18 @@ tracker_store:
   ssl_keyfile: "keyfile.key"
   ssl_certfile: "certfile.crt"
   ssl_ca_certs: "my-bundle.ca-bundle"
+lock_store:
+  type: redis
+  url: localhost
+  port: 6379
+  db: 0
+  username: username
+  password: password
+  key_prefix: lock
+  use_ssl: True
+  ssl_keyfile: "keyfile.key"
+  ssl_certfile: "certfile.crt"
+  ssl_ca_certs: "my-bundle.ca-bundle"
 # example of mongoDB external tracker store config
 #tracker_store:
   #type: mongod

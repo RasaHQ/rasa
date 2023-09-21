@@ -397,6 +397,7 @@ def test_create_lock_store_from_endpoint_config(endpoints_path: Text):
         ssl_keyfile="keyfile.key",
         ssl_certfile="certfile.crt",
         ssl_ca_certs="my-bundle.ca-bundle",
+        key_prefix="lock",
     )
 
     assert isinstance(tracker_store, type(LockStore.create(store)))
