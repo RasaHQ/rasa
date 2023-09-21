@@ -980,7 +980,7 @@ async def test_no_bilou_when_entity_recognition_off(
         (16, 3),
         (18, 3),
         (20, 2),
-        (32, 1),
+        (32, 2),
         (64, 1),
         (128, 1),
         (256, 1),
