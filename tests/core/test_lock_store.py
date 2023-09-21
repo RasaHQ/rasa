@@ -1,34 +1,26 @@
 import asyncio
 import logging
 import sys
+import time
 from pathlib import Path
+from typing import Text
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
-import time
-
+import rasa.core.lock_store
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import patch, Mock
-
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.lock import TicketLock
-import rasa.core.lock_store
-from rasa.core.lock_store import (
-    InMemoryLockStore,
-    LockError,
-    LockStore,
-    RedisLockStore,
-    DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
-)
+from rasa.core.lock_store import (DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
+                                  InMemoryLockStore, LockError, LockStore,
+                                  RedisLockStore)
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-
-from typing import Text
-from rasa.shared.core.domain import Domain
 
 
 class FakeRedisLockStore(RedisLockStore):
@@ -389,8 +381,8 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
             pass
 
 
-def test_tracker_store_endpoint_config_loading(endpoints_path: Text):
-    cfg = read_endpoint_config(endpoints_path, "tracker_store")
+def test_lock_store_endpoint_config_loading(endpoints_path: Text):
+    cfg = read_endpoint_config(endpoints_path, endpoint_type="lock_store")
 
     assert cfg == EndpointConfig.from_dict(
         {
@@ -409,10 +401,9 @@ def test_tracker_store_endpoint_config_loading(endpoints_path: Text):
     )
 
 
-def test_create_lock_store_from_endpoint_config(domain: Domain, endpoints_path: Text):
+def test_create_lock_store_from_endpoint_config(endpoints_path: Text):
     store = read_endpoint_config(endpoints_path, "tracker_store")
     tracker_store = RedisLockStore(
-        domain=domain,
         host="localhost",
         port=6379,
         db=0,
@@ -425,4 +416,4 @@ def test_create_lock_store_from_endpoint_config(domain: Domain, endpoints_path: 
         ssl_ca_certs="my-bundle.ca-bundle",
     )
 
-    assert isinstance(tracker_store, type(LockStore.create(store, domain)))
+    assert isinstance(tracker_store, type(LockStore.create(store)))
