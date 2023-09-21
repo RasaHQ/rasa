@@ -3,10 +3,10 @@ import clsx from 'clsx';
 
 import styles from './styles.module.css';
 
-function ActionLabel({isLoading, ...props}) {
+function TutorialActionLabel({isLoading, ...props}) {
   return (
       <div className={clsx(styles.label)}>Action Required</div>
   )
 }
 
-export default ActionLabel;
+export default TutorialActionLabel;
