@@ -62,27 +62,43 @@ excluded_files:
 
 # # Any typos we should ignore?
 excluded_words:
+  - CDD
+  - Comerica
+  - ConveRTFeaturizer
+  - ConveRTTokenizer
+  - HookimplMarker
+  - Juste
+  - NLG
+  - README
+  - Tanja
+  - Vova
   - analytics
+  - anonymization
+  - anonymized
   - asyncio
+  - backends
   - bot
   - bot's
   - cdd
-  - CDD
   - cmdline
+  - conftest
   - conveRT
-  - ConveRTFeaturizer
-  - ConveRTTokenizer
+  - crf
+  - crfentityextractor
   - crfsuite
+  - crypto
   - custom-nlg-service
+  - customizable
   - daksh
+  - dataset
   - db's
-  - deque
-  - docusaurus
-  - non-latin
   - deduplicate
   - deduplication
+  - deque
+  - docusaurus
   - donath
-  - matplotlib
+  - dslim
+  - entitysynonymmapper
   - extractor
   - fbmessenger
   - featurization
@@ -95,13 +111,17 @@ excluded_words:
   - forni
   - gzip
   - gzipped
+  - hallo
   - hftransformersnlp
+  - hookimpl
   - initializer
   - instaclient
-  - jwt
-  - jwt's
+  - ish
+  - jieba
   - jupyter
   - jupyterhub
+  - jwt
+  - jwt's
   - karpathy
   - keras
   - knowledgebase
@@ -110,101 +130,82 @@ excluded_words:
   - llm
   - luis
   - matmul
+  - matplotlib
   - mattermost
   - memoization
+  - memoizationpolicy
   - miniconda
   - mitie
-  - mitiefeaturizer
   - mitie's
+  - mitiefeaturizer
   - mitienlp
-  - dataset
   - mongod
   - mrkdown
   - mrkdwn
   - myio
   - mymodelname
   - myuser
-  - numpy
   - networkx
+  - ngram
+  - nlg
   - nlu
   - nlu's
+  - non-latin
+  - numpy
   - perceptron
+  - pii-management
   - pika
   - pika's
-  - jieba
+  - pluggy
+  - pre
   - pretrained
+  - prototyper
   - prototyper
   - pycodestyle
   - pykwalify
   - pymessenger
   - pyobject
   - python-engineio
-  - pre
-  - customizable
   - quickstart
   - rasa
   - rasa's
   - readthedocs
+  - regexes
+  - regexfeaturizer
   - regularizer
   - repo
   - rst
+  - ruamel
+  - rustc
+  - rustup
+  - rustup-init
   - sanic
   - sanitization
   - scipy
   - sklearn
   - socketio
+  - spaCy
+  - spaCy's
   - spacy
   - spacyfeaturizer
   - spacynlp
-  - ish
-  - spaCy
-  - spaCy's
-  - README
-  - crf
-  - backends
-  - whitespaced
-  - ngram
   - subsampled
   - testagent
+  - thisismysecret
+  - tokenization
   - tokenize
   - tokenized
-  - tokenization
   - tokenizer
   - tokenizers
   - tokenizing
   - typoci
   - unfeaturized
   - unschedule
-  - wsgi
-  - ruamel
-  - prototyper
-  - hallo
-  - crypto
-  - regexes
+  - venv
   - walkthroughs
   - webexteams
-  - venv
-  - regexfeaturizer
-  - crfentityextractor
-  - Comerica
-  - entitysynonymmapper
-  - memoizationpolicy
-  - NLG
-  - nlg
-  - Juste
-  - Tanja
-  - Vova
-  - rustup
-  - rustup-init
-  - rustc
-  - conftest
+  - whitespaced
   - winpty
-  - pii-management
-  - anonymization
-  - anonymized
-  - dslim
-  - pluggy
-  - HookimplMarker
-  - hookimpl
+  - wsgi
 
 spellcheck_filenames: false
