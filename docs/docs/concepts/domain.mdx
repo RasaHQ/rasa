@@ -77,8 +77,10 @@ Different slot types exist to restrict the possible values a slot can take.
 
   ```yaml-rasa
   slots:
-     cuisine:
-        type: text
+    cuisine:
+      type: text
+      mappings:
+        - type: custom
   ```
 - **Allowed Values**
 
@@ -90,8 +92,10 @@ Different slot types exist to restrict the possible values a slot can take.
 
   ```yaml-rasa
   slots:
-     confirmation:
-        type: bool
+    confirmation:
+      type: bool
+      mappings:
+        - type: custom        
   ```
 - **Allowed Values**
 
@@ -105,6 +109,8 @@ Different slot types exist to restrict the possible values a slot can take.
   slots:
     risk_level:
       type: categorical
+      mappings:
+        - type: custom      
       values:
         - low
         - medium
@@ -119,6 +125,8 @@ Different slot types exist to restrict the possible values a slot can take.
   slots:
     temperature:
       type: float
+      mappings:
+        - type: custom      
   ```
 
 #### Any Slot
@@ -129,6 +137,8 @@ Different slot types exist to restrict the possible values a slot can take.
   slots:
     shopping_items:
       type: any
+      mappings:
+        - type: custom      
   ```
 
 
@@ -141,6 +151,8 @@ slots:
   num_fallbacks:
     type: float
     initial_value: 0
+    mappings:
+      - type: custom        
 ```
 
 ### Slot Mappings
