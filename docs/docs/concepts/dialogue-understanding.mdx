@@ -140,7 +140,7 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        // highlight-next-line
+        # highlight-next-line
         description: the amount of money to send. extract only the numerical value, ignoring the currency.
         next: "transfer_successful"
 ```
@@ -153,9 +153,7 @@ To do this, you can write your own prompt as a jinja2 template and provide it to
 
 ```yaml-rasa title="config.yml"
 pipeline:
-# - ...
   - name: LLMCommandGenerator
-    // highlight-next-line
+    # highlight-next-line
     prompt: prompts/command-generator.jinja2
-# - ...
 ```

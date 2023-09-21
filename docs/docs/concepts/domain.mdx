@@ -32,14 +32,17 @@ rasa train --domain path_to_domain_directory
 
 ## Responses
 
-Responses are [actions](#actions) that send a message to a user without running any custom code or
-returning events. These responses can be defined directly in the domain file under the `responses` key
-and can include rich content such as buttons and attachments. For more information on responses and how to define them,
+Responses are templated messages that your assistant can send to your user. 
+Responses can contain rich content like buttons, images, and custom json payloads. 
+Every responses is also an [action](#actions), meaning that it can be used directly in
+an `action` step in a flow. 
+Responses can be defined directly in the domain file under the `responses` key.
+For more information on responses and how to define them,
 see [Responses](./responses.mdx).
 
 ## Actions
 
-[Actions](./actions.mdx) are the things your bot can actually do.
+[Actions](./actions.mdx) are the things your bot can do.
 For example, an action could:
 
 - respond to a user,
@@ -52,6 +55,8 @@ For example, an action could:
 
 All [custom actions](./custom-actions.mdx) should be listed in your domain.
 
+Rasa also has [default actions](./default-actions.mdx) which you do not 
+need to list in your domain. 
 
 ## Slots
 
