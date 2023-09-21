@@ -1174,7 +1174,7 @@ jobs:
       #      password: ${{ secrets.PYPI_TOKEN }}
 
       # Push to the dev registry
-      - name: Publish to PyPI 📦
+      - name: Publish to internal PyPI 📦
         uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
         with:
           user: "github-ci"
