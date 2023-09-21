@@ -68,7 +68,6 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
@@ -340,12 +339,18 @@ class FlowExecutor:
                 tracker=tracker,
             )
             return None
-        if current.id != END_STEP:
-            # we've reached the end of the user defined steps in the flow.
-            # every flow should end with an end step, so we add it here.
+        if current.id == END_STEP:
+            # we are already at the very end of the flow. There is no next step.
+            return None
+        elif isinstance(current, LinkFlowStep):
+            # link steps don't have a next step, so we'll return the end step
             return END_STEP
         else:
-            # we are already at the very end of the flow. There is no next step.
+            structlogger.error(
+                "flow.step.failed_to_select_next_step",
+                step=current,
+                tracker=tracker,
+            )
             return None
 
     def _select_next_step(

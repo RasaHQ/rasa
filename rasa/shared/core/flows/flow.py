@@ -2,8 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol, Set, Text, runtime_checkable
-
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Protocol,
+    Set,
+    Text,
+    Union,
+    runtime_checkable,
+)
 import structlog
 
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -18,6 +28,12 @@ from rasa.shared.utils.llm import (
 )
 
 structlogger = structlog.get_logger()
+
+START_STEP = "START"
+
+END_STEP = "END"
+
+DEFAULF_STEPS = {END_STEP, START_STEP}
 
 
 class UnreachableFlowStepException(RasaException):
@@ -35,6 +51,70 @@ class UnreachableFlowStepException(RasaException):
             f"from the start step. Please make sure that all steps can be reached "
             f"from the start step, e.g. by "
             f"checking that another step points to this step."
+        )
+
+
+class MissingNextLinkException(RasaException):
+    """Raised when a flow step is missing a next link."""
+
+    def __init__(self, step: FlowStep, flow: Flow) -> None:
+        """Initializes the exception."""
+        self.step = step
+        self.flow = flow
+
+    def __str__(self) -> Text:
+        """Return a string representation of the exception."""
+        return (
+            f"Step '{self.step.id}' in flow '{self.flow.id}' is missing a `next` "
+            f"but is required to have one. "
+        )
+
+
+class ReservedFlowStepIdException(RasaException):
+    """Raised when a flow step is using a reserved id."""
+
+    def __init__(self, step: FlowStep, flow: Flow) -> None:
+        """Initializes the exception."""
+        self.step = step
+        self.flow = flow
+
+    def __str__(self) -> Text:
+        """Return a string representation of the exception."""
+        return (
+            f"Step '{self.step.id}' in flow '{self.flow.id}' is using a reserved id. "
+            f"Please use a different id for your step."
+        )
+
+
+class MissingElseBranchException(RasaException):
+    """Raised when a flow step is missing an else branch."""
+
+    def __init__(self, step: FlowStep, flow: Flow) -> None:
+        """Initializes the exception."""
+        self.step = step
+        self.flow = flow
+
+    def __str__(self) -> Text:
+        """Return a string representation of the exception."""
+        return (
+            f"Step '{self.step.id}' in flow '{self.flow.id}' is missing an `else` "
+            f"branch but is required to have one. "
+        )
+
+
+class NoNextAllowedException(RasaException):
+    """Raised when a flow step has a next link but is not allowed to have one."""
+
+    def __init__(self, step: FlowStep, flow: Flow) -> None:
+        """Initializes the exception."""
+        self.step = step
+        self.flow = flow
+
+    def __str__(self) -> Text:
+        """Return a string representation of the exception."""
+        return (
+            f"Step '{self.step.id}' in flow '{self.flow.id}' has a `next` but "
+            f"is not allowed to have one. "
         )
 
 
@@ -194,7 +274,7 @@ class Flow:
     """The name of the flow."""
     description: Optional[Text]
     """The description of the flow."""
-    steps: List[FlowStep]
+    step_sequence: StepSequence
     """The steps of the flow."""
 
     @staticmethod
@@ -207,13 +287,53 @@ class Flow:
         Returns:
             The parsed flow.
         """
-        steps = flow_config.get("steps") or []
+        step_sequence = StepSequence.from_json(flow_config.get("steps"))
+
         return Flow(
             id=flow_id,
             name=flow_config.get("name", ""),
             description=flow_config.get("description"),
-            steps=[step_from_json(step_config) for step_config in steps],
+            step_sequence=Flow.resolve_default_ids(step_sequence),
         )
+
+    @staticmethod
+    def resolve_default_ids(step_sequence: StepSequence) -> StepSequence:
+        """Resolves the default ids of all steps in the sequence.
+
+        If a step does not have an id, a default id is assigned to it based
+        on the type of the step and its position in the flow.
+
+        Similarly, if a step doesn't have an explicit next assigned we resolve
+        the default next step id.
+
+        Args:
+            step_sequence: The step sequence to resolve the default ids for.
+
+        Returns:
+            The step sequence with the default ids resolved.
+        """
+        # assign an index to all steps
+        for idx, step in enumerate(step_sequence.steps):
+            step.idx = idx
+
+        def resolve_default_next(steps: List[FlowStep], is_root_sequence: bool) -> None:
+            for i, step in enumerate(steps):
+                if step.next.no_link_available():
+                    if i == len(steps) - 1:
+                        # can't attach end to link step
+                        if is_root_sequence and not isinstance(step, LinkFlowStep):
+                            # if this is the root sequence, we need to add an end step
+                            # to the end of the sequence. other sequences, e.g.
+                            # in branches need to explicitly add a next step.
+                            step.next.links.append(StaticFlowLink(target=END_STEP))
+                    else:
+                        step.next.links.append(StaticFlowLink(target=steps[i + 1].id))
+                for link in step.next.links:
+                    if sub_steps := link.child_steps():
+                        resolve_default_next(sub_steps, is_root_sequence=False)
+
+        resolve_default_next(step_sequence.child_steps, is_root_sequence=True)
+        return step_sequence
 
     def as_json(self) -> Dict[Text, Any]:
         """Returns the flow as a dictionary.
@@ -225,7 +345,7 @@ class Flow:
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "steps": [step.as_json() for step in self.steps],
+            "steps": self.step_sequence.as_json(),
         }
 
     def readable_name(self) -> str:
@@ -240,12 +360,43 @@ class Flow:
             - whether all next links point to existing steps
             - whether all steps can be reached from the start step
         """
+        self._validate_all_steps_next_property()
         self._validate_all_next_ids_are_availble_steps()
         self._validate_all_steps_can_be_reached()
+        self._validate_all_branches_have_an_else()
+        self._validate_not_using_buildin_ids()
+
+    def _validate_not_using_buildin_ids(self) -> None:
+        """Validates that the flow does not use any of the build in ids."""
+        for step in self.steps:
+            if step.id in DEFAULF_STEPS or step.id.startswith(CONTINUE_STEP_PREFIX):
+                raise ReservedFlowStepIdException(step, self)
+
+    def _validate_all_branches_have_an_else(self) -> None:
+        """Validates that all branches have an else link."""
+        for step in self.steps:
+            links = step.next.links
+
+            has_an_if = any(isinstance(link, IfFlowLink) for link in links)
+            has_an_else = any(isinstance(link, ElseFlowLink) for link in links)
+
+            if has_an_if and not has_an_else:
+                raise MissingElseBranchException(step, self)
+
+    def _validate_all_steps_next_property(self) -> None:
+        """Validates that every step has a next link."""
+        for step in self.steps:
+            if isinstance(step, LinkFlowStep):
+                # link steps can't have a next link!
+                if not step.next.no_link_available():
+                    raise NoNextAllowedException(step, self)
+            elif step.next.no_link_available():
+                # all other steps should have a next link
+                raise MissingNextLinkException(step, self)
 
     def _validate_all_next_ids_are_availble_steps(self) -> None:
         """Validates that all next links point to existing steps."""
-        available_steps = {step.id for step in self.steps}
+        available_steps = {step.id for step in self.steps} | DEFAULF_STEPS
         for step in self.steps:
             for link in step.next.links:
                 if link.target not in available_steps:
@@ -337,9 +488,7 @@ class Flow:
                     if previous_step.id in visited_steps:
                         continue
                     collects.extend(
-                        _previously_asked_collect(
-                            previous_step.id, visited_steps
-                        )
+                        _previously_asked_collect(previous_step.id, visited_steps)
                     )
             return collects
 
@@ -381,6 +530,58 @@ class Flow:
                 collect_steps.append(step)
         return collect_steps
 
+    @property
+    def steps(self) -> List[FlowStep]:
+        """Returns the steps of the flow."""
+        return self.step_sequence.steps
+
+
+@dataclass
+class StepSequence:
+    child_steps: List[FlowStep]
+
+    @staticmethod
+    def from_json(steps_config: List[Dict[Text, Any]]) -> StepSequence:
+        """Used to read steps from parsed YAML.
+
+        Args:
+            steps_config: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed steps.
+        """
+
+        flow_steps: List[FlowStep] = [step_from_json(config) for config in steps_config]
+
+        return StepSequence(child_steps=flow_steps)
+
+    def as_json(self) -> List[Dict[Text, Any]]:
+        """Returns the steps as a dictionary.
+
+        Returns:
+            The steps as a dictionary.
+        """
+        return [
+            step.as_json()
+            for step in self.child_steps
+            if not isinstance(step, InternalFlowStep)
+        ]
+
+    @property
+    def steps(self) -> List[FlowStep]:
+        """Returns the steps of the flow."""
+        return [
+            step
+            for child_step in self.child_steps
+            for step in child_step.steps_in_tree()
+        ]
+
+    def first(self) -> Optional[FlowStep]:
+        """Returns the first step of the sequence."""
+        if len(self.child_steps) == 0:
+            return None
+        return self.child_steps[0]
+
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
     """Used to read flow steps from parsed YAML.
@@ -413,8 +614,10 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
 class FlowStep:
     """Represents the configuration of a flow step."""
 
-    id: Text
+    custom_id: Optional[Text]
     """The id of the flow step."""
+    idx: int
+    """The index of the step in the flow."""
     description: Optional[Text]
     """The description of the flow step."""
     metadata: Dict[Text, Any]
@@ -433,7 +636,10 @@ class FlowStep:
             The parsed flow step.
         """
         return FlowStep(
-            id=flow_step_config["id"],
+            # the idx is set later once the flow is created that contains
+            # this step
+            idx=0,
+            custom_id=flow_step_config.get("id"),
             description=flow_step_config.get("description"),
             metadata=flow_step_config.get("metadata", {}),
             next=FlowLinks.from_json(flow_step_config.get("next", [])),
@@ -445,18 +651,31 @@ class FlowStep:
         Returns:
             The flow step as a dictionary.
         """
-        dump = {
-            "id": self.id,
-            "next": self.next.as_json(),
-        }
+        dump = {"next": self.next.as_json(), "id": self.id}
+
         if self.description:
             dump["description"] = self.description
         if self.metadata:
             dump["metadata"] = self.metadata
         return dump
 
+    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+        """Returns the steps in the tree of the flow step."""
+        yield self
+        yield from self.next.steps_in_tree()
 
-START_STEP = "__start__"
+    @property
+    def id(self) -> Text:
+        """Returns the id of the flow step."""
+        return self.custom_id or self.default_id()
+
+    def default_id(self) -> str:
+        """Returns the default id of the flow step."""
+        return f"{self.idx}_{self.default_id_postfix()}"
+
+    def default_id_postfix(self) -> str:
+        """Returns the default id postfix of the flow step."""
+        raise NotImplementedError()
 
 
 class InternalFlowStep(FlowStep):
@@ -503,14 +722,12 @@ class StartFlowStep(InternalFlowStep):
             links = []
 
         super().__init__(
-            id=START_STEP,
+            idx=0,
+            custom_id=START_STEP,
             description=None,
             metadata={},
             next=FlowLinks(links=links),
         )
-
-
-END_STEP = "__end__"
 
 
 @dataclass
@@ -520,14 +737,15 @@ class EndFlowStep(InternalFlowStep):
     def __init__(self) -> None:
         """Initializes an end flow step."""
         super().__init__(
-            id=END_STEP,
+            idx=0,
+            custom_id=END_STEP,
             description=None,
             metadata={},
             next=FlowLinks(links=[]),
         )
 
 
-CONTINUE_STEP_PREFIX = "__next__"
+CONTINUE_STEP_PREFIX = "NEXT:"
 
 
 @dataclass
@@ -537,7 +755,8 @@ class ContinueFlowStep(InternalFlowStep):
     def __init__(self, next: str) -> None:
         """Initializes a continue-step flow step."""
         super().__init__(
-            id=CONTINUE_STEP_PREFIX + next,
+            idx=0,
+            custom_id=CONTINUE_STEP_PREFIX + next,
             description=None,
             metadata={},
             # The continue step links to the step that should be continued.
@@ -588,6 +807,9 @@ class ActionFlowStep(FlowStep):
         dump["action"] = self.action
         return dump
 
+    def default_id_postfix(self) -> str:
+        return self.action
+
 
 @dataclass
 class BranchFlowStep(FlowStep):
@@ -615,6 +837,10 @@ class BranchFlowStep(FlowStep):
         dump = super().as_json()
         return dump
 
+    def default_id_postfix(self) -> str:
+        """Returns the default id postfix of the flow step."""
+        return "branch"
+
 
 @dataclass
 class LinkFlowStep(FlowStep):
@@ -634,8 +860,6 @@ class LinkFlowStep(FlowStep):
             The parsed flow step.
         """
         base = super()._from_json(flow_step_config)
-        # Links are not allowed to have next step
-        base.next = FlowLinks(links=[])
         return LinkFlowStep(
             link=flow_step_config.get("link", ""),
             **base.__dict__,
@@ -650,6 +874,10 @@ class LinkFlowStep(FlowStep):
         dump = super().as_json()
         dump["link"] = self.link
         return dump
+
+    def default_id_postfix(self) -> str:
+        """Returns the default id postfix of the flow step."""
+        return f"link_{self.link}"
 
 
 @dataclass
@@ -780,6 +1008,10 @@ class UserMessageStep(FlowStep, StepThatCanStartAFlow):
             for trigger_condition in self.trigger_conditions
         )
 
+    def default_id_postfix(self) -> str:
+        """Returns the default id postfix of the flow step."""
+        return "intent"
+
 
 DEFAULT_LLM_CONFIG = {
     "_type": "openai",
@@ -860,6 +1092,9 @@ class GenerateResponseFlowStep(FlowStep):
                 "flow.generate_step.llm.error", error=e, step=self.id, prompt=prompt
             )
             return None
+
+    def default_id_postfix(self) -> str:
+        return "generate"
 
 
 @dataclass
@@ -962,6 +1197,10 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
         else:
             return False
 
+    def default_id_postfix(self) -> str:
+        """Returns the default id postfix of the flow step."""
+        return "entry_prompt"
+
 
 # enumeration of collect information scopes. scope can either be flow or global
 class CollectInformationScope(str, Enum):
@@ -1023,6 +1262,10 @@ class CollectInformationFlowStep(FlowStep):
 
         return dump
 
+    def default_id_postfix(self) -> str:
+        """Returns the default id postfix of the flow step."""
+        return f"collect_{self.collect}"
+
 
 @dataclass
 class SetSlotsFlowStep(FlowStep):
@@ -1061,6 +1304,10 @@ class SetSlotsFlowStep(FlowStep):
         dump = super().as_json()
         dump["set_slots"] = [{slot["key"]: slot["value"]} for slot in self.slots]
         return dump
+
+    def default_id_postfix(self) -> str:
+        """Returns the default id postfix of the flow step."""
+        return "set_slots"
 
 
 @dataclass
@@ -1124,12 +1371,21 @@ class FlowLinks:
 
         return [link.as_json() for link in self.links]
 
+    def no_link_available(self) -> bool:
+        """Returns whether no link is available."""
+        return len(self.links) == 0
+
+    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+        """Returns the steps in the tree of the flow links."""
+        for link in self.links:
+            yield from link.steps_in_tree()
+
 
 class FlowLink(Protocol):
     """Represents a flow link."""
 
     @property
-    def target(self) -> Text:
+    def target(self) -> Optional[Text]:
         """Returns the target of the flow link.
 
         Returns:
@@ -1157,13 +1413,48 @@ class FlowLink(Protocol):
         """
         ...
 
+    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+        """Returns the steps in the tree of the flow link."""
+        ...
+
+    def child_steps(self) -> List[FlowStep]:
+        """Returns the child steps of the flow link."""
+        ...
+
 
 @dataclass
-class IfFlowLink:
+class BranchBasedLink:
+    target_reference: Union[Text, StepSequence]
+    """The id of the linked flow."""
+
+    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+        """Returns the steps in the tree of the flow link."""
+        if isinstance(self.target_reference, StepSequence):
+            yield from self.target_reference.steps
+
+    def child_steps(self) -> List[FlowStep]:
+        """Returns the child steps of the flow link."""
+        if isinstance(self.target_reference, StepSequence):
+            return self.target_reference.child_steps
+        else:
+            return []
+
+    @property
+    def target(self) -> Optional[Text]:
+        """Returns the target of the flow link."""
+        if isinstance(self.target_reference, StepSequence):
+            if first := self.target_reference.first():
+                return first.id
+            else:
+                return None
+        else:
+            return self.target_reference
+
+
+@dataclass
+class IfFlowLink(BranchBasedLink):
     """Represents the configuration of an if flow link."""
 
-    target: Text
-    """The id of the linked flow."""
     condition: Optional[Text]
     """The condition of the linked flow."""
 
@@ -1177,7 +1468,15 @@ class IfFlowLink:
         Returns:
             The parsed flow link.
         """
-        return IfFlowLink(target=link_config["then"], condition=link_config.get("if"))
+        if isinstance(link_config["then"], str):
+            return IfFlowLink(
+                target_reference=link_config["then"], condition=link_config.get("if")
+            )
+        else:
+            return IfFlowLink(
+                target_reference=StepSequence.from_json(link_config["then"]),
+                condition=link_config.get("if"),
+            )
 
     def as_json(self) -> Dict[Text, Any]:
         """Returns the flow link as a dictionary.
@@ -1187,16 +1486,15 @@ class IfFlowLink:
         """
         return {
             "if": self.condition,
-            "then": self.target,
+            "then": self.target_reference.as_json()
+            if isinstance(self.target_reference, StepSequence)
+            else self.target_reference,
         }
 
 
 @dataclass
-class ElseFlowLink:
+class ElseFlowLink(BranchBasedLink):
     """Represents the configuration of an else flow link."""
-
-    target: Text
-    """The id of the linked flow."""
 
     @staticmethod
     def from_json(link_config: Dict[Text, Any]) -> ElseFlowLink:
@@ -1208,7 +1506,12 @@ class ElseFlowLink:
         Returns:
             The parsed flow link.
         """
-        return ElseFlowLink(target=link_config["else"])
+        if isinstance(link_config["else"], str):
+            return ElseFlowLink(target_reference=link_config["else"])
+        else:
+            return ElseFlowLink(
+                target_reference=StepSequence.from_json(link_config["else"])
+            )
 
     def as_json(self) -> Dict[Text, Any]:
         """Returns the flow link as a dictionary.
@@ -1216,7 +1519,11 @@ class ElseFlowLink:
         Returns:
             The flow link as a dictionary.
         """
-        return {"else": self.target}
+        return {
+            "else": self.target_reference.as_json()
+            if isinstance(self.target_reference, StepSequence)
+            else self.target_reference
+        }
 
 
 @dataclass
@@ -1245,3 +1552,12 @@ class StaticFlowLink:
             The flow link as a dictionary.
         """
         return self.target
+
+    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+        """Returns the steps in the tree of the flow link."""
+        # static links do not have any child steps
+        yield from []
+
+    def child_steps(self) -> List[FlowStep]:
+        """Returns the child steps of the flow link."""
+        return []

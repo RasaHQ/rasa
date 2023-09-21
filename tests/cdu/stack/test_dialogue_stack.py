@@ -19,7 +19,7 @@ def test_dialogue_stack_from_dict():
                 "type": "pattern_collect_information",
                 "collect": "foo",
                 "frame_id": "some-other-id",
-                "step_id": "__start__",
+                "step_id": "START",
                 "flow_id": "pattern_collect_information",
             },
         ]
@@ -64,7 +64,7 @@ def test_dialogue_stack_as_dict():
             "type": "pattern_collect_information",
             "collect": "foo",
             "frame_id": "some-other-id",
-            "step_id": "__start__",
+            "step_id": "START",
             "flow_id": "pattern_collect_information",
         },
     ]

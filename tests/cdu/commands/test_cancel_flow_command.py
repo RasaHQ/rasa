@@ -72,7 +72,7 @@ def test_run_command_on_tracker():
 
     assert dialogue_stack_dump[1]["type"] == "pattern_cancel_flow"
     assert dialogue_stack_dump[1]["flow_id"] == "pattern_cancel_flow"
-    assert dialogue_stack_dump[1]["step_id"] == "__start__"
+    assert dialogue_stack_dump[1]["step_id"] == "START"
     assert dialogue_stack_dump[1]["canceled_name"] == "foo flow"
     assert dialogue_stack_dump[1]["canceled_frames"] == ["some-frame-id"]
 
