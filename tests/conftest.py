@@ -204,6 +204,7 @@ def e2e_story_file_trips_circuit_breaker_path() -> Text:
 def endpoints_path() -> Text:
     return "data/test_endpoints/example_endpoints.yml"
 
+
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
