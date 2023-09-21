@@ -21,6 +21,7 @@ tracker_store:
   ssl_keyfile: "keyfile.key"
   ssl_certfile: "certfile.crt"
   ssl_ca_certs: "my-bundle.ca-bundle"
+# example of redis external lock store config
 lock_store:
   type: redis
   url: localhost
