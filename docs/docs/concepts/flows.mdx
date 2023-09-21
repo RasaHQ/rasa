@@ -441,7 +441,7 @@ response will be used to fill the "account_type" slot.
 :::note
 
 The slot needs to be defined in the domain file. See the
-[domain documentation](./domain.mdx) for more information. Additionaly, the slot
+[domain documentation](./domain.mdx) for more information. Additionally, the slot
 should have fitting slot mappings.
 
 :::
@@ -482,6 +482,44 @@ flow is completed.
   collect_information: "yes_or_no" # slot name
   scope: "flow"
 ```
+
+#### Slot value validation
+
+You can now write slot value validation directly in your flow yaml file without the need to use custom actions.
+Add a `rejections` property to your `collect_information` step to define the validation rules.
+The `rejections` section is a list of mappings, where each mapping has an `if` and an `utter` property:
+- the `if` property is a condition written in natural language that is evaluated using the
+[pypred](https://github.com/armon/pypred) library.
+- the `utter` property is the name of the response the assistant will send if the condition evaluates to `True`.
+
+Here is an example:
+
+```yaml
+flows:
+  verify_eligibility:
+    description: This flow verifies if the user is eligible for creating an account.
+    name: verify eligibility
+    steps:
+      - id: "ask_age"
+        collect: "age"
+        rejections:
+          - if: age < 1
+            utter: utter_invalid_age
+          - if: age < 13
+            utter: utter_age_at_least_13
+        next: "ask_email"
+```
+
+Upon every validation failure, the assistant will again make another attempt to collect the information.
+This will be repeated until none of the rejection conditions pass. Once all rejections have evaluated to `False`, the
+assistant moves on to the `next` step with the collected value.
+
+If the predicate defined in the `if` property is invalid or missing, the assistant will log an error and respond with the
+`utter_internal_error_rasa` response which by default is
+`Sorry, I'm having trouble understanding you right now. Please try again later.`. However, you can customize this in
+your domain file. We recommend using end-to-end testing to ensure that your flows work as expected.
+
+If no rejections are defined, the assistant will fill the slot with the collected value and proceed to the next step.
 
 ### Link
 
