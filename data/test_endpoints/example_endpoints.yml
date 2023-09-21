@@ -13,6 +13,7 @@ tracker_store:
   url: localhost
   port: 6379
   db: 0
+  username: username
   password: password
   key_prefix: conversation
   record_exp: 30000
