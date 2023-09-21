@@ -385,8 +385,8 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
             pass
 
 
-def test_create_lock_store_from_endpoint_config(endpoints_path: Text):
-    store = read_endpoint_config(endpoints_path, "tracker_store")
+def test_create_lock_store_from_endpoint_config(lockstore_endpoints_path: Text):
+    store = read_endpoint_config(lockstore_endpoints_path, "tracker_store")
     tracker_store = RedisLockStore(
         host="localhost",
         port=6379,
