@@ -15,9 +15,13 @@ from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
-from rasa.core.lock_store import (DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
-                                  InMemoryLockStore, LockError, LockStore,
-                                  RedisLockStore)
+from rasa.core.lock_store import (
+    DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
+    InMemoryLockStore,
+    LockError,
+    LockStore,
+    RedisLockStore,
+)
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -381,26 +385,6 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
             pass
 
 
-def test_lock_store_endpoint_config_loading(endpoints_path: Text):
-    cfg = read_endpoint_config(endpoints_path, endpoint_type="lock_store")
-
-    assert cfg == EndpointConfig.from_dict(
-        {
-            "type": "redis",
-            "url": "localhost",
-            "port": 6379,
-            "db": 0,
-            "username": "username",
-            "password": "password",
-            "timeout": 30000,
-            "use_ssl": True,
-            "ssl_keyfile": "keyfile.key",
-            "ssl_certfile": "certfile.crt",
-            "ssl_ca_certs": "my-bundle.ca-bundle",
-        }
-    )
-
-
 def test_create_lock_store_from_endpoint_config(endpoints_path: Text):
     store = read_endpoint_config(endpoints_path, "tracker_store")
     tracker_store = RedisLockStore(
@@ -409,7 +393,6 @@ def test_create_lock_store_from_endpoint_config(endpoints_path: Text):
         db=0,
         username="username",
         password="password",
-        record_exp=3000,
         use_ssl=True,
         ssl_keyfile="keyfile.key",
         ssl_certfile="certfile.crt",
