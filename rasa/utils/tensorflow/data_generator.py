@@ -1,3 +1,4 @@
+import math
 from typing import List, Union, Text, Optional, Any, Tuple, Dict, cast
 
 import logging
@@ -380,8 +381,8 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         # data was rebalanced, so need to recalculate number of examples
         num_examples = self.model_data.number_of_examples(self._data)
         batch_size = self._current_batch_size
-        # keep last batch only if it has more than half a batch size of examples
-        last_batch_half_full = num_examples % batch_size > batch_size // 2
+        # keep last batch only if it has at least half a batch size of examples
+        last_batch_half_full = num_examples % batch_size >= math.ceil(batch_size / 2)
         num_batches = num_examples // batch_size + int(last_batch_half_full)
         # Return at least 1 if there is an example
         return max(num_batches, int(num_examples > 0))
