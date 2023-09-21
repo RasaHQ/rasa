@@ -356,7 +356,7 @@ predict_schema:
       needs:
           tracker: __tracker__
           flows: flows_provider
-      uses: rasa.cdu.processor.command_processor_component.CommandProcessorComponent
+      uses: rasa.dialogue_understanding.processor.command_processor_component.CommandProcessorComponent
       constructor_name: load
       fn: execute_commands
       config: { }

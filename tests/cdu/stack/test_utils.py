@@ -1,10 +1,10 @@
-from rasa.cdu.patterns.collect_information import (
+from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.cdu.stack.dialogue_stack import DialogueStack
-from rasa.cdu.stack.frames.chit_chat_frame import ChitChatStackFrame
-from rasa.cdu.stack.frames.flow_stack_frame import UserFlowStackFrame
-from rasa.cdu.stack.utils import (
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.chit_chat_frame import ChitChatStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.utils import (
     filled_slots_for_active_flow,
     top_flow_frame,
     top_user_flow_frame,

@@ -391,7 +391,7 @@ class FlowSyncImporter(PassThroughImporter):
         from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 
         default_flows_file = pkg_resources.resource_filename(
-            "rasa.cdu.patterns", DEFAULT_PATTERN_FLOWS_FILE_NAME
+            "rasa.dialogue_understanding.patterns", DEFAULT_PATTERN_FLOWS_FILE_NAME
         )
 
         return YAMLFlowsReader.read_from_file(default_flows_file)
@@ -400,7 +400,7 @@ class FlowSyncImporter(PassThroughImporter):
     def load_default_pattern_flows_domain() -> Domain:
         """Loads the default flows from the file system."""
         default_flows_file = pkg_resources.resource_filename(
-            "rasa.cdu.patterns", DEFAULT_PATTERN_FLOWS_FILE_NAME
+            "rasa.dialogue_understanding.patterns", DEFAULT_PATTERN_FLOWS_FILE_NAME
         )
 
         return Domain.from_path(default_flows_file)

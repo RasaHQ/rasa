@@ -1,4 +1,4 @@
-from rasa.cdu.commands.error_command import ErrorCommand
+from rasa.dialogue_understanding.commands.error_command import ErrorCommand
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 

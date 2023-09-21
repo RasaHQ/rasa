@@ -1,4 +1,6 @@
-from rasa.cdu.commands.chit_chat_answer_command import ChitChatAnswerCommand
+from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
+    ChitChatAnswerCommand,
+)
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
