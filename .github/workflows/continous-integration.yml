@@ -1106,28 +1106,21 @@ jobs:
       - name: Push image with ${{github.ref}} tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
         run: |
-          IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
-
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
-
-          docker tag rasa/rasa:${IMAGE_TAG} ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
-          docker push ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG}
-
-          # Tag the image as latest
-          if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
-            if [[ "${{ matrix.image }}" == "default" ]]; then
-              RELEASE_TAG="${IMAGE_TAG}"
-            else
-              RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
-            fi
-
-            LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
-            
-            # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
-            IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
-            # Push tagged image
-            IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl -t ${{env.RELEASE_REGISTRY}}/rasa:${IMAGE_TAG} ${{ matrix.image }} --push
+        
+      - name: Push image with latest tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa' && needs.build_docker_base_images_and_set_env.outputs.is_newest_version == 'true'
+        run: |
+          if [[ "${{ matrix.image }}" == "default" ]]; then
+            RELEASE_TAG="${IMAGE_TAG}"
+          else
+            RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
           fi
+
+          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
+          
+          # Push tagged image
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -t ${{env.RELEASE_REGISTRY}}/rasa:${LATEST_TAG} -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
   deploy:
     name: Deploy to PyPI
