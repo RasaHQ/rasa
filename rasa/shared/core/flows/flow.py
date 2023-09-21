@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, Set, Text, runtime_checkable
@@ -380,6 +381,10 @@ class Flow:
             if isinstance(step, CollectInformationFlowStep):
                 collect_information_steps.append(step)
         return collect_information_steps
+
+    def fingerprint(self) -> str:
+        """Create a fingerprint identifying this flow."""
+        return rasa.shared.utils.io.deep_container_fingerprint(self.as_json())
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:

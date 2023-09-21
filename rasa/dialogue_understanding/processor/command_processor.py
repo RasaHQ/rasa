@@ -1,4 +1,4 @@
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Set, Tuple, Dict
 
 import structlog
 from rasa.dialogue_understanding.commands import (
@@ -9,6 +9,7 @@ from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
     FreeFormAnswerCommand,
 )
+from rasa.dialogue_understanding.commands.clean_stack_command import CleanStackCommand
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -23,6 +24,7 @@ from rasa.dialogue_understanding.stack.utils import (
     filled_slots_for_active_flow,
     top_flow_frame,
 )
+from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import (
     FlowsList,
@@ -95,6 +97,39 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     assert sum(isinstance(c, CorrectSlotsCommand) for c in commands) <= 1
 
 
+def find_updated_flows(tracker: DialogueStateTracker, all_flows: FlowsList) -> Set[str]:
+    """Find the set of updated flows.
+
+    Run through the current dialogue stack and compare the flow hashes of the
+    flows on the stack with those stored in the tracker.
+
+    Args:
+        tracker: The tracker.
+        all_flows: All flows.
+
+    Returns:
+    A set of flow ids of those flows that have changed
+    """
+    stored_fingerprints = tracker.get_slot(FLOW_HASHES_SLOT)
+    dialogue_stack = DialogueStack.from_tracker(tracker)
+
+    changed_flows = set()
+    for frame in dialogue_stack.frames:
+        if isinstance(frame, BaseFlowStackFrame):
+            flow = all_flows.flow_by_id(frame.flow_id)
+            if flow is None or (
+                flow.id in stored_fingerprints
+                and flow.fingerprint() != stored_fingerprints[flow.id]
+            ):
+                changed_flows.add(frame.flow_id)
+    return changed_flows
+
+
+def calculate_flow_fingerprints(all_flows: FlowsList) -> Dict[str, str]:
+    """Calculate fingerprints for all flows."""
+    return {flow.id: flow.fingerprint() for flow in all_flows.underlying_flows}
+
+
 def execute_commands(
     tracker: DialogueStateTracker, all_flows: FlowsList
 ) -> List[Event]:
@@ -112,6 +147,16 @@ def execute_commands(
     original_tracker = tracker.copy()
 
     commands = clean_up_commands(commands, tracker, all_flows)
+
+    updated_flows = find_updated_flows(tracker, all_flows)
+    if updated_flows:
+        # Override commands
+        commands = [CleanStackCommand()]
+
+    # always store current flow hashes
+    tracker.update_with_events(
+        [SlotSet(FLOW_HASHES_SLOT, calculate_flow_fingerprints(all_flows))], None
+    )
 
     events: List[Event] = []
 

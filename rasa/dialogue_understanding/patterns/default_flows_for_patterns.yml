@@ -32,6 +32,10 @@ responses:
         rephrase: True
         template: jinja
 
+  utter_inform_stack_cleanup_rasa:
+    - text: There has been an update to my code. I need to wrap up our running dialogue tasks and start from scratch.
+      metadata:
+        rephrase: True
 
 slots:
   confirm_correction:
@@ -125,3 +129,12 @@ flows:
         action: action_listen
         next: "start"
       - id: "done"
+
+  pattern_clean_stack:
+    description: flow used to clean the stack after a bot update
+    steps:
+      - id: "inform_user"
+        action: utter_inform_stack_cleanup
+        next: "run_cleanup"
+      - id: "run_cleanup"
+        action: action_clean_stack
