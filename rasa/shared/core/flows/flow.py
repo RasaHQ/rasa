@@ -1001,8 +1001,8 @@ class SlotRejection:
             The parsed slot rejection.
         """
         return SlotRejection(
-            if_=rejection_config.get("if"),
-            utter=rejection_config.get("utter"),
+            if_=rejection_config["if"],
+            utter=rejection_config["utter"],
         )
 
     def as_dict(self) -> Dict[Text, Any]:

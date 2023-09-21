@@ -68,7 +68,7 @@ class ActionRunSlotRejections(Action):
         current_context = dialogue_stack.current_context()
         current_context[slot_name] = slot_value
 
-        structlogger.debug("collect.predicate.context", context=current_context)
+        structlogger.debug("run.predicate.context", context=current_context)
         document = current_context.copy()
 
         for rejection in top_frame.rejections:
@@ -80,13 +80,13 @@ class ActionRunSlotRejections(Action):
                 predicate = Predicate(rendered_template)
                 violation = predicate.evaluate(document)
                 structlogger.debug(
-                    "collect.predicate.result",
+                    "run.predicate.result",
                     predicate=predicate.description(),
                     violation=violation,
                 )
             except (TypeError, Exception) as e:
                 structlogger.error(
-                    "collect.predicate.error",
+                    "run.predicate.error",
                     predicate=condition,
                     document=document,
                     error=str(e),
@@ -106,9 +106,9 @@ class ActionRunSlotRejections(Action):
         if internal_error:
             utterance = "utter_internal_error_rasa"
 
-        if utterance is None:
+        if not isinstance(utterance, str):
             structlogger.error(
-                "collect.rejection.missing.utter",
+                "run.rejection.missing.utter",
                 utterance=utterance,
             )
             return events
@@ -120,8 +120,8 @@ class ActionRunSlotRejections(Action):
         )
 
         if message is None:
-            structlogger.debug(
-                "collect.rejection.failed.finding.utter",
+            structlogger.error(
+                "run.rejection.failed.finding.utter",
                 utterance=utterance,
             )
         else:
