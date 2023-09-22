@@ -1409,16 +1409,16 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 <RasaLabsLabel />
 
-<RasaLabsBanner version="3.7.0b1" />
+<RasaLabsBanner version="3.8.0a7" />
 
 The LLM-based intent classifier is a new intent classifier that uses large
 language models (LLMs) to classify intents. The LLM-based intent classifier
 relies on a method called retrieval augmented generation (RAG), which combines
-the benefits of retrieval-based and generation-based approaches. 
+the benefits of retrieval-based and generation-based approaches.
 
 During training, the classifier
 
-1. embeds all intent examples and 
+1. embeds all intent examples and
 2. stores their embeddings in a vector store.
 
 During prediction the classifier
@@ -1428,7 +1428,7 @@ During prediction the classifier
 3. The retrieved examples are ranked based on similarity to the current message and
 4. the most similar ones are included in an LLM prompt. The prompt guides the LLM to
    predict the intent of the message.
-5. LLM predicts an intent label. 
+5. LLM predicts an intent label.
 6. The generated label is mapped to an intent of the domain. The LLM can also
    predict a label that is not part of the training data. In this case, the
    intent from the domain with the most similar embedding is predicted.
@@ -1464,8 +1464,6 @@ pipeline:
     fallback_intent: "out_of_scope"
 # - ...
 ```
-
-
 
 ### FallbackClassifier
 
