@@ -12,27 +12,34 @@ import RasaProBanner from "@theme/RasaProBanner";
 
 ## Cheat Sheet
 
-| Command                   | Effect                                                                                             |
-| ------------------------- | -------------------------------------------------------------------------------------------------- |
-| `rasa init`               | Creates a new project with example training data, actions, and config files.                       |
-| `rasa train`              | Trains a model using your NLU data and stories, saves trained model in `./models`.                 |
-| `rasa interactive`        | Starts an interactive learning session to create new training data by chatting to your assistant.  |
-| `rasa shell`              | Loads your trained model and lets you talk to your assistant on the command line.                  |
-| `rasa run`                | Starts a server with your trained model.                                                           |
-| `rasa run actions`        | Starts an action server using the Rasa SDK.                                                        |
-| `rasa visualize`          | Generates a visual representation of your stories.                                                 |
-| `rasa test`               | Tests a trained Rasa model on any files starting with `test_`.                                     |
-| `rasa test e2e`           | Runs end-to-end testing fully integrated with the action server that serves as acceptance testing. |
-| `rasa data split nlu`     | Performs a 80/20 split of your NLU training data.                                                  |
-| `rasa data split stories` | Do the same as `rasa data split nlu`, but for your stories data.                                   |
-| `rasa data convert`       | Converts training data between different formats.                                                  |
-| `rasa data migrate`       | Migrates 2.0 domain to 3.0 format.                                                                 |
-| `rasa data validate`      | Checks the domain, NLU and conversation data for inconsistencies.                                  |
-| `rasa export`             | Exports conversations from a tracker store to an event broker.                                     |
-| `rasa evaluate markers`   | Extracts markers from an existing tracker store.                                                   |
-| `rasa marker upload`      | Upload marker configurations to Analytics Data Pipeline                                            |
-| `rasa license`            | Display licensing information.                                                                     |
-| `rasa -h`                 | Shows all available commands.                                                                      |
+The following commands are relevant to all assistants built with Rasa.
+
+| Command                 | Effect                                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `rasa init`             | Creates a new project with example training data, actions, and config files.                       |
+| `rasa train`            | Trains a model using your NLU data and stories, saves trained model in `./models`.                 |
+| `rasa shell`            | Loads your trained model and lets you talk to your assistant on the command line.                  |
+| `rasa run`              | Starts a server with your trained model.                                                           |
+| `rasa run actions`      | Starts an action server using the Rasa SDK.                                                        |
+| `rasa test e2e`         | Runs end-to-end testing fully integrated with the action server that serves as acceptance testing. |
+| `rasa data split nlu`   | Performs a 80/20 split of your NLU training data.                                                  |
+| `rasa data validate`    | Checks the domain, NLU and conversation data for inconsistencies.                                  |
+| `rasa export`           | Exports conversations from a tracker store to an event broker.                                     |
+| `rasa evaluate markers` | Extracts markers from an existing tracker store.                                                   |
+| `rasa marker upload`    | Upload marker configurations to Analytics Data Pipeline                                            |
+| `rasa license`          | Display licensing information.                                                                     |
+| `rasa -h`               | Shows all available commands.                                                                      |
+
+The following commands are only relevant if you are building [NLU-based assistants](./calm.mdx#calm-compared-to-nlu-based-assistants).
+
+| Command                   | Effect                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
+| `rasa interactive`        | Starts an interactive learning session to create new training data by chatting to your assistant. |
+| `rasa visualize`          | Generates a visual representation of your stories.                                                |
+| `rasa test`               | Tests a trained Rasa model on any files starting with `test_`.                                    |
+| `rasa data split stories` | Do the same as `rasa data split nlu`, but for your stories data.                                  |
+| `rasa data convert`       | Converts training data between different formats.                                                 |
+| `rasa data migrate`       | Migrates 2.0 domain to 3.0 format.                                                                |
 
 :::note
 If you run into character encoding issues on Windows like: `UnicodeEncodeError: 'charmap' codec can't encode character ...` or
@@ -151,7 +158,7 @@ The following arguments can be used to configure the training process:
 
 ```
 
-See the section on [data augmentation](../building-classic-assistants/policies.mdx#data-augmentation) for info on how data augmentation works
+See the section on [data augmentation](./building-classic-assistants/policies.mdx#data-augmentation) for info on how data augmentation works
 and how to choose a value for the flag. Note that `TEDPolicy` is the only policy affected by data augmentation.
 
 See the following section on [incremental training](#incremental-training) for more information about the `--epoch-fraction` argument.
@@ -210,8 +217,8 @@ rasa interactive
 
 This will first train a model and then start an interactive shell session.
 You can then correct your assistants predictions as you talk to it.
-If [`UnexpecTEDIntentPolicy`](../building-classic-assistants/policies.mdx#unexpected-intent-policy) is
-included in the pipeline, [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
+If [`UnexpecTEDIntentPolicy`](./building-classic-assistants/policies.mdx#unexpected-intent-policy) is
+included in the pipeline, [`action_unlikely_intent`](./concepts/default-actions.mdx#action_unlikely_intent)
 can be triggered at any conversation turn. Subsequently, the following message will be displayed:
 
 ```
@@ -275,7 +282,7 @@ rasa shell --debug
 In order to see the typical greetings and/or session start behavior you might see
 in an external channel, you will need to explicitly send `/session_start`
 as the first message. Otherwise, the session start behavior will begin as described in
-[Session configuration](./domain.mdx#session-configuration).
+[Session configuration](./concepts/domain.mdx#session-configuration).
 :::
 
 The following arguments can be used to configure the command.
@@ -323,7 +330,7 @@ rasa run --connector rest
 ```
 
 The name of the channel should match the name you specify in your credentials file.
-For supported channels see [the page about messaging and voice channels](../connectors/messaging-and-voice-channels.mdx).
+For supported channels see [the page about messaging and voice channels](./connectors/messaging-and-voice-channels.mdx).
 
 The following arguments can be used to configure your Rasa server:
 
@@ -331,8 +338,8 @@ The following arguments can be used to configure your Rasa server:
 
 ```
 
-For more information on the additional parameters, see [Model Storage](../production/model-storage.mdx).
-See the Rasa [HTTP API](../http-api.mdx) page for detailed documentation of all the endpoints.
+For more information on the additional parameters, see [Model Storage](./production/model-storage.mdx).
+See the Rasa [HTTP API](./http-api.mdx) page for detailed documentation of all the endpoints.
 
 ## rasa run actions
 
@@ -391,8 +398,8 @@ rasa test nlu
 ```
 
 You can find more details on specific arguments for each testing type in
-[Evaluating an NLU Model](../production/testing-your-assistant.mdx#evaluating-an-nlu-model) and
-[Evaluating a Dialogue Management Model](../production/testing-your-assistant.mdx#evaluating-a-dialogue-model).
+[Evaluating an NLU Model](./production/testing-your-assistant.mdx#evaluating-an-nlu-model) and
+[Evaluating a Dialogue Management Model](./production/testing-your-assistant.mdx#evaluating-a-dialogue-model).
 
 The following arguments are available for `rasa test`:
 
@@ -412,7 +419,7 @@ You can now use end-to-end testing to test your assistant as a whole, including 
 
 :::
 
-To run [end-to-end testing](../production/testing-your-assistant.mdx#end-to-end-testing) on your trained model, run:
+To run [end-to-end testing](./production/testing-your-assistant.mdx#end-to-end-testing) on your trained model, run:
 
 ```bash
 rasa test e2e
@@ -535,7 +542,7 @@ If no arguments are specified, the default domain path (`domain.yml`) will be us
 This command will also back-up your 2.0 domain file(s) into a different `original_domain.yml` file or
 directory labeled `original_domain`.
 
-Note that the slots in the migrated domain will contain [mapping conditions](./domain.mdx#mapping-conditions) if these
+Note that the slots in the migrated domain will contain [mapping conditions](./building-classic-assistants/domain.mdx#mapping-conditions) if these
 slots are part of a form's `required_slots`.
 
 :::caution
@@ -585,7 +592,7 @@ rasa data validate stories
 ```
 
 :::note
-Running `rasa data validate` does **not** test if your [rules](../building-classic-assistants/rules.mdx) are consistent with your stories.
+Running `rasa data validate` does **not** test if your [rules](./building-classic-assistants/rules.mdx) are consistent with your stories.
 However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
 
 Also, if you use end-to-end stories, then this might not capture all conflicts. Specifically, if two user inputs
@@ -635,8 +642,8 @@ This feature is currently experimental and might change or be removed in the fut
 
 :::
 
-The following command applies the [markers](../production/markers.mdx) you defined in your marker configuration file,
-to pre-existing dialogues stored in your [tracker store](../production/tracker-stores.mdx), and produces `.csv` files containing
+The following command applies the [markers](./production/markers.mdx) you defined in your marker configuration file,
+to pre-existing dialogues stored in your [tracker store](./production/tracker-stores.mdx), and produces `.csv` files containing
 the extracted markers and summary statistics:
 
 ```bash
@@ -683,10 +690,10 @@ Python Logging Options:
 
 :::info New in 3.6
 
-This command is available from Rasa Pro 3.6.0 and requires [Rasa Analytics Data Pipeline](../operating/analytics/getting-started-with-analytics.mdx)
+This command is available from Rasa Pro 3.6.0 and requires [Rasa Analytics Data Pipeline](./operating/analytics/getting-started-with-analytics.mdx)
 :::
 
-This command applies to [markers](../production/markers.mdx) and their [real-time processing](../operating/analytics/realtime-markers.mdx).
+This command applies to [markers](./production/markers.mdx) and their [real-time processing](./operating/analytics/realtime-markers.mdx).
 Running this command validates the marker configuration file against the domain file and uploads the configuration to Analytics Data Pipeline
 
 ```

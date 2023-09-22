@@ -6,7 +6,7 @@ module.exports = {
       label: "Getting started",
       collapsed: false,
       items: [
-        "conversational-ai-with-rasa", // TODO: ENG-517
+        "calm", // TODO: ENG-517
         {
           type: "category",
           label: "Installation",
@@ -26,8 +26,7 @@ module.exports = {
           ],
         },
         "tutorial",
-        "dm2-vs-intent-based-systems", // TODO: ENG-517
-        "dm2-vs-llm-chaining", // TODO: ENG-517
+        "command-line-interface",        
       ],
     },
     {
@@ -36,9 +35,10 @@ module.exports = {
       collapsed: true,
       items: [
         // TODO: ENG-537
-        "concepts/command-line-interface",
         "concepts/flows",
+        "concepts/dialogue-understanding",        
         "concepts/domain",
+        "concepts/unhappy-paths",
         {
           type: "category",
           label: "Actions",
@@ -49,21 +49,26 @@ module.exports = {
             "concepts/slot-validation-actions",
           ],
         },
-        "concepts/llm-command-generator",
-        "concepts/responses",
         {
           type: "category",
-          label: "Config",
+          label: "Responses",
           items: [
-            "concepts/llm-configuration",
-            "concepts/custom-graph-components",
-            "concepts/training-data-importers",
-            "concepts/graph-recipe",
-            "concepts/spaces",
+            "concepts/responses",
+            "concepts/contextual-response-rephraser",            
+          ],
+        },        
+        {
+          type: "category",
+          label: "Components",
+          items: [
+            "concepts/components/overview",
+            "llms/llm-configuration",
+            "llms/llm-custom",
+            "concepts/components/custom-graph-components",
+            "concepts/components/graph-recipe",
           ],
         },
         "concepts/policies", // TODO: ENG-538
-        "concepts/glossary",
         {
           type: "category",
           label: "Building Classic Assistants",
@@ -93,13 +98,14 @@ module.exports = {
                 "building-classic-assistants/language-support",
               ],
             },
+            "building-classic-assistants/domain",
             "building-classic-assistants/rules",
             "building-classic-assistants/stories",
             "building-classic-assistants/forms",
             "building-classic-assistants/training-data-format",
             "building-classic-assistants/nlu-training-data",
             "building-classic-assistants/tuning-your-model",
-            "building-classic-assistants/nlu-only",
+            "building-classic-assistants/nlu-only",         
           ],
         },
       ],
@@ -240,6 +246,7 @@ module.exports = {
           ],
         },
         "operating/tracing",
+        "operating/spaces",        
       ],
     },
     {
@@ -253,6 +260,7 @@ module.exports = {
       label: "Reference",
       collapsed: true,
       items: [
+        "building-classic-assistants/glossary",        
         "telemetry/telemetry",
         "telemetry/reference",
         require("./docs/reference/sidebar.json"),
@@ -275,44 +283,5 @@ module.exports = {
         },
       ],
     },
-  ],
-  llms: [
-    "start-here",
-    "tutorial",
-    {
-      type: "category",
-      label: "Getting Started",
-      collapsed: false,
-
-      items: [
-        "llms/llm-installation",
-        "llms/llm-next-gen",
-        "llms/llm-configuration",
-      ],
-    },
-    {
-      type: "category",
-      label: "Next-Gen Assistants",
-      collapsed: false,
-      items: [
-        "concepts/flows",
-        "llms/unhappy-paths",
-        "llms/llm-detector",
-      ],
-    },
-    {
-      type: "category",
-      label: "Components",
-      collapsed: false,
-      items: [
-        "llms/llm-intent",
-        "concepts/llm-command-generator",
-        "llms/contextual-response-rephraser",
-        "llms/llm-docsearch",
-        "llms/llm-intentless",
-        "llms/flow-policy",
-      ],
-    },
-    "llms/llm-custom",
-  ],
+  ]
 };

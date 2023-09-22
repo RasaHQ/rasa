@@ -19,7 +19,7 @@ policies:
 
 ### Defining a Form
 
-Define a form by adding it to the `forms` section in your [domain](../concepts/domain.mdx).
+Define a form by adding it to the `forms` section in your [domain](./domain.mdx).
 The name of the form is also the name of the action which you can use in
 [stories](./stories.mdx) or [rules](./rules.mdx) to handle form executions.
 You will need to specify a list of slot names to the mandatory `required_slots` key.
@@ -141,12 +141,12 @@ write stories or rules for this case.
 ### Slot Mappings
 
 :::caution Changed in 3.0
-As of 3.0, [slot mappings](../concepts/domain.mdx#slot-mappings) are defined in the `slots` section of the domain.
+As of 3.0, [slot mappings](./domain.mdx#slot-mappings) are defined in the `slots` section of the domain.
 This change allows the same slot mapping to be reused across multiple forms, removing any unnecessary duplication.
 Please follow the [migration guide](../migration-guide.mdx#slot-mappings) to update your assistant.
 
-Note specifically the role of [Mapping Conditions](../concepts/domain.mdx#mapping-conditions) and the
-[unique entity mapping](../concepts/domain.mdx#unique-from_entity-mapping-matching) constraint.
+Note specifically the role of [Mapping Conditions](./domain.mdx#mapping-conditions) and the
+[unique entity mapping](./domain.mdx#unique-from_entity-mapping-matching) constraint.
 :::
 
 ### Writing Stories / Rules for Unhappy Form Paths
@@ -291,7 +291,7 @@ The `slots_mapped_in_domain` argument provided to the `required_slots` method of
 has been replaced by the `domain_slots` argument, please update your custom actions to the new argument name.
 :::
 
-If none of the predefined [Slot Mappings](../concepts/domain.mdx#slot-mappings) fit your use
+If none of the predefined [Slot Mappings](./domain.mdx#slot-mappings) fit your use
 case, you can use the
 [Custom Action](../concepts/actions.mdx#custom-actions) `validate_<form_name>` to write your own
 extraction code. Rasa will trigger this action when the form is run.
@@ -421,7 +421,7 @@ class ValidateBookingForm(FormValidationAction):
 ### The requested_slot slot
 
 The slot `requested_slot` is automatically added to the domain as a
-slot of type [`text`](../concepts/domain.mdx#text-slot). The value of the `requested_slot` will be
+slot of type [`text`](./domain.mdx#text-slot). The value of the `requested_slot` will be
 ignored during conversations. If you want to change this behavior, you need to add
 the `requested_slot` to your domain file as a categorical slot with
 `influence_conversation` set to `true`.

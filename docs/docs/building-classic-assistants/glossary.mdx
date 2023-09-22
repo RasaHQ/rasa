@@ -5,7 +5,7 @@ title: Rasa Glossary
 description: Glossary for all Rasa-related terms
 ---
 
-## [Action](./actions.mdx)
+## [Action](../concepts/custom-actions.mdx)
 
 A single step that a bot takes in a conversation (e.g. calling an API or sending a response back to the user).
 
@@ -50,15 +50,15 @@ An element in the an assistant's [NLU pipeline](../building-classic-assistants/t
 
 Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
 
-## [Conditional Response Variation](./responses.mdx#conditional-response-variations)
+## [Conditional Response Variation](../concepts/responses.mdx#conditional-response-variations)
 
 Response variation that can only be used when the current dialogue state satisfies some constraints as defined in the domain or responses files. If there's a match between the constraints and the dialogue state, Rasa can use this variation.
 
-## [Custom Action](./actions.mdx#custom-actions)
+## [Custom Action](../concepts/custom-actions.mdx)
 
 An action written by a bot developer that can run arbitrary code, mainly to interact with external systems and APIs.
 
-## [Default Action](./actions.mdx#default-actions)
+## [Default Action](../concepts/default-actions.mdx)
 
 A built-in action that comes with predefined functionality.
 
@@ -166,7 +166,7 @@ A special type of intent that can be divided into smaller sub-intents. For examp
 
 A messaging channel used to build custom connectors. Includes an input channel, where user messages can be posted to Rasa, and the ability to specify a callback URL, where the bot’s response actions will be sent.
 
-## [Response / Template / Utterance](./responses.mdx)
+## [Response / Template / Utterance](../concepts/responses.mdx)
 
 A message that an assistant sends to a user. This can include text, buttons, images, and other content.
 
@@ -188,7 +188,7 @@ Training data format for the dialogue model, consisting of a conversation betwee
 
 Transformer Embedding Dialogue Policy. TED is the default machine learning-based dialogue policy used by Rasa. TED complements rule-based policies by handling previously unseen situations, where no rule exists to determine the next action.
 
-## [Template / Response / Utterance](./responses.mdx)
+## [Template / Response / Utterance](../concepts/responses.mdx)
 
 A message template used to respond to a user. Can include text, buttons, images, and other attachments.
 
