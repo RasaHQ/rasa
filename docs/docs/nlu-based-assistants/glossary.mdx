@@ -96,9 +96,13 @@ A type of custom action that asks the user for multiple pieces of information.
 
 For example, if you need a city, a cuisine, and a price range to recommend a restaurant, you can create a restaurant form to collect the information. You can describe [business logic](#business-logic) inside a form, like offering the customer a different set of menu options if they mention a food allergy.
 
-## Happy / Unhappy Paths
+## Happy Path / Conversation Repair
 
-Terms used to describe whether the user’s input is expected or unexpected. If your assistant asks a user for some information and the user provides it, we call that a happy path. Unhappy paths are all possible edge cases. For example, the user refusing to give the requested input, changing the topic of conversation, or correcting something they said earlier.
+Terms used to describe whether the user’s input follows an expected flow or diverges
+from the expected flow, which happens often in reality.
+If your assistant asks a user for some information and the user provides it, we call that a happy path.
+Conversation repair intervenes when, for example, the user refuses to give the requested input,
+changes the topic of conversation, or corrects something they said earlier.
 
 ## [Intent](../nlu-based-assistants/nlu-training-data.mdx)
 

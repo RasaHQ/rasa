@@ -131,7 +131,7 @@ input. Once triggered, it's placed on top of the dialogue stack for execution.
 For the `transfer_money` flow, the correction flow is an interruption. Once
 completed, the `transfer_money` flow resumes. Before its res umption, a
 `resume_flow` flow is activated. You can customize what happens in `resume_flow`
-and `correction` flows in [Handling Unhappy Paths](./unhappy-paths.mdx).
+and `correction` flows in [Conversation Repair](./conversation-repair.mdx).
 
 Upon completion of the `resume_flow` flow, the `transfer_money` flow resumes,
 and the bot returns to the state before the correction flow started. The
@@ -141,7 +141,7 @@ and the bot returns to the state before the correction flow started. The
 The `resume_flow` and `correction` flows are conversational patterns not
 explicitly modeled in the `transfer_money` flow. The `FlowPolicy` automatically
 triggers them when needed. For more details on defining conversational patterns,
-refer to [Handling Unhappy Paths](./unhappy-paths.mdx).
+refer to [Conversation Repair](./conversation-repair.mdx).
 
 ### Transitioning Between States
 
@@ -170,7 +170,7 @@ Flows and their specifications should ideally model the happy path of a
 conversation. The `FlowPolicy` depends on other components to identify
 digressions and interruptions and interrupt the flow accordingly. For details on
 which digressions and interruptions the flow policy can handle, refer to
-[Handling Unhappy Paths](./unhappy-paths.mdx).
+[Conversation Repair](./conversation-repair.mdx).
 
 For example, the user message _"oh sorry I meant John"_ is a correction to a
 prior input. The `FlowPolicy` depends on another component, like the

@@ -38,7 +38,7 @@ module.exports = {
         "concepts/flows",
         "concepts/dialogue-understanding",
         "concepts/domain",
-        "concepts/unhappy-paths",
+        "concepts/conversation-repair",
         {
           type: "category",
           label: "Actions",

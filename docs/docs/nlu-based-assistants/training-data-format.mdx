@@ -464,9 +464,9 @@ stories:
 A [form](../nlu-based-assistants/glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. You
 [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
-Once defined, you should specify the [happy path](../nlu-based-assistants/glossary.mdx#happy--unhappy-paths)
+Once defined, you should specify the [happy path](../nlu-based-assistants/glossary.mdx#happy-path--conversation-repair)
 for a form as a [rule](./forms.mdx). You should include interruptions of forms or
-other "unhappy paths" in stories so that the model can
+other conversation repair in stories so that the model can
 generalize to unseen conversation sequences.
 As a step in a story, a form takes the following format:
 

@@ -1,7 +1,7 @@
 ---
-id: unhappy-paths
-sidebar_label: Unhappy Paths
-title: Unhappy Paths
+id: conversation-repair
+sidebar_label: Conversation Repair
+title: Conversation Repair
 abstract: |
   Discover how to navigate situations where users deviate from a flow's prescribed business logic.
 ---
@@ -9,15 +9,15 @@ abstract: |
 ## Overview
 
 [Flows](../concepts/flows.mdx) offer structured way to design conversation-driven business logic. While
-flow designers primarily focus on linear [happy paths](../nlu-based-assistants/glossary.mdx#happy--unhappy-paths),
-Rasa provides a robust way to manage deviations, simplifying design complexity.
+flow designers primarily focus on linear [happy paths](../nlu-based-assistants/glossary.mdx#happy-path--conversation-repair),
+Rasa provides a robust way to manage conversation repair, simplifying design complexity.
 
 ### Default Behaviors
 
-Rasa ships a **default behavior for every unhappy path**. Override
+Rasa ships a **default behavior for every conversation repair case**. Override
 defaults by creating a flows with the same name of a pattern, like `pattern_correction`.
 
-## Unhappy Path Types
+## Conversation Repair Cases
 
 ### 1. Digressions
 
@@ -132,7 +132,7 @@ Errors arise from unexpected system or flow issues.
 
 ## Configurations
 
-Each of these unhappy paths can be configured using Rasa's YAML-based
+Each of these conversation repair cases can be configured using Rasa's YAML-based
 domain and flow system. You can overwrite a default behavior by creating
 a flow with the same name as the pattern:
 
@@ -283,7 +283,7 @@ was interrupted is called `transfer_money`.
 
 ## Reference: Default Pattern Configuration
 
-For reference, here is the complete default configuration for unhappy paths:
+For reference, here is the complete default configuration for conversation repair:
 
 ```yaml title="Default Patterns"
 version: "3.1"
