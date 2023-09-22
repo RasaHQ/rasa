@@ -307,6 +307,24 @@ You can learn more about conditions and advanced logic here (link).
 To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your assistant.
 It should now ask you to confirm before completing the transfer.
 
+## Ensuring a Slot is Requested Explicitly
+
+If you start a conversation with your assistant and say "I would like to transfer 100 dollars to Joe",
+the slots `amount` and `recipient` will be filled immediately based on the first message, and your conversation
+will advance to the end of the flow. 
+If you want to ensure that your assistant explicitly asks the user before filling a slot value,
+you can set the attribute `ask_before_filling` to `true` in your `collect` step.
+For example, to ensure that you always ask a user for confirmation, your flow step would look like this:
+
+```
+      - id: "confirm_transfer"
+        collect_information: final_confirmation
+        # highlight-next-line
+        ask_before_filling: true
+        next:
+          - if: final_confirmation
+            then: "transfer_successful"
+```
 
 ## Integrating an API call
 
