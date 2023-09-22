@@ -625,3 +625,59 @@ async def test_nlg_conditional_response_variations_condition_logging(
         "[condition 2] type: slot | name: test_B | value: B" in message
         for message in caplog.messages
     )
+
+
+async def test_nlg_response_with_jinja_template():
+    domain = Domain.from_yaml(
+        f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                responses:
+                    utter_flow_xyz:
+                    - text: "let's continue with the topic {{ context.flow_id }}"
+                      metadata:
+                        rephrase: true
+                        template: jinja
+        """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    slot = AnySlot(
+        name="context",
+        mappings=[{}],
+        initial_value={
+            "frame_id": "XX00YYZZ",
+            "flow_id": "transfer_money",
+            "step_id": "ask_recipient",
+            "collect_information": "transfer_money_recipient",
+            "type": "flow",
+            "frame_type": "regular",
+        },
+        influence_conversation=False,
+    )
+    tracker = DialogueStateTracker(sender_id="test", slots=[slot])
+    r = t.generate_from_slots(
+        "utter_flow_xyz",
+        {
+            "context": {
+                "frame_id": "XX00YYZZ",
+                "flow_id": "transfer_money",
+                "step_id": "ask_recipient",
+                "collect_information": "transfer_money_recipient",
+                "type": "flow",
+                "frame_type": "regular",
+            }
+        },
+        {
+            "frame_id": "XX00YYZZ",
+            "flow_id": "transfer_money",
+            "step_id": "ask_recipient",
+            "collect_information": "transfer_money_recipient",
+            "type": "flow",
+            "frame_type": "regular",
+        },
+        "",
+    )
+    assert r.get("text") == "let's continue with the topic transfer_money"
+
+    # tracker_no_slots = DialogueStateTracker(sender_id="new_test", slots=[])
+    # r = await t.generate("utter_action", tracker_no_slots, "")
+    # assert r.get("text") == "text for null"
