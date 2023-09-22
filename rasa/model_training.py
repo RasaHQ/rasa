@@ -24,6 +24,7 @@ import rasa.shared.utils.cli
 import rasa.shared.exceptions
 import rasa.shared.utils.io
 import rasa.shared.constants
+from rasa.shared.constants import CONTEXT
 import rasa.model
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
@@ -136,7 +137,7 @@ def _check_restricted_slots(domain: Domain) -> None:
     Returns:
         `None` if there are no restricted slots.
     """
-    restricted_slot_names = [rasa.shared.constants.CONTEXT]
+    restricted_slot_names = [CONTEXT]
     for slot in domain.slots:
         if slot.name in restricted_slot_names:
             rasa.shared.utils.cli.print_warning(
