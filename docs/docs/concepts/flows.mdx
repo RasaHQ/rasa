@@ -483,18 +483,19 @@ flow is completed.
   scope: "flow"
 ```
 
-#### Slot value validation
+#### Slot validation
 
-You can now write slot value validation directly in your flow yaml file without the need to use custom actions.
-Add a `rejections` property to your `collect_information` step to define the validation rules.
-The `rejections` section is a list of mappings, where each mapping has an `if` and an `utter` property:
+You can define slot validation rules directly in your flow yaml file by adding a `rejections` property to any
+`collect_information` step. The `rejections` section is a list of mappings, where each mapping must have an
+`if` and an `utter` mandatory properties:
 - the `if` property is a condition written in natural language that is evaluated using the
 [pypred](https://github.com/armon/pypred) library.
-- the `utter` property is the name of the response the assistant will send if the condition evaluates to `True`.
+- the `utter` property is the name of the [response](./responses.mdx) the assistant will send if the condition evaluates
+to `True`.
 
 Here is an example:
 
-```yaml
+```rasa-yaml title="flows.yml"
 flows:
   verify_eligibility:
     description: This flow verifies if the user is eligible for creating an account.
@@ -505,19 +506,19 @@ flows:
         rejections:
           - if: age < 1
             utter: utter_invalid_age
-          - if: age < 13
-            utter: utter_age_at_least_13
+          - if: age < 18
+            utter: utter_age_at_least_18
         next: "ask_email"
 ```
 
-Upon every validation failure, the assistant will again make another attempt to collect the information.
-This will be repeated until none of the rejection conditions pass. Once all rejections have evaluated to `False`, the
-assistant moves on to the `next` step with the collected value.
+Upon every validation failure, the assistant will automatically make another attempt to collect the information.
+The assistant will repeatedly ask for the slot until none of the rejection conditions pass. Once all rejections have
+evaluated to `False`, the assistant moves on to the `next` step with the collected value.
 
-If the predicate defined in the `if` property is invalid or missing, the assistant will log an error and respond with the
-`utter_internal_error_rasa` response which by default is
-`Sorry, I'm having trouble understanding you right now. Please try again later.`. However, you can customize this in
-your domain file. We recommend using end-to-end testing to ensure that your flows work as expected.
+If the predicate defined in the `if` property is invalid, the assistant will log an error and respond with the
+`utter_internal_error_rasa` response which by default is `Sorry, I'm having trouble understanding you right now.
+Please try again later.`. However, you can customize this in your domain file. We recommend using end-to-end testing
+to ensure that your flows work as expected.
 
 If no rejections are defined, the assistant will fill the slot with the collected value and proceed to the next step.
 
