@@ -62,8 +62,8 @@ module.exports = {
           label: "Components",
           items: [
             "concepts/components/overview",
-            "llms/llm-configuration",
-            "llms/llm-custom",
+            "concepts/components/llm-configuration",
+            "concepts/components/llm-custom",
             "concepts/components/custom-graph-components",
             "concepts/components/graph-recipe",
           ],

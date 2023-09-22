@@ -6,14 +6,13 @@ className: hide
 abstract:
 ---
 
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import useBaseUrl from "@docusaurus/useBaseUrl";
 import TutorialActionLabel from "@theme/TutorialActionLabel";
 
 You will build an assistant in this tutorial for helping people transfer money.
 This tutorial does not assume and existing knowledge of Rasa or chatbots.
 The techniques you will learn in this tutorial are fundamental to building any Rasa bot,
 and understanding it will bring you quite far along to mastering Rasa.
-
 
 ## What are you building?
 
@@ -22,26 +21,37 @@ doesn't get confused as soon as a user says something unexpected.
 
 Here are some of the conversations your assistant will be able to handle:
 
-<Tabs values={[{"label": "Happy path", "value": "happy-path"}, {"label": "Complete request", "value": "all-upfront"}, {"label": "Change of mind", "value": "change-mind"}, {"label": "Interjection", "value": "interjection"}]}  groupId="example-conversations" defaultValue="happy-path">
+<Tabs
+  values={[
+    { label: "Happy path", value: "happy-path" },
+    { label: "Complete request", value: "all-upfront" },
+    { label: "Change of mind", value: "change-mind" },
+    { label: "Interjection", value: "interjection" },
+  ]}
+  groupId="example-conversations"
+  defaultValue="happy-path"
+>
   <TabItem value="happy-path">
     <Chat caption="happy path">
-    <ChatUserText>I'd like to transfer some money</ChatUserText>
-    <ChatBotText>Sure - who are we sending money to?</ChatBotText>
-    <ChatUserText>Jen</ChatUserText>
-    <ChatBotText>How much would you like to send?</ChatBotText>
-    <ChatUserText>$50</ChatUserText>
-    <ChatBotText>Just to confirm: you want to send $50 to Jen?</ChatBotText>
-    <ChatUserText>yes</ChatUserText>
-    <ChatBotText>Ok, it's done!</ChatBotText>
+      <ChatUserText>I'd like to transfer some money</ChatUserText>
+      <ChatBotText>Sure - who are we sending money to?</ChatBotText>
+      <ChatUserText>Jen</ChatUserText>
+      <ChatBotText>How much would you like to send?</ChatBotText>
+      <ChatUserText>$50</ChatUserText>
+      <ChatBotText>Just to confirm: you want to send $50 to Jen?</ChatBotText>
+      <ChatUserText>yes</ChatUserText>
+      <ChatBotText>Ok, it's done!</ChatBotText>
     </Chat>
   </TabItem>
   <TabItem value="all-upfront">
     <Chat caption="All info given">
-    <ChatUserText>I want to send $100 to Joe</ChatUserText>
-    <ChatBotText>Just to confirm, you want to send $100.00 to Joe Smith?</ChatBotText>
-    <ChatUserText>yes.</ChatUserText>
-    <ChatBotText>All done. $100.00 has been sent to Joe Smith.</ChatBotText>
-    <ChatBotText>Is there anything else I can help you with?</ChatBotText>
+      <ChatUserText>I want to send $100 to Joe</ChatUserText>
+      <ChatBotText>
+        Just to confirm, you want to send $100.00 to Joe Smith?
+      </ChatBotText>
+      <ChatUserText>yes.</ChatUserText>
+      <ChatBotText>All done. $100.00 has been sent to Joe Smith.</ChatBotText>
+      <ChatBotText>Is there anything else I can help you with?</ChatBotText>
     </Chat>
   </TabItem>
 </Tabs>
@@ -58,15 +68,15 @@ rasa init --template tutorial
 ```
 
 By default, this tutorial uses the OpenAI API.
-If you'd like to use a different LLM, follow the instructions [here](./llms/llm-configuration.mdx#other-llmsembeddings)
+If you'd like to use a different LLM, follow the instructions [here](./concepts/components/llm-configuration.mdx#other-llmsembeddings)
 To set your OpenAI API key, run the following command:
 
 <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
   <TabItem value="unix">
 
-  ```shell
-  export OPENAI_API_KEY=<your-api-key>
-  ```
+```shell
+export OPENAI_API_KEY=<your-api-key>
+```
 
   </TabItem>
   <TabItem value="windows">
@@ -82,15 +92,14 @@ To set your OpenAI API key, run the following command:
 
 Replacing `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
 
-
 ## Overview
 
 Open up the project folder in your IDE to see the files that make up your new project.
 In this tutorial you will primarily work with the following files:
 
-* `data/flows.yml`
-* `domain.yml`
-* `actions.py`
+- `data/flows.yml`
+- `domain.yml`
+- `actions.py`
 
 ## Testing your money transfer flow
 
@@ -136,12 +145,10 @@ But it is also helpful for anyone who inspects your code to understand what is g
 If a user says "I need to transfer some money", the description helps Rasa understand that this is the relevant flow.
 The `steps` describe the business logic required to do what the user asked for.
 
-
 There are three steps defined, each with an `id`.
 The `id` can be anything you like, but it's a good idea to use names that make it clear what is going on.
 The first step is a `collect_information` step, which is used to fill a `slot`.
 A `collect_information` step sends a message to the user requesting information, and waits for an answer.
-
 
 ## Collecting Information in Slots
 
@@ -177,7 +184,7 @@ flows:
         action: utter_transfer_complete
 ```
 
-Rasa will look for a  `response` called `utter_ask_recipient` in your domain file and use this to
+Rasa will look for a `response` called `utter_ask_recipient` in your domain file and use this to
 phrase the question to the user.
 
 ```yaml-rasa title="domain.yml"
@@ -265,7 +272,6 @@ Notice that your confirmation question uses curly brackets `{}` to include slot 
 Add a `collect_information` step to your flow and give it the id `confirm_transfer`.
 Also change the `next` attribute of the `ask_amount` step to match the `id` of your newly created step: `confirm_transfer`.
 
-
 ```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
@@ -297,7 +303,6 @@ You can learn more about conditions and advanced logic here (link).
 
 To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your bot.
 It should now ask you to confirm before completing the transfer.
-
 
 ## Integrating an API call
 
@@ -331,9 +336,9 @@ class ActionSufficientFunds(Action):
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        # hard-coded balance for tutorial purposes. in production this 
+        # hard-coded balance for tutorial purposes. in production this
         # would be retrieved from a database or an API
-        balance = 1000 
+        balance = 1000
         transfer_amount = tracker.get_slot("amount")
         has_sufficient_funds = transfer_amount <= balance
         return [SlotSet("has_sufficient_funds", has_sufficient_funds)]
@@ -343,9 +348,10 @@ Slots are the primary way to pass information to and from custom actions.
 In the `run()` method above, you access the value of the `amount` slot that was set during the conversation,
 and you pass information back to the conversation by returning a `SlotSet` event to update the `has_sufficient_funds` slot.
 
-
-<img alt="diagram of how slots are used with custom actions" src={useBaseUrl("/img/slot-communication-customaction.png")} />
-
+<img
+  alt="diagram of how slots are used with custom actions"
+  src={useBaseUrl("/img/slot-communication-customaction.png")}
+/>
 
 Now you are going to make three additions to your `domain.yml`.
 You will add a top-level section listing your custom actions.
@@ -376,7 +382,7 @@ responses:
 ```
 
 Now you are going to update your flow logic to handle the cases where the user does or does not have
- enough money in their account to make the transfer.
+enough money in their account to make the transfer.
 
 ```yaml-rasa title="flows.yml"
 flows:
@@ -432,29 +438,36 @@ you don't have enough funds in your account.
 At this point you have experience using some of the key concepts involved in building with Rasa.
 Congratulations! Take some time to look over these more advanced topics to learn even more.
 
-
 ## How-to Guides for Advanced Topics
 
 ### Slot Validation
+
 Use custom logic to determine whether to accept or reject the value of a slot provided by the user.
 
 ### Handling Corrections
+
 Handle cases where the user changes their mind about something and provides an new answer to an earlier question.
 
 ### Handling Digressions
+
 Handle cases where users ask clarifying questions, make small talk, etc.
 
 ### Customising Patterns
+
 Customise how Rasa switches between flows and other common conversational patterns.
 
 ### Contextual Paraphrasing
+
 Use LLMs to paraphrase templated responses to account for context and increase fluency.
 
 ### Linking Flows
+
 Link multiple flows together, build shared sub-flows
 
 ### Integrating Search & RAG
+
 Integrate flow-based and knowledge-based dialogue into fluent conversations.
 
 ### Handling Disambiguation
+
 Automatically ask clarifying questions when it is not clear which flow applies.
