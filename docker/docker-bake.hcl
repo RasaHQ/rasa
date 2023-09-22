@@ -1,18 +1,13 @@
-variable "BASE_IMAGE_REGISTRY" {
-  default = "rasa"
-}
-
 variable "TARGET_IMAGE_REGISTRY" {
   default = "rasa"
 }
-
 
 variable "TARGET_IMAGE_NAME" {
   default = "${TARGET_IMAGE_REGISTRY}/rasa"
 }
 
 variable "BASE_IMAGE_NAME" {
-  default = "${BASE_IMAGE_REGISTRY}/rasa"
+  default = "rasa/rasa"
 }
 
 variable "IMAGE_TAG" {
@@ -95,8 +90,8 @@ target "default" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest",
   ]
 }
@@ -115,8 +110,8 @@ target "full" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest-full",
   ]
 }
@@ -135,9 +130,9 @@ target "mitie-en" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-mitie-${BASE_MITIE_IMAGE_HASH}",
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-mitie-${BASE_MITIE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest-mitie-en",
   ]
 }
@@ -155,8 +150,8 @@ target "spacy-de" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest-spacy-de",
   ]
 }
@@ -174,8 +169,8 @@ target "spacy-it" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest-spacy-it",
   ]
 }
@@ -193,8 +188,8 @@ target "spacy-en" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${TARGET_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest-spacy-en",
   ]
 }

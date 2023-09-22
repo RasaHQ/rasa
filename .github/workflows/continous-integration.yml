@@ -834,8 +834,6 @@ jobs:
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
     runs-on: ubuntu-22.04
-    env:
-      BASE_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-ci-cd/rasa"
     outputs:
       base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
       base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
@@ -870,17 +868,8 @@ jobs:
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
-      # Authenticate and push to the release registry
-      - id: 'auth-release'
-        name: Authenticate with gcloud for dev registry 🎫
-        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
-        with:
-          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
-
-      - name: Authenticate docker for dev registry 🎫
-        run: |
-          # Set up docker to authenticate via gcloud command-line tool.
-          gcloud auth configure-docker europe-west3-docker.pkg.dev
+      - name: Login to DockerHub Registry 🔢
+        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
       - name: Check if tag version is equal or higher than the latest tagged Rasa version
         id: rasa_get_version
@@ -911,7 +900,7 @@ jobs:
           BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
           echo "base_image_hash=${BASE_IMAGE_HASH}" >> $GITHUB_OUTPUT
 
-          BASE_IMAGE_EXISTS=$((docker manifest inspect ${BASE_IMAGE_REGISTRY}/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
+          BASE_IMAGE_EXISTS=$((docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
           echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base MITIE image
@@ -919,18 +908,18 @@ jobs:
           MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
           echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}" >> $GITHUB_OUTPUT
 
-          BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect ${BASE_IMAGE_REGISTRY}/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
+          BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
           echo "base_mitie_exists=${BASE_IMAGE_MITIE_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base poetry image
-          BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect ${BASE_IMAGE_REGISTRY}/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
+          BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect rasa/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
           echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base builder image
           BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
           echo "base_builder_image_hash=${BASE_IMAGE_BUILDER_HASH}" >> $GITHUB_OUTPUT
 
-          BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect ${BASE_IMAGE_REGISTRY}/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
+          BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
           echo "base_builder_exists=${BASE_IMAGE_BUILDER_EXISTS}" >> $GITHUB_OUTPUT
 
       - name: Build Docker base image 🛠
@@ -1031,7 +1020,6 @@ jobs:
     needs: [changes, build_docker_base_images_and_set_env]
     env:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
-      BASE_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-ci-cd/rasa"
       TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
       BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
