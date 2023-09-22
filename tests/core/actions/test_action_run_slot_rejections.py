@@ -122,6 +122,7 @@ async def test_action_run_slot_rejections_top_frame_none_rejections(
             "flow_id": "pattern_ask_collect_information",
             "step_id": "start",
             "collect_information": "payment_recipient",
+            "utter": "utter_ask_payment_recipient",
             "rejections": [],
             "type": "pattern_collect_information",
         },
@@ -169,6 +170,7 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
             "flow_id": "pattern_ask_collect_information",
             "step_id": "start",
             "collect_information": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
@@ -222,6 +224,7 @@ async def test_action_run_slot_rejections_run_success(
             "flow_id": "pattern_ask_collect_information",
             "step_id": "start",
             "collect_information": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
@@ -285,6 +288,7 @@ async def test_action_run_slot_rejections_internal_error(
             "flow_id": "pattern_ask_collect_information",
             "step_id": "start",
             "collect_information": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": predicate,
@@ -345,6 +349,7 @@ async def test_action_run_slot_rejections_collect_missing_utter(
             "flow_id": "pattern_ask_collect_information",
             "step_id": "start",
             "collect_information": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
@@ -402,6 +407,7 @@ async def test_action_run_slot_rejections_not_found_utter(
             "flow_id": "pattern_ask_collect_information",
             "step_id": "start",
             "collect_information": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
@@ -459,6 +465,7 @@ async def test_action_run_slot_rejections_pass_multiple_rejection_checks(
             "flow_id": "pattern_ask_collect_information",
             "step_id": "start",
             "collect_information": "payment_amount",
+            "utter": "utter_ask_payment_amount",
             "rejections": [
                 {
                     "if": "payment_amount > 1000",
@@ -517,6 +524,7 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
             "flow_id": "pattern_ask_collect_information",
             "step_id": "start",
             "collect_information": "payment_amount",
+            "utter": "utter_ask_payment_amount",
             "rejections": [
                 {
                     "if": "payment_amount > 1000",
