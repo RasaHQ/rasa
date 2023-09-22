@@ -337,8 +337,8 @@ You can learn more about everything you can do with responses here (link).
 
 The second type of `action` is a custom action. The name of a custom action starts with `action_`.
 
-You are going to create a custom action, `action_check_balance`, to check whether the user has enough money
-to make the transfer, and then add logic to your flow to handle both cases.
+You are going to create a custom action, `action_check_sufficient_funds`, to check whether the 
+user has enough money to make the transfer, and then add logic to your flow to handle both cases.
 
 Your custom action is defined in the file `actions.py`.
 To learn more about custom actions, go here (link).
@@ -351,9 +351,9 @@ from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 
-class ActionSufficientFunds(Action):
+class ActionCheckSufficientFunds(Action):
     def name(self) -> Text:
-        return "action_sufficient_funds"
+        return "action_check_sufficient_funds"
 
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
@@ -383,7 +383,7 @@ add a new response to send to the user in case they do not have sufficient funds
 ```yaml-rasa title="domain.yml"
 # highlight-start
 actions:
-  - action_sufficient_funds
+  - action_check_sufficient_funds
 # highlight-end
 
 slots:
@@ -419,7 +419,7 @@ flows:
         # highlight-start
         next: "check_funds"
       - id: "check_funds"
-        action: action_sufficient_funds
+        action: action_check_sufficient_funds
         next:
           - if: has_sufficient_funds
             then: "confirm_transfer"
@@ -455,7 +455,7 @@ action_endpoint:
 ```
 
 Then re-start your assistant by running `rasa shell`.
-When you reach the `"check_funds"` step in your flow, Rasa will call the custom action `action_sufficient_funds`.
+When you reach the `"check_funds"` step in your flow, Rasa will call the custom action `action_check_sufficient_funds`.
 We have hardcoded the user's balance to be `1000`, so if you try to send more, the assistant will tell you that
 you don't have enough funds in your account.
 
