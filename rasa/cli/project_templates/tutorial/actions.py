@@ -4,9 +4,9 @@ from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 
 
-class ActionSufficientFunds(Action):
+class ActionCheckSufficientFunds(Action):
     def name(self) -> Text:
-        return "action_sufficient_funds"
+        return "action_check_sufficient_funds"
 
     def run(
         self,

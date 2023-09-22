@@ -54,7 +54,13 @@ import rasa.shared.utils.io
 import rasa.shared.utils.common
 import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
+from rasa.shared.core.slots import (
+    Slot,
+    CategoricalSlot,
+    TextSlot,
+    AnySlot,
+    ListSlot,
+)
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -968,9 +974,6 @@ class Domain:
 
     def _add_flow_slots(self) -> None:
         """Adds the slots needed for the conversation flows.
-
-        Add a slot called `flow_step_slot` to the list of slots. The value of
-        this slot will hold the name of the id of the next step in the flow.
 
         Add a slot called `dialogue_stack_slot` to the list of slots. The value of
         this slot will be a call stack of the flow ids.

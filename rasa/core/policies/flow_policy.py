@@ -53,6 +53,7 @@ from rasa.shared.core.flows.flow import (
     IfFlowLink,
     EntryPromptFlowStep,
     CollectInformationScope,
+    SlotRejection,
     StepThatCanStartAFlow,
     UserMessageStep,
     LinkFlowStep,
@@ -170,6 +171,7 @@ class FlowPolicy(Policy):
             domain: The model's domain.
             rule_only_data: Slots and loops which are specific to rules and hence
                 should be ignored by this policy.
+            flows: The flows to use.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 
@@ -207,7 +209,7 @@ class FlowPolicy(Policy):
             domain: The model's domain.
             score: The score of the predicted action.
 
-        Resturns:
+        Returns:
             The prediction result where the score is used for one hot encoding.
         """
         result = self._default_predictions(domain)
@@ -241,8 +243,9 @@ class FlowExecutor:
         """Initializes the `FlowExecutor`.
 
         Args:
-            dialogue_stack_frame: State of the flow.
+            dialogue_stack: State of the flow.
             all_flows: All flows.
+            domain: The domain.
         """
         self.dialogue_stack = dialogue_stack
         self.all_flows = all_flows
@@ -257,6 +260,7 @@ class FlowExecutor:
         Args:
             tracker: The tracker to create the `FlowExecutor` from.
             flows: The flows to use.
+            domain: The domain to use.
 
         Returns:
         The created `FlowExecutor`.
@@ -269,7 +273,6 @@ class FlowExecutor:
 
         Args:
             tracker: The tracker containing the conversation history up to now.
-            flows: The flows to use.
 
         Returns:
             The predicted action and the events to run.
@@ -295,7 +298,7 @@ class FlowExecutor:
     ) -> bool:
         """Evaluate a predicate condition."""
 
-        # attach context to the predicate evaluation to allow coditions using it
+        # attach context to the predicate evaluation to allow conditions using it
         context = {"context": DialogueStack.from_tracker(tracker).current_context()}
         document: Dict[str, Any] = context.copy()
         for slot in self.domain.slots:
@@ -409,7 +412,6 @@ class FlowExecutor:
 
         Args:
             tracker: The tracker to get the next action for.
-            domain: The domain to get the next action for.
 
         Returns:
         The predicted action and the events to run.
@@ -450,7 +452,6 @@ class FlowExecutor:
 
         Args:
             tracker: The tracker to get the next action for.
-            domain: The domain to get the next action for.
 
         Returns:
             The next action to execute, the events that should be applied to the
@@ -546,11 +547,14 @@ class FlowExecutor:
         """
         if isinstance(step, CollectInformationFlowStep):
             structlogger.debug("flow.step.run.collect")
-            self.trigger_pattern_collect_information(step.collect)
+            self.trigger_pattern_ask_collect_information(
+                step.collect, step.rejections, step.utter
+            )
 
-            # reset the slot if its already filled and the collect infomation shouldn't
+            # reset the slot if its already filled and the collect information shouldn't
             # be skipped
             slot = tracker.slots.get(step.collect, None)
+
             if slot and slot.has_been_set and step.ask_before_filling:
                 events = [SlotSet(step.collect, slot.initial_value)]
             else:
@@ -561,8 +565,10 @@ class FlowExecutor:
         elif isinstance(step, ActionFlowStep):
             if not step.action:
                 raise FlowException(f"Action not specified for step {step}")
+
             context = {"context": self.dialogue_stack.current_context()}
             action_name = self.render_template_variables(step.action, context)
+
             if action_name in self.domain.action_names_or_texts:
                 structlogger.debug("flow.step.run.action", context=context)
                 return PauseFlowReturnPrediction(ActionPrediction(action_name, 1.0))
@@ -670,9 +676,19 @@ class FlowExecutor:
                 )
             )
 
-    def trigger_pattern_collect_information(self, collect: str) -> None:
+    def trigger_pattern_ask_collect_information(
+        self,
+        collect: str,
+        rejections: List[SlotRejection],
+        utter: str,
+    ) -> None:
+        """Trigger the pattern to ask for a slot value."""
         self.dialogue_stack.push(
-            CollectInformationPatternFlowStackFrame(collect=collect)
+            CollectInformationPatternFlowStackFrame(
+                collect=collect,
+                utter=utter,
+                rejections=rejections,
+            )
         )
 
     @staticmethod

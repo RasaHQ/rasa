@@ -21,6 +21,7 @@ def test_dialogue_stack_from_dict():
                 "frame_id": "some-other-id",
                 "step_id": "START",
                 "flow_id": "pattern_collect_information",
+                "utter": "utter_ask_foo",
             },
         ]
     )
@@ -31,7 +32,7 @@ def test_dialogue_stack_from_dict():
         flow_id="foo", step_id="first_step", frame_id="some-frame-id"
     )
     assert stack.frames[1] == CollectInformationPatternFlowStackFrame(
-        collect="foo", frame_id="some-other-id"
+        collect="foo", frame_id="some-other-id", utter="utter_ask_foo"
     )
 
 
@@ -47,7 +48,9 @@ def test_dialogue_stack_as_dict():
                 flow_id="foo", step_id="first_step", frame_id="some-frame-id"
             ),
             CollectInformationPatternFlowStackFrame(
-                collect="foo", frame_id="some-other-id"
+                collect="foo",
+                frame_id="some-other-id",
+                utter="utter_ask_foo",
             ),
         ]
     )
@@ -66,6 +69,8 @@ def test_dialogue_stack_as_dict():
             "frame_id": "some-other-id",
             "step_id": "START",
             "flow_id": "pattern_collect_information",
+            "rejections": None,
+            "utter": "utter_ask_foo",
         },
     ]
 
@@ -188,7 +193,7 @@ def test_get_current_context():
         flow_id="foo", step_id="first_step", frame_id="some-frame-id"
     )
     pattern_frame = CollectInformationPatternFlowStackFrame(
-        collect="foo", frame_id="some-other-id"
+        collect="foo", frame_id="some-other-id", utter="utter_ask_foo"
     )
 
     stack = DialogueStack(frames=[])
@@ -201,6 +206,8 @@ def test_get_current_context():
         "step_id": "first_step",
         "type": "flow",
         "collect": "foo",
+        "utter": "utter_ask_foo",
+        "rejections": None,
     }
 
 

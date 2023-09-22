@@ -40,6 +40,7 @@ ACTION_VALIDATE_SLOT_MAPPINGS = "action_validate_slot_mappings"
 ACTION_CANCEL_FLOW = "action_cancel_flow"
 ACTION_CLARIFY_FLOWS = "action_clarify_flows"
 ACTION_CORRECT_FLOW_SLOT = "action_correct_flow_slot"
+ACTION_RUN_SLOT_REJECTIONS_NAME = "action_run_slot_rejections"
 
 
 DEFAULT_ACTION_NAMES = [
@@ -60,6 +61,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_CANCEL_FLOW,
     ACTION_CORRECT_FLOW_SLOT,
     ACTION_CLARIFY_FLOWS,
+    ACTION_RUN_SLOT_REJECTIONS_NAME,
 ]
 
 ACTION_SHOULD_SEND_DOMAIN = "send_domain"
