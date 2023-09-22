@@ -17,14 +17,14 @@ In a CALM-based assistant, the `FlowPolicy` is responsible for executing your bu
 You can customize the policies your assistant uses by specifying the `policies`
 key in your project's `config.yml`.
 In most cases, the default configuration should meet your needs, customization is
-there for advanced users.
+there for advanced use-cases.
 
 There are different policies to choose from, and you can include
 multiple policies in a single configuration. Here's an example of
 what a list of policies might look like:
 
 ```yaml-rasa title="config.yml"
-...
+# ...
 
 policies:
   - name: FlowPolicy
@@ -32,12 +32,12 @@ policies:
 ```
 
 
-:::
 
 ## Action Selection
 
 At every turn, each policy defined in your configuration gets a chance to
-predict a next action with a certain confidence level. A policy can also not predict an action.
+predict a next [action](./actions.mdx) with a certain confidence level.
+A policy can also not predict an action.
 The policy that predicts with the highest confidence decides the assistant's next action.
 
 :::note Maximum number of predictions
@@ -54,15 +54,15 @@ to the desired number of maximum predictions.
 :::info New in 3.7
 
 The *Flow Policy* is part of Rasa's new 
-Conversational AI with Language Models (CALM) approach and available starting
+[Conversational AI with Language Models (CALM)](../calm.mdx) approach and available starting
 with version `3.7.0`.
 :::
 
-Rasa's Flow Policy is a state machine that allows you to manage and control your
-chatbot's conversational flows. It facilitates the integration of your business
+The Flow Policy is a state machine that allows you to manage and control your
+assistant's conversational flows. It facilitates the integration of your business
 logic with machine learning capabilities.
 
-The Flow Policy oversees your bot's state, handles state transitions, and
+The Flow Policy oversees your assistant's state, handles state transitions, and
 triggers new flows when needed. The "Dialogue Stack" represents all started but
 incomplete flows and refers to steps defined in the
 [flows specification](../concepts/flows.mdx).
@@ -78,19 +78,17 @@ For more detailed information on defining flows, refer to the
 
 ## Adding the FlowPolicy to your bot
 
-The Flow Policy can be integrated like [any other policy](../building-classic-assistants/policies.mdx). It
-involves two steps:
+The Flow Policy can be integrated like [any other policy](../building-classic-assistants/policies.mdx). 
+It involves two steps:
 
 1. Configure the `FlowPolicy` in your `config.yml` file:
 
    ```yaml-rasa title="config.yml"
    policies:
-   # - ...
      - name: rasa.core.policies.flow_policy.FlowPolicy
-   # - ...
    ```
 
-2. Add flows to your bot as per the [flows specification](../concepts/flows.mdx). This
+2. Add flows to your assistant as per the [flows specification](../concepts/flows.mdx). This
    step involves defining the states and transitions that your bot should
    recognize and react to.
 
@@ -111,7 +109,7 @@ inserted flows will continue. The dialogue stack is stored in the `dialogue_stac
 
 Here's an example flow and a conversation currently using it:
 
-```yaml title="flows.yml"
+```rasa-yaml title="flows.yml"
 flows:
   transfer_money:
     description: This flow enables users to send money to friends and family.

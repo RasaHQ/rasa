@@ -10,7 +10,7 @@ abstract: |
 :::info New in 3.7
 
 The *Command Generator* is part of Rasa's new 
-Conversational AI with Language Models (CALM) approach and available starting
+[Conversational AI with Language Models (CALM) approach](../calm.mdx) and available starting
 with version `3.7.0`.
 :::
 
@@ -19,7 +19,7 @@ with version `3.7.0`.
 The `CommandGenerator` component performs *Dialogue Understanding*. 
 In the CALM approach, *Dialogue Understanding* aims to represent how the end user
 wants to progress the conversation. 
-There is currently only one command generator available: the `LLMCommandGenerator`
+There is currently only one command generator available: the `LLMCommandGenerator`.
 
 
 ## Using the LLMCommandGenerator in Your Bot
@@ -140,7 +140,7 @@ flows:
         next: "ask_amount"
       - id: "ask_amount"
         collect_information: amount
-        // highlight-next-line
+        # highlight-next-line
         description: the amount of money to send. extract only the numerical value, ignoring the currency.
         next: "transfer_successful"
 ```
@@ -153,9 +153,7 @@ To do this, you can write your own prompt as a jinja2 template and provide it to
 
 ```yaml-rasa title="config.yml"
 pipeline:
-# - ...
   - name: LLMCommandGenerator
-    // highlight-next-line
+    # highlight-next-line
     prompt: prompts/command-generator.jinja2
-# - ...
 ```

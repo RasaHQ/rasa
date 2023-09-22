@@ -58,6 +58,6 @@ For business use cases, CALM has advantages over LLM Agents:
 
 1. Your business logic is explicitly written down, can be easily edited, and you can be sure that it will be followed faithfully
 2. Your business logic is known up front so you don't need to rely on an LLM to guess it. This avoids doing multiple LLM calls in series in response to a single user message, which is infeasibly slow for most applications.
-3. You can make your business logic arbitrarily complex and not worry about whether the LLM “forgets” a step
+3. You can make your business logic arbitrarily complex and not worry about whether the LLM “forgets” a step.
 4. You can validate every piece of information a user provides (i.e. every slot value) as the conversation progresses. So you don’t have to wait until the all the information is collected and the API response gives you an error.
 5. End users cannot use prompt injection to override your business logic. *A Language model as a reasoning engine* is a fundamentally insecure proposition - see the [OWASP top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/assets/PDF/OWASP-Top-10-for-LLMs-2023-slides-v1_0.pdf).
