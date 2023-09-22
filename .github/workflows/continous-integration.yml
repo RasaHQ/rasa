@@ -1186,6 +1186,11 @@ jobs:
       - name: "Set up Cloud SDK"
         uses: "google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587"
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+
       - name: Release via GCP Artifact Registry
         run: |
           pip install keyring
