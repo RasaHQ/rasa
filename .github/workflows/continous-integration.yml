@@ -1024,7 +1024,6 @@ jobs:
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
       BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
-      RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
     strategy:
       matrix:
         image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
@@ -1068,6 +1067,7 @@ jobs:
       - name: Echo Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
 
+      # TODO: need to reenable pushing to docker registry once dm2 is merged
       # - name: Login to DockerHub Registry 🔢
       #   if: needs.changes.outputs.docker == 'true'
       #   run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
