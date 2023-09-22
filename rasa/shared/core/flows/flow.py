@@ -1023,6 +1023,8 @@ class CollectInformationFlowStep(FlowStep):
 
     collect_information: Text
     """The collect information of the flow step."""
+    utter: Text
+    """The utterance that the assistant uses to ask for the slot."""
     rejections: List[SlotRejection]
     """how the slot value is validated using predicate evaluation."""
     ask_before_filling: bool = False
@@ -1043,6 +1045,9 @@ class CollectInformationFlowStep(FlowStep):
         base = super()._from_json(flow_step_config)
         return CollectInformationFlowStep(
             collect_information=flow_step_config.get("collect_information", ""),
+            utter=flow_step_config.get(
+                "utter", f"utter_ask_{flow_step_config['collect_information']}"
+            ),
             ask_before_filling=flow_step_config.get("ask_before_filling", False),
             scope=CollectInformationScope.from_str(flow_step_config.get("scope")),
             rejections=[
@@ -1060,6 +1065,7 @@ class CollectInformationFlowStep(FlowStep):
         """
         dump = super().as_json()
         dump["collect_information"] = self.collect_information
+        dump["utter"] = self.utter
         dump["ask_before_filling"] = self.ask_before_filling
         dump["scope"] = self.scope.value
         dump["rejections"] = [rejection.as_dict() for rejection in self.rejections]

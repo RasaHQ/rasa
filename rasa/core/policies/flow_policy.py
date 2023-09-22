@@ -554,7 +554,7 @@ class FlowExecutor:
         if isinstance(step, CollectInformationFlowStep):
             structlogger.debug("flow.step.run.collect_information")
             self.trigger_pattern_ask_collect_information(
-                step.collect_information, step.rejections
+                step.collect_information, step.rejections, step.utter
             )
 
             # reset the slot if its already filled and the collect information shouldn't
@@ -686,11 +686,13 @@ class FlowExecutor:
         self,
         collect_information: str,
         rejections: List[SlotRejection],
+        utter: str,
     ) -> None:
         """Trigger the pattern to ask for a slot value."""
         self.dialogue_stack.push(
             CollectInformationPatternFlowStackFrame(
                 collect_information=collect_information,
+                utter=utter,
                 rejections=rejections,
             )
         )
