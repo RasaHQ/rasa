@@ -2825,7 +2825,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   [conversation session](./concepts/domain.mdx#session-configuration).
 
   Added a new boolean query parameter `all_sessions` (default: `false`) to the
-  [HTTP API](./http-api.mdx) endpoint for fetching test stories
+  [HTTP API](./production/http-api.mdx) endpoint for fetching test stories
   (`GET /conversations/<conversation_id>/story`).
 
   When setting `?all_sessions=true`, the endpoint returns test stories for all
@@ -2910,7 +2910,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#6721](https://github.com/rasahq/rasa/issues/6721): Fixed bug where slots with `influence_conversation=false` affected the action
   prediction if they were set manually using the
   `POST /conversations/<conversation_id/tracker/events` endpoint in the
-  [HTTP API](./http-api.mdx).
+  [HTTP API](./production/http-api.mdx).
 - [#6760](https://github.com/rasahq/rasa/issues/6760): Update Pika event broker to be a separate process and make it use a
   `multiprocessing.Queue` to send and process messages. This change should help
   avoid situations when events stop being sent after a while.

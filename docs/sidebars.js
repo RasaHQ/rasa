@@ -105,8 +105,9 @@ module.exports = {
             "building-classic-assistants/training-data-format",
             "building-classic-assistants/nlu-training-data",
             "building-classic-assistants/tuning-your-model",
-            "building-classic-assistants/nlu-only",
             "building-classic-assistants/testing-your-assistant",
+            "building-classic-assistants/nlu-only",
+            "building-classic-assistants/nlu-only-server",
           ],
         },
       ],
@@ -218,6 +219,7 @@ module.exports = {
           ],
         },
         "production/load-testing-guidelines",
+        "production/http-api",
       ],
     },
     {
@@ -249,12 +251,6 @@ module.exports = {
         "operating/tracing",
         "operating/spaces",
       ],
-    },
-    {
-      type: "category",
-      label: "APIs",
-      collapsed: true,
-      items: ["http-api", "nlu-only-server"],
     },
     {
       type: "category",
