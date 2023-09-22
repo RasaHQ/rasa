@@ -119,7 +119,7 @@ flows:
           then: "done"
         - else: "ask_collect_information"
       - id: "ask_collect_information"
-        action: utter_ask_{{context.collect_information}}
+        action: "{{context.utter}}"
         next: "listen"
       - id: "listen"
         action: action_listen
