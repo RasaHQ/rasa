@@ -15,7 +15,6 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
-    UTTER_ASK_PREFIX,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
@@ -232,7 +231,11 @@ class Validator:
                 ):
                     flow_utterances.add(step.action)
                 if isinstance(step, CollectInformationFlowStep):
-                    flow_utterances.add(UTTER_ASK_PREFIX + step.collect_information)
+                    flow_utterances.add(step.utter)
+
+                    for rejection in step.rejections:
+                        flow_utterances.add(rejection.utter)
+
         return flow_utterances
 
     def verify_utterances_in_dialogues(self, ignore_warnings: bool = True) -> bool:
@@ -241,8 +244,6 @@ class Validator:
         Checks whether utterances used in the stories are valid,
         and whether all valid utterances are used in stories.
         """
-        everything_is_alright = True
-
         utterance_actions = self._gather_utterance_actions()
 
         stories_utterances = self._utterances_used_in_stories()
@@ -253,7 +254,7 @@ class Validator:
         everything_is_alright = (
             ignore_warnings
             or self._does_story_only_use_valid_actions(
-                stories_utterances, utterance_actions
+                stories_utterances, list(utterance_actions)
             )
         )
 
