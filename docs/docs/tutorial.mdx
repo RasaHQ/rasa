@@ -195,7 +195,7 @@ responses:
 
 After sending this message, Rasa will wait for a response from the user.
 When the user responds, Rasa will try to use their answer to fill the slot `recipient`.
-Read about slot validation (link) to learn more about how to run additional checks on slot values.
+Read about [slot validation](./concepts/slot-validation-actions.mdx) to learn more about how to run additional checks on slot values.
 
 The diagram below summarizes how slot values are used to collect and store information,
 and how they can be used to create branching logic.
@@ -302,7 +302,7 @@ The `next` attribute of your `confirm_transfer` step includes a `condition`.
 The expression after the `if:` key will be evaluated and return `True` or `False`.
 In this case, we're using the value of the boolean slot `final_confirmation`.
 Conditions can be used to create branching logic, including logical operators like `AND`, `OR`, etc.
-You can learn more about conditions and advanced logic here (link).
+You can learn more about conditions and advanced logic [here](./concepts/flows.mdx).
 
 To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your assistant.
 It should now ask you to confirm before completing the transfer.
@@ -333,7 +333,7 @@ If the name of the action starts with `utter_`, then this action sends a message
 The name of the action has to match the name of one of the `responses` defined in your domain.
 The final step in your flow contains the action `utter_transfer_complete`, and this response is
 also defined in your domain. Responses can contain buttons, images, and custom payloads.
-You can learn more about everything you can do with responses here (link).
+You can learn more about everything you can do with responses [here](./concepts/responses.mdx).
 
 The second type of `action` is a custom action. The name of a custom action starts with `action_`.
 
@@ -341,7 +341,7 @@ You are going to create a custom action, `action_check_sufficient_funds`, to che
 user has enough money to make the transfer, and then add logic to your flow to handle both cases.
 
 Your custom action is defined in the file `actions.py`.
-To learn more about custom actions, go here (link).
+To learn more about custom actions, go [here](./concepts/custom-actions.mdx).
 
 Your `actions.py` file should look like this:
 
