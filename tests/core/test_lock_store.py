@@ -15,9 +15,13 @@ from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
-from rasa.core.lock_store import (DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
-                                  InMemoryLockStore, LockError, LockStore,
-                                  RedisLockStore)
+from rasa.core.lock_store import (
+    DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
+    InMemoryLockStore,
+    LockError,
+    LockStore,
+    RedisLockStore,
+)
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
