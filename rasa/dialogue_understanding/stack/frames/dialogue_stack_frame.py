@@ -52,8 +52,14 @@ class DialogueStackFrame:
 
         def custom_asdict_factory(fields: List[Tuple[str, Any]]) -> Dict[str, Any]:
             """Converts enum values to their value."""
+
+            def rename_internal(field_name: str) -> str:
+                return field_name[:-1] if field_name.endswith("_") else field_name
+
             return {
-                field: value.value if isinstance(value, Enum) else value
+                rename_internal(field): value.value
+                if isinstance(value, Enum)
+                else value
                 for field, value in fields
             }
 

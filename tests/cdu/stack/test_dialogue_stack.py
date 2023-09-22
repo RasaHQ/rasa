@@ -66,6 +66,7 @@ def test_dialogue_stack_as_dict():
             "frame_id": "some-other-id",
             "step_id": "__start__",
             "flow_id": "pattern_ask_collect_information",
+            "rejections": None,
         },
     ]
 
@@ -201,6 +202,7 @@ def test_get_current_context():
         "step_id": "first_step",
         "type": "flow",
         "collect_information": "foo",
+        "rejections": None,
     }
 
 

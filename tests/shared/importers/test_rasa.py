@@ -35,6 +35,7 @@ def test_rasa_file_importer(project: Text):
         AnySlot(RETURN_VALUE_SLOT, mappings=[{}]),
         AnySlot(SESSION_START_METADATA_SLOT, mappings=[{}]),
     ]
+
     assert domain.entities == []
     assert len(domain.action_names_or_texts) == 6 + len(DEFAULT_ACTION_NAMES)
     assert len(domain.responses) == 6

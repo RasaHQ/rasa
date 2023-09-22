@@ -110,7 +110,7 @@ flows:
     description: flow used to fill a slot
     steps:
       - id: "start"
-        action: action_extract_slots
+        action: action_run_slot_rejections
         next: "validate"
       - id: "validate"
         action: validate_{{context.collect_information}}
