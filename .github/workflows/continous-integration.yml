@@ -1092,11 +1092,6 @@ jobs:
         run: |
           ./scripts/write_keys_file.sh
 
-      - name: Build Docker image
-        if: needs.changes.outputs.docker == 'true'
-        run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
-
       # Authenticate and push to the release registry
       - id: 'auth-release'
         name: Authenticate with gcloud for dev registry 🎫
@@ -1108,6 +1103,11 @@ jobs:
         run: |
           # Set up docker to authenticate via gcloud command-line tool.
           gcloud auth configure-docker europe-west3-docker.pkg.dev
+
+      - name: Build Docker image
+        if: needs.changes.outputs.docker == 'true'
+        run: |
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
 
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
