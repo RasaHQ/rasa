@@ -835,7 +835,7 @@ jobs:
     name: Build Docker base images and setup environment
     runs-on: ubuntu-22.04
     env:
-      IMAGE_NAME: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa"
+      BASE_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-ci-cd/rasa"
     outputs:
       base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
       base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
@@ -870,8 +870,17 @@ jobs:
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
-      - name: Login to DockerHub Registry 🔢
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
+      # Authenticate and push to the release registry
+      - id: 'auth-release'
+        name: Authenticate with gcloud for dev registry 🎫
+        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        with:
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+
+      - name: Authenticate docker for dev registry 🎫
+        run: |
+          # Set up docker to authenticate via gcloud command-line tool.
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
 
       - name: Check if tag version is equal or higher than the latest tagged Rasa version
         id: rasa_get_version
@@ -1022,7 +1031,8 @@ jobs:
     needs: [changes, build_docker_base_images_and_set_env]
     env:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
-      IMAGE_NAME: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa"
+      BASE_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-ci-cd/rasa"
+      TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
       BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
