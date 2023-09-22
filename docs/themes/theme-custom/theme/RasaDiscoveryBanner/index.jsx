@@ -1,7 +1,5 @@
 import * as React from 'react';
-import clsx from 'clsx';
 
-import styles from './styles.module.css';
 
 function RasaDiscoveryBanner({isLoading, ...props}) {
   return (
@@ -19,7 +17,7 @@ function RasaDiscoveryBanner({isLoading, ...props}) {
         </div>
       <div class="mdx-box admonition-content">
         <p>
-          Discovery features are <strong>highly unstable</strong>. We introduce 
+          Discovery features are <strong>highly unstable</strong>. We introduce
           them for product exploration.
 
           These features will change and should only be used for testing purposes.

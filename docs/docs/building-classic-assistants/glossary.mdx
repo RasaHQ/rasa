@@ -5,6 +5,10 @@ title: Rasa Glossary
 description: Glossary for all Rasa-related terms
 ---
 
+import RasaNLUBasedBanner from "@theme/RasaNLUBasedBanner";
+
+<RasaNLUBasedBanner />
+
 ## [Action](../concepts/custom-actions.mdx)
 
 A single step that a bot takes in a conversation (e.g. calling an API or sending a response back to the user).
@@ -40,7 +44,7 @@ A way to store bot responses externally instead of including them directly in th
 
 The process of using user messages and conversation data to influence the design of an assistant and train the model, combined with engineering best practices. There are 6 steps that make up CDD: Share, Review, Annotate, Fix, Track, and Test.
 
-## [Conversation Tests](../production/testing-your-assistant.mdx)
+## [Conversation Tests](./testing-your-assistant.mdx)
 
 Modified story format that includes the full text of the user message in addition to the intent label. Test conversations are saved to a test set file (conversation_tests.md), which is used to evaluate the model’s predictions across an entire conversation.
 

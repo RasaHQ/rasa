@@ -8,6 +8,10 @@ abstract:
   model. Stories can be used to train models that are able to generalize to unseen conversation paths.
 ---
 
+import RasaNLUBasedBanner from "@theme/RasaNLUBasedBanner";
+
+<RasaNLUBasedBanner />
+
 ## Format
 
 A story is a representation of a conversation between a user and an AI assistant,
@@ -200,7 +204,7 @@ Overusing OR statements will slow down training.
 ## Test Conversation Format
 
 The test conversation format is a format that combines both NLU data and stories
-into a single file for evaluation. Read more about this format in [Testing Your Assistant](../production/testing-your-assistant.mdx).
+into a single file for evaluation. Read more about this format in [Testing Your Assistant](./testing-your-assistant.mdx).
 
 :::caution testing only
 This format is only used for testing and cannot be used for training.

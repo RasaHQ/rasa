@@ -26,7 +26,7 @@ module.exports = {
           ],
         },
         "tutorial",
-        "command-line-interface",        
+        "command-line-interface",
       ],
     },
     {
@@ -36,7 +36,7 @@ module.exports = {
       items: [
         // TODO: ENG-537
         "concepts/flows",
-        "concepts/dialogue-understanding",        
+        "concepts/dialogue-understanding",
         "concepts/domain",
         "concepts/unhappy-paths",
         {
@@ -54,9 +54,9 @@ module.exports = {
           label: "Responses",
           items: [
             "concepts/responses",
-            "concepts/contextual-response-rephraser",            
+            "concepts/contextual-response-rephraser",
           ],
-        },        
+        },
         {
           type: "category",
           label: "Components",
@@ -105,7 +105,8 @@ module.exports = {
             "building-classic-assistants/training-data-format",
             "building-classic-assistants/nlu-training-data",
             "building-classic-assistants/tuning-your-model",
-            "building-classic-assistants/nlu-only",         
+            "building-classic-assistants/nlu-only",
+            "building-classic-assistants/testing-your-assistant",
           ],
         },
       ],
@@ -246,7 +247,7 @@ module.exports = {
           ],
         },
         "operating/tracing",
-        "operating/spaces",        
+        "operating/spaces",
       ],
     },
     {
@@ -260,7 +261,7 @@ module.exports = {
       label: "Reference",
       collapsed: true,
       items: [
-        "building-classic-assistants/glossary",        
+        "building-classic-assistants/glossary",
         "telemetry/telemetry",
         "telemetry/reference",
         require("./docs/reference/sidebar.json"),
@@ -283,5 +284,5 @@ module.exports = {
         },
       ],
     },
-  ]
+  ],
 };
