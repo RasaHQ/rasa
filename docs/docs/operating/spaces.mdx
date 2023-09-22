@@ -23,11 +23,11 @@ If you have feedback (positive or negative) please share it with us via your sup
 :::
 
 Spaces are a way to modularize your assistant. As assistants grow in scale and scope, the
-potential for conflicts between intents, entities, and other [primitives](../building-classic-assistants/glossary.mdx#rasa-primitive) grows as well.
+potential for conflicts between intents, entities, and other [primitives](../nlu-based-assistants/glossary.mdx#rasa-primitive) grows as well.
 That is because in a regular rasa assistant all intents, entities, and actions are
 available at any time, giving the assistant more choices to distinguish between the more that gets
 added. Spaces provide a basic separation between parts of the bot through the activation
-and deactivation of groups of [rasa primitives](../building-classic-assistants/glossary.mdx#rasa-primitive). Each of these groups is called a Space.
+and deactivation of groups of [rasa primitives](../nlu-based-assistants/glossary.mdx#rasa-primitive). Each of these groups is called a Space.
 Spaces are activated when certain designated intents, called entry intents, are
 predicted. With the activation of a Space, all the primitives for the Space become
 available for subsequent interactions with the user. Good ways to think about spaces are
@@ -218,7 +218,7 @@ generated during assembly.
 ### How does filter and rerank work?
 
 The filter and rerank component post-processes the intent ranking of the [intent
-classification components](../building-classic-assistants/components.mdx#intent-classifiers). It accesses the [tracker](../action-server/sdk-tracker.mdx)
+classification components](../nlu-based-assistants/components.mdx#intent-classifiers). It accesses the [tracker](../action-server/sdk-tracker.mdx)
 and checks which space are active or would be activated, in case an entry intent is at the top.
 
 It then removes any intents from the ranking that are not possible. Further it also
@@ -254,8 +254,8 @@ retrieval intent belongs to the main space, no prefix is added. That's why
 
 ### Lookup tables and Synonyms
 
-[Lookup Tables](../building-classic-assistants/training-data-format.mdx#lookup-tables) and
-[Synonyms](../building-classic-assistants/training-data-format.mdx#synonyms) work with spaces. However, they are not
+[Lookup Tables](../nlu-based-assistants/training-data-format.mdx#lookup-tables) and
+[Synonyms](../nlu-based-assistants/training-data-format.mdx#synonyms) work with spaces. However, they are not
 truly isolated between spaces. So there can be some unanticipated interactions.
 For synonyms, specifically:
 
@@ -267,9 +267,7 @@ For synonyms, specifically:
 
 For lookup tables no adverse interactions are known.
 
-
 ## Training Data Importers
-
 
 Using the [`--data` command line argument](../command-line-interface.mdx) you can specify where Rasa should look
 for training data on your disk. Rasa then loads any potential training files and uses
@@ -401,7 +399,7 @@ their training data will be combined.
 
 ## Writing a Custom Importer
 
-If you are writing a custom importer, this importer has to implement the interface of 
+If you are writing a custom importer, this importer has to implement the interface of
 `TrainingDataImporter`:
 
 ```python

@@ -108,7 +108,7 @@ you might use one model for intent classification and another for rephrasing.
 To configure models per component, follow these steps described on the
 pages for each component:
 
-1. [intent classification instructions](../../building-classic-assistants/components.mdx#llmintentclassifier)
+1. [intent classification instructions](../../nlu-based-assistants/components.mdx#llmintentclassifier)
 2. [rephrasing instructions](../contextual-response-rephraser.mdx#llm-configuration)
 3. [intentless policy instructions](../policies.mdx#flow-policy)
 4. docsearch instructions
@@ -331,7 +331,7 @@ pipeline:
       type: "cohere"
 ```
 
-The above configuration specifies that the [LLMIntentClassifier](../../building-classic-assistants/components.mdx#llmintentclassifier)
+The above configuration specifies that the [LLMIntentClassifier](../../nlu-based-assistants/components.mdx#llmintentclassifier)
 should use the [Cohere](https://cohere.ai/) embeddings provider rather than OpenAI.
 
 :::note Only Some Components need Embeddings

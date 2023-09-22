@@ -158,7 +158,7 @@ The following arguments can be used to configure the training process:
 
 ```
 
-See the section on [data augmentation](./building-classic-assistants/policies.mdx#data-augmentation) for info on how data augmentation works
+See the section on [data augmentation](./nlu-based-assistants/policies.mdx#data-augmentation) for info on how data augmentation works
 and how to choose a value for the flag. Note that `TEDPolicy` is the only policy affected by data augmentation.
 
 See the following section on [incremental training](#incremental-training) for more information about the `--epoch-fraction` argument.
@@ -217,7 +217,7 @@ rasa interactive
 
 This will first train a model and then start an interactive shell session.
 You can then correct your assistants predictions as you talk to it.
-If [`UnexpecTEDIntentPolicy`](./building-classic-assistants/policies.mdx#unexpected-intent-policy) is
+If [`UnexpecTEDIntentPolicy`](./nlu-based-assistants/policies.mdx#unexpected-intent-policy) is
 included in the pipeline, [`action_unlikely_intent`](./concepts/default-actions.mdx#action_unlikely_intent)
 can be triggered at any conversation turn. Subsequently, the following message will be displayed:
 
@@ -398,8 +398,8 @@ rasa test nlu
 ```
 
 You can find more details on specific arguments for each testing type in
-[Evaluating an NLU Model](./building-classic-assistants/testing-your-assistant.mdx#evaluating-an-nlu-model) and
-[Evaluating a Dialogue Management Model](./building-classic-assistants/testing-your-assistant.mdx#evaluating-a-dialogue-model).
+[Evaluating an NLU Model](./nlu-based-assistants/testing-your-assistant.mdx#evaluating-an-nlu-model) and
+[Evaluating a Dialogue Management Model](./nlu-based-assistants/testing-your-assistant.mdx#evaluating-a-dialogue-model).
 
 The following arguments are available for `rasa test`:
 
@@ -542,7 +542,7 @@ If no arguments are specified, the default domain path (`domain.yml`) will be us
 This command will also back-up your 2.0 domain file(s) into a different `original_domain.yml` file or
 directory labeled `original_domain`.
 
-Note that the slots in the migrated domain will contain [mapping conditions](./building-classic-assistants/domain.mdx#mapping-conditions) if these
+Note that the slots in the migrated domain will contain [mapping conditions](./nlu-based-assistants/domain.mdx#mapping-conditions) if these
 slots are part of a form's `required_slots`.
 
 :::caution
@@ -592,7 +592,7 @@ rasa data validate stories
 ```
 
 :::note
-Running `rasa data validate` does **not** test if your [rules](./building-classic-assistants/rules.mdx) are consistent with your stories.
+Running `rasa data validate` does **not** test if your [rules](./nlu-based-assistants/rules.mdx) are consistent with your stories.
 However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
 
 Also, if you use end-to-end stories, then this might not capture all conflicts. Specifically, if two user inputs

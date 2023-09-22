@@ -71,7 +71,7 @@ module.exports = {
         "concepts/policies", // TODO: ENG-538
         {
           type: "category",
-          label: "Building Classic Assistants",
+          label: "NLU-based Assistants",
           collapsed: true,
           items: [
             // TODO: ENG-537
@@ -80,34 +80,34 @@ module.exports = {
               label: "Conversation Patterns",
               collapsed: true,
               items: [
-                "building-classic-assistants/chitchat-faqs",
-                "building-classic-assistants/business-logic",
-                "building-classic-assistants/fallback-handoff",
-                "building-classic-assistants/unexpected-input",
-                "building-classic-assistants/contextual-conversations",
-                "building-classic-assistants/reaching-out-to-user",
+                "nlu-based-assistants/chitchat-faqs",
+                "nlu-based-assistants/business-logic",
+                "nlu-based-assistants/fallback-handoff",
+                "nlu-based-assistants/unexpected-input",
+                "nlu-based-assistants/contextual-conversations",
+                "nlu-based-assistants/reaching-out-to-user",
               ],
             },
             {
               type: "category",
               label: "Config",
               items: [
-                "building-classic-assistants/model-configuration",
-                "building-classic-assistants/components", // TODO: ENG-538
-                "building-classic-assistants/policies", // TODO: ENG-538
-                "building-classic-assistants/language-support",
+                "nlu-based-assistants/model-configuration",
+                "nlu-based-assistants/components", // TODO: ENG-538
+                "nlu-based-assistants/policies", // TODO: ENG-538
+                "nlu-based-assistants/language-support",
               ],
             },
-            "building-classic-assistants/domain",
-            "building-classic-assistants/rules",
-            "building-classic-assistants/stories",
-            "building-classic-assistants/forms",
-            "building-classic-assistants/training-data-format",
-            "building-classic-assistants/nlu-training-data",
-            "building-classic-assistants/tuning-your-model",
-            "building-classic-assistants/testing-your-assistant",
-            "building-classic-assistants/nlu-only",
-            "building-classic-assistants/nlu-only-server",
+            "nlu-based-assistants/domain",
+            "nlu-based-assistants/rules",
+            "nlu-based-assistants/stories",
+            "nlu-based-assistants/forms",
+            "nlu-based-assistants/training-data-format",
+            "nlu-based-assistants/nlu-training-data",
+            "nlu-based-assistants/tuning-your-model",
+            "nlu-based-assistants/testing-your-assistant",
+            "nlu-based-assistants/nlu-only",
+            "nlu-based-assistants/nlu-only-server",
           ],
         },
       ],
@@ -257,7 +257,7 @@ module.exports = {
       label: "Reference",
       collapsed: true,
       items: [
-        "building-classic-assistants/glossary",
+        "nlu-based-assistants/glossary",
         "telemetry/telemetry",
         "telemetry/reference",
         require("./docs/reference/sidebar.json"),

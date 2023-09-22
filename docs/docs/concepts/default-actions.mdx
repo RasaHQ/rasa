@@ -50,7 +50,7 @@ This action resets the whole conversation history, including any slots that were
 set during it.
 
 It can be triggered by the user in a conversation by sending a
-"/restart" message, if the [RulePolicy](../building-classic-assistants/rules.mdx) is included in the model configuration.
+"/restart" message, if the [RulePolicy](../nlu-based-assistants/rules.mdx) is included in the model configuration.
 If you define an `utter_restart` response in your domain, this will be sent to the user as well.
 
 ## action_session_start
@@ -139,12 +139,12 @@ class ActionSessionStart(Action):
 ## action_default_fallback
 
 This action undoes the last user-bot interaction and sends the `utter_default` response if it is defined.
-It is triggered by low action prediction confidence, if you have this [fallback mechanism](../building-classic-assistants/fallback-handoff.mdx) enabled.
+It is triggered by low action prediction confidence, if you have this [fallback mechanism](../nlu-based-assistants/fallback-handoff.mdx) enabled.
 
 ## action_deactivate_loop
 
 This action deactivates the active loop and resets the requested slot. This is used when
-[handling unhappy paths in forms](../building-classic-assistants/forms.mdx#writing-stories--rules-for-unhappy-form-paths).
+[handling unhappy paths in forms](../nlu-based-assistants/forms.mdx#writing-stories--rules-for-unhappy-form-paths).
 
 :::note
 If you wish to reset all slots, we recommend using a custom action
@@ -154,7 +154,7 @@ that returns the [`AllSlotsReset`](https://rasa.com/docs/rasa/reference/rasa/sha
 ## action_two_stage_fallback
 
 This is a fallback loop that can be used to handle low NLU confidence. Read more about
-[handling low NLU confidence](../building-classic-assistants/fallback-handoff.mdx#nlu-fallback).
+[handling low NLU confidence](../nlu-based-assistants/fallback-handoff.mdx#nlu-fallback).
 
 ## action_default_ask_affirmation
 
@@ -171,21 +171,21 @@ their message.
 ## action_back
 
 This action undoes the last user-bot interaction. It can be triggered by the user
-by sending a "/back" message to the assistant if the [RulePolicy](../building-classic-assistants/policies.mdx#rule-policy) is configured.
+by sending a "/back" message to the assistant if the [RulePolicy](../nlu-based-assistants/policies.mdx#rule-policy) is configured.
 |
 
 ## Form Action
 
 By default Rasa uses `FormAction` for processing any
-[form logic](../building-classic-assistants/forms.mdx). You can override this default action with a custom action by
+[form logic](../nlu-based-assistants/forms.mdx). You can override this default action with a custom action by
 adding a custom action with the form's name to the domain.
 Overriding the default action for forms should **only** be used during the process of
 migrating from Rasa 1.0 to 2.0.
 
 ## action_unlikely_intent
 
-Rasa triggers `action_unlikely_intent` via [`UnexpecTEDIntentPolicy`](../building-classic-assistants/policies.mdx#unexpected-intent-policy).
-You can control how often this action is predicted by tuning the [`tolerance`](../building-classic-assistants/policies.mdx#unexpected-intent-policy)
+Rasa triggers `action_unlikely_intent` via [`UnexpecTEDIntentPolicy`](../nlu-based-assistants/policies.mdx#unexpected-intent-policy).
+You can control how often this action is predicted by tuning the [`tolerance`](../nlu-based-assistants/policies.mdx#unexpected-intent-policy)
 parameter of `UnexpecTEDIntentPolicy`.
 
 ### Customization

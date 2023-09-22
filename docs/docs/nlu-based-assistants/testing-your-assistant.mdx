@@ -38,7 +38,7 @@ always good to run this check before training a model. By including the
 `--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
 
 :::note
-Running `rasa data validate` does **not** test if your [rules](../building-classic-assistants/rules.mdx) are consistent with your stories.
+Running `rasa data validate` does **not** test if your [rules](../nlu-based-assistants/rules.mdx) are consistent with your stories.
 However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
 :::
 
@@ -386,7 +386,7 @@ confidence histogram (`response_selection_histogram.png`) and errors (`response_
 If your pipeline includes multiple response selectors, they are evaluated in a single report.
 
 The report logs precision, recall and f1 measure for
-each sub-intent of a [retrieval intent](../building-classic-assistants/glossary.mdx#retrieval-intent) and provides an overall average.
+each sub-intent of a [retrieval intent](../nlu-based-assistants/glossary.mdx#retrieval-intent) and provides an overall average.
 You can save these reports as JSON files using the `--report` argument.
 
 #### Entity Extraction
@@ -423,7 +423,7 @@ multiple tokens.
 #### Entity Scoring
 
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider
-[BILOU tags](../building-classic-assistants/nlu-training-data.mdx#bilou-entity-tagging) exactly, but only the
+[BILOU tags](../nlu-based-assistants/nlu-training-data.mdx#bilou-entity-tagging) exactly, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
 expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`.
 
@@ -475,7 +475,7 @@ policies failed to do so, then the corresponding story will end up in `results/f
 a failed story.
 
 The stories are sorted by the severity of `action_unlikely_intent`'s prediction.
-This severity is calculated by [`UnexpecTEDIntentPolicy`](../building-classic-assistants/policies.mdx#unexpected-intent-policy) itself at prediction time.
+This severity is calculated by [`UnexpecTEDIntentPolicy`](../nlu-based-assistants/policies.mdx#unexpected-intent-policy) itself at prediction time.
 The higher the severity, the more unlikely is the intent and hence reviewing that particular
 conversation path becomes more critical.
 

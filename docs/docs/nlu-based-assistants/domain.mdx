@@ -31,7 +31,7 @@ rasa train --domain path_to_domain_directory
 ## Intents
 
 The `intents` key in your domain file lists all intents
-used in your [NLU data](../building-classic-assistants/nlu-training-data.mdx) and [conversation training data](../building-classic-assistants/training-data-format.mdx#conversation-training-data).
+used in your [NLU data](../nlu-based-assistants/nlu-training-data.mdx) and [conversation training data](../nlu-based-assistants/training-data-format.mdx#conversation-training-data).
 
 ### Ignoring Entities for Certain Intents
 
@@ -102,7 +102,7 @@ and default behaviour remains unchanged.
 :::
 
 The `entities` section lists all entities that can be
-extracted by any [entity extractor](../building-classic-assistants/components.mdx) in your
+extracted by any [entity extractor](../nlu-based-assistants/components.mdx) in your
 NLU pipeline.
 
 For example:
@@ -118,7 +118,7 @@ entities:
 When using multiple domain files, entities can be specified in any domain file,
 and can be used or ignored by any intent in any domain file.
 
-If you are using the feature [Entity Roles and Groups](../building-classic-assistants/nlu-training-data.mdx#entities-roles-and-groups) you also
+If you are using the feature [Entity Roles and Groups](../nlu-based-assistants/nlu-training-data.mdx#entities-roles-and-groups) you also
 need to list the roles and groups of an entity in this section.
 
 For example:
@@ -786,7 +786,7 @@ see [Responses](../concepts/responses.mdx).
 
 Forms are a special type of action meant to help your assistant collect information from a user.
 Define forms under the `forms` key in your domain file.
-For more information on form and how to define them, see [Forms](../building-classic-assistants/forms.mdx).
+For more information on form and how to define them, see [Forms](../nlu-based-assistants/forms.mdx).
 
 ## Actions
 
@@ -898,5 +898,5 @@ config:
 
 :::note looking for config.yml?
 If you're looking for information on the `config.yml` file, check out the docs on
-[Model Configuration](../building-classic-assistants/model-configuration.mdx).
+[Model Configuration](../nlu-based-assistants/model-configuration.mdx).
 :::

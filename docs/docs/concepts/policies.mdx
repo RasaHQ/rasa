@@ -11,7 +11,7 @@ import RasaProBanner from "@theme/RasaProBanner";
 
 In Rasa, policies are the components responsible for dialogue management.
 In NLU-based assistants, dialogue policies play a larger role.
-You can read more about those policies and other advanced topics [here](../building-classic-assistants/policies.mdx).
+You can read more about those policies and other advanced topics [here](../nlu-based-assistants/policies.mdx).
 
 In a CALM-based assistant, the `FlowPolicy` is responsible for executing your business logic.
 
@@ -74,7 +74,7 @@ For more detailed information on defining flows, refer to the
 
 ## Adding the FlowPolicy to your bot
 
-The Flow Policy can be integrated like [any other policy](../building-classic-assistants/policies.mdx).
+The Flow Policy can be integrated like [any other policy](../nlu-based-assistants/policies.mdx).
 It involves two steps:
 
 1. Configure the `FlowPolicy` in your `config.yml` file:
@@ -577,7 +577,7 @@ utter_faq_6:
 Beyond having the `utter_` prefix, the naming of the utterances is not relevant.
 
 The second step is to add
-[end-to-end stories](../building-classic-assistants/training-data-format.mdx#end-to-end-training)
+[end-to-end stories](../nlu-based-assistants/training-data-format.mdx#end-to-end-training)
 to `data/e2e_stories.yml`. These stories teach the LLM about your domain, so it
 can figure out when to say what.
 
