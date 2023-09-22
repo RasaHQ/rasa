@@ -33,7 +33,7 @@ START_STEP = "START"
 
 END_STEP = "END"
 
-DEFAULF_STEPS = {END_STEP, START_STEP}
+DEFAULT_STEPS = {END_STEP, START_STEP}
 
 
 class UnreachableFlowStepException(RasaException):
@@ -65,8 +65,8 @@ class MissingNextLinkException(RasaException):
     def __str__(self) -> Text:
         """Return a string representation of the exception."""
         return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' is missing a `next` "
-            f"but is required to have one. "
+            f"Step '{self.step.id}' in flow '{self.flow.id}' is missing a `next`. "
+            f"As a last step of a branch, it is required to have one. "
         )
 
 
@@ -81,8 +81,8 @@ class ReservedFlowStepIdException(RasaException):
     def __str__(self) -> Text:
         """Return a string representation of the exception."""
         return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' is using a reserved id. "
-            f"Please use a different id for your step."
+            f"Step '{self.step.id}' in flow '{self.flow.id}' is using the reserved id "
+            f"'{self.step.id}'. Please use a different id for your step."
         )
 
 
@@ -98,11 +98,12 @@ class MissingElseBranchException(RasaException):
         """Return a string representation of the exception."""
         return (
             f"Step '{self.step.id}' in flow '{self.flow.id}' is missing an `else` "
-            f"branch but is required to have one. "
+            f"branch. If a steps `next` statement contains an `if` it always "
+            f"also needs an `else` branch. Please add the missing `else` branch."
         )
 
 
-class NoNextAllowedException(RasaException):
+class NoNextAllowedForLinkException(RasaException):
     """Raised when a flow step has a next link but is not allowed to have one."""
 
     def __init__(self, step: FlowStep, flow: Flow) -> None:
@@ -113,8 +114,8 @@ class NoNextAllowedException(RasaException):
     def __str__(self) -> Text:
         """Return a string representation of the exception."""
         return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' has a `next` but "
-            f"is not allowed to have one. "
+            f"Link step '{self.step.id}' in flow '{self.flow.id}' has a `next` but "
+            f"as a link step is not allowed to have one."
         )
 
 
@@ -369,7 +370,7 @@ class Flow:
     def _validate_not_using_buildin_ids(self) -> None:
         """Validates that the flow does not use any of the build in ids."""
         for step in self.steps:
-            if step.id in DEFAULF_STEPS or step.id.startswith(CONTINUE_STEP_PREFIX):
+            if step.id in DEFAULT_STEPS or step.id.startswith(CONTINUE_STEP_PREFIX):
                 raise ReservedFlowStepIdException(step, self)
 
     def _validate_all_branches_have_an_else(self) -> None:
@@ -389,14 +390,14 @@ class Flow:
             if isinstance(step, LinkFlowStep):
                 # link steps can't have a next link!
                 if not step.next.no_link_available():
-                    raise NoNextAllowedException(step, self)
+                    raise NoNextAllowedForLinkException(step, self)
             elif step.next.no_link_available():
                 # all other steps should have a next link
                 raise MissingNextLinkException(step, self)
 
     def _validate_all_next_ids_are_availble_steps(self) -> None:
         """Validates that all next links point to existing steps."""
-        available_steps = {step.id for step in self.steps} | DEFAULF_STEPS
+        available_steps = {step.id for step in self.steps} | DEFAULT_STEPS
         for step in self.steps:
             for link in step.next.links:
                 if link.target not in available_steps:
@@ -638,7 +639,7 @@ class FlowStep:
         return FlowStep(
             # the idx is set later once the flow is created that contains
             # this step
-            idx=0,
+            idx=-1,
             custom_id=flow_step_config.get("id"),
             description=flow_step_config.get("description"),
             metadata=flow_step_config.get("metadata", {}),
