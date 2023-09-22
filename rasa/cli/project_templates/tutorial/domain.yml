@@ -18,4 +18,4 @@ responses:
     - text: "How much money would you like to send?"
 
   utter_transfer_complete:
-    - text: "All done. ${amount} has been sent to {recipient}."
+    - text: "All done. {amount} has been sent to {recipient}."

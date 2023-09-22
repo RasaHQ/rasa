@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStackFrame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.shared.core.flows.flow import SlotRejection
 
 FLOW_PATTERN_COLLECT_INFORMATION = (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX + "ask_collect_information"
@@ -20,6 +21,14 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
     collect_information: str = ""
     """The information that should be collected from the user.
     this corresponds to the slot that will be filled."""
+    utter: str = ""
+    """The utter action that should be executed to ask the user for the
+    information."""
+    rejections: Optional[List[SlotRejection]] = None
+    """The predicate check that should be applied to the collected information.
+    If a predicate check fails, its `utter` action indicated under rejections
+    will be executed.
+    """
 
     @classmethod
     def type(cls) -> str:
@@ -36,10 +45,18 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
         Returns:
             The created `DialogueStackFrame`.
         """
+        rejections = data.get("rejections")
+        if rejections is not None:
+            rejections = [
+                SlotRejection.from_dict(rejection) for rejection in rejections
+            ]
+
         return CollectInformationPatternFlowStackFrame(
             data["frame_id"],
             step_id=data["step_id"],
             collect_information=data["collect_information"],
+            utter=data["utter"],
+            rejections=rejections,
         )
 
     def context_as_dict(
