@@ -139,7 +139,7 @@ rules:
 ```
 
 Users might want to break out of a form early. Please see
-[Writing Stories / Rules for Unhappy Form Paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths) on how to
+[Writing Stories / Rules for Conversation Repair cases](./forms.mdx#writing-stories--rules-for-conversation-repair-cases) on how to
 write stories or rules for this case.
 
 ### Slot Mappings
@@ -153,7 +153,7 @@ Note specifically the role of [Mapping Conditions](./domain.mdx#mapping-conditio
 [unique entity mapping](./domain.mdx#unique-from_entity-mapping-matching) constraint.
 :::
 
-### Writing Stories / Rules for Unhappy Form Paths
+### Writing Stories / Rules for Conversation Repair cases
 
 Your users will not always respond with the information you ask of them.
 Typically, users will ask questions, make chitchat, change their mind, or otherwise
@@ -180,12 +180,12 @@ you could add a rule to handle this:
 
 ```yaml-rasa
 rules:
-- rule: Example of an unhappy path
+- rule: Example of conversation repair
   condition:
   # Condition that form is active.
   - active_loop: restaurant_form
   steps:
-  # This unhappy path handles the case of an intent `chitchat`.
+  # This case handles the case of an intent `chitchat`.
   - intent: chitchat
   - action: utter_chitchat
   # Return to form after handling the `chitchat` intent
@@ -430,7 +430,7 @@ ignored during conversations. If you want to change this behavior, you need to a
 the `requested_slot` to your domain file as a categorical slot with
 `influence_conversation` set to `true`.
 You might want to do this if you
-want to handle your unhappy paths differently, depending on what slot is
+want to handle conversation repair differently, depending on what slot is
 currently being asked from the user. For example, if your users respond
 to one of the bot's questions with another question, like _why do you need to know that?_
 The response to this `explain` intent depends on where we are in the story.

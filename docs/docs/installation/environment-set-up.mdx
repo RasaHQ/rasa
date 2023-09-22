@@ -126,7 +126,7 @@ C:\> .\venv\Scripts\activate
 
 Rasa installations on Apple Silicon _don't_ use [Apple Metal](https://developer.apple.com/metal/) by default.
 We found that using the GPU on Apple Silicon increased training time for the
-[`DIETClassifier`](../building-classic-assistants/components.mdx#dietclassifier) and [`TEDPolicy`](../building-classic-assistants/policies.mdx#ted-policy) dramatically.
+[`DIETClassifier`](../nlu-based-assistants/components.mdx#dietclassifier) and [`TEDPolicy`](../nlu-based-assistants/policies.mdx#ted-policy) dramatically.
 You can, however, install the optional dependency to test it yourself
 or try it with other components using: `pip3 install 'rasa[metal]'`.
 
@@ -134,10 +134,10 @@ Currently, not all of Rasa's dependencies support Apple Silicon natively. This l
 to the following restrictions:
 
 - You can not run Duckling as a docker container on Apple Silicon. If you want
-  to use the [duckling entity extractor](../building-classic-assistants/components.mdx#ducklingentityextractor) we recommend a cloud deployment of
+  to use the [duckling entity extractor](../nlu-based-assistants/components.mdx#ducklingentityextractor) we recommend a cloud deployment of
   duckling. Progress on this can be tracked on the
   [Duckling project](https://github.com/facebook/duckling/issues/695).
-- Rasa on Apple Silicon does not support the [`ConveRTFeaturizer` component](../building-classic-assistants/components.mdx#convertfeaturizer) or pipelines
+- Rasa on Apple Silicon does not support the [`ConveRTFeaturizer` component](../nlu-based-assistants/components.mdx#convertfeaturizer) or pipelines
   containing it. The component relies on `tensorflow-text` which currently
   isn't available for Apple Silicon. Progress on this can be tracked on the
   [Tensorflow Text project](https://github.com/tensorflow/text/issues/823).

@@ -21,7 +21,7 @@ responses:
   - text: "See you!"
 ```
 
-If you are using [retrieval intents](../building-classic-assistants/glossary.mdx#retrieval-intent) in your assistant, you also need to add responses
+If you are using [retrieval intents](../nlu-based-assistants/glossary.mdx#retrieval-intent) in your assistant, you also need to add responses
 for your assistant's replies to these intents:
 
 ```yaml-rasa {5-6,8-9}
@@ -40,7 +40,7 @@ responses:
 Notice the special format of response names for retrieval intents. Each name starts with `utter_`,
 followed by the retrieval intent's name (here `chitchat`) and finally a suffix specifying
 the different response keys (here `ask_name` and `ask_weather`). See [the documentation for NLU
-training examples](../building-classic-assistants/training-data-format.mdx#training-examples) to learn more.
+training examples](../nlu-based-assistants/training-data-format.mdx#training-examples) to learn more.
 :::
 
 ### Using Variables in Responses

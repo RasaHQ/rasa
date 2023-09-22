@@ -9,13 +9,6 @@ abstract: |
   efficiently with your specific use case.
 ---
 
-import RasaLabsLabel from "@theme/RasaLabsLabel";
-import RasaLabsBanner from "@theme/RasaLabsBanner";
-
-<RasaLabsLabel />
-
-<RasaLabsBanner version="3.7.0b1" />
-
 ## Overview
 
 This guide will walk you through the process of configuring Rasa to connect to an
@@ -49,10 +42,10 @@ nlg:
 Additional configuration parameters are explained in detail in the documentation
 pages for each of these components:
 
-- [LLMCommandGenerator](../concepts/dialogue-understanding.mdx)
-- [FlowPolicy](../concepts/policies.mdx#flow-policy)
+- [LLMCommandGenerator](../dialogue-understanding.mdx)
+- [FlowPolicy](../policies.mdx#flow-policy)
 - Docseacrh
-- [ContextualResponseRephraser](../concepts/contextual-response-rephraser.mdx)
+- [ContextualResponseRephraser](../contextual-response-rephraser.mdx)
 
 ## OpenAI Configuration
 
@@ -115,9 +108,9 @@ you might use one model for intent classification and another for rephrasing.
 To configure models per component, follow these steps described on the
 pages for each component:
 
-1. [intent classification instructions](../building-classic-assistants/components.mdx#llmintentclassifier)
-2. [rephrasing instructions](../concepts/contextual-response-rephraser.mdx#llm-configuration)
-3. [intentless policy instructions](../concepts/policies.mdx#flow-policy)
+1. [intent classification instructions](../../nlu-based-assistants/components.mdx#llmintentclassifier)
+2. [rephrasing instructions](../contextual-response-rephraser.mdx#llm-configuration)
+3. [intentless policy instructions](../policies.mdx#flow-policy)
 4. docsearch instructions
 
 ### Additional Configuration for Azure OpenAI Service
@@ -338,13 +331,13 @@ pipeline:
       type: "cohere"
 ```
 
-The above configuration specifies that the [LLMIntentClassifier](../building-classic-assistants/components.mdx#llmintentclassifier)
+The above configuration specifies that the [LLMIntentClassifier](../../nlu-based-assistants/components.mdx#llmintentclassifier)
 should use the [Cohere](https://cohere.ai/) embeddings provider rather than OpenAI.
 
 :::note Only Some Components need Embeddings
 
 Not every component uses embeddings. For example, the
-[ContextualResponseRephraser](../concepts/contextual-response-rephraser.mdx) component does not use embeddings.
+[ContextualResponseRephraser](../contextual-response-rephraser.mdx) component does not use embeddings.
 For these components, no `embeddings` property is needed.
 
 :::
@@ -438,7 +431,8 @@ embeddings:
 ## FAQ
 
 ### Does OpenAI use my data to train their models?
+
 No. OpenAI does not use your data to train their models. From their [website](https://openai.com/security):
 
-> Data submitted through the OpenAI API is not used to train OpenAI 
+> Data submitted through the OpenAI API is not used to train OpenAI
 > models or improve OpenAI's service offering.

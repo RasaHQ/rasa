@@ -6,11 +6,12 @@ abstract: Policies decide the next action in a conversation.
 ---
 
 import useBaseUrl from "@docusaurus/useBaseUrl";
-import RasaProLabel from '@theme/RasaProLabel';
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaProBanner from "@theme/RasaProBanner";
 
-In Rasa, policies are the components responsible for dialogue management. 
-In NLU-based assistants, dialogue policies play a larger role. 
-You can read more about those policies and other advanced topics [here](../building-classic-assistants/policies.mdx).
+In Rasa, policies are the components responsible for dialogue management.
+In NLU-based assistants, dialogue policies play a larger role.
+You can read more about those policies and other advanced topics [here](../nlu-based-assistants/policies.mdx).
 
 In a CALM-based assistant, the `FlowPolicy` is responsible for executing your business logic.
 
@@ -31,8 +32,6 @@ policies:
   - name: DocSearchPolicy
 ```
 
-
-
 ## Action Selection
 
 At every turn, each policy defined in your configuration gets a chance to
@@ -48,12 +47,11 @@ to the desired number of maximum predictions.
 
 :::
 
-
 ### Flow Policy
 
 :::info New in 3.7
 
-The *Flow Policy* is part of Rasa's new 
+The _Flow Policy_ is part of Rasa's new
 [Conversational AI with Language Models (CALM)](../calm.mdx) approach and available starting
 with version `3.7.0`.
 :::
@@ -67,8 +65,6 @@ triggers new flows when needed. The "Dialogue Stack" represents all started but
 incomplete flows and refers to steps defined in the
 [flows specification](../concepts/flows.mdx).
 
-
-
 Using the Flow Policy, you can encapsulate your logic into flows, thereby
 guiding the conversation based on user input and system response. Other
 classifiers adjust the underlying state machine to handle edge cases.
@@ -78,7 +74,7 @@ For more detailed information on defining flows, refer to the
 
 ## Adding the FlowPolicy to your bot
 
-The Flow Policy can be integrated like [any other policy](../building-classic-assistants/policies.mdx). 
+The Flow Policy can be integrated like [any other policy](../nlu-based-assistants/policies.mdx).
 It involves two steps:
 
 1. Configure the `FlowPolicy` in your `config.yml` file:
@@ -129,14 +125,13 @@ sorry I meant John"_, initiates a correction flow. This correction is not
 explicitly modeled in the `transfer_money` flow; it's handled by a
 conversational pattern:
 
-
 The correction flow only executes when the user wants to correct a previous
 input. Once triggered, it's placed on top of the dialogue stack for execution.
 
 For the `transfer_money` flow, the correction flow is an interruption. Once
 completed, the `transfer_money` flow resumes. Before its res umption, a
 `resume_flow` flow is activated. You can customize what happens in `resume_flow`
-and `correction` flows in [Handling Unhappy Paths](./unhappy-paths.mdx).
+and `correction` flows in [Conversation Repair](./conversation-repair.mdx).
 
 Upon completion of the `resume_flow` flow, the `transfer_money` flow resumes,
 and the bot returns to the state before the correction flow started. The
@@ -146,7 +141,7 @@ and the bot returns to the state before the correction flow started. The
 The `resume_flow` and `correction` flows are conversational patterns not
 explicitly modeled in the `transfer_money` flow. The `FlowPolicy` automatically
 triggers them when needed. For more details on defining conversational patterns,
-refer to [Handling Unhappy Paths](./unhappy-paths.mdx).
+refer to [Conversation Repair](./conversation-repair.mdx).
 
 ### Transitioning Between States
 
@@ -175,7 +170,7 @@ Flows and their specifications should ideally model the happy path of a
 conversation. The `FlowPolicy` depends on other components to identify
 digressions and interruptions and interrupt the flow accordingly. For details on
 which digressions and interruptions the flow policy can handle, refer to
-[Handling Unhappy Paths](./unhappy-paths.mdx).
+[Conversation Repair](./conversation-repair.mdx).
 
 For example, the user message _"oh sorry I meant John"_ is a correction to a
 prior input. The `FlowPolicy` depends on another component, like the
@@ -200,8 +195,7 @@ with the `FlowPolicy`.
 
 <RasaProLabel />
 
-
-## Overview 
+<RasaProBanner />
 
 The component uses an LLM to generate rephrased responses. The LLM is trained
 on a prompt that includes a transcript of the conversation with the user and a
@@ -225,7 +219,7 @@ policies:
 ```
 
 The `source` parameter specifies the directory containing your documentation.
-The `DocsearchPolicy` will automatically index all files with a `.txt` 
+The `DocsearchPolicy` will automatically index all files with a `.txt`
 extension in this directory (recursively) and uses them to generate responses.
 
 ## Customization
@@ -235,11 +229,11 @@ You can customize the LLM by modifying the following parameters in the
 
 ### Mapping to existing responses
 
-Instead of generating new responses, you can also use the LLM to respond with 
-responses from your domain. This allows you to use the LLMs information 
+Instead of generating new responses, you can also use the LLM to respond with
+responses from your domain. This allows you to use the LLMs information
 retrieval capabilities to find the best response from your domain.
 
-The response generated by the document search is compared to the responses 
+The response generated by the document search is compared to the responses
 defined in your domain. If there is a response that is similar enough, it is
 used instead of the generated response. The `max_distance` parameter allows
 you to control this behavior:
@@ -257,8 +251,6 @@ value of `0.0` means that the generated response needs to be identical to an
 existing response. A value of `1.0` means that the generated response will
 always be maped to an existing response. The default value is `0.2`.
 
-
-
 ### LLM / Embeddings
 
 You can choose the OpenAI model that is used for the LLM by adding the `llm.model_name`
@@ -275,17 +267,17 @@ policies:
 
 Defaults to `gpt-3.5-turbo`.
 
-If you want to use Azure OpenAI Service, you can configure the necessary 
-parameters as described in the 
-[Azure OpenAI Service](../llms/llm-configuration.mdx#additional-configuration-for-azure-openai-service) 
+If you want to use Azure OpenAI Service, you can configure the necessary
+parameters as described in the
+[Azure OpenAI Service](./components/llm-configuration.mdx#additional-configuration-for-azure-openai-service)
 section.
 
 :::info Using Other LLMs / Embeddings
 
-By default, OpenAI is used as the underlying LLM and embedding provider. 
+By default, OpenAI is used as the underlying LLM and embedding provider.
 
 The used LLM provider and embeddings provider can be configured in the
-`config.yml` file to use another provider, e.g. `cohere`: 
+`config.yml` file to use another provider, e.g. `cohere`:
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -299,13 +291,13 @@ policies:
 ```
 
 For more information, see the
-[LLM setup page on llms and embeddings](../llms/llm-configuration.mdx#other-llmsembeddings)
+[LLM setup page on llms and embeddings](./components/llm-configuration.mdx#other-llmsembeddings)
 
 :::
 
 ### Prompt
 
-You can change the prompt template used to generate a response based on 
+You can change the prompt template used to generate a response based on
 retrieved documents by setting the `prompt` property in the `config.yml`:
 
 ```yaml-rasa title="config.yml"
@@ -313,9 +305,9 @@ policies:
 # - ...
   - name: rasa_plus.ml.DocsearchPolicy
     prompt: |
-      Given the following passages of relevant documents, and the 
-      previous conversation, answer the question. If you don't 
-      know the answer, just say that you don't know. Don't try 
+      Given the following passages of relevant documents, and the
+      previous conversation, answer the question. If you don't
+      know the answer, just say that you don't know. Don't try
       to make up an answer.
 
       Relevant Passages:
@@ -329,8 +321,8 @@ policies:
 
       ===
 
-      Please formulate an answer for the question or request in 
-      the user's last message. If you don't know the answer, just 
+      Please formulate an answer for the question or request in
+      the user's last message. If you don't know the answer, just
       say that you don't know. Don't try to make up an answer.
 
       Your answer:
@@ -353,16 +345,16 @@ The component uses an LLM to generate rephrased responses.
 
 The following threat vectors should be considered:
 
-- **Privacy**: Most LLMs are run as remote services. The component sends 
-  your bot's conversations to remote servers for prediction. By default, 
-  the used prompt templates include a transcript of the conversation. 
+- **Privacy**: Most LLMs are run as remote services. The component sends
+  your bot's conversations to remote servers for prediction. By default,
+  the used prompt templates include a transcript of the conversation.
   Slot values are not included.
-- **Hallucination**: When generating answers, it is possible that the LLM 
-  changes your document content in a way that the meaning is no longer exactly 
-  the same. The temperature parameter allows you to control this trade-off. 
-  A low temperature will only allow for minor variations. A higher temperature 
-  allows greater flexibility but with the risk of the meaning being 
-  changed  - but allows the model to better combine knowledge from 
+- **Hallucination**: When generating answers, it is possible that the LLM
+  changes your document content in a way that the meaning is no longer exactly
+  the same. The temperature parameter allows you to control this trade-off.
+  A low temperature will only allow for minor variations. A higher temperature
+  allows greater flexibility but with the risk of the meaning being
+  changed - but allows the model to better combine knowledge from
   different documents.
 - **Prompt Injection**: Messages sent by your end users to your bot will become
   part of the LLM prompt (see template above). That means a malicious user can
@@ -376,14 +368,13 @@ The following threat vectors should be considered:
 More detailed information can be found in Rasa's webinar on
 [LLM Security in the Enterprise](https://info.rasa.com/webinars/llm-security-in-the-enterprise-replay).
 
-
 ### Intentless Policy
 
 <RasaProLabel />
 
 :::info New in 3.7
 
-The *Intentless Policy* is part of Rasa's new  Conversational AI with 
+The _Intentless Policy_ is part of Rasa's new Conversational AI with
 Language Models (CALM) approach and available starting with version `3.7.0`.
 :::
 
@@ -398,7 +389,6 @@ existing rasa components and make it easier:
 Using the `IntentlessPolicy`, a
 question-answering bot can already understanding many different ways
 that users could phrase their questions - even across a series of user messages:
-
 
 This only requires appropriate responses to be defined in the domain file.
 
@@ -498,7 +488,7 @@ Defaults to `text-davinci-003`. The model name needs to be set to an
 
 If you want to use Azure OpenAI Service, you can configure the necessary
 parameters as described in the
-[Azure OpenAI Service](../llms/llm-configuration.mdx#additional-configuration-for-azure-openai-service)
+[Azure OpenAI Service](./components/llm-configuration.mdx#additional-configuration-for-azure-openai-service)
 section.
 
 #### Other LLMs / Embeddings
@@ -519,7 +509,7 @@ policies:
 ```
 
 For more information, see the
-[LLM setup page on llms and embeddings](../llms/llm-configuration.mdx#other-llmsembeddings).
+[LLM setup page on llms and embeddings](./components/llm-configuration.mdx#other-llmsembeddings).
 
 ### Other Policies
 
@@ -551,7 +541,6 @@ policies are uncertain:
 
 - If the `IntentlessPolicy` prediction has low confidence, the `RulePolicy` will
   trigger fallback based on the `core_fallback_threshold`.
-
 
 **What about TED?**
 
@@ -588,7 +577,7 @@ utter_faq_6:
 Beyond having the `utter_` prefix, the naming of the utterances is not relevant.
 
 The second step is to add
-[end-to-end stories](../building-classic-assistants/training-data-format.mdx#end-to-end-training)
+[end-to-end stories](../nlu-based-assistants/training-data-format.mdx#end-to-end-training)
 to `data/e2e_stories.yml`. These stories teach the LLM about your domain, so it
 can figure out when to say what.
 
@@ -691,8 +680,5 @@ be dealt with using the traditional NLU approaches and slots.
 At this point, the intentless policy can only predict utterances but not custom
 actions. Triggering custom actions needs to be done by traditional policies,
 such as the rule- or memoization policy.
-
-
-
 
 ## Configuring Policies

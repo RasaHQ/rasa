@@ -1,22 +1,21 @@
 ---
 id: calm
-sidebar_label: CALM
-title: CALM
-description: CALM is an LLM-native approach to building reliable conversational AI.
+sidebar_label: Conversational AI with Language Models
+title: Conversational AI with Language Models
+description: Conversational AI with Language Models (CALM) is an LLM-native approach to building reliable conversational AI.
 ---
 
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import useBaseUrl from "@docusaurus/useBaseUrl";
 
-CALM is an LLM-native approach to building reliable conversational AI.
+Conversational AI with Language Models (CALM) is an LLM-native approach to building reliable conversational AI.
 
-If you are familiar with building NLU-based chatbots in Rasa or another platform, 
+If you are familiar with building NLU-based chatbots in Rasa or another platform,
 go [here](#calm-compared-to-nlu-based-assistants) to understand how CALM differs.
-
 
 If you are familiar with building LLM Agents and want to understand how that
 approach relates to CALM, go [here](#calm-compared-to-llm-agents).
 
-The CALM approach is best described as a set of interacting modules. 
+The CALM approach is best described as a set of interacting modules.
 
 <img
   alt="high level outline of the CALM approach"
@@ -25,39 +24,37 @@ The CALM approach is best described as a set of interacting modules.
 
 ## CALM compared to NLU-based assistants
 
-The diagram above might look familiar if you have built NLU-based assistants before. 
+The diagram above might look familiar if you have built NLU-based assistants before.
 In that paradigm, an NLU module interprets one user message at a time and represents its meaning by predicting
-intents and entities. 
-The dialogue manager then decides what to do based on the NLU output. 
-
+intents and entities.
+The dialogue manager then decides what to do based on the NLU output.
 
 ## CALM compared to LLM Agents
 
 "LLM Agents" refers to idea of using LLMs as a _reasoning engine_,
 as in the [Reasoning and Acting](https://arxiv.org/abs/2210.03629) (ReAct) framework.
 
-CALM uses an LLM to figure out *how the user wants to progress the conversation*.
+CALM uses an LLM to figure out _how the user wants to progress the conversation_.
 It does not use an LLM to guess what the correct set of steps are to complete that process.
-This is the primary difference between the two approaches. 
+This is the primary difference between the two approaches.
 
 In CALM, business logic is described by a `Flow` and executed precisely using the `FlowPolicy`.
 
-So CALM uses an LLM to reason about the user side of the conversation, but not the system side. 
+So CALM uses an LLM to reason about the user side of the conversation, but not the system side.
 In a ReAct-style agent, an LLM is used for both.
 
 When each of these is appropriate:
 
-| LLM Agents                                                                  | CALM                                                          | 
-| --------------------------------------------------------------------------- | ------------------------------------------------------------- | 
-| allow users to make open-ended use of tools / API endpoints                 | known business logic for a finite set of skills / user goals  | 
-| you have an effectively infinite set of possible tasks and open-ended goals | business logic needs to be strictly enforced                  | 
-| you want to give the end-user of the bot full autonomy                      | limits to what end-users are allowed to do                    | 
+| LLM Agents                                                                  | CALM                                                         |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| allow users to make open-ended use of tools / API endpoints                 | known business logic for a finite set of skills / user goals |
+| you have an effectively infinite set of possible tasks and open-ended goals | business logic needs to be strictly enforced                 |
+| you want to give the end-user of the bot full autonomy                      | limits to what end-users are allowed to do                   |
 
 For business use cases, CALM has advantages over LLM Agents:
-
 
 1. Your business logic is explicitly written down, can be easily edited, and you can be sure that it will be followed faithfully
 2. Your business logic is known up front so you don't need to rely on an LLM to guess it. This avoids doing multiple LLM calls in series in response to a single user message, which is infeasibly slow for most applications.
 3. You can make your business logic arbitrarily complex and not worry about whether the LLM “forgets” a step.
 4. You can validate every piece of information a user provides (i.e. every slot value) as the conversation progresses. So you don’t have to wait until the all the information is collected and the API response gives you an error.
-5. End users cannot use prompt injection to override your business logic. *A Language model as a reasoning engine* is a fundamentally insecure proposition - see the [OWASP top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/assets/PDF/OWASP-Top-10-for-LLMs-2023-slides-v1_0.pdf).
+5. End users cannot use prompt injection to override your business logic. _A Language model as a reasoning engine_ is a fundamentally insecure proposition - see the [OWASP top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/assets/PDF/OWASP-Top-10-for-LLMs-2023-slides-v1_0.pdf).
