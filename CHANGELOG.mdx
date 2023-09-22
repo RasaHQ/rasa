@@ -2631,7 +2631,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   :::
 - [#7306](https://github.com/rasahq/rasa/issues/7306): Fix an erroneous attribute for Redis key prefix in `rasa.core.tracker_store.RedisTrackerStore`: 'RedisTrackerStore' object has no attribute 'prefix'.
 - [#7407](https://github.com/rasahq/rasa/issues/7407): Remove token when its text (for example, whitespace) can't be tokenized by LM tokenizer (from `LanguageModelFeaturizer`).
-- [#7408](https://github.com/rasahq/rasa/issues/7408): Temporary directories which were created during requests to the [HTTP API](http-api.mdx)
+- [#7408](https://github.com/rasahq/rasa/issues/7408): Temporary directories which were created during requests to the [HTTP API](./production/http-api.mdx)
   are now cleaned up correctly once the request was processed.
 - [#7422](https://github.com/rasahq/rasa/issues/7422): Add option `use_word_boundaries` for `RegexFeaturizer` and `RegexEntityExtractor`. To correctly process languages such as Chinese that don't use whitespace for word separation, the user needs to add the `use_word_boundaries: False` option to those two components.
 - [#7529](https://github.com/rasahq/rasa/issues/7529): Correctly fingerprint the default domain slots. Previously this led to the issue
