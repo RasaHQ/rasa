@@ -11,7 +11,7 @@ import TutorialActionLabel from "@theme/TutorialActionLabel";
 
 You will build an assistant in this tutorial for helping people transfer money.
 This tutorial does not assume and existing knowledge of Rasa or chatbots.
-The techniques you will learn in this tutorial are fundamental to building any Rasa bot,
+The techniques you will learn in this tutorial are fundamental to building any Rasa assistant,
 and understanding it will bring you quite far along to mastering Rasa.
 
 
@@ -46,6 +46,11 @@ Here are some of the conversations your assistant will be able to handle:
   </TabItem>
 </Tabs>
 
+## Following This Tutorial
+
+Whenever there is something for you to do, you'll see this label:
+<TutorialActionLabel />
+
 ## Setup
 
 <TutorialActionLabel />
@@ -58,7 +63,7 @@ rasa init --template tutorial
 ```
 
 By default, this tutorial uses the OpenAI API.
-If you'd like to use a different LLM, follow the instructions [here](./llms/llm-configuration.mdx#other-llmsembeddings)
+If you'd like to use a different LLM, follow the instructions [here](./llms/llm-configuration.mdx#other-llmsembeddings).
 To set your OpenAI API key, run the following command:
 
 <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
@@ -94,6 +99,8 @@ In this tutorial you will primarily work with the following files:
 
 ## Testing your money transfer flow
 
+<TutorialActionLabel />
+
 Train your assistant by running:
 
 ```bash
@@ -106,7 +113,7 @@ And start talking to it in the shell by running:
 rasa shell
 ```
 
-Tell the bot that you'd like to transfer some money to a friend.
+Tell the assistant that you'd like to transfer some money to a friend.
 
 ## Understanding your money transfer flow.
 
@@ -226,6 +233,8 @@ flows:
 
 Slots are also used to build branching logic in flows.
 
+<TutorialActionLabel />
+
 You're going to introduce an extra step to your flow, asking the user to confirm the amount
 and the recipient before sending the transfer.
 Since you are asking a yes/no question, you can store the result in a boolean `slot`
@@ -295,7 +304,7 @@ In this case, we're using the value of the boolean slot `final_confirmation`.
 Conditions can be used to create branching logic, including logical operators like `AND`, `OR`, etc.
 You can learn more about conditions and advanced logic here (link).
 
-To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your bot.
+To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your assistant.
 It should now ask you to confirm before completing the transfer.
 
 
@@ -346,6 +355,7 @@ and you pass information back to the conversation by returning a `SlotSet` event
 
 <img alt="diagram of how slots are used with custom actions" src={useBaseUrl("/img/slot-communication-customaction.png")} />
 
+<TutorialActionLabel />
 
 Now you are going to make three additions to your `domain.yml`.
 You will add a top-level section listing your custom actions.
@@ -410,6 +420,8 @@ flows:
 
 ## Testing your Custom Action
 
+<TutorialActionLabel />
+
 Custom actions are run as a separate server to the main Rasa assistant.
 To start your custom action server, create a new terminal tab and run:
 
@@ -424,7 +436,7 @@ action_endpoint:
   url: "http://localhost:5055/webhook"
 ```
 
-Then re-start your bot by running `rasa shell`.
+Then re-start your assistant by running `rasa shell`.
 When you reach the `"check_funds"` step in your flow, Rasa will call the custom action `action_sufficient_funds`.
 We have hardcoded the user's balance to be `1000`, so if you try to send more, the assistant will tell you that
 you don't have enough funds in your account.
