@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 import pytest
-from rasa.cdu.stack.frames.dialogue_stack_frame import (
+from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
     DialogueStackFrame,
     InvalidStackFrameType,
     generate_stack_frame_id,

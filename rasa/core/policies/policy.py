@@ -4,7 +4,7 @@ import copy
 import logging
 from enum import Enum
 from pathlib import Path
-from rasa.cdu.stack.dialogue_stack import (
+from rasa.dialogue_understanding.stack.dialogue_stack import (
     DialogueStack,
     DialogueStackFrame,
 )

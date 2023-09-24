@@ -1,6 +1,6 @@
 import pytest
-from rasa.cdu.commands.command import Command
-from rasa.cdu.commands.set_slot_command import SetSlotCommand
+from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
 
 
 def test_command_from_json():

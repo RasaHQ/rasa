@@ -1,4 +1,6 @@
-from rasa.cdu.commands.can_not_handle_command import CannotHandleCommand
+from rasa.dialogue_understanding.commands.can_not_handle_command import (
+    CannotHandleCommand,
+)
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 

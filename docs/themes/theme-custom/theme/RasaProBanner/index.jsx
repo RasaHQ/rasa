@@ -18,7 +18,7 @@ function RasaProBanner({isLoading, ...props}) {
           </h5>
         </div>
       <div class="mdx-box admonition-content">
-        <p>You'll need a license to get started with Rasa Pro. 
+        <p>You'll need a license to get started with Rasa Pro.
         {' '}
           <a href="https://rasa.com/connect-with-rasa/" target="_blank" rel="noopener noreferrer">
             Talk with Sales
