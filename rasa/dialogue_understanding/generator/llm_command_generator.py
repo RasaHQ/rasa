@@ -300,29 +300,29 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     @staticmethod
     def is_extractable(
-        q: CollectInformationFlowStep,
+        info_step: CollectInformationFlowStep,
         tracker: DialogueStateTracker,
         current_step: Optional[FlowStep] = None,
     ) -> bool:
         """Check if the collect_information can be filled.
 
-        A collect_information slot can only be filled if the slot exist
+        A collect_information slot can only be filled if the slot exists
         and either the collect_information has been asked already or the
         slot has been filled already."""
-        slot = tracker.slots.get(q.collect_information)
+        slot = tracker.slots.get(info_step.collect_information)
         if slot is None:
             return False
 
         return (
             # we can fill because this is a slot that can be filled ahead of time
-            not q.ask_before_filling
+            not info_step.ask_before_filling
             # we can fill because the slot has been filled already
             or slot.has_been_set
             # we can fill because the is currently getting asked
             or (
                 current_step is not None
                 and isinstance(current_step, CollectInformationFlowStep)
-                and current_step.collect_information == q.collect_information
+                and current_step.collect_information == info_step.collect_information
             )
         )
 
