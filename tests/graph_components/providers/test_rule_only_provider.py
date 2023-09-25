@@ -15,8 +15,7 @@ def test_provide(
 
     domain = Domain.load("examples/nlu_based/rules/domain.yml")
     trackers = rasa.core.training.load_data(
-        "examples/nlu_based/rules/data/rules.yml",
-        domain
+        "examples/nlu_based/rules/data/rules.yml", domain
     )
 
     policy = RulePolicy.create(
