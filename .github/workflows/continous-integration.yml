@@ -1037,92 +1037,91 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      
-      # TODO: readd
-      # - name: Checkout git repository 🕝
-      #   uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      #   if: github.event_name != 'pull_request'
 
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        if: github.event_name != 'pull_request'
 
-      # - name: Set up Docker Buildx
-      #   uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55  # v2.7.0
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
 
-      # - name: Free disk space
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55  # v2.7.0
+
+      - name: Free disk space
+        if: needs.changes.outputs.docker == 'true'
+        # tries to make sure we do not run out of disk space, see
+        # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt clean
+          docker image prune -a
+          df -h
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Echo Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
+      # TODO: need to reenable pushing to docker registry once dm2 is merged
+      # - name: Login to DockerHub Registry 🔢
       #   if: needs.changes.outputs.docker == 'true'
-      #   # tries to make sure we do not run out of disk space, see
-      #   # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
-      #   run: |
-      #     sudo swapoff -a
-      #     sudo rm -f /swapfile
-      #     sudo apt clean
-      #     docker image prune -a
-      #     df -h
+      #   run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
-      # - name: Read Poetry Version 🔢
-      #   run: |
-      #     echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      #   shell: bash
+      - name: Copy Segment write key to the package
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+        env:
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+        run: |
+          ./scripts/write_keys_file.sh
 
-      # - name: Echo Available platforms
-      #   run: echo ${{ steps.buildx.outputs.platforms }}
+      # Authenticate and push to the release registry
+      - id: 'auth-release'
+        name: Authenticate with gcloud for dev registry 🎫
+        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        with:
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
-      # # TODO: need to reenable pushing to docker registry once dm2 is merged
-      # # - name: Login to DockerHub Registry 🔢
-      # #   if: needs.changes.outputs.docker == 'true'
-      # #   run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
+      - name: Authenticate docker for dev registry 🎫
+        run: |
+          # Set up docker to authenticate via gcloud command-line tool.
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
 
-      # - name: Copy Segment write key to the package
-      #   if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-      #   env:
-      #     RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
-      #     RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
-      #   run: |
-      #     ./scripts/write_keys_file.sh
+      - name: Build Docker image
+        if: needs.changes.outputs.docker == 'true'
+        run: |
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
 
-      # # Authenticate and push to the release registry
-      # - id: 'auth-release'
-      #   name: Authenticate with gcloud for dev registry 🎫
-      #   uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
-      #   with:
-      #     credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+      - name: Push image with main tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
+        run: |
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
-      # - name: Authenticate docker for dev registry 🎫
-      #   run: |
-      #     # Set up docker to authenticate via gcloud command-line tool.
-      #     gcloud auth configure-docker europe-west3-docker.pkg.dev
-
-      # - name: Build Docker image
-      #   if: needs.changes.outputs.docker == 'true'
-      #   run: |
-      #     docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
-
-      # - name: Push image with main tag 📦
-      #   if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
-      #   run: |
-      #     docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
-
-      # - name: Push image with ${{github.ref}} tag 📦
-      #   if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
-      #   run: |
-      #     docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+      - name: Push image with ${{github.ref}} tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
+        run: |
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
         
-      # - name: Push image with latest tag 📦
-      #   if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa' && needs.build_docker_base_images_and_set_env.outputs.is_newest_version == 'true'
-      #   run: |
-      #     if [[ "${{ matrix.image }}" == "default" ]]; then
-      #       RELEASE_TAG="${IMAGE_TAG}"
-      #     else
-      #       RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
-      #     fi
+      - name: Push image with latest tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa' && needs.build_docker_base_images_and_set_env.outputs.is_newest_version == 'true'
+        run: |
+          if [[ "${{ matrix.image }}" == "default" ]]; then
+            RELEASE_TAG="${IMAGE_TAG}"
+          else
+            RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
+          fi
 
-      #     LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
+          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
           
-      #     # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
-      #     IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
-      #     # Push tagged image
-      #     IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+          # Push tagged image
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
   deploy:
     name: Deploy to PyPI
@@ -1168,15 +1167,14 @@ jobs:
       #      user: __token__
       #      password: ${{ secrets.PYPI_TOKEN }}
 
-      # TODO: change back
       # Push to the dev registry
-      # - name: Publish to internal PyPI 📦
-      #   uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
-      #   with:
-      #     user: "github-ci"
-      #     password: ${{ secrets.PYPI_PASSWORD }}
-      #     repository_url: "https://pypi.rasa.com/simple/"
-      #     packages_dir: ${{ format('{0}/dist', github.workspace) }}
+      - name: Publish to internal PyPI 📦
+        uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
+        with:
+          user: "github-ci"
+          password: ${{ secrets.PYPI_PASSWORD }}
+          repository_url: "https://pypi.rasa.com/simple/"
+          packages_dir: ${{ format('{0}/dist', github.workspace) }}
 
       # Authenticate and push to the release registry
       - id: "auth-release"
@@ -1187,11 +1185,6 @@ jobs:
 
       - name: "Set up Cloud SDK"
         uses: "google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587"
-
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-      #   with:
-      #     limit-access-to-actor: true
 
       - name: Release via GCP Artifact Registry
         run: |
