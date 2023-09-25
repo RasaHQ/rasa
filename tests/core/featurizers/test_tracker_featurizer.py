@@ -22,7 +22,6 @@ from rasa.shared.core.constants import (
     ACTION_UNLIKELY_INTENT_NAME,
     USER,
     PREVIOUS_ACTION,
-    DEFAULT_ACTION_NAMES,
 )
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
