@@ -463,10 +463,13 @@ the `collect_information` step and fill the slot again. This ensures the confirm
 #### Reset slot value after flow execution
 
 You can determine whether to reset the slot value after the flow execution or not by setting the optional
-`reset_after_flow_ends` property to `true` or `false` respectively. If the `reset_after_flow_ends` property is set to
-`True`, the slot value exists only for the duration of the flow. Once the flow ends, the slot value is either reset to
-`null` or the slot's initial value (if provided in the domain file under `slots`). If instead the `reset_after_flow_ends`
-property is set to `false`, this indicates that the slot value should persist across flows until it is explicitly changed.
+`reset_after_flow_ends` property to `true` or `false` respectively. If the property is not defined for the
+`collect_information` step, the default value will be `true`.
+
+If the `reset_after_flow_ends` property is set to `true`, the slot value exists only for the duration of the flow.
+Once the flow ends, the slot value is either reset to `null` or the slot's initial value (if provided in the domain
+file under `slots`). If instead the `reset_after_flow_ends` property is set to `false`, this indicates that the slot
+value should persist across flows until it is explicitly changed.
 
 The following configuration would clear the answer to the `collect_information` step when a
 flow is completed.
@@ -476,8 +479,6 @@ flow is completed.
   collect_information: "my_custom_slot" # slot name
   reset_after_flow_ends: true
 ```
-
-If the property is not defined for the `collect_information` step, the default value will be `true`.
 
 #### Define a different response for the `collect_information` step
 
