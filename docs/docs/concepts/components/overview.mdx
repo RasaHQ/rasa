@@ -6,57 +6,97 @@ description: Learn about model configuration for Rasa.
 abstract: The configuration file defines the components and policies that your model will use to make predictions based on user input.
 ---
 
-The recipe key allows for different types of config and model architecture.
-Currently, "default.v1" and the experimental "graph.v1" recipes are supported.
+import RasaProLabel from '@theme/RasaProLabel';
 
-:::info New in 3.5
+You can customise many aspects of how Rasa works by modifying the `config.yml` file. 
 
-The config file now includes a new mandatory key `assistant_id` which represents the unique assistant identifier.
+A minimal configuration for a [CALM](../calm.mdx) assistant looks like this:
+
+```yaml-rasa title="config.yml"
+recipe: default.v1
+language: en
+assistant_id: 20230405-114328-tranquil-mustard
+
+pipeline:
+  - name: LLMCommandGenerator
+
+policies:
+  - name: rasa.core.policies.flow_policy.FlowPolicy
+```
+
+:::tip Default Configuration
+For backwards compatibility, running `rasa init` will create an NLU-based assistant.
+To create a CALM assistant with the right `config.yml`, add the 
+additional `--template` argument:
+
+```bash
+rasa init --template calm
+```
 
 :::
 
-The `assistant_id` key must specify a unique value to distinguish multiple assistants in deployment.
-The assistant identifier will be propagated to each event's metadata, alongside the model id.
-Note that if the config file does not include this required key or the placeholder default value is not replaced, a random
-assistant name will be generated and added to the configuration everytime when running `rasa train`.
+### The recipe, language, and assistant_id keys
 
-The language and pipeline keys specify the components used by the  model to make NLU predictions.
-The policies key defines the policies used by the model to predict the next action.
+The `recipe` key only needs to be modified if you want to build a [custom graph recipe](./graph-recipe.mdx).
+The vast majority of projects should use the default value `"default.v1"`. 
+
+The `language` key is a 2-letter ISO code for the language your assistant supports.
+
+The `assistant_id` key should be a unique value and allows you to distinguish multiple
+deployed assistants.
+This id is added to each event's metadata, together with the model id.
+See [event brokers](../production/event-brokers.mdx) for more information.
+Note that if the config file does not include this required key or the placeholder default value 
+is not replaced, a random assistant name will be generated and added to the configuration 
+every time you run `rasa train`.
 
 
-## Suggested Config
 
-TODO: update
+## Pipeline 
 
-You can leave the pipeline and/or policies key out of your configuration file.
-When you run `rasa train`, the Suggested Config feature will select a default configuration
-for the missing key(s) to train the model.
+The `pipeline` key lists the components which will be used to process and understand the messages
+that end users send to your assistant. 
+In a CALM assistant, the output of your pipeline components is a list of [commands](../dialogue-understanding.mdx).
 
-Make sure to specify the language key in your `config.yml` file with the
-2-letter ISO language code.
+The main component in your pipeline is the `LLMCommandGenerator`.
+Here is what an example configuration looks like:
 
-Example `config.yml` file:
-
-```yaml-rasa (docs/sources/data/configs_for_docs/example_for_suggested_config.yml)
+```yaml-rasa title="config.yml"
+pipeline:
+  - name: LLMCommandGenerator
+    llm:
+      model_name: "gpt-4"
+      request_timeout: 7
+      temperature: 0.0
 ```
 
-The selected configuration will also be written as comments into the `config.yml` file,
-so you can see which configuration was used. For the example above, the resulting file
-might look e.g. like this:
+The full set of configurable parameters is listed [here](../dialogue-understanding.mdx).
 
-```yaml-rasa (docs/sources/data/configs_for_docs/example_for_suggested_config_after_train.yml)
+All components which make use of LLMs have common configuration parameters which are listed [here](../llm-configuration.mdx)
+
+
+### Combining CALM and NLU-based components
+
+<RasaProLabel />
+
+Rasa Pro allows you to combine both NLU-based and CALM components in your pipeline. 
+See a full list of NLU-based components [here](../buil-based-assistants/components.mdx).
+
+## Policies
+
+The `policies` key lists the [dialogue policies](../policies.mdx) your assistant will use 
+to progress the conversation. 
+
+```yaml-rasa title="config.yml"
+policies:
+  - name: rasa.core.policies.flow_policy.FlowPolicy
 ```
 
-If you like, you can then un-comment the suggested configuration for one or both of the
-keys and make modifications. Note that this will disable automatic suggestions for this
-key when training again.
-As long as you leave the configuration commented out and don't specify any configuration
-for a key yourself, a default configuration will be suggested whenever you train a new
-model.
+The `FlowPolicy` currently doesn't have an additional configuration parameters.
 
-:::note nlu- or dialogue- only models
+### Combining CALM and NLU-based dialogue policies
 
-Only the default configuration for `pipeline` will be automatically selected
-if you run `rasa train nlu`, and only the default configuration for `policies`
-will be selected if you run `rasa train core`.
-:::
+<RasaProLabel />
+
+Rasa Pro allows you to use both NLU-based and CALM dialogue policies in your assistant. 
+See a full list of NLU-based policies [here](../buil-based-assistants/policies.mdx).
