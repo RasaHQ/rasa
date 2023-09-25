@@ -52,7 +52,6 @@ from rasa.shared.core.flows.flow import (
     GenerateResponseFlowStep,
     IfFlowLink,
     EntryPromptFlowStep,
-    CollectInformationScope,
     SlotRejection,
     StepThatCanStartAFlow,
     UserMessageStep,
@@ -521,7 +520,7 @@ class FlowExecutor:
             # reset all slots scoped to the flow
             if (
                 isinstance(step, CollectInformationFlowStep)
-                and step.scope == CollectInformationScope.FLOW
+                and step.reset_after_flow_ends
             ):
                 slot = tracker.slots.get(step.collect_information, None)
                 initial_value = slot.initial_value if slot else None
