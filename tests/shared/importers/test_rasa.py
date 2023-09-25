@@ -11,10 +11,6 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import (
     DEFAULT_ACTION_NAMES,
     DEFAULT_INTENTS,
-    SESSION_START_METADATA_SLOT,
-    DIALOGUE_STACK_SLOT,
-    RETURN_VALUE_SLOT,
-    FLOW_HASHES_SLOT,
     DEFAULT_SLOT_NAMES,
     REQUESTED_SLOT,
 )
