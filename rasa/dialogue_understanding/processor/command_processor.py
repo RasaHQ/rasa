@@ -110,7 +110,7 @@ def find_updated_flows(tracker: DialogueStateTracker, all_flows: FlowsList) -> S
     Returns:
     A set of flow ids of those flows that have changed
     """
-    stored_fingerprints = tracker.get_slot(FLOW_HASHES_SLOT)
+    stored_fingerprints: Dict[str, str] = tracker.get_slot(FLOW_HASHES_SLOT) or {}
     dialogue_stack = DialogueStack.from_tracker(tracker)
 
     changed_flows = set()
