@@ -139,7 +139,7 @@ def test_data_validate_help(run: Callable[..., RunResult]):
                           [--max-history MAX_HISTORY] [-c CONFIG]
                           [--fail-on-warnings] [-d DOMAIN]
                           [--data DATA [DATA ...]]
-                          {{stories}} ..."""
+                          {{stories,flows}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

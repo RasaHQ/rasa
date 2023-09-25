@@ -604,8 +604,8 @@ class Validator:
     def verify_flows_structure(self) -> bool:
         """Checks if the flows structure is valid."""
         if self.flows.is_empty():
-            rasa.shared.utils.io.raise_warning(
-                "No flows were found in the data files."
+            logger.warning(
+                "No flows were found in the data files. "
                 "Will not proceed with flow validation.",
             )
             return True
