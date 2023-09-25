@@ -153,10 +153,10 @@ def execute_commands(
         # Override commands
         commands = [CleanStackCommand()]
 
-    # always store current flow hashes
-    tracker.update_with_events(
-        [SlotSet(FLOW_HASHES_SLOT, calculate_flow_fingerprints(all_flows))], None
-    )
+    # store current flow hashes if they changed
+    new_hashes = calculate_flow_fingerprints(all_flows)
+    if new_hashes != (tracker.get_slot(FLOW_HASHES_SLOT) or {}):
+        tracker.update_with_events([SlotSet(FLOW_HASHES_SLOT, new_hashes)], None)
 
     events: List[Event] = []
 
