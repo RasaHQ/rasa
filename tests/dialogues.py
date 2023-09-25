@@ -272,6 +272,6 @@ TEST_DIALOGUES = [TEST_DEFAULT_DIALOGUE, TEST_FORMBOT_DIALOGUE, TEST_MOODBOT_DIA
 
 TEST_DOMAINS_FOR_DIALOGUES = [
     "data/test_domains/default_with_slots.yml",
-    "examples/formbot/domain.yml",
+    "examples/nlu_based/formbot/domain.yml",
     "data/test_moodbot/domain.yml",
 ]

@@ -28,7 +28,7 @@ def test_slot_mapping_entity_is_desired(slot_name: Text, expected: bool):
 
 
 def test_slot_mapping_intent_is_desired(domain: Domain):
-    domain = Domain.from_file("examples/formbot/domain.yml")
+    domain = Domain.from_file("examples/nlu_based/formbot/domain.yml")
     tracker = DialogueStateTracker("sender_id_test", slots=domain.slots)
     event1 = UserUttered(
         text="I'd like to book a restaurant for 2 people.",
