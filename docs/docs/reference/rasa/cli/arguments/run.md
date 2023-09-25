@@ -46,3 +46,27 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None
 
 Add arguments for running API endpoint.
 
+#### add\_server\_settings\_arguments
+
+```python
+def add_server_settings_arguments(parser: argparse.ArgumentParser) -> None
+```
+
+Add arguments for the API server.
+
+**Arguments**:
+
+- `parser` - Argument parser.
+
+#### add\_jwt\_arguments
+
+```python
+def add_jwt_arguments(parser: argparse.ArgumentParser) -> None
+```
+
+Adds arguments related to JWT authentication.
+
+**Arguments**:
+
+- `parser` - Argument parser.
+
