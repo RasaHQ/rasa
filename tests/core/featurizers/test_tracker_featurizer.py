@@ -22,6 +22,7 @@ from rasa.shared.core.constants import (
     ACTION_UNLIKELY_INTENT_NAME,
     USER,
     PREVIOUS_ACTION,
+    DEFAULT_ACTION_NAMES,
 )
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -179,14 +180,25 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
             },
         ]
     ]
-
     assert actual_features is not None
     assert len(actual_features) == len(expected_features)
 
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 21, 0, 18, 19, 0, 20]])
+    expected_labels = np.array(
+        [
+            [
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_greet"),
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_cheer_up"),
+                moodbot_domain.action_names_or_texts.index("utter_did_that_help"),
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_goodbye"),
+            ]
+        ]
+    )
     assert actual_labels is not None
     assert len(actual_labels) == 1
     for actual, expected in zip(actual_labels, expected_labels):
@@ -255,7 +267,19 @@ def test_trackers_ignore_action_unlikely_intent_with_full_dialogue_tracker_featu
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 21, 0, 18, 19, 0, 20]])
+    expected_labels = np.array(
+        [
+            [
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_greet"),
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_cheer_up"),
+                moodbot_domain.action_names_or_texts.index("utter_did_that_help"),
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_goodbye"),
+            ]
+        ]
+    )
     assert actual_labels is not None
     assert len(actual_labels) == 1
     for actual, expected in zip(actual_labels, expected_labels):
@@ -324,7 +348,22 @@ def test_trackers_keep_action_unlikely_intent_with_full_dialogue_tracker_featuri
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 9, 21, 0, 9, 18, 19, 0, 9, 20]])
+    expected_labels = np.array(
+        [
+            [
+                0,
+                moodbot_domain.action_names_or_texts.index("action_unlikely_intent"),
+                moodbot_domain.action_names_or_texts.index("utter_greet"),
+                0,
+                moodbot_domain.action_names_or_texts.index("action_unlikely_intent"),
+                moodbot_domain.action_names_or_texts.index("utter_cheer_up"),
+                moodbot_domain.action_names_or_texts.index("utter_did_that_help"),
+                0,
+                moodbot_domain.action_names_or_texts.index("action_unlikely_intent"),
+                moodbot_domain.action_names_or_texts.index("utter_goodbye"),
+            ]
+        ]
+    )
     assert actual_labels is not None
     assert len(actual_labels) == 1
     for actual, expected in zip(actual_labels, expected_labels):
@@ -832,7 +871,19 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 21, 0, 18, 19, 0, 20]]).T
+    expected_labels = np.array(
+        [
+            [
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_greet"),
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_cheer_up"),
+                moodbot_domain.action_names_or_texts.index("utter_did_that_help"),
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_goodbye"),
+            ]
+        ]
+    ).T
 
     assert actual_labels is not None
     assert actual_labels.shape == expected_labels.shape
@@ -899,7 +950,15 @@ def test_featurize_trackers_ignore_action_unlikely_intent_max_history_featurizer
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 21, 0]]).T
+    expected_labels = np.array(
+        [
+            [
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_greet"),
+                0,
+            ]
+        ]
+    ).T
     assert actual_labels.shape == expected_labels.shape
     for actual, expected in zip(actual_labels, expected_labels):
         assert np.all(actual == expected)
@@ -971,7 +1030,16 @@ def test_featurize_trackers_keep_action_unlikely_intent_max_history_featurizer(
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 9, 21, 0]]).T
+    expected_labels = np.array(
+        [
+            [
+                0,
+                moodbot_domain.action_names_or_texts.index("action_unlikely_intent"),
+                moodbot_domain.action_names_or_texts.index("utter_greet"),
+                0,
+            ]
+        ]
+    ).T
     assert actual_labels is not None
     assert actual_labels.shape == expected_labels.shape
     for actual, expected in zip(actual_labels, expected_labels):
@@ -1088,7 +1156,19 @@ def test_deduplicate_featurize_trackers_with_max_history_tracker_featurizer(
     for actual, expected in zip(actual_features, expected_features):
         assert compare_featurized_states(actual, expected)
 
-    expected_labels = np.array([[0, 21, 0, 18, 19, 0, 20]]).T
+    expected_labels = np.array(
+        [
+            [
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_greet"),
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_cheer_up"),
+                moodbot_domain.action_names_or_texts.index("utter_did_that_help"),
+                0,
+                moodbot_domain.action_names_or_texts.index("utter_goodbye"),
+            ]
+        ]
+    ).T
     if not remove_duplicates:
         expected_labels = np.vstack([expected_labels] * 2)
 
