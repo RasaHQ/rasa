@@ -1,4 +1,4 @@
-from typing import List, Optional, Type, Set, Tuple, Dict
+from typing import List, Optional, Type, Set, Dict
 
 import structlog
 from rasa.dialogue_understanding.commands import (

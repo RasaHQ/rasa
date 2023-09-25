@@ -20,8 +20,6 @@ from rasa.shared.core.flows.flow import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.cdu.commands.test_command_processor import (
-    tracker,
-    all_flows,
     start_bar_user_uttered,
     change_cases,
 )
