@@ -38,7 +38,7 @@ class UnreachableFlowStepException(RasaException):
 
 
 class UnresolvedFlowStepIdException(RasaException):
-    """Raised when a flow step is referenced but it's id can not be resolved."""
+    """Raised when a flow step is referenced, but its id can not be resolved."""
 
     def __init__(
         self, step_id: Text, flow: Flow, referenced_from: Optional[FlowStep]

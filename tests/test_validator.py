@@ -5,6 +5,7 @@ from typing import Text
 import pytest
 from _pytest.logging import LogCaptureFixture
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.exceptions import RasaException
 
 from rasa.validator import Validator
 
@@ -856,3 +857,397 @@ def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
 
     with pytest.warns(UserWarning, match=message):
         validator.warn_if_config_mandatory_keys_are_not_set()
+
+
+def test_verify_flow_steps_against_domain_missing_slot_in_domain(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    missing_slot_in_domain = "transfer_amount"
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                flows:
+                  transfer_money:
+                    description: This flow lets users send money.
+                    name: transfer money
+                    steps:
+                    - id: "ask_recipient"
+                      collect_information: transfer_recipient
+                      next: "ask_amount"
+                    - id: "ask_amount"
+                      collect_information: {missing_slot_in_domain}
+                      next: "execute_transfer"
+                    - id: "execute_transfer"
+                      action: action_transfer_money
+                """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                intents:
+                  - greet
+                slots:
+                    transfer_recipient:
+                        type: text
+                        mappings: []
+                actions:
+                  - action_transfer_money
+                """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with pytest.raises(RasaException) as e:
+        validator.verify_flows_steps_against_domain()
+
+    assert (
+        f"The slot '{missing_slot_in_domain}' is used in the step 'ask_amount' of "
+        f"flow 'transfer money', but it is not listed in the domain slots."
+    ) in str(e.value)
+
+
+def test_verify_flow_steps_against_domain_missing_action_in_domain(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    missing_action_in_domain = "action_transfer_money"
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                flows:
+                  transfer_money:
+                    description: This flow lets users send money.
+                    name: transfer money
+                    steps:
+                    - id: "ask_recipient"
+                      collect_information: transfer_recipient
+                      next: "ask_amount"
+                    - id: "ask_amount"
+                      collect_information: transfer_amount
+                      next: "execute_transfer"
+                    - id: "execute_transfer"
+                      action: {missing_action_in_domain}
+                """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                intents:
+                  - greet
+                slots:
+                    transfer_recipient:
+                        type: text
+                        mappings: []
+                    transfer_amount:
+                        type: text
+                        mappings: []
+                """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with pytest.raises(RasaException) as e:
+        validator.verify_flows_steps_against_domain()
+
+    assert (
+        f"The action '{missing_action_in_domain}' is used in the step "
+        f"'execute_transfer' of flow 'transfer money', but it "
+        f"is not listed in the domain file."
+    ) in str(e.value)
+
+
+def test_verify_flow_steps_against_domain_missing_slot_from_set_slot_step(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    missing_slot_in_domain = "account_type"
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    flows:
+                      transfer_money:
+                        description: This flow lets users send money.
+                        name: transfer money
+                        steps:
+                        - id: "ask_recipient"
+                          collect_information: transfer_recipient
+                          next: "ask_amount"
+                        - id: "ask_amount"
+                          collect_information: transfer_amount
+                          next: "set_account_type"
+                        - id: "set_account_type"
+                          set_slots:
+                            - {missing_slot_in_domain}: "debit"
+                          next: "execute_transfer"
+                        - id: "execute_transfer"
+                          action: action_transfer_money
+                    """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    intents:
+                      - greet
+                    slots:
+                        transfer_recipient:
+                            type: text
+                            mappings: []
+                        transfer_amount:
+                            type: text
+                            mappings: []
+                    actions:
+                      - action_transfer_money
+                    """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with pytest.raises(RasaException) as e:
+        validator.verify_flows_steps_against_domain()
+
+    assert (
+        f"The slot '{missing_slot_in_domain}' is used in the step "
+        f"'set_account_type' of flow 'transfer money', "
+        f"but it is not listed in the domain slots."
+    ) in str(e.value)
+
+
+def test_verify_unique_flows_duplicate_names(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    duplicate_flow_name = "transfer money"
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: This flow lets users send money.
+                            name: {duplicate_flow_name}
+                            steps:
+                            - id: "ask_recipient"
+                              collect_information: transfer_recipient
+                              next: "ask_amount"
+                            - id: "ask_amount"
+                              collect_information: transfer_amount
+                              next: "execute_transfer"
+                            - id: "execute_transfer"
+                              action: action_transfer_money
+                          recurrent_payment:
+                            description: This flow sets up a recurrent payment.
+                            name: {duplicate_flow_name}
+                            steps:
+                            - id: "set_up_recurrence"
+                              action: action_set_up_recurrent_payment
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                            transfer_amount:
+                                type: text
+                                mappings: []
+                        actions:
+                          - action_transfer_money
+                          - action_set_up_recurrent_payment
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with pytest.raises(RasaException) as e:
+        validator.verify_unique_flows()
+
+    assert (
+        f"Detected duplicate flow name '{duplicate_flow_name}'. "
+        f"Flow names must be unique. "
+        f"Please make sure that all flows have different names."
+    ) in str(e.value)
+
+
+def test_verify_unique_flows_duplicate_descriptions(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    duplicate_flow_description_with_punctuation = "This flow lets users send money."
+    duplicate_flow_description = "This flow lets users send money"
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: {duplicate_flow_description_with_punctuation}
+                            name: transfer money
+                            steps:
+                            - id: "ask_recipient"
+                              collect_information: transfer_recipient
+                              next: "ask_amount"
+                            - id: "ask_amount"
+                              collect_information: transfer_amount
+                              next: "execute_transfer"
+                            - id: "execute_transfer"
+                              action: action_transfer_money
+                          recurrent_payment:
+                            description: {duplicate_flow_description}
+                            name: setup recurrent payment
+                            steps:
+                            - id: "set_up_recurrence"
+                              action: action_set_up_recurrent_payment
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                            transfer_amount:
+                                type: text
+                                mappings: []
+                        actions:
+                          - action_transfer_money
+                          - action_set_up_recurrent_payment
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with pytest.raises(RasaException) as e:
+        validator.verify_unique_flows()
+
+    assert (
+        "Detected duplicate flow description for flow 'setup recurrent payment'. "
+        "Flow descriptions must be unique. "
+        "Please make sure that all flows have different descriptions."
+    ) in str(e.value)
+
+
+def test_verify_predicates_invalid_rejection_if(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    predicate = 'account_type not in {{"debit", "savings"}}'
+    expected_exception = (
+        f"Detected invalid rejection '{predicate}' "
+        f"at `collect_information` step 'ask_account_type' "
+        f"for flow 'transfer money'. "
+        f"Please make sure that all conditions are valid."
+    )
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: This flow lets users send money.
+                            name: transfer money
+                            steps:
+                            - id: "ask_account_type"
+                              collect_information: account_type
+                              rejections:
+                                - if: {predicate}
+                                  utter: utter_invalid_account_type
+                              next: "ask_recipient"
+                            - id: "ask_recipient"
+                              collect_information: transfer_recipient
+                              next: "ask_amount"
+                            - id: "ask_amount"
+                              collect_information: transfer_amount
+                              next: "execute_transfer"
+                            - id: "execute_transfer"
+                              action: action_transfer_money
+                          recurrent_payment:
+                            description: This flow setups recurrent payments
+                            name: setup recurrent payment
+                            steps:
+                            - id: "set_up_recurrence"
+                              action: action_set_up_recurrent_payment
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                            transfer_amount:
+                                type: text
+                                mappings: []
+                        actions:
+                          - action_transfer_money
+                          - action_set_up_recurrent_payment
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with pytest.raises(RasaException) as e:
+        validator.verify_predicates()
+
+    assert expected_exception in str(e.value)
