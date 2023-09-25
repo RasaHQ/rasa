@@ -433,7 +433,7 @@ If you have feedback (positive or negative) please share it with us on the [Rasa
 `UnexpecTEDIntentPolicy` helps you review conversations and also allows your bot to react
 to unlikely user turns. It is an auxiliary policy that should only be used in
 conjunction with at least one other policy, as the only action that it can trigger
-is the special [`action_unlikely_intent`](../concepts/default-actions.mdx#action_unlikely_intent) action.
+is the special [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent) action.
 
 `UnexpecTEDIntentPolicy` has the same model architecture as [`TEDPolicy`](./policies.mdx#ted-policy).
 The difference is at a task level. Instead of learning the best action to be triggered next,
@@ -441,7 +441,7 @@ The difference is at a task level. Instead of learning the best action to be tri
 given the conversation context from training stories. It uses the learned information at inference time by
 checking if the predicted intent by NLU is the most likely intent. If the intent predicted
 by NLU is indeed likely to occur given the conversation context, `UnexpecTEDIntentPolicy` does not trigger
-any action. Otherwise, it triggers an [`action_unlikely_intent`](../concepts/default-actions.mdx#action_unlikely_intent)
+any action. Otherwise, it triggers an [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
 with a confidence of `1.00`.
 
 `UnexpecTEDIntentPolicy` should be viewed as an aid for `TEDPolicy`. Since, `TEDPolicy` is expected to improve

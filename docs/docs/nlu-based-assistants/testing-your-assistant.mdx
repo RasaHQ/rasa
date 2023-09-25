@@ -467,10 +467,10 @@ incorrect action was predicted instead.
 ### Interpreting the generated warnings
 
 The test script will also generate a warnings file called `results/stories_with_warnings.yml`.
-This file contains all test stories for which [`action_unlikely_intent`](../concepts/default-actions.mdx#action_unlikely_intent)
+This file contains all test stories for which [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
 was predicted at any conversation turn but all actions from the original story were predicted correctly.
 However, if a test story originally included an `action_unlikely_intent`, for example to ensure [a rule is designed to
-trigger the conversation path after an `action_unlikely_intent`](../concepts/default-actions.mdx#customization-1) but the ensemble of
+trigger the conversation path after an `action_unlikely_intent`](../concepts/default-actions.mdx#customization) but the ensemble of
 policies failed to do so, then the corresponding story will end up in `results/failed_test_stories.yml` as
 a failed story.
 

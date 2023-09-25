@@ -1291,7 +1291,7 @@ The `auto_fill` key in the domain is no longer available, as well as the `auto_f
 the `Slot` class.
 
 While forms continue to request the next slot, slot extraction is now delegated to the default
-action [`action_extract_slots`](./concepts/default-actions.mdx#action_extract_slots). This action runs in the background
+action [`action_extract_slots`](./nlu-based-assistants/default-actions.mdx#action_extract_slots). This action runs in the background
 automatically after each user turn. Like `action_listen`, it should not be included in stories.
 
 Each slot in the `slots` section must include the `mappings` key. The same keys used for predefined mappings in 2.0 are
@@ -1307,7 +1307,7 @@ slots:
         action: action_verify_customer_status
 ```
 
-You can use [slot validation actions](./concepts/slot-validation-actions.mdx) to either validate slots with predefined
+You can use [slot validation actions](./nlu-based-assistants/slot-validation-actions.mdx) to either validate slots with predefined
 mappings, or to both extract and validate slots with custom mappings.
 
 Slots which will be filled by arbitrary custom actions in the course of the conversation, and which should not be updated
@@ -1461,7 +1461,7 @@ and extend the [ValidationAction class](./action-server/validation-action.mdx#va
 :::note
 If you have custom validation actions extending `FormValidationAction` which override `required_slots` method, you should
 double-check the dynamic form behavior of your migrated assistant. Slots set by the default action
-[`action_extract_slots`](./concepts/default-actions.mdx#action_extract_slots) may need to be reset within the context of your
+[`action_extract_slots`](./nlu-based-assistants/default-actions.mdx#action_extract_slots) may need to be reset within the context of your
 form by the custom validation actions for the form's required slots. For example, if your form dynamically adds a required
 slot after the first slot is filled, you may want to reset the potential required slot as part of the first required slot's
 validation method to ensure it will be empty when added.
