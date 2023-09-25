@@ -27,6 +27,7 @@ from rasa.shared.core.constants import (
     DEFAULT_KNOWLEDGE_BASE_ACTION,
     ENTITY_LABEL_SEPARATOR,
     DEFAULT_ACTION_NAMES,
+    DEFAULT_SLOT_NAMES,
 )
 from rasa.shared.core.domain import (
     InvalidDomain,
@@ -888,10 +889,9 @@ def test_domain_from_multiple_files():
         "utter_default": [{"text": "default message"}],
         "utter_amazement": [{"text": "awesomness!"}],
     }
-    expected_slots = [
+    expected_slots = list(DEFAULT_SLOT_NAMES) + [
         "activate_double_simulation",
         "activate_simulation",
-        "dialogue_stack",
         "display_cure_method",
         "display_drum_cure_horns",
         "display_method_artwork",
@@ -914,9 +914,6 @@ def test_domain_from_multiple_files():
         "humbleSelectionManagement",
         "humbleSelectionStatus",
         "offers",
-        "requested_slot",
-        "return_value",
-        "session_started_metadata",
     ]
 
     domain_slots = []
@@ -930,7 +927,7 @@ def test_domain_from_multiple_files():
     assert expected_responses == domain.responses
     assert expected_forms == domain.forms
     assert domain.session_config.session_expiration_time == 360
-    assert expected_slots == sorted(domain_slots)
+    assert sorted(expected_slots) == sorted(domain_slots)
 
 
 def test_domain_warnings(domain: Domain):

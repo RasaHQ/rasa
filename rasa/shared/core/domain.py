@@ -37,12 +37,12 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
     RESPONSE_CONDITION,
 )
-import rasa.shared.core.constants
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
     SlotMappingType,
     MAPPING_TYPE,
     MAPPING_CONDITIONS,
+    KNOWLEDGE_BASE_SLOT_NAMES,
 )
 from rasa.shared.exceptions import (
     RasaException,
@@ -1030,12 +1030,7 @@ class Domain:
                 )
             )
             slot_names = [slot.name for slot in self.slots]
-            knowledge_base_slots = [
-                rasa.shared.core.constants.SLOT_LISTED_ITEMS,
-                rasa.shared.core.constants.SLOT_LAST_OBJECT,
-                rasa.shared.core.constants.SLOT_LAST_OBJECT_TYPE,
-            ]
-            for slot in knowledge_base_slots:
+            for slot in KNOWLEDGE_BASE_SLOT_NAMES:
                 if slot not in slot_names:
                     self.slots.append(
                         TextSlot(slot, mappings=[], influence_conversation=False)
