@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -233,8 +233,8 @@ class TestLLMCommandGenerator:
         self,
         slot_name: str,
         slot: Slot,
-        slot_value: Optional[str | int | float | bool],
-        expected_output: Optional[str | int | float | bool],
+        slot_value: Any,
+        expected_output: Any,
     ):
         """Test that coerce_slot_value coerces the slot value correctly."""
         # Given
