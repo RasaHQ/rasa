@@ -73,10 +73,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         """Generate a response for the requested utter action."""
         filled_slots = tracker.current_slot_values()
         stack_context = DialogueStack.from_tracker(tracker).current_context()
-        resp = self.generate_from_slots(
+        return self.generate_from_slots(
             utter_action, filled_slots, stack_context, output_channel, **kwargs
         )
-        return resp
 
     def generate_from_slots(
         self,
@@ -112,6 +111,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         method = response.get(METADATA, {}).get(
             TEMPLATE_ENGINE_CONFIG_KEY, DEFAULT_TEMPLATE_ENGINE
         )
+
         keys_to_interpolate = [
             "text",
             "image",
