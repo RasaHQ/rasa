@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -1203,24 +1202,6 @@ class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
         return "entry_prompt"
 
 
-# enumeration of collect information scopes. scope can either be flow or global
-class CollectInformationScope(str, Enum):
-    FLOW = "flow"
-    GLOBAL = "global"
-
-    @staticmethod
-    def from_str(label: Optional[Text]) -> "CollectInformationScope":
-        """Converts a string to a CollectInformationScope."""
-        if label is None:
-            return CollectInformationScope.FLOW
-        elif label.lower() == "flow":
-            return CollectInformationScope.FLOW
-        elif label.lower() == "global":
-            return CollectInformationScope.GLOBAL
-        else:
-            raise NotImplementedError
-
-
 @dataclass
 class SlotRejection:
     """A slot rejection."""
@@ -1269,8 +1250,8 @@ class CollectInformationFlowStep(FlowStep):
     """how the slot value is validated using predicate evaluation."""
     ask_before_filling: bool = False
     """Whether to always ask the question even if the slot is already filled."""
-    scope: CollectInformationScope = CollectInformationScope.FLOW
-    """how the question is scoped, determines when to reset its value."""
+    reset_after_flow_ends: bool = True
+    """Determines whether to reset the slot value at the end of the flow."""
 
     @classmethod
     def from_json(cls, flow_step_config: Dict[Text, Any]) -> CollectInformationFlowStep:
@@ -1289,7 +1270,7 @@ class CollectInformationFlowStep(FlowStep):
                 "utter", f"utter_ask_{flow_step_config['collect']}"
             ),
             ask_before_filling=flow_step_config.get("ask_before_filling", False),
-            scope=CollectInformationScope.from_str(flow_step_config.get("scope")),
+            reset_after_flow_ends=flow_step_config.get("reset_after_flow_ends", True),
             rejections=[
                 SlotRejection.from_dict(rejection)
                 for rejection in flow_step_config.get("rejections", [])
@@ -1307,7 +1288,7 @@ class CollectInformationFlowStep(FlowStep):
         dump["collect"] = self.collect
         dump["utter"] = self.utter
         dump["ask_before_filling"] = self.ask_before_filling
-        dump["scope"] = self.scope.value
+        dump["reset_after_flow_ends"] = self.reset_after_flow_ends
         dump["rejections"] = [rejection.as_dict() for rejection in self.rejections]
 
         return dump
