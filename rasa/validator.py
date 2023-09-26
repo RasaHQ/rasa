@@ -34,6 +34,7 @@ from rasa.shared.core.events import UserUttered
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
+from rasa.shared.core.slots import ListSlot
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -495,34 +496,52 @@ class Validator:
     def verify_flows_steps_against_domain(self, user_flows: List[Flow]) -> bool:
         """Checks flows steps' references against the domain file."""
         all_good = True
-        domain_slot_names = [slot.name for slot in self.domain.slots]
+        domain_slots = {slot.name: slot for slot in self.domain.slots}
         for flow in user_flows:
             for step in flow.steps:
                 if isinstance(step, CollectInformationFlowStep):
-                    if step.collect_information not in domain_slot_names:
+                    if step.collect_information not in domain_slots:
                         raise RasaException(
                             f"The slot '{step.collect_information}' is used in the "
-                            f"step '{step.id}' of flow '{flow.name}', but it "
+                            f"step '{step.id}' of flow id '{flow.id}', but it "
                             f"is not listed in the domain slots. "
                             f"You should add it to your domain file!",
+                        )
+                    current_slot = domain_slots[step.collect_information]
+                    if isinstance(current_slot, ListSlot):
+                        raise RasaException(
+                            f"The slot '{step.collect_information}' is used in the "
+                            f"step '{step.id}' of flow id '{flow.id}', but it "
+                            f"is a list slot. List slots are currently not "
+                            f"supported in flows. You should change it to a "
+                            f"text, boolean or float slot in your domain file!",
                         )
 
                 elif isinstance(step, SetSlotsFlowStep):
                     for slot in step.slots:
                         slot_name = slot["key"]
-                        if slot_name not in domain_slot_names:
+                        if slot_name not in domain_slots:
                             raise RasaException(
                                 f"The slot '{slot_name}' is used in the step "
-                                f"'{step.id}' of flow '{flow.name}', but it "
+                                f"'{step.id}' of flow id '{flow.id}', but it "
                                 f"is not listed in the domain slots. "
                                 f"You should add it to your domain file!",
+                            )
+                        current_slot = domain_slots[slot_name]
+                        if isinstance(current_slot, ListSlot):
+                            raise RasaException(
+                                f"The slot '{slot_name}' is used in the "
+                                f"step '{step.id}' of flow id '{flow.id}', but it "
+                                f"is a list slot. List slots are currently not "
+                                f"supported in flows. You should change it to a "
+                                f"text, boolean or float slot in your domain file!",
                             )
 
                 elif isinstance(step, ActionFlowStep):
                     if step.action not in self.domain.action_names_or_texts:
                         raise RasaException(
                             f"The action '{step.action}' is used in the step "
-                            f"'{step.id}' of flow '{flow.name}', but it "
+                            f"'{step.id}' of flow id '{flow.id}', but it "
                             f"is not listed in the domain file. "
                             f"You should add it to your domain file!",
                         )
@@ -541,15 +560,15 @@ class Validator:
             cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr] # noqa: E501
             if cleaned_description in flows_mapping.values():
                 raise RasaException(
-                    f"Detected duplicate flow description for flow '{flow.name}'. "
+                    f"Detected duplicate flow description for flow id '{flow.id}'. "
                     f"Flow descriptions must be unique. "
                     f"Please make sure that all flows have different descriptions."
                 )
 
             if flow.name in flows_mapping:
                 raise RasaException(
-                    f"Detected duplicate flow name '{flow.name}'. "
-                    f"Flow names must be unique. "
+                    f"Detected duplicate flow name '{flow.name}' for flow "
+                    f"id '{flow.id}'. Flow names must be unique. "
                     f"Please make sure that all flows have different names."
                 )
 
@@ -579,7 +598,7 @@ class Validator:
                             if not is_valid:
                                 raise RasaException(
                                     f"Detected invalid condition '{link.condition}' "
-                                    f"at step '{step.id}' for flow '{flow.name}'. "
+                                    f"at step '{step.id}' for flow id '{flow.id}'. "
                                     f"Please make sure that all conditions are valid."
                                 )
                 elif isinstance(step, CollectInformationFlowStep):
@@ -599,13 +618,15 @@ class Validator:
                             raise RasaException(
                                 f"Detected invalid rejection '{predicate}' "
                                 f"at `collect_information` step '{step.id}' "
-                                f"for flow '{flow.name}'. "
+                                f"for flow id '{flow.id}'. "
                                 f"Please make sure that all conditions are valid."
                             )
         return all_good
 
     def verify_flows(self) -> bool:
         """Checks for inconsistencies across flows."""
+        logger.info("Validating flows...")
+
         if self.flows.is_empty():
             logger.warning(
                 "No flows were found in the data files. "

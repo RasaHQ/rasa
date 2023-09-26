@@ -917,7 +917,7 @@ def test_verify_flow_steps_against_domain_missing_slot_in_domain(
 
     assert (
         f"The slot '{missing_slot_in_domain}' is used in the step 'ask_amount' of "
-        f"flow 'transfer money', but it is not listed in the domain slots."
+        f"flow id 'transfer_money', but it is not listed in the domain slots."
     ) in str(e.value)
 
 
@@ -980,7 +980,7 @@ def test_verify_flow_steps_against_domain_missing_action_in_domain(
 
     assert (
         f"The action '{missing_action_in_domain}' is used in the step "
-        f"'execute_transfer' of flow 'transfer money', but it "
+        f"'execute_transfer' of flow id 'transfer_money', but it "
         f"is not listed in the domain file."
     ) in str(e.value)
 
@@ -1050,9 +1050,69 @@ def test_verify_flow_steps_against_domain_missing_slot_from_set_slot_step(
 
     assert (
         f"The slot '{missing_slot_in_domain}' is used in the step "
-        f"'set_account_type' of flow 'transfer money', "
+        f"'set_account_type' of flow id 'transfer_money', "
         f"but it is not listed in the domain slots."
     ) in str(e.value)
+
+
+def test_verify_flow_steps_against_domain_disallowed_list_slot(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                flows:
+                  order_pizza:
+                    description: This flow lets users order their favourite pizza.
+                    name: order pizza
+                    steps:
+                    - id: "ask_pizza_toppings"
+                      collect_information: pizza_toppings
+                      next: "ask_address"
+                    - id: "ask_address"
+                      collect_information: address
+                """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                intents:
+                  - greet
+                slots:
+                    pizza_toppings:
+                        type: list
+                        mappings: []
+                    address:
+                        type: text
+                        mappings: []
+                """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+    user_flows = [
+        flow
+        for flow in validator.flows.underlying_flows
+        if not flow.id.startswith("pattern_")
+    ]
+
+    with pytest.raises(RasaException) as e:
+        validator.verify_flows_steps_against_domain(user_flows)
+
+    assert (
+        "The slot 'pizza_toppings' is used in the step 'ask_pizza_toppings' "
+        "of flow id 'order_pizza', but it is a list slot. List slots are "
+        "currently not supported in flows." in str(e.value)
+    )
 
 
 def test_verify_unique_flows_duplicate_names(
@@ -1122,8 +1182,8 @@ def test_verify_unique_flows_duplicate_names(
         validator.verify_unique_flows(user_flows)
 
     assert (
-        f"Detected duplicate flow name '{duplicate_flow_name}'. "
-        f"Flow names must be unique. "
+        f"Detected duplicate flow name '{duplicate_flow_name}' for "
+        f"flow id 'recurrent_payment'. Flow names must be unique. "
         f"Please make sure that all flows have different names."
     ) in str(e.value)
 
@@ -1196,7 +1256,7 @@ def test_verify_unique_flows_duplicate_descriptions(
         validator.verify_unique_flows(user_flows)
 
     assert (
-        "Detected duplicate flow description for flow 'setup recurrent payment'. "
+        "Detected duplicate flow description for flow id 'recurrent_payment'. "
         "Flow descriptions must be unique. "
         "Please make sure that all flows have different descriptions."
     ) in str(e.value)
@@ -1210,7 +1270,7 @@ def test_verify_predicates_invalid_rejection_if(
     expected_exception = (
         f"Detected invalid rejection '{predicate}' "
         f"at `collect_information` step 'ask_account_type' "
-        f"for flow 'transfer money'. "
+        f"for flow id 'transfer_money'. "
         f"Please make sure that all conditions are valid."
     )
     flows_file = tmp_path / "flows.yml"
