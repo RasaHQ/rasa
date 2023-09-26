@@ -253,7 +253,6 @@ def test_run_command_slot_set_categorical_slot_values():
                     - high
                 mappings:
                 - type: custom
-  
         """
     )
     tracker = DialogueStateTracker.from_events(
