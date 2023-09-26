@@ -906,9 +906,14 @@ def test_verify_flow_steps_against_domain_missing_slot_in_domain(
     )
 
     validator = Validator.from_importer(importer)
+    user_flows = [
+        flow
+        for flow in validator.flows.underlying_flows
+        if not flow.id.startswith("pattern_")
+    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain()
+        validator.verify_flows_steps_against_domain(user_flows)
 
     assert (
         f"The slot '{missing_slot_in_domain}' is used in the step 'ask_amount' of "
@@ -953,7 +958,7 @@ def test_verify_flow_steps_against_domain_missing_action_in_domain(
                         type: text
                         mappings: []
                     transfer_amount:
-                        type: text
+                        type: float
                         mappings: []
                 """
         )
@@ -964,9 +969,14 @@ def test_verify_flow_steps_against_domain_missing_action_in_domain(
     )
 
     validator = Validator.from_importer(importer)
+    user_flows = [
+        flow
+        for flow in validator.flows.underlying_flows
+        if not flow.id.startswith("pattern_")
+    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain()
+        validator.verify_flows_steps_against_domain(user_flows)
 
     assert (
         f"The action '{missing_action_in_domain}' is used in the step "
@@ -1016,7 +1026,7 @@ def test_verify_flow_steps_against_domain_missing_slot_from_set_slot_step(
                             type: text
                             mappings: []
                         transfer_amount:
-                            type: text
+                            type: float
                             mappings: []
                     actions:
                       - action_transfer_money
@@ -1029,9 +1039,14 @@ def test_verify_flow_steps_against_domain_missing_slot_from_set_slot_step(
     )
 
     validator = Validator.from_importer(importer)
+    user_flows = [
+        flow
+        for flow in validator.flows.underlying_flows
+        if not flow.id.startswith("pattern_")
+    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain()
+        validator.verify_flows_steps_against_domain(user_flows)
 
     assert (
         f"The slot '{missing_slot_in_domain}' is used in the step "
@@ -1083,7 +1098,7 @@ def test_verify_unique_flows_duplicate_names(
                                 type: text
                                 mappings: []
                             transfer_amount:
-                                type: text
+                                type: float
                                 mappings: []
                         actions:
                           - action_transfer_money
@@ -1097,9 +1112,14 @@ def test_verify_unique_flows_duplicate_names(
     )
 
     validator = Validator.from_importer(importer)
+    user_flows = [
+        flow
+        for flow in validator.flows.underlying_flows
+        if not flow.id.startswith("pattern_")
+    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_unique_flows()
+        validator.verify_unique_flows(user_flows)
 
     assert (
         f"Detected duplicate flow name '{duplicate_flow_name}'. "
@@ -1152,7 +1172,7 @@ def test_verify_unique_flows_duplicate_descriptions(
                                 type: text
                                 mappings: []
                             transfer_amount:
-                                type: text
+                                type: float
                                 mappings: []
                         actions:
                           - action_transfer_money
@@ -1166,9 +1186,14 @@ def test_verify_unique_flows_duplicate_descriptions(
     )
 
     validator = Validator.from_importer(importer)
+    user_flows = [
+        flow
+        for flow in validator.flows.underlying_flows
+        if not flow.id.startswith("pattern_")
+    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_unique_flows()
+        validator.verify_unique_flows(user_flows)
 
     assert (
         "Detected duplicate flow description for flow 'setup recurrent payment'. "
@@ -1232,7 +1257,7 @@ def test_verify_predicates_invalid_rejection_if(
                                 type: text
                                 mappings: []
                             transfer_amount:
-                                type: text
+                                type: float
                                 mappings: []
                         actions:
                           - action_transfer_money
@@ -1246,8 +1271,13 @@ def test_verify_predicates_invalid_rejection_if(
     )
 
     validator = Validator.from_importer(importer)
+    user_flows = [
+        flow
+        for flow in validator.flows.underlying_flows
+        if not flow.id.startswith("pattern_")
+    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_predicates()
+        validator.verify_predicates(user_flows)
 
     assert expected_exception in str(e.value)

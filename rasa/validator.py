@@ -10,6 +10,7 @@ from rasa.shared.core.flows.flow import (
     ActionFlowStep,
     BranchFlowStep,
     CollectInformationFlowStep,
+    Flow,
     FlowsList,
     IfFlowLink,
     SetSlotsFlowStep,
@@ -491,11 +492,11 @@ class Validator:
                 f"placeholder value with a unique identifier."
             )
 
-    def verify_flows_steps_against_domain(self) -> bool:
+    def verify_flows_steps_against_domain(self, user_flows: List[Flow]) -> bool:
         """Checks flows steps' references against the domain file."""
         all_good = True
         domain_slot_names = [slot.name for slot in self.domain.slots]
-        for flow in self.flows.underlying_flows:
+        for flow in user_flows:
             for step in flow.steps:
                 if isinstance(step, CollectInformationFlowStep):
                     if step.collect_information not in domain_slot_names:
@@ -527,14 +528,15 @@ class Validator:
                         )
         return all_good
 
-    def verify_unique_flows(self) -> bool:
+    @staticmethod
+    def verify_unique_flows(user_flows: List[Flow]) -> bool:
         """Checks if all flows have unique names and descriptions."""
         all_good = True
 
         flows_mapping: Dict[str, str] = {}
         punctuation_table = str.maketrans({i: "" for i in string.punctuation})
 
-        for flow in self.flows.underlying_flows:
+        for flow in user_flows:
             flow_description = flow.description
             cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr] # noqa: E501
             if cleaned_description in flows_mapping.values():
@@ -555,10 +557,11 @@ class Validator:
 
         return all_good
 
-    def verify_predicates(self) -> bool:
+    @staticmethod
+    def verify_predicates(user_flows: List[Flow]) -> bool:
         """Checks that predicates used in branch flow steps or `collect_information` steps are valid."""  # noqa: E501
         all_good = True
-        for flow in self.flows.underlying_flows:
+        for flow in user_flows:
             for step in flow.steps:
                 if isinstance(step, BranchFlowStep):
                     for link in step.next.links:
@@ -601,8 +604,8 @@ class Validator:
                             )
         return all_good
 
-    def verify_flows_structure(self) -> bool:
-        """Checks if the flows structure is valid."""
+    def verify_flows(self) -> bool:
+        """Checks for inconsistencies across flows."""
         if self.flows.is_empty():
             logger.warning(
                 "No flows were found in the data files. "
@@ -610,12 +613,16 @@ class Validator:
             )
             return True
 
-        self.flows.validate()
+        user_flows = [
+            flow
+            for flow in self.flows.underlying_flows
+            if not flow.id.startswith("pattern_")
+        ]
 
         all_good = (
-            self.verify_flows_steps_against_domain()
-            and self.verify_unique_flows()
-            and self.verify_predicates()
+            self.verify_flows_steps_against_domain(user_flows)
+            and self.verify_unique_flows(user_flows)
+            and self.verify_predicates(user_flows)
         )
 
         return all_good
