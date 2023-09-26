@@ -165,30 +165,30 @@ pipeline:
 Like its name indicates, the `CommandGenerator` generates "commands" that are then internally processed to
 trigger operations on the current conversation. Here is a reference of all supported commands:
 
-### StartFlowCommand
+### Start Flow
 
 This command indicates the assistant should start a new [flow](./flows.mdx).
 
-### CancelFlowCommand
+### Cancel Flow
 
 This command indicates the assistant should cancel the current [flow](./flows.mdx).
 It powers [Conversation Repair's Cancellation use case](./conversation-repair.mdx#3-cancellations).
 
-### SetSlotCommand
+### Set Slot
 
 This command indicates the assistant should set a [slot](./domain.mdx#slots) to a given value.
 
-### CorrectSlotsCommand
+### Correct Slots
 
 This command indicates the assistant should change the value of a given [slot](./domain.mdx#slots)
 to a new value. It powers [Conversation Repair's Correction use case](./conversation-repair.mdx#2-corrections).
 
-### ClarifyCommand
+### Clarify
 
 This command indicates the assistant should ask for clarification. It powers
 [Conversation Repair's Clarification use case](./conversation-repair.mdx#6-clarification).
 
-### ChitChatAnswerCommand
+### Chit-Chat Answer
 
 <RasaProLabel />
 
@@ -197,7 +197,7 @@ This command indicates the assistant should ask for clarification. It powers
 This command indicates the assistant should reply a chitchat style free-form answer.
 It powers [Conversation Repair's Chitchat use case](./conversation-repair.mdx#4-chitchat).
 
-### KnowledgeAnswerCommand
+### Knowledge Answer
 
 <RasaProLabel />
 
@@ -206,11 +206,11 @@ It powers [Conversation Repair's Chitchat use case](./conversation-repair.mdx#4-
 This command indicates the assistant should reply a knowledge-based free-form answer. It works
 hand in hand with the [DocSearch policy](./policies.mdx#docsearch-policy).
 
-### HumanHandoffCommand
+### Human Handoff
 
 This command indicates the assistant should hand off the conversation to a human.
 
-### ErrorCommand
+### Error
 
 This command indicates the assistant failed to handle the dialogue due to
 an [internal error](./conversation-repair.mdx#7-internal-errors).
