@@ -5,6 +5,8 @@
     padding: 2px 12px;
     font-size: 15px !important;
     font-weight: 600;
+    margin-left: 8px;
+    margin-top: 0px !important;
 
     display: inline-block;
 }
