@@ -12,9 +12,6 @@ from rasa.shared.constants import RESPONSE_CONDITION
 from rasa.shared.nlu.constants import METADATA
 
 logger = logging.getLogger(__name__)
-import structlog
-
-structlogger = structlog.get_logger()
 
 
 class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
@@ -74,15 +71,11 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
-        structlogger.info("test0", tracker=tracker)
         filled_slots = tracker.current_slot_values()
-        structlogger.info("test1", filled_slots=filled_slots)
         stack_context = DialogueStack.from_tracker(tracker).current_context()
-        structlogger.info("test2", stack_context=stack_context)
         resp = self.generate_from_slots(
             utter_action, filled_slots, stack_context, output_channel, **kwargs
         )
-        structlogger.info("test3", resp=resp)
         return resp
 
     def generate_from_slots(
@@ -119,7 +112,6 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         method = response.get(METADATA, {}).get(
             TEMPLATE_ENGINE_CONFIG_KEY, DEFAULT_TEMPLATE_ENGINE
         )
-        print(method)
         keys_to_interpolate = [
             "text",
             "image",
@@ -131,7 +123,6 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         if response_vars:
             for key in keys_to_interpolate:
                 if key in response:
-                    print(key)
                     response[key] = interpolator.interpolate(
                         response[key],
                         response_vars,

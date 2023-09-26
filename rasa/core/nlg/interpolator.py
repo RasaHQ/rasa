@@ -68,12 +68,7 @@ def interpolate_jinja_template(response: Text, values: Dict[Text, Any]) -> Text:
     The piece of text with any replacements made.
     """
     try:
-        structlogger.debug("interpolator.interpolate.text.response", response=response)
-        structlogger.debug("interpolator.interpolate.text.values", values=values)
-
-        resp = Template(response).render(values)
-        structlogger.debug("interpolator.interpolate.text.respOutput", resp=resp)
-        return resp
+        return Template(response).render(values)
     except jinja2.exceptions.UndefinedError as e:
         event_info = (
             "The specified slot name does not exist, "
