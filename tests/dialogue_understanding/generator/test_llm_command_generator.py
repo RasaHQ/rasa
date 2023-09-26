@@ -357,7 +357,7 @@ class TestLLMCommandGenerator:
         self,
         command_generator: LLMCommandGenerator,
     ):
-        """Test that is_extractable returns True when 
+        """Test that is_extractable returns True when
         collect_information slot can be filled.
         """
         # Given
