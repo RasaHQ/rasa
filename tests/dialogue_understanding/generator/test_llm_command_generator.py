@@ -43,7 +43,6 @@ class TestLLMCommandGenerator:
         return LLMCommandGenerator.create(
             config={}, resource=Mock(), model_storage=Mock(), execution_context=Mock())
 
-
     @pytest.fixture
     def flows(self) -> FlowsList:
         """Create a FlowsList."""
@@ -87,37 +86,60 @@ class TestLLMCommandGenerator:
         # Then
         assert not predicted_commands
 
-    # def test_generate_action_list_calls_llm_correctly(
-    #     self,
-    #     command_generator: LLMCommandGenerator,
-    # ):
-    #     """Test that _generate_action_list calls llm correctly."""
-    #     # When
-    #     with patch(
-    #         "rasa.shared.utils.llm.llm_factory",
-    #         Mock()
-    #     ) as mock_llm_factory:
-    #         command_generator._generate_action_list_using_llm("some prompt")
-    #     # Then
-    #         mock_llm_factory.assert_called()
+    def test_generate_action_list_calls_llm_factory_correctly(
+        self,
+        command_generator: LLMCommandGenerator,
+    ):
+        """Test that _generate_action_list calls llm correctly."""
+        # Given
+        llm_config = {
+            "_type": "openai",
+            "request_timeout": 7,
+            "temperature": 0.0,
+            "model_name": "gpt-4",
+        }
+        # When
+        with patch(
+            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+            Mock()
+        ) as mock_llm_factory:
+            command_generator._generate_action_list_using_llm("some prompt")
+            # Then
+            mock_llm_factory.assert_called_once_with(None, llm_config)
 
-    # def test_generate_action_list_catches_llm_exception(
-    #     self,
-    #     command_generator: LLMCommandGenerator,
-    # ):
-    #     """Test that _generate_action_list calls llm correctly."""
-    #     # When
-    #     mock_llm = Mock(side_effect=Exception("some exception"))
-    #     with patch(
-    #         "rasa.shared.utils.llm.llm_factory",
-    #         Mock(return_value=mock_llm)
-    #     ):
-    #         with capture_logs() as logs:
-    #             command_generator._generate_action_list_using_llm("some prompt")
-    #     # Then
-    #     print(logs)
-    #     assert len(logs) == 4
-    #     # assert logs[1]["error"] == "some expection"
+    def test_generate_action_list_calls_llm_correctly(
+        self,
+        command_generator: LLMCommandGenerator,
+    ):
+        """Test that _generate_action_list calls llm correctly."""
+        # Given
+        with patch(
+            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+            Mock()
+        ) as mock_llm_factory:
+            mock_llm_factory.return_value = Mock()
+            # When
+            command_generator._generate_action_list_using_llm("some prompt")
+            # Then
+            mock_llm_factory.return_value.assert_called_once_with("some prompt")
+
+    def test_generate_action_list_catches_llm_exception(
+        self,
+        command_generator: LLMCommandGenerator,
+    ):
+        """Test that _generate_action_list calls llm correctly."""
+        # When
+        mock_llm = Mock(side_effect=Exception("some exception"))
+        with patch(
+            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+            Mock(return_value=mock_llm)
+        ):
+            with capture_logs() as logs:
+                command_generator._generate_action_list_using_llm("some prompt")
+                # Then
+                print(logs)
+                assert len(logs) == 1
+                assert logs[0]["event"] == "llm_command_generator.llm.error"
 
     def test_render_template(
         self,
