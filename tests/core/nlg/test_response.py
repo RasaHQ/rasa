@@ -633,7 +633,8 @@ async def test_nlg_response_with_jinja_template():
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         responses:
             utter_flow_xyz:
-            - text: "Do you want to update the {{{{ context.corrected_slots.keys()|join(', ') }}}}?"
+            - text: "Do you want to update the
+            {{{{ context.corrected_slots.keys()|join(', ') }}}}?"
               metadata:
                 rephrase: true
                 template: jinja
@@ -642,11 +643,11 @@ async def test_nlg_response_with_jinja_template():
     t = TemplatedNaturalLanguageGenerator(domain.responses)
     r = t.generate_from_slots(
         "utter_flow_xyz",
-        {"transfer_money_amount_of_money": "50"},
+        {"tm": "50"},
         {
             "frame_id": "XYYZABCD",
-            "corrected_slots": {"transfer_money_amount_of_money": "100"},
+            "corrected_slots": {"tm": "100"},
         },
         "",
     )
-    assert r.get("text") == "Do you want to update the transfer_money_amount_of_money?"
+    assert r.get("text") == "Do you want to update the tm?"
