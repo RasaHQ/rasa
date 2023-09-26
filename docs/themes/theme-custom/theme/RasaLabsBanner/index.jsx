@@ -23,10 +23,11 @@ function RasaLabsBanner({isLoading, ...props}) {
       <div class="mdx-box admonition-content">
         <p>
           Rasa Labs features are <strong>experimental</strong>. We introduce experimental
-          features to co-create with our customers. If you are interested in using this feature,
+          features to co-create with our customers. To find out more about how to participate
+          in our Labs program visit our
           {' '}
-          <a href="https://rasa.com/contact" target="_blank" rel="noopener noreferrer">
-            please contact us
+          <a href="https://rasa.com/rasa-labs/" target="_blank" rel="noopener noreferrer">
+            Rasa Labs page
           </a>.
 
           These features might be changed or removed in the future.
