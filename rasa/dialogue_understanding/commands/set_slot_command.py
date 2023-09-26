@@ -9,6 +9,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.utils import filled_slots_for_active_flow
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.slots import CategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()
@@ -75,6 +76,17 @@ class SetSlotCommand(Command):
                     "command_executor.skip_command.slot_not_asked_for", command=self
                 )
                 return []
+        if (
+            self.name in tracker.slots
+            and isinstance(tracker.slots[self.name], CategoricalSlot)
+            and self.value not in tracker.slots[self.name].values
+        ):
+            # only fill categorical slots with values that are in the domain
+            structlogger.debug(
+                "command_executor.skip_command.categorical_slot_value_not_in_domain",
+                command=self,
+            )
+            return []
 
         structlogger.debug("command_executor.set_slot", command=self)
         return [SlotSet(self.name, self.value)]
