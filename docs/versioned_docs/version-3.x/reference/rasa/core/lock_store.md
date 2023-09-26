@@ -150,6 +150,7 @@ def __init__(
         host: Text = "localhost",
         port: int = 6379,
         db: int = 1,
+        username: Optional[Text] = None,
         password: Optional[Text] = None,
         use_ssl: bool = False,
         ssl_certfile: Optional[Text] = None,
@@ -167,16 +168,18 @@ Create a lock store which uses Redis for persistence.
 - `port` - The port of the redis server.
 - `db` - The name of the database within Redis which should be used by Rasa
   Open Source.
+- `username` - The username which should be used for authentication with the
+  Redis database.
 - `password` - The password which should be used for authentication with the
   Redis database.
 - `use_ssl` - `True` if SSL should be used for the connection to Redis.
 - `ssl_certfile` - Path to the SSL certificate file.
 - `ssl_keyfile` - Path to the SSL private key file.
 - `ssl_ca_certs` - Path to the SSL CA certificate file.
-- `key_prefix` - prefix to prepend to all keys used by the lock store. Must be
+- `port`0 - prefix to prepend to all keys used by the lock store. Must be
   alphanumeric.
-- `port`0 - Timeout in seconds after which an exception will be raised
-  in case Redis doesn&#x27;t respond within `port`0 seconds.
+- `port`1 - Timeout in seconds after which an exception will be raised
+  in case Redis doesn&#x27;t respond within `port`1 seconds.
 
 #### get\_lock
 
