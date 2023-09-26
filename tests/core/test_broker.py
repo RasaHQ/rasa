@@ -404,7 +404,9 @@ async def test_sql_connection_error(monkeypatch: MonkeyPatch):
 def test_pika_event_broker_configure_url(
     host: Text, expected_url: Optional[Text]
 ) -> None:
+    # deepcode ignore NoHardcodedCredentials/test: Test credential
     username = "test_user"
+    # deepcode ignore NoHardcodedPasswords/test: Test credential
     password = "test_pass"
     broker = PikaEventBroker(host=host, username=username, password=password)
     url = broker._configure_url()

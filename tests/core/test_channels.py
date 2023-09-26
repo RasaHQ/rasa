@@ -1,3 +1,5 @@
+# file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests. # noqa: E501
+
 import logging
 
 import jwt
