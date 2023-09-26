@@ -357,7 +357,9 @@ class TestLLMCommandGenerator:
         self,
         command_generator: LLMCommandGenerator,
     ):
-        """Test that is_extractable returns True when collect_information can be filled."""
+        """Test that is_extractable returns True when 
+        collect_information slot can be filled.
+        """
         # Given
         tracker = DialogueStateTracker.from_events(
             sender_id="test", evts=[], slots=[TextSlot(name="test_slot", mappings=[])]
