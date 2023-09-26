@@ -85,7 +85,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         self.config = {**self.get_default_config(), **config}
         self.prompt_template = get_prompt_template(
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
-            self.config.get("prompt"),
+            config.get("prompt"),
         )
         self._model_storage = model_storage
         self._resource = resource
