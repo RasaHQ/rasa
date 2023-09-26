@@ -16,6 +16,18 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.6.10] - 2023-09-26
+                        
+Rasa 3.6.10 (2023-09-26)                         
+### Improvements
+- [#12827](https://github.com/rasahq/rasa/issues/12827): Improved handling of last batch during DIET and TED training. The last batch is discarded if it contains less than half a batch size of data.
+- [#12852](https://github.com/rasahq/rasa/issues/12852): Added `username` to the connection parameters for `RedisLockStore` and `RedisTrackerStore`
+- [#1493](https://github.com/rasahq/rasa/issues/1493): Telemetry data is only send for licensed users.
+
+### Improved Documentation
+- [#12868](https://github.com/rasahq/rasa/issues/12868): Remove the Playground from docs.
+
+
 ## [3.6.9] - 2023-09-15
                        
 Rasa 3.6.9 (2023-09-15)                        
