@@ -24,59 +24,7 @@ The `CommandGenerator` component performs _Dialogue Understanding_.
 In the CALM approach, _Dialogue Understanding_ aims to represent how the end user
 wants to progress the conversation.
 There is currently only one command generator available: the `LLMCommandGenerator`.
-
-Like its name indicates, the `CommandGenerator` generates "commands" that are then internally processed to
-trigger operations on the current conversation. Here is a reference of all supported commands:
-
-### StartFlowCommand
-
-This command indicates the assistant should start a new [flow](./flows.mdx).
-
-### CancelFlowCommand
-
-This command indicates the assistant should cancel the current [flow](./flows.mdx).
-It powers [Conversation Repair's Cancellation use case](./conversation-repair.mdx#3-cancellations).
-
-### SetSlotCommand
-
-This command indicates the assistant should set a [slot](./domain.mdx#slots) to a given value.
-
-### CorrectSlotsCommand
-
-This command indicates the assistant should change the value of a given [slot](./domain.mdx#slots)
-to a new value. It powers [Conversation Repair's Correction use case](./conversation-repair.mdx#2-corrections).
-
-### ClarifyCommand
-
-This command indicates the assistant should ask for clarification. It powers
-[Conversation Repair's Clarification use case](./conversation-repair.mdx#6-clarification).
-
-### ChitChatAnswerCommand
-
-<RasaProLabel />
-
-<RasaProBanner />
-
-This command indicates the assistant should reply a chitchat style free-form answer.
-It powers [Conversation Repair's Chitchat use case](./conversation-repair.mdx#4-chitchat).
-
-### KnowledgeAnswerCommand
-
-<RasaProLabel />
-
-<RasaProBanner />
-
-This command indicates the assistant should reply a knowledge-based free-form answer. It works
-hand in hand with the [DocSearch policy](./policies.mdx#docsearch-policy).
-
-### HumanHandoffCommand
-
-This command indicates the assistant should hand off the conversation to a human.
-
-### ErrorCommand
-
-This command indicates the assistant failed to handle the dialogue due to
-an [internal error](./conversation-repair.mdx#7-internal-errors).
+You can find all generated commands in the [command reference](#command-reference) below.
 
 ## Using the LLMCommandGenerator
 
@@ -211,3 +159,58 @@ pipeline:
     # highlight-next-line
     prompt: prompts/command-generator.jinja2
 ```
+
+## Command reference
+
+Like its name indicates, the `CommandGenerator` generates "commands" that are then internally processed to
+trigger operations on the current conversation. Here is a reference of all supported commands:
+
+### StartFlowCommand
+
+This command indicates the assistant should start a new [flow](./flows.mdx).
+
+### CancelFlowCommand
+
+This command indicates the assistant should cancel the current [flow](./flows.mdx).
+It powers [Conversation Repair's Cancellation use case](./conversation-repair.mdx#3-cancellations).
+
+### SetSlotCommand
+
+This command indicates the assistant should set a [slot](./domain.mdx#slots) to a given value.
+
+### CorrectSlotsCommand
+
+This command indicates the assistant should change the value of a given [slot](./domain.mdx#slots)
+to a new value. It powers [Conversation Repair's Correction use case](./conversation-repair.mdx#2-corrections).
+
+### ClarifyCommand
+
+This command indicates the assistant should ask for clarification. It powers
+[Conversation Repair's Clarification use case](./conversation-repair.mdx#6-clarification).
+
+### ChitChatAnswerCommand
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+This command indicates the assistant should reply a chitchat style free-form answer.
+It powers [Conversation Repair's Chitchat use case](./conversation-repair.mdx#4-chitchat).
+
+### KnowledgeAnswerCommand
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+This command indicates the assistant should reply a knowledge-based free-form answer. It works
+hand in hand with the [DocSearch policy](./policies.mdx#docsearch-policy).
+
+### HumanHandoffCommand
+
+This command indicates the assistant should hand off the conversation to a human.
+
+### ErrorCommand
+
+This command indicates the assistant failed to handle the dialogue due to
+an [internal error](./conversation-repair.mdx#7-internal-errors).
