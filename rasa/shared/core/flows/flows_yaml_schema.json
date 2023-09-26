@@ -1,0 +1,109 @@
+{
+  "type": "object",
+  "properties": {
+    "flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+  
+          "if": {
+            "type": "string",
+            "description": "Flow guard condition"
+          },
+
+          "nlu_trigger": {
+            "type": "object",
+            "properties":{
+              "nlu_trigger": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["intent"],
+                  "properties": {
+                    "intent": {
+                      "type": "object",
+                      "required": ["name"],
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "confidence_threshold": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "collect": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "ask_before_filling": {
+                  "type": "boolean"
+                },
+                "next": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "if": {
+                        "type": "string"
+                      },
+                      "then": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "action": {
+                              "type": "string"
+                            },
+                            "next": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["action", "next"]
+                        }
+                      }
+                    },
+                    "required": ["if", "then"]
+                  }
+                },
+                "link": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                }
+              },
+              "required": ["next"]
+            }
+          }
+        },
+        "required": ["name", "steps"]
+      }
+    }
+  },
+  "required": ["flows"]
+}
