@@ -136,6 +136,17 @@ class ActionSessionStart(Action):
         return [SessionStarted(), ActionExecuted("action_listen")]
 ```
 
+## action_default_fallback
+
+This action undoes the last user-bot interaction and sends the `utter_default` response if it is defined.
+It is triggered by low action prediction confidence, if you have this [fallback mechanism](../nlu-based-assistants/fallback-handoff.mdx) enabled.
+
+:::note
+If `action_default_fallback` is the next action predicted and executed by the assistant, this will result in a
+`UserUtteranceReverted` event which will unset the slots previously filled in the last user turn.
+
+:::
+
 ## action_run_slot_rejections
 
 This action runs [slot validation](./flows.mdx#slot-validation) rules written directly in the flows yaml file.
