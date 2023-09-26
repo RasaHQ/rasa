@@ -34,7 +34,7 @@ from rasa.shared.core.events import UserUttered
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
-from rasa.shared.core.slots import ListSlot
+from rasa.shared.core.slots import ListSlot, Slot
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -493,6 +493,29 @@ class Validator:
                 f"placeholder value with a unique identifier."
             )
 
+    @staticmethod
+    def _raise_exception_if_list_slot(slot: Slot, step_id: str, flow_id: str) -> None:
+        if isinstance(slot, ListSlot):
+            raise RasaException(
+                f"The slot '{slot.name}' is used in the "
+                f"step '{step_id}' of flow id '{flow_id}', but it "
+                f"is a list slot. List slots are currently not "
+                f"supported in flows. You should change it to a "
+                f"text, boolean or float slot in your domain file!",
+            )
+
+    @staticmethod
+    def _raise_exception_if_dialogue_stack_slot(
+        slot: Slot, step_id: str, flow_id: str
+    ) -> None:
+        if slot.name == constants.DIALOGUE_STACK_SLOT:
+            raise RasaException(
+                f"The slot '{constants.DIALOGUE_STACK_SLOT}' is used in the "
+                f"step '{step_id}' of flow id '{flow_id}', but it "
+                f"is a reserved slot. You must not use reserved slots in "
+                f"your flows.",
+            )
+
     def verify_flows_steps_against_domain(self, user_flows: List[Flow]) -> bool:
         """Checks flows steps' references against the domain file."""
         all_good = True
@@ -508,14 +531,10 @@ class Validator:
                             f"You should add it to your domain file!",
                         )
                     current_slot = domain_slots[step.collect_information]
-                    if isinstance(current_slot, ListSlot):
-                        raise RasaException(
-                            f"The slot '{step.collect_information}' is used in the "
-                            f"step '{step.id}' of flow id '{flow.id}', but it "
-                            f"is a list slot. List slots are currently not "
-                            f"supported in flows. You should change it to a "
-                            f"text, boolean or float slot in your domain file!",
-                        )
+                    self._raise_exception_if_list_slot(current_slot, step.id, flow.id)
+                    self._raise_exception_if_dialogue_stack_slot(
+                        current_slot, step.id, flow.id
+                    )
 
                 elif isinstance(step, SetSlotsFlowStep):
                     for slot in step.slots:
@@ -528,14 +547,12 @@ class Validator:
                                 f"You should add it to your domain file!",
                             )
                         current_slot = domain_slots[slot_name]
-                        if isinstance(current_slot, ListSlot):
-                            raise RasaException(
-                                f"The slot '{slot_name}' is used in the "
-                                f"step '{step.id}' of flow id '{flow.id}', but it "
-                                f"is a list slot. List slots are currently not "
-                                f"supported in flows. You should change it to a "
-                                f"text, boolean or float slot in your domain file!",
-                            )
+                        self._raise_exception_if_list_slot(
+                            current_slot, step.id, flow.id
+                        )
+                        self._raise_exception_if_dialogue_stack_slot(
+                            current_slot, step.id, flow.id
+                        )
 
                 elif isinstance(step, ActionFlowStep):
                     if step.action not in self.domain.action_names_or_texts:
