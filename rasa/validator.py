@@ -241,7 +241,7 @@ class Validator:
                 ):
                     flow_utterances.add(step.action)
                 if isinstance(step, CollectInformationFlowStep):
-                    flow_utterances.add(UTTER_ASK_PREFIX + step.collect_information)
+                    flow_utterances.add(UTTER_ASK_PREFIX + step.collect)
         return flow_utterances
 
     def verify_utterances_in_dialogues(self, ignore_warnings: bool = True) -> bool:

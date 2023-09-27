@@ -15,7 +15,7 @@ from tests.utilities import flows_from_str
 
 def test_top_flow_frame_ignores_pattern():
     pattern_frame = CollectInformationPatternFlowStackFrame(
-        collect_information="foo", frame_id="some-other-id"
+        collect="foo", frame_id="some-other-id"
     )
     user_frame = UserFlowStackFrame(
         flow_id="foo", step_id="first_step", frame_id="some-frame-id"
@@ -32,7 +32,7 @@ def test_top_flow_frame_ignores_pattern():
 
 def test_top_flow_frame_uses_pattern():
     pattern_frame = CollectInformationPatternFlowStackFrame(
-        collect_information="foo", frame_id="some-other-id"
+        collect="foo", frame_id="some-other-id"
     )
     user_frame = UserFlowStackFrame(
         flow_id="foo", step_id="first_step", frame_id="some-frame-id"
@@ -51,7 +51,7 @@ def test_top_flow_frame_handles_empty():
 
 def test_top_user_flow_frame():
     pattern_frame = CollectInformationPatternFlowStackFrame(
-        collect_information="foo", frame_id="some-other-id"
+        collect="foo", frame_id="some-other-id"
     )
     user_frame = UserFlowStackFrame(
         flow_id="foo", step_id="first_step", frame_id="some-frame-id"
@@ -68,7 +68,7 @@ def test_top_user_flow_frame_handles_empty():
 
 def test_user_flows_on_the_stack():
     pattern_frame = CollectInformationPatternFlowStackFrame(
-        collect_information="foo", frame_id="some-other-id"
+        collect="foo", frame_id="some-other-id"
     )
     user_frame = UserFlowStackFrame(
         flow_id="foo", step_id="first_step", frame_id="some-frame-id"
@@ -94,13 +94,13 @@ def test_filled_slots_for_active_flow():
             name: foo flow
             steps:
             - id: collect_foo
-              collect_information: foo
+              collect: foo
               next: collect_bar
             - id: collect_bar
-              collect_information: bar
+              collect: bar
               next: collect_baz
             - id: collect_baz
-              collect_information: baz
+              collect: baz
         """
     )
 
@@ -120,13 +120,13 @@ def test_filled_slots_for_active_flow_handles_empty():
             name: foo flow
             steps:
             - id: collect_foo
-              collect_information: foo
+              collect: foo
               next: collect_bar
             - id: collect_bar
-              collect_information: bar
+              collect: bar
               next: collect_baz
             - id: collect_baz
-              collect_information: baz
+              collect: baz
         """
     )
 
@@ -142,13 +142,13 @@ def test_filled_slots_for_active_flow_skips_chitchat():
             name: foo flow
             steps:
             - id: collect_foo
-              collect_information: foo
+              collect: foo
               next: collect_bar
             - id: collect_bar
-              collect_information: bar
+              collect: bar
               next: collect_baz
             - id: collect_baz
-              collect_information: baz
+              collect: baz
         """
     )
 
@@ -169,24 +169,24 @@ def test_filled_slots_for_active_flow_only_collects_till_top_most_user_flow_fram
             name: foo flow
             steps:
             - id: collect_foo
-              collect_information: foo
+              collect: foo
               next: collect_bar
             - id: collect_bar
-              collect_information: bar
+              collect: bar
               next: collect_baz
             - id: collect_baz
-              collect_information: baz
+              collect: baz
           my_other_flow:
             name: foo flow
             steps:
             - id: collect_foo2
-              collect_information: foo2
+              collect: foo2
               next: collect_bar2
             - id: collect_bar2
-              collect_information: bar2
+              collect: bar2
               next: collect_baz2
             - id: collect_baz2
-              collect_information: baz2
+              collect: baz2
         """
     )
 

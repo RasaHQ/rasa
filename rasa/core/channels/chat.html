@@ -337,51 +337,67 @@
 title: ${flow?.id ?? "No Flow"}
 ---
 flowchart TD
-classDef collect_information stroke-width:1px
+classDef collect stroke-width:1px
 classDef action fill:#FBFCFD,stroke:#A0B8CF
 classDef link fill:#f43
-classDef slot fill:#aaa
+classDef slot fill:#e8f3db,stroke:#c5e1a5
+classDef endstep fill:#ccc,stroke:#444
 classDef active stroke:#5A17ED,stroke-width:3px,stroke-dasharray: 5 3
         `;
 
-        if (flow) {
-          flow.steps.forEach((step) => {
-            if (step.collect_information) {
-              var slotValue = slots[step.collect_information]
-                ? `'${slots[step.collect_information]}'`
+        function renderStepSequence(steps) {
+          var mermaidTextFragment = "";
+          steps.forEach((step) => {
+            if (step.collect) {
+              var slotValue = slots[step.collect]
+                ? `'${slots[step.collect]}'`
                 : "\uD83D\uDCAC";
-              mermaidText += `${step.id}["${toHtmlEntities(keepShort(inject(step.collect_information, currentContext)))}\n${keepShort(slotValue)}"]:::collect_information\n`;
+                mermaidTextFragment += `${step.id}["${toHtmlEntities(keepShort(inject(step.collect, currentContext)))}\n${keepShort(slotValue)}"]:::collect\n`;
             }
             if (step.action) {
-              mermaidText += `${step.id}["${toHtmlEntities(keepShort(inject(step.action, currentContext)))}"]:::action\n`;
+              mermaidTextFragment += `${step.id}["${toHtmlEntities(keepShort(inject(step.action, currentContext)))}"]:::action\n`;
             }
             if (step.link) {
-              mermaidText += `${step.id}["\uD83D\uDD17 ${step.link}"]:::link\n`;
+              mermaidTextFragment += `${step.id}["\uD83D\uDD17 ${step.link}"]:::link\n`;
             }
             if (step.set_slots) {
-              mermaidText += `${step.id}["\uD83E\uDEA3 ${step.id}"]:::slot\n`;
+              mermaidTextFragment += `${step.id}["\uD83E\uDEA3 ${step.id}"]:::slot\n`;
             }
 
             if (step.id === activeStep) {
-              mermaidText += `class ${step.id} active\n`;
+              mermaidTextFragment += `class ${step.id} active\n`;
             }
 
             // if next is an id, then it is a link
             if (step.next && typeof step.next === "string") {
-              mermaidText += `${step.id} --> ${step.next}\n`;
+              mermaidTextFragment += `${step.id} --> ${step.next}\n`;
             }
             // if next is an array, then it is a list of conditions
             if (step.next && Array.isArray(step.next)) {
               step.next.forEach((condition) => {
-                if (condition.then) {
-                  mermaidText += `${step.id} -->|${toHtmlEntities(inject(condition.if, currentContext))}| ${condition.then}\n`;
+                if (condition.then && typeof condition.then === "string") {
+                  mermaidTextFragment += `${step.id} -->|${toHtmlEntities(inject(condition.if, currentContext))}| ${condition.then}\n`;
                 }
-                if (condition.else) {
-                  mermaidText += `${step.id} -->|else| ${condition.else}\n`;
+                else if (condition.then) {
+                  mermaidTextFragment += `${step.id} -->|${toHtmlEntities(inject(condition.if, currentContext))}| ${condition.then[0].id}\n`;
+                  mermaidTextFragment += renderStepSequence(condition.then);
+                }
+
+                if (condition.else && typeof condition.else === "string") {
+                  mermaidTextFragment += `${step.id} -->|else| ${condition.else}\n`;
+                } else if(condition.else) {
+                  mermaidTextFragment += `${step.id} -->|else| ${condition.else[0].id}\n`;
+                  mermaidTextFragment += renderStepSequence(condition.else);
                 }
               })
             }
-          })
+          });
+          mermaidTextFragment += `END["\uD83C\uDFC1 END"]:::endstep\n`;
+          return mermaidTextFragment;
+        }
+
+        if (flow) {
+          mermaidText += renderStepSequence(flow.steps);
         }
         let flowEl = document.getElementById("flow");
         console.log(mermaidText);

@@ -652,13 +652,9 @@ class MessageProcessor:
     @staticmethod
     def _log_slots(tracker: DialogueStateTracker) -> None:
         # Log currently set slots
-        slot_values = "\n".join(
-            [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
-        )
-        if slot_values.strip():
-            structlogger.debug(
-                "processor.slots.log", slot_values=copy.deepcopy(slot_values)
-            )
+        slots = {s.name: s.value for s in tracker.slots.values() if s.value is not None}
+
+        structlogger.debug("processor.slots.log", slots=slots)
 
     def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
         """Warns the user if the NLU parse data contains unrecognized features.
