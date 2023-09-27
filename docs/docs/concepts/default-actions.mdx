@@ -34,7 +34,7 @@ actions:
 
 :::caution
 After adding this action to your domain file, re-train your model with
-`rasa train --force`. Otherwise Rasa won't know you've changed anything
+`rasa train --force`. Otherwise, Rasa won't know you've changed anything
 and may skip re-training your dialogue model.
 
 :::
@@ -135,3 +135,12 @@ class ActionSessionStart(Action):
         # as a user message follows
         return [SessionStarted(), ActionExecuted("action_listen")]
 ```
+
+## action_run_slot_rejections
+
+This action runs [slot validation](./flows.mdx#slot-validation) rules written directly in the flows yaml file.
+When the assistant asks the user for information in a flow, `action_run_slot_rejections` is executed as a step in the
+default flow `pattern_collect_information`. If the action evaluates one of the rules to `True`, then it will reset the
+originally requested slot and ask the user for the slot again by dispatching the response indicated in the `utter`
+property. If no rule is evaluated to `True`, then the action will retain the original value which filled the slot and
+the assistant will continue to the next step in the flow.
