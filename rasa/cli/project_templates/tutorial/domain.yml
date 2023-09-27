@@ -3,8 +3,12 @@ version: "3.1"
 slots:
   recipient:
     type: text
+    mappings:
+    - type: custom
   amount:
     type: float
+    mappings:
+    - type: custom
 
 responses:
   utter_ask_recipient:
