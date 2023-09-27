@@ -2,27 +2,22 @@ flows:
   transfer_money:
     description: This flow lets users send money to friends and family.
     steps:
-      - id: "ask_recipient"
-        collect_information: recipient
-        next: "ask_amount"
-      - id: "ask_amount"
-        collect_information: amount
-        next: "check_funds"
-      - id: "check_funds"
-        action: action_sufficient_funds
+      - collect: recipient
+      - collect: amount
+      - action: action_check_sufficient_funds
         next:
-          - if: has_sufficient_funds
-            then: "confirm_transfer"
-          - else: "insufficient_funds"
-      - id: "insufficient_funds"
-        action: utter_insufficient_funds      
-      - id: "confirm_transfer"
-        collect_information: final_confirmation
+          - if: not has_sufficient_funds
+            then:
+              - action: utter_insufficient_funds
+                next: END
+          - else: final_confirmation
+      - id: final_confirmation
+        collect: final_confirmation
         next:
-          - if: final_confirmation
-            then: "transfer_successful"
-          - else: "transfer_cancelled"
-      - id: "transfer_cancelled"
-        action: utter_transfer_cancelled
-      - id: "transfer_successful"
+          - if: not final_confirmation
+            then:
+              - action: utter_transfer_cancelled
+                next: END
+          - else: transfer_successful
+      - id: transfer_successful
         action: utter_transfer_complete

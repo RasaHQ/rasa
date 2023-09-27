@@ -40,4 +40,4 @@ responses:
 
 
 actions:
-  - action_sufficient_funds
+  - action_check_sufficient_funds
