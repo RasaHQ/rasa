@@ -36,7 +36,7 @@ def _anonymizer(
         "text",
         "response_text",
         "user_text",
-        "slot_values",
+        "slots",
         "parse_data_text",
         "parse_data_entities",
         "prediction_events",

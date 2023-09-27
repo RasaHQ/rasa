@@ -100,6 +100,9 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
     from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
     from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
     from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
+    from rasa.core.actions.action_run_slot_rejections import (
+        ActionRunSlotRejections,
+    )
 
     return [
         ActionListen(),
@@ -118,6 +121,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionCancelFlow(),
         ActionCorrectFlowSlot(),
         ActionClarifyFlows(),
+        ActionRunSlotRejections(),
     ]
 
 
