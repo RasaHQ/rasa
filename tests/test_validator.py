@@ -1,3 +1,4 @@
+import logging
 import textwrap
 import warnings
 from typing import Any, Dict, List, Text
@@ -935,14 +936,9 @@ def test_verify_flow_steps_against_domain_fail(
     )
 
     validator = Validator.from_importer(importer)
-    user_flows = [
-        flow
-        for flow in validator.flows.underlying_flows
-        if not flow.id.startswith("pattern_")
-    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain(user_flows)
+        validator.verify_flows_steps_against_domain()
 
     assert exception_message in str(e.value)
 
@@ -991,14 +987,9 @@ def test_verify_flow_steps_against_domain_disallowed_list_slot(
     )
 
     validator = Validator.from_importer(importer)
-    user_flows = [
-        flow
-        for flow in validator.flows.underlying_flows
-        if not flow.id.startswith("pattern_")
-    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain(user_flows)
+        validator.verify_flows_steps_against_domain()
 
     assert (
         "The slot 'pizza_toppings' is used in the step 'ask_pizza_toppings' "
@@ -1041,19 +1032,59 @@ def test_verify_flow_steps_against_domain_dialogue_stack_slot(
     )
 
     validator = Validator.from_importer(importer)
-    user_flows = [
-        flow
-        for flow in validator.flows.underlying_flows
-        if not flow.id.startswith("pattern_")
-    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain(user_flows)
+        validator.verify_flows_steps_against_domain()
 
     assert (
         "The slot 'dialogue_stack' is used in the step 'ask_internal_slot' "
         "of flow id 'my_flow', but it is a reserved slot." in str(e.value)
     )
+
+
+def test_verify_flow_steps_against_domain_interpolated_action_name(
+    caplog: LogCaptureFixture,
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    flows:
+                      pattern_collect_information:
+                        description: Test that interpolated names log a warning.
+                        name: test flow
+                        steps:
+                        - id: "validate"
+                          action: "validate_{{context.collect}}"
+                    """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    intents:
+                      - greet
+                    """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.WARNING):
+        assert validator.verify_flows_steps_against_domain()
+        assert (
+            "An interpolated action name was found at step 'validate' "
+            "of flow id 'pattern_collect_information'. "
+            "Skipping validation for this step." in caplog.text
+        )
 
 
 def test_verify_unique_flows_duplicate_names(
@@ -1113,14 +1144,9 @@ def test_verify_unique_flows_duplicate_names(
     )
 
     validator = Validator.from_importer(importer)
-    user_flows = [
-        flow
-        for flow in validator.flows.underlying_flows
-        if not flow.id.startswith("pattern_")
-    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_unique_flows(user_flows)
+        validator.verify_unique_flows()
 
     assert (
         f"Detected duplicate flow name '{duplicate_flow_name}' for "
@@ -1187,14 +1213,9 @@ def test_verify_unique_flows_duplicate_descriptions(
     )
 
     validator = Validator.from_importer(importer)
-    user_flows = [
-        flow
-        for flow in validator.flows.underlying_flows
-        if not flow.id.startswith("pattern_")
-    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_unique_flows(user_flows)
+        validator.verify_unique_flows()
 
     assert (
         "Detected duplicate flow description for flow id 'recurrent_payment'. "
@@ -1272,13 +1293,8 @@ def test_verify_predicates_invalid_rejection_if(
     )
 
     validator = Validator.from_importer(importer)
-    user_flows = [
-        flow
-        for flow in validator.flows.underlying_flows
-        if not flow.id.startswith("pattern_")
-    ]
 
     with pytest.raises(RasaException) as e:
-        validator.verify_predicates(user_flows)
+        validator.verify_predicates()
 
     assert expected_exception in str(e.value)

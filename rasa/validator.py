@@ -1,4 +1,5 @@
 import logging
+import re
 import string
 from collections import defaultdict
 from typing import Set, Text, Optional, Dict, Any, List
@@ -10,7 +11,6 @@ from rasa.shared.core.flows.flow import (
     ActionFlowStep,
     BranchFlowStep,
     CollectInformationFlowStep,
-    Flow,
     FlowsList,
     IfFlowLink,
     SetSlotsFlowStep,
@@ -528,10 +528,10 @@ class Validator:
                 f"your flows.",
             )
 
-    def verify_flows_steps_against_domain(self, user_flows: List[Flow]) -> bool:
+    def verify_flows_steps_against_domain(self) -> bool:
         """Checks flows steps' references against the domain file."""
         domain_slots = {slot.name: slot for slot in self.domain.slots}
-        for flow in user_flows:
+        for flow in self.flows.underlying_flows:
             for step in flow.steps:
                 if isinstance(step, CollectInformationFlowStep):
                     self._raise_exception_if_slot_not_in_domain(
@@ -560,7 +560,17 @@ class Validator:
                         )
 
                 elif isinstance(step, ActionFlowStep):
-                    if step.action not in self.domain.action_names_or_texts:
+                    regex = r"{context\..+?}"
+                    matches = re.findall(regex, step.action)
+                    if matches:
+                        logger.warning(
+                            f"An interpolated action name was found at step "
+                            f"'{step.id}' of flow id '{flow.id}'. "
+                            f"Skipping validation for this step. "
+                            f"Please make sure that the action name is "
+                            f"listed in your domain responses or actions."
+                        )
+                    elif step.action not in self.domain.action_names_or_texts:
                         raise RasaException(
                             f"The action '{step.action}' is used in the step "
                             f"'{step.id}' of flow id '{flow.id}', but it "
@@ -569,13 +579,12 @@ class Validator:
                         )
         return True
 
-    @staticmethod
-    def verify_unique_flows(user_flows: List[Flow]) -> bool:
+    def verify_unique_flows(self) -> bool:
         """Checks if all flows have unique names and descriptions."""
         flows_mapping: Dict[str, str] = {}
         punctuation_table = str.maketrans({i: "" for i in string.punctuation})
 
-        for flow in user_flows:
+        for flow in self.flows.underlying_flows:
             flow_description = flow.description
             cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr] # noqa: E501
             if cleaned_description in flows_mapping.values():
@@ -609,11 +618,10 @@ class Validator:
 
         return pred
 
-    @staticmethod
-    def verify_predicates(user_flows: List[Flow]) -> bool:
+    def verify_predicates(self) -> bool:
         """Checks that predicates used in branch flow steps or `collect` steps are valid."""  # noqa: E501
         all_good = True
-        for flow in user_flows:
+        for flow in self.flows.underlying_flows:
             for step in flow.steps:
                 if isinstance(step, BranchFlowStep):
                     for link in step.next.links:
@@ -651,16 +659,10 @@ class Validator:
             )
             return True
 
-        user_flows = [
-            flow
-            for flow in self.flows.underlying_flows
-            if not flow.id.startswith("pattern_")
-        ]
-
         all_good = (
-            self.verify_flows_steps_against_domain(user_flows)
-            and self.verify_unique_flows(user_flows)
-            and self.verify_predicates(user_flows)
+            self.verify_flows_steps_against_domain()
+            and self.verify_unique_flows()
+            and self.verify_predicates()
         )
 
         return all_good
