@@ -1,5 +1,6 @@
 import * as React from 'react';
 import clsx from 'clsx';
+import CodeBlock from '@theme/CodeBlock';
 
 import styles from './styles.module.css';
 
@@ -29,11 +30,17 @@ function RasaLabsBanner({isLoading, ...props}) {
           <a href="https://rasa.com/rasa-labs/" target="_blank" rel="noopener noreferrer">
             Rasa Labs page
           </a>.
+          <br />
+          <br />
+          We are continuously improving Rasa Labs features based on customer feedback. To benefit from the latest
+          bug fixes and feature improvements, please install the latest pre-release using:
 
-          These features might be changed or removed in the future.
+          <CodeBlock language="bash">
+            pip install 'rasa-plus&gt;3.6' --pre --upgrade
+          </CodeBlock>
         </p>
       </div>
-      </div>
+    </div>
   </>
   )
 }
