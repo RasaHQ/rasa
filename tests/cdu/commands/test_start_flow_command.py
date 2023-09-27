@@ -46,7 +46,7 @@ def test_run_command_on_tracker():
     assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 1
     assert dialogue_stack_dump[0]["frame_type"] == "regular"
     assert dialogue_stack_dump[0]["flow_id"] == "foo"
-    assert dialogue_stack_dump[0]["step_id"] == "__start__"
+    assert dialogue_stack_dump[0]["step_id"] == "START"
     assert dialogue_stack_dump[0].get("frame_id") is not None
 
 
@@ -88,7 +88,7 @@ def test_run_start_flow_that_is_already_on_the_stack():
                     "type": "flow",
                     "frame_type": "regular",
                     "flow_id": "foo",
-                    "step_id": "__start__",
+                    "step_id": "START",
                     "frame_id": "test",
                 }
             ],
@@ -142,7 +142,7 @@ def test_run_start_flow_interrupting_existing_flow():
                     "type": "flow",
                     "frame_type": "regular",
                     "flow_id": "foo",
-                    "step_id": "__start__",
+                    "step_id": "START",
                     "frame_id": "test",
                 }
             ],
@@ -161,7 +161,7 @@ def test_run_start_flow_interrupting_existing_flow():
     assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 2
     assert dialogue_stack_dump[1]["frame_type"] == "interrupt"
     assert dialogue_stack_dump[1]["flow_id"] == "bar"
-    assert dialogue_stack_dump[1]["step_id"] == "__start__"
+    assert dialogue_stack_dump[1]["step_id"] == "START"
     assert dialogue_stack_dump[1].get("frame_id") is not None
 
 
