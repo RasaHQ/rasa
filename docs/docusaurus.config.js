@@ -132,19 +132,6 @@ module.exports = {
     gtm: {
       containerID: 'GTM-MMHSZCS',
     },
-    prism: {
-      magicComments: [
-        {
-          className: 'theme-code-block-highlighted-line',
-          line: 'highlight-next-line',
-          block: {start: 'highlight-start', end: 'highlight-end'},
-        },
-        {
-          className: 'code-block-deleted-line',
-          line: 'highlight-deleted-line',
-        },
-      ],
-    },
   },
   themes: [
     '@docusaurus/theme-search-algolia',
