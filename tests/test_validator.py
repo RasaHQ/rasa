@@ -869,7 +869,7 @@ def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
             "The slot 'account_type' is used in the step 'set_account_type' "
             "of flow id 'transfer_money', but it is not listed in the domain slots.",
         ),
-        # collect_information slot is not listed in the domain
+        # collect slot is not listed in the domain
         (
             ["action_transfer_money"],
             {"account_type": {"type": "text", "mappings": []}},
@@ -906,7 +906,7 @@ def test_verify_flow_steps_against_domain_fail(
                         name: transfer money
                         steps:
                         - id: "ask_amount"
-                          collect_information: transfer_amount
+                          collect: transfer_amount
                           next: "set_account_type"
                         - id: "set_account_type"
                           set_slots:
@@ -962,10 +962,10 @@ def test_verify_flow_steps_against_domain_disallowed_list_slot(
                     name: order pizza
                     steps:
                     - id: "ask_pizza_toppings"
-                      collect_information: pizza_toppings
+                      collect: pizza_toppings
                       next: "ask_address"
                     - id: "ask_address"
-                      collect_information: address
+                      collect: address
                 """
         )
     domain_file = tmp_path / "domain.yml"
@@ -1022,7 +1022,7 @@ def test_verify_flow_steps_against_domain_dialogue_stack_slot(
                     name: test flow
                     steps:
                     - id: "ask_internal_slot"
-                      collect_information: dialogue_stack
+                      collect: dialogue_stack
                 """
         )
     domain_file = tmp_path / "domain.yml"
@@ -1072,10 +1072,10 @@ def test_verify_unique_flows_duplicate_names(
                             name: {duplicate_flow_name}
                             steps:
                             - id: "ask_recipient"
-                              collect_information: transfer_recipient
+                              collect: transfer_recipient
                               next: "ask_amount"
                             - id: "ask_amount"
-                              collect_information: transfer_amount
+                              collect: transfer_amount
                               next: "execute_transfer"
                             - id: "execute_transfer"
                               action: action_transfer_money
@@ -1146,10 +1146,10 @@ def test_verify_unique_flows_duplicate_descriptions(
                             name: transfer money
                             steps:
                             - id: "ask_recipient"
-                              collect_information: transfer_recipient
+                              collect: transfer_recipient
                               next: "ask_amount"
                             - id: "ask_amount"
-                              collect_information: transfer_amount
+                              collect: transfer_amount
                               next: "execute_transfer"
                             - id: "execute_transfer"
                               action: action_transfer_money
@@ -1210,7 +1210,7 @@ def test_verify_predicates_invalid_rejection_if(
     predicate = 'account_type not in {{"debit", "savings"}}'
     expected_exception = (
         f"Detected invalid rejection '{predicate}' "
-        f"at `collect_information` step 'ask_account_type' "
+        f"at `collect` step 'ask_account_type' "
         f"for flow id 'transfer_money'. "
         f"Please make sure that all conditions are valid."
     )
@@ -1225,16 +1225,16 @@ def test_verify_predicates_invalid_rejection_if(
                             name: transfer money
                             steps:
                             - id: "ask_account_type"
-                              collect_information: account_type
+                              collect: account_type
                               rejections:
                                 - if: {predicate}
                                   utter: utter_invalid_account_type
                               next: "ask_recipient"
                             - id: "ask_recipient"
-                              collect_information: transfer_recipient
+                              collect: transfer_recipient
                               next: "ask_amount"
                             - id: "ask_amount"
-                              collect_information: transfer_amount
+                              collect: transfer_amount
                               next: "execute_transfer"
                             - id: "execute_transfer"
                               action: action_transfer_money

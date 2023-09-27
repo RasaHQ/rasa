@@ -535,10 +535,10 @@ class Validator:
             for step in flow.steps:
                 if isinstance(step, CollectInformationFlowStep):
                     self._raise_exception_if_slot_not_in_domain(
-                        step.collect_information, domain_slots, step.id, flow.id
+                        step.collect, domain_slots, step.id, flow.id
                     )
 
-                    current_slot = domain_slots[step.collect_information]
+                    current_slot = domain_slots[step.collect]
                     self._raise_exception_if_list_slot(current_slot, step.id, flow.id)
                     self._raise_exception_if_dialogue_stack_slot(
                         current_slot, step.id, flow.id
@@ -611,7 +611,7 @@ class Validator:
 
     @staticmethod
     def verify_predicates(user_flows: List[Flow]) -> bool:
-        """Checks that predicates used in branch flow steps or `collect_information` steps are valid."""  # noqa: E501
+        """Checks that predicates used in branch flow steps or `collect` steps are valid."""  # noqa: E501
         all_good = True
         for flow in user_flows:
             for step in flow.steps:
@@ -634,7 +634,7 @@ class Validator:
                         if not pred.is_valid():
                             raise RasaException(
                                 f"Detected invalid rejection '{predicate}' "
-                                f"at `collect_information` step '{step.id}' "
+                                f"at `collect` step '{step.id}' "
                                 f"for flow id '{flow.id}'. "
                                 f"Please make sure that all conditions are valid."
                             )
