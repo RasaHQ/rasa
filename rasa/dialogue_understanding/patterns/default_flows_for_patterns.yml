@@ -110,20 +110,20 @@ flows:
       - id: "1"
         action: utter_clarification_options_rasa
 
-  pattern_ask_collect_information:
+  pattern_collect_information:
     description: flow used to fill a slot
     steps:
       - id: "start"
         action: action_run_slot_rejections
         next: "validate"
       - id: "validate"
-        action: validate_{{context.collect_information}}
+        action: validate_{{context.collect}}
         next: 
-        - if: "{{context.collect_information}} is not null"
+        - if: "{{context.collect}} is not null"
           then: "done"
-        - else: "ask_collect_information"
-      - id: "ask_collect_information"
-        action: utter_ask_{{context.collect_information}}
+        - else: "ask_collect"
+      - id: "ask_collect"
+        action: "{{context.utter}}"
         next: "listen"
       - id: "listen"
         action: action_listen

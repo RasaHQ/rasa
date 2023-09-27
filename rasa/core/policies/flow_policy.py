@@ -52,7 +52,6 @@ from rasa.shared.core.flows.flow import (
     GenerateResponseFlowStep,
     IfFlowLink,
     EntryPromptFlowStep,
-    CollectInformationScope,
     SlotRejection,
     StepThatCanStartAFlow,
     UserMessageStep,
@@ -69,7 +68,6 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
@@ -343,12 +341,18 @@ class FlowExecutor:
                 tracker=tracker,
             )
             return None
-        if current.id != END_STEP:
-            # we've reached the end of the user defined steps in the flow.
-            # every flow should end with an end step, so we add it here.
+        if current.id == END_STEP:
+            # we are already at the very end of the flow. There is no next step.
+            return None
+        elif isinstance(current, LinkFlowStep):
+            # link steps don't have a next step, so we'll return the end step
             return END_STEP
         else:
-            # we are already at the very end of the flow. There is no next step.
+            structlogger.error(
+                "flow.step.failed_to_select_next_step",
+                step=current,
+                tracker=tracker,
+            )
             return None
 
     def _select_next_step(
@@ -373,23 +377,12 @@ class FlowExecutor:
         """Replace context variables in a text."""
         return Template(text).render(context)
 
-    def _slot_for_collect_information(self, collect_information: Text) -> Slot:
-        """Find the slot for the collect information step."""
-        for slot in self.domain.slots:
-            if slot.name == collect_information:
-                return slot
-        else:
-            raise FlowException(
-                f"Collect Information '{collect_information}' does not map to "
-                f"an existing slot."
-            )
-
     def _is_step_completed(
         self, step: FlowStep, tracker: "DialogueStateTracker"
     ) -> bool:
         """Check if a step is completed."""
         if isinstance(step, CollectInformationFlowStep):
-            return tracker.get_slot(step.collect_information) is not None
+            return tracker.get_slot(step.collect) is not None
         else:
             return True
 
@@ -521,11 +514,11 @@ class FlowExecutor:
             # reset all slots scoped to the flow
             if (
                 isinstance(step, CollectInformationFlowStep)
-                and step.scope == CollectInformationScope.FLOW
+                and step.reset_after_flow_ends
             ):
-                slot = tracker.slots.get(step.collect_information, None)
+                slot = tracker.slots.get(step.collect, None)
                 initial_value = slot.initial_value if slot else None
-                events.append(SlotSet(step.collect_information, initial_value))
+                events.append(SlotSet(step.collect, initial_value))
         return events
 
     def _run_step(
@@ -552,17 +545,17 @@ class FlowExecutor:
         A result of running the step describing where to transition to.
         """
         if isinstance(step, CollectInformationFlowStep):
-            structlogger.debug("flow.step.run.collect_information")
+            structlogger.debug("flow.step.run.collect")
             self.trigger_pattern_ask_collect_information(
-                step.collect_information, step.rejections
+                step.collect, step.rejections, step.utter
             )
 
             # reset the slot if its already filled and the collect information shouldn't
             # be skipped
-            slot = tracker.slots.get(step.collect_information, None)
+            slot = tracker.slots.get(step.collect, None)
 
             if slot and slot.has_been_set and step.ask_before_filling:
-                events = [SlotSet(step.collect_information, slot.initial_value)]
+                events = [SlotSet(step.collect, slot.initial_value)]
             else:
                 events = []
 
@@ -684,13 +677,15 @@ class FlowExecutor:
 
     def trigger_pattern_ask_collect_information(
         self,
-        collect_information: str,
+        collect: str,
         rejections: List[SlotRejection],
+        utter: str,
     ) -> None:
         """Trigger the pattern to ask for a slot value."""
         self.dialogue_stack.push(
             CollectInformationPatternFlowStackFrame(
-                collect_information=collect_information,
+                collect=collect,
+                utter=utter,
                 rejections=rejections,
             )
         )

@@ -71,7 +71,7 @@ def test_run_command_ignores_non_existant_flows():
     frame = dialogue_stack_dump.value[0]
     assert frame["type"] == "pattern_clarification"
     assert frame["flow_id"] == "pattern_clarification"
-    assert frame["step_id"] == "__start__"
+    assert frame["step_id"] == "START"
     assert frame["names"] == ["foo"]
     assert frame["clarification_options"] == ""
 

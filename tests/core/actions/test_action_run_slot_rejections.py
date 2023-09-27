@@ -119,9 +119,10 @@ async def test_action_run_slot_rejections_top_frame_none_rejections(
         },
         {
             "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_ask_collect_information",
+            "flow_id": "pattern_collect_information",
             "step_id": "start",
-            "collect_information": "payment_recipient",
+            "collect": "payment_recipient",
+            "utter": "utter_ask_payment_recipient",
             "rejections": [],
             "type": "pattern_collect_information",
         },
@@ -166,9 +167,10 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
         },
         {
             "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_ask_collect_information",
+            "flow_id": "pattern_collect_information",
             "step_id": "start",
-            "collect_information": "recurrent_payment_type",
+            "collect": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
@@ -219,9 +221,10 @@ async def test_action_run_slot_rejections_run_success(
         },
         {
             "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_ask_collect_information",
+            "flow_id": "pattern_collect_information",
             "step_id": "start",
-            "collect_information": "recurrent_payment_type",
+            "collect": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
@@ -282,9 +285,10 @@ async def test_action_run_slot_rejections_internal_error(
         },
         {
             "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_ask_collect_information",
+            "flow_id": "pattern_collect_information",
             "step_id": "start",
-            "collect_information": "recurrent_payment_type",
+            "collect": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": predicate,
@@ -342,9 +346,10 @@ async def test_action_run_slot_rejections_collect_missing_utter(
         },
         {
             "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_ask_collect_information",
+            "flow_id": "pattern_collect_information",
             "step_id": "start",
-            "collect_information": "recurrent_payment_type",
+            "collect": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
@@ -399,9 +404,10 @@ async def test_action_run_slot_rejections_not_found_utter(
         },
         {
             "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_ask_collect_information",
+            "flow_id": "pattern_collect_information",
             "step_id": "start",
-            "collect_information": "recurrent_payment_type",
+            "collect": "recurrent_payment_type",
+            "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
                     "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
@@ -456,9 +462,10 @@ async def test_action_run_slot_rejections_pass_multiple_rejection_checks(
         },
         {
             "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_ask_collect_information",
+            "flow_id": "pattern_collect_information",
             "step_id": "start",
-            "collect_information": "payment_amount",
+            "collect": "payment_amount",
+            "utter": "utter_ask_payment_amount",
             "rejections": [
                 {
                     "if": "payment_amount > 1000",
@@ -514,9 +521,10 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
         },
         {
             "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_ask_collect_information",
+            "flow_id": "pattern_collect_information",
             "step_id": "start",
-            "collect_information": "payment_amount",
+            "collect": "payment_amount",
+            "utter": "utter_ask_payment_amount",
             "rejections": [
                 {
                     "if": "payment_amount > 1000",
