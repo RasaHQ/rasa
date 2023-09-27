@@ -519,8 +519,8 @@ jobs:
           path: |
             ${{ github.workspace }}/${{ matrix.test }}-coverage
 
-  prepare_coverage_reports:
-    name: Prepare coverage reports
+  prepare_coverage_reports_analyse_with_sonarcloud:
+    name: Prepare coverage reports and Analyse coverage with Sonarcloud
     if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     # Always upload results even if tests failed
@@ -561,21 +561,6 @@ jobs:
           coverage combine "${final_dir}/"*
           coverage xml
 
-  sonarcloud:
-    name: SonarCloud Scan
-    if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
-    needs:
-      - prepare_coverage_reports
-
-    steps:
-      - name: Checkout git repository 🕝
-        if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-        with:
-          # Disabling shallow clone is recommended for improving relevancy of coverage reporting
-          fetch-depth: 0
-
       - name: Analyse code with SonarCloud
         uses: sonarsource/sonarcloud-github-action@5875562561d22a34be0c657405578705a169af6c
         env:
@@ -586,7 +571,7 @@ jobs:
             -Dsonar.organization=rasahq
             -Dsonar.projectKey=RasaHQ_rasa
             -Dsonar.sources=.
-            -Dsonar.python.coverage.reportPaths=tests_coverage/coverage.xml
+            -Dsonar.python.coverage.reportPaths=${{ github.workspace }}/tests_coverage
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.verbose=true
 
