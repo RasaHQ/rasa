@@ -50,7 +50,7 @@ class ActionRunSlotRejections(Action):
         if not top_frame.rejections:
             return []
 
-        slot_name = top_frame.collect_information
+        slot_name = top_frame.collect
         slot_instance = tracker.slots.get(slot_name)
         if slot_instance and not slot_instance.has_been_set:
             # this is the first time the assistant asks for the slot value,
@@ -101,7 +101,7 @@ class ActionRunSlotRejections(Action):
             return []
 
         # reset slot value that was initially filled with an invalid value
-        events.append(SlotSet(top_frame.collect_information, None))
+        events.append(SlotSet(top_frame.collect, None))
 
         if internal_error:
             utterance = "utter_internal_error_rasa"

@@ -6,7 +6,13 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
     FlowStackFrameType,
 )
-from rasa.shared.core.flows.flow import ActionFlowStep, Flow, FlowLinks, FlowsList
+from rasa.shared.core.flows.flow import (
+    ActionFlowStep,
+    Flow,
+    FlowLinks,
+    FlowsList,
+    StepSequence,
+)
 
 
 def test_flow_frame_type():
@@ -49,7 +55,12 @@ def test_flow_stack_frame_type_from_str_none():
 
 def test_flow_get_flow():
     frame = UserFlowStackFrame(frame_id="test", flow_id="foo", step_id="bar")
-    flow = Flow(id="foo", steps=[], name="foo flow", description="foo flow description")
+    flow = Flow(
+        id="foo",
+        step_sequence=StepSequence(child_steps=[]),
+        name="foo flow",
+        description="foo flow description",
+    )
     all_flows = FlowsList(flows=[flow])
     assert frame.flow(all_flows) == flow
 
@@ -59,7 +70,10 @@ def test_flow_get_flow_non_existant_id():
     all_flows = FlowsList(
         flows=[
             Flow(
-                id="foo", steps=[], name="foo flow", description="foo flow description"
+                id="foo",
+                step_sequence=StepSequence(child_steps=[]),
+                name="foo flow",
+                description="foo flow description",
             )
         ]
     )
@@ -70,8 +84,9 @@ def test_flow_get_flow_non_existant_id():
 def test_flow_get_step():
     frame = UserFlowStackFrame(frame_id="test", flow_id="foo", step_id="my_step")
     step = ActionFlowStep(
+        idx=1,
         action="action_listen",
-        id="my_step",
+        custom_id="my_step",
         description=None,
         metadata={},
         next=FlowLinks(links=[]),
@@ -80,7 +95,7 @@ def test_flow_get_step():
         flows=[
             Flow(
                 id="foo",
-                steps=[step],
+                step_sequence=StepSequence(child_steps=[step]),
                 name="foo flow",
                 description="foo flow description",
             )
@@ -94,7 +109,10 @@ def test_flow_get_step_non_existant_id():
     all_flows = FlowsList(
         flows=[
             Flow(
-                id="foo", steps=[], name="foo flow", description="foo flow description"
+                id="foo",
+                step_sequence=StepSequence(child_steps=[]),
+                name="foo flow",
+                description="foo flow description",
             )
         ]
     )
@@ -107,7 +125,10 @@ def test_flow_get_step_non_existant_flow_id():
     all_flows = FlowsList(
         flows=[
             Flow(
-                id="foo", steps=[], name="foo flow", description="foo flow description"
+                id="foo",
+                step_sequence=StepSequence(child_steps=[]),
+                name="foo flow",
+                description="foo flow description",
             )
         ]
     )

@@ -31,5 +31,5 @@ def test_run_command_on_tracker():
 
     frame = dialogue_stack_event.value[0]
     assert frame["type"] == "pattern_internal_error"
-    assert frame["step_id"] == "__start__"
+    assert frame["step_id"] == "START"
     assert frame["flow_id"] == "pattern_internal_error"
