@@ -127,18 +127,11 @@ Let's look at this definition to see what is going on:
 ```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
-    description: |
-      This flow lets users send money to friends
-      and family, in US Dollars.
+    description: This flow lets users send money to friends and family.
     steps:
-      - id: "ask_recipient"
-        collect_information: recipient
-        next: "ask_amount"
-      - id: "ask_amount"
-        collect_information: amount
-        next: "transfer_successful"
-      - id: "transfer_successful"
-        action: utter_transfer_complete
+      - collect: recipient
+      - collect: amount
+      - action: utter_transfer_complete
 ```
 
 The two key attributes of the `transfer_money` flow are the `description` and the `steps`.
@@ -148,44 +141,37 @@ If a user says "I need to transfer some money", the description helps Rasa under
 The `steps` describe the business logic required to do what the user asked for.
 
 
-There are three steps defined, each with an `id`.
-The `id` can be anything you like, but it's a good idea to use names that make it clear what is going on.
-The first step is a `collect_information` step, which is used to fill a `slot`.
-A `collect_information` step sends a message to the user requesting information, and waits for an answer.
+There are three steps defined.
+The first step is a `collect` step, which is used to fill a `slot`.
+A `collect` step sends a message to the user requesting information, and waits for an answer.
 
 
 ## Collecting Information in Slots
 
-`Slots` are a key-value memory store used during a conversation.
+`Slots` are variables your assistant can read and write throughout a conversation.
 Slots are defined in your `domain.yml` file. For example, the definition of your `recipient` slot looks like this:
 
 ```yaml-rasa title="domain.yml"
 slots:
   recipient:
     type: text
-    mappings:
-      - type: custom
   # ...
 ```
 
-They can be used to store information provided to you by the user or fetched via an API call.
+Slots can be used to store information that users provide during the conversation,
+or information that has been fetched via an API call.
 First, you're going to see how to store information provided by the end user in a slot.
-To do this, you define a `collect_information` step like the first step in your flow above.
+To do this, you define a `collect` step like the first step in your flow above.
 
 ```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
     description: This flow lets users send money to friends and family.
     steps:
-      - id: "ask_recipient"
-        # highlight-next-line
-        collect_information: recipient
-        next: "ask_amount"
-      - id: "ask_amount"
-        collect_information: amount
-        next: "transfer_successful"
-      - id: "transfer_successful"
-        action: utter_transfer_complete
+      # highlight-next-line    
+      - collect: recipient
+      - collect: amount
+      - action: utter_transfer_complete
 ```
 
 Rasa will look for a  `response` called `utter_ask_recipient` in your domain file and use this to
@@ -199,7 +185,8 @@ responses:
 
 After sending this message, Rasa will wait for a response from the user.
 When the user responds, Rasa will try to use their answer to fill the slot `recipient`.
-Read about [slot validation](./concepts/slot-validation-actions.mdx) to learn more about how to run additional checks on slot values.
+Read about [slot validation](./concepts/slot-validation-actions.mdx) to learn how you
+can run extra checks on the slot values Rasa has extracted.
 
 The diagram below summarizes how slot values are used to collect and store information,
 and how they can be used to create branching logic.
@@ -211,7 +198,7 @@ and how they can be used to create branching logic.
 
 ## Action Steps
 
-The third `step` in your `transfer_money` flow is not a `collect_information` step but an `action` step.
+The third `step` in your `transfer_money` flow is not a `collect` step but an `action` step.
 When you reach an action step in a flow, your assistant will execute the corresponding action and then
 proceed to the next step.
 It will not stop to wait for the user's next message.
@@ -222,15 +209,10 @@ flows:
   transfer_money:
     description: This flow lets users send money to friends and family.
     steps:
-      - id: "ask_recipient"
-        collect_information: recipient
-        next: "ask_amount"
-      - id: "ask_amount"
-        collect_information: amount
-        next: "transfer_successful"
-      - id: "transfer_successful"
-        # highlight-next-line
-        action: utter_transfer_complete
+      - collect: recipient
+      - collect: amount
+      # highlight-next-line    
+      - action: utter_transfer_complete
 ```
 
 ## Branching Logic
@@ -246,19 +228,16 @@ which you will call `final_confirmation`.
 
 In your domain file, add the definition of the `final_confirmation` slot
 and the corresponding response: `utter_ask_final_confirmation`.
+Also add a response to confirm the transfer has been cancelled.
 
 ```yaml-rasa title="domain.yml"
 slots:
   recipient:
     type: Text
-    mappings:
-      - type: custom
   # ...
   # highlight-start
   final_confirmation:
     type: bool
-    mappings:
-      - type: custom
   # highlight-end
 ```
 
@@ -270,43 +249,45 @@ responses:
   # highlight-start
   utter_ask_final_confirmation:
     - text: "Please confirm: you want to transfer {amount} to {recipient}?"
+  utter_transfer_cancelled:
+    - text: "Your transfer has been cancelled."
   # highlight-end
 ```
 
 Notice that your confirmation question uses curly brackets `{}` to include slot values in your response.
 
-Add a `collect_information` step to your flow and give it the id `confirm_transfer`.
-Also change the `next` attribute of the `ask_amount` step to match the `id` of your newly created step: `confirm_transfer`.
+Now add the branching logic to your flow. 
+First, add a `collect` step to your flow for the slot `final_confirmation`. 
+This step has a `next` attribute which implements the branching logic.
+The expression after `if:` is a condition which will be evaluated to return `True` or `False`.
+We're using the value of the boolean slot in the expression `not final_confirmation`.
+You can learn more about conditions and advanced logic [here](./concepts/flows.mdx).
 
+Notice that the final step in your flow now has an additional `id` attribute.
+A `then` or `else` key can either be followed by a list of steps, or by the `id`
+of a step to jump to. 
+The `id` is required for any step to be the target of a `then` or `else` statement.
 
 ```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
     description: This flow lets users send money to friends and family.
     steps:
-      - id: "ask_recipient"
-        collect_information: recipient
-        next: "ask_amount"
-      - id: "ask_amount"
-        collect_information: amount
-        # highlight-start
-        next: "confirm_transfer"
-      - id: "confirm_transfer"
-        collect_information: final_confirmation
+      - collect: recipient
+      - collect: amount
+      # highlight-start
+      - collect: final_confirmation
         next:
-          - if: final_confirmation
-            then: "transfer_successful"
-        # highlight-end
-      - id: "transfer_successful"
+          - if: not final_confirmation
+            then:
+              - action: utter_transfer_cancelled
+                next: END
+          - else: transfer_successful
+      - id: transfer_successful
+      # highlight-end
         action: utter_transfer_complete
-
 ```
 
-The `next` attribute of your `confirm_transfer` step includes a `condition`.
-The expression after the `if:` key will be evaluated and return `True` or `False`.
-In this case, we're using the value of the boolean slot `final_confirmation`.
-Conditions can be used to create branching logic, including logical operators like `AND`, `OR`, etc.
-You can learn more about conditions and advanced logic [here](./concepts/flows.mdx).
 
 To try out the updated version of your assistant, run `rasa train`, and then `rasa shell` to talk to your assistant.
 It should now ask you to confirm before completing the transfer.
@@ -320,14 +301,18 @@ If you want to ensure that your assistant explicitly asks the user before fillin
 you can set the attribute `ask_before_filling` to `true` in your `collect` step.
 For example, to ensure that you always ask a user for confirmation, your flow step would look like this:
 
-```
-      - id: "confirm_transfer"
-        collect_information: final_confirmation
-        # highlight-next-line
-        ask_before_filling: true
+```yaml-rasa title="flows.yml"
+flows:
+  transfer_money:
+    description: This flow lets users send money to friends and family.
+    steps:
+      - collect: recipient
+      - collect: amount
+      - collect: final_confirmation
+      # highlight-next-line          
+        ask_before_filling: true    
         next:
-          - if: final_confirmation
-            then: "transfer_successful"
+        ...
 ```
 
 ## Integrating an API call
@@ -415,28 +400,26 @@ flows:
   transfer_money:
     description: This flow lets users send money to friends and family.
     steps:
-      - id: "ask_recipient"
-        collect_information: recipient
-        next: "ask_amount"
-      - id: "ask_amount"
-        collect_information: amount
-        # highlight-start
-        next: "check_funds"
-      - id: "check_funds"
-        action: action_check_sufficient_funds
+      - collect: recipient
+      - collect: amount
+      # highlight-start
+      - action: action_check_sufficient_funds
         next:
-          - if: has_sufficient_funds
-            then: "confirm_transfer"
-          - else: "insufficient_funds"
-      - id: "insufficient_funds"
-        action: utter_insufficient_funds
-        # highlight-end
-      - id: "confirm_transfer"
-        collect_information: final_confirmation
+          - if: not has_sufficient_funds
+            then:
+              - action: utter_insufficient_funds
+                next: END
+          - else: final_confirmation
+      - id: final_confirmation
+      # highlight-end      
+        collect: final_confirmation
         next:
-          - if: final_confirmation
-            then: "transfer_successful"
-      - id: "transfer_successful"
+          - if: not final_confirmation
+            then:
+              - action: utter_transfer_cancelled
+                next: END
+          - else: transfer_successful
+      - id: transfer_successful
         action: utter_transfer_complete
 ```
 
