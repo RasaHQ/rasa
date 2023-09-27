@@ -235,7 +235,7 @@ def validate_files(
     if stories_only:
         all_good = _validate_story_structure(validator, max_history, fail_on_warnings)
     elif flows_only:
-        all_good = _validate_flows(validator)
+        all_good = validator.verify_flows()
     else:
         if importer.get_domain().is_empty():
             rasa.shared.utils.cli.print_error_and_exit(
@@ -247,7 +247,7 @@ def validate_files(
         valid_stories = _validate_story_structure(
             validator, max_history, fail_on_warnings
         )
-        valid_flows = _validate_flows(validator)
+        valid_flows = validator.verify_flows()
 
         all_good = valid_domain and valid_nlu and valid_stories and valid_flows
 
@@ -291,10 +291,6 @@ def _validate_story_structure(
     return validator.verify_story_structure(
         not fail_on_warnings, max_history=max_history
     )
-
-
-def _validate_flows(validator: "Validator") -> bool:
-    return validator.verify_flows()
 
 
 def cancel_cause_not_found(

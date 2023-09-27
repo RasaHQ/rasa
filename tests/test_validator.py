@@ -1,6 +1,6 @@
 import textwrap
 import warnings
-from typing import Text
+from typing import Any, Dict, List, Text
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -859,137 +859,42 @@ def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
         validator.warn_if_config_mandatory_keys_are_not_set()
 
 
-def test_verify_flow_steps_against_domain_missing_slot_in_domain(
+@pytest.mark.parametrize(
+    "domain_actions, domain_slots, exception_message",
+    [
+        # set_slot slot is not listed in the domain
+        (
+            ["action_transfer_money"],
+            {"transfer_amount": {"type": "float", "mappings": []}},
+            "The slot 'account_type' is used in the step 'set_account_type' "
+            "of flow id 'transfer_money', but it is not listed in the domain slots.",
+        ),
+        # collect_information slot is not listed in the domain
+        (
+            ["action_transfer_money"],
+            {"account_type": {"type": "text", "mappings": []}},
+            "The slot 'transfer_amount' is used in the step 'ask_amount' "
+            "of flow id 'transfer_money', but it is not listed in the domain slots.",
+        ),
+        # action name is not listed in the domain
+        (
+            [],
+            {
+                "account_type": {"type": "text", "mappings": []},
+                "transfer_amount": {"type": "float", "mappings": []},
+            },
+            "The action 'action_transfer_money' is used in the step 'execute_transfer' "
+            "of flow id 'transfer_money', but it is not listed in the domain file.",
+        ),
+    ],
+)
+def test_verify_flow_steps_against_domain_fail(
     tmp_path: Path,
     nlu_data_path: Path,
+    domain_actions: List[Text],
+    domain_slots: Dict[Text, Any],
+    exception_message: Text,
 ) -> None:
-    missing_slot_in_domain = "transfer_amount"
-    flows_file = tmp_path / "flows.yml"
-    with open(flows_file, "w") as file:
-        file.write(
-            f"""
-                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                flows:
-                  transfer_money:
-                    description: This flow lets users send money.
-                    name: transfer money
-                    steps:
-                    - id: "ask_recipient"
-                      collect_information: transfer_recipient
-                      next: "ask_amount"
-                    - id: "ask_amount"
-                      collect_information: {missing_slot_in_domain}
-                      next: "execute_transfer"
-                    - id: "execute_transfer"
-                      action: action_transfer_money
-                """
-        )
-    domain_file = tmp_path / "domain.yml"
-    with open(domain_file, "w") as file:
-        file.write(
-            f"""
-                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                intents:
-                  - greet
-                slots:
-                    transfer_recipient:
-                        type: text
-                        mappings: []
-                actions:
-                  - action_transfer_money
-                """
-        )
-    importer = RasaFileImporter(
-        config_file="data/test_moodbot/config.yml",
-        domain_path=str(domain_file),
-        training_data_paths=[str(flows_file), str(nlu_data_path)],
-    )
-
-    validator = Validator.from_importer(importer)
-    user_flows = [
-        flow
-        for flow in validator.flows.underlying_flows
-        if not flow.id.startswith("pattern_")
-    ]
-
-    with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain(user_flows)
-
-    assert (
-        f"The slot '{missing_slot_in_domain}' is used in the step 'ask_amount' of "
-        f"flow id 'transfer_money', but it is not listed in the domain slots."
-    ) in str(e.value)
-
-
-def test_verify_flow_steps_against_domain_missing_action_in_domain(
-    tmp_path: Path,
-    nlu_data_path: Path,
-) -> None:
-    missing_action_in_domain = "action_transfer_money"
-    flows_file = tmp_path / "flows.yml"
-    with open(flows_file, "w") as file:
-        file.write(
-            f"""
-                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                flows:
-                  transfer_money:
-                    description: This flow lets users send money.
-                    name: transfer money
-                    steps:
-                    - id: "ask_recipient"
-                      collect_information: transfer_recipient
-                      next: "ask_amount"
-                    - id: "ask_amount"
-                      collect_information: transfer_amount
-                      next: "execute_transfer"
-                    - id: "execute_transfer"
-                      action: {missing_action_in_domain}
-                """
-        )
-    domain_file = tmp_path / "domain.yml"
-    with open(domain_file, "w") as file:
-        file.write(
-            f"""
-                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                intents:
-                  - greet
-                slots:
-                    transfer_recipient:
-                        type: text
-                        mappings: []
-                    transfer_amount:
-                        type: float
-                        mappings: []
-                """
-        )
-    importer = RasaFileImporter(
-        config_file="data/test_moodbot/config.yml",
-        domain_path=str(domain_file),
-        training_data_paths=[str(flows_file), str(nlu_data_path)],
-    )
-
-    validator = Validator.from_importer(importer)
-    user_flows = [
-        flow
-        for flow in validator.flows.underlying_flows
-        if not flow.id.startswith("pattern_")
-    ]
-
-    with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain(user_flows)
-
-    assert (
-        f"The action '{missing_action_in_domain}' is used in the step "
-        f"'execute_transfer' of flow id 'transfer_money', but it "
-        f"is not listed in the domain file."
-    ) in str(e.value)
-
-
-def test_verify_flow_steps_against_domain_missing_slot_from_set_slot_step(
-    tmp_path: Path,
-    nlu_data_path: Path,
-) -> None:
-    missing_slot_in_domain = "account_type"
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
         file.write(
@@ -1000,15 +905,12 @@ def test_verify_flow_steps_against_domain_missing_slot_from_set_slot_step(
                         description: This flow lets users send money.
                         name: transfer money
                         steps:
-                        - id: "ask_recipient"
-                          collect_information: transfer_recipient
-                          next: "ask_amount"
                         - id: "ask_amount"
                           collect_information: transfer_amount
                           next: "set_account_type"
                         - id: "set_account_type"
                           set_slots:
-                            - {missing_slot_in_domain}: "debit"
+                            - account_type: "debit"
                           next: "execute_transfer"
                         - id: "execute_transfer"
                           action: action_transfer_money
@@ -1022,14 +924,8 @@ def test_verify_flow_steps_against_domain_missing_slot_from_set_slot_step(
                     intents:
                       - greet
                     slots:
-                        transfer_recipient:
-                            type: text
-                            mappings: []
-                        transfer_amount:
-                            type: float
-                            mappings: []
-                    actions:
-                      - action_transfer_money
+                        {domain_slots}
+                    actions: {domain_actions}
                     """
         )
     importer = RasaFileImporter(
@@ -1048,11 +944,7 @@ def test_verify_flow_steps_against_domain_missing_slot_from_set_slot_step(
     with pytest.raises(RasaException) as e:
         validator.verify_flows_steps_against_domain(user_flows)
 
-    assert (
-        f"The slot '{missing_slot_in_domain}' is used in the step "
-        f"'set_account_type' of flow id 'transfer_money', "
-        f"but it is not listed in the domain slots."
-    ) in str(e.value)
+    assert exception_message in str(e.value)
 
 
 def test_verify_flow_steps_against_domain_disallowed_list_slot(

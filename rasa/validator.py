@@ -494,6 +494,18 @@ class Validator:
             )
 
     @staticmethod
+    def _raise_exception_if_slot_not_in_domain(
+        slot_name: str, domain_slots: Dict[Text, Slot], step_id: str, flow_id: str
+    ) -> None:
+        if slot_name not in domain_slots:
+            raise RasaException(
+                f"The slot '{slot_name}' is used in the "
+                f"step '{step_id}' of flow id '{flow_id}', but it "
+                f"is not listed in the domain slots. "
+                f"You should add it to your domain file!",
+            )
+
+    @staticmethod
     def _raise_exception_if_list_slot(slot: Slot, step_id: str, flow_id: str) -> None:
         if isinstance(slot, ListSlot):
             raise RasaException(
@@ -518,18 +530,14 @@ class Validator:
 
     def verify_flows_steps_against_domain(self, user_flows: List[Flow]) -> bool:
         """Checks flows steps' references against the domain file."""
-        all_good = True
         domain_slots = {slot.name: slot for slot in self.domain.slots}
         for flow in user_flows:
             for step in flow.steps:
                 if isinstance(step, CollectInformationFlowStep):
-                    if step.collect_information not in domain_slots:
-                        raise RasaException(
-                            f"The slot '{step.collect_information}' is used in the "
-                            f"step '{step.id}' of flow id '{flow.id}', but it "
-                            f"is not listed in the domain slots. "
-                            f"You should add it to your domain file!",
-                        )
+                    self._raise_exception_if_slot_not_in_domain(
+                        step.collect_information, domain_slots, step.id, flow.id
+                    )
+
                     current_slot = domain_slots[step.collect_information]
                     self._raise_exception_if_list_slot(current_slot, step.id, flow.id)
                     self._raise_exception_if_dialogue_stack_slot(
@@ -539,13 +547,10 @@ class Validator:
                 elif isinstance(step, SetSlotsFlowStep):
                     for slot in step.slots:
                         slot_name = slot["key"]
-                        if slot_name not in domain_slots:
-                            raise RasaException(
-                                f"The slot '{slot_name}' is used in the step "
-                                f"'{step.id}' of flow id '{flow.id}', but it "
-                                f"is not listed in the domain slots. "
-                                f"You should add it to your domain file!",
-                            )
+                        self._raise_exception_if_slot_not_in_domain(
+                            slot_name, domain_slots, step.id, flow.id
+                        )
+
                         current_slot = domain_slots[slot_name]
                         self._raise_exception_if_list_slot(
                             current_slot, step.id, flow.id
@@ -562,13 +567,11 @@ class Validator:
                             f"is not listed in the domain file. "
                             f"You should add it to your domain file!",
                         )
-        return all_good
+        return True
 
     @staticmethod
     def verify_unique_flows(user_flows: List[Flow]) -> bool:
         """Checks if all flows have unique names and descriptions."""
-        all_good = True
-
         flows_mapping: Dict[str, str] = {}
         punctuation_table = str.maketrans({i: "" for i in string.punctuation})
 
@@ -591,7 +594,20 @@ class Validator:
 
             flows_mapping[flow.name] = cleaned_description
 
-        return all_good
+        return True
+
+    @staticmethod
+    def _construct_predicate(predicate: Optional[str], step_id: str) -> Predicate:
+        try:
+            pred = Predicate(predicate)
+        except (TypeError, Exception) as exception:
+            raise RasaException(
+                f"Could not initialize the predicate found under step "
+                f"'{step_id}'. Please make sure that all predicates "
+                f"are strings."
+            ) from exception
+
+        return pred
 
     @staticmethod
     def verify_predicates(user_flows: List[Flow]) -> bool:
@@ -602,17 +618,10 @@ class Validator:
                 if isinstance(step, BranchFlowStep):
                     for link in step.next.links:
                         if isinstance(link, IfFlowLink):
-                            try:
-                                predicate = Predicate(link.condition)
-                            except (TypeError, Exception) as exception:
-                                raise RasaException(
-                                    f"Could not initialize the predicate found "
-                                    f"under step '{step.id}'. Please make sure "
-                                    f"that all predicates are strings."
-                                ) from exception
-
-                            is_valid = predicate.is_valid()
-                            if not is_valid:
+                            predicate = Validator._construct_predicate(
+                                link.condition, step.id
+                            )
+                            if not predicate.is_valid():
                                 raise RasaException(
                                     f"Detected invalid condition '{link.condition}' "
                                     f"at step '{step.id}' for flow id '{flow.id}'. "
@@ -621,17 +630,8 @@ class Validator:
                 elif isinstance(step, CollectInformationFlowStep):
                     predicates = [predicate.if_ for predicate in step.rejections]
                     for predicate in predicates:
-                        try:
-                            pred = Predicate(predicate)
-                        except (TypeError, Exception) as exception:
-                            raise RasaException(
-                                f"Could not initialize the predicate found under step "
-                                f"'{step.id}'. Please make sure that all predicates "
-                                f"are strings."
-                            ) from exception
-
-                        is_valid = pred.is_valid()
-                        if not is_valid:
+                        pred = Validator._construct_predicate(predicate, step.id)
+                        if not pred.is_valid():
                             raise RasaException(
                                 f"Detected invalid rejection '{predicate}' "
                                 f"at `collect_information` step '{step.id}' "
