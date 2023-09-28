@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 import structlog
 
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.patterns.clean_stack import CleanStackFlowStackFrame
+from rasa.dialogue_understanding.patterns.code_change import CodeChangeFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import Event, SlotSet
@@ -18,22 +18,22 @@ structlogger = structlog.get_logger()
 
 
 @dataclass
-class CleanStackCommand(Command):
-    """A command to cancel the current flow."""
+class HandleCodeChangeCommand(Command):
+    """A that is executed when the flows have changed."""
 
     @classmethod
     def command(cls) -> str:
         """Returns the command type."""
-        return "clean stack"
+        return "handle code change"
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> CleanStackCommand:
+    def from_dict(cls, data: Dict[str, Any]) -> HandleCodeChangeCommand:
         """Converts the dictionary to a command.
 
         Returns:
             The converted dictionary.
         """
-        return CleanStackCommand()
+        return HandleCodeChangeCommand()
 
     def run_command_on_tracker(
         self,
@@ -59,9 +59,9 @@ class CleanStackCommand(Command):
 
         if not current_flow:
             structlogger.debug(
-                "command_executor.skip_clean_stack.no_active_flow", command=self
+                "handle_code_change_command.skip.no_active_flow", command=self
             )
             return []
 
-        stack.push(CleanStackFlowStackFrame())
+        stack.push(CodeChangeFlowStackFrame())
         return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]

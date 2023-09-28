@@ -9,7 +9,9 @@ from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
     FreeFormAnswerCommand,
 )
-from rasa.dialogue_understanding.commands.clean_stack_command import CleanStackCommand
+from rasa.dialogue_understanding.commands.handle_code_change_command import (
+    HandleCodeChangeCommand,
+)
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -155,7 +157,7 @@ def execute_commands(
             "command_executor.running_flows_were_updated",
             updated_flow_ids=updated_flows,
         )
-        commands = [CleanStackCommand()]
+        commands = [HandleCodeChangeCommand()]
 
     # store current flow hashes if they changed
     new_hashes = calculate_flow_fingerprints(all_flows)

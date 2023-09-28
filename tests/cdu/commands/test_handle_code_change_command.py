@@ -2,8 +2,12 @@ import pytest
 
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.dialogue_understanding.commands.clean_stack_command import CleanStackCommand
-from rasa.dialogue_understanding.patterns.clean_stack import ActionCleanStack
+from rasa.dialogue_understanding.commands.handle_code_change_command import (
+    HandleCodeChangeCommand,
+)
+from rasa.core.actions.action_clean_stack import ActionCleanStack
+
+from rasa.dialogue_understanding.patterns.code_change import FLOW_PATTERN_CODE_CHANGE_ID
 from rasa.dialogue_understanding.processor.command_processor import execute_commands
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
@@ -29,15 +33,15 @@ from tests.utilities import flows_from_str
 def test_name_of_command():
     # names of commands should not change as they are part of persisted
     # trackers
-    assert CleanStackCommand.command() == "clean stack"
+    assert HandleCodeChangeCommand.command() == "clean stack"
 
 
 def test_from_dict():
-    assert CleanStackCommand.from_dict({}) == CleanStackCommand()
+    assert HandleCodeChangeCommand.from_dict({}) == HandleCodeChangeCommand()
 
 
 def test_run_command_on_tracker(tracker: DialogueStateTracker, all_flows: FlowsList):
-    command = CleanStackCommand()
+    command = HandleCodeChangeCommand()
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
     assert len(events) == 1
     dialogue_stack_event = events[0]
@@ -46,7 +50,7 @@ def test_run_command_on_tracker(tracker: DialogueStateTracker, all_flows: FlowsL
     assert len(dialogue_stack_event.value) == 2
 
     frame = dialogue_stack_event.value[1]
-    assert frame["type"] == "pattern_clean_stack"
+    assert frame["type"] == FLOW_PATTERN_CODE_CHANGE_ID
 
 
 @pytest.fixture
@@ -70,7 +74,7 @@ def about_to_be_cleaned_tracker(tracker: DialogueStateTracker, all_flows: FlowsL
 
     stack_clean_frame = dialogue_stack.frames[2]
     assert isinstance(stack_clean_frame, PatternFlowStackFrame)
-    assert stack_clean_frame.flow_id == "pattern_clean_stack"
+    assert stack_clean_frame.flow_id == FLOW_PATTERN_CODE_CHANGE_ID
     assert stack_clean_frame.step_id == START_STEP
 
     return tracker

@@ -1,5 +1,6 @@
 import pytest
 
+from rasa.dialogue_understanding.patterns.code_change import FLOW_PATTERN_CODE_CHANGE_ID
 from rasa.dialogue_understanding.processor.command_processor import (
     execute_commands,
     find_updated_flows,
@@ -124,4 +125,4 @@ def test_stack_cleaning_command_is_applied_on_changes(tracker: DialogueStateTrac
     assert len(dialogue_stack.frames) == 2
     assert (top_frame := dialogue_stack.top())
     assert isinstance(top_frame, PatternFlowStackFrame)
-    assert top_frame.flow_id == "pattern_clean_stack"
+    assert top_frame.flow_id == FLOW_PATTERN_CODE_CHANGE_ID
