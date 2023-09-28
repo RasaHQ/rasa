@@ -11,7 +11,7 @@ import RasaProBanner from "@theme/RasaProBanner";
 
 You can customise many aspects of how Rasa works by modifying the `config.yml` file. 
 
-A minimal configuration for a [CALM](../calm.mdx) assistant looks like this:
+A minimal configuration for a [CALM](../../calm.mdx) assistant looks like this:
 
 ```yaml-rasa title="config.yml"
 recipe: default.v1
@@ -46,7 +46,7 @@ The `language` key is a 2-letter ISO code for the language your assistant suppor
 The `assistant_id` key should be a unique value and allows you to distinguish multiple
 deployed assistants.
 This id is added to each event's metadata, together with the model id.
-See [event brokers](../production/event-brokers.mdx) for more information.
+See [event brokers](../../production/event-brokers.mdx) for more information.
 Note that if the config file does not include this required key or the placeholder default value 
 is not replaced, a random assistant name will be generated and added to the configuration 
 every time you run `rasa train`.
@@ -73,7 +73,7 @@ pipeline:
 
 The full set of configurable parameters is listed [here](../dialogue-understanding.mdx).
 
-All components which make use of LLMs have common configuration parameters which are listed [here](../llm-configuration.mdx)
+All components which make use of LLMs have common configuration parameters which are listed [here](./llm-configuration.mdx)
 
 
 ### Combining CALM and NLU-based components
@@ -83,7 +83,7 @@ All components which make use of LLMs have common configuration parameters which
 <RasaProBanner />
 
 Rasa Pro allows you to combine both NLU-based and CALM components in your pipeline. 
-See a full list of NLU-based components [here](../nlu-based-assistants/components.mdx).
+See a full list of NLU-based components [here](../../nlu-based-assistants/components.mdx).
 
 ## Policies
 
@@ -104,4 +104,4 @@ The [FlowPolicy](../policies.mdx#flow-policy) currently doesn't have an addition
 <RasaProBanner />
 
 Rasa Pro allows you to use both NLU-based and CALM dialogue policies in your assistant. 
-See a full list of NLU-based policies [here](../nlu-based-assistants/policies.mdx).
+See a full list of NLU-based policies [here](../../nlu-based-assistants/policies.mdx).
