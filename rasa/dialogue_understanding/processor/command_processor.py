@@ -151,6 +151,10 @@ def execute_commands(
     updated_flows = find_updated_flows(tracker, all_flows)
     if updated_flows:
         # Override commands
+        structlogger.debug(
+            "command_executor.running_flows_were_updated",
+            updated_flow_ids=updated_flows,
+        )
         commands = [CleanStackCommand()]
 
     # store current flow hashes if they changed
