@@ -77,7 +77,8 @@ To configure the API token, follow these steps:
 
 Many LLM providers offer multiple models through their API. 
 The model is specified individually for each component, so that if you want to you can use
-a combination of various models. 
+a combination of various models. For instance here is how you could configure a different model
+for the `LLMCommandGenerator` and the `DocsearchPolicy`:
 
 ```yaml title="config.yml"
 recipe: default.v1
