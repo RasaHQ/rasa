@@ -462,30 +462,29 @@ the `collect_information` step and fill the slot again. This ensures the confirm
 
 #### Reset slot value after flow execution
 
-You can determine whether to reset the slot value after the flow execution or not by setting the optional
-`reset_after_flow_ends` property to `true` or `false` respectively. If the property is not defined for the
-`collect_information` step, the default value will be `true`.
+You can configure the reset slot value behaviour after the flow completes by setting the optional
+`reset_after_flow_ends` property to `true` or `false`. If the property is not defined for the
+`collect` step, the default value will be `true`.
 
 If the `reset_after_flow_ends` property is set to `true`, the slot value exists only for the duration of the flow.
 Once the flow ends, the slot value is either reset to `null` or the slot's initial value (if provided in the domain
-file under `slots`). If instead the `reset_after_flow_ends` property is set to `false`, this indicates that the slot
+file under `slots`). If instead, the `reset_after_flow_ends` property is set to `false`, this indicates that the slot
 value should persist across flows until it is explicitly changed.
 
-The following configuration would clear the answer to the `collect_information` step when a
+The following configuration would clear the answer to the `collect` step when a
 flow is completed.
 
 ```yaml
-- id: "another_confirmation_step"
-  collect_information: "my_custom_slot" # slot name
+- collect: "my_custom_slot" # slot name
   reset_after_flow_ends: true
 ```
 
-#### Define a different response for the `collect_information` step
+#### Define a different response for the `collect` step
 
 By default, the assistant will ask the user to fill the slot with the `utter_ask_{slot_name}` response. You can define
-a different response for the `collect_information` step by adding a `utter` property to the step. The `utter` property
-is optional and represents the name of the [response](./responses.mdx) the assistant will ask the user. Make sure to
-have this response included in the domain.
+a different response for the `collect` step by adding a `utter` property to the step. The `utter` property
+is optional and represents the name of the [response](./responses.mdx) the assistant will use to collect the information from the
+user. Make sure to have this response included in the domain.
 
 Here is an example:
 
@@ -495,8 +494,7 @@ flows:
     description: This flow helps the user to replace a supplementary card for a family member.
     name: replace card
     steps:
-      - id: "ask_account_type"
-        collect: account_type
+      - collect: account_type
         utter: utter_ask_secondary_account_type
         next: "ask_account_number"
 ```
