@@ -79,9 +79,9 @@ class SetSlotCommand(Command):
         if (
             self.name in tracker.slots
             and isinstance(tracker.slots[self.name], CategoricalSlot)
-            and self.value not in tracker.slots[self.name].values
+            and self.value not in tracker.slots[self.name].values  # type: ignore
         ):
-            # only fill categorical slots with values that are in the domain
+            # only fill categorical slots with values that are present in the domain
             structlogger.debug(
                 "command_executor.skip_command.categorical_slot_value_not_in_domain",
                 command=self,
