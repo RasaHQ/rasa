@@ -71,7 +71,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
-        return {LLM_CONFIG_KEY: None}
+        return {"prompt": None, LLM_CONFIG_KEY: None}
 
     def __init__(
         self,
