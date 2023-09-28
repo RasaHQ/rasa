@@ -7,10 +7,8 @@ abstract:
 
 import RasaLabsLabel from "@theme/RasaLabsLabel";
 import RasaLabsBanner from "@theme/RasaLabsBanner";
-
-<RasaLabsLabel />
-
-<RasaLabsBanner version="3.7.0b1" />
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaProBanner from "@theme/RasaProBanner";
 
 The LLM components can be extended and modified with custom versions. This
 allows you to customize the behavior of the LLM components to your needs and
@@ -19,10 +17,10 @@ experiment with different algorithms.
 ## Customizing a component
 
 The LLM components are implemented as a set of classes that can be extended
-and modified. The following example shows how to extend the 
+and modified. The following example shows how to extend the
 `LLMIntentClassifier` component to add a custom behavior.
 
-For example, we can change the logic that selects the intent labels that are 
+For example, we can change the logic that selects the intent labels that are
 included in the prompt to the LLM model. By default, we only include a selection
 of the available intents in the prompt. But we can also include all available
 intents in the prompt. This can be done by extending the `LLMIntentClassifier`
@@ -44,7 +42,7 @@ class CustomLLMIntentClassifier(LLMIntentClassifier):
         Returns:
             The list of intent examples to use for the LLM training.
         """
-        
+
         # use all available intents for the LLM prompt
         return list(self.available_intents)
 ```
@@ -61,18 +59,23 @@ To reference a component in the Rasa configuration file, you need to use the
 full name of the component class. The full name of the component class is
 `<module>.<class>`.
 
-All components are well documented in their source code. The code can 
-be found in your local installation of the `rasa_plus` python package. 
+All components are well documented in their source code. The code can
+be found in your local installation of the `rasa_plus` python package.
 
 ## Common functions to be overridden
+
 Below is a list of functions that could be overwritten to customize the LLM
 components:
 
 ### LLMIntentClassifier
 
+<RasaLabsLabel />
+
+<RasaLabsBanner version="3.8.0a7" />
+
 #### select_intent_examples
 
-Selects the intent examples to use for the LLM prompt. The selected intent 
+Selects the intent examples to use for the LLM prompt. The selected intent
 labels are included in the generation prompt. By default, only the intent
 labels that are used in the few shot examples are included in the prompt.
 
@@ -103,7 +106,8 @@ labels that are used in the few shot examples are included in the prompt.
 ```
 
 #### closest_intent_from_training_data
-The LLM generates an intent label which 
+
+The LLM generates an intent label which
 might not always be part of the domain. This function can be used to map the
 generated intent label to an intent label that is part of the domain.
 
@@ -126,7 +130,7 @@ labels from the domain and returns the closest intent label from the domain.
 
 Selects the NLU training examples that are included in the LLM prompt. The
 selected examples are included in the prompt to help the LLM to generate the
-correct intent. By default, the most similar training examples are selected. 
+correct intent. By default, the most similar training examples are selected.
 The selection is based on the message that should be classified. The most
 similar examples are selected by embedding the incoming message, all training
 examples and doing a similarity search.
@@ -148,6 +152,10 @@ examples and doing a similarity search.
 ```
 
 ### ContextualResponseRephraser
+
+<RasaProLabel />
+
+<RasaProBanner />
 
 #### rephrase
 
@@ -176,11 +184,15 @@ replaced with the generated response.
 
 ### IntentlessPolicy
 
+<RasaProLabel />
+
+<RasaProBanner />
+
 #### select_response_examples
 
 Samples responses that fit the current conversation. The default implementation
 samples responses from the domain that fit the current conversation.
-The selection is based on the conversation history, the history will be 
+The selection is based on the conversation history, the history will be
 embedded and the most similar responses will be selected.
 
 ```python

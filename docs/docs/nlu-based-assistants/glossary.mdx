@@ -26,15 +26,15 @@ Adding labels to messages and conversations so that they can be used to train a 
 The process of replacing personally identifiable information (PII) with masked, artificial or constant text values.
 This is done to protect the privacy of users.
 
-## [Business Logic](../building-classic-assistants/business-logic.mdx)
+## [Business Logic](../nlu-based-assistants/business-logic.mdx)
 
-Conditions that need to be fulfilled due to business requirements. For example: requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based actions like [forms](../building-classic-assistants/forms.mdx).
+Conditions that need to be fulfilled due to business requirements. For example: requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based actions like [forms](../nlu-based-assistants/forms.mdx).
 
-## [Chitchat](../building-classic-assistants/chitchat-faqs.mdx)
+## [Chitchat](../nlu-based-assistants/chitchat-faqs.mdx)
 
 A conversation pattern where the user says something that isn't directly related to their goal.
 This can include things like greetings, asking how you are etc.
-Read about handling [Chitchat and FAQs](../building-classic-assistants/chitchat-faqs.mdx) to learn how to implement this with Rasa.
+Read about handling [Chitchat and FAQs](../nlu-based-assistants/chitchat-faqs.mdx) to learn how to implement this with Rasa.
 
 ## CMS
 
@@ -48,9 +48,9 @@ The process of using user messages and conversation data to influence the design
 
 Modified story format that includes the full text of the user message in addition to the intent label. Test conversations are saved to a test set file (conversation_tests.md), which is used to evaluate the model’s predictions across an entire conversation.
 
-## [Component](../building-classic-assistants/components.mdx)
+## [Component](../nlu-based-assistants/components.mdx)
 
-An element in the an assistant's [NLU pipeline](../building-classic-assistants/tuning-your-model.mdx#how-to-choose-a-pipeline) in the [Model Configuration](../building-classic-assistants/model-configuration.mdx).
+An element in the an assistant's [NLU pipeline](../nlu-based-assistants/tuning-your-model.mdx#how-to-choose-a-pipeline) in the [Model Configuration](../nlu-based-assistants/model-configuration.mdx).
 
 Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
 
@@ -66,7 +66,7 @@ An action written by a bot developer that can run arbitrary code, mainly to inte
 
 A built-in action that comes with predefined functionality.
 
-## [DIET](../building-classic-assistants/components.mdx#dietclassifier)
+## [DIET](../nlu-based-assistants/components.mdx#dietclassifier)
 
 Dual Intent and Entity Transformer. The default NLU architecture used by Rasa, which performs both intent classification and entity extraction.
 
@@ -76,7 +76,7 @@ Defines the inputs and outputs of an assistant.
 
 It includes a list of all the intents, entities, slots, actions, and forms that the assistant knows about.
 
-## [Entity](../building-classic-assistants/training-data-format.mdx#entities)
+## [Entity](../nlu-based-assistants/training-data-format.mdx#entities)
 
 Keywords that can be extracted from a user message. For example: a telephone number, a person's name, a location, the name of a product
 
@@ -88,19 +88,23 @@ Something that happens in a conversation. For instance, a `UserUttered` event re
 
 Frequently asked questions (FAQs) are common questions that your users ask. In the context of building an assistant,
 this typically means the user sends a message and the assistant send a response without needing to consider the context of the conversation.
-Read about handling [Chitchat and FAQs](../building-classic-assistants/chitchat-faqs.mdx) to learn how to implement this with Rasa.
+Read about handling [Chitchat and FAQs](../nlu-based-assistants/chitchat-faqs.mdx) to learn how to implement this with Rasa.
 
-## [Form](../building-classic-assistants/forms.mdx)
+## [Form](../nlu-based-assistants/forms.mdx)
 
 A type of custom action that asks the user for multiple pieces of information.
 
 For example, if you need a city, a cuisine, and a price range to recommend a restaurant, you can create a restaurant form to collect the information. You can describe [business logic](#business-logic) inside a form, like offering the customer a different set of menu options if they mention a food allergy.
 
-## Happy / Unhappy Paths
+## Happy Path / Conversation Repair
 
-Terms used to describe whether the user’s input is expected or unexpected. If your assistant asks a user for some information and the user provides it, we call that a happy path. Unhappy paths are all possible edge cases. For example, the user refusing to give the requested input, changing the topic of conversation, or correcting something they said earlier.
+Terms used to describe whether the user’s input follows an expected flow or diverges
+from the expected flow, which happens often in reality.
+If your assistant asks a user for some information and the user provides it, we call that a happy path.
+Conversation repair intervenes when, for example, the user refuses to give the requested input,
+changes the topic of conversation, or corrects something they said earlier.
 
-## [Intent](../building-classic-assistants/nlu-training-data.mdx)
+## [Intent](../nlu-based-assistants/nlu-training-data.mdx)
 
 In a given user message, the thing that a user is trying to convey or accomplish (e,g., greeting, specifying a location).
 
@@ -130,15 +134,15 @@ Natural Language Generation (NLG) is the process of generating natural language 
 
 Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.
 
-## [NLU](../building-classic-assistants/nlu-training-data.mdx)
+## [NLU](../nlu-based-assistants/nlu-training-data.mdx)
 
 Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.
 
-## [Pipeline](../building-classic-assistants/tuning-your-model.mdx)
+## [Pipeline](../nlu-based-assistants/tuning-your-model.mdx)
 
 The list of NLU components (see [NLU Component](#nlu-component)) that defines a Rasa assistant’s NLU system. A user message is processed by each component one by one, before returning the final structured output.
 
-## [Policy](../building-classic-assistants/policies.mdx)
+## [Policy](../nlu-based-assistants/policies.mdx)
 
 Rasa components that predict the dialogue system’s next actionPolicies make decisions about how the conversation flow should proceed. A typical configuration includes multiple policies, and the policy with the highest confidence decides the next action to be taken in the conversation.
 
@@ -154,7 +158,7 @@ The dialogue engine that decides what to do next in a conversation based on the 
 
 Rasa NLU is the part of Rasa that performs Natural Language Understanding ([NLU](#nlu)), including intent classification and entity extraction.
 
-## [NLU Component](../building-classic-assistants/components.mdx)
+## [NLU Component](../nlu-based-assistants/components.mdx)
 
 An element in the Rasa NLU pipeline (see [Pipeline](#pipeline)) that processes incoming messages. Components perform tasks ranging from entity extraction to intent classification to pre-processing.
 
@@ -162,7 +166,7 @@ An element in the Rasa NLU pipeline (see [Pipeline](#pipeline)) that processes i
 
 A tool for conversation-driven development. Rasa X/Enterprise helps teams share and test an assistant built with Rasa, annotate user messages, and view conversations.
 
-## [Retrieval Intent](../building-classic-assistants/chitchat-faqs.mdx)
+## [Retrieval Intent](../nlu-based-assistants/chitchat-faqs.mdx)
 
 A special type of intent that can be divided into smaller sub-intents. For example, an FAQ retrieval intent has sub-intents that represent each individual question the assistant knows how to answer.
 
@@ -174,21 +178,21 @@ A messaging channel used to build custom connectors. Includes an input channel, 
 
 A message that an assistant sends to a user. This can include text, buttons, images, and other content.
 
-## [Rules](../building-classic-assistants/rules.mdx)
+## [Rules](../nlu-based-assistants/rules.mdx)
 
 Special training data to specify rule-like behavior, where a specific condition always predicts a specific next action. Examples include
-answering FAQs, filling [Forms](../building-classic-assistants/forms.mdx), or handling
-[Fallbacks](../building-classic-assistants/fallback-handoff.mdx#fallbacks).
+answering FAQs, filling [Forms](../nlu-based-assistants/forms.mdx), or handling
+[Fallbacks](../nlu-based-assistants/fallback-handoff.mdx#fallbacks).
 
 ## [Slot](./domain.mdx#slots)
 
 A key-value store that Rasa uses to track information over the course of a conversation.
 
-## [Story](../building-classic-assistants/stories.mdx)
+## [Story](../nlu-based-assistants/stories.mdx)
 
 Training data format for the dialogue model, consisting of a conversation between a user and a bot. The user's messages are represented as annotated intents and entities, and the bot’s responses are represented as a sequence of actions.
 
-## [TED Policy](../building-classic-assistants/policies.mdx#ted-policy)
+## [TED Policy](../nlu-based-assistants/policies.mdx#ted-policy)
 
 Transformer Embedding Dialogue Policy. TED is the default machine learning-based dialogue policy used by Rasa. TED complements rule-based policies by handling previously unseen situations, where no rule exists to determine the next action.
 

@@ -30,7 +30,7 @@ Please check whether your trained model still performs as expected and retrain i
 
 ### NLU JSON Format
 
-[NLU training data](./building-classic-assistants/nlu-training-data.mdx) in JSON format is deprecated and will be
+[NLU training data](./nlu-based-assistants/nlu-training-data.mdx) in JSON format is deprecated and will be
 removed in Rasa 4.0.
 Please use `rasa data convert nlu -f yaml --data <path to NLU data>` to convert your
 NLU JSON data to YAML format before support for NLU JSON data is removed.
@@ -52,7 +52,7 @@ to convert your data from Markdown to YAML. Please use the commands described
 ### Model Configuration
 
 It is required to specify the used `recipe` within the
-[model configuration](./building-classic-assistants/model-configuration.mdx). As of now Rasa only supports
+[model configuration](./nlu-based-assistants/model-configuration.mdx). As of now Rasa only supports
 the `default.v1` recipe and will continue using it even if you don't specify a recipe
 in the model configuration. To avoid breaking changes in the future you should
 to specify `recipe: "default.v1"` at the top of your model configuration:
@@ -88,8 +88,8 @@ policies:
 
 ### Custom Policies and Custom Components
 
-Rasa 3.0 changed the way [NLU components](./building-classic-assistants/components.mdx) and
-[policies](./building-classic-assistants/policies.mdx) are trained and run during inference. As part of these changes
+Rasa 3.0 changed the way [NLU components](./nlu-based-assistants/components.mdx) and
+[policies](./nlu-based-assistants/policies.mdx) are trained and run during inference. As part of these changes
 the interfaces for NLU components and policies have been unified and adapted.
 
 The next sections outline which adaptions are required to run your custom NLU components
@@ -468,8 +468,8 @@ class MyNLUComponent(GraphComponent, IntentClassifier):
 
 **Augmenting Training Data in an NLU Component**
 
-NLU Components like [tokenizers](./building-classic-assistants/components.mdx#tokenizers) or
-[featurizers](./building-classic-assistants/components.mdx#featurizers) augment the training data with their
+NLU Components like [tokenizers](./nlu-based-assistants/components.mdx#tokenizers) or
+[featurizers](./nlu-based-assistants/components.mdx#featurizers) augment the training data with their
 output during the model training. Their output is required by NLU components later in the
 pipeline. Typically, featurizers require _tokenized_ messages and intent
 classifiers require _featurized_ training data to train themselves. Rasa
@@ -615,8 +615,8 @@ class MyNLUComponent(GraphComponent, IntentClassifier):
 
 **Using a Model Provider with your NLU Component**
 
-If your NLU component requires a pretrained model such as a [Spacy](./building-classic-assistants/components.mdx#spacynlp) or
-[Mitie](./building-classic-assistants/components.mdx#mitienlp) language model you have to specify the NLU component which
+If your NLU component requires a pretrained model such as a [Spacy](./nlu-based-assistants/components.mdx#spacynlp) or
+[Mitie](./nlu-based-assistants/components.mdx#mitienlp) language model you have to specify the NLU component which
 provides this model in your model's pipeline before the NLU component which requires
 the model. In addition to this you now also need to specify the model loading component in the `model_from`
 parameter in the `register` decorator. The model will then be passed to your model's
@@ -688,7 +688,7 @@ This guide leads you through the migration of a custom policy step by step.
 
 Policies are no longer instantiated via their constructor. Instead, all policies have
 to implement a `create` method. During the policy instantiation the configuration from
-the [model configuration](./building-classic-assistants/model-configuration.mdx) is passed in as a dictionary instead
+the [model configuration](./nlu-based-assistants/model-configuration.mdx) is passed in as a dictionary instead
 of as separate parameters. Similarly, the`featurizers` are no longer instantiated
 outside of policies.
 Instead, the super class `rasa.core.policies.policy.Policy` instantiates the
@@ -960,7 +960,7 @@ class MyPolicy(Policy):
 
 **Using End-To-End Features in a Policy**
 
-To use a custom [end-to-end policy](./building-classic-assistants/stories.mdx#end-to-end-training) in Rasa
+To use a custom [end-to-end policy](./nlu-based-assistants/stories.mdx#end-to-end-training) in Rasa
 Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
 events manually. In Rasa 3.0,
 you need to [register](./concepts/components/custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
@@ -968,7 +968,7 @@ will be precomputed and passed into your policy during training and inference.
 
 :::caution
 End-To-End features will only be computed and provided to your policy if your training
-data actually contains [end-to-end training data](./building-classic-assistants/stories.mdx#end-to-end-training).
+data actually contains [end-to-end training data](./nlu-based-assistants/stories.mdx#end-to-end-training).
 :::
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
@@ -1098,14 +1098,14 @@ class MyPolicy(Policy):
 
 **Providing Rule-only Data to a Policy**
 
-Rasa allows excluding [forms](./building-classic-assistants/forms.mdx) or [slots](./concepts/domain.mdx#slots) which
+Rasa allows excluding [forms](./nlu-based-assistants/forms.mdx) or [slots](./concepts/domain.mdx#slots) which
 are completely handled by
-[rules](./building-classic-assistants/rules.mdx) from becoming features in other policies.
+[rules](./nlu-based-assistants/rules.mdx) from becoming features in other policies.
 In Rasa 2 this information was passed onto the
 policies using the `set_shared_policy_states` method which set the policy attribute
 `_rule_only_data`. Rasa passes the names of rule-only slots and forms via the
 `predict_action_probabilities` method. The passed `rule_only_data` can be `None`
-in case the [`RulePolicy`](./building-classic-assistants/policies.mdx#rule-policy) is not part of your model
+in case the [`RulePolicy`](./nlu-based-assistants/policies.mdx#rule-policy) is not part of your model
 configuration.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-rule-only-data" defaultValue="new">
@@ -1270,8 +1270,8 @@ consult the following migration guides for the individual policies:
 - `TwoStageFallbackPolicy` [migration guide](#manually-migrating-from-the-two-stage-fallback-policy)
 - `MappingPolicy` [migration guide](#manually-migrating-from-the-mapping-policy)
 - `FormPolicy` [migration guide](#forms)
-- `SklearnPolicy` should be replaced with [TEDPolicy](./building-classic-assistants/policies.mdx#ted-policy).
-  It is recommended to use the [default TEDPolicy config](./building-classic-assistants/model-configuration.mdx#suggested-config) as a starting point.
+- `SklearnPolicy` should be replaced with [TEDPolicy](./nlu-based-assistants/policies.mdx#ted-policy).
+  It is recommended to use the [default TEDPolicy config](./nlu-based-assistants/model-configuration.mdx#suggested-config) as a starting point.
 
 #### Removed Tokenizers and Featurizers
 
@@ -1347,7 +1347,7 @@ provided instead.
 
 To maintain the behavior of forms in the 2.0 format, all migrated slot mappings will include mapping conditions for
 each form. This can be changed manually according to your use case.
-See the docs on [mapping conditions](./building-classic-assistants/domain.mdx#mapping-conditions) for more information.
+See the docs on [mapping conditions](./nlu-based-assistants/domain.mdx#mapping-conditions) for more information.
 
 #### Manually migrating from 2.0 domain format to the 3.0 format
 
@@ -1419,7 +1419,7 @@ forms:
       - outdoor_seating
 ```
 
-For slots that should be filled only in the context of a form, add [mapping conditions](./building-classic-assistants/domain.mdx#mapping-conditions)
+For slots that should be filled only in the context of a form, add [mapping conditions](./nlu-based-assistants/domain.mdx#mapping-conditions)
 to specify which form(s) should be active, as well as indicate if the `requested_slot` should be the same slot.
 Adding `conditions` is required to preserve the behavior of slot mappings from 2.0, since without them
 the mappings will be applied on each user turn regardless of whether a form is active or not.
@@ -1453,7 +1453,7 @@ If you have been dynamically filling slots not present in the form's `required_s
 file, note that this behaviour is no longer supported in 3.x. Any dynamic slots with custom mappings, which are set in
 the last user turn, will be filled **only if** they are returned by the `required_slots` method of the custom action
 inheriting from `FormValidationAction`. To maintain the 2.x behaviour, you must now override the `required_slots` method
-of this custom action as per the strong recommendation listed in the [dynamic form documentation](./building-classic-assistants/forms.mdx#dynamic-form-behavior).
+of this custom action as per the strong recommendation listed in the [dynamic form documentation](./nlu-based-assistants/forms.mdx#dynamic-form-behavior).
 
 To extract custom slots that are not defined in any form's `required_slots`, you should now use a global [custom slot mapping](./concepts/domain.mdx#custom-slot-mappings)
 and extend the [ValidationAction class](./action-server/validation-action.mdx#validationaction-class).
@@ -1505,8 +1505,8 @@ models - `DIETClassifier`, `ResponseSelector`. In other words, no extra buffer i
 advance for additional vocabulary items and space will be dynamically allocated for them inside the model.
 
 This means there's no need to specify `additional_vocabulary_size` for
-[`CountVectorsFeaturizer`](./building-classic-assistants/components.mdx#countvectorsfeaturizer) or
-`number_additional_patterns` for [`RegexFeaturizer`](./building-classic-assistants/components.mdx#regexfeaturizer).
+[`CountVectorsFeaturizer`](./nlu-based-assistants/components.mdx#countvectorsfeaturizer) or
+`number_additional_patterns` for [`RegexFeaturizer`](./nlu-based-assistants/components.mdx#regexfeaturizer).
 These parameters are now deprecated.
 
 **Before**
@@ -1539,7 +1539,7 @@ Based on user feedback, we have identified multiple problems with this option.
 Therefore, `model_confidence=linear_norm` is now deprecated and
 will be removed in Rasa `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
 we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
-we also recommend to [re-tune the thresholds for fallback components](./building-classic-assistants/fallback-handoff.mdx#fallbacks).
+we also recommend to [re-tune the thresholds for fallback components](./nlu-based-assistants/fallback-handoff.mdx#fallbacks).
 
 ## Rasa 2.5 to 2.6
 
@@ -1549,7 +1549,7 @@ we also recommend to [re-tune the thresholds for fallback components](./building
 
 There is a new parameter under Forms called `ignored_intents`. This parameter
 can be used to prevent any required slots in a form from being filled with the specified
-intent or intents. Please see the [Forms documentation](./building-classic-assistants/forms.mdx) for examples and more
+intent or intents. Please see the [Forms documentation](./nlu-based-assistants/forms.mdx) for examples and more
 information on how to use it in your `domain.yml` file.
 
 Before, if a user did not want to fill any slots of a form with a specified intent
@@ -1648,7 +1648,7 @@ a compatible language is configured for the entire pipeline in `config.yml`, eve
 specify a `model`. This fallback behavior is temporary and will be deprecated in Rasa 3.0.0.
 
 We've updated our docs to reflect these changes. All examples now show a direct link to the
-correct spaCy model. We've also added a warning to the [SpaCyNLP](./building-classic-assistants/components.mdx#spacynlp)
+correct spaCy model. We've also added a warning to the [SpaCyNLP](./nlu-based-assistants/components.mdx#spacynlp)
 docs that explains the fallback behavior.
 
 ## Rasa 2.3 to Rasa 2.4
@@ -1677,8 +1677,8 @@ NLG Server
 
 Response Selector
 
-- The field `template_name` will be deprecated in Rasa 3.0.0. Please use `utter_action` instead. Please see [here](./building-classic-assistants/components.mdx#selectors) for more details.
-- The field `response_templates` will be deprecated in Rasa 3.0.0. Please use `responses` instead. Please see [here](./building-classic-assistants/components.mdx#selectors) for more details.
+- The field `template_name` will be deprecated in Rasa 3.0.0. Please use `utter_action` instead. Please see [here](./nlu-based-assistants/components.mdx#selectors) for more details.
+- The field `response_templates` will be deprecated in Rasa 3.0.0. Please use `responses` instead. Please see [here](./nlu-based-assistants/components.mdx#selectors) for more details.
 
 ## Rasa 2.3.3 to Rasa 2.3.4
 
@@ -1728,7 +1728,7 @@ A new option `model_confidence` has been added to each ML component. It affects 
 2. `cosine` - Cosine similarity between input and label embeddings. Confidence for each label will be in the range `[-1,1]`.
 3. `linear_norm` - Dot product similarities between input and label embeddings are post-processed with a linear normalization function. Confidence for each label will be in the range `[0,1]`.
 
-The default value is `softmax`, but we recommend trying `linear_norm`. This should make it easier to [tune thresholds for triggering fallback](./building-classic-assistants/fallback-handoff.mdx#fallbacks).
+The default value is `softmax`, but we recommend trying `linear_norm`. This should make it easier to [tune thresholds for triggering fallback](./nlu-based-assistants/fallback-handoff.mdx#fallbacks).
 The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier`.
 
 We encourage you to try both the above recommendations. This can be done with the following config:
@@ -1740,7 +1740,7 @@ We encourage you to try both the above recommendations. This can be done with th
   ...
 ```
 
-Once the assistant is re-trained with the above configuration, users should also [tune fallback confidence thresholds](./building-classic-assistants/fallback-handoff.mdx#fallbacks).
+Once the assistant is re-trained with the above configuration, users should also [tune fallback confidence thresholds](./nlu-based-assistants/fallback-handoff.mdx#fallbacks).
 
 **EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa version `2.3.4`.
 
@@ -1807,7 +1807,7 @@ described [here](./migration-guide.mdx#training-data-files).
 
 ### Policies
 
-[Policies](./building-classic-assistants/policies.mdx) now require a `**kwargs` argument in their constructor and `load` method.
+[Policies](./nlu-based-assistants/policies.mdx) now require a `**kwargs` argument in their constructor and `load` method.
 Policies without `**kwargs` will be supported until Rasa version `3.0.0`.
 However when using [incremental training](./command-line-interface.mdx#incremental-training)
 `**kwargs` **must** be included.
@@ -1823,7 +1823,7 @@ However when using [incremental training](./command-line-interface.mdx#increment
 
 ### Deprecations
 
-`ConveRTTokenizer` is now deprecated. [ConveRTFeaturizer](./building-classic-assistants/components.mdx#convertfeaturizer) now implements
+`ConveRTTokenizer` is now deprecated. [ConveRTFeaturizer](./nlu-based-assistants/components.mdx#convertfeaturizer) now implements
 its behaviour. To migrate, replace `ConveRTTokenizer` with any other tokenizer, for e.g.:
 
 ```yaml
@@ -1835,7 +1835,7 @@ pipeline:
 ```
 
 `HFTransformersNLP` and `LanguageModelTokenizer` components are now deprecated.
-[LanguageModelFeaturizer](./building-classic-assistants/components.mdx#languagemodelfeaturizer) now implements their behaviour.
+[LanguageModelFeaturizer](./nlu-based-assistants/components.mdx#languagemodelfeaturizer) now implements their behaviour.
 To migrate, replace both the above components with any tokenizer and specify the model architecture and model weights
 as part of `LanguageModelFeaturizer`, for e.g.:
 
@@ -1880,7 +1880,7 @@ some additional changes will need to be made as described in their respective se
 
 ### Policies
 
-With the introduction of [rules](./building-classic-assistants/rules.mdx) and the [RulePolicy](./building-classic-assistants/policies.mdx#rule-policy),
+With the introduction of [rules](./nlu-based-assistants/rules.mdx) and the [RulePolicy](./nlu-based-assistants/policies.mdx#rule-policy),
 the following policies are deprecated:
 
 - [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy)
@@ -1907,7 +1907,7 @@ You can also migrate the individual policies manually, if you don't want to use 
 #### Manually migrating from the Mapping Policy
 
 If you previously used the [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy), you
-can follow the documentation on [FAQs](./building-classic-assistants/chitchat-faqs.mdx) to convert your mapped
+can follow the documentation on [FAQs](./nlu-based-assistants/chitchat-faqs.mdx) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
 ```yaml-rasa title="domain.yml"
@@ -1934,7 +1934,7 @@ intents:
 ```
 
 Finally, you can replace the Mapping Policy with the
-[Rule Policy](./building-classic-assistants/policies.mdx#rule-policy) in your model configuration:
+[Rule Policy](./nlu-based-assistants/policies.mdx#rule-policy) in your model configuration:
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -1973,7 +1973,7 @@ policies:
     core_fallback_action_name: "action_default_fallback"
 ```
 
-In addition, you need to add a [rule](./building-classic-assistants/rules.mdx) to specify which action to run
+In addition, you need to add a [rule](./nlu-based-assistants/rules.mdx) to specify which action to run
 in case of low NLU confidence:
 
 ```yaml-rasa title="rules.yml"
@@ -1984,7 +1984,7 @@ rules:
     - action: utter_please_rephrase
 ```
 
-See the documentation on [fallback](./building-classic-assistants/fallback-handoff.mdx#fallbacks) for more
+See the documentation on [fallback](./nlu-based-assistants/fallback-handoff.mdx#fallbacks) for more
 information.
 
 #### Manually migrating from the Two-Stage-Fallback Policy
@@ -2021,7 +2021,7 @@ policies:
     core_fallback_action_name: "action_default_fallback"
 ```
 
-In addition you need to add a [rule](./building-classic-assistants/rules.mdx) to activate the Two-Stage Fallback for
+In addition you need to add a [rule](./nlu-based-assistants/rules.mdx) to activate the Two-Stage Fallback for
 messages with low NLU confidence.
 
 ```yaml-rasa title="rules.yml"
@@ -2040,18 +2040,18 @@ Note that the previous parameters `fallback_nlu_action_name` and
 `deny_suggestion_intent_name` are no longer configurable and have the fixed values
 `action_default_fallback` and `out_of_scope`.
 
-See the [fallback](./building-classic-assistants/fallback-handoff.mdx#fallbacks) documentation for more
+See the [fallback](./nlu-based-assistants/fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
 ### Forms
 
-As of version 2.0 the logic for [forms](./building-classic-assistants/forms.mdx) has been moved from the
+As of version 2.0 the logic for [forms](./nlu-based-assistants/forms.mdx) has been moved from the
 Rasa SDK to Rasa to simplify implementation and make it easier to write
 action servers in other languages.
 
 This means that forms are no longer implemented using a `FormAction`, but instead
 defined in the domain. Any customizations around requesting slots or
-[slot validation](./building-classic-assistants/forms.mdx#validating-form-input) can be handled with a `FormValidationAction`.
+[slot validation](./nlu-based-assistants/forms.mdx#validating-form-input) can be handled with a `FormValidationAction`.
 
 Consider a custom form action from 1.x like this:
 
@@ -2112,7 +2112,7 @@ class RestaurantForm(FormAction):
         return []
 ```
 
-Start the migration by removing the FormPolicy and adding the [RulePolicy](./building-classic-assistants/policies.mdx#rule-policy)
+Start the migration by removing the FormPolicy and adding the [RulePolicy](./nlu-based-assistants/policies.mdx#rule-policy)
 (if not there already) to your model configuration:
 
 ```yaml-rasa title="config.yml"
@@ -2123,7 +2123,7 @@ policies:
 ```
 
 Then you need to define the form, required slots and their slot mappings
-in the domain as described in the documentation on [forms](./building-classic-assistants/forms.mdx#defining-a-form):
+in the domain as described in the documentation on [forms](./nlu-based-assistants/forms.mdx#defining-a-form):
 
 ```yaml-rasa title="domain.yml"
 forms:
@@ -2234,7 +2234,7 @@ forms:
  my_form:
 ```
 
-See the [forms](./building-classic-assistants/forms.mdx) documentation for more details.
+See the [forms](./nlu-based-assistants/forms.mdx) documentation for more details.
 
 ### Response Selectors
 
@@ -2298,7 +2298,7 @@ list in your domain.
 
 This behavior will work fine when defined as a story, but even better when defined
 as a rule. You should consider transferring your retrieval stories to rules. More information
-on what that looks like in the [chitchat and FAQs documentation](./building-classic-assistants/chitchat-faqs.mdx).
+on what that looks like in the [chitchat and FAQs documentation](./nlu-based-assistants/chitchat-faqs.mdx).
 
 Response Selectors are now trained on retrieval intent labels by default instead
 of the actual response text. For most models, this should improve training time
@@ -2419,7 +2419,7 @@ session_config:
 
 ### Dialogue Featurization
 
-This section is only relevant if you explicitly defined [featurizers](./building-classic-assistants/policies.mdx#featurizers)
+This section is only relevant if you explicitly defined [featurizers](./nlu-based-assistants/policies.mdx#featurizers)
 in your policy configuration.
 
 LabelTokenizerSingleStateFeaturizer is deprecated and will be removed in the future.
@@ -2477,12 +2477,12 @@ and SQLProducer have been removed. If you used these brokers in your
 
 The deprecated EmbeddingIntentClassifier has been removed. If you used this
 component in your pipeline configuration (`config.yml`) you can replace it
-with [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier).
+with [DIETClassifier](./nlu-based-assistants/components.mdx#dietclassifier).
 It accepts the same configuration parameters.
 
 The deprecated KerasPolicy has been removed. If you used this
 component in your policies configuration (`config.yml`) you can replace it
-with [TEDPolicy](./building-classic-assistants/policies.mdx#ted-policy). It accepts the same configuration parameters.
+with [TEDPolicy](./nlu-based-assistants/policies.mdx#ted-policy). It accepts the same configuration parameters.
 
 ## Rasa 1.7 to Rasa 1.8
 
@@ -2495,10 +2495,10 @@ model before trying to use it with this improved version.
 
 ### General
 
-- The [TED Policy](./building-classic-assistants/policies.mdx#ted-policy) replaced the `keras_policy` as recommended machine
+- The [TED Policy](./nlu-based-assistants/policies.mdx#ted-policy) replaced the `keras_policy` as recommended machine
   learning policy. New projects generated with `rasa init` will automatically use
   this policy. In case you want to change your existing model configuration to use the
-  [TED Policy](./building-classic-assistants/policies.mdx#ted-policy) add this to the `policies` section in your `config.yml`
+  [TED Policy](./nlu-based-assistants/policies.mdx#ted-policy) add this to the `policies` section in your `config.yml`
   and remove potentially existing `KerasPolicy` entries:
 
   ```yaml-rasa
@@ -2511,14 +2511,14 @@ model before trying to use it with this improved version.
 
   The given snippet specifies default values for the parameters `max_history` and
   `epochs`. `max_history` is particularly important and strongly depends on your stories.
-  Please see the docs of the [TED Policy](./building-classic-assistants/policies.mdx#ted-policy) if you want to customize them.
+  Please see the docs of the [TED Policy](./nlu-based-assistants/policies.mdx#ted-policy) if you want to customize them.
 
 - All pre-defined pipeline templates are deprecated. **Any templates you use will be
   mapped to the new configuration, but the underlying architecture is the same**.
-  Take a look at [Tuning Your Model](./building-classic-assistants/tuning-your-model.mdx) to decide on what components you should use
+  Take a look at [Tuning Your Model](./nlu-based-assistants/tuning-your-model.mdx) to decide on what components you should use
   in your configuration file.
 
-- The Embedding Policy was renamed to [TED Policy](./building-classic-assistants/policies.mdx#ted-policy). The functionality of the policy stayed the same.
+- The Embedding Policy was renamed to [TED Policy](./nlu-based-assistants/policies.mdx#ted-policy). The functionality of the policy stayed the same.
   Please update your configuration files to use `TEDPolicy` instead of `EmbeddingPolicy`.
 
 - Most of the model options for `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` got
@@ -2549,7 +2549,7 @@ model before trying to use it with this improved version.
   Old configuration options will be mapped to the new names, and a warning will be thrown.
   However, these will be deprecated in a future release.
 
-- The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier)
+- The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier](./nlu-based-assistants/components.mdx#dietclassifier)
   in the future.
   `DIETClassfier` performs intent classification as well as entity recognition.
   If you want to get the same model behavior as the current `EmbeddingIntentClassifier`, you can use
@@ -2573,7 +2573,7 @@ model before trying to use it with this improved version.
     # ... any other parameters
   ```
 
-  See [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier) for more information about the new component.
+  See [DIETClassifier](./nlu-based-assistants/components.mdx#dietclassifier) for more information about the new component.
   Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, and results in
   the same behaviour within the same Rasa version.
 
@@ -2610,14 +2610,14 @@ model before trying to use it with this improved version.
   ```
 
   `CRFEntityExtractor` featurizes user messages on its own, it does not depend on any featurizer.
-  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer](./building-classic-assistants/components.mdx#lexicalsyntacticfeaturizer). Thus,
+  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer](./nlu-based-assistants/components.mdx#lexicalsyntacticfeaturizer). Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
-  [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier).
+  [DIETClassifier](./nlu-based-assistants/components.mdx#dietclassifier).
   Specifying `CRFEntityExtractor` in the configuration maps to the above component definition, the behavior
   is unchanged from previous versions.
 
 - If your pipeline contains `CRFEntityExtractor` and `EmbeddingIntentClassifier` you can substitute both
-  components with [DIETClassifier](./building-classic-assistants/components.mdx#dietclassifier). You can use the following pipeline for that:
+  components with [DIETClassifier](./nlu-based-assistants/components.mdx#dietclassifier). You can use the following pipeline for that:
 
   ```yaml-rasa
   pipeline:
@@ -2668,7 +2668,7 @@ model before trying to use it with this improved version.
 - Default parameters of `EmbeddingIntentClassifier` are changed. See
   the Components page for details.
   Architecture implementation is changed as well, so **old trained models cannot be loaded**.
-  Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./building-classic-assistants/policies.mdx) for details.
+  Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./nlu-based-assistants/policies.mdx) for details.
   It uses transformer instead of lstm. **Old trained models cannot be loaded**.
   They use `inner` similarity and `softmax` loss by default instead of
   `cosine` similarity and `margin` loss (can be set in config file).
@@ -2681,7 +2681,7 @@ model before trying to use it with this improved version.
 - Default `max_history` for `EmbeddingPolicy` is `None` which means it'll use
   the `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to
   some finite value in order to use `MaxHistoryTrackerFeaturizer`
-  for **faster training**. See [Featurizers](./building-classic-assistants/policies.mdx#featurizers) for details.
+  for **faster training**. See [Featurizers](./nlu-based-assistants/policies.mdx#featurizers) for details.
   We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
   (e.g. `"batch_size": [32, 64]`)
 
@@ -2751,4 +2751,4 @@ model before trying to use it with this improved version.
 
 ### HTTP API
 
-- There are numerous HTTP API endpoint changes which can be found [here](./http-api.mdx).
+- There are numerous HTTP API endpoint changes which can be found [here](./production/http-api.mdx).

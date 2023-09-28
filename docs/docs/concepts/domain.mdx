@@ -8,14 +8,14 @@ abstract: The domain defines the universe in which your assistant operates.
 In Rasa, your `domain` defines the universe in which your assistant operates.
 Specifically, it lists:
 
-* The `responses` that can be used as templated messages to send to a user.
-* The custom `actions` that can be predicted by dialogue policies.
-* The `slots` that act as your assistant's memory throughout a conversation.
-* Session configuration parameters including inactivity timeout.
+- The `responses` that can be used as templated messages to send to a user.
+- The custom `actions` that can be predicted by dialogue policies.
+- The `slots` that act as your assistant's memory throughout a conversation.
+- Session configuration parameters including inactivity timeout.
 
-If you are building an NLU-based assistant, refer to [this page](../building-classic-assistants/domain.mdx) to see how 
-intents, entities, slot mappings, and slot featurization can be configured in 
-your domain. 
+If you are building an NLU-based assistant, refer to [this page](../nlu-based-assistants/domain.mdx) to see how
+intents, entities, slot mappings, and slot featurization can be configured in
+your domain.
 
 ## Multiple Domain Files
 
@@ -29,13 +29,12 @@ you can train a model with split domain files by running:
 rasa train --domain path_to_domain_directory
 ```
 
-
 ## Responses
 
-Responses are templated messages that your assistant can send to your user. 
-Responses can contain rich content like buttons, images, and custom json payloads. 
+Responses are templated messages that your assistant can send to your user.
+Responses can contain rich content like buttons, images, and custom json payloads.
 Every responses is also an [action](#actions), meaning that it can be used directly in
-an `action` step in a flow. 
+an `action` step in a flow.
 Responses can be defined directly in the domain file under the `responses` key.
 For more information on responses and how to define them,
 see [Responses](./responses.mdx).
@@ -55,8 +54,8 @@ For example, an action could:
 
 All [custom actions](./custom-actions.mdx) should be listed in your domain.
 
-Rasa also has [default actions](./default-actions.mdx) which you do not 
-need to list in your domain. 
+Rasa also has [default actions](./default-actions.mdx) which you do not
+need to list in your domain.
 
 ## Slots
 
@@ -82,6 +81,7 @@ Different slot types exist to restrict the possible values a slot can take.
       mappings:
         - type: custom
   ```
+
 - **Allowed Values**
 
   Any string
@@ -95,8 +95,9 @@ Different slot types exist to restrict the possible values a slot can take.
     confirmation:
       type: bool
       mappings:
-        - type: custom        
+        - type: custom
   ```
+
 - **Allowed Values**
 
   `true` or `false`
@@ -110,7 +111,7 @@ Different slot types exist to restrict the possible values a slot can take.
     risk_level:
       type: categorical
       mappings:
-        - type: custom      
+        - type: custom
       values:
         - low
         - medium
@@ -126,7 +127,7 @@ Different slot types exist to restrict the possible values a slot can take.
     temperature:
       type: float
       mappings:
-        - type: custom      
+        - type: custom
   ```
 
 #### Any Slot
@@ -138,9 +139,8 @@ Different slot types exist to restrict the possible values a slot can take.
     shopping_items:
       type: any
       mappings:
-        - type: custom      
+        - type: custom
   ```
-
 
 ### Initial slot values
 
@@ -152,7 +152,7 @@ slots:
     type: float
     initial_value: 0
     mappings:
-      - type: custom        
+      - type: custom
 ```
 
 ### Slot Mappings
@@ -205,7 +205,6 @@ call, or to start the conversation with a bot message. The docs on
 [Customizing the session start action](./default-actions.mdx#customization) shows you how to do that.
 
 :::
-
 
 ## Select which actions should receive domain
 

@@ -3,28 +3,32 @@ id: dialogue-understanding
 sidebar_label: Dialogue Understanding
 title: Dialogue Understanding
 abstract: |
-  Dialogue Understanding aims to understand how the end user of an assistant wants 
+  Dialogue Understanding aims to understand how the end user of an assistant wants
   to progress the conversation.
 ---
 
+import RasaProLabel from "@theme/RasaProLabel";
+
+import RasaProBanner from "@theme/RasaProBanner";
+
 :::info New in 3.7
 
-The *Command Generator* is part of Rasa's new 
+The _Command Generator_ is part of Rasa's new
 [Conversational AI with Language Models (CALM) approach](../calm.mdx) and available starting
 with version `3.7.0`.
 :::
 
 ## CommandGenerator
 
-The `CommandGenerator` component performs *Dialogue Understanding*. 
-In the CALM approach, *Dialogue Understanding* aims to represent how the end user
-wants to progress the conversation. 
+The `CommandGenerator` component performs _Dialogue Understanding_.
+In the CALM approach, _Dialogue Understanding_ aims to represent how the end user
+wants to progress the conversation.
 There is currently only one command generator available: the `LLMCommandGenerator`.
+You can find all generated commands in the [command reference](#command-reference) below.
 
+## Using the LLMCommandGenerator
 
-## Using the LLMCommandGenerator in Your Bot
-
-To use this component in your bot, you need to add the
+To use this component in your assistant, you need to add the
 `LLMCommandGenerator` to your NLU pipeline in the `config.yml` file.
 
 ```yaml-rasa title="config.yml"
@@ -44,12 +48,12 @@ The job of a Command Generator is to ingest information about a conversation so 
 and output a sequence of `commands` which represent _how the user wants to progress the conversation_.
 
 For example, if you have defined a flow called `transfer_money`, and a user starts a conversation
-by saying "I need to transfer some money", then the correct command output would be `StartFlow("transfer_money")`. 
+by saying "I need to transfer some money", then the correct command output would be `StartFlow("transfer_money")`.
 
 If you have just asked the user a yes/no question (using a `collect` step) and they say _"yes."_
 , the correct command output would be `SetSlot(slot_name, True)`.
 
-If the user answers the question but also requests something new, like _"yes. Oh what's my balance?"_, 
+If the user answers the question but also requests something new, like _"yes. Oh what's my balance?"_,
 the command output might be `[SetSlot(slot_name, True), StartFlow("check_balance")]`.
 
 By generating a sequence of commands, Dialogue Understanding has a much richer way to represent
@@ -57,12 +61,11 @@ what the user wants than a classification-based NLU system.
 
 The current implementation of the Command Generator uses _in-context learning_, and uses
 information about the current state of the conversation as well as the flows defined in your bot
-to interpret the user's message in context. 
-
+to interpret the user's message in context.
 
 ## Customization
 
-You can customize the command generator as much as you wish. 
+You can customize the command generator as much as you wish.
 
 ### LLM configuration
 
@@ -80,24 +83,24 @@ pipeline:
 # - ...
 ```
 
-The `model_name` defaults to `gpt-4`. The model name should be set 
+The `model_name` defaults to `gpt-4`. The model name should be set
 to a chat model of [OpenAI](https://platform.openai.com/docs/guides/gpt/chat-completions-api).
 
-Similarly, you can specify the `request_timeout` and 
-`temperature` parameters for the LLM. The `request_timeout` 
+Similarly, you can specify the `request_timeout` and
+`temperature` parameters for the LLM. The `request_timeout`
 defaults to `7` seconds and the `temperature` defaults to `0.0`.
 
 If you want to use Azure OpenAI Service, you can configure the necessary
 parameters as described in the
-[Azure OpenAI Service](../llms/llm-configuration.mdx#additional-configuration-for-azure-openai-service)
+[Azure OpenAI Service](./components/llm-configuration.mdx#additional-configuration-for-azure-openai-service)
 section.
 
 :::info Using Other LLMs
 
-By default, OpenAI is used as the underlying LLM provider. 
+By default, OpenAI is used as the underlying LLM provider.
 
 The used LLM provider provider can be configured in the
-`config.yml` file to use another provider, e.g. `cohere`: 
+`config.yml` file to use another provider, e.g. `cohere`:
 
 ```yaml-rasa title="config.yml"
 pipeline:
@@ -109,24 +112,23 @@ pipeline:
 ```
 
 For more information, see the
-[LLM setup page on llms and embeddings](../llms/llm-configuration.mdx#other-llmsembeddings)
+[LLM setup page on llms and embeddings](./components/llm-configuration.mdx#other-llmsembeddings)
 
 :::
 
 ### Customizing The Prompt
 
 Because the `LLMCommandGenerator` uses in-context learning, one of the primary ways
-to tweak or improve performance is to customize the prompt. 
+to tweak or improve performance is to customize the prompt.
 
 In most cases, you should be able to achieve what you need to by customizing the `description` fields
 in your flows.
 Every flow has its own `description` field, and optionally every `step` in your flow can have one as well.
 If you notice that a flow is being triggered when it shouldn't, or that a slot is not being extracted correctly,
-adding more detail to the description will often solve the issue. 
+adding more detail to the description will often solve the issue.
 
 For example if you have a `transfer_money` flow with a `collect` step for the slot `amount`, you might add a description
-to extract the value more reliably: 
-
+to extract the value more reliably:
 
 ```yaml-rasa title="flows.yml"
 flows:
@@ -157,3 +159,58 @@ pipeline:
     # highlight-next-line
     prompt: prompts/command-generator.jinja2
 ```
+
+## Command reference
+
+Like its name indicates, the `CommandGenerator` generates "commands" that are then internally processed to
+trigger operations on the current conversation. Here is a reference of all supported commands:
+
+### Start Flow
+
+This command indicates the assistant should start a new [flow](./flows.mdx).
+
+### Cancel Flow
+
+This command indicates the assistant should cancel the current [flow](./flows.mdx).
+It powers [Conversation Repair's Cancellation use case](./conversation-repair.mdx#3-cancellations).
+
+### Set Slot
+
+This command indicates the assistant should set a [slot](./domain.mdx#slots) to a given value.
+
+### Correct Slots
+
+This command indicates the assistant should change the value of a given [slot](./domain.mdx#slots)
+to a new value. It powers [Conversation Repair's Correction use case](./conversation-repair.mdx#2-corrections).
+
+### Clarify
+
+This command indicates the assistant should ask for clarification. It powers
+[Conversation Repair's Clarification use case](./conversation-repair.mdx#6-clarification).
+
+### Chit-Chat Answer
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+This command indicates the assistant should reply a chitchat style free-form answer.
+It powers [Conversation Repair's Chitchat use case](./conversation-repair.mdx#4-chitchat).
+
+### Knowledge Answer
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+This command indicates the assistant should reply a knowledge-based free-form answer. It works
+hand in hand with the [DocSearch policy](./policies.mdx#docsearch-policy).
+
+### Human Handoff
+
+This command indicates the assistant should hand off the conversation to a human.
+
+### Error
+
+This command indicates the assistant failed to handle the dialogue due to
+an [internal error](./conversation-repair.mdx#7-internal-errors).
