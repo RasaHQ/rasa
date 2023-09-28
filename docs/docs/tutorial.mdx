@@ -24,7 +24,7 @@ Here are some of the conversations your assistant will be able to handle:
 <Tabs
   values={[
     { label: "Happy path", value: "happy-path" },
-    { label: "Complete request", value: "all-upfront" },
+    { label: "All at once", value: "all-upfront" },
     { label: "Change of mind", value: "change-mind" },
     { label: "Interjection", value: "interjection" },
   ]}
@@ -33,24 +33,39 @@ Here are some of the conversations your assistant will be able to handle:
 >
   <TabItem value="happy-path">
     <Chat caption="happy path">
-      <ChatUserText>I'd like to transfer some money</ChatUserText>
-      <ChatBotText>Sure - who are we sending money to?</ChatBotText>
-      <ChatUserText>Jen</ChatUserText>
+      <ChatUserText>I want to send money</ChatUserText>
+      <ChatBotText>Who would you like to send money to?</ChatBotText>
+      <ChatUserText>to Jen</ChatUserText>
       <ChatBotText>How much would you like to send?</ChatBotText>
       <ChatUserText>$50</ChatUserText>
-      <ChatBotText>Just to confirm: you want to send $50 to Jen?</ChatBotText>
+      <ChatBotText>Please confirm: you want to transfer $50.0 to Jen?</ChatBotText>
       <ChatUserText>yes</ChatUserText>
-      <ChatBotText>Ok, it's done!</ChatBotText>
+      <ChatBotText>All done. $50.0 has been sent to Jen.</ChatBotText>
+      <ChatBotText>Is there anything else I can help you with?!</ChatBotText>
     </Chat>
   </TabItem>
   <TabItem value="all-upfront">
     <Chat caption="All info given">
-      <ChatUserText>I want to send $100 to Joe</ChatUserText>
+      <ChatUserText>I want to send 100 dollars to Joe</ChatUserText>
       <ChatBotText>
-        Just to confirm, you want to send $100.00 to Joe Smith?
+        Please confirm: you want to transfer $100.0 to Joe?
       </ChatBotText>
       <ChatUserText>yes.</ChatUserText>
-      <ChatBotText>All done. $100.00 has been sent to Joe Smith.</ChatBotText>
+      <ChatBotText>All done. $100.00 has been sent to Joe.</ChatBotText>
+      <ChatBotText>Is there anything else I can help you with?</ChatBotText>
+    </Chat>
+  </TabItem>
+  <TabItem value="change-mind">
+    <Chat caption="Change of mind">
+      <ChatUserText>I need to send $ 50</ChatUserText>
+      <ChatBotText>Who would you like to send money to?</ChatBotText>
+      <ChatUserText>Jen</ChatUserText>
+      <ChatBotText>Please confirm: you want to transfer $50.0 to Jen?</ChatBotText>
+      <ChatUserText>actually no 60</ChatUserText>
+      <ChatBotText>Ok, I corrected the amount.</ChatBotText>
+      <ChatBotText>Please confirm: you want to transfer $60.0 to Jen?</ChatBotText>
+      <ChatUserText>yes.</ChatUserText>
+      <ChatBotText>All done. $60.00 has been sent to Jen.</ChatBotText>
       <ChatBotText>Is there anything else I can help you with?</ChatBotText>
     </Chat>
   </TabItem>
