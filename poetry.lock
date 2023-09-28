@@ -4763,13 +4763,13 @@ docs = ["Sphinx (>=3.3,<4.0)", "sphinx-autobuild (>=2020.9.1,<2021.0.0)", "sphin
 
 [[package]]
 name = "randomname"
-version = "0.1.5"
+version = "0.2.1"
 description = "Generate random adj-noun names like docker and github."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "randomname-0.1.5.tar.gz", hash = "sha256:e10d14ea10895ee5bc417bdcc6d955e0b586f3bc67094ab87afcf8dcac23ab92"},
+    {file = "randomname-0.2.1.tar.gz", hash = "sha256:b79b98302ba4479164b0a4f87995b7bebbd1d91012aeda483341e3e58ace520e"},
 ]
 
 [package.dependencies]
@@ -7470,4 +7470,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "7cec61e0fd750cf64446511f5f013ace6052078856d26c60868b43d0cf047242"
+content-hash = "7d061f86269fee0a2c1a29f1c801789cb43ce9cd62beea9012fcf0b69e2eb2e3"
