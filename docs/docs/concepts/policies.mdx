@@ -41,7 +41,7 @@ policies:
   - name: DocSearchPolicy
 ```
 
-### Action Selection
+## Action Selection
 
 At every turn, each policy defined in your configuration gets a chance to
 predict a next [action](./actions.mdx) with a certain confidence level.
@@ -348,7 +348,7 @@ are not part of a flow.
 This can be helpful for handling chitchat, contextual questions,
 and high-stakes topics.
 
-#### Chitchat
+### Chitchat
 In an enterprise setting it may not be appropriate to use
 a purely generative model to handle chitchat.
 Teams want to ensure that the assistant is always on-brand and on-message.
@@ -358,7 +358,7 @@ Because the Intentless Policy leverages LLMs and considers the whole context of 
 when selecting an appropriate `response`, it is much more powerful
 than simply predicting an intent and triggering a fixed response to it. 
 
-#### High-stakes Topics
+### High-stakes Topics
 In addition to chitchat, another common use case for the Intentless Policy is
 providing answers on high-stakes topics.
 For example, if users have questions about policies, legal terms, or guarantees,
@@ -373,7 +373,7 @@ For high-stakes topics, it is safest to send a self-contained, vetted answer
 rather than relying on a generative model.
 The Intentless Policy provides that capability in a CALM assistant.
 
-#### Interjections
+### Interjections
 When a flow reaches a `collect` step and your assistant asks the user for information,
 your user might ask a clarifying question, refuse to answer, or otherwise interject in 
 the continuation of the flow. 
