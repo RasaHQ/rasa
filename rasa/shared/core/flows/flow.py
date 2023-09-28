@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 from typing import (
     Any,
     Dict,
@@ -535,6 +536,11 @@ class Flow:
         """Returns the steps of the flow."""
         return self.step_sequence.steps
 
+    @cached_property
+    def fingerprint(self) -> str:
+        """Create a fingerprint identifying this step sequence."""
+        return rasa.shared.utils.io.deep_container_fingerprint(self.as_json())
+
 
 @dataclass
 class StepSequence:
@@ -581,10 +587,6 @@ class StepSequence:
         if len(self.child_steps) == 0:
             return None
         return self.child_steps[0]
-
-    def fingerprint(self) -> str:
-        """Create a fingerprint identifying this flow."""
-        return rasa.shared.utils.io.deep_container_fingerprint(self.as_json())
 
 
 def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:

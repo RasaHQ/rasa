@@ -119,7 +119,7 @@ def find_updated_flows(tracker: DialogueStateTracker, all_flows: FlowsList) -> S
             flow = all_flows.flow_by_id(frame.flow_id)
             if flow is None or (
                 flow.id in stored_fingerprints
-                and flow.fingerprint() != stored_fingerprints[flow.id]
+                and flow.fingerprint != stored_fingerprints[flow.id]
             ):
                 changed_flows.add(frame.flow_id)
     return changed_flows
@@ -127,7 +127,7 @@ def find_updated_flows(tracker: DialogueStateTracker, all_flows: FlowsList) -> S
 
 def calculate_flow_fingerprints(all_flows: FlowsList) -> Dict[str, str]:
     """Calculate fingerprints for all flows."""
-    return {flow.id: flow.fingerprint() for flow in all_flows.underlying_flows}
+    return {flow.id: flow.fingerprint for flow in all_flows.underlying_flows}
 
 
 def execute_commands(
