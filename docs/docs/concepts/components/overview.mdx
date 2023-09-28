@@ -7,6 +7,7 @@ abstract: The configuration file defines the components and policies that your m
 ---
 
 import RasaProLabel from '@theme/RasaProLabel';
+import RasaProBanner from "@theme/RasaProBanner";
 
 You can customise many aspects of how Rasa works by modifying the `config.yml` file. 
 
@@ -79,6 +80,8 @@ All components which make use of LLMs have common configuration parameters which
 
 <RasaProLabel />
 
+<RasaProBanner />
+
 Rasa Pro allows you to combine both NLU-based and CALM components in your pipeline. 
 See a full list of NLU-based components [here](../nlu-based-assistants/components.mdx).
 
@@ -92,11 +95,13 @@ policies:
   - name: rasa.core.policies.flow_policy.FlowPolicy
 ```
 
-The `FlowPolicy` currently doesn't have an additional configuration parameters.
+The [FlowPolicy](../policies.mdx#flow-policy) currently doesn't have an additional configuration parameters.
 
 ### Combining CALM and NLU-based dialogue policies
 
 <RasaProLabel />
+
+<RasaProBanner />
 
 Rasa Pro allows you to use both NLU-based and CALM dialogue policies in your assistant. 
 See a full list of NLU-based policies [here](../nlu-based-assistants/policies.mdx).
