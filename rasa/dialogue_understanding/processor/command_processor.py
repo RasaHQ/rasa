@@ -155,10 +155,12 @@ def execute_commands(
 
     # store current flow hashes if they changed
     new_hashes = calculate_flow_fingerprints(all_flows)
+    flow_hash_events = []
     if new_hashes != (tracker.get_slot(FLOW_HASHES_SLOT) or {}):
-        tracker.update_with_events([SlotSet(FLOW_HASHES_SLOT, new_hashes)], None)
+        flow_hash_events.append(SlotSet(FLOW_HASHES_SLOT, new_hashes))
+        tracker.update_with_events(flow_hash_events, None)
 
-    events: List[Event] = []
+    events: List[Event] = flow_hash_events
 
     # commands need to be reversed to make sure they end up in the right order
     # on the stack. e.g. if there multiple start flow commands, the first one
