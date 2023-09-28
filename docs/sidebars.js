@@ -259,7 +259,7 @@ module.exports = {
         "concepts/components/llm-custom",        
         "concepts/components/graph-recipe",
         "telemetry/telemetry",
-        "telemetry/reference",        
+        "telemetry/reference",
         require("./docs/reference/sidebar.json"),
       ],
     },
