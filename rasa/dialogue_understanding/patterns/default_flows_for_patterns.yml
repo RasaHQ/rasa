@@ -1,39 +1,39 @@
 version: "3.1"
 responses:
   utter_flow_continue_interrupted: 
-    - text: Let's continue with the topic {{ context.previous_flow_name }}.
+    - text: "Let's continue with {{ context.previous_flow_name }}."
       metadata: 
         rephrase: True
         template: jinja
   
   utter_corrected_previous_input:
-    - text: "Ok, I corrected the {{ context.corrected_slots.keys()|join(', ') }}."
+    - text: "Ok, I am updating {{ context.corrected_slots.keys()|join(', ') }} to {{ context.corrected_slots.values()|join(', ') respectively."
       metadata: 
         rephrase: True
         template: jinja
 
   utter_flow_cancelled_rasa:
-    - text: Okay, stopping the flow {{ context.canceled_name }}.
+    - text: "Okay, stopping {{ context.canceled_name }}."
       metadata:
         rephrase: True
         template: jinja
 
   utter_can_do_something_else:
-    - text: "Is there anything else I can help you with?"
+    - text: "What else I can help you with?"
       metadata: 
         rephrase: True
 
   utter_internal_error_rasa:
-    - text: Sorry, I'm having trouble understanding you right now. Please try again later.
+    - text: Sorry, I am having trouble with that. Please try again in a few minutes.
 
   utter_clarification_options_rasa:
-    - text: I'm not sure what you'd like to achieve. Do you want to {{context.clarification_options}}?
+    - text: "I can help, but I need more information. Which of these would you like to do: {{context.clarification_options}}?"
       metadata:
         rephrase: True
         template: jinja
 
   utter_inform_code_change:
-    - text: There has been an update to my code. I need to wrap up our running dialogue tasks and start from scratch.
+    - text: There has been an update to my code. I need to wrap up our running dialogue and start from scratch.
       metadata:
         rephrase: True
 
