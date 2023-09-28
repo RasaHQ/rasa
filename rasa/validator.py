@@ -2,7 +2,7 @@ import logging
 import re
 import string
 from collections import defaultdict
-from typing import Set, Text, Optional, Dict, Any, List
+from typing import Set, Text, Optional, Dict, Any, List, Tuple
 
 from pypred import Predicate
 
@@ -36,7 +36,6 @@ from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.slots import ListSlot, Slot
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
@@ -494,69 +493,91 @@ class Validator:
             )
 
     @staticmethod
-    def _raise_exception_if_slot_not_in_domain(
-        slot_name: str, domain_slots: Dict[Text, Slot], step_id: str, flow_id: str
-    ) -> None:
+    def _log_error_if_slot_not_in_domain(
+        slot_name: str,
+        domain_slots: Dict[Text, Slot],
+        step_id: str,
+        flow_id: str,
+        all_good: bool,
+    ) -> bool:
         if slot_name not in domain_slots:
-            raise RasaException(
+            logger.error(
                 f"The slot '{slot_name}' is used in the "
                 f"step '{step_id}' of flow id '{flow_id}', but it "
                 f"is not listed in the domain slots. "
                 f"You should add it to your domain file!",
             )
+            all_good = False
+
+        return all_good
 
     @staticmethod
-    def _raise_exception_if_list_slot(slot: Slot, step_id: str, flow_id: str) -> None:
+    def _log_error_if_list_slot(
+        slot: Slot, step_id: str, flow_id: str, all_good: bool
+    ) -> bool:
         if isinstance(slot, ListSlot):
-            raise RasaException(
+            logger.error(
                 f"The slot '{slot.name}' is used in the "
                 f"step '{step_id}' of flow id '{flow_id}', but it "
                 f"is a list slot. List slots are currently not "
                 f"supported in flows. You should change it to a "
                 f"text, boolean or float slot in your domain file!",
             )
+            all_good = False
+
+        return all_good
 
     @staticmethod
-    def _raise_exception_if_dialogue_stack_slot(
-        slot: Slot, step_id: str, flow_id: str
-    ) -> None:
+    def _log_error_if_dialogue_stack_slot(
+        slot: Slot, step_id: str, flow_id: str, all_good: bool
+    ) -> bool:
         if slot.name == constants.DIALOGUE_STACK_SLOT:
-            raise RasaException(
+            logger.error(
                 f"The slot '{constants.DIALOGUE_STACK_SLOT}' is used in the "
                 f"step '{step_id}' of flow id '{flow_id}', but it "
                 f"is a reserved slot. You must not use reserved slots in "
                 f"your flows.",
             )
+            all_good = False
+
+        return all_good
 
     def verify_flows_steps_against_domain(self) -> bool:
         """Checks flows steps' references against the domain file."""
+        all_good = True
         domain_slots = {slot.name: slot for slot in self.domain.slots}
         for flow in self.flows.underlying_flows:
             for step in flow.steps:
                 if isinstance(step, CollectInformationFlowStep):
-                    self._raise_exception_if_slot_not_in_domain(
-                        step.collect, domain_slots, step.id, flow.id
+                    all_good = self._log_error_if_slot_not_in_domain(
+                        step.collect, domain_slots, step.id, flow.id, all_good
                     )
+                    if not all_good:
+                        continue
 
                     current_slot = domain_slots[step.collect]
-                    self._raise_exception_if_list_slot(current_slot, step.id, flow.id)
-                    self._raise_exception_if_dialogue_stack_slot(
-                        current_slot, step.id, flow.id
+                    all_good = self._log_error_if_list_slot(
+                        current_slot, step.id, flow.id, all_good
+                    )
+                    all_good = self._log_error_if_dialogue_stack_slot(
+                        current_slot, step.id, flow.id, all_good
                     )
 
                 elif isinstance(step, SetSlotsFlowStep):
                     for slot in step.slots:
                         slot_name = slot["key"]
-                        self._raise_exception_if_slot_not_in_domain(
-                            slot_name, domain_slots, step.id, flow.id
+                        all_good = self._log_error_if_slot_not_in_domain(
+                            slot_name, domain_slots, step.id, flow.id, all_good
                         )
+                        if not all_good:
+                            continue
 
                         current_slot = domain_slots[slot_name]
-                        self._raise_exception_if_list_slot(
-                            current_slot, step.id, flow.id
+                        all_good = self._log_error_if_list_slot(
+                            current_slot, step.id, flow.id, all_good
                         )
-                        self._raise_exception_if_dialogue_stack_slot(
-                            current_slot, step.id, flow.id
+                        all_good = self._log_error_if_dialogue_stack_slot(
+                            current_slot, step.id, flow.id, all_good
                         )
 
                 elif isinstance(step, ActionFlowStep):
@@ -564,59 +585,68 @@ class Validator:
                     matches = re.findall(regex, step.action)
                     if matches:
                         logger.warning(
-                            f"An interpolated action name was found at step "
-                            f"'{step.id}' of flow id '{flow.id}'. "
+                            f"An interpolated action name '{step.action}' was "
+                            f"found at step '{step.id}' of flow id '{flow.id}'. "
                             f"Skipping validation for this step. "
                             f"Please make sure that the action name is "
                             f"listed in your domain responses or actions."
                         )
                     elif step.action not in self.domain.action_names_or_texts:
-                        raise RasaException(
+                        logger.error(
                             f"The action '{step.action}' is used in the step "
                             f"'{step.id}' of flow id '{flow.id}', but it "
                             f"is not listed in the domain file. "
                             f"You should add it to your domain file!",
                         )
-        return True
+                        all_good = False
+        return all_good
 
     def verify_unique_flows(self) -> bool:
         """Checks if all flows have unique names and descriptions."""
-        flows_mapping: Dict[str, str] = {}
+        all_good = True
+        flow_names = set()
+        flow_descriptions = set()
         punctuation_table = str.maketrans({i: "" for i in string.punctuation})
 
         for flow in self.flows.underlying_flows:
             flow_description = flow.description
             cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr] # noqa: E501
-            if cleaned_description in flows_mapping.values():
-                raise RasaException(
+            if cleaned_description in flow_descriptions:
+                logger.error(
                     f"Detected duplicate flow description for flow id '{flow.id}'. "
                     f"Flow descriptions must be unique. "
                     f"Please make sure that all flows have different descriptions."
                 )
+                all_good = False
 
-            if flow.name in flows_mapping:
-                raise RasaException(
+            if flow.name in flow_names:
+                logger.error(
                     f"Detected duplicate flow name '{flow.name}' for flow "
                     f"id '{flow.id}'. Flow names must be unique. "
                     f"Please make sure that all flows have different names."
                 )
+                all_good = False
 
-            flows_mapping[flow.name] = cleaned_description
+            flow_names.add(flow.name)
+            flow_descriptions.add(cleaned_description)
 
-        return True
+        return all_good
 
     @staticmethod
-    def _construct_predicate(predicate: Optional[str], step_id: str) -> Predicate:
+    def _construct_predicate(
+        predicate: Optional[str], step_id: str, all_good: bool = True
+    ) -> Tuple[Optional[Predicate], bool]:
         try:
             pred = Predicate(predicate)
         except (TypeError, Exception) as exception:
-            raise RasaException(
+            logger.error(
                 f"Could not initialize the predicate found under step "
-                f"'{step_id}'. Please make sure that all predicates "
-                f"are strings."
-            ) from exception
+                f"'{step_id}': {exception}."
+            )
+            pred = None
+            all_good = False
 
-        return pred
+        return pred, all_good
 
     def verify_predicates(self) -> bool:
         """Checks that predicates used in branch flow steps or `collect` steps are valid."""  # noqa: E501
@@ -626,26 +656,30 @@ class Validator:
                 if isinstance(step, BranchFlowStep):
                     for link in step.next.links:
                         if isinstance(link, IfFlowLink):
-                            predicate = Validator._construct_predicate(
+                            predicate, all_good = Validator._construct_predicate(
                                 link.condition, step.id
                             )
-                            if not predicate.is_valid():
-                                raise RasaException(
+                            if predicate and not predicate.is_valid():
+                                logger.error(
                                     f"Detected invalid condition '{link.condition}' "
                                     f"at step '{step.id}' for flow id '{flow.id}'. "
                                     f"Please make sure that all conditions are valid."
                                 )
+                                all_good = False
                 elif isinstance(step, CollectInformationFlowStep):
                     predicates = [predicate.if_ for predicate in step.rejections]
                     for predicate in predicates:
-                        pred = Validator._construct_predicate(predicate, step.id)
-                        if not pred.is_valid():
-                            raise RasaException(
+                        pred, all_good = Validator._construct_predicate(
+                            predicate, step.id
+                        )
+                        if pred and not pred.is_valid():
+                            logger.error(
                                 f"Detected invalid rejection '{predicate}' "
                                 f"at `collect` step '{step.id}' "
                                 f"for flow id '{flow.id}'. "
                                 f"Please make sure that all conditions are valid."
                             )
+                            all_good = False
         return all_good
 
     def verify_flows(self) -> bool:

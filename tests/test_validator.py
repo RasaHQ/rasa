@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Text
 import pytest
 from _pytest.logging import LogCaptureFixture
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.exceptions import RasaException
 
 from rasa.validator import Validator
 
@@ -861,7 +860,7 @@ def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
 
 
 @pytest.mark.parametrize(
-    "domain_actions, domain_slots, exception_message",
+    "domain_actions, domain_slots, log_message",
     [
         # set_slot slot is not listed in the domain
         (
@@ -894,7 +893,8 @@ def test_verify_flow_steps_against_domain_fail(
     nlu_data_path: Path,
     domain_actions: List[Text],
     domain_slots: Dict[Text, Any],
-    exception_message: Text,
+    log_message: Text,
+    caplog: LogCaptureFixture,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -937,15 +937,16 @@ def test_verify_flow_steps_against_domain_fail(
 
     validator = Validator.from_importer(importer)
 
-    with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain()
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_flows_steps_against_domain()
 
-    assert exception_message in str(e.value)
+    assert log_message in caplog.text
 
 
 def test_verify_flow_steps_against_domain_disallowed_list_slot(
     tmp_path: Path,
     nlu_data_path: Path,
+    caplog: LogCaptureFixture,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -988,19 +989,20 @@ def test_verify_flow_steps_against_domain_disallowed_list_slot(
 
     validator = Validator.from_importer(importer)
 
-    with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain()
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_flows_steps_against_domain()
 
     assert (
         "The slot 'pizza_toppings' is used in the step 'ask_pizza_toppings' "
         "of flow id 'order_pizza', but it is a list slot. List slots are "
-        "currently not supported in flows." in str(e.value)
+        "currently not supported in flows." in caplog.text
     )
 
 
 def test_verify_flow_steps_against_domain_dialogue_stack_slot(
     tmp_path: Path,
     nlu_data_path: Path,
+    caplog: LogCaptureFixture,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -1033,12 +1035,12 @@ def test_verify_flow_steps_against_domain_dialogue_stack_slot(
 
     validator = Validator.from_importer(importer)
 
-    with pytest.raises(RasaException) as e:
-        validator.verify_flows_steps_against_domain()
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_flows_steps_against_domain()
 
     assert (
         "The slot 'dialogue_stack' is used in the step 'ask_internal_slot' "
-        "of flow id 'my_flow', but it is a reserved slot." in str(e.value)
+        "of flow id 'my_flow', but it is a reserved slot." in caplog.text
     )
 
 
@@ -1081,8 +1083,8 @@ def test_verify_flow_steps_against_domain_interpolated_action_name(
     with caplog.at_level(logging.WARNING):
         assert validator.verify_flows_steps_against_domain()
         assert (
-            "An interpolated action name was found at step 'validate' "
-            "of flow id 'pattern_collect_information'. "
+            "An interpolated action name 'validate_{context.collect}' was found "
+            "at step 'validate' of flow id 'pattern_collect_information'. "
             "Skipping validation for this step." in caplog.text
         )
 
@@ -1090,6 +1092,7 @@ def test_verify_flow_steps_against_domain_interpolated_action_name(
 def test_verify_unique_flows_duplicate_names(
     tmp_path: Path,
     nlu_data_path: Path,
+    caplog: LogCaptureFixture,
 ) -> None:
     duplicate_flow_name = "transfer money"
     flows_file = tmp_path / "flows.yml"
@@ -1145,19 +1148,20 @@ def test_verify_unique_flows_duplicate_names(
 
     validator = Validator.from_importer(importer)
 
-    with pytest.raises(RasaException) as e:
-        validator.verify_unique_flows()
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_unique_flows()
 
     assert (
         f"Detected duplicate flow name '{duplicate_flow_name}' for "
         f"flow id 'recurrent_payment'. Flow names must be unique. "
         f"Please make sure that all flows have different names."
-    ) in str(e.value)
+    ) in caplog.text
 
 
 def test_verify_unique_flows_duplicate_descriptions(
     tmp_path: Path,
     nlu_data_path: Path,
+    caplog: LogCaptureFixture,
 ) -> None:
     duplicate_flow_description_with_punctuation = "This flow lets users send money."
     duplicate_flow_description = "This flow lets users send money"
@@ -1214,22 +1218,23 @@ def test_verify_unique_flows_duplicate_descriptions(
 
     validator = Validator.from_importer(importer)
 
-    with pytest.raises(RasaException) as e:
+    with caplog.at_level(logging.ERROR):
         validator.verify_unique_flows()
 
     assert (
         "Detected duplicate flow description for flow id 'recurrent_payment'. "
         "Flow descriptions must be unique. "
         "Please make sure that all flows have different descriptions."
-    ) in str(e.value)
+    ) in caplog.text
 
 
 def test_verify_predicates_invalid_rejection_if(
     tmp_path: Path,
     nlu_data_path: Path,
+    caplog: LogCaptureFixture,
 ) -> None:
     predicate = 'account_type not in {{"debit", "savings"}}'
-    expected_exception = (
+    error_log = (
         f"Detected invalid rejection '{predicate}' "
         f"at `collect` step 'ask_account_type' "
         f"for flow id 'transfer_money'. "
@@ -1294,7 +1299,7 @@ def test_verify_predicates_invalid_rejection_if(
 
     validator = Validator.from_importer(importer)
 
-    with pytest.raises(RasaException) as e:
-        validator.verify_predicates()
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_predicates()
 
-    assert expected_exception in str(e.value)
+    assert error_log in caplog.text
