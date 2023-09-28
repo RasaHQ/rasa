@@ -33,7 +33,7 @@ from tests.utilities import flows_from_str
 def test_name_of_command():
     # names of commands should not change as they are part of persisted
     # trackers
-    assert HandleCodeChangeCommand.command() == "clean stack"
+    assert HandleCodeChangeCommand.command() == "handle code change"
 
 
 def test_from_dict():

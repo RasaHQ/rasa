@@ -161,7 +161,7 @@ def execute_commands(
 
     # store current flow hashes if they changed
     new_hashes = calculate_flow_fingerprints(all_flows)
-    flow_hash_events = []
+    flow_hash_events: List[Event] = []
     if new_hashes != (tracker.get_slot(FLOW_HASHES_SLOT) or {}):
         flow_hash_events.append(SlotSet(FLOW_HASHES_SLOT, new_hashes))
         tracker.update_with_events(flow_hash_events, None)
