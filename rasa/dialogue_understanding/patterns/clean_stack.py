@@ -39,7 +39,7 @@ class CleanStackFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_clean_stack"
+        return FLOW_PATTERN_CLEAN_STACK_ID
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> CleanStackFlowStackFrame:
