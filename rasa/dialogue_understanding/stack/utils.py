@@ -82,8 +82,8 @@ def filled_slots_for_active_flow(
             # frames, because they don't have slots.
             continue
         flow = frame.flow(all_flows)
-        for q in flow.previous_collect_information_steps(frame.step_id):
-            filled_slots.add(q.collect_information)
+        for q in flow.previous_collect_steps(frame.step_id):
+            filled_slots.add(q.collect)
 
         if isinstance(frame, UserFlowStackFrame):
             # as soon as we hit the first stack frame that is a "normal"

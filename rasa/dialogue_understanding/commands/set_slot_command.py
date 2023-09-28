@@ -65,9 +65,9 @@ class SetSlotCommand(Command):
         if self.name not in slots_so_far:
             # only fill slots that belong to a collect infos that can be asked
             use_slot_fill = any(
-                step.collect_information == self.name and not step.ask_before_filling
+                step.collect == self.name and not step.ask_before_filling
                 for flow in all_flows.underlying_flows
-                for step in flow.get_collect_information_steps()
+                for step in flow.get_collect_steps()
             )
 
             if not use_slot_fill:

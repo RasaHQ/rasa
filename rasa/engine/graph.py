@@ -3,8 +3,9 @@ from __future__ import annotations
 import dataclasses
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple, Union
+
+import structlog
 
 from rasa.engine.exceptions import (
     GraphComponentException,
@@ -19,7 +20,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.data import TrainingType
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 @dataclass
@@ -392,10 +393,12 @@ class GraphNode:
             self._load_component()
 
     def _load_component(self, **kwargs: Any) -> None:
-        logger.debug(
-            f"Node '{self._node_name}' loading "
-            f"'{self._component_class.__name__}.{self._constructor_name}' "
-            f"and kwargs: '{kwargs}'."
+        structlogger.debug(
+            "graph.node.loading_component",
+            node_name=self._node_name,
+            clazz=self._component_class.__name__,
+            constructor=self._constructor_name,
+            kwargs=kwargs,
         )
 
         constructor = getattr(self._component_class, self._constructor_name)
@@ -417,8 +420,9 @@ class GraphNode:
                     f"Error initializing graph component for node {self._node_name}."
                 ) from e
             else:
-                logger.error(
-                    f"Error initializing graph component for node {self._node_name}."
+                structlogger.error(
+                    "graph.node.error_loading_component",
+                    node_name=self._node_name,
                 )
                 raise
 
@@ -458,10 +462,14 @@ class GraphNode:
                 node_name, node_output = i
                 received_inputs[node_name] = node_output
             else:
-                logger.warning(
-                    f"Node '{i}' was not resolved, there is no putput. "
-                    f"Another component should have provided this as an "
-                    f"output."
+                structlogger.warning(
+                    "graph.node.input_not_resolved",
+                    node_name=self._node_name,
+                    input_name=i,
+                    event_info=(
+                        "Node input was not resolved, there is no putput. "
+                        "Another component should have provided this as an output."
+                    ),
                 )
 
         kwargs = {}
@@ -487,9 +495,11 @@ class GraphNode:
         else:
             run_kwargs = kwargs
 
-        logger.debug(
-            f"Node '{self._node_name}' running "
-            f"'{self._component_class.__name__}.{self._fn_name}'."
+        structlogger.debug(
+            "graph.node.running_component",
+            node_name=self._node_name,
+            clazz=self._component_class.__name__,
+            fn=self._fn_name,
         )
 
         try:
@@ -504,8 +514,9 @@ class GraphNode:
                     f"Error running graph component for node {self._node_name}."
                 ) from e
             else:
-                logger.error(
-                    f"Error running graph component for node {self._node_name}."
+                structlogger.error(
+                    "graph.node.error_running_component",
+                    node_name=self._node_name,
                 )
                 raise
 
@@ -516,9 +527,10 @@ class GraphNode:
     def _run_after_hooks(self, input_hook_outputs: List[Dict], output: Any) -> None:
         for hook, hook_data in zip(self._hooks, input_hook_outputs):
             try:
-                logger.debug(
-                    f"Hook '{hook.__class__.__name__}.on_after_node' "
-                    f"running for node '{self._node_name}'."
+                structlogger.debug(
+                    "graph.node.hook.on_after_node",
+                    node_name=self._node_name,
+                    hook_name=hook.__class__.__name__,
                 )
                 hook.on_after_node(
                     node_name=self._node_name,
@@ -536,9 +548,10 @@ class GraphNode:
         input_hook_outputs = []
         for hook in self._hooks:
             try:
-                logger.debug(
-                    f"Hook '{hook.__class__.__name__}.on_before_node' "
-                    f"running for node '{self._node_name}'."
+                structlogger.debug(
+                    "graph.node.hook.on_before_node",
+                    node_name=self._node_name,
+                    hook_name=hook.__class__.__name__,
                 )
                 hook_output = hook.on_before_node(
                     node_name=self._node_name,

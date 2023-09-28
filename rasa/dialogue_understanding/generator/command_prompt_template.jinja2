@@ -15,7 +15,7 @@ Here is what happened previously in the conversation:
 ===
 {% if current_flow != None %}
 You are currently in the flow "{{ current_flow }}", which {{ current_flow.description }}
-You have just asked the user for the slot "{{ collect_information }}"{% if collect_information_description %} ({{ collect_information_description }}){% endif %}.
+You have just asked the user for the slot "{{ collect }}"{% if collect_description %} ({{ collect_description }}){% endif %}.
 
 {% if flow_slots|length > 0 %}
 Here are the slots of the currently active flow:
