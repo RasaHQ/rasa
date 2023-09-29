@@ -50,7 +50,7 @@ class ClarifyPatternFlowStackFrame(PatternFlowStackFrame):
             The created `DialogueStackFrame`.
         """
         return ClarifyPatternFlowStackFrame(
-            data["frame_id"],
+            frame_id=data["frame_id"],
             step_id=data["step_id"],
             names=data["names"],
             clarification_options=data["clarification_options"],

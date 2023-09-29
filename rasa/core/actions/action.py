@@ -57,6 +57,7 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     SlotMappingType,
+    KNOWLEDGE_BASE_SLOT_NAMES,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -1292,7 +1293,9 @@ class ActionExtractSlots(Action):
         executed_custom_actions: Set[Text] = set()
 
         user_slots = [
-            slot for slot in domain.slots if slot.name not in DEFAULT_SLOT_NAMES
+            slot
+            for slot in domain.slots
+            if slot.name not in DEFAULT_SLOT_NAMES | KNOWLEDGE_BASE_SLOT_NAMES
         ]
 
         for slot in user_slots:
