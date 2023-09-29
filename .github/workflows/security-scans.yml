@@ -34,7 +34,7 @@ jobs:
         fetch-depth: '0'
     - name: Run Trivy vulnerability scanner
       id: trivy
-      uses: aquasecurity/trivy-action@e5f43133f6e8736992c9f3c1b3296e24b37e17f2
+      uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f
       continue-on-error: true
       with:
         format: 'table'
