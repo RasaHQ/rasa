@@ -1080,8 +1080,6 @@ jobs:
           IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
 
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
-          docker buildx bake --set *.platform=linux/amd64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
-          docker buildx bake --set *.platform=linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --load
 
           # Tag the image as latest
           if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
@@ -1092,9 +1090,11 @@ jobs:
             fi
 
             LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
-
-            docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
-            docker push rasa/rasa:${LATEST_TAG}
+            
+            # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
+            IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+            # Push tagged image
+            IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
           fi
 
   deploy:
