@@ -236,14 +236,14 @@ jobs:
       fail-fast: false
       matrix:
         test:
-#          - test-cli
+          - test-cli
           - test-core-featurizers
-#          - test-policies
-#          - test-nlu-featurizers
-#          - test-nlu-predictors
-#          - test-full-model-training
-#          - test-other-unit-tests
-#          - test-performance
+          - test-policies
+          - test-nlu-featurizers
+          - test-nlu-predictors
+          - test-full-model-training
+          - test-other-unit-tests
+          - test-performance
         os: [ubuntu-22.04, windows-2019]
         python-version: [3.8, 3.9, "3.10"]
 
@@ -379,145 +379,145 @@ jobs:
           path: |
             ${{ github.workspace }}/${{ matrix.test }}-coverage
 
-#  test-flaky:
-#    name: Run Flaky Tests
-#    if: github.ref_type != 'tag'
-#    runs-on: ${{ matrix.os }}
-#    timeout-minutes: 60
-#    needs: [changes]
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [ubuntu-22.04, windows-2019]
-#        python-version: [3.8, 3.9, "3.10"]
-#
-#    steps:
-#      - name: Run DataDog Agent
-#        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
-#        run: |
-#          docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
-#          docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
-#          docker port dd_agent
-#
-#      - name: Checkout git repository 🕝
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-#
-#      - name: Set up Python ${{ matrix.python-version }} 🐍
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#
-#      - name: Read Poetry Version 🔢
-#        if: needs.changes.outputs.backend == 'true'
-#        run: |
-#          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-#        shell: bash
-#
-#      - name: Install poetry 🦄
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
-#        with:
-#          poetry-version: ${{ env.POETRY_VERSION }}
-#
-#      - name: Load Poetry Cached Libraries ⬇
-#        id: cache-poetry
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
-#        with:
-#          path: .venv
-#          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
-#
-#      - name: Clear Poetry cache
-#        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-#        run: rm -r .venv
-#
-#        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
-#        # The virtualenv simply doesn't work on Windows with our setup,
-#        # that's why we use venv to create virtual environment
-#      - name: Create virtual environment
-#        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
-#        run: python -m venv create .venv
-#
-#      - name: Set up virtual environment
-#        if: needs.changes.outputs.backend == 'true'
-#        # Poetry on Windows cannot pick up the virtual environments directory properly,
-#        # and it creates a new one every time the pipeline runs.
-#        # This step solves this problem — it tells poetry to always use `.venv` directory inside
-#        # the project itself, which also makes it easier for us to determine the correct directory
-#        # that needs to be cached.
-#        run: poetry config virtualenvs.in-project true
-#
-#      - name: Install Dependencies (Linux) 📦
-#        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
-#        run: |
-#          sudo apt-get -y install libpq-dev
-#          make install-full | tee .output
-#          if grep 'The lock file is not up to date' .output; then exit 1; fi
-#          make prepare-tests-ubuntu
-#
-#      - name: Install Dependencies (Windows) 📦
-#        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-#        # Restoring cache doesn't work properly on Windows due to symlinks.
-#        # We create symlinks for spacy models, that's why we need to clean them up
-#        # before caching the dependencies' directory.
-#        # More information: https://github.com/actions/cache/issues/120
-#        run: |
-#          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
-#          if (Test-Path $spacy_data_dir) {
-#            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-#            Remove-Item -Force -Recurse $spacy_data_dir
-#            New-Item -Path $spacy_data_dir -Type Directory
-#          }
-#          make install-full
-#          make prepare-tests-windows-gha
-#
-#      - name: Add github workflow problem matchers
-#        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
-#        # only annotate based on test runs on ubuntu: otherwise
-#        # all errors will be duplicated for each python / os combination
-#        # therefore, we only enable for the one where most tests are run
-#        # (tests will still run in other envs, they will just not create annotations)
-#        run: pip install pytest-github-actions-annotate-failures
-#
-#      - name: Disable "LongPathsEnabled" option on Windows
-#        if: matrix.os == 'windows-2019'
-#        # On Windows laptops, a default preset prevents path names from being longer than
-#        # 260 characters. Some of our users can't enable this setting due to company policies.
-#        # We implemented a fix for model storage. The Windows container in GitHub
-#        # comes with the setting enabled, so we disable it here in order to ensure our tests
-#        # are running in an environment where long path names are prevented.
-#        run: |
-#          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
-#          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
-#
-#      - name: Install ddtrace
-#        if: needs.changes.outputs.backend == 'true'
-#        run: poetry run pip install -U ddtrace
-#
-#      - name: Test Code 🔍 (multi-process)
-#        if: needs.changes.outputs.backend == 'true'
-#        env:
-#          JOBS: 2
-#          PYTHONIOENCODING: "utf-8"
-#          DD_ENV: test-flaky
-#          DD_SERVICE: rasa
-#          DD_ARGS: --ddtrace --ddtrace-patch-all
-#        run: |
-#          make test-flaky
-#          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-#            mv .coverage ${{ github.workspace }}/test-flaky-coverage
-#          fi
-#        shell: bash # bash shell is a way to make code run for both Linux and Windows
-#
-#      - name: Store coverage reports
-#        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
-#        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
-#        with:
-#          name: ${{ matrix.test }}-coverage
-#          path: |
-#            ${{ github.workspace }}/${{ matrix.test }}-coverage
+  test-flaky:
+    name: Run Flaky Tests
+    if: github.ref_type != 'tag'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    needs: [changes]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2019]
+        python-version: [3.8, 3.9, "3.10"]
+
+    steps:
+      - name: Run DataDog Agent
+        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
+        run: |
+          docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
+          docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
+          docker port dd_agent
+
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python ${{ matrix.python-version }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
+      - name: Install Dependencies (Windows) 📦
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        # Restoring cache doesn't work properly on Windows due to symlinks.
+        # We create symlinks for spacy models, that's why we need to clean them up
+        # before caching the dependencies' directory.
+        # More information: https://github.com/actions/cache/issues/120
+        run: |
+          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
+          if (Test-Path $spacy_data_dir) {
+            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+            Remove-Item -Force -Recurse $spacy_data_dir
+            New-Item -Path $spacy_data_dir -Type Directory
+          }
+          make install-full
+          make prepare-tests-windows-gha
+
+      - name: Add github workflow problem matchers
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
+        # only annotate based on test runs on ubuntu: otherwise
+        # all errors will be duplicated for each python / os combination
+        # therefore, we only enable for the one where most tests are run
+        # (tests will still run in other envs, they will just not create annotations)
+        run: pip install pytest-github-actions-annotate-failures
+
+      - name: Disable "LongPathsEnabled" option on Windows
+        if: matrix.os == 'windows-2019'
+        # On Windows laptops, a default preset prevents path names from being longer than
+        # 260 characters. Some of our users can't enable this setting due to company policies.
+        # We implemented a fix for model storage. The Windows container in GitHub
+        # comes with the setting enabled, so we disable it here in order to ensure our tests
+        # are running in an environment where long path names are prevented.
+        run: |
+          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
+          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
+
+      - name: Install ddtrace
+        if: needs.changes.outputs.backend == 'true'
+        run: poetry run pip install -U ddtrace
+
+      - name: Test Code 🔍 (multi-process)
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          JOBS: 2
+          PYTHONIOENCODING: "utf-8"
+          DD_ENV: test-flaky
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all
+        run: |
+          make test-flaky
+          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
+            mv .coverage ${{ github.workspace }}/test-flaky-coverage
+          fi
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Store coverage reports
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        with:
+          name: ${{ matrix.test }}-coverage
+          path: |
+            ${{ github.workspace }}/${{ matrix.test }}-coverage
 
   prepare_coverage_reports_analyse_with_sonarcloud:
     name: Prepare coverage reports and Analyse coverage with Sonarcloud
@@ -575,246 +575,246 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.verbose=true
 
-#  integration_test:
-#    name: Run Non-Sequential Integration Tests
-#    if: github.ref_type != 'tag'
-#    runs-on: ubuntu-22.04
-#    timeout-minutes: 60
-#    needs: [changes]
-#    env:
-#      REDIS_HOST: localhost
-#      REDIS_PORT: 6379
-#      POSTGRES_HOST: localhost
-#      POSTGRES_PORT: 5432
-#      POSTGRES_USER: postgres
-#      POSTGRES_PASSWORD: postgres
-#      RABBITMQ_HOST: localhost
-#      RABBITMQ_PORT: 5672
-#      RABBITMQ_USER: guest
-#      RABBITMQ_PASSWORD: guest
-#
-#    services:
-#      redis:
-#        image: redis:6
-#        # Set health checks to wait until redis has started
-#        options: >-
-#          --health-cmd "redis-cli ping"
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 5
-#        ports:
-#          # FIXME: cannot use ${{ env.REDIS_PORT }} here
-#          # mapping container ports to the host
-#          - 6379:6379
-#
-#      postgres:
-#        image: postgres:13
-#        # Set health checks to wait until postgres has started
-#        options: >-
-#          --health-cmd pg_isready
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 5
-#        env:
-#          # postgres image requires password to be set
-#          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-#        ports:
-#          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
-#          # mapping container ports to the host
-#          - 5432:5432
-#
-#      rabbitmq:
-#        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
-#        image: healthcheck/rabbitmq
-#        ports:
-#          - 5672:5672
-#
-#      mongodb:
-#        image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
-#        options: >-
-#          --health-cmd "echo 'db.runCommand("ping").ok' | mongosh --quiet"
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 5
-#        ports:
-#          - 27017:27017
-#
-#    steps:
-#      - name: Checkout git repository 🕝
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-#
-#      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
-#        with:
-#          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
-#
-#      - name: Read Poetry Version 🔢
-#        if: needs.changes.outputs.backend == 'true'
-#        run: |
-#          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-#        shell: bash
-#
-#      - name: Install poetry 🦄
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
-#        with:
-#          poetry-version: ${{ env.POETRY_VERSION }}
-#
-#      - name: Load Poetry Cached Libraries ⬇
-#        id: cache-poetry
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
-#        with:
-#          path: .venv
-#          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
-#
-#      - name: Clear Poetry cache
-#        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-#        run: rm -r .venv
-#
-#        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
-#        # The virtualenv simply doesn't work on Windows with our setup,
-#        # that's why we use venv to create virtual environment
-#      - name: Create virtual environment
-#        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
-#        run: python -m venv create .venv
-#
-#      - name: Set up virtual environment
-#        if: needs.changes.outputs.backend == 'true'
-#        # Poetry on Windows cannot pick up the virtual environments directory properly,
-#        # and it creates a new one every time the pipeline runs.
-#        # This step solves this problem — it tells poetry to always use `.venv` directory inside
-#        # the project itself, which also makes it easier for us to determine the correct directory
-#        # that needs to be cached.
-#        run: poetry config virtualenvs.in-project true
-#
-#      - name: Install Dependencies (Linux) 📦
-#        if: needs.changes.outputs.backend == 'true'
-#        run: |
-#          sudo apt-get -y install libpq-dev
-#          make install-full | tee .output
-#          if grep 'The lock file is not up to date' .output; then exit 1; fi
-#          make prepare-tests-ubuntu
-#
-#      - name: Run kafka and zookeeper containers for integration testing
-#        if: needs.changes.outputs.backend == 'true'
-#        run: |
-#          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
-#
-#      - name: Test Code with Services 🩺
-#        if: needs.changes.outputs.backend == 'true'
-#        env:
-#          JOBS: 2
-#          INTEGRATION_TEST_PYTEST_MARKERS: '"not sequential"'
-#          PYTHONIOENCODING: "utf-8"
-#        run: |
-#          make test-integration
-#
-#  sequential_integration_test:
-#    name: Run Sequential Integration Tests
-#    if: github.ref_type != 'tag'
-#    runs-on: ubuntu-20.04
-#    timeout-minutes: 60
-#    needs: [changes]
-#    env:
-#      POSTGRES_HOST: localhost
-#      POSTGRES_PORT: 5432
-#      POSTGRES_USER: postgres
-#      POSTGRES_PASSWORD: postgres
-#
-#    services:
-#      postgres:
-#        image: postgres:13
-#        # Set health checks to wait until postgres has started
-#        options: >-
-#          --health-cmd pg_isready
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 5
-#        env:
-#          # postgres image requires password to be set
-#          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-#        ports:
-#          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
-#          # mapping container ports to the host
-#          - 5432:5432
-#
-#    steps:
-#      - name: Checkout git repository 🕝
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: actions/checkout@v3
-#
-#      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
-#        with:
-#          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
-#
-#      - name: Read Poetry Version 🔢
-#        if: needs.changes.outputs.backend == 'true'
-#        run: |
-#          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-#        shell: bash
-#
-#      - name: Install poetry 🦄
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
-#        with:
-#          poetry-version: ${{ env.POETRY_VERSION }}
-#
-#      - name: Load Poetry Cached Libraries ⬇
-#        id: cache-poetry
-#        if: needs.changes.outputs.backend == 'true'
-#        uses: actions/cache@v3
-#        with:
-#          path: .venv
-#          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
-#
-#      - name: Clear Poetry cache
-#        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-#        run: rm -r .venv
-#
-#        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
-#        # The virtualenv simply doesn't work on Windows with our setup,
-#        # that's why we use venv to create virtual environment
-#      - name: Create virtual environment
-#        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
-#        run: python -m venv create .venv
-#
-#      - name: Set up virtual environment
-#        if: needs.changes.outputs.backend == 'true'
-#        # Poetry on Windows cannot pick up the virtual environments directory properly,
-#        # and it creates a new one every time the pipeline runs.
-#        # This step solves this problem — it tells poetry to always use `.venv` directory inside
-#        # the project itself, which also makes it easier for us to determine the correct directory
-#        # that needs to be cached.
-#        run: poetry config virtualenvs.in-project true
-#
-#      - name: Install Dependencies (Linux) 📦
-#        if: needs.changes.outputs.backend == 'true'
-#        run: |
-#          sudo apt-get -y install libpq-dev
-#          make install-full | tee .output
-#          if grep 'The lock file is not up to date' .output; then exit 1; fi
-#          make prepare-tests-ubuntu
-#
-#      # these integration tests need to be ran in a sequential fashion,
-#      # due to environment constraints, so we're running them in a single process.
-#      - name: Test Code with Services 🩺 (sequential)
-#        if: needs.changes.outputs.backend == 'true'
-#        env:
-#          JOBS: 1
-#          INTEGRATION_TEST_PYTEST_MARKERS: "sequential"
-#          PYTHONIOENCODING: "utf-8"
-#        run: |
-#          make test-integration
-#
-#      - name: Stop kafka and zookeeper containers for integration testing
-#        if: needs.changes.outputs.backend == 'true'
-#        run: |
-#          docker-compose -f tests_deployment/docker-compose.kafka.yml down
+  integration_test:
+    name: Run Non-Sequential Integration Tests
+    if: github.ref_type != 'tag'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    needs: [changes]
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RABBITMQ_HOST: localhost
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+
+    services:
+      redis:
+        image: redis:6
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # FIXME: cannot use ${{ env.REDIS_PORT }} here
+          # mapping container ports to the host
+          - 6379:6379
+
+      postgres:
+        image: postgres:13
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          # postgres image requires password to be set
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
+          # mapping container ports to the host
+          - 5432:5432
+
+      rabbitmq:
+        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
+        image: healthcheck/rabbitmq
+        ports:
+          - 5672:5672
+
+      mongodb:
+        image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
+        options: >-
+          --health-cmd "echo 'db.runCommand("ping").ok' | mongosh --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
+      - name: Run kafka and zookeeper containers for integration testing
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
+
+      - name: Test Code with Services 🩺
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          JOBS: 2
+          INTEGRATION_TEST_PYTEST_MARKERS: '"not sequential"'
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-integration
+
+  sequential_integration_test:
+    name: Run Sequential Integration Tests
+    if: github.ref_type != 'tag'
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    needs: [changes]
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    services:
+      postgres:
+        image: postgres:13
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          # postgres image requires password to be set
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
+          # mapping container ports to the host
+          - 5432:5432
+
+    steps:
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
+      # these integration tests need to be ran in a sequential fashion,
+      # due to environment constraints, so we're running them in a single process.
+      - name: Test Code with Services 🩺 (sequential)
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          JOBS: 1
+          INTEGRATION_TEST_PYTEST_MARKERS: "sequential"
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-integration
+
+      - name: Stop kafka and zookeeper containers for integration testing
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml down
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
