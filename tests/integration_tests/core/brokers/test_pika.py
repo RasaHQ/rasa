@@ -40,6 +40,7 @@ async def test_pika_event_broker_publish_after_restart(
     rabbitmq_username: Text,
     rabbitmq_password: Text,
 ) -> None:
+
     environment = {
         "RABBITMQ_DEFAULT_USER": rabbitmq_username,
         "RABBITMQ_DEFAULT_PASS": rabbitmq_password,

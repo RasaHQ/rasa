@@ -23,6 +23,8 @@ from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker, KafkaProducerInitializationError
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
+from rasa.core.brokers.celery import CeleryEventBroker
+
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -411,3 +413,27 @@ def test_pika_event_broker_configure_url(
     broker = PikaEventBroker(host=host, username=username, password=password)
     url = broker._configure_url()
     assert url == expected_url
+
+
+@pytest.fixture
+def celery_endpoint_config_string() -> str:
+    return """
+        event_broker:
+          type: celery
+          broker_url: rediss://:password@localhost:6379/0
+          task_name: tasks.event_logger
+          countdown: 2
+          priority: 1
+    """
+
+
+@pytest.fixture
+def celery_endpoint_config(celery_endpoint_config_string: str) -> EndpointConfig:
+    yaml_content = rasa.shared.utils.io.read_yaml(celery_endpoint_config_string)
+    return EndpointConfig.from_dict(yaml_content)
+
+
+async def test_celery_from_endpoint_config(celery_endpoint_config: EndpointConfig):
+    actual = await EventBroker.create(celery_endpoint_config)
+
+    assert isinstance(actual, CeleryEventBroker)

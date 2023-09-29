@@ -203,6 +203,23 @@ However, multiple consumers can read from the same queue as long as they are in 
 Each consumer group will process all events independent of each other 
 (in a sense, each group has their own reference to the last event they have processed). [Kafka: The Definitive Guide](https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html#:~:text=Kafka%20consumers%20are%20typically%20part,the%20partitions%20in%20the%20topic.)
 
+## Celery Event Broker
+
+It is possible to use an celery as an event broker. Connections to message brokers are established 
+using celery's existing connection handler, Kombu. Celery allows connections to different brokers, ie 
+Redis, SQS, and RabbitMQ. To explore the connection detail, please see the SQLAlchemy documentation on SQL dialects.
+Adding optional keyword arguments for task calls are also allowed by adding the arguments as in here.
+### Adding a Celery Event Broker Using the Endpoint Configuration
+#### Task is in another code base
+```yaml-rasa title="endpoints.yml"
+event_broker:
+  type: celery
+  broker_url: rediss://:password@localhost:6379/0
+  queue_task_name: tasks.event_logger
+  countdown: 2
+  priority: 1
+```
+
 ## SQL Event Broker
 
 It is possible to use an SQL database as an event broker. Connections to databases are established using
