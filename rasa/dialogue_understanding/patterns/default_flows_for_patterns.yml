@@ -7,7 +7,7 @@ responses:
         template: jinja
   
   utter_corrected_previous_input:
-    - text: "Ok, I am updating {{ context.corrected_slots.keys()|join(', ') }} to {{ context.corrected_slots.values()|join(', ') respectively."
+    - text: "Ok, I am updating {{ context.corrected_slots.keys()|join(', ') }} to {{ context.corrected_slots.values()|join(', ') }} respectively."
       metadata: 
         rephrase: True
         template: jinja
