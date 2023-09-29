@@ -552,10 +552,10 @@ class Validator:
                     all_good = self._log_error_if_slot_not_in_domain(
                         step.collect, domain_slots, step.id, flow.id, all_good
                     )
-                    if not all_good:
+                    current_slot = domain_slots.get(step.collect)
+                    if not current_slot:
                         continue
 
-                    current_slot = domain_slots[step.collect]
                     all_good = self._log_error_if_list_slot(
                         current_slot, step.id, flow.id, all_good
                     )
@@ -569,10 +569,10 @@ class Validator:
                         all_good = self._log_error_if_slot_not_in_domain(
                             slot_name, domain_slots, step.id, flow.id, all_good
                         )
-                        if not all_good:
+                        current_slot = domain_slots.get(slot_name)
+                        if not current_slot:
                             continue
 
-                        current_slot = domain_slots[slot_name]
                         all_good = self._log_error_if_list_slot(
                             current_slot, step.id, flow.id, all_good
                         )
@@ -693,10 +693,10 @@ class Validator:
             )
             return True
 
-        all_good = (
-            self.verify_flows_steps_against_domain()
-            and self.verify_unique_flows()
-            and self.verify_predicates()
-        )
+        condition_one = self.verify_flows_steps_against_domain()
+        condition_two = self.verify_unique_flows()
+        condition_three = self.verify_predicates()
+
+        all_good = all([condition_one, condition_two, condition_three])
 
         return all_good
