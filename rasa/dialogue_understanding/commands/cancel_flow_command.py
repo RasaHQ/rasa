@@ -9,8 +9,7 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import Event
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
@@ -103,4 +102,4 @@ class CancelFlowCommand(Command):
                 canceled_frames=canceled_frames,
             )
         )
-        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
+        return [stack.persist_as_event()]
