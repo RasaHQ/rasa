@@ -76,17 +76,15 @@ class SetSlotCommand(Command):
                     "command_executor.skip_command.slot_not_asked_for", command=self
                 )
                 return []
-        if (
-            self.name in tracker.slots
-            and isinstance(tracker.slots[self.name], CategoricalSlot)
-            and self.value not in tracker.slots[self.name].values  # type: ignore
-        ):
-            # only fill categorical slots with values that are present in the domain
-            structlogger.debug(
-                "command_executor.skip_command.categorical_slot_value_not_in_domain",
-                command=self,
-            )
-            return []
+        if self.name in tracker.slots:
+            slot = tracker.slots[self.name]
+            if isinstance(slot, CategoricalSlot) and self.value not in slot.values:
+                # only fill categorical slots with values that are present in the domain
+                structlogger.debug(
+                    "command_executor.skip_command.categorical_slot_value_not_in_domain",
+                    command=self,
+                )
+                return []
 
         structlogger.debug("command_executor.set_slot", command=self)
         return [SlotSet(self.name, self.value)]

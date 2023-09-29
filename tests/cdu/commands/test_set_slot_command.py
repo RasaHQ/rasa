@@ -236,10 +236,10 @@ def test_run_command_slot_set_categorical_slot_values():
             my_flow:
                 steps:
                 - id: collect_foo
-                  collect_information: foo
+                  collect: foo
                   next: collect_bar
                 - id: collect_bar
-                  collect_information: bar
+                  collect: bar
         """
     )
     domain = Domain.from_yaml(
