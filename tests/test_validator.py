@@ -1340,11 +1340,11 @@ def test_verify_utterances_in_dialogues_finds_all_responses_in_flows(
                         name: Transfer money
                         steps:
                         - id: "ask_recipient"
-                          collect_information: transfer_recipient
+                          collect: transfer_recipient
                           utter: utter_ask_recipient
                           next: "ask_amount"
                         - id: "ask_amount"
-                          collect_information: amount
+                          collect: amount
                           rejections:
                             - if: amount > 1000
                               utter: utter_amount_too_high
@@ -1373,7 +1373,7 @@ def test_verify_utterances_in_dialogues_missing_responses_in_flows(
     tmp_path: Path, nlu_data_path: Path, domain_file_name: Path
 ):
     flows_file_name = tmp_path / "flows.yml"
-    # remove utter_ask_recipient from this flows file
+    # remove utter_ask_recipient from this flows file,
     # but it is listed in the domain file
     with open(flows_file_name, "w") as file:
         file.write(
@@ -1385,10 +1385,10 @@ def test_verify_utterances_in_dialogues_missing_responses_in_flows(
                         name: Transfer money
                         steps:
                         - id: "ask_recipient"
-                          collect_information: transfer_money_recipient
+                          collect: transfer_money_recipient
                           next: "ask_amount"
                         - id: "ask_amount"
-                          collect_information: transfer_money_amount
+                          collect: transfer_money_amount
                           rejections:
                             - if: transfer_money_amount > 1000
                               utter: utter_amount_too_high
