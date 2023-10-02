@@ -15,7 +15,7 @@ async def send_text_message(recipient_id: Text, text: Text,
                             **kwargs: Any) -> None
 ```
 
-Send message to output channel
+Send message to output channel.
 
 ## RocketChatInput Objects
 

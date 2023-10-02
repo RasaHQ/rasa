@@ -149,6 +149,7 @@ Computes the unary scores of tag sequences.
 - `tag_indices` - A [batch_size, max_seq_len] matrix of tag indices.
 - `sequence_lengths` - A [batch_size] vector of true sequence lengths.
 - `inputs` - A [batch_size, max_seq_len, num_tags] tensor of unary potentials.
+  
 
 **Returns**:
 
@@ -168,6 +169,7 @@ Computes the binary scores of tag sequences.
 - `tag_indices` - A [batch_size, max_seq_len] matrix of tag indices.
 - `sequence_lengths` - A [batch_size] vector of true sequence lengths.
 - `transition_params` - A [num_tags, num_tags] matrix of binary potentials.
+  
 
 **Returns**:
 
@@ -191,6 +193,7 @@ Computes the unnormalized score for a tag sequence.
   we compute the unnormalized score.
 - `sequence_lengths` - A [batch_size] vector of true sequence lengths.
 - `transition_params` - A [num_tags, num_tags] transition matrix.
+  
 
 **Returns**:
 
@@ -239,6 +242,7 @@ Computes the normalization for a CRF.
   to use as input to the CRF layer.
 - `sequence_lengths` - A [batch_size] vector of true sequence lengths.
 - `transition_params` - A [num_tags, num_tags] transition matrix.
+  
 
 **Returns**:
 
@@ -266,6 +270,7 @@ Computes the log-likelihood of tag sequences in a CRF.
 - `sequence_lengths` - A [batch_size] vector of true sequence lengths.
 - `transition_params` - A [num_tags, num_tags] transition matrix,
   if available.
+  
 
 **Returns**:
 

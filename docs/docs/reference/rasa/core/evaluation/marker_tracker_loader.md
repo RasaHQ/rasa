@@ -39,7 +39,7 @@ Represents a wrapper over a `TrackerStore` with a configurable access pattern.
 ```python
 def __init__(tracker_store: TrackerStore,
              strategy: str,
-             count: int = None,
+             count: Optional[int] = None,
              seed: Any = None) -> None
 ```
 

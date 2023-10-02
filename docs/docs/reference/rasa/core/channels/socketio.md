@@ -58,7 +58,7 @@ async def send_image_url(recipient_id: Text, image: Text,
                          **kwargs: Any) -> None
 ```
 
-Sends an image to the output
+Sends an image to the output.
 
 #### send\_text\_with\_buttons
 
@@ -87,7 +87,7 @@ async def send_custom_json(recipient_id: Text, json_message: Dict[Text, Any],
                            **kwargs: Any) -> None
 ```
 
-Sends custom json to the output
+Sends custom json to the output.
 
 #### send\_attachment
 

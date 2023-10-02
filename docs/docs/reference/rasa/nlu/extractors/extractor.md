@@ -96,7 +96,7 @@ def convert_predictions_into_entities(
     text: Text,
     tokens: List[Token],
     tags: Dict[Text, List[Text]],
-    split_entities_config: Dict[Text, bool] = None,
+    split_entities_config: Optional[Dict[Text, bool]] = None,
     confidences: Optional[Dict[Text, List[float]]] = None
 ) -> List[Dict[Text, Any]]
 ```

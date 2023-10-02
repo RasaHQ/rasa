@@ -120,7 +120,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         if self.model_name not in model_class_dict:
             raise KeyError(
                 f"'{self.model_name}' not a valid model name. Choose from "
-                f"{str(list(model_class_dict.keys()))} or create"
+                f"{list(model_class_dict.keys())!s} or create"
                 f"a new class inheriting from this class to support your model."
             )
 
@@ -528,6 +528,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         This is only done if the input was truncated during the batch
         preparation of input for the model.
+
         Args:
             sequence_embeddings: Embeddings returned from the model
             actual_sequence_lengths: original sequence length of all inputs

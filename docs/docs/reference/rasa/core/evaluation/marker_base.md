@@ -101,6 +101,7 @@ Instantiates a marker.
   applies if and only if the non-negated marker does not apply)
 - `description` - an optional description of the marker. It is not used
   internally but can be used to document the marker.
+  
 
 **Raises**:
 
@@ -352,6 +353,7 @@ Instantiates a marker.
   conversion of this marker
 - `description` - an optional description of the marker. It is not used
   internally but can be used to document the marker.
+  
 
 **Raises**:
 

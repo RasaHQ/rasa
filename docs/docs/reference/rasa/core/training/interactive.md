@@ -160,10 +160,11 @@ Add routes to serve the conversation visualization files.
 #### run\_interactive\_learning
 
 ```python
-def run_interactive_learning(file_importer: TrainingDataImporter,
-                             skip_visualization: bool = False,
-                             conversation_id: Text = uuid.uuid4().hex,
-                             server_args: Dict[Text, Any] = None) -> None
+def run_interactive_learning(
+        file_importer: TrainingDataImporter,
+        skip_visualization: bool = False,
+        conversation_id: Text = uuid.uuid4().hex,
+        server_args: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Start the interactive learning with the model of the agent.

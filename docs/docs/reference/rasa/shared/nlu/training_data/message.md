@@ -78,7 +78,7 @@ Retrieve message property.
 def as_dict_nlu() -> dict
 ```
 
-Get dict representation of message as it would appear in training data
+Get dict representation of message as it would appear in training data.
 
 #### as\_dict
 
@@ -146,7 +146,7 @@ Builds a Message from `UserUttered` data.
 def get_full_intent() -> Text
 ```
 
-Get intent as it appears in training data
+Get intent as it appears in training data.
 
 #### separate\_intent\_response\_key
 

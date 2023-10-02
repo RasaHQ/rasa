@@ -231,7 +231,7 @@ Calculates the number of examples per entity.
 def sort_regex_features() -> None
 ```
 
-Sorts regex features lexicographically by name+pattern
+Sorts regex features lexicographically by name+pattern.
 
 #### nlu\_as\_json
 

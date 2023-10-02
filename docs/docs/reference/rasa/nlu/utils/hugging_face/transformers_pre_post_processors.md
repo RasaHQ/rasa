@@ -221,7 +221,7 @@ def xlm_embeddings_post_processor(
         sequence_embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 ```
 
-Post process embeddings from XLM models
+Post process embeddings from XLM models.
 
 by taking a mean over sequence embeddings and returning that as sentence
 representation. Remove first and last time steps

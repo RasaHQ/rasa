@@ -8,7 +8,7 @@ title: rasa.shared.core.conversation
 class Dialogue()
 ```
 
-A dialogue comprises a list of Turn objects
+A dialogue comprises a list of Turn objects.
 
 #### \_\_init\_\_
 

@@ -10,7 +10,7 @@ def transform_entity_synonyms(
         known_synonyms: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
 ```
 
-Transforms the entity synonyms into a text-&gt;value dictionary
+Transforms the entity synonyms into a text-&gt;value dictionary.
 
 #### get\_file\_format\_extension
 
@@ -29,6 +29,7 @@ same known format, return it&#x27;s extension
 **Arguments**:
 
 - `resource_name` - The name of the resource, can be a file or a folder.
+  
 
 **Returns**:
 

@@ -67,7 +67,7 @@ Fingerprint the container.
 #### messages
 
 ```python
-def messages(key_attribute: Text = None) -> ValuesView
+def messages(key_attribute: Optional[Text] = None) -> ValuesView
 ```
 
 Returns a view of all messages.

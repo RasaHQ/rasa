@@ -28,6 +28,7 @@ Turns Story steps into an string.
   the existing story file.
 - `is_test_story` - Identifies if the stories should be exported in test stories
   format.
+  
 
 **Returns**:
 

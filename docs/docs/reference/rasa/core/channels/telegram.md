@@ -63,7 +63,7 @@ Sends a message with a custom json payload.
 class TelegramInput(InputChannel)
 ```
 
-Telegram input channel
+Telegram input channel.
 
 #### get\_output\_channel
 

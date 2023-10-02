@@ -449,7 +449,7 @@ def f1_score(tag_ids: tf.Tensor, pred_ids: tf.Tensor,
              mask: tf.Tensor) -> tf.Tensor
 ```
 
-Calculates f1 score for train predictions
+Calculates f1 score for train predictions.
 
 ## DotProductLoss Objects
 

@@ -653,8 +653,8 @@ def get_db_url(dialect: Text = "sqlite",
                host: Optional[Text] = None,
                port: Optional[int] = None,
                db: Text = "rasa.db",
-               username: Text = None,
-               password: Text = None,
+               username: Optional[Text] = None,
+               password: Optional[Text] = None,
                login_db: Optional[Text] = None,
                query: Optional[Dict] = None) -> Union[Text, "URL"]
 ```

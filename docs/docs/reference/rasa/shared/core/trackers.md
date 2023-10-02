@@ -456,7 +456,7 @@ Dump the tracker as a story to a file.
 def get_last_event_for(
     event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"],
                                                     ...]],
-    action_names_to_exclude: List[Text] = None,
+    action_names_to_exclude: Optional[List[Text]] = None,
     skip: int = 0,
     event_verbosity: EventVerbosity = EventVerbosity.APPLIED
 ) -> Optional["EventTypeAlias"]

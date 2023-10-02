@@ -18,7 +18,7 @@ Includes the channel the responses should be sent to.
 def __init__(text: Optional[Text] = None,
              output_channel: Optional["OutputChannel"] = None,
              sender_id: Optional[Text] = None,
-             parse_data: Dict[Text, Any] = None,
+             parse_data: Optional[Dict[Text, Any]] = None,
              input_channel: Optional[Text] = None,
              message_id: Optional[Text] = None,
              metadata: Optional[Dict] = None,
