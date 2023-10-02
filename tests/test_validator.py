@@ -1303,3 +1303,111 @@ def test_verify_predicates_invalid_rejection_if(
         assert not validator.verify_predicates()
 
     assert error_log in caplog.text
+
+
+@pytest.fixture
+def domain_file_name(tmp_path: Path) -> Path:
+    domain_file_name = tmp_path / "domain.yml"
+    with open(domain_file_name, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                responses:
+                  utter_ask_recipient:
+                    - text: "Who do you want to send money to?"
+                  utter_ask_amount:
+                    - text: "How much do you want to send?"
+                  utter_amount_too_high:
+                    - text: "Sorry, you can only send up to 1000."
+                  utter_transfer_summary:
+                    - text: You are sending {{amount}} to {{transfer_recipient}}.
+                """
+        )
+    return domain_file_name
+
+
+def test_verify_utterances_in_dialogues_finds_all_responses_in_flows(
+    tmp_path: Path, nlu_data_path: Path, domain_file_name: Path
+):
+    flows_file_name = tmp_path / "flows.yml"
+    with open(flows_file_name, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    flows:
+                      transfer_money:
+                        description: This flow lets users send money.
+                        name: Transfer money
+                        steps:
+                        - id: "ask_recipient"
+                          collect: transfer_recipient
+                          utter: utter_ask_recipient
+                          next: "ask_amount"
+                        - id: "ask_amount"
+                          collect: amount
+                          rejections:
+                            - if: amount > 1000
+                              utter: utter_amount_too_high
+                          next: "summarize_transfer"
+                        - id: "summarize_transfer"
+                          action: utter_transfer_summary
+                    """
+        )
+
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file_name),
+        training_data_paths=[str(flows_file_name), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with warnings.catch_warnings() as record:
+        warnings.simplefilter("error")
+        # force validator to not ignore warnings (default is True)
+        assert validator.verify_utterances_in_dialogues(ignore_warnings=False)
+        assert record is None
+
+
+def test_verify_utterances_in_dialogues_missing_responses_in_flows(
+    tmp_path: Path, nlu_data_path: Path, domain_file_name: Path
+):
+    flows_file_name = tmp_path / "flows.yml"
+    # remove utter_ask_recipient from this flows file,
+    # but it is listed in the domain file
+    with open(flows_file_name, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    flows:
+                      transfer_money:
+                        description: This flow lets users send money.
+                        name: Transfer money
+                        steps:
+                        - id: "ask_recipient"
+                          collect: transfer_money_recipient
+                          next: "ask_amount"
+                        - id: "ask_amount"
+                          collect: transfer_money_amount
+                          rejections:
+                            - if: transfer_money_amount > 1000
+                              utter: utter_amount_too_high
+                          next: "summarize_transfer"
+                        - id: "summarize_transfer"
+                          action: utter_transfer_summary
+                    """
+        )
+
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file_name),
+        training_data_paths=[str(flows_file_name), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+    match = (
+        "The utterance 'utter_ask_recipient' is not used in any story, rule or flow."
+    )
+    with pytest.warns(UserWarning, match=match):
+        # force validator to not ignore warnings (default is True)
+        validator.verify_utterances_in_dialogues(ignore_warnings=False)
