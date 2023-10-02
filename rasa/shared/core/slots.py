@@ -78,7 +78,8 @@ class Slot(ABC):
     def value_reset_delay(self) -> Optional[int]:
         """After how many turns the slot should be reset to the initial_value.
 
-        If the delay is set to `None`, the slot will keep its value forever."""
+        If the delay is set to `None`, the slot will keep its value forever.
+        """
         # TODO: FUTURE this needs to be implemented - slots are not reset yet
         return self._value_reset_delay
 

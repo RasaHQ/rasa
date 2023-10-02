@@ -103,8 +103,7 @@ class Message:
         return self.data.get(prop, default)
 
     def as_dict_nlu(self) -> dict:
-        """Get dict representation of message as it would appear in training data"""
-
+        """Get dict representation of message as it would appear in training data."""
         d = self.as_dict()
         if d.get(INTENT, None):
             d[INTENT] = self.get_full_intent()
@@ -196,8 +195,7 @@ class Message:
         return cls(data, **kwargs)
 
     def get_full_intent(self) -> Text:
-        """Get intent as it appears in training data"""
-
+        """Get intent as it appears in training data."""
         return (
             self.get(INTENT_RESPONSE_KEY)
             if self.get(INTENT_RESPONSE_KEY)

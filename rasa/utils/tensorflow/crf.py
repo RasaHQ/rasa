@@ -226,6 +226,7 @@ def crf_unary_score(
       tag_indices: A [batch_size, max_seq_len] matrix of tag indices.
       sequence_lengths: A [batch_size] vector of true sequence lengths.
       inputs: A [batch_size, max_seq_len, num_tags] tensor of unary potentials.
+
     Returns:
       unary_scores: A [batch_size] vector of unary scores.
     """
@@ -266,6 +267,7 @@ def crf_binary_score(
       tag_indices: A [batch_size, max_seq_len] matrix of tag indices.
       sequence_lengths: A [batch_size] vector of true sequence lengths.
       transition_params: A [num_tags, num_tags] matrix of binary potentials.
+
     Returns:
       binary_scores: A [batch_size] vector of binary scores.
     """
@@ -310,6 +312,7 @@ def crf_sequence_score(
           we compute the unnormalized score.
       sequence_lengths: A [batch_size] vector of true sequence lengths.
       transition_params: A [num_tags, num_tags] transition matrix.
+
     Returns:
       sequence_scores: A [batch_size] vector of unnormalized sequence scores.
     """
@@ -403,6 +406,7 @@ def crf_log_norm(
           to use as input to the CRF layer.
       sequence_lengths: A [batch_size] vector of true sequence lengths.
       transition_params: A [num_tags, num_tags] transition matrix.
+
     Returns:
       log_norm: A [batch_size] vector of normalizers for a CRF.
     """
@@ -457,6 +461,7 @@ def crf_log_likelihood(
       sequence_lengths: A [batch_size] vector of true sequence lengths.
       transition_params: A [num_tags, num_tags] transition matrix,
           if available.
+
     Returns:
       log_likelihood: A [batch_size] `Tensor` containing the log-likelihood of
         each example, given the sequence of tag indices.
