@@ -62,6 +62,7 @@ excluded_files:
 
 # # Any typos we should ignore?
 excluded_words:
+  - rephraser
   - analytics
   - asyncio
   - bot
