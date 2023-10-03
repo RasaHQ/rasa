@@ -112,7 +112,7 @@ async def _pull_model_and_fingerprint(
 
     logger.debug(f"Requesting model from server {model_server.url}...")
 
-    async with model_server.session() as session:
+    async with model_server.session as session:
         try:
             params = model_server.combine_parameters()
             async with session.request(
