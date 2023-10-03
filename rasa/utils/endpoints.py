@@ -161,24 +161,23 @@ class EndpointConfig:
                     f"'{os.path.abspath(self.cafile)}' does not exist."
                 ) from e
 
-        async with self.session as session:
-            async with session.request(
-                method,
-                url,
-                headers=headers,
-                params=self.combine_parameters(kwargs),
-                compress=compress,
-                ssl=sslcontext,
-                **kwargs,
-            ) as response:
-                if response.status >= 400:
-                    raise ClientResponseError(
-                        response.status, response.reason, await response.content.read()
-                    )
-                try:
-                    return await response.json()
-                except ContentTypeError:
-                    return None
+        async with self.session.request(
+            method,
+            url,
+            headers=headers,
+            params=self.combine_parameters(kwargs),
+            compress=compress,
+            ssl=sslcontext,
+            **kwargs,
+        ) as response:
+            if response.status >= 400:
+                raise ClientResponseError(
+                    response.status, response.reason, await response.content.read()
+                )
+            try:
+                return await response.json()
+            except ContentTypeError:
+                return None
 
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "EndpointConfig":
