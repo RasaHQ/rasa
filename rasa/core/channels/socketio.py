@@ -13,8 +13,6 @@ from socketio import AsyncServer
 
 logger = logging.getLogger(__name__)
 
-CHAT_TEMPLATE_PATH = "/chat.html"
-
 
 class SocketBlueprint(Blueprint):
     """Blueprint for socketio connections."""
@@ -147,7 +145,7 @@ class SocketIOInput(InputChannel):
             credentials.get("user_message_evt", "user_uttered"),
             credentials.get("bot_message_evt", "bot_uttered"),
             credentials.get("namespace"),
-            credentials.get("session_persistence", True),
+            credentials.get("session_persistence", False),
             credentials.get("socketio_path", "/socket.io"),
             credentials.get("jwt_key"),
             credentials.get("jwt_method", "HS256"),
@@ -159,7 +157,7 @@ class SocketIOInput(InputChannel):
         user_message_evt: Text = "user_uttered",
         bot_message_evt: Text = "bot_uttered",
         namespace: Optional[Text] = None,
-        session_persistence: bool = True,
+        session_persistence: bool = False,
         socketio_path: Optional[Text] = "/socket.io",
         jwt_key: Optional[Text] = None,
         jwt_method: Optional[Text] = "HS256",
@@ -190,12 +188,6 @@ class SocketIOInput(InputChannel):
             return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
-    def chat_html_path(self) -> Text:
-        """Returns the path to the chat.html file."""
-        import pkg_resources
-
-        return pkg_resources.resource_filename(__name__, CHAT_TEMPLATE_PATH)
-
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -213,10 +205,6 @@ class SocketIOInput(InputChannel):
         @socketio_webhook.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
-
-        @socketio_webhook.route("/chat.html", methods=["GET"])
-        async def chat(_: Request) -> HTTPResponse:
-            return await response.file(self.chat_html_path())
 
         @sio.on("connect", namespace=self.namespace)
         async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:
