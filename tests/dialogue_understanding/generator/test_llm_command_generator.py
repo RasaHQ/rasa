@@ -328,11 +328,12 @@ class TestLLMCommandGenerator:
     def collect_info_step(self) -> CollectInformationFlowStep:
         """Create a CollectInformationFlowStep."""
         return CollectInformationFlowStep(
-            collect_information="test_slot",
+            collect="test_slot",
+            idx=0,
             ask_before_filling=True,
             utter="hello",
             rejections=[SlotRejection("test_slot", "some rejection")],
-            id="collect_information",
+            custom_id="collect",
             description="test_slot",
             metadata={},
             next="next_step",
@@ -365,11 +366,12 @@ class TestLLMCommandGenerator:
             sender_id="test", evts=[], slots=[TextSlot(name="test_slot", mappings=[])]
         )
         collect_info_step = CollectInformationFlowStep(
-            collect_information="test_slot",
+            collect="test_slot",
             ask_before_filling=False,
             utter="hello",
             rejections=[SlotRejection("test_slot", "some rejection")],
-            id="collect_information",
+            custom_id="collect_information",
+            idx=0,
             description="test_slot",
             metadata={},
             next="next_step",

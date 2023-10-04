@@ -177,11 +177,11 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if top_flow is not None:
             flow_slots = [
                 {
-                    "name": info_step.collect_information,
-                    "value": self.slot_value(tracker, info_step.collect_information),
-                    "type": tracker.slots[info_step.collect_information].type_name,
+                    "name": info_step.collect,
+                    "value": self.slot_value(tracker, info_step.collect),
+                    "type": tracker.slots[info_step.collect].type_name,
                     "allowed_values": self.allowed_values_for_slot(
-                        tracker.slots[info_step.collect_information]
+                        tracker.slots[info_step.collect]
                     ),
                     "description": info_step.description,
                 }
@@ -192,7 +192,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             flow_slots = []
 
         collect_information, collect_information_description = (
-            (current_step.collect_information, current_step.description)
+            (current_step.collect, current_step.description)
             if isinstance(current_step, CollectInformationFlowStep)
             else (None, None)
         )
@@ -398,7 +398,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         Returns:
             `True` if the slot can be filled, `False` otherwise.
         """
-        slot = tracker.slots.get(info_step.collect_information)
+        slot = tracker.slots.get(info_step.collect)
         if slot is None:
             return False
 
@@ -411,7 +411,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             or (
                 current_step is not None
                 and isinstance(current_step, CollectInformationFlowStep)
-                and current_step.collect_information == info_step.collect_information
+                and current_step.collect == info_step.collect
             )
         )
 
