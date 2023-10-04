@@ -37,6 +37,11 @@ responses:
       metadata:
         rephrase: True
 
+  utter_no_knowledge_base:
+    - text: I am afraid, I don't know the answer. At this point, I don't have access to a knowledge base.
+      metadata:
+        rephrase: True
+
 slots:
   confirm_correction:
     type: bool
@@ -106,6 +111,12 @@ flows:
 
           User: {{latest_user_message}}
           Response:
+
+  pattern_search:
+    description: handle a knowledge-based question or request
+    steps:
+      - action: utter_no_knowledge_base
+      # - action: action_trigger_search to use doc search policy if present
 
   pattern_clarification:
     description: handle clarifications with the user
