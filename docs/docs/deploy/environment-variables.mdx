@@ -26,26 +26,26 @@ rasa:
 
 ## Rasa Pro and Rasa Open Source
 
-When running Rasa Pro, the `RASA_PRO_LICENSE` environement variable needs to contain
+When running Rasa Pro, the `RASA_PRO_LICENSE` environment variable needs to contain
 the Rasa Pro license key.
 
 ### Backing services
 
-| Environment Variable              | Description                                                                                                           | Default            |
-| :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------- | :----------------- |
-| `POSTGRESQL_SCHEMA`               | The postgres schema for the [`SQLTrackerStore`](../production/tracker-stores.mdx#sqltrackerstore).                                                              | `"public"`                   |
-| `POSTGRESQL_POOL_SIZE`            | The limit of the number of open connections for the [`SQLTrackerStore`](../production/tracker-stores.mdx#sqltrackerstore).                                     | `50`                   |
-| `POSTGRESQL_MAX_OVERFLOW`         | The [maximum overflow](https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool.params.max_overflow) of pool size for the [`SQLTrackerStore`](../production/tracker-stores.mdx#sqltrackerstore).                                                            | `100`                   |
-| `RABBITMQ_SSL_CLIENT_CERTIFICATE` | The path to the SSL client certificate for the [`PikaEventBroker`](../production/event-brokers.mdx#pika-event-broker).                                                             |                    |
-| `RABBITMQ_SSL_CLIENT_KEY`         | The path to the SSL client key for the [`PikaEventBroker`](../production/event-brokers.mdx#pika-event-broker).                                                              |                    |
-| `RASA_ENVIRONMENT`                | The Rasa environement for the [`PikaEventBroker`](../production/event-brokers.mdx#pika-event-broker) and the [`KafkaEventBroker`](../production/event-brokers.mdx#kafka-event-broker).                                                              |                    |
-| `SECRET_MANAGER`                  | <RasaProLabel /> The type of [secret manager](../production/secrets-managers.mdx).                                                              | `"vault"`                   |
-| `TICKET_LOCK_LIFETIME`            | The lifetime of ticket locks, in seconds. It configures the [lock store](../production/lock-stores.mdx).                                                              | `60`                   |
-| `VAULT_URL`                       | <RasaProLabel /> The URl of the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             |                   |
-| `VAULT_TOKEN`                     | <RasaProLabel /> The token to authenticate to the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             |                   |
-| `VAULT_NAMESPACE`                 | <RasaProLabel /> The namespace of the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             |                   |
-| `VAULT_RASA_SECRETS_PATH`         | <RasaProLabel /> The path to Rasa secrets in the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             | `"rasa-secrets"`                   |
-| `VAULT_TRANSIT_MOUNT_POINT`       | <RasaProLabel /> The mount point of the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             |                   |
+| Environment Variable              | Description                                                                                                                                                                                                           | Default           |
+| :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------- |
+| `POSTGRESQL_SCHEMA`               | The postgres schema for the [`SQLTrackerStore`](../production/tracker-stores.mdx#sqltrackerstore).                                                                                                                    | `"public"`        |
+| `POSTGRESQL_POOL_SIZE`            | The limit of the number of open connections for the [`SQLTrackerStore`](../production/tracker-stores.mdx#sqltrackerstore).                                                                                            | `50`              |
+| `POSTGRESQL_MAX_OVERFLOW`         | The [maximum overflow](https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool.params.max_overflow) of pool size for the [`SQLTrackerStore`](../production/tracker-stores.mdx#sqltrackerstore). | `100`             |
+| `RABBITMQ_SSL_CLIENT_CERTIFICATE` | The path to the SSL client certificate for the [`PikaEventBroker`](../production/event-brokers.mdx#pika-event-broker).                                                                                                |                   |
+| `RABBITMQ_SSL_CLIENT_KEY`         | The path to the SSL client key for the [`PikaEventBroker`](../production/event-brokers.mdx#pika-event-broker).                                                                                                        |                   |
+| `RASA_ENVIRONMENT`                | The Rasa environment for the [`PikaEventBroker`](../production/event-brokers.mdx#pika-event-broker) and the [`KafkaEventBroker`](../production/event-brokers.mdx#kafka-event-broker).                                 |                   |
+| `SECRET_MANAGER`                  | <RasaProLabel /> The type of [secret manager](../production/secrets-managers.mdx).                                                                                                                                    | `"vault"`         |
+| `TICKET_LOCK_LIFETIME`            | The lifetime of ticket locks, in seconds. It configures the [lock store](../production/lock-stores.mdx).                                                                                                              | `60`              |
+| `VAULT_URL`                       | <RasaProLabel /> The URl of the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                                                                |                   |
+| `VAULT_TOKEN`                     | <RasaProLabel /> The token to authenticate to the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                                              |                   |
+| `VAULT_NAMESPACE`                 | <RasaProLabel /> The namespace of the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                                                          |                   |
+| `VAULT_RASA_SECRETS_PATH`         | <RasaProLabel /> The path to Rasa secrets in the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                                               | `"rasa-secrets"`  |
+| `VAULT_TRANSIT_MOUNT_POINT`       | <RasaProLabel /> The mount point of the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                                                        |                   |
 
 ### Model Storage
 
@@ -69,7 +69,7 @@ Environment variables that configure model storage on cloud providers are descri
 
 | Environment Variable         | Description                                                                                                       | Default   |
 | :--------------------------- | :---------------------------------------------------------------------------------------------------------------- | :-------- |
-| `LOG_LEVEL`                  | The log level for Rasa and Rasa Pro.                                                                                | `"INFO"`  |
+| `LOG_LEVEL`                  | The log level for Rasa and Rasa Pro.                                                                              | `"INFO"`  |
 | `LOG_LEVEL_LIBRARIES`        | The log level for 3rd-party libraries. More info [here](../command-line-interface.mdx#log-level).                 | `"ERROR"` |
 | `LOG_LEVEL_KAFKA`            | The log level for `kafka` library. More info [here](../command-line-interface.mdx#log-level).                     | `"ERROR"` |
 | `LOG_LEVEL_RABBITMQ`         | The log level for `rabbitmq` library. More info [here](../command-line-interface.mdx#log-level).                  | `"ERROR"` |
