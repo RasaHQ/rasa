@@ -474,34 +474,32 @@ class Policy(GraphComponent):
                 if state:
                     if USER in state:
                         if TEXT in state[USER]:
-                            state_messages.append(
-                                f"user text: {str(state[USER][TEXT])}"
-                            )
+                            state_messages.append(f"user text: {state[USER][TEXT]!s}")
                         if INTENT in state[USER]:
                             state_messages.append(
-                                f"user intent: {str(state[USER][INTENT])}"
+                                f"user intent: {state[USER][INTENT]!s}"
                             )
                         if ENTITIES in state[USER]:
                             state_messages.append(
-                                f"user entities: {str(state[USER][ENTITIES])}"
+                                f"user entities: {state[USER][ENTITIES]!s}"
                             )
                     if PREVIOUS_ACTION in state:
                         if ACTION_NAME in state[PREVIOUS_ACTION]:
                             state_messages.append(
                                 f"previous action name: "
-                                f"{str(state[PREVIOUS_ACTION][ACTION_NAME])}"
+                                f"{state[PREVIOUS_ACTION][ACTION_NAME]!s}"
                             )
                         if ACTION_TEXT in state[PREVIOUS_ACTION]:
                             state_messages.append(
                                 f"previous action text: "
-                                f"{str(state[PREVIOUS_ACTION][ACTION_TEXT])}"
+                                f"{state[PREVIOUS_ACTION][ACTION_TEXT]!s}"
                             )
                     if ACTIVE_LOOP in state:
-                        state_messages.append(f"active loop: {str(state[ACTIVE_LOOP])}")
+                        state_messages.append(f"active loop: {state[ACTIVE_LOOP]!s}")
                     if SLOTS in state:
-                        state_messages.append(f"slots: {str(state[SLOTS])}")
+                        state_messages.append(f"slots: {state[SLOTS]!s}")
                     state_message_formatted = " | ".join(state_messages)
-                    state_formatted = f"[state {str(index)}] {state_message_formatted}"
+                    state_formatted = f"[state {index!s}] {state_message_formatted}"
                     formatted_states.append(state_formatted)
 
         return "\n".join(formatted_states)

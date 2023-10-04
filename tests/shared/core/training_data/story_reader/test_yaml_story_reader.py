@@ -716,7 +716,7 @@ def test_can_read_test_story(domain: Domain):
     # this should be the story simple_story_with_only_end -> show_it_all
     # the generated stories are in a non stable order - therefore we need to
     # do some trickery to find the one we want to test
-    tracker = [t for t in trackers if len(t.events) == 5][0]
+    tracker = [t for t in trackers if len(t.events) == 5][0]  # noqa: RUF015
     assert tracker.events[0] == ActionExecuted("action_listen")
     assert tracker.events[1] == UserUttered(
         intent={INTENT_NAME_KEY: "simple", "confidence": 1.0},

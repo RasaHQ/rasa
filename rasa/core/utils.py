@@ -117,7 +117,7 @@ def list_routes(app: Sanic) -> Dict[Text, Text]:
         for arg in route._params:
             options[arg] = f"[{arg}]"
 
-        handlers = [(list(route.methods)[0], route.name.replace("rasa_server.", ""))]
+        handlers = [(next(iter(route.methods)), route.name.replace("rasa_server.", ""))]
 
         for method, name in handlers:
             full_endpoint = "/" + "/".join(endpoint)

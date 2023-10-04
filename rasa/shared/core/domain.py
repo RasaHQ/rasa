@@ -518,7 +518,7 @@ class Domain:
             `used_entities` since this is the expected format of the intent
             when used internally.
         """
-        name, properties = list(intent.items())[0]
+        name, properties = next(iter(intent.items()))
 
         if properties:
             properties.setdefault(USE_ENTITIES_KEY, True)
@@ -709,7 +709,7 @@ class Domain:
                 }
             }
         else:
-            intent_name = list(intent.keys())[0]
+            intent_name = next(iter(intent.keys()))
 
         return (
             intent_name,
@@ -852,7 +852,7 @@ class Domain:
             User-defined intents that are default intents.
         """
         intent_names: Set[Text] = {
-            list(intent.keys())[0] if isinstance(intent, dict) else intent
+            next(iter(intent.keys())) if isinstance(intent, dict) else intent
             for intent in intents
         }
         return sorted(
@@ -909,7 +909,7 @@ class Domain:
     ) -> List[Union[Text, Dict]]:
         def sort(elem: Union[Text, Dict]) -> Union[Text, Dict]:
             if isinstance(elem, dict):
-                return list(elem.keys())[0]
+                return next(iter(elem.keys()))
             elif isinstance(elem, str):
                 return elem
 
@@ -1717,7 +1717,7 @@ class Domain:
 
         def get_exception_message(
             duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
-            mappings: List[Tuple[Text, Text]] = None,
+            mappings: Optional[List[Tuple[Text, Text]]] = None,
         ) -> Text:
             """Return a message given a list of error locations."""
             message = ""

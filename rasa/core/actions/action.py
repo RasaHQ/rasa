@@ -1176,7 +1176,7 @@ class ActionExtractSlots(Action):
         except (RasaException, ClientResponseError) as e:
             logger.warning(
                 f"Failed to execute custom action '{custom_action}' "
-                f"as a result of error '{str(e)}'. The default action "
+                f"as a result of error '{e!s}'. The default action "
                 f"'{self.name()}' failed to fill slots with custom "
                 f"mappings."
             )

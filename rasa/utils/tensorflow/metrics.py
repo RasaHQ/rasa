@@ -185,7 +185,6 @@ class FBetaScore(tf.keras.metrics.Metric):
 
     def get_config(self) -> Dict[str, Any]:
         """Returns the serializable config of the metric."""
-
         config = {
             "num_classes": self.num_classes,
             "average": self.average,
@@ -269,7 +268,7 @@ class F1Score(FBetaScore):
     def __init__(
         self,
         num_classes: TensorLike,
-        average: str = None,
+        average: Optional[str] = None,
         threshold: Optional[TensorLike] = None,
         name: str = "f1_score",
         dtype: Any = None,
