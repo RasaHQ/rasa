@@ -5,7 +5,8 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
+from rasa.shared.core.flows.flow import END_STEP, ContinueFlowStep, FlowsList
 
 
 def top_flow_frame(
@@ -106,3 +107,23 @@ def user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:
     return {
         f.flow_id for f in dialogue_stack.frames if isinstance(f, UserFlowStackFrame)
     }
+
+
+def end_top_user_flow(stack: DialogueStack) -> None:
+    """Ends all frames on top of the stack including the topmost user frame.
+
+    Ends all flows until the next user flow is reached. This is useful
+    if you want to end all flows that are currently on the stack and
+    the user flow that triggered them.
+
+    Args:
+        stack: The dialogue stack.
+    """
+
+    for frame in reversed(stack.frames):
+        if isinstance(frame, BaseFlowStackFrame):
+            frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
+            if isinstance(frame, UserFlowStackFrame):
+                # Making sure there are no "continue interrupts" triggered
+                frame.frame_type = FlowStackFrameType.REGULAR
+                break

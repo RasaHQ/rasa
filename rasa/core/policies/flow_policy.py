@@ -7,6 +7,9 @@ from jinja2 import Template
 from structlog.contextvars import (
     bound_contextvars,
 )
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
@@ -23,7 +26,10 @@ from rasa.dialogue_understanding.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
-from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
+from rasa.dialogue_understanding.stack.utils import (
+    end_top_user_flow,
+    top_user_flow_frame,
+)
 
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
@@ -220,7 +226,18 @@ class FlowPolicy(Policy):
                     "There appears to be an infinite loop in the flows."
                 ),
             )
-            return self._prediction(self._default_predictions(domain))
+            # end the current flow and start the internal error flow
+            end_top_user_flow(executor.dialogue_stack)
+            executor.dialogue_stack.push(InternalErrorPatternFlowStackFrame())
+            # we retry, with the internal error frame on the stack
+            prediction = executor.advance_flows(tracker)
+            return self._create_prediction_result(
+                prediction.action_name,
+                domain,
+                prediction.score,
+                prediction.events,
+                prediction.metadata,
+            )
 
     def _create_prediction_result(
         self,

@@ -21,7 +21,11 @@ from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
     SearchStackFrame,
 )
-from tests.utilities import flows_from_str
+from tests.utilities import (
+    flows_default_domain,
+    flows_from_str,
+    flows_from_str_with_defaults,
+)
 
 
 @pytest.fixture()
@@ -235,6 +239,59 @@ def test_executor_trips_internal_circuit_breaker():
 
     with pytest.raises(FlowCircuitBreakerTrippedException):
         executor.select_next_action(tracker)
+
+
+def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
+    default_flow_policy: FlowPolicy,
+):
+    flow_with_loop = flows_from_str_with_defaults(
+        """
+        flows:
+          foo_flow:
+            steps:
+            - id: "1"
+              set_slot:
+                foo: bar
+              next: "2"
+            - id: "2"
+              set_slot:
+                foo: barbar
+              next: "1"
+        """
+    )
+
+    domain = flows_default_domain()
+
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="foo_flow", step_id="1", frame_id="some-id")]
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[ActionExecuted(action_name="action_listen"), stack.persist_as_event()],
+        domain=domain,
+        slots=domain.slots,
+    )
+
+    prediction = default_flow_policy.predict_action_probabilities(
+        tracker=tracker, domain=domain, flows=flow_with_loop
+    )
+
+    assert prediction.max_confidence == 1.0
+
+    predicted_idx = prediction.max_confidence_index
+    assert domain.action_names_or_texts[predicted_idx] == "utter_internal_error_rasa"
+    # check that the stack was updated.
+    assert len(prediction.optional_events) == 1
+    assert isinstance(prediction.optional_events[0], SlotSet)
+
+    assert prediction.optional_events[0].key == "dialogue_stack"
+    # the user flow should be on the stack as well as the error pattern
+    assert len(prediction.optional_events[0].value) == 2
+    # the user flow should be about to end
+    assert prediction.optional_events[0].value[0]["step_id"] == "NEXT:END"
+    # the pattern should be the other frame
+    assert prediction.optional_events[0].value[1]["flow_id"] == "pattern_internal_error"
 
 
 def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
