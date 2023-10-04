@@ -352,9 +352,13 @@ jobs:
           (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
           Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
 
-      - name: Install ddtrace
-        if: needs.changes.outputs.backend == 'true'
-        run: poetry run pip install -U ddtrace
+      - name: Install ddtrace on Linux
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        run: poetry run pip install -U 'ddtrace<2.0.0'
+
+      - name: Install ddtrace on Windows
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        run: py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
@@ -492,9 +496,13 @@ jobs:
           (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
           Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
 
-      - name: Install ddtrace
-        if: needs.changes.outputs.backend == 'true'
-        run: poetry run pip install -U ddtrace
+      - name: Install ddtrace on Linux
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        run: poetry run pip install -U 'ddtrace<2.0.0'
+
+      - name: Install ddtrace on Windows
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        run: py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
