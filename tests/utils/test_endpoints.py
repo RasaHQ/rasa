@@ -233,7 +233,7 @@ def test_int_arg(value: Optional[Union[int, str]], default: int, expected_result
     assert endpoint_utils.int_arg(request, "key", default) == expected_result
 
 
-def test_endpoint_config_caches_session() -> None:
+async def test_endpoint_config_caches_session() -> None:
     """Test that the EndpointConfig session is cached.
 
     Assert identity of the session object, which should not be recreated when calling
@@ -242,7 +242,7 @@ def test_endpoint_config_caches_session() -> None:
     endpoint = endpoint_utils.EndpointConfig("https://example.com/")
     session = endpoint.session
 
-    assert session is endpoint.session
+    assert endpoint.session is session
 
 
 async def test_endpoint_config_constructor_does_not_create_session_cached_property() -> None:  # noqa: E501
