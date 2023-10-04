@@ -354,7 +354,7 @@ jobs:
 
       - name: Install ddtrace
         if: needs.changes.outputs.backend == 'true'
-        run: poetry run pip install -U ddtrace
+        run: poetry run pip install -U "ddtrace<2.0.0"
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
