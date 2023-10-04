@@ -17,7 +17,7 @@ from typing import (
 import structlog
 
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX, UTTER_PREFIX
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
 
@@ -263,6 +263,11 @@ class FlowsList:
         Returns:
             All flows that can be started."""
         return [f.id for f in self.underlying_flows if not f.is_handling_pattern()]
+
+    @property
+    def utterances(self) -> Set[str]:
+        """Retrieve all utterances of all flows"""
+        return set().union(*[flow.utterances for flow in self.underlying_flows])
 
 
 @dataclass
@@ -541,6 +546,11 @@ class Flow:
         """Create a fingerprint identifying this step sequence."""
         return rasa.shared.utils.io.deep_container_fingerprint(self.as_json())
 
+    @property
+    def utterances(self) -> Set[str]:
+        """Retrieve all utterances of this flow"""
+        return set().union(*[step.utterances for step in self.step_sequence.steps])
+
 
 @dataclass
 class StepSequence:
@@ -683,6 +693,11 @@ class FlowStep:
         """Returns the default id postfix of the flow step."""
         raise NotImplementedError()
 
+    @property
+    def utterances(self) -> Set[str]:
+        """Return all the utterances used in this step"""
+        return set()
+
 
 class InternalFlowStep(FlowStep):
     """Represents the configuration of a built-in flow step.
@@ -815,6 +830,11 @@ class ActionFlowStep(FlowStep):
 
     def default_id_postfix(self) -> str:
         return self.action
+
+    @property
+    def utterances(self) -> Set[str]:
+        """Return all the utterances used in this step"""
+        return {self.action} if self.action.startswith(UTTER_PREFIX) else set()
 
 
 @dataclass
@@ -1302,6 +1322,11 @@ class CollectInformationFlowStep(FlowStep):
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         return f"collect_{self.collect}"
+
+    @property
+    def utterances(self) -> Set[str]:
+        """Return all the utterances used in this step"""
+        return {self.utter} | {r.utter for r in self.rejections}
 
 
 @dataclass
