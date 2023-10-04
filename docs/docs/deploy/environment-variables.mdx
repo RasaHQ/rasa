@@ -91,8 +91,10 @@ Environment variables that configure model storage on cloud providers are descri
 | `RASA_STUDIO_CLI_CLIENT_ID_KEY`  | <RasaProLabel /> TBD        |           |
 
 ### Advanced configuration
+
 | Environment Variable                           | Description                                                                                                                                                                 | Default          |
 | :--------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------- |
+| `COMPRESS_ACTION_SERVER_REQUEST`               | Toggle compression of HTTP requests sent to the [Action Server](../action-server/actions.mdx).                                                                              | `false`          |
 | `RASA_MAX_CACHE_SIZE`                          | The maximum size of the training cache, in MB.                                                                                                                              | `1000`           |
 | `RASA_CACHE_NAME`                              | The filename of the training cache.                                                                                                                                         | `"cache.db"`     |
 | `RASA_CACHE_DIRECTORY`                         | The directory for the training cache.                                                                                                                                       | `".rasa/cache/"` |
