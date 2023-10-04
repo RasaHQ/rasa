@@ -88,7 +88,7 @@ async def test_endpoint_config():
 
         # unfortunately, the mock library won't report any headers stored on
         # the session object, so we need to verify them separately
-        async with endpoint.session as s:
+        async with endpoint.session() as s:
             assert s._default_headers.get("X-Powered-By") == "Rasa"
             assert s._default_auth.login == "user"
             assert s._default_auth.password == "pass"
@@ -233,15 +233,8 @@ def test_int_arg(value: Optional[Union[int, str]], default: int, expected_result
     assert endpoint_utils.int_arg(request, "key", default) == expected_result
 
 
-async def test_endpoint_config_does_not_create_session_cached_property() -> None:
-    """Test the instantiation of EndpointConfig does not create the session cached property."""  # noqa: E501
+async def test_endpoint_config_caches_session() -> None:
     endpoint = endpoint_utils.EndpointConfig("https://example.com/")
+    session = endpoint.session()
 
-    assert endpoint.__dict__.get("url") == "https://example.com/"
-    assert endpoint.__dict__.get("session") is None
-
-    # the property is created when it is accessed
-    async with endpoint.session as session:
-        assert session is not None
-
-    assert endpoint.__dict__.get("session") is session
+    assert session is endpoint.session()

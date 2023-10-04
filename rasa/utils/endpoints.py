@@ -1,5 +1,5 @@
 import ssl
-from functools import cached_property
+from functools import lru_cache
 
 import aiohttp
 import logging
@@ -95,7 +95,7 @@ class EndpointConfig:
         self.cafile = cafile
         self.kwargs = kwargs
 
-    @cached_property
+    @lru_cache
     def session(self) -> aiohttp.ClientSession:
         """Creates and returns a configured aiohttp client session."""
         # create authentication parameters
@@ -161,7 +161,7 @@ class EndpointConfig:
                     f"'{os.path.abspath(self.cafile)}' does not exist."
                 ) from e
 
-        async with self.session.request(
+        async with self.session().request(
             method,
             url,
             headers=headers,
@@ -209,6 +209,18 @@ class EndpointConfig:
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.url,
+                tuple(self.params.items()),
+                tuple(self.headers.items()),
+                tuple(self.basic_auth.items()),
+                self.token,
+                self.token_name,
+            )
+        )
 
 
 class ClientResponseError(aiohttp.ClientError):

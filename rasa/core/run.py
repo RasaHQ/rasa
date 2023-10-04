@@ -3,7 +3,7 @@ import logging
 import uuid
 import os
 from functools import partial
-from typing import Any, List, Optional, Text, Union, Dict
+from typing import Any, List, Optional, TYPE_CHECKING, Text, Union, Dict
 
 import rasa.core.utils
 from rasa.plugin import plugin_manager
@@ -22,6 +22,9 @@ from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.io
 from sanic import Sanic
 from asyncio import AbstractEventLoop
+
+if TYPE_CHECKING:
+    from aiohttp import ClientSession
 
 logger = logging.getLogger()  # get the root logger
 
@@ -214,6 +217,7 @@ def serve_application(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
+    app.register_listener(create_connections, "after_server_start")
     app.register_listener(close_resources, "after_server_stop")
 
     number_of_workers = rasa.core.utils.number_of_sanic_workers(
@@ -275,3 +279,19 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
     event_broker = current_agent.tracker_store.event_broker
     if event_broker:
         await event_broker.close()
+
+
+async def create_connections(
+    app: Sanic, _: AbstractEventLoop
+) -> Optional["ClientSession"]:
+    current_agent = getattr(app.ctx, "agent", None)
+    if not current_agent:
+        logger.debug("No agent found after server start.")
+        return None
+
+    action_endpoint = current_agent.action_endpoint
+    if not action_endpoint:
+        logger.debug("No action endpoint found after server start.")
+        return None
+
+    return action_endpoint.session()
