@@ -217,7 +217,7 @@ def serve_application(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
-    app.register_listener(create_connections, "after_server_start")
+    app.register_listener(create_connection_pools, "after_server_start")
     app.register_listener(close_resources, "after_server_stop")
 
     number_of_workers = rasa.core.utils.number_of_sanic_workers(
@@ -281,17 +281,34 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
         await event_broker.close()
 
 
-async def create_connections(
-    app: Sanic, _: AbstractEventLoop
-) -> Optional["ClientSession"]:
+async def create_connection_pools(app: Sanic, _: AbstractEventLoop) -> None:
+    """Create connection pools for the agent's action server and model server."""
     current_agent = getattr(app.ctx, "agent", None)
     if not current_agent:
         logger.debug("No agent found after server start.")
         return None
 
-    action_endpoint = current_agent.action_endpoint
+    create_action_endpoint_connection_pool(current_agent)
+    create_model_server_connection_pool(current_agent)
+
+    return None
+
+
+def create_action_endpoint_connection_pool(agent: Agent) -> Optional["ClientSession"]:
+    """Create a connection pool for the action endpoint."""
+    action_endpoint = agent.action_endpoint
     if not action_endpoint:
         logger.debug("No action endpoint found after server start.")
         return None
 
-    return action_endpoint.session()
+    return action_endpoint.session
+
+
+def create_model_server_connection_pool(agent: Agent) -> Optional["ClientSession"]:
+    """Create a connection pool for the model server."""
+    model_server = agent.model_server
+    if not model_server:
+        logger.debug("No model server endpoint found after server start.")
+        return None
+
+    return model_server.session

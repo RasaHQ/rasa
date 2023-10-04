@@ -114,7 +114,7 @@ async def _pull_model_and_fingerprint(
 
     try:
         params = model_server.combine_parameters()
-        async with model_server.session().request(
+        async with model_server.session.request(
             "GET",
             model_server.url,
             timeout=DEFAULT_REQUEST_TIMEOUT,
