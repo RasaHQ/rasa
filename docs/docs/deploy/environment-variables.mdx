@@ -1,0 +1,131 @@
+---
+id: environment-variables
+title: Adding Environment Variables
+abstract: |
+    Rasa offers advanced configuration through environment variables.
+    Find the full reference here.
+---
+
+import RasaProLabel from "@theme/RasaProLabel";
+
+To add extra environment variables to your containers, add the
+environment variable to an `extraEnvs` array on the service in your `values.yml`. These
+values can be provided directly or refer to [secrets](../production/secrets-managers.mdx).
+The `extraEnvs` parameter is available for all services.
+For example:
+
+```yaml
+# rasa: Settings common for all Rasa containers
+rasa:
+  # other configured parameters
+  # ...
+  extraEnvs:
+  - name: "LOG_LEVEL"
+    value: "warning"
+```
+
+## Rasa Pro and Rasa Open Source
+
+When running Rasa Pro, the `RASA_PRO_LICENSE` environement variable needs to contain
+the Rasa Pro license key.
+
+### Backing services
+
+| Environment Variable              | Description                                                                                                           | Default            |
+| :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------- | :----------------- |
+| `POSTGRESQL_SCHEMA`               | The postgres schema for the [`SQLTrackerStore`](../production/tracker-stores.mdx#sqltrackerstore).                                                              | `"public"`                   |
+| `POSTGRESQL_POOL_SIZE`            | The limit of the number of open connections for the [`SQLTrackerStore`](../production/tracker-stores.mdx#sqltrackerstore).                                     | `50`                   |
+| `POSTGRESQL_MAX_OVERFLOW`         | The [maximum overflow](https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool.params.max_overflow) of pool size for the [`SQLTrackerStore`](../production/tracker-stores.mdx#sqltrackerstore).                                                            | `100`                   |
+| `RABBITMQ_SSL_CLIENT_CERTIFICATE` | The path to the SSL client certificate for the [`PikaEventBroker`](../production/event-brokers.mdx#pika-event-broker).                                                             |                    |
+| `RABBITMQ_SSL_CLIENT_KEY`         | The path to the SSL client key for the [`PikaEventBroker`](../production/event-brokers.mdx#pika-event-broker).                                                              |                    |
+| `RASA_ENVIRONMENT`                | The Rasa environement for the [`PikaEventBroker`](../production/event-brokers.mdx#pika-event-broker) and the [`KafkaEventBroker`](../production/event-brokers.mdx#kafka-event-broker).                                                              |                    |
+| `SECRET_MANAGER`                  | <RasaProLabel /> The type of [secret manager](../production/secrets-managers.mdx).                                                              | `"vault"`                   |
+| `TICKET_LOCK_LIFETIME`            | The lifetime of ticket locks, in seconds. It configures the [lock store](../production/lock-stores.mdx).                                                              | `60`                   |
+| `VAULT_URL`                       | <RasaProLabel /> The URl of the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             |                   |
+| `VAULT_TOKEN`                     | <RasaProLabel /> The token to authenticate to the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             |                   |
+| `VAULT_NAMESPACE`                 | <RasaProLabel /> The namespace of the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             |                   |
+| `VAULT_RASA_SECRETS_PATH`         | <RasaProLabel /> The path to Rasa secrets in the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             | `"rasa-secrets"`                   |
+| `VAULT_TRANSIT_MOUNT_POINT`       | <RasaProLabel /> The mount point of the [HashiCorp Vault](../production/secrets-managers.mdx#hashicorp-vault-secrets-manager).                                                             |                   |
+
+### Model Storage
+
+Environment variables that configure model storage on cloud providers are described in the following sections:
+- [Amazon S3 Storage](../production/model-storage.mdx#amazon-s3-storage)
+- [Google Cloud Storage](../production/model-storage.mdx#google-cloud-storage)
+- [Azure Storage](../production/model-storage.mdx#azure-storage)
+
+### Dialogue Management
+
+| Environment Variable             | Description                                                                                                                                                                                   | Default   |
+| :------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------- |
+| `RASA_DUCKLING_HTTP_URL`          | The URL of the Duckling service powering the [`DucklingEntityExtractor`](../nlu-based-assistants/components.mdx#ducklingentityextractor).                                                    |           |
+| `MAX_NUMBER_OF_PREDICTIONS`       | The maximum of predictions after each user message. See [Action Selection](../concepts/policies.mdx#action-selection).                                                                       | `10`      |
+| `TF_GPU_MEMORY_ALLOC`             | GPU configuration for TensorFlow. See [Configuring TensorFlow](../nlu-based-assistants/tuning-your-model.mdx#configuring-tensorflow).                                                        |           |
+| `TF_INTER_OP_PARALLELISM_THREADS` | The number of threads used for parallelism between independent operations in TensorFlow. See [Configuring TensorFlow](../nlu-based-assistants/tuning-your-model.mdx#configuring-tensorflow). |           |
+| `TF_INTRA_OP_PARALLELISM_THREADS` | The number of threads used within an individual TensorFlow operation for parallelism. See [Configuring TensorFlow](../nlu-based-assistants/tuning-your-model.mdx#configuring-tensorflow).    |           |
+| `TF_DETERMINISTIC_OPS`            | Configures TensorFlow ops to run deterministically. See [Configuring TensorFlow](../nlu-based-assistants/tuning-your-model.mdx#configuring-tensorflow).                                      | `false`   |
+
+### Observability
+
+| Environment Variable         | Description                                                                                                       | Default   |
+| :--------------------------- | :---------------------------------------------------------------------------------------------------------------- | :-------- |
+| `LOG_LEVEL`                  | The log level for Rasa and Rasa Pro.                                                                                | `"INFO"`  |
+| `LOG_LEVEL_LIBRARIES`        | The log level for 3rd-party libraries. More info [here](../command-line-interface.mdx#log-level).                 | `"ERROR"` |
+| `LOG_LEVEL_KAFKA`            | The log level for `kafka` library. More info [here](../command-line-interface.mdx#log-level).                     | `"ERROR"` |
+| `LOG_LEVEL_RABBITMQ`         | The log level for `rabbitmq` library. More info [here](../command-line-interface.mdx#log-level).                  | `"ERROR"` |
+| `LOG_LEVEL_FAKER`            | The log level for `faker` library. More info [here](../command-line-interface.mdx#log-level).                     | `"ERROR"` |
+| `LOG_LEVEL_PRESIDIO`         | <RasaProLabel /> The log level for `presidio` library. More info [here](../command-line-interface.mdx#log-level). | `"ERROR"` |
+| `RASA_TELEMETRY_ENABLED`     | Toggle telemetry reporting. More info [here](../telemetry/telemetry.mdx)                                          | `true`    |
+| `RASA_TELEMETRY_DEBUG`       | Toggle debug information for telemetry reporting.                                                                 | `false`   |
+| `RASA_PRO_TELEMETRY_ENABLED` | <RasaProLabel /> Toggle telemetry reporting. More info [here](../telemetry/telemetry.mdx)                         | `true`    |
+| `RASA_PRO_TELEMETRY_DEBUG`   | <RasaProLabel /> Toggle debug information for telemetry reporting.                                                | `false`   |
+| `TRACING_SERVICE_NAME`       | <RasaProLabel /> The top-level service name when sending traces. More info [here](../operating/tracing.mdx)       | `"rasa"`  |
+
+### Studio
+
+| Environment Variable             | Description                 | Default   |
+| :------------------------------- | :-------------------------- | :-------- |
+| `RASA_STUDIO_AUTH_SERVER_URL`    | <RasaProLabel /> TBD        |           |
+| `RASA_STUDIO_CLI_STUDIO_URL`     | <RasaProLabel /> TBD        |           |
+| `RASA_STUDIO_CLI_REALM_NAME_KEY` | <RasaProLabel /> TBD        |           |
+| `RASA_STUDIO_CLI_CLIENT_ID_KEY`  | <RasaProLabel /> TBD        |           |
+
+### Advanced configuration
+| Environment Variable                           | Description                                                                                                                                                                 | Default          |
+| :--------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------- |
+| `RASA_MAX_CACHE_SIZE`                          | The maximum size of the training cache, in MB.                                                                                                                              | `1000`           |
+| `RASA_CACHE_NAME`                              | The filename of the training cache.                                                                                                                                         | `"cache.db"`     |
+| `RASA_CACHE_DIRECTORY`                         | The directory for the training cache.                                                                                                                                       | `".rasa/cache/"` |
+| `RASA_SHELL_STREAM_READING_TIMEOUT_IN_SECONDS` | The stream reading timeout for [`rasa shell`](../command-line-interface.mdx#rasa-shell), in seconds.                                                                        | `10`             |
+| `SANIC_BACKLOG`                                | The number of unaccepted connections that the [HTTP server](../production/http-api.mdx) and [NLG server](../production/nlg.mdx) will allow before refusing new connections. | `100`            |
+| `SANIC_WORKERS`                                | The number of HTTP workers when enabling the [HTTP server](../production/http-api.mdx).                                                                                     | `1`              |
+
+## Rasa Pro Services
+
+The Rasa Pro Services docker container supports configuration through
+several environment variables. The following table lists the available
+environment variables:
+
+| Environment Variable      | Description                                                                                                           | Default            |
+| :------------------------ | :-------------------------------------------------------------------------------------------------------------------- | :----------------- |
+| `RASA_PRO_LICENSE`        | **Required**. The license key for Rasa Pro Services.                                                                  |                    |
+| `KAFKA_BROKER_ADDRESS`    | **Required**. The address of the Kafka broker.                                                                        |                    |
+| `KAFKA_TOPIC`             | **Required**. The topic Rasa Plus publishes events to and Rasa Pro consumes from.                                     | `rasa_core_events` |
+| `LOGGING_LEVEL`           | Set the log level of the application. Valid levels are DEBUG, INFO, WARNING, ERROR, CRITICAL. (Available from 3.0.2)  | `INFO`             |
+| `RASA_ANALYTICS_DB_URL`   | The URL of the data lake to store analytics data in.                                                                  |                    |
+| `KAFKA_SASL_MECHANISM`    | The SASL mechanism to use for authentication. Valid mechanisms are                                                    | `PLAIN`            |
+| `KAFKA_SASL_USERNAME`     | The username for SASL authentication.                                                                                 |                    |
+| `KAFKA_SASL_PASSWORD`     | The password for SASL authentication.                                                                                 |                    |
+| `KAFKA_SECURITY_PROTOCOL` | The security protocol to use for communication with Kafka. Supported mechanisms are `PLAINTEXT` and `SASL_PLAINTEXT`. | `PLAINTEXT`        |
+| `KAFKA_SSL_CA_LOCATION`   | The filepath for SSL CA Certificate that will be used to connect with Kafka (Available from `3.1.0b1`)                |                    |
+
+## Rasa SDK
+
+The Rasa SDK docker container supports configuration through
+several environment variables. The following table lists the available
+environment variables:
+
+| Environment Variable          | Description                                                                                                           | Default |
+| :---------------------------- | :-------------------------------------------------------------------------------------------------------------------- | :------ |
+| `ACTION_SERVER_SANIC_WORKERS` | The number of Sanic HTTP workers in the Action server.                                                                | `1`     |
+| `LOG_LEVEL_LIBRARIES`         | The log level of third-party libraries. See [Log level configuration](../command-line-interface.mdx#log-level).       | `ERROR` |

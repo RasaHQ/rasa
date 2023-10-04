@@ -216,6 +216,7 @@ module.exports = {
             "deploy/deploy-rasa",
             "deploy/deploy-action-server",
             "deploy/deploy-rasa-pro-services",
+            "deploy/environment-variables",
           ],
         },
         "production/load-testing-guidelines",
