@@ -3,10 +3,7 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.chit_chat_frame import ChitChatStackFrame
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
-    FlowStackFrameType,
-    UserFlowStackFrame,
-)
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.dialogue_understanding.stack.utils import (
     end_top_user_flow,
     filled_slots_for_active_flow,
@@ -244,37 +241,6 @@ def test_end_top_user_flow_only_ends_topmost_user_frame():
     )
     assert stack.frames[1] == UserFlowStackFrame(
         flow_id="my_flow", step_id="NEXT:END", frame_id="some-frame-id"
-    )
-
-
-def test_end_top_user_flow_handles_interrupt_frames():
-    user_frame = UserFlowStackFrame(
-        flow_id="my_flow",
-        step_id="collect_bar",
-        frame_id="some-frame-id",
-        frame_type=FlowStackFrameType.INTERRUPT,
-    )
-    other_user_frame = UserFlowStackFrame(
-        flow_id="my_other_flow", step_id="collect_bar2", frame_id="some-other-id"
-    )
-    stack = DialogueStack(frames=[other_user_frame, user_frame])
-
-    end_top_user_flow(stack)
-
-    assert len(stack.frames) == 2
-
-    assert stack.frames[0] == UserFlowStackFrame(
-        flow_id="my_other_flow",
-        step_id="collect_bar2",
-        frame_id="some-other-id",
-        frame_type=FlowStackFrameType.REGULAR,
-    )
-
-    assert stack.frames[1] == UserFlowStackFrame(
-        flow_id="my_flow",
-        step_id="NEXT:END",
-        frame_id="some-frame-id",
-        frame_type=FlowStackFrameType.REGULAR,
     )
 
 

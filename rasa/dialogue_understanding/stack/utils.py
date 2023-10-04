@@ -5,7 +5,6 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
 from rasa.shared.core.flows.flow import END_STEP, ContinueFlowStep, FlowsList
 
 
@@ -124,6 +123,4 @@ def end_top_user_flow(stack: DialogueStack) -> None:
         if isinstance(frame, BaseFlowStackFrame):
             frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
             if isinstance(frame, UserFlowStackFrame):
-                # Making sure there are no "continue interrupts" triggered
-                frame.frame_type = FlowStackFrameType.REGULAR
                 break
