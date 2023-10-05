@@ -16,6 +16,19 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.6.11] - 2023-10-05
+                        
+Rasa 3.6.11 (2023-10-05)                         
+### Bugfixes
+- [#12722](https://github.com/rasahq/rasa/issues/12722): Intent names will not be falsely abbreviated in interactive training (fixes OSS-413).
+
+  This will also fix a bug where forced user utterances (using the regex matcher) will
+  be reverted even though they are present in the domain.
+- [#12886](https://github.com/rasahq/rasa/issues/12886): Cache `EndpointConfig` session object using `cached_property` decorator instead of recreating this object on every request.
+  Initialize these connection pools for action server and model server endpoints as part of the Sanic `after_server_start` listener.
+  Also close connection pools during Sanic `after_server_stop` listener.
+
+
 ## [3.6.10] - 2023-09-26
                         
 Rasa 3.6.10 (2023-09-26)                         
