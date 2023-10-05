@@ -158,9 +158,9 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
                 ):
                     rasa.shared.utils.io.raise_warning(
                         f"Found conflicting synonym definitions "
-                        f"for {repr(entity_lowercase)}. Overwriting target "
-                        f"{repr(self.synonyms[entity_lowercase])} with "
-                        f"{repr(synonym)}. "
+                        f"for {entity_lowercase!r}. Overwriting target "
+                        f"{self.synonyms[entity_lowercase]!r} with "
+                        f"{synonym!r}. "
                         f"Check your training data and remove "
                         f"conflicting synonym definitions to "
                         f"prevent this from happening.",
