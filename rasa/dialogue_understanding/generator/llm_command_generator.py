@@ -185,7 +185,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                     ),
                     "description": info_step.description,
                 }
-                for info_step in top_flow.get_collect_information_steps()
+                for info_step in top_flow.get_collect_steps()
                 if self.is_extractable(info_step, tracker, current_step)
             ]
         else:
