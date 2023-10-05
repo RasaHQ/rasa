@@ -1050,7 +1050,7 @@ jobs:
           sudo rm -f /swapfile
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo apt clean
-          docker image prune -a
+          docker image prune -a -f
           docker volume prune -f
           docker container prune -f
           df -h
@@ -1079,6 +1079,9 @@ jobs:
         if: needs.changes.outputs.docker == 'true'
         run: |
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+
+      - name: Check how much space is left after Docker build
+        run: df -h
 
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
