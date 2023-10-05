@@ -1046,7 +1046,7 @@ jobs:
         uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55  # v2.7.0
 
       - name: Free disk space
-#        if: needs.changes.outputs.docker == 'true'
+        if: needs.changes.outputs.docker == 'true'
         # tries to make sure we do not run out of disk space, see
         # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
         run: |
@@ -1068,7 +1068,7 @@ jobs:
         run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Login to DockerHub Registry 🔢
-#        if: needs.changes.outputs.docker == 'true'
+        if: needs.changes.outputs.docker == 'true'
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
       - name: Copy Segment write key to the package
@@ -1080,7 +1080,7 @@ jobs:
           ./scripts/write_keys_file.sh
 
       - name: Build Docker image
-#        if: needs.changes.outputs.docker == 'true'
+        if: needs.changes.outputs.docker == 'true'
         run: |
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
 
