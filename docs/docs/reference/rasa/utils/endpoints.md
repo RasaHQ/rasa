@@ -9,9 +9,7 @@ def read_endpoint_config(filename: Text,
                          endpoint_type: Text) -> Optional["EndpointConfig"]
 ```
 
-Read an endpoint configuration file from disk and extract one.
-
-config.
+Read an endpoint configuration file from disk and extract one config.
 
 #### concat\_url
 
@@ -62,6 +60,7 @@ Creates an `EndpointConfig` instance.
 #### session
 
 ```python
+@cached_property
 def session() -> aiohttp.ClientSession
 ```
 

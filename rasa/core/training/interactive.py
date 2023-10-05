@@ -1453,6 +1453,20 @@ def _print_help(skip_visualization: bool) -> None:
     )
 
 
+def intent_names_from_domain(domain: Any) -> List[Text]:
+    """Get a list of the possible intents names from the domain specification.
+
+    This is its own function as intents are non-trivial to unpack and this
+    warrants testing.
+    """
+    domain_intents = domain.get("intents", []) if domain is not None else []
+
+    # intents with properties such as `use_entities` or `ignore_entities`
+    # are a dictionary which needs unpacking. Other intents are strings
+    # and can be used as-is.
+    return [next(iter(i)) if isinstance(i, dict) else i for i in domain_intents]
+
+
 async def record_messages(
     endpoint: EndpointConfig,
     file_importer: TrainingDataImporter,
@@ -1471,9 +1485,7 @@ async def record_messages(
             )
             return
 
-        domain_intents = domain.get("intents", []) if domain is not None else []
-
-        intents = [next(iter(i)) for i in domain_intents]
+        intents = intent_names_from_domain(domain)
 
         num_messages = 0
 
