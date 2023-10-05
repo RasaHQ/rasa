@@ -358,7 +358,9 @@ jobs:
 
       - name: Install ddtrace on Windows
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        run: py -m pip install -U 'ddtrace<2.0.0'
+        run: |
+          .\.venv\Scripts\activate
+          py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
@@ -502,7 +504,9 @@ jobs:
 
       - name: Install ddtrace on Windows
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        run: py -m pip install -U 'ddtrace<2.0.0'
+        run: |
+          .\.venv\Scripts\activate
+          py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
