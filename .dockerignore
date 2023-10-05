@@ -8,5 +8,4 @@ rasa/tests
 rasa/scripts
 data/
 examples/
-node_modules/*
 docker-data/*

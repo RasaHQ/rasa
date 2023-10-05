@@ -1048,6 +1048,7 @@ jobs:
         run: |
           sudo swapoff -a
           sudo rm -f /swapfile
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo apt clean
           docker image prune -a
           docker volume prune -f
