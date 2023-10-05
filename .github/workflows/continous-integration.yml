@@ -1056,6 +1056,21 @@ jobs:
           docker image prune -a
           df -h
 
+      - name: Free Up GitHub Actions Ubuntu Runner Disk Space 🔧
+        if: matrix.os == 'ubuntu-22.04'
+        # switching to a better maintained action https://github.com/insightsengineering/disk-space-reclaimer
+        uses: insightsengineering/disk-space-reclaimer@v1
+        with:
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+          docker-images: true
+          tools-cache: true
+
       - name: Read Poetry Version 🔢
         run: |
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
