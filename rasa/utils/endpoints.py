@@ -19,9 +19,10 @@ logger = logging.getLogger(__name__)
 def read_endpoint_config(
     filename: Text, endpoint_type: Text
 ) -> Optional["EndpointConfig"]:
-    """Read an endpoint configuration file from disk and extract one
+    """Read an endpoint configuration file from disk and extract one.
 
-    config."""
+    config.
+    """
     if not filename:
         return None
 

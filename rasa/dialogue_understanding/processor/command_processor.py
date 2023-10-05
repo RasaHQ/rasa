@@ -1,4 +1,4 @@
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Set, Dict
 
 import structlog
 from rasa.dialogue_understanding.commands import (
@@ -8,6 +8,9 @@ from rasa.dialogue_understanding.commands import (
     CorrectedSlot,
     SetSlotCommand,
     FreeFormAnswerCommand,
+)
+from rasa.dialogue_understanding.commands.handle_code_change_command import (
+    HandleCodeChangeCommand,
 )
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -23,6 +26,7 @@ from rasa.dialogue_understanding.stack.utils import (
     filled_slots_for_active_flow,
     top_flow_frame,
 )
+from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import (
     FlowsList,
@@ -95,6 +99,39 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     assert sum(isinstance(c, CorrectSlotsCommand) for c in commands) <= 1
 
 
+def find_updated_flows(tracker: DialogueStateTracker, all_flows: FlowsList) -> Set[str]:
+    """Find the set of updated flows.
+
+    Run through the current dialogue stack and compare the flow hashes of the
+    flows on the stack with those stored in the tracker.
+
+    Args:
+        tracker: The tracker.
+        all_flows: All flows.
+
+    Returns:
+    A set of flow ids of those flows that have changed
+    """
+    stored_fingerprints: Dict[str, str] = tracker.get_slot(FLOW_HASHES_SLOT) or {}
+    dialogue_stack = DialogueStack.from_tracker(tracker)
+
+    changed_flows = set()
+    for frame in dialogue_stack.frames:
+        if isinstance(frame, BaseFlowStackFrame):
+            flow = all_flows.flow_by_id(frame.flow_id)
+            if flow is None or (
+                flow.id in stored_fingerprints
+                and flow.fingerprint != stored_fingerprints[flow.id]
+            ):
+                changed_flows.add(frame.flow_id)
+    return changed_flows
+
+
+def calculate_flow_fingerprints(all_flows: FlowsList) -> Dict[str, str]:
+    """Calculate fingerprints for all flows."""
+    return {flow.id: flow.fingerprint for flow in all_flows.underlying_flows}
+
+
 def execute_commands(
     tracker: DialogueStateTracker, all_flows: FlowsList
 ) -> List[Event]:
@@ -113,7 +150,23 @@ def execute_commands(
 
     commands = clean_up_commands(commands, tracker, all_flows)
 
-    events: List[Event] = []
+    updated_flows = find_updated_flows(tracker, all_flows)
+    if updated_flows:
+        # Override commands
+        structlogger.debug(
+            "command_executor.running_flows_were_updated",
+            updated_flow_ids=updated_flows,
+        )
+        commands = [HandleCodeChangeCommand()]
+
+    # store current flow hashes if they changed
+    new_hashes = calculate_flow_fingerprints(all_flows)
+    flow_hash_events: List[Event] = []
+    if new_hashes != (tracker.get_slot(FLOW_HASHES_SLOT) or {}):
+        flow_hash_events.append(SlotSet(FLOW_HASHES_SLOT, new_hashes))
+        tracker.update_with_events(flow_hash_events, None)
+
+    events: List[Event] = flow_hash_events
 
     # commands need to be reversed to make sure they end up in the right order
     # on the stack. e.g. if there multiple start flow commands, the first one

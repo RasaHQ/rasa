@@ -59,7 +59,7 @@ class CancelPatternFlowStackFrame(PatternFlowStackFrame):
             The created `DialogueStackFrame`.
         """
         return CancelPatternFlowStackFrame(
-            data["frame_id"],
+            frame_id=data["frame_id"],
             step_id=data["step_id"],
             canceled_name=data["canceled_name"],
             canceled_frames=data["canceled_frames"],

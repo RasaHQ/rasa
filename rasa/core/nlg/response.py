@@ -152,12 +152,12 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         formatted_response_conditions = [""]
         for index, condition in enumerate(response_conditions):
             constraints = []
-            constraints.append(f"type: {str(condition['type'])}")
-            constraints.append(f"name: {str(condition['name'])}")
-            constraints.append(f"value: {str(condition['value'])}")
+            constraints.append(f"type: {condition['type']!s}")
+            constraints.append(f"name: {condition['name']!s}")
+            constraints.append(f"value: {condition['value']!s}")
 
             condition_message = " | ".join(constraints)
-            formatted_condition = f"[condition {str(index + 1)}] {condition_message}"
+            formatted_condition = f"[condition {index + 1!s}] {condition_message}"
             formatted_response_conditions.append(formatted_condition)
 
         return "\n".join(formatted_response_conditions)

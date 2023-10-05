@@ -4,6 +4,8 @@ from typing import Callable
 
 from _pytest.fixtures import FixtureRequest
 from _pytest.pytester import RunResult
+
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 import rasa.shared.utils.io
 
@@ -139,7 +141,7 @@ def test_data_validate_help(run: Callable[..., RunResult]):
                           [--max-history MAX_HISTORY] [-c CONFIG]
                           [--fail-on-warnings] [-d DOMAIN]
                           [--data DATA [DATA ...]]
-                          {{stories}} ..."""
+                          {{stories,flows}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -255,3 +257,41 @@ def test_data_split_stories(run_in_simple_project: Callable[..., RunResult]):
     test_data = rasa.shared.utils.io.read_yaml_file(test_file)
     assert len(test_data.get("stories", [])) == 1
     assert test_data["stories"][0].get("story") == "story 2"
+
+
+def test_rasa_data_validate_flows_success(
+    run_in_simple_project: Callable[..., RunResult]
+) -> None:
+    flows_yaml = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+flows:
+    transfer_money:
+        description: This flow lets users send money.
+        name: transfer money
+        steps:
+        - id: "ask_recipient"
+          collect_information: transfer_recipient
+          next: "ask_amount"
+        - id: "ask_amount"
+          collect_information: transfer_amount
+          next: "execute_transfer"
+        - id: "execute_transfer"
+          action: action_transfer_money"""
+
+    Path("data/flows.yml").write_text(flows_yaml)
+
+    domain_yaml = """
+    actions:
+    - action_transfer_money
+    intents:
+    - transfer_money
+    slots:
+      transfer_recipient:
+        type: text
+        mappings: []
+      transfer_amount:
+        type: float
+        mappings: []"""
+    Path("domain.yml").write_text(domain_yaml)
+    result = run_in_simple_project("data", "validate", "flows")
+    assert result.ret == 0
