@@ -137,6 +137,17 @@ async def is_listening_for_message(conversation_id: Text,
 
 Check if the conversation is in need for a user message.
 
+#### intent\_names\_from\_domain
+
+```python
+def intent_names_from_domain(domain: Any) -> List[Text]
+```
+
+Get a list of the possible intents names from the domain specification.
+
+This is its own function as intents are non-trivial to unpack and this
+warrants testing.
+
 #### record\_messages
 
 ```python

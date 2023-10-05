@@ -96,3 +96,29 @@ Gracefully closes resources when shutting down server.
 - `app` - The Sanic application.
 - `_` - The current Sanic worker event loop.
 
+#### create\_connection\_pools
+
+```python
+async def create_connection_pools(app: Sanic, _: AbstractEventLoop) -> None
+```
+
+Create connection pools for the agent&#x27;s action server and model server.
+
+#### create\_action\_endpoint\_connection\_pool
+
+```python
+def create_action_endpoint_connection_pool(
+        agent: Agent) -> Optional["ClientSession"]
+```
+
+Create a connection pool for the action endpoint.
+
+#### create\_model\_server\_connection\_pool
+
+```python
+def create_model_server_connection_pool(
+        agent: Agent) -> Optional["ClientSession"]
+```
+
+Create a connection pool for the model server.
+
