@@ -26,7 +26,9 @@ jobs:
     runs-on: ubuntu-22.04
 
     # only run this workflow if a pull request has been merged
-    if: github.event.pull_request.merged == true
+    # don't run this workflow on pull request from forks, permissions will be missing anyway
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflows-in-forked-repositories
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == 'RasaHQ/rasa'
 
     steps:
       - name: Checkout git repository 🕝
