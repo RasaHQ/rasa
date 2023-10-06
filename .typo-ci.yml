@@ -62,9 +62,7 @@ excluded_files:
 
 # # Any typos we should ignore?
 excluded_words:
-<<<<<<< HEAD
   - rephraser
-=======
   - CDD
   - Comerica
   - ConveRTFeaturizer
@@ -75,7 +73,6 @@ excluded_words:
   - README
   - Tanja
   - Vova
->>>>>>> main
   - analytics
   - anonymization
   - anonymized
