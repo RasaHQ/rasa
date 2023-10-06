@@ -8,7 +8,7 @@ from rasa.shared.exceptions import YamlException
 
 from rasa.shared.core.flows.flow import Flow, FlowsList
 
-FLOWS_SCHEMA_FILE = "/shared/core/flows/flows_yaml_schema.yml"
+FLOWS_SCHEMA_FILE = "rasa/shared/core/flows/flows_yaml_schema.json"
 
 
 class YAMLFlowsReader:
@@ -51,10 +51,11 @@ class YAMLFlowsReader:
         Returns:
             `Flow`s read from `string`.
         """
-        if not skip_validation:
-            rasa.shared.utils.validation.validate_yaml_schema(string, FLOWS_SCHEMA_FILE)
-
         yaml_content = rasa.shared.utils.io.read_yaml(string)
+
+        if not skip_validation:
+            schema = rasa.shared.utils.io.read_yaml_file(FLOWS_SCHEMA_FILE)
+            rasa.shared.utils.validation.validate_dict_with_schema(yaml_content, schema)
 
         flows = FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}))
         if not skip_validation:

@@ -290,16 +290,25 @@ def validate_training_data_format_version(
     )
     return False
 
-def validate_yaml_with_schema(json_data: Dict[Text, Any], schema: Dict[Text, Any]) -> None:
-    from jsonschema import validate
-    from jsonschema import ValidationError
+
+def validate_dict_with_schema(data: Dict[Text, Any], schema: Dict[Text, Any]) -> None:
+    """Validate data format.
+
+    Args:
+        data (Dict[Text, Any]): Data to validate
+        schema (Dict[Text, Any]): jsonschema to validate against
+
+    Raises:
+        SchemaValidationError: if validation fails.
+    """
+    from jsonschema import validate, ValidationError
 
     try:
-        validate(json_data, schema)
-    except ValidationError as e:
-        e.message += (
+        validate(data, schema)
+    except ValidationError as error:
+        error.message += (
             f". Failed to validate data, make sure your data "
             f"is valid. For more information about the format visit "
             f"{DOCS_URL_TRAINING_DATA}."
         )
-        raise SchemaValidationError.create_from(e) from e
+        raise SchemaValidationError.create_from(error) from error

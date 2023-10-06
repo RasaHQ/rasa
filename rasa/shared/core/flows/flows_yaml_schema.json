@@ -1,109 +1,210 @@
 {
   "type": "object",
+  "required": [
+    "flows"
+  ],
   "properties": {
     "flows": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": {
+          "$ref": "#$defs/flow"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "steps": {
       "type": "array",
+      "minContains": 1,
       "items": {
         "type": "object",
+        "oneOf": [
+          {
+            "required": [
+              "action"
+            ]
+          },
+          {
+            "required": [
+              "collect"
+            ]
+          },
+          {
+            "required": [
+              "link"
+            ]
+          },
+          {
+            "required": [
+              "set_slots"
+            ]
+          }
+        ],
         "properties": {
-
-          "name": {
+          "action": {
+            "type": "string"
+          },
+          "ask_before_filling": {
+            "type": "boolean"
+          },
+          "collect": {
             "type": "string"
           },
           "description": {
             "type": "string"
           },
-  
-          "if": {
-            "type": "string",
-            "description": "Flow guard condition"
+          "id": {
+            "type": "string"
           },
-
-          "nlu_trigger": {
-            "type": "object",
-            "properties":{
-              "nlu_trigger": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": ["intent"],
-                  "properties": {
-                    "intent": {
-                      "type": "object",
-                      "required": ["name"],
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "confidence_threshold": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "link": {
+            "type": "string"
           },
-
-          "steps": {
+          "next": {
+            "$ref": "#$defs/next"
+          },
+          "reset_after_flow_ends": {
+            "type": "boolean"
+          },
+          "set_slots": {
+            "$ref": "#$defs/set_slots"
+          },
+          "utter": {
+            "type": "string"
+          },
+          "rejections": {
             "type": "array",
             "items": {
               "type": "object",
+              "required": [
+                "if",
+                "utter"
+              ],
               "properties": {
-                "collect": {
+                "if": {
                   "type": "string"
                 },
-                "description": {
-                  "type": "string"
-                },
-                "ask_before_filling": {
-                  "type": "boolean"
-                },
-                "next": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "if": {
-                        "type": "string"
-                      },
-                      "then": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "action": {
-                              "type": "string"
-                            },
-                            "next": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["action", "next"]
-                        }
-                      }
-                    },
-                    "required": ["if", "then"]
-                  }
-                },
-                "link": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string"
-                },
-                "action": {
+                "utter": {
                   "type": "string"
                 }
-              },
-              "required": ["next"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "flow": {
+      "required": [
+        "name",
+        "steps"
+      ],
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "if": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "nlu_trigger": {
+          "type": "array",
+          "items": {
+            "required": [
+              "intent"
+            ],
+            "type": "object",
+            "properties": {
+              "intent": {
+                "properties": {
+                  "confidence_threshold": {
+                    "type": "number"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "type": "object"
+              }
             }
           }
         },
-        "required": ["name", "steps"]
+        "steps": {
+          "$ref": "#$defs/steps"
+        }
+      }
+    },
+    "next": {
+      "anyOf": [
+        {
+          "type": "array",
+          "minContains": 1,
+          "items": {
+            "type": "object",
+            "oneOf": [
+              {
+                "required": [
+                  "if",
+                  "then"
+                ]
+              },
+              {
+                "required": [
+                  "else"
+                ]
+              }
+            ],
+            "properties": {
+              "else": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#$defs/steps"
+                  }
+                ]
+              },
+              "if": {
+                "type": "string"
+              },
+              "then": {
+                "oneOf": [
+                  {
+                    "$ref": "#$defs/steps"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "enum": [
+            "END"
+          ]
+        }
+      ]
+    },
+    "set_slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^[A-Za-z_][A-Za-z0-9_]*$": {
+            "type": "string"
+          }
+        }
       }
     }
-  },
-  "required": ["flows"]
+  }
 }
