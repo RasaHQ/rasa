@@ -9,8 +9,7 @@ from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import Event
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -54,4 +53,4 @@ class ErrorCommand(Command):
         dialogue_stack = DialogueStack.from_tracker(tracker)
         structlogger.debug("command_executor.error", command=self)
         dialogue_stack.push(InternalErrorPatternFlowStackFrame())
-        return [SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack.as_dict())]
+        return [dialogue_stack.persist_as_event()]
