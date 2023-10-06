@@ -1,5 +1,6 @@
 from rasa.shared.core.flows.flow import FlowsList
-from rasa.shared.core.flows.utils import flows_from_str
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.importers.importer import FlowSyncImporter
 
 
 def test_non_pattern_flows():
@@ -65,3 +66,9 @@ def test_collecting_flow_utterances():
         "utter_too_young",
         "utter_too_old",
     }
+
+
+def test_default_flows_have_non_empty_names():
+    default_flows = FlowSyncImporter.load_default_pattern_flows()
+    for flow in default_flows.underlying_flows:
+        assert flow.name

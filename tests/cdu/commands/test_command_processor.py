@@ -14,7 +14,7 @@ from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.cdu.commands.conftest import start_bar_user_uttered
-from rasa.shared.core.flows.utils import flows_from_str
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
 
 def test_properly_prepared_tracker(tracker: DialogueStateTracker):

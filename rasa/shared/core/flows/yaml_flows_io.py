@@ -1,3 +1,4 @@
+import textwrap
 from pathlib import Path
 from typing import List, Text, Union
 from rasa.shared.core.flows.utils import KEY_FLOWS
@@ -91,3 +92,8 @@ class YamlFlowsWriter:
             filename: The path to the file to write to.
         """
         rasa.shared.utils.io.write_text_file(YamlFlowsWriter.dumps(flows), filename)
+
+
+def flows_from_str(yaml_str: str) -> FlowsList:
+    """Reads flows from a YAML string."""
+    return YAMLFlowsReader.read_from_string(textwrap.dedent(yaml_str))

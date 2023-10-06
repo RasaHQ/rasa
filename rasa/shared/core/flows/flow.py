@@ -277,7 +277,7 @@ class Flow:
     id: Text
     """The id of the flow."""
     name: Text
-    """The name of the flow."""
+    """The human-readable name of the flow."""
     description: Optional[Text]
     """The description of the flow."""
     step_sequence: StepSequence
@@ -297,7 +297,7 @@ class Flow:
 
         return Flow(
             id=flow_id,
-            name=flow_config.get("name", ""),
+            name=flow_config["name"],
             description=flow_config.get("description"),
             step_sequence=Flow.resolve_default_ids(step_sequence),
         )

@@ -599,6 +599,10 @@ class Validator:
                 )
                 all_good = False
 
+            if not flow.name:
+                logger.error(f"Flow with flow id '{flow.id}' has an empty name.")
+                all_good = False
+
             if flow.name in flow_names:
                 logger.error(
                     f"Detected duplicate flow name '{flow.name}' for flow "
