@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List
 from rasa.dialogue_understanding.commands import FreeFormAnswerCommand
+from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import FlowsList
@@ -46,5 +46,5 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
             The events to apply to the tracker.
         """
         dialogue_stack = DialogueStack.from_tracker(tracker)
-        dialogue_stack.push(SearchStackFrame())
+        dialogue_stack.push(SearchPatternFlowStackFrame())
         return [SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack.as_dict())]
