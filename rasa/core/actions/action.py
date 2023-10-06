@@ -781,26 +781,31 @@ class RemoteAction(Action):
             logger.debug(
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
-
-            should_compress = get_bool_env_variable(
-                COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
-                DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
-            )
-
-            modified_json = plugin_manager().hook.prefix_stripping_for_custom_actions(
-                json_body=json_body
-            )
-            response: Any = await self.action_endpoint.request(
-                json=modified_json if modified_json else json_body,
-                method="post",
-                timeout=DEFAULT_REQUEST_TIMEOUT,
-                compress=should_compress,
-            )
-            if modified_json:
-                plugin_manager().hook.prefixing_custom_actions_response(
-                    json_body=json_body, response=response
+            if self.action_endpoint.url.startswith("grpc"):
+                response: Any = plugin_manager().hook.call_action_with_grpc_client(
+                    action_endpoint = self.action_endpoint,
+                    json_body= json_body
                 )
-            self._validate_action_result(response)
+            else: 
+                should_compress = get_bool_env_variable(
+                    COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
+                    DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
+                )
+
+                modified_json = plugin_manager().hook.prefix_stripping_for_custom_actions(
+                    json_body=json_body
+                )
+                response: Any = await self.action_endpoint.request(
+                    json=modified_json if modified_json else json_body,
+                    method="post",
+                    timeout=DEFAULT_REQUEST_TIMEOUT,
+                    compress=should_compress,
+                )
+                if modified_json:
+                    plugin_manager().hook.prefixing_custom_actions_response(
+                        json_body=json_body, response=response
+                    )
+                self._validate_action_result(response)
 
             events_json = response.get("events", [])
             responses = response.get("responses", [])

@@ -157,3 +157,13 @@ def after_server_stop() -> None:
     Use this hook to de-initialize any resources that require explicit cleanup like,
     thread shutdown, closing connections, etc.
     """
+
+@hookspec(firstresult=True)  # type: ignore[misc]
+def call_action_with_grpc_client(
+    action_endpoint: Optional["EndpointConfig"],
+    json_body: Dict[Text, Any]
+    )-> Dict[Text, Any]:
+    """Hook specification for calling action server.
+ 
+    Use this hook to connect to action server using grpc for faster connection.
+    """
