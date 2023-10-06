@@ -352,9 +352,15 @@ jobs:
           (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
           Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
 
-      - name: Install ddtrace
-        if: needs.changes.outputs.backend == 'true'
-        run: poetry run pip install -U ddtrace
+      - name: Install ddtrace on Linux
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        run: poetry run pip install -U 'ddtrace<2.0.0'
+
+      - name: Install ddtrace on Windows
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        run: |
+          .\.venv\Scripts\activate
+          py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
@@ -492,9 +498,15 @@ jobs:
           (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
           Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
 
-      - name: Install ddtrace
-        if: needs.changes.outputs.backend == 'true'
-        run: poetry run pip install -U ddtrace
+      - name: Install ddtrace on Linux
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        run: poetry run pip install -U 'ddtrace<2.0.0'
+
+      - name: Install ddtrace on Windows
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        run: |
+          .\.venv\Scripts\activate
+          py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
@@ -519,8 +531,8 @@ jobs:
           path: |
             ${{ github.workspace }}/${{ matrix.test }}-coverage
 
-  prepare_coverage_reports:
-    name: Prepare coverage reports
+  prepare_coverage_reports_analyse_with_sonarcloud:
+    name: Prepare coverage reports and Analyse coverage with Sonarcloud
     if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     # Always upload results even if tests failed
@@ -561,21 +573,6 @@ jobs:
           coverage combine "${final_dir}/"*
           coverage xml
 
-  sonarcloud:
-    name: SonarCloud Scan
-    if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
-    needs:
-      - prepare_coverage_reports
-
-    steps:
-      - name: Checkout git repository 🕝
-        if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-        with:
-          # Disabling shallow clone is recommended for improving relevancy of coverage reporting
-          fetch-depth: 0
-
       - name: Analyse code with SonarCloud
         uses: sonarsource/sonarcloud-github-action@5875562561d22a34be0c657405578705a169af6c
         env:
@@ -586,7 +583,7 @@ jobs:
             -Dsonar.organization=rasahq
             -Dsonar.projectKey=RasaHQ_rasa
             -Dsonar.sources=.
-            -Dsonar.python.coverage.reportPaths=tests_coverage/coverage.xml
+            -Dsonar.python.coverage.reportPaths=${{ github.workspace }}/tests_coverage
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.verbose=true
 
@@ -906,7 +903,7 @@ jobs:
           # Base MITIE image
           BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
           MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-          echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH}" >> $GITHUB_OUTPUT
+          echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}" >> $GITHUB_OUTPUT
 
           BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
           echo "base_mitie_exists=${BASE_IMAGE_MITIE_EXISTS}" >> $GITHUB_OUTPUT
@@ -1055,8 +1052,11 @@ jobs:
         run: |
           sudo swapoff -a
           sudo rm -f /swapfile
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo apt clean
-          docker image prune -a
+          docker image prune -a -f
+          docker volume prune -f
+          docker container prune -f
           df -h
 
       - name: Read Poetry Version 🔢
@@ -1083,6 +1083,9 @@ jobs:
         if: needs.changes.outputs.docker == 'true'
         run: |
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+
+      - name: Check how much space is left after Docker build
+        run: df -h
 
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'

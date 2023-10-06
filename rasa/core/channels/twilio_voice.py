@@ -18,7 +18,7 @@ from rasa.core.channels.channel import (
 class TwilioVoiceInput(InputChannel):
     """Input channel for Twilio Voice."""
 
-    SUPPORTED_VOICES = [
+    SUPPORTED_VOICES = [  # noqa: RUF012
         "man",
         "woman",
         "alice",
@@ -88,7 +88,11 @@ class TwilioVoiceInput(InputChannel):
         "Polly.Aditi",
     ]
 
-    SUPPORTED_SPEECH_MODELS = ["default", "numbers_and_commands", "phone_call"]
+    SUPPORTED_SPEECH_MODELS = [  # noqa: RUF012
+        "default",
+        "numbers_and_commands",
+        "phone_call",
+    ]
 
     @classmethod
     def name(cls) -> Text:

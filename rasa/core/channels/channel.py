@@ -40,7 +40,7 @@ class UserMessage:
         text: Optional[Text] = None,
         output_channel: Optional["OutputChannel"] = None,
         sender_id: Optional[Text] = None,
-        parse_data: Dict[Text, Any] = None,
+        parse_data: Optional[Dict[Text, Any]] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
@@ -340,11 +340,11 @@ class CollectingOutputChannel(OutputChannel):
     @staticmethod
     def _message(
         recipient_id: Text,
-        text: Text = None,
-        image: Text = None,
-        buttons: List[Dict[Text, Any]] = None,
-        attachment: Text = None,
-        custom: Dict[Text, Any] = None,
+        text: Optional[Text] = None,
+        image: Optional[Text] = None,
+        buttons: Optional[List[Dict[Text, Any]]] = None,
+        attachment: Optional[Text] = None,
+        custom: Optional[Dict[Text, Any]] = None,
     ) -> Dict:
         """Create a message object that will be stored."""
         obj = {

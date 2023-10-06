@@ -16,6 +16,41 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.6.11] - 2023-10-05
+                        
+Rasa 3.6.11 (2023-10-05)                         
+### Bugfixes
+- [#12722](https://github.com/rasahq/rasa/issues/12722): Intent names will not be falsely abbreviated in interactive training (fixes OSS-413).
+
+  This will also fix a bug where forced user utterances (using the regex matcher) will
+  be reverted even though they are present in the domain.
+- [#12886](https://github.com/rasahq/rasa/issues/12886): Cache `EndpointConfig` session object using `cached_property` decorator instead of recreating this object on every request.
+  Initialize these connection pools for action server and model server endpoints as part of the Sanic `after_server_start` listener.
+  Also close connection pools during Sanic `after_server_stop` listener.
+
+
+## [3.6.10] - 2023-09-26
+                        
+Rasa 3.6.10 (2023-09-26)                         
+### Improvements
+- [#12827](https://github.com/rasahq/rasa/issues/12827): Improved handling of last batch during DIET and TED training. The last batch is discarded if it contains less than half a batch size of data.
+- [#12852](https://github.com/rasahq/rasa/issues/12852): Added `username` to the connection parameters for `RedisLockStore` and `RedisTrackerStore`
+- [#1493](https://github.com/rasahq/rasa/issues/1493): Telemetry data is only send for licensed users.
+
+### Improved Documentation
+- [#12868](https://github.com/rasahq/rasa/issues/12868): Remove the Playground from docs.
+
+
+## [3.6.9] - 2023-09-15
+                       
+Rasa 3.6.9 (2023-09-15)                        
+### Improvements
+- [#12778](https://github.com/rasahq/rasa/issues/12778): Added additional method `fingerprint_addon` to the `GraphComponent` interface to allow inclusion of external data into the fingerprint calculation of a component
+
+### Bugfixes
+- [#12790](https://github.com/rasahq/rasa/issues/12790): Fixed `KeyError` which resulted when `domain_responses` doesn't exist as a keyword argument while using a custom action dispatcher with nlg server.
+
+
 ## [3.6.8] - 2023-08-30
 
 Rasa 3.6.8 (2023-08-30)

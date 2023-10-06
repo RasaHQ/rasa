@@ -450,6 +450,7 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         host: Text = "localhost",
         port: int = 6379,
         db: int = 0,
+        username: Optional[Text] = None,
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
@@ -467,6 +468,7 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
             host=host,
             port=port,
             db=db,
+            username=username,
             password=password,
             ssl=use_ssl,
             ssl_keyfile=ssl_keyfile,
@@ -1063,8 +1065,8 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         host: Optional[Text] = None,
         port: Optional[int] = None,
         db: Text = "rasa.db",
-        username: Text = None,
-        password: Text = None,
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
@@ -1080,9 +1082,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         self.engine = sa.create_engine(engine_url, **create_engine_kwargs(engine_url))
 
-        logger.debug(
-            f"Attempting to connect to database via '{repr(self.engine.url)}'."
-        )
+        logger.debug(f"Attempting to connect to database via '{self.engine.url!r}'.")
 
         # Database might take a while to come up
         while True:
@@ -1123,8 +1123,8 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         host: Optional[Text] = None,
         port: Optional[int] = None,
         db: Text = "rasa.db",
-        username: Text = None,
-        password: Text = None,
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
     ) -> Union[Text, "URL"]:

@@ -127,7 +127,7 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
 
     if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
         rasa.shared.utils.io.raise_warning(
-            f"The config file '{str(config_file)}' is missing a unique value for the "
+            f"The config file '{config_file!s}' is missing a unique value for the "
             f"'{ASSISTANT_ID_KEY}' mandatory key. Proceeding with generating a random "
             f"value and overwriting the '{ASSISTANT_ID_KEY}' in the config file."
         )
