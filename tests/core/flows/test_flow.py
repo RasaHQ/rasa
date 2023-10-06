@@ -1,5 +1,5 @@
 from rasa.shared.core.flows.flow import FlowsList
-from tests.utilities import flows_from_str
+from rasa.shared.core.flows.utils import flows_from_str
 
 
 def test_non_pattern_flows():

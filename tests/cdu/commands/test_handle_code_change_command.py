@@ -27,7 +27,7 @@ from tests.cdu.commands.test_command_processor import (
     start_bar_user_uttered,
     change_cases,
 )
-from tests.utilities import flows_from_str
+from rasa.shared.core.flows.utils import flows_from_str
 
 
 def test_name_of_command():
