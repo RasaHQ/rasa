@@ -66,7 +66,7 @@ flows:
             then:
               - action: utter_corrected_previous_input
                 next: "END"
-            else: "END"
+          - else: "END"
 
   pattern_cancel_flow:
     description: A meta flow that's started when a flow is cancelled.
@@ -104,6 +104,7 @@ flows:
 
   pattern_search:
     description: handle a knowledge-based question or request
+    name: pattern search
     steps:
       - action: utter_no_knowledge_base
       # - action: action_trigger_search to use doc search policy if present
@@ -136,6 +137,7 @@ flows:
 
   pattern_code_change:
     description: flow used to clean the stack after a bot update
+    name: pattern code change
     steps:
       - action: utter_inform_code_change
       - action: action_clean_stack
