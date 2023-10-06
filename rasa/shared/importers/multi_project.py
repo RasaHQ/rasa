@@ -122,7 +122,6 @@ class MultiProjectImporter(TrainingDataImporter):
 
     def training_paths(self) -> Set[Text]:
         """Returns the paths which should be searched for training data."""
-
         # only include extra paths if they are not part of the current project directory
         training_paths = {
             i
@@ -136,8 +135,8 @@ class MultiProjectImporter(TrainingDataImporter):
         return training_paths
 
     def is_imported(self, path: Text) -> bool:
-        """
-        Checks whether a path is imported by a skill.
+        """Checks whether a path is imported by a skill.
+
         Args:
             path: File or directory path which should be checked.
 

@@ -1,3 +1,5 @@
+# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
+
 import logging
 import warnings
 from collections import deque
@@ -399,6 +401,7 @@ def test_sql_tracker_store_logs_do_not_show_password(caplog: LogCaptureFixture):
     port = 9901
     db = "some-database"
     username = "db-user"
+    # deepcode ignore NoHardcodedPasswords/test: Test credential
     password = "some-password"
 
     with caplog.at_level(logging.DEBUG):

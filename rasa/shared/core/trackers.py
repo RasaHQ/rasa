@@ -387,6 +387,32 @@ class DialogueStateTracker:
             logger.info(f"Tried to access non existent slot '{key}'")
             return None
 
+    def has_bot_message_after_latest_user_message(self) -> bool:
+        """Checks if there is a bot message after the most recent user message.
+
+        Returns:
+            `True` if there is an action after the most recent user message.
+        """
+        for event in reversed(self.applied_events()):
+            if isinstance(event, BotUttered):
+                return True
+            elif isinstance(event, UserUttered):
+                return False
+        return False
+
+    def has_action_after_latest_user_message(self) -> bool:
+        """Check if there is an action after the most recent user message.
+
+        Returns:
+            `True` if there is an action after the most recent user message.
+        """
+        for event in reversed(self.applied_events()):
+            if isinstance(event, ActionExecuted):
+                return True
+            elif isinstance(event, UserUttered):
+                return False
+        return False
+
     def get_latest_entity_values(
         self,
         entity_type: Text,
@@ -728,7 +754,7 @@ class DialogueStateTracker:
     def get_last_event_for(
         self,
         event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"], ...]],
-        action_names_to_exclude: List[Text] = None,
+        action_names_to_exclude: Optional[List[Text]] = None,
         skip: int = 0,
         event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
     ) -> Optional["EventTypeAlias"]:
