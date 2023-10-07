@@ -344,7 +344,7 @@ class FlowExecutor:
         """Evaluate a predicate condition."""
 
         # attach context to the predicate evaluation to allow conditions using it
-        context = {"context": DialogueStack.from_tracker(tracker).current_context()}
+        context = {"context": self.dialogue_stack.current_context()}
         document: Dict[str, Any] = context.copy()
         for slot in self.domain.slots:
             document[slot.name] = tracker.get_slot(slot.name)
