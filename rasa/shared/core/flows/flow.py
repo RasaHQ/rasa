@@ -179,6 +179,10 @@ class FlowsList:
         """
         self.underlying_flows = flows
 
+    def __iter__(self) -> Generator[Flow, None, None]:
+        """Iterates over the flows."""
+        yield from self.underlying_flows
+
     def is_empty(self) -> bool:
         """Returns whether the flows list is empty."""
         return len(self.underlying_flows) == 0
@@ -254,15 +258,23 @@ class FlowsList:
         for flow in self.underlying_flows:
             flow.validate()
 
-    def non_pattern_flows(self) -> List[str]:
-        """Get all flows that can be started.
-
-        Args:
-            all_flows: All flows.
+    @property
+    def user_flow_ids(self) -> List[str]:
+        """Get all ids of flows that can be started by a user.
 
         Returns:
-            All flows that can be started."""
-        return [f.id for f in self.underlying_flows if not f.is_handling_pattern()]
+            The ids of all flows that can be started by a user."""
+        return [f.id for f in self.user_flows]
+
+    @property
+    def user_flows(self) -> FlowsList:
+        """Get all flows that can be started by a user.
+
+        Returns:
+            All flows that can be started by a user."""
+        return FlowsList(
+            [f for f in self.underlying_flows if not f.is_rasa_default_flow]
+        )
 
 
 @dataclass
@@ -495,10 +507,6 @@ class Flow:
 
         return _previously_asked_collect(step_id or START_STEP, set())
 
-    def is_handling_pattern(self) -> bool:
-        """Returns whether the flow is handling a pattern."""
-        return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
-
     def get_trigger_intents(self) -> Set[str]:
         """Returns the trigger intents of the flow"""
         results: Set[str] = set()
@@ -519,6 +527,7 @@ class Flow:
         """Test whether a user can trigger the flow with an intent."""
         return len(self.get_trigger_intents()) > 0
 
+    @property
     def is_rasa_default_flow(self) -> bool:
         """Test whether something is a rasa default flow."""
         return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
