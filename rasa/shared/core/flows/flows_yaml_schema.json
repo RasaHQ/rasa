@@ -115,6 +115,9 @@
               },
               "set_slots": {
                 "$ref": "#$defs/set_slots"
+              },
+              "next": {
+                "$ref": "#$defs/next"
               }
             }
           },
