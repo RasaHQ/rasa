@@ -152,7 +152,6 @@ class EndpointConfig:
         if self.headers:
             headers.update(self.headers)
 
-        logger.debug(f"OSS request headers: {headers}")
         url = concat_url(self.url, subpath)
 
         sslcontext = None
