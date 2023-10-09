@@ -303,7 +303,7 @@ class Flow:
         )
 
     @staticmethod
-    def create_default_name(self, flow_id: str) -> str:
+    def create_default_name(flow_id: str) -> str:
         """Create a default flow name for when it is missing."""
         return flow_id.replace("_", " ").replace("-", " ")
 
