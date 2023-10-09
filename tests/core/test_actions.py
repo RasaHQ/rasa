@@ -26,6 +26,7 @@ from rasa.core.actions.action import (
     ActionSessionStart,
     ActionEndToEndResponse,
     ActionExtractSlots,
+    default_actions,
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
@@ -72,36 +73,17 @@ from rasa.shared.core.events import (
 import rasa.shared.utils.common
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
-    ACTION_CANCEL_FLOW,
-    ACTION_CLARIFY_FLOWS,
-    ACTION_CORRECT_FLOW_SLOT,
-    ACTION_RUN_SLOT_REJECTIONS_NAME,
     USER_INTENT_SESSION_START,
     ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_SESSION_START_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEACTIVATE_LOOP_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_BACK_NAME,
-    ACTION_TWO_STAGE_FALLBACK_NAME,
-    ACTION_UNLIKELY_INTENT_NAME,
-    RULE_SNIPPET_ACTION_NAME,
-    ACTION_SEND_TEXT_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
-    ACTION_EXTRACT_SLOTS,
     DIALOGUE_STACK_SLOT,
     RETURN_VALUE_SLOT,
-    ACTION_CLEAN_STACK,
     FLOW_HASHES_SLOT,
-    ACTION_TRIGGER_SEARCH,
-    ACTION_TRIGGER_CHITCHAT,
     DEFAULT_ACTION_NAMES,
+    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -3049,3 +3031,11 @@ async def test_action_send_text_handles_missing_metadata(
     )
 
     assert events == [BotUttered("")]
+
+
+def test_default_actions_and_names_consistency():
+    names_of_default_actions = {action.name() for action in default_actions()}
+    names_of_executable_actions_in_constants = set(DEFAULT_ACTION_NAMES) - {
+        RULE_SNIPPET_ACTION_NAME
+    }
+    assert names_of_default_actions == names_of_executable_actions_in_constants
