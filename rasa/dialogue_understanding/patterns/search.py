@@ -11,7 +11,7 @@ FLOW_PATTERN_SEARCH = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "search"
 
 @dataclass
 class SearchPatternFlowStackFrame(PatternFlowStackFrame):
-    """A pattern flow stack frame that gets added if an interruption is completed."""
+    """A stack frame that gets added to respond to knowledge-oriented questions."""
 
     flow_id: str = FLOW_PATTERN_SEARCH
     """The ID of the flow."""

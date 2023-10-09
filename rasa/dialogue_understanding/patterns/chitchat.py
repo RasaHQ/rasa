@@ -11,7 +11,7 @@ FLOW_PATTERN_CHITCHAT = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "chitchat"
 
 @dataclass
 class ChitchatPatternFlowStackFrame(PatternFlowStackFrame):
-    """A pattern flow stack frame that gets added if an interruption is completed."""
+    """A flow stack frame that gets added to respond to Chitchat."""
 
     flow_id: str = FLOW_PATTERN_CHITCHAT
     """The ID of the flow."""
