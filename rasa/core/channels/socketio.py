@@ -13,8 +13,6 @@ from socketio import AsyncServer
 
 logger = logging.getLogger(__name__)
 
-CHAT_TEMPLATE_PATH = "/chat.html"
-
 
 class SocketBlueprint(Blueprint):
     """Blueprint for socketio connections."""
@@ -53,22 +51,19 @@ class SocketIOOutput(OutputChannel):
 
     async def _send_message(self, socket_id: Text, response: Any) -> None:
         """Sends a message to the recipient using the bot event."""
-
         await self.sio.emit(self.bot_message_evt, response, room=socket_id)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Send a message through this channel."""
-
         for message_part in text.strip().split("\n\n"):
             await self._send_message(recipient_id, {"text": message_part})
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
-        """Sends an image to the output"""
-
+        """Sends an image to the output."""
         message = {"attachment": {"type": "image", "payload": {"src": image}}}
         await self._send_message(recipient_id, message)
 
@@ -80,7 +75,6 @@ class SocketIOOutput(OutputChannel):
         **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
-
         # split text and create a message for each text fragment
         # the `or` makes sure there is at least one message we can attach the quick
         # replies to
@@ -106,7 +100,6 @@ class SocketIOOutput(OutputChannel):
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output."""
-
         for element in elements:
             message = {
                 "attachment": {
@@ -120,8 +113,7 @@ class SocketIOOutput(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        """Sends custom json to the output"""
-
+        """Sends custom json to the output."""
         json_message.setdefault("room", recipient_id)
 
         await self.sio.emit(self.bot_message_evt, **json_message)
@@ -147,7 +139,7 @@ class SocketIOInput(InputChannel):
             credentials.get("user_message_evt", "user_uttered"),
             credentials.get("bot_message_evt", "bot_uttered"),
             credentials.get("namespace"),
-            credentials.get("session_persistence", True),
+            credentials.get("session_persistence", False),
             credentials.get("socketio_path", "/socket.io"),
             credentials.get("jwt_key"),
             credentials.get("jwt_method", "HS256"),
@@ -159,7 +151,7 @@ class SocketIOInput(InputChannel):
         user_message_evt: Text = "user_uttered",
         bot_message_evt: Text = "bot_uttered",
         namespace: Optional[Text] = None,
-        session_persistence: bool = True,
+        session_persistence: bool = False,
         socketio_path: Optional[Text] = "/socket.io",
         jwt_key: Optional[Text] = None,
         jwt_method: Optional[Text] = "HS256",
@@ -190,12 +182,6 @@ class SocketIOInput(InputChannel):
             return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
-    def chat_html_path(self) -> Text:
-        """Returns the path to the chat.html file."""
-        import pkg_resources
-
-        return pkg_resources.resource_filename(__name__, CHAT_TEMPLATE_PATH)
-
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -213,10 +199,6 @@ class SocketIOInput(InputChannel):
         @socketio_webhook.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
-
-        @socketio_webhook.route("/chat.html", methods=["GET"])
-        async def chat(_: Request) -> HTTPResponse:
-            return await response.file(self.chat_html_path())
 
         @sio.on("connect", namespace=self.namespace)
         async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:

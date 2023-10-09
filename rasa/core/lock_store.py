@@ -200,6 +200,7 @@ class RedisLockStore(LockStore):
         host: Text = "localhost",
         port: int = 6379,
         db: int = 1,
+        username: Optional[Text] = None,
         password: Optional[Text] = None,
         use_ssl: bool = False,
         ssl_certfile: Optional[Text] = None,
@@ -215,6 +216,8 @@ class RedisLockStore(LockStore):
             port: The port of the redis server.
             db: The name of the database within Redis which should be used by Rasa
                 Open Source.
+            username: The username which should be used for authentication with the
+                Redis database.
             password: The password which should be used for authentication with the
                 Redis database.
             use_ssl: `True` if SSL should be used for the connection to Redis.
@@ -232,6 +235,7 @@ class RedisLockStore(LockStore):
             host=host,
             port=int(port),
             db=int(db),
+            username=username,
             password=password,
             ssl=use_ssl,
             ssl_certfile=ssl_certfile,

@@ -15,8 +15,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     BaseFlowStackFrame,
     UserFlowStackFrame,
 )
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import Event
 from rasa.shared.core.flows.flow import END_STEP, ContinueFlowStep, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.dialogue_understanding.stack.utils as utils
@@ -68,7 +67,7 @@ class CorrectSlotsCommand(Command):
     ) -> bool:
         """Checks if all slots are reset only.
 
-        A slot is reset only if the `collect_information` step it gets filled by
+        A slot is reset only if the `collect` step it gets filled by
         has the `ask_before_filling` flag set to `True`. This means, the slot
         shouldn't be filled if the question isn't asked.
 
@@ -83,10 +82,10 @@ class CorrectSlotsCommand(Command):
             `True` if all slots are reset only, `False` otherwise.
         """
         return all(
-            collect_information_step.collect_information not in proposed_slots
-            or collect_information_step.ask_before_filling
+            collect_step.collect not in proposed_slots
+            or collect_step.ask_before_filling
             for flow in all_flows.underlying_flows
-            for collect_information_step in flow.get_collect_information_steps()
+            for collect_step in flow.get_collect_steps()
         )
 
     @staticmethod
@@ -123,11 +122,11 @@ class CorrectSlotsCommand(Command):
         #   The way to get the exact set of slots would probably simulate the
         #   flow forwards from the starting step. Given the current slots you
         #   could chart the path to the current step id.
-        asked_collect_info_steps = flow.previous_collect_information_steps(step.id)
+        asked_collect_steps = flow.previous_collect_steps(step.id)
 
-        for collect_info_step in reversed(asked_collect_info_steps):
-            if collect_info_step.collect_information in updated_slots:
-                return collect_info_step
+        for collect_step in reversed(asked_collect_steps):
+            if collect_step.collect in updated_slots:
+                return collect_step
         return None
 
     def corrected_slots_dict(self, tracker: DialogueStateTracker) -> Dict[str, Any]:
@@ -284,4 +283,4 @@ class CorrectSlotsCommand(Command):
         self.end_previous_correction(top_flow_frame, stack)
 
         stack.push(correction_frame, index=insertion_index)
-        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
+        return [stack.persist_as_event()]

@@ -104,7 +104,7 @@ class DefaultV1Recipe(Recipe):
         COMMAND_GENERATOR = 7
 
     name = "default.v1"
-    _registered_components: Dict[Text, RegisteredComponent] = {}
+    _registered_components: Dict[Text, RegisteredComponent] = {}  # noqa: RUF012
 
     def __init__(self) -> None:
         """Creates recipe."""

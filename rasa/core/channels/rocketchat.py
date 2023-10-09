@@ -34,8 +34,7 @@ class RocketChatBot(OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-        """Send message to output channel"""
-
+        """Send message to output channel."""
         for message_part in text.strip().split("\n\n"):
             self.rocket.chat_post_message(message_part, room_id=recipient_id)
 

@@ -8,7 +8,7 @@ from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.shared.core.flows.flow import SlotRejection
 
 FLOW_PATTERN_COLLECT_INFORMATION = (
-    RASA_DEFAULT_FLOW_PATTERN_PREFIX + "ask_collect_information"
+    RASA_DEFAULT_FLOW_PATTERN_PREFIX + "collect_information"
 )
 
 
@@ -18,7 +18,7 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
 
     flow_id: str = FLOW_PATTERN_COLLECT_INFORMATION
     """The ID of the flow."""
-    collect_information: str = ""
+    collect: str = ""
     """The information that should be collected from the user.
     this corresponds to the slot that will be filled."""
     utter: str = ""
@@ -52,9 +52,9 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
             ]
 
         return CollectInformationPatternFlowStackFrame(
-            data["frame_id"],
+            frame_id=data["frame_id"],
             step_id=data["step_id"],
-            collect_information=data["collect_information"],
+            collect=data["collect"],
             utter=data["utter"],
             rejections=rejections,
         )

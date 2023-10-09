@@ -13,7 +13,7 @@ flows:
     description: greet the user and ask how they are doing. cheer them up if needed.
     steps:
       - id: "0"
-        collect_information: good_mood
+        collect: good_mood
         description: "can be true or false"
         next:
           - if: good_mood
@@ -30,13 +30,13 @@ flows:
     description: This flow recommends a restaurant
     steps:
       - id: "0"
-        collect_information: cuisine
+        collect: cuisine
         next: "1"
       - id: "1"
-        collect_information: price_range
+        collect: price_range
         next: "2"
       - id: "2"
-        collect_information: city
+        collect: city
         next: "3"
       - id: "3"
         action: utter_recommend_restaurant

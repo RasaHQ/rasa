@@ -9,8 +9,7 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import Event
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
@@ -48,9 +47,9 @@ class CancelFlowCommand(Command):
             The frames that were canceled."""
         canceled_frames = []
         # we need to go through the original stack dump in reverse order
-        # to find the frames that were canceled. we cancel everthing from
+        # to find the frames that were canceled. we cancel everything from
         # the top of the stack until we hit the user flow that was canceled.
-        # this will also cancel any patterns put ontop of that user flow,
+        # this will also cancel any patterns put on top of that user flow,
         # e.g. corrections.
         for frame in reversed(stack.frames):
             canceled_frames.append(frame.frame_id)
@@ -103,4 +102,4 @@ class CancelFlowCommand(Command):
                 canceled_frames=canceled_frames,
             )
         )
-        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
+        return [stack.persist_as_event()]

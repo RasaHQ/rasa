@@ -143,8 +143,8 @@ class UserFlowStackFrame(BaseFlowStackFrame):
             The created `DialogueStackFrame`.
         """
         return UserFlowStackFrame(
-            data["frame_id"],
-            data["flow_id"],
-            data["step_id"],
-            FlowStackFrameType.from_str(data.get("frame_type")),
+            frame_id=data["frame_id"],
+            flow_id=data["flow_id"],
+            step_id=data["step_id"],
+            frame_type=FlowStackFrameType.from_str(data.get("frame_type")),
         )

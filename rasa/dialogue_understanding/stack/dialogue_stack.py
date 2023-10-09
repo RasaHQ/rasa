@@ -6,6 +6,7 @@ from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
 from rasa.shared.core.constants import (
     DIALOGUE_STACK_SLOT,
 )
+from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
@@ -128,6 +129,10 @@ class DialogueStack:
         Returns:
             The persisted stack as a dictionary."""
         return tracker.get_slot(DIALOGUE_STACK_SLOT) or []
+
+    def persist_as_event(self) -> Event:
+        """Returns the stack as a slot set event."""
+        return SlotSet(DIALOGUE_STACK_SLOT, self.as_dict())
 
     @staticmethod
     def from_tracker(tracker: DialogueStateTracker) -> DialogueStack:

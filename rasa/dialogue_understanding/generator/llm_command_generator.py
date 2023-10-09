@@ -275,8 +275,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             if not flow.is_rasa_default_flow():
 
                 slots_with_info = [
-                    {"name": q.collect_information, "description": q.description}
-                    for q in flow.get_collect_information_steps()
+                    {"name": q.collect, "description": q.description}
+                    for q in flow.get_collect_steps()
                     if cls.is_extractable(q, tracker)
                 ]
                 result.append(
@@ -294,12 +294,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         tracker: DialogueStateTracker,
         current_step: Optional[FlowStep] = None,
     ) -> bool:
-        """Check if the collect_information can be filled.
+        """Check if the `collect` can be filled.
 
-        A collect_information slot can only be filled if the slot exist
-        and either the collect_information has been asked already or the
+        A collect slot can only be filled if the slot exist
+        and either the collect has been asked already or the
         slot has been filled already."""
-        slot = tracker.slots.get(q.collect_information)
+        slot = tracker.slots.get(q.collect)
         if slot is None:
             return False
 
@@ -312,7 +312,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             or (
                 current_step is not None
                 and isinstance(current_step, CollectInformationFlowStep)
-                and current_step.collect_information == q.collect_information
+                and current_step.collect == q.collect
             )
         )
 
@@ -346,22 +346,22 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if top_flow is not None:
             flow_slots = [
                 {
-                    "name": q.collect_information,
-                    "value": self.slot_value(tracker, q.collect_information),
-                    "type": tracker.slots[q.collect_information].type_name,
+                    "name": q.collect,
+                    "value": self.slot_value(tracker, q.collect),
+                    "type": tracker.slots[q.collect].type_name,
                     "allowed_values": self.allowed_values_for_slot(
-                        tracker.slots[q.collect_information]
+                        tracker.slots[q.collect]
                     ),
                     "description": q.description,
                 }
-                for q in top_flow.get_collect_information_steps()
+                for q in top_flow.get_collect_steps()
                 if self.is_extractable(q, tracker, current_step)
             ]
         else:
             flow_slots = []
 
-        collect_information, collect_information_description = (
-            (current_step.collect_information, current_step.description)
+        collect, collect_description = (
+            (current_step.collect, current_step.description)
             if isinstance(current_step, CollectInformationFlowStep)
             else (None, None)
         )
@@ -376,8 +376,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
             "current_flow": top_flow.id if top_flow is not None else None,
-            "collect_information": collect_information,
-            "collect_information_description": collect_information_description,
+            "collect": collect,
+            "collect_description": collect_description,
             "user_message": latest_user_message,
         }
 

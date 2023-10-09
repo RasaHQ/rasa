@@ -1,6 +1,7 @@
+import logging
 import textwrap
 import warnings
-from typing import Text
+from typing import Any, Dict, List, Text
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -856,3 +857,557 @@ def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
 
     with pytest.warns(UserWarning, match=message):
         validator.warn_if_config_mandatory_keys_are_not_set()
+
+
+@pytest.mark.parametrize(
+    "domain_actions, domain_slots, log_message",
+    [
+        # set_slot slot is not listed in the domain
+        (
+            ["action_transfer_money"],
+            {"transfer_amount": {"type": "float", "mappings": []}},
+            "The slot 'account_type' is used in the step 'set_account_type' "
+            "of flow id 'transfer_money', but it is not listed in the domain slots.",
+        ),
+        # collect slot is not listed in the domain
+        (
+            ["action_transfer_money"],
+            {"account_type": {"type": "text", "mappings": []}},
+            "The slot 'transfer_amount' is used in the step 'ask_amount' "
+            "of flow id 'transfer_money', but it is not listed in the domain slots.",
+        ),
+        # action name is not listed in the domain
+        (
+            [],
+            {
+                "account_type": {"type": "text", "mappings": []},
+                "transfer_amount": {"type": "float", "mappings": []},
+            },
+            "The action 'action_transfer_money' is used in the step 'execute_transfer' "
+            "of flow id 'transfer_money', but it is not listed in the domain file.",
+        ),
+    ],
+)
+def test_verify_flow_steps_against_domain_fail(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    domain_actions: List[Text],
+    domain_slots: Dict[Text, Any],
+    log_message: Text,
+    caplog: LogCaptureFixture,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    flows:
+                      transfer_money:
+                        description: This flow lets users send money.
+                        name: transfer money
+                        steps:
+                        - id: "ask_amount"
+                          collect: transfer_amount
+                          next: "set_account_type"
+                        - id: "set_account_type"
+                          set_slots:
+                            - account_type: "debit"
+                          next: "execute_transfer"
+                        - id: "execute_transfer"
+                          action: action_transfer_money
+                    """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    intents:
+                      - greet
+                    slots:
+                        {domain_slots}
+                    actions: {domain_actions}
+                    """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_flows_steps_against_domain()
+
+    assert log_message in caplog.text
+
+
+def test_verify_flow_steps_against_domain_disallowed_list_slot(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                flows:
+                  order_pizza:
+                    description: This flow lets users order their favourite pizza.
+                    name: order pizza
+                    steps:
+                    - id: "ask_pizza_toppings"
+                      collect: pizza_toppings
+                      next: "ask_address"
+                    - id: "ask_address"
+                      collect: address
+                """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                intents:
+                  - greet
+                slots:
+                    pizza_toppings:
+                        type: list
+                        mappings: []
+                    address:
+                        type: text
+                        mappings: []
+                """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_flows_steps_against_domain()
+
+    assert (
+        "The slot 'pizza_toppings' is used in the step 'ask_pizza_toppings' "
+        "of flow id 'order_pizza', but it is a list slot. List slots are "
+        "currently not supported in flows." in caplog.text
+    )
+
+
+def test_verify_flow_steps_against_domain_dialogue_stack_slot(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                flows:
+                  my_flow:
+                    description: Test that dialogue stack is not modified in flows.
+                    name: test flow
+                    steps:
+                    - id: "ask_internal_slot"
+                      collect: dialogue_stack
+                """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                intents:
+                  - greet
+                """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_flows_steps_against_domain()
+
+    assert (
+        "The slot 'dialogue_stack' is used in the step 'ask_internal_slot' "
+        "of flow id 'my_flow', but it is a reserved slot." in caplog.text
+    )
+
+
+def test_verify_flow_steps_against_domain_interpolated_action_name(
+    caplog: LogCaptureFixture,
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    flows:
+                      pattern_collect_information:
+                        description: Test that interpolated names log a warning.
+                        name: test flow
+                        steps:
+                        - id: "validate"
+                          action: "validate_{{context.collect}}"
+                    """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    intents:
+                      - greet
+                    """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.WARNING):
+        assert validator.verify_flows_steps_against_domain()
+        assert (
+            "An interpolated action name 'validate_{context.collect}' was found "
+            "at step 'validate' of flow id 'pattern_collect_information'. "
+            "Skipping validation for this step." in caplog.text
+        )
+
+
+def test_verify_unique_flows_duplicate_names(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    duplicate_flow_name = "transfer money"
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: This flow lets users send money.
+                            name: {duplicate_flow_name}
+                            steps:
+                            - id: "ask_recipient"
+                              collect: transfer_recipient
+                              next: "ask_amount"
+                            - id: "ask_amount"
+                              collect: transfer_amount
+                              next: "execute_transfer"
+                            - id: "execute_transfer"
+                              action: action_transfer_money
+                          recurrent_payment:
+                            description: This flow sets up a recurrent payment.
+                            name: {duplicate_flow_name}
+                            steps:
+                            - id: "set_up_recurrence"
+                              action: action_set_up_recurrent_payment
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                            transfer_amount:
+                                type: float
+                                mappings: []
+                        actions:
+                          - action_transfer_money
+                          - action_set_up_recurrent_payment
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_unique_flows()
+
+    assert (
+        f"Detected duplicate flow name '{duplicate_flow_name}' for "
+        f"flow id 'recurrent_payment'. Flow names must be unique. "
+        f"Please make sure that all flows have different names."
+    ) in caplog.text
+
+
+def test_verify_unique_flows_duplicate_descriptions(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    duplicate_flow_description_with_punctuation = "This flow lets users send money."
+    duplicate_flow_description = "This flow lets users send money"
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: {duplicate_flow_description_with_punctuation}
+                            name: transfer money
+                            steps:
+                            - id: "ask_recipient"
+                              collect: transfer_recipient
+                              next: "ask_amount"
+                            - id: "ask_amount"
+                              collect: transfer_amount
+                              next: "execute_transfer"
+                            - id: "execute_transfer"
+                              action: action_transfer_money
+                          recurrent_payment:
+                            description: {duplicate_flow_description}
+                            name: setup recurrent payment
+                            steps:
+                            - id: "set_up_recurrence"
+                              action: action_set_up_recurrent_payment
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                            transfer_amount:
+                                type: float
+                                mappings: []
+                        actions:
+                          - action_transfer_money
+                          - action_set_up_recurrent_payment
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.ERROR):
+        validator.verify_unique_flows()
+
+    assert (
+        "Detected duplicate flow description for flow id 'recurrent_payment'. "
+        "Flow descriptions must be unique. "
+        "Please make sure that all flows have different descriptions."
+    ) in caplog.text
+
+
+def test_verify_predicates_invalid_rejection_if(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    predicate = 'account_type not in {{"debit", "savings"}}'
+    error_log = (
+        f"Detected invalid rejection '{predicate}' "
+        f"at `collect` step 'ask_account_type' "
+        f"for flow id 'transfer_money'. "
+        f"Please make sure that all conditions are valid."
+    )
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: This flow lets users send money.
+                            name: transfer money
+                            steps:
+                            - id: "ask_account_type"
+                              collect: account_type
+                              rejections:
+                                - if: {predicate}
+                                  utter: utter_invalid_account_type
+                              next: "ask_recipient"
+                            - id: "ask_recipient"
+                              collect: transfer_recipient
+                              next: "ask_amount"
+                            - id: "ask_amount"
+                              collect: transfer_amount
+                              next: "execute_transfer"
+                            - id: "execute_transfer"
+                              action: action_transfer_money
+                          recurrent_payment:
+                            description: This flow setups recurrent payments
+                            name: setup recurrent payment
+                            steps:
+                            - id: "set_up_recurrence"
+                              action: action_set_up_recurrent_payment
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                            transfer_amount:
+                                type: float
+                                mappings: []
+                        actions:
+                          - action_transfer_money
+                          - action_set_up_recurrent_payment
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_predicates()
+
+    assert error_log in caplog.text
+
+
+@pytest.fixture
+def domain_file_name(tmp_path: Path) -> Path:
+    domain_file_name = tmp_path / "domain.yml"
+    with open(domain_file_name, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                responses:
+                  utter_ask_recipient:
+                    - text: "Who do you want to send money to?"
+                  utter_ask_amount:
+                    - text: "How much do you want to send?"
+                  utter_amount_too_high:
+                    - text: "Sorry, you can only send up to 1000."
+                  utter_transfer_summary:
+                    - text: You are sending {{amount}} to {{transfer_recipient}}.
+                """
+        )
+    return domain_file_name
+
+
+def test_verify_utterances_in_dialogues_finds_all_responses_in_flows(
+    tmp_path: Path, nlu_data_path: Path, domain_file_name: Path
+):
+    flows_file_name = tmp_path / "flows.yml"
+    with open(flows_file_name, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    flows:
+                      transfer_money:
+                        description: This flow lets users send money.
+                        name: Transfer money
+                        steps:
+                        - id: "ask_recipient"
+                          collect: transfer_recipient
+                          utter: utter_ask_recipient
+                          next: "ask_amount"
+                        - id: "ask_amount"
+                          collect: amount
+                          rejections:
+                            - if: amount > 1000
+                              utter: utter_amount_too_high
+                          next: "summarize_transfer"
+                        - id: "summarize_transfer"
+                          action: utter_transfer_summary
+                    """
+        )
+
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file_name),
+        training_data_paths=[str(flows_file_name), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with warnings.catch_warnings() as record:
+        warnings.simplefilter("error")
+        # force validator to not ignore warnings (default is True)
+        assert validator.verify_utterances_in_dialogues(ignore_warnings=False)
+        assert record is None
+
+
+def test_verify_utterances_in_dialogues_missing_responses_in_flows(
+    tmp_path: Path, nlu_data_path: Path, domain_file_name: Path
+):
+    flows_file_name = tmp_path / "flows.yml"
+    # remove utter_ask_recipient from this flows file,
+    # but it is listed in the domain file
+    with open(flows_file_name, "w") as file:
+        file.write(
+            f"""
+                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                    flows:
+                      transfer_money:
+                        description: This flow lets users send money.
+                        name: Transfer money
+                        steps:
+                        - id: "ask_recipient"
+                          collect: transfer_money_recipient
+                          next: "ask_amount"
+                        - id: "ask_amount"
+                          collect: transfer_money_amount
+                          rejections:
+                            - if: transfer_money_amount > 1000
+                              utter: utter_amount_too_high
+                          next: "summarize_transfer"
+                        - id: "summarize_transfer"
+                          action: utter_transfer_summary
+                    """
+        )
+
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file_name),
+        training_data_paths=[str(flows_file_name), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+    match = (
+        "The utterance 'utter_ask_recipient' is not used in any story, rule or flow."
+    )
+    with pytest.warns(UserWarning, match=match):
+        # force validator to not ignore warnings (default is True)
+        validator.verify_utterances_in_dialogues(ignore_warnings=False)

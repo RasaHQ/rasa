@@ -48,10 +48,10 @@ def test_run_command_sets_slot_if_asked_for():
             my_flow:
                 steps:
                 - id: collect_foo
-                  collect_information: foo
+                  collect: foo
                   next: collect_bar
                 - id: collect_bar
-                  collect_information: bar
+                  collect: bar
         """
     )
 
@@ -84,11 +84,11 @@ def test_run_command_skips_set_slot_if_slot_was_not_asked_for():
             my_flow:
                 steps:
                 - id: collect_foo
-                  collect_information: foo
+                  collect: foo
                   next: collect_bar
                 - id: collect_bar
                   ask_before_filling: true
-                  collect_information: bar
+                  collect: bar
         """
     )
 
@@ -122,10 +122,10 @@ def test_run_command_can_set_slots_before_asking():
             my_flow:
                 steps:
                 - id: collect_foo
-                  collect_information: foo
+                  collect: foo
                   next: collect_bar
                 - id: collect_bar
-                  collect_information: bar
+                  collect: bar
         """
     )
 
@@ -160,10 +160,10 @@ def test_run_command_can_set_slot_that_was_already_asked_in_the_past():
             my_flow:
                 steps:
                 - id: collect_foo
-                  collect_information: foo
+                  collect: foo
                   next: collect_bar
                 - id: collect_bar
-                  collect_information: bar
+                  collect: bar
         """
     )
 
@@ -199,10 +199,10 @@ def test_run_command_skips_setting_unknown_slot():
             my_flow:
                 steps:
                 - id: collect_foo
-                  collect_information: foo
+                  collect: foo
                   next: collect_bar
                 - id: collect_bar
-                  collect_information: bar
+                  collect: bar
         """
     )
 

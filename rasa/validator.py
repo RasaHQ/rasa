@@ -1,12 +1,19 @@
 import logging
+import re
+import string
 from collections import defaultdict
-from typing import Set, Text, Optional, Dict, Any, List
+from typing import Set, Text, Optional, Dict, Any, List, Tuple
+
+from pypred import Predicate
 
 import rasa.core.training.story_conflict
 from rasa.shared.core.flows.flow import (
     ActionFlowStep,
+    BranchFlowStep,
     CollectInformationFlowStep,
     FlowsList,
+    IfFlowLink,
+    SetSlotsFlowStep,
 )
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
@@ -15,7 +22,6 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
-    UTTER_ASK_PREFIX,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
@@ -27,6 +33,7 @@ from rasa.shared.core.events import UserUttered
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
+from rasa.shared.core.slots import ListSlot, Slot
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -108,7 +115,6 @@ class Validator:
         self, ignore_warnings: bool = True
     ) -> bool:
         """Checks if there is no duplicated example in different intents."""
-
         everything_is_alright = True
 
         duplication_hash = defaultdict(set)
@@ -133,8 +139,8 @@ class Validator:
         """Checks intents used in stories.
 
         Verifies if the intents used in the stories are valid, and whether
-        all valid intents are used in the stories."""
-
+        all valid intents are used in the stories.
+        """
         everything_is_alright = self.verify_intents(ignore_warnings=ignore_warnings)
 
         stories_intents = {
@@ -232,7 +238,11 @@ class Validator:
                 ):
                     flow_utterances.add(step.action)
                 if isinstance(step, CollectInformationFlowStep):
-                    flow_utterances.add(UTTER_ASK_PREFIX + step.collect_information)
+                    flow_utterances.add(step.utter)
+
+                    for rejection in step.rejections:
+                        flow_utterances.add(rejection.utter)
+
         return flow_utterances
 
     def verify_utterances_in_dialogues(self, ignore_warnings: bool = True) -> bool:
@@ -241,8 +251,6 @@ class Validator:
         Checks whether utterances used in the stories are valid,
         and whether all valid utterances are used in stories.
         """
-        everything_is_alright = True
-
         utterance_actions = self._gather_utterance_actions()
 
         stories_utterances = self._utterances_used_in_stories()
@@ -253,7 +261,7 @@ class Validator:
         everything_is_alright = (
             ignore_warnings
             or self._does_story_only_use_valid_actions(
-                stories_utterances, utterance_actions
+                stories_utterances, list(utterance_actions)
             )
         )
 
@@ -345,7 +353,6 @@ class Validator:
             `False` is a conflict was found and `ignore_warnings` is `False`.
             `True` otherwise.
         """
-
         logger.info("Story structure validation...")
 
         trackers = TrainingDataGenerator(
@@ -370,7 +377,6 @@ class Validator:
 
     def verify_nlu(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
-
         logger.info("Validating intents...")
         intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
 
@@ -483,3 +489,212 @@ class Validator:
                 f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
                 f"placeholder value with a unique identifier."
             )
+
+    @staticmethod
+    def _log_error_if_slot_not_in_domain(
+        slot_name: str,
+        domain_slots: Dict[Text, Slot],
+        step_id: str,
+        flow_id: str,
+        all_good: bool,
+    ) -> bool:
+        if slot_name not in domain_slots:
+            logger.error(
+                f"The slot '{slot_name}' is used in the "
+                f"step '{step_id}' of flow id '{flow_id}', but it "
+                f"is not listed in the domain slots. "
+                f"You should add it to your domain file!",
+            )
+            all_good = False
+
+        return all_good
+
+    @staticmethod
+    def _log_error_if_list_slot(
+        slot: Slot, step_id: str, flow_id: str, all_good: bool
+    ) -> bool:
+        if isinstance(slot, ListSlot):
+            logger.error(
+                f"The slot '{slot.name}' is used in the "
+                f"step '{step_id}' of flow id '{flow_id}', but it "
+                f"is a list slot. List slots are currently not "
+                f"supported in flows. You should change it to a "
+                f"text, boolean or float slot in your domain file!",
+            )
+            all_good = False
+
+        return all_good
+
+    @staticmethod
+    def _log_error_if_dialogue_stack_slot(
+        slot: Slot, step_id: str, flow_id: str, all_good: bool
+    ) -> bool:
+        if slot.name == constants.DIALOGUE_STACK_SLOT:
+            logger.error(
+                f"The slot '{constants.DIALOGUE_STACK_SLOT}' is used in the "
+                f"step '{step_id}' of flow id '{flow_id}', but it "
+                f"is a reserved slot. You must not use reserved slots in "
+                f"your flows.",
+            )
+            all_good = False
+
+        return all_good
+
+    def verify_flows_steps_against_domain(self) -> bool:
+        """Checks flows steps' references against the domain file."""
+        all_good = True
+        domain_slots = {slot.name: slot for slot in self.domain.slots}
+        for flow in self.flows.underlying_flows:
+            for step in flow.steps:
+                if isinstance(step, CollectInformationFlowStep):
+                    all_good = self._log_error_if_slot_not_in_domain(
+                        step.collect, domain_slots, step.id, flow.id, all_good
+                    )
+                    current_slot = domain_slots.get(step.collect)
+                    if not current_slot:
+                        continue
+
+                    all_good = self._log_error_if_list_slot(
+                        current_slot, step.id, flow.id, all_good
+                    )
+                    all_good = self._log_error_if_dialogue_stack_slot(
+                        current_slot, step.id, flow.id, all_good
+                    )
+
+                elif isinstance(step, SetSlotsFlowStep):
+                    for slot in step.slots:
+                        slot_name = slot["key"]
+                        all_good = self._log_error_if_slot_not_in_domain(
+                            slot_name, domain_slots, step.id, flow.id, all_good
+                        )
+                        current_slot = domain_slots.get(slot_name)
+                        if not current_slot:
+                            continue
+
+                        all_good = self._log_error_if_list_slot(
+                            current_slot, step.id, flow.id, all_good
+                        )
+                        all_good = self._log_error_if_dialogue_stack_slot(
+                            current_slot, step.id, flow.id, all_good
+                        )
+
+                elif isinstance(step, ActionFlowStep):
+                    regex = r"{context\..+?}"
+                    matches = re.findall(regex, step.action)
+                    if matches:
+                        logger.warning(
+                            f"An interpolated action name '{step.action}' was "
+                            f"found at step '{step.id}' of flow id '{flow.id}'. "
+                            f"Skipping validation for this step. "
+                            f"Please make sure that the action name is "
+                            f"listed in your domain responses or actions."
+                        )
+                    elif step.action not in self.domain.action_names_or_texts:
+                        logger.error(
+                            f"The action '{step.action}' is used in the step "
+                            f"'{step.id}' of flow id '{flow.id}', but it "
+                            f"is not listed in the domain file. "
+                            f"You should add it to your domain file!",
+                        )
+                        all_good = False
+        return all_good
+
+    def verify_unique_flows(self) -> bool:
+        """Checks if all flows have unique names and descriptions."""
+        all_good = True
+        flow_names = set()
+        flow_descriptions = set()
+        punctuation_table = str.maketrans({i: "" for i in string.punctuation})
+
+        for flow in self.flows.underlying_flows:
+            flow_description = flow.description
+            cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr] # noqa: E501
+            if cleaned_description in flow_descriptions:
+                logger.error(
+                    f"Detected duplicate flow description for flow id '{flow.id}'. "
+                    f"Flow descriptions must be unique. "
+                    f"Please make sure that all flows have different descriptions."
+                )
+                all_good = False
+
+            if flow.name in flow_names:
+                logger.error(
+                    f"Detected duplicate flow name '{flow.name}' for flow "
+                    f"id '{flow.id}'. Flow names must be unique. "
+                    f"Please make sure that all flows have different names."
+                )
+                all_good = False
+
+            flow_names.add(flow.name)
+            flow_descriptions.add(cleaned_description)
+
+        return all_good
+
+    @staticmethod
+    def _construct_predicate(
+        predicate: Optional[str], step_id: str, all_good: bool = True
+    ) -> Tuple[Optional[Predicate], bool]:
+        try:
+            pred = Predicate(predicate)
+        except (TypeError, Exception) as exception:
+            logger.error(
+                f"Could not initialize the predicate found under step "
+                f"'{step_id}': {exception}."
+            )
+            pred = None
+            all_good = False
+
+        return pred, all_good
+
+    def verify_predicates(self) -> bool:
+        """Checks that predicates used in branch flow steps or `collect` steps are valid."""  # noqa: E501
+        all_good = True
+        for flow in self.flows.underlying_flows:
+            for step in flow.steps:
+                if isinstance(step, BranchFlowStep):
+                    for link in step.next.links:
+                        if isinstance(link, IfFlowLink):
+                            predicate, all_good = Validator._construct_predicate(
+                                link.condition, step.id
+                            )
+                            if predicate and not predicate.is_valid():
+                                logger.error(
+                                    f"Detected invalid condition '{link.condition}' "
+                                    f"at step '{step.id}' for flow id '{flow.id}'. "
+                                    f"Please make sure that all conditions are valid."
+                                )
+                                all_good = False
+                elif isinstance(step, CollectInformationFlowStep):
+                    predicates = [predicate.if_ for predicate in step.rejections]
+                    for predicate in predicates:
+                        pred, all_good = Validator._construct_predicate(
+                            predicate, step.id
+                        )
+                        if pred and not pred.is_valid():
+                            logger.error(
+                                f"Detected invalid rejection '{predicate}' "
+                                f"at `collect` step '{step.id}' "
+                                f"for flow id '{flow.id}'. "
+                                f"Please make sure that all conditions are valid."
+                            )
+                            all_good = False
+        return all_good
+
+    def verify_flows(self) -> bool:
+        """Checks for inconsistencies across flows."""
+        logger.info("Validating flows...")
+
+        if self.flows.is_empty():
+            logger.warning(
+                "No flows were found in the data files. "
+                "Will not proceed with flow validation.",
+            )
+            return True
+
+        condition_one = self.verify_flows_steps_against_domain()
+        condition_two = self.verify_unique_flows()
+        condition_three = self.verify_predicates()
+
+        all_good = all([condition_one, condition_two, condition_three])
+
+        return all_good

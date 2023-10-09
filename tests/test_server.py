@@ -57,6 +57,7 @@ from rasa.shared.core.constants import (
     SESSION_START_METADATA_SLOT,
     DIALOGUE_STACK_SLOT,
     RETURN_VALUE_SLOT,
+    FLOW_HASHES_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
@@ -1117,6 +1118,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     assert content["slots"] == {
         "name": None,
         REQUESTED_SLOT: None,
+        FLOW_HASHES_SLOT: None,
         SESSION_START_METADATA_SLOT: None,
         DIALOGUE_STACK_SLOT: None,
         RETURN_VALUE_SLOT: None,
@@ -2214,7 +2216,7 @@ async def test_get_tracker_with_query_param_include_events_after_restart(
 
     serialized_actual_events = tracker["events"]
 
-    restarted_event = [
+    restarted_event = [  # noqa: RUF015
         event for event in events_to_store if isinstance(event, Restarted)
     ][0]
     truncated_events = events_to_store[events_to_store.index(restarted_event) + 1 :]
@@ -2245,11 +2247,11 @@ async def test_get_tracker_with_query_param_include_events_applied(
 
     serialized_actual_events = tracker["events"]
 
-    restarted_event = [
+    restarted_event = [  # noqa: RUF015
         event for event in events_to_store if isinstance(event, Restarted)
     ][0]
     truncated_events = events_to_store[events_to_store.index(restarted_event) + 1 :]
-    session_started = [
+    session_started = [  # noqa: RUF015
         event for event in truncated_events if isinstance(event, SessionStarted)
     ][0]
     truncated_events = truncated_events[truncated_events.index(session_started) + 1 :]

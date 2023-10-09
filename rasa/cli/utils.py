@@ -127,7 +127,7 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
 
     if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
         rasa.shared.utils.io.raise_warning(
-            f"The config file '{str(config_file)}' is missing a unique value for the "
+            f"The config file '{config_file!s}' is missing a unique value for the "
             f"'{ASSISTANT_ID_KEY}' mandatory key. Proceeding with generating a random "
             f"value and overwriting the '{ASSISTANT_ID_KEY}' in the config file."
         )
@@ -217,6 +217,7 @@ def validate_files(
     max_history: Optional[int],
     importer: TrainingDataImporter,
     stories_only: bool = False,
+    flows_only: bool = False,
 ) -> None:
     """Validates either the story structure or the entire project.
 
@@ -225,6 +226,7 @@ def validate_files(
         max_history: The max history to use when validating the story structure.
         importer: The `TrainingDataImporter` to use to load the training data.
         stories_only: If `True`, only the story structure is validated.
+        flows_only: If `True`, only the flows are validated.
     """
     from rasa.validator import Validator
 
@@ -232,6 +234,8 @@ def validate_files(
 
     if stories_only:
         all_good = _validate_story_structure(validator, max_history, fail_on_warnings)
+    elif flows_only:
+        all_good = validator.verify_flows()
     else:
         if importer.get_domain().is_empty():
             rasa.shared.utils.cli.print_error_and_exit(
@@ -243,8 +247,9 @@ def validate_files(
         valid_stories = _validate_story_structure(
             validator, max_history, fail_on_warnings
         )
+        valid_flows = validator.verify_flows()
 
-        all_good = valid_domain and valid_nlu and valid_stories
+        all_good = valid_domain and valid_nlu and valid_stories and valid_flows
 
     validator.warn_if_config_mandatory_keys_are_not_set()
 

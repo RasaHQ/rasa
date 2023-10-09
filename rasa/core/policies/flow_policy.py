@@ -7,6 +7,9 @@ from jinja2 import Template
 from structlog.contextvars import (
     bound_contextvars,
 )
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
@@ -23,7 +26,10 @@ from rasa.dialogue_understanding.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
-from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
+from rasa.dialogue_understanding.stack.utils import (
+    end_top_user_flow,
+    top_user_flow_frame,
+)
 
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
@@ -36,7 +42,6 @@ from rasa.shared.constants import FLOW_PREFIX
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SEND_TEXT_NAME,
-    DIALOGUE_STACK_SLOT,
 )
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow import (
@@ -61,26 +66,49 @@ from rasa.shared.core.flows.flow import (
     StaticFlowLink,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
 import structlog
 
+from rasa.shared.exceptions import RasaException
+
 structlogger = structlog.get_logger()
 
+MAX_NUMBER_OF_STEPS = 250
 
-class FlowException(Exception):
+
+class FlowException(RasaException):
     """Exception that is raised when there is a problem with a flow."""
 
     pass
+
+
+class FlowCircuitBreakerTrippedException(FlowException):
+    """Exception that is raised when there is a problem with a flow."""
+
+    def __init__(
+        self, dialogue_stack: DialogueStack, number_of_steps_taken: int
+    ) -> None:
+        """Creates a `FlowCircuitBreakerTrippedException`.
+
+        Args:
+            dialogue_stack: The dialogue stack.
+            number_of_steps_taken: The number of steps that were taken.
+        """
+        super().__init__(
+            f"Flow circuit breaker tripped after {number_of_steps_taken} steps. "
+            "There appears to be an infinite loop in the flows."
+        )
+        self.dialogue_stack = dialogue_stack
+        self.number_of_steps_taken = number_of_steps_taken
 
 
 @DefaultV1Recipe.register(
@@ -95,7 +123,15 @@ class FlowPolicy(Policy):
 
     @staticmethod
     def does_support_stack_frame(frame: DialogueStackFrame) -> bool:
-        """Checks if the policy supports the given stack frame."""
+        """Checks if the policy supports the topmost frame on the dialogue stack.
+
+        If `False` is returned, the policy will abstain from making a prediction.
+
+        Args:
+            frame: The frame to check.
+
+        Returns:
+            `True` if the policy supports the frame, `False` otherwise."""
         return isinstance(frame, BaseFlowStackFrame)
 
     @staticmethod
@@ -106,18 +142,6 @@ class FlowPolicy(Policy):
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
             POLICY_MAX_HISTORY: None,
         }
-
-    @staticmethod
-    def supported_data() -> SupportedData:
-        """The type of data supported by this policy.
-
-        By default, this is only ML-based training data. If policies support rule data,
-        or both ML-based data and rule data, they need to override this method.
-
-        Returns:
-            The data type supported by this policy (ML-based training data).
-        """
-        return SupportedData.ML_DATA
 
     def __init__(
         self,
@@ -151,9 +175,6 @@ class FlowPolicy(Policy):
             A policy must return its resource locator so that potential children nodes
             can load the policy from the resource.
         """
-        # currently, nothing to do here. we have access to the flows during
-        # prediction. we might want to store the flows in the future
-        # or do some preprocessing here.
         return self.resource
 
     def predict_action_probabilities(
@@ -179,20 +200,44 @@ class FlowPolicy(Policy):
              The prediction.
         """
         if not self.supports_current_stack_frame(tracker):
+            # if the policy doesn't support the current stack frame, we'll abstain
             return self._prediction(self._default_predictions(domain))
 
         flows = flows or FlowsList([])
         executor = FlowExecutor.from_tracker(tracker, flows, domain)
 
         # create executor and predict next action
-        prediction = executor.advance_flows(tracker)
-        return self._create_prediction_result(
-            prediction.action_name,
-            domain,
-            prediction.score,
-            prediction.events,
-            prediction.metadata,
-        )
+        try:
+            prediction = executor.advance_flows(tracker)
+            return self._create_prediction_result(
+                prediction.action_name,
+                domain,
+                prediction.score,
+                prediction.events,
+                prediction.metadata,
+            )
+        except FlowCircuitBreakerTrippedException as e:
+            structlogger.error(
+                "flow.circuit_breaker",
+                dialogue_stack=e.dialogue_stack,
+                number_of_steps_taken=e.number_of_steps_taken,
+                event_info=(
+                    "The flow circuit breaker tripped. "
+                    "There appears to be an infinite loop in the flows."
+                ),
+            )
+            # end the current flow and start the internal error flow
+            end_top_user_flow(executor.dialogue_stack)
+            executor.dialogue_stack.push(InternalErrorPatternFlowStackFrame())
+            # we retry, with the internal error frame on the stack
+            prediction = executor.advance_flows(tracker)
+            return self._create_prediction_result(
+                prediction.action_name,
+                domain,
+                prediction.score,
+                prediction.events,
+                prediction.metadata,
+            )
 
     def _create_prediction_result(
         self,
@@ -299,7 +344,7 @@ class FlowExecutor:
         """Evaluate a predicate condition."""
 
         # attach context to the predicate evaluation to allow conditions using it
-        context = {"context": DialogueStack.from_tracker(tracker).current_context()}
+        context = {"context": self.dialogue_stack.current_context()}
         document: Dict[str, Any] = context.copy()
         for slot in self.domain.slots:
             document[slot.name] = tracker.get_slot(slot.name)
@@ -342,12 +387,18 @@ class FlowExecutor:
                 tracker=tracker,
             )
             return None
-        if current.id != END_STEP:
-            # we've reached the end of the user defined steps in the flow.
-            # every flow should end with an end step, so we add it here.
+        if current.id == END_STEP:
+            # we are already at the very end of the flow. There is no next step.
+            return None
+        elif isinstance(current, LinkFlowStep):
+            # link steps don't have a next step, so we'll return the end step
             return END_STEP
         else:
-            # we are already at the very end of the flow. There is no next step.
+            structlogger.error(
+                "flow.step.failed_to_select_next_step",
+                step=current,
+                tracker=tracker,
+            )
             return None
 
     def _select_next_step(
@@ -372,23 +423,12 @@ class FlowExecutor:
         """Replace context variables in a text."""
         return Template(text).render(context)
 
-    def _slot_for_collect_information(self, collect_information: Text) -> Slot:
-        """Find the slot for the collect information step."""
-        for slot in self.domain.slots:
-            if slot.name == collect_information:
-                return slot
-        else:
-            raise FlowException(
-                f"Collect Information '{collect_information}' does not map to "
-                f"an existing slot."
-            )
-
     def _is_step_completed(
         self, step: FlowStep, tracker: "DialogueStateTracker"
     ) -> bool:
         """Check if a step is completed."""
         if isinstance(step, CollectInformationFlowStep):
-            return tracker.get_slot(step.collect_information) is not None
+            return tracker.get_slot(step.collect) is not None
         else:
             return True
 
@@ -431,20 +471,15 @@ class FlowExecutor:
             return ActionPrediction(None, 0.0)
         else:
             previous_stack = DialogueStack.get_persisted_stack(tracker)
-            prediction = self._select_next_action(tracker)
+            prediction = self.select_next_action(tracker)
             if previous_stack != self.dialogue_stack.as_dict():
                 # we need to update dialogue stack to persist the state of the executor
                 if not prediction.events:
                     prediction.events = []
-                prediction.events.append(
-                    SlotSet(
-                        DIALOGUE_STACK_SLOT,
-                        self.dialogue_stack.as_dict(),
-                    )
-                )
+                prediction.events.append(self.dialogue_stack.persist_as_event())
             return prediction
 
-    def _select_next_action(
+    def select_next_action(
         self,
         tracker: DialogueStateTracker,
     ) -> ActionPrediction:
@@ -468,7 +503,16 @@ class FlowExecutor:
 
         number_of_initial_events = len(tracker.events)
 
+        number_of_steps_taken = 0
+
         while isinstance(step_result, ContinueFlowWithNextStep):
+
+            number_of_steps_taken += 1
+            if number_of_steps_taken > MAX_NUMBER_OF_STEPS:
+                raise FlowCircuitBreakerTrippedException(
+                    self.dialogue_stack, number_of_steps_taken
+                )
+
             active_frame = self.dialogue_stack.top()
             if not isinstance(active_frame, BaseFlowStackFrame):
                 # If there is no current flow, we assume that all flows are done
@@ -491,7 +535,7 @@ class FlowExecutor:
                         self._advance_top_flow_on_stack(current_step.id)
 
                         with bound_contextvars(step_id=current_step.id):
-                            step_result = self._run_step(
+                            step_result = self.run_step(
                                 current_flow, current_step, tracker
                             )
                             tracker.update_with_events(step_result.events, self.domain)
@@ -522,12 +566,12 @@ class FlowExecutor:
                 isinstance(step, CollectInformationFlowStep)
                 and step.reset_after_flow_ends
             ):
-                slot = tracker.slots.get(step.collect_information, None)
+                slot = tracker.slots.get(step.collect, None)
                 initial_value = slot.initial_value if slot else None
-                events.append(SlotSet(step.collect_information, initial_value))
+                events.append(SlotSet(step.collect, initial_value))
         return events
 
-    def _run_step(
+    def run_step(
         self,
         flow: Flow,
         step: FlowStep,
@@ -551,17 +595,17 @@ class FlowExecutor:
         A result of running the step describing where to transition to.
         """
         if isinstance(step, CollectInformationFlowStep):
-            structlogger.debug("flow.step.run.collect_information")
+            structlogger.debug("flow.step.run.collect")
             self.trigger_pattern_ask_collect_information(
-                step.collect_information, step.rejections, step.utter
+                step.collect, step.rejections, step.utter
             )
 
             # reset the slot if its already filled and the collect information shouldn't
             # be skipped
-            slot = tracker.slots.get(step.collect_information, None)
+            slot = tracker.slots.get(step.collect, None)
 
             if slot and slot.has_been_set and step.ask_before_filling:
-                events = [SlotSet(step.collect_information, slot.initial_value)]
+                events = [SlotSet(step.collect, slot.initial_value)]
             else:
                 events = []
 
@@ -683,14 +727,14 @@ class FlowExecutor:
 
     def trigger_pattern_ask_collect_information(
         self,
-        collect_information: str,
+        collect: str,
         rejections: List[SlotRejection],
         utter: str,
     ) -> None:
         """Trigger the pattern to ask for a slot value."""
         self.dialogue_stack.push(
             CollectInformationPatternFlowStackFrame(
-                collect_information=collect_information,
+                collect=collect,
                 utter=utter,
                 rejections=rejections,
             )
