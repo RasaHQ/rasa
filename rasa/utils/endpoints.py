@@ -149,6 +149,9 @@ class EndpointConfig:
             headers.update(kwargs["headers"])
             del kwargs["headers"]
 
+        if self.headers:
+            headers.update(self.headers)
+
         logger.debug(f"OSS request headers: {headers}")
         url = concat_url(self.url, subpath)
 
