@@ -1,4 +1,3 @@
-import textwrap
 from pathlib import Path
 from typing import Text, Union
 import rasa.shared.data
