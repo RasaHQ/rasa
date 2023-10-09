@@ -183,6 +183,13 @@ class FlowsList:
         """Iterates over the flows."""
         yield from self.underlying_flows
 
+    def __eq__(self, other: Any) -> bool:
+        """Compares the flows."""
+        return (
+            isinstance(other, FlowsList)
+            and self.underlying_flows == other.underlying_flows
+        )
+
     def is_empty(self) -> bool:
         """Returns whether the flows list is empty."""
         return len(self.underlying_flows) == 0
