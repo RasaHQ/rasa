@@ -9,6 +9,7 @@ from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import TextSlot, AnySlot, CategoricalSlot, BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.utils.validation import YamlValidationException
 
 
 async def test_nlg_conditional_response_variations_with_no_slots():
@@ -627,6 +628,45 @@ async def test_nlg_conditional_response_variations_condition_logging(
     )
 
 
+async def test_nlg_response_with_no_text():
+    with pytest.raises(YamlValidationException):
+        Domain.from_yaml(
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            responses:
+                utter_flow_xyz:
+                  - buttons:
+                      - payload: "yes"
+                        title: Yes
+                      - payload: "no"
+                        title: No
+
+            """
+        )
+
+
+async def test_nlg_response_with_default_template_engine():
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_flow_xyz:
+            - text: "Do you want to update the values?"
+        """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    r = t.generate_from_slots(
+        "utter_flow_xyz",
+        {"tm": "50"},
+        {
+            "frame_id": "XYYZABCD",
+            "corrected_slots": {"tm": "100"},
+        },
+        "",
+    )
+    assert r.get("text") == "Do you want to update the values?"
+
+
 async def test_nlg_response_with_jinja_template():
     domain = Domain.from_yaml(
         f"""
@@ -651,3 +691,28 @@ async def test_nlg_response_with_jinja_template():
         "",
     )
     assert r.get("text") == "Do you want to update the tm?"
+
+
+async def test_nlg_response_with_unknown_var_jinja_template():
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_flow_xyz:
+            - text: "Do you want to update the {{{{ context.unknown_key }}}}?"
+              metadata:
+                rephrase: true
+                template: jinja
+        """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    r = t.generate_from_slots(
+        "utter_flow_xyz",
+        {"tm": "50"},
+        {
+            "frame_id": "XYYZABCD",
+            "corrected_slots": {"tm": "100"},
+        },
+        "",
+    )
+    assert r.get("text") == "Do you want to update the ?"
