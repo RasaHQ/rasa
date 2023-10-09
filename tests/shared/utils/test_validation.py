@@ -491,7 +491,7 @@ flows:
         action: utter_payment_failed
       - action: utter_failed_payment_handover
       - action: utter_failed_handoff""",
-      """
+        """
         flows:
           foo_flow:
             steps:
@@ -502,7 +502,17 @@ flows:
             - id: "2"
               action: action_listen
               next: "1"
-              """
+              """,
+        """
+        flows:
+          test_flow:
+            description: Test flow
+            steps:
+              - id: "1"
+                intent: transfer_money
+                next: "2"
+              - id: "2"
+                action: utter_ask_name""",
     ],
 )
 def test_flow_validation_pass(flow_yaml: str) -> None:

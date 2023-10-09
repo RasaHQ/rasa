@@ -159,6 +159,23 @@
                 "type": "string"
               }
             }
+          },
+          {
+            "required": [
+              "intent"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "intent": {
+                "type": "string"
+              },
+              "next": {
+                "$ref": "#$defs/next"
+              }
+            }
           }
         ]
       }
