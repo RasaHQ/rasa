@@ -301,8 +301,8 @@ def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
           foo_flow:
             steps:
             - id: "1"
-              set_slot:
-                foo: bar
+              set_slots:
+                - foo: bar
               next: "2"
             - id: "2"
               action: action_listen
