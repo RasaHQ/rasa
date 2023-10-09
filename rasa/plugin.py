@@ -6,8 +6,6 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 import pluggy
 
 from rasa.cli import SubParsersAction
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -15,6 +13,8 @@ if TYPE_CHECKING:
     from rasa.engine.graph import SchemaNode
     from rasa.engine.storage.storage import ModelMetadata
     from rasa.shared.core.domain import Domain
+    from rasa.shared.core.trackers import DialogueStateTracker
+    from rasa.shared.nlu.training_data.message import Message
     from rasa.utils.endpoints import EndpointConfig
 
 
@@ -95,8 +95,8 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None:
 
 @hookspec  # type: ignore[misc]
 def mock_tracker_for_evaluation(
-    example: Message, model_metadata: Optional["ModelMetadata"]
-) -> Optional[DialogueStateTracker]:
+    example: "Message", model_metadata: Optional["ModelMetadata"]
+) -> Optional["DialogueStateTracker"]:
     """Generate a mocked tracker for NLU evaluation."""
 
 
