@@ -297,10 +297,15 @@ class Flow:
 
         return Flow(
             id=flow_id,
-            name=flow_config["name"],
+            name=flow_config.get("name", Flow.create_default_name(flow_id)),
             description=flow_config.get("description"),
             step_sequence=Flow.resolve_default_ids(step_sequence),
         )
+
+    @staticmethod
+    def create_default_name(self, flow_id: str) -> str:
+        """Create a default flow name for when it is missing."""
+        return flow_id.replace("_", " ").replace("-", " ")
 
     @staticmethod
     def resolve_default_ids(step_sequence: StepSequence) -> StepSequence:
