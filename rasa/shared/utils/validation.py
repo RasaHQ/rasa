@@ -291,20 +291,42 @@ def validate_training_data_format_version(
     return False
 
 
-def validate_dict_with_schema(data: Dict[Text, Any], schema: Dict[Text, Any]) -> None:
+def validate_yaml_with_jsonschema(
+    yaml_file_content: Text, schema_path: Text, package_name: Text = PACKAGE_NAME
+) -> None:
     """Validate data format.
 
     Args:
-        data (Dict[Text, Any]): Data to validate
-        schema (Dict[Text, Any]): jsonschema to validate against
+        yaml_file_content: the content of the yaml file to be validated
+        schema_path: the schema of the yaml file
+        package_name: the name of the package the schema is located in. defaults
+            to `rasa`.
 
     Raises:
+        YamlSyntaxException: if the yaml file is not valid.
         SchemaValidationError: if validation fails.
     """
     from jsonschema import validate, ValidationError
+    from ruamel.yaml import YAMLError
+    import pkg_resources
+
+    schema_file = pkg_resources.resource_filename(package_name, schema_path)
+    schema_content = rasa.shared.utils.io.read_yaml_file(schema_file)
 
     try:
-        validate(data, schema)
+        # we need "rt" since
+        # it will add meta information to the parsed output. this meta information
+        # will include e.g. at which line an object was parsed. this is very
+        # helpful when we validate files later on and want to point the user to the
+        # right line
+        source_data = rasa.shared.utils.io.read_yaml(
+            yaml_file_content, reader_type=["safe", "rt"]
+        )
+    except (YAMLError, DuplicateKeyError) as e:
+        raise YamlSyntaxException(underlying_yaml_exception=e)
+
+    try:
+        validate(source_data, schema_content)
     except ValidationError as error:
         error.message += (
             f". Failed to validate data, make sure your data "

@@ -17,7 +17,10 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
-from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.utils.validation import (
+    KEY_TRAINING_DATA_FORMAT_VERSION,
+    validate_yaml_with_jsonschema,
+)
 
 
 @pytest.mark.parametrize(
@@ -426,6 +429,21 @@ nlu:
               - action: utter_relevant_card_not_linked
                 next: END
     """,
+        f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+flows:
+    transfer_money:
+        description: This flow lets users send money.
+        name: transfer money
+        steps:
+        - id: "ask_recipient"
+          collect: transfer_recipient
+          next: "ask_amount"
+        - id: "ask_amount"
+          collect: transfer_amount
+          next: "execute_transfer"
+        - id: "execute_transfer"
+          action: action_transfer_money""",
         """flows:
   setup_recurrent_payment:
     name: setup recurrent payment
@@ -476,42 +494,85 @@ nlu:
     ],
 )
 def test_flow_validation_pass(flow_yaml: str) -> None:
-    flow_dict = rasa.shared.utils.io.read_yaml(flow_yaml)
-    print(flow_dict, type(flow_dict), type(flow_dict["flows"]))
-    validation_schema = rasa.shared.utils.io.read_json_file(FLOWS_SCHEMA_FILE)
-    rasa.shared.utils.validation.validate_dict_with_schema(flow_dict, validation_schema)
+    # test fails if exception is raised
+    validate_yaml_with_jsonschema(flow_yaml, FLOWS_SCHEMA_FILE)
 
 
 @pytest.mark.parametrize(
     "flow_yaml, error_msg",
     [
-        ("""flows:""", "Failed validating 'type' in schema['properties']['flows']"),
+        ("""flows:""", "None is not of type 'object'."),
         (
             """flows:
   test:
     name: test
     steps:""",
-            (
-                "Failed validating 'type' in schema['properties']['flows']"
-                "['patternProperties']['^[A-Za-z_][A-Za-z0-9_]*$']['properties']['steps']"
-            ),
+            ("None is not of type 'array'."),
         ),
         (
             """flows:
          test:
          - id: test""",
+            "[ordereddict([('id', 'test')])] is not of type 'object'.",
+        ),
+        (
+            """flows:
+  test:
+    name: test
+    steps:
+      - collect: recurrent_payment_type
+        rejections:
+          - if: not ({"direct debit" "standing order"} contains recurrent_payment_type)
+            utter: utter_invalid_recurrent_payment_type
+        desc: the type of payment""",
             (
-                "Failed validating 'type' in schema['properties']"
-                "['flows']['patternProperties']['^[A-Za-z_][A-Za-z0-9_]*$']"
+                "('desc', 'the type of payment')]) is not valid"
+                " under any of the given schemas."
+            ),
+        ),
+        (  # next is a Bool
+            """flows:
+  test:
+    name: test
+    steps:
+      - collect: confirm_correct_card
+        ask_before_filling: true
+        next:
+          - if: "confirm_correct_card"
+            then:
+              - link: "replace_eligible_card"
+          - else:
+              - action: utter_relevant_card_not_linked
+                next: True""",
+            "('next', True)])])])])]) is not valid under any of the given schemas.",
+        ),
+        (  # just next and ask_before_filling
+            """flows:
+  test:
+    name: test
+    steps:
+      - ask_before_filling: true
+        next:
+          - if: "confirm_correct_card"
+            then:
+              - link: "replace_eligible_card"
+          - else:
+              - action: utter_relevant_card_not_linked
+                next: END""",
+            (
+                "ordereddict([('ask_before_filling', True), "
+                "('next', [ordereddict([('if', 'confirm_correct_card'),"
+                " ('then', [ordereddict([('link', 'replace_eligible_card')])])]),"
+                " ordereddict([('else', [ordereddict([('action',"
+                " 'utter_relevant_card_not_linked'), "
+                "('next', 'END')])])])])]) is not valid under any of the given schemas."
             ),
         ),
     ],
 )
 def test_flow_validation_fail(flow_yaml: str, error_msg: str) -> None:
-    flow_dict = rasa.shared.utils.io.read_yaml(flow_yaml)
-    validation_schema = rasa.shared.utils.io.read_json_file(FLOWS_SCHEMA_FILE)
-    with pytest.raises(SchemaValidationError) as e:
-        rasa.shared.utils.validation.validate_dict_with_schema(
-            flow_dict, validation_schema
+    with pytest.raises((SchemaValidationError, TypeError)) as e:
+        rasa.shared.utils.validation.validate_yaml_with_jsonschema(
+            flow_yaml, FLOWS_SCHEMA_FILE
         )
     assert error_msg in str(e.value)
