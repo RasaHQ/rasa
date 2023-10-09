@@ -1,8 +1,0 @@
-allowempty: True
-mapping:
-  version:
-    type: "str"
-    required: False
-    allowempty: False
-  flows:
-    type: "any"
