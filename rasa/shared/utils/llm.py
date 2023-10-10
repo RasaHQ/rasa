@@ -212,7 +212,7 @@ def embedder_factory(
 
 
 def get_prompt_template(
-    default_prompt_template: Text, jinja_file_path: Optional[Text]
+    jinja_file_path: Optional[Text], default_prompt_template: Text
 ) -> Text:
     """Returns the prompt template.
 

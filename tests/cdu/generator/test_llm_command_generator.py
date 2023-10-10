@@ -22,21 +22,21 @@ def model_storage(tmp_path_factory: TempPathFactory) -> ModelStorage:
     return LocalModelStorage(tmp_path_factory.mktemp(uuid.uuid4().hex))
 
 
-@pytest.mark.parametrize(
-    "config, expected",
-    [
-        (
-            {"prompt": "data/test_prompt_templates/test_prompt.jinja2"},
-            "This is a test prompt.",
-        ),
-        (
-            {},
-            "Your task is to analyze the current conversation",
-        ),
-    ],
-)
-async def test_llm_command_generator_prompt_initialisation(
-    model_storage: ModelStorage, resource: Resource, config: Dict, expected: str
-):
-    generator = LLMCommandGenerator(config, model_storage, resource)
-    assert generator.prompt_template.startswith(expected)
+async def test_llm_command_generator_prompt_init_custom(
+    model_storage: ModelStorage, resource: Resource
+) -> None:
+    generator = LLMCommandGenerator(
+        {"prompt": "data/test_prompt_templates/test_prompt.jinja2"},
+        model_storage,
+        resource,
+    )
+    assert generator.prompt_template.startswith("This is a test prompt.")
+
+
+async def test_llm_command_generator_prompt_init_default(
+    model_storage: ModelStorage, resource: Resource
+) -> None:
+    generator = LLMCommandGenerator({}, model_storage, resource)
+    assert generator.prompt_template.startswith(
+        "Your task is to analyze the current conversation"
+    )
