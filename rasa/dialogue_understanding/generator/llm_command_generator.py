@@ -188,14 +188,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         current_conversation += f"\nUSER: {latest_user_message}"
 
         inputs = {
-            "available_flows": self.prepare_flows_for_template(
-                flows.user_flows, tracker
-            ),
+            "available_flows": self.prepare_flows_for_template(flows, tracker),
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
             "current_flow": top_flow.id if top_flow is not None else None,
-            "collect_information": current_slot,
-            "collect_information_description": current_slot_description,
+            "current_slot": current_slot,
+            "current_slot_description": current_slot_description,
             "user_message": latest_user_message,
         }
 
@@ -407,7 +405,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return None
 
     @staticmethod
-    def slot_value(tracker: DialogueStateTracker, slot_name: str) -> str:
+    def get_slot_value(tracker: DialogueStateTracker, slot_name: str) -> str:
         """Get the slot value from the tracker.
 
         Args:
@@ -430,7 +428,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             flow_slots = [
                 {
                     "name": collect_step.collect,
-                    "value": self.slot_value(tracker, collect_step.collect),
+                    "value": self.get_slot_value(tracker, collect_step.collect),
                     "type": tracker.slots[collect_step.collect].type_name,
                     "allowed_values": self.allowed_values_for_slot(
                         tracker.slots[collect_step.collect]
@@ -444,7 +442,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             flow_slots = []
         return flow_slots
 
-    def prepare_current_slot_for_template(self, current_step: FlowStep):
+    def prepare_current_slot_for_template(
+        self, current_step: FlowStep
+    ) -> tuple[Optional[str], Optional[str]]:
         """Prepare the current slot for the template."""
         return (
             (current_step.collect, current_step.description)

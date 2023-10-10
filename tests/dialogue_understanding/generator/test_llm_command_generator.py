@@ -202,6 +202,18 @@ class TestLLMCommandGenerator:
                     )
                 ],
             ),
+            (
+                "Here is a list of commands:\nSetSlot(flow_name, some_flow)\n",
+                [StartFlowCommand(flow="some_flow")],
+            ),
+            (
+                """SetSlot(flow_name, some_flow)
+                   SetSlot(transfer_money_amount_of_money,)""",
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    SetSlotCommand(name="transfer_money_amount_of_money", value=None),
+                ],
+            ),
         ],
     )
     def test_parse_commands_identifies_correct_command(
@@ -296,7 +308,7 @@ class TestLLMCommandGenerator:
         # Given
         tracker = DialogueStateTracker.from_events("test", evts=[], slots=[slot])
         # When
-        slot_value = LLMCommandGenerator.slot_value(tracker, slot_name)
+        slot_value = LLMCommandGenerator.get_slot_value(tracker, slot_name)
 
         assert slot_value == expected_output
 
