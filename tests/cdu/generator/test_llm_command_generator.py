@@ -1,5 +1,4 @@
 import uuid
-from typing import Dict
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
