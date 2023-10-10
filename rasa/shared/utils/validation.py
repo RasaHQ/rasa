@@ -328,9 +328,5 @@ def validate_yaml_with_jsonschema(
     try:
         validate(source_data, schema_content)
     except ValidationError as error:
-        error.message += (
-            f". Failed to validate data, make sure your data "
-            f"is valid. For more information about the format visit "
-            f"{DOCS_URL_TRAINING_DATA}."
-        )
+        error.message += ". Failed to validate data, make sure your data " "is valid."
         raise SchemaValidationError.create_from(error) from error
