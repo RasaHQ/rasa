@@ -217,8 +217,8 @@ def get_prompt_template(
     """Returns the prompt template.
 
     Args:
-        default_prompt_template: the default prompt template
         jinja_file_path: the path to the jinja file
+        default_prompt_template: the default prompt template
 
     Returns:
         The prompt template.
