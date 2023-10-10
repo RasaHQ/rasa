@@ -38,6 +38,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
+    get_prompt_template,
     llm_factory,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
@@ -70,10 +71,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
-        return {
-            "prompt": DEFAULT_COMMAND_PROMPT_TEMPLATE,
-            LLM_CONFIG_KEY: None,
-        }
+        return {"prompt": None, LLM_CONFIG_KEY: None}
 
     def __init__(
         self,
@@ -82,7 +80,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         resource: Resource,
     ) -> None:
         self.config = {**self.get_default_config(), **config}
-        self.prompt_template = self.config["prompt"]
+        self.prompt_template = get_prompt_template(
+            config.get("prompt"),
+            DEFAULT_COMMAND_PROMPT_TEMPLATE,
+        )
         self._model_storage = model_storage
         self._resource = resource
 
