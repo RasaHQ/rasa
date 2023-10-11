@@ -88,8 +88,8 @@ Hook specification for initialising plugin telemetry.
 ```python
 @hookspec
 def mock_tracker_for_evaluation(
-        example: Message, model_metadata: Optional[ModelMetadata]
-) -> Optional[DialogueStateTracker]
+    example: "Message", model_metadata: Optional["ModelMetadata"]
+) -> Optional["DialogueStateTracker"]
 ```
 
 Generate a mocked tracker for NLU evaluation.
