@@ -136,6 +136,11 @@ jobs:
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
+      - name: Inject setuptools into poetry's runtime environment
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          poetry self add setuptools
+
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
@@ -163,7 +168,7 @@ jobs:
         # This is a workaround for that issue
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full || make install-full || make install-full
+          make install-full
 
       - name: Checkout target branch to be able to diff
         if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
@@ -277,6 +282,11 @@ jobs:
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
+      - name: Inject setuptools into poetry's runtime environment
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          poetry self add setuptools
+
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
@@ -311,7 +321,7 @@ jobs:
         # This is a workaround for that issue
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output  || make install-full | tee .output || make install-full | tee .output
+          make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -330,7 +340,7 @@ jobs:
             Remove-Item -Force -Recurse $spacy_data_dir
             New-Item -Path $spacy_data_dir -Type Directory
           }
-          make install-full  || make install-full || make install-full
+          make install-full
           make prepare-tests-windows-gha
 
       - name: Add github workflow problem matchers
@@ -426,6 +436,11 @@ jobs:
         uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Inject setuptools into poetry's runtime environment
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          poetry self add setuptools
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
