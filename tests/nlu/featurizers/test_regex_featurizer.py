@@ -28,7 +28,7 @@ def create_featurizer(
     resource: Resource,
 ) -> Callable[..., RegexFeaturizer]:
     def inner(
-        config: Dict[Text, Any] = None,
+        config: Optional[Dict[Text, Any]] = None,
         known_patterns: Optional[List[Dict[Text, Any]]] = None,
     ) -> RegexFeaturizer:
         config = config or {}

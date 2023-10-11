@@ -4,6 +4,8 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
+from rasa.shared.core.events import SlotSet
 
 
 def test_dialogue_stack_from_dict():
@@ -73,6 +75,24 @@ def test_dialogue_stack_as_dict():
             "utter": "utter_ask_foo",
         },
     ]
+
+
+def test_dialogue_stack_as_event():
+    # check that the stack gets persisted as an event storing the dict
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+            ),
+            CollectInformationPatternFlowStackFrame(
+                collect="foo",
+                frame_id="some-other-id",
+                utter="utter_ask_foo",
+            ),
+        ]
+    )
+
+    assert stack.persist_as_event() == SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())
 
 
 def test_dialogue_stack_as_dict_handles_empty():

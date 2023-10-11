@@ -1,37 +1,41 @@
 version: "3.1"
 responses:
   utter_flow_continue_interrupted: 
-    - text: Let's continue with the topic {{ context.previous_flow_name }}.
+    - text: "Let's continue with {{ context.previous_flow_name }}."
       metadata: 
         rephrase: True
         template: jinja
   
   utter_corrected_previous_input:
-    - text: "Ok, I corrected the {{ context.corrected_slots.keys()|join(', ') }}."
+    - text: "Ok, I am updating {{ context.corrected_slots.keys()|join(', ') }} to {{ context.corrected_slots.values()|join(', ') }} respectively."
       metadata: 
         rephrase: True
         template: jinja
 
   utter_flow_cancelled_rasa:
-    - text: Okay, stopping the flow {{ context.canceled_name }}.
+    - text: "Okay, stopping {{ context.canceled_name }}."
       metadata:
         rephrase: True
         template: jinja
 
   utter_can_do_something_else:
-    - text: "Is there anything else I can help you with?"
+    - text: "What else I can help you with?"
       metadata: 
         rephrase: True
 
   utter_internal_error_rasa:
-    - text: Sorry, I'm having trouble understanding you right now. Please try again later.
+    - text: Sorry, I am having trouble with that. Please try again in a few minutes.
 
   utter_clarification_options_rasa:
-    - text: I'm not sure what you'd like to achieve. Do you want to {{context.clarification_options}}?
+    - text: "I can help, but I need more information. Which of these would you like to do: {{context.clarification_options}}?"
       metadata:
         rephrase: True
         template: jinja
 
+  utter_inform_code_change:
+    - text: There has been an update to my code. I need to wrap up our running dialogue and start from scratch.
+      metadata:
+        rephrase: True
 
 slots:
   confirm_correction:
@@ -41,7 +45,8 @@ slots:
 
 flows:  
   pattern_continue_interrupted:
-    description: A flow that should will be started to continue an interrupted flow. 
+    description: A flow that should will be started to continue an interrupted flow.
+    name: pattern continue interrupted
 
     steps:
       - id: "0"
@@ -49,6 +54,7 @@ flows:
   
   pattern_correction:
     description: Handle a correction of a slot value.
+    name: pattern correction
 
     steps:
       - id: "check_if_reset_only"
@@ -66,6 +72,7 @@ flows:
 
   pattern_cancel_flow:
     description: A meta flow that's started when a flow is cancelled.
+    name: pattern_cancel_flow
 
     steps:
       - id: "cancel_flow"
@@ -76,18 +83,21 @@ flows:
 
   pattern_internal_error:
     description: internal error
+    name: pattern internal error
     steps:
       - id: "0"
         action: utter_internal_error_rasa
   
   pattern_completed:
     description: a flow has been completed and there is nothing else to be done
+    name: pattern completed
     steps:
       - id: "0"
         action: utter_can_do_something_else
 
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented
+    name: pattern chitchat
     steps:
       - id: "0"
         generation_prompt: |
@@ -99,6 +109,7 @@ flows:
 
   pattern_clarification:
     description: handle clarifications with the user
+    name: pattern clarification
     steps:
       - id: "0"
         action: action_clarify_flows
@@ -108,6 +119,7 @@ flows:
 
   pattern_collect_information:
     description: flow used to fill a slot
+    name: pattern collect information
     steps:
       - id: "start"
         action: action_run_slot_rejections
@@ -125,3 +137,12 @@ flows:
         action: action_listen
         next: "start"
       - id: "done"
+
+  pattern_code_change:
+    description: flow used to clean the stack after a bot update
+    steps:
+      - id: "inform_user"
+        action: utter_inform_code_change
+        next: "run_cleanup"
+      - id: "run_cleanup"
+        action: action_clean_stack

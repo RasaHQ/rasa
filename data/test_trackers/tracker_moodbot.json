@@ -34,6 +34,7 @@
   "followup_action": null,
   "slots": {
     "dialogue_stack": null,
+    "flow_hashes": null,
     "name": null,
     "requested_slot": null,
     "return_value": null,

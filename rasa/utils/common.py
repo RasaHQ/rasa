@@ -363,7 +363,7 @@ def update_rabbitmq_log_level(library_log_level: Text) -> None:
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
-    return sorted(dicts, key=lambda d: list(d.keys())[0])
+    return sorted(dicts, key=lambda d: next(iter(d.keys())))
 
 
 def write_global_config_value(name: Text, value: Any) -> bool:

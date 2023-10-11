@@ -97,6 +97,8 @@ from rasa.shared.core.constants import (
     ACTION_EXTRACT_SLOTS,
     DIALOGUE_STACK_SLOT,
     RETURN_VALUE_SLOT,
+    ACTION_CLEAN_STACK,
+    FLOW_HASHES_SLOT,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -146,7 +148,7 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 21
+    assert len(instantiated_actions) == 22
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -165,9 +167,10 @@ def test_domain_action_instantiation():
     assert instantiated_actions[15].name() == ACTION_CORRECT_FLOW_SLOT
     assert instantiated_actions[16].name() == ACTION_CLARIFY_FLOWS
     assert instantiated_actions[17].name() == ACTION_RUN_SLOT_REJECTIONS_NAME
-    assert instantiated_actions[18].name() == "my_module.ActionTest"
-    assert instantiated_actions[19].name() == "utter_test"
-    assert instantiated_actions[20].name() == "utter_chitchat"
+    assert instantiated_actions[18].name() == ACTION_CLEAN_STACK
+    assert instantiated_actions[19].name() == "my_module.ActionTest"
+    assert instantiated_actions[20].name() == "utter_test"
+    assert instantiated_actions[21].name() == "utter_chitchat"
 
 
 @pytest.mark.parametrize(
@@ -248,6 +251,7 @@ async def test_remote_action_runs(
                 "slots": {
                     "name": None,
                     REQUESTED_SLOT: None,
+                    FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
                     DIALOGUE_STACK_SLOT: None,
                     RETURN_VALUE_SLOT: None,
@@ -312,6 +316,7 @@ async def test_remote_action_logs_events(
                 "slots": {
                     "name": None,
                     REQUESTED_SLOT: None,
+                    FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
                     DIALOGUE_STACK_SLOT: None,
                     RETURN_VALUE_SLOT: None,

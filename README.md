@@ -338,7 +338,7 @@ While this table represents our target release frequency, we reserve the right t
 Our End of Life policy defines how long a given release is considered supported, as well as how long a release is
 considered to be still in active development or maintenance.
 
-The maintentance duration and end of life for every release are shown on our website as part of the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
+The maintenance duration and end of life for every release are shown on our website as part of the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
 
 ### Cutting a Major / Minor release
 #### A week before release day

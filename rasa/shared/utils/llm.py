@@ -10,6 +10,7 @@ from langchain.cache import SQLiteCache
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.engine.caching import get_local_cache_location
+import rasa.shared.utils.io
 
 
 structlogger = structlog.get_logger()
@@ -208,3 +209,22 @@ def embedder_factory(
         return embeddings_cls(**parameters)
     else:
         raise ValueError(f"Unsupported embeddings type '{typ}'")
+
+
+def get_prompt_template(
+    jinja_file_path: Optional[Text], default_prompt_template: Text
+) -> Text:
+    """Returns the prompt template.
+
+    Args:
+        jinja_file_path: the path to the jinja file
+        default_prompt_template: the default prompt template
+
+    Returns:
+        The prompt template.
+    """
+    return (
+        rasa.shared.utils.io.read_file(jinja_file_path)
+        if jinja_file_path is not None
+        else default_prompt_template
+    )

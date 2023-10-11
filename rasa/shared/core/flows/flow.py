@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 from typing import (
     Any,
     Dict,
@@ -119,7 +120,7 @@ class NoNextAllowedForLinkException(RasaException):
 
 
 class UnresolvedFlowStepIdException(RasaException):
-    """Raised when a flow step is referenced but it's id can not be resolved."""
+    """Raised when a flow step is referenced, but its id can not be resolved."""
 
     def __init__(
         self, step_id: Text, flow: Flow, referenced_from: Optional[FlowStep]
@@ -534,6 +535,11 @@ class Flow:
     def steps(self) -> List[FlowStep]:
         """Returns the steps of the flow."""
         return self.step_sequence.steps
+
+    @cached_property
+    def fingerprint(self) -> str:
+        """Create a fingerprint identifying this step sequence."""
+        return rasa.shared.utils.io.deep_container_fingerprint(self.as_json())
 
 
 @dataclass

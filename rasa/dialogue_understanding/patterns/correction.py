@@ -7,9 +7,6 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-from rasa.shared.core.constants import (
-    DIALOGUE_STACK_SLOT,
-)
 from rasa.shared.core.flows.flow import (
     START_STEP,
 )
@@ -75,7 +72,7 @@ class CorrectionPatternFlowStackFrame(PatternFlowStackFrame):
             The created `DialogueStackFrame`.
         """
         return CorrectionPatternFlowStackFrame(
-            data["frame_id"],
+            frame_id=data["frame_id"],
             step_id=data["step_id"],
             is_reset_only=data["is_reset_only"],
             corrected_slots=data["corrected_slots"],
@@ -139,7 +136,7 @@ class ActionCorrectFlowSlot(action.Action):
                     ContinueFlowStep.continue_step_for_id(END_STEP)
                 )
 
-        events: List[Event] = [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
+        events: List[Event] = [stack.persist_as_event()]
 
         events.extend([SlotSet(k, v) for k, v in top.corrected_slots.items()])
 

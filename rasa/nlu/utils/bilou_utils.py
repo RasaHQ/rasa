@@ -252,8 +252,7 @@ def _add_bilou_tags_to_entities(
 def ensure_consistent_bilou_tagging(
     predicted_tags: List[Text], predicted_confidences: List[float]
 ) -> Tuple[List[Text], List[float]]:
-    """
-    Ensure predicted tags follow the BILOU tagging schema.
+    """Ensure predicted tags follow the BILOU tagging schema.
 
     We assume that starting B- tags are correct. Followed tags that belong to start
     tag but have a different entity type are updated considering also the confidence
@@ -269,7 +268,6 @@ def ensure_consistent_bilou_tagging(
         List of tags.
         List of confidences.
     """
-
     for idx, predicted_tag in enumerate(predicted_tags):
         prefix = bilou_prefix_from_tag(predicted_tag)
         tag = tag_without_prefix(predicted_tag)
