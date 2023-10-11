@@ -154,6 +154,11 @@ Conversation repair cases are expected to work out-of-the-box. This means that i
 
 It is possible to override the default behaviour of each conversation repair case by creating a flow with the same name as that of the pattern used to handle the corresponding case, like `pattern_correction`. If the pattern uses a default action which needs to be modified, you can override the implementation of the default action by implementing a new custom action and use that custom action in the flow.
 
+:::info
+
+Make sure the assistant is re-trained after the modification is completed.
+
+:::
 
 :::info
 
