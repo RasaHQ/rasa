@@ -6,7 +6,7 @@
 [![PyPI version](https://badge.fury.io/py/rasa.svg)](https://badge.fury.io/py/rasa)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa.svg)](https://pypi.python.org/pypi/rasa)
 [![Build Status](https://github.com/RasaHQ/rasa/workflows/Continuous%20Integration/badge.svg)](https://github.com/RasaHQ/rasa/actions)
-[![Coverage Status](https://api.codeclimate.com/v1/badges/756dc6fea1d5d3e127f7/test_coverage)](https://codeclimate.com/github/RasaHQ/rasa/)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=RasaHQ_rasa&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=RasaHQ_rasa)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs)
 ![Documentation Build](https://img.shields.io/netlify/d2e447e4-5a5e-4dc7-be5d-7c04ae7ff706?label=Documentation%20Build)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
@@ -90,9 +90,9 @@ We are very happy to receive and merge your contributions into this repository!
 
 To contribute via pull request, follow these steps:
 
-1. Create an issue describing the feature you want to work on (or
-   have a look at the [contributor board](https://github.com/orgs/RasaHQ/projects/23))
-2. Write your code, tests and documentation, and format them with ``black``
+1. Create an issue describing the bug/improvement you want to work on or pick up an
+   existing issue in [Jira](https://rasa-open-source.atlassian.net/jira/software/c/projects/OSS/boards/1)
+2. Follow our Pull Request guidelines: write code, test, documentation, changelog and follow our [Code Style](#code-style)
 3. Create a pull request describing your changes
 
 For more detailed instructions on how to contribute code, check out these [code contributor guidelines](CONTRIBUTING.md).
@@ -338,7 +338,7 @@ While this table represents our target release frequency, we reserve the right t
 Our End of Life policy defines how long a given release is considered supported, as well as how long a release is
 considered to be still in active development or maintenance.
 
-The maintentance duration and end of life for every release are shown on our website as part of the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
+The maintenance duration and end of life for every release are shown on our website as part of the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
 
 ### Cutting a Major / Minor release
 #### A week before release day

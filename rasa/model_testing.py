@@ -104,7 +104,6 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     Returns: The adjusted model_directory that should be used in
         `test_core_models_in_directory`.
     """
-
     p = Path(model_directory)
     if p.is_file():
         if model_directory != rasa.model.get_latest_model():
@@ -246,7 +245,6 @@ async def compare_nlu_models(
     exclusion_percentages: List[int],
 ) -> None:
     """Trains multiple models, compares them and saves the results."""
-
     from rasa.nlu.test import drop_intents_below_freq
     from rasa.nlu.utils import write_json_to_file
     from rasa.utils.io import create_path
