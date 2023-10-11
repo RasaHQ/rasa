@@ -106,6 +106,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
     RUN_EAGERLY,
+    MULTI_GPU
 )
 
 logger = logging.getLogger(__name__)
@@ -288,6 +289,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # a few steps, as the compilation of the graph tends to take more time than
             # running it. It is recommended to not adjust the optimization parameter.
             RUN_EAGERLY: False,
+            MULTI_GPU: False
         }
 
     def __init__(
@@ -906,13 +908,25 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         if not self.finetune_mode:
             # No pre-trained model to load from. Create a new instance of the model.
-            self.model = self._instantiate_model_class(model_data)
-            self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(
-                    self.component_config[LEARNING_RATE]
-                ),
-                run_eagerly=self.component_config[RUN_EAGERLY],
-            )
+            if not self.component_config[MULTI_GPU]:
+                self.model = self._instantiate_model_class(model_data)
+                self.model.compile(
+                    optimizer=tf.keras.optimizers.Adam(
+                        self.component_config[LEARNING_RATE]
+                    ),
+                    run_eagerly=self.component_config[RUN_EAGERLY],
+                )
+            else:
+                strategy = tf.distribute.MirroredStrategy()
+                with strategy.scope():
+                    self.model = self._instantiate_model_class(model_data)
+                    self.model.compile(
+                        optimizer=tf.keras.optimizers.Adam(
+                            self.component_config[LEARNING_RATE]
+                        ),
+                        run_eagerly=self.component_config[RUN_EAGERLY],
+                    )
+
         else:
             if self.model is None:
                 raise ModelNotFound("Model could not be found. ")

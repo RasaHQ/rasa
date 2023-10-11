@@ -113,3 +113,4 @@ EPOCH_OVERRIDE = "epoch_override"
 
 USE_GPU = "use_gpu"
 RUN_EAGERLY = "run_eagerly"
+MULTI_GPU = "multi_gpu"
