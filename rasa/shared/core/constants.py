@@ -42,6 +42,8 @@ ACTION_CLARIFY_FLOWS = "action_clarify_flows"
 ACTION_CORRECT_FLOW_SLOT = "action_correct_flow_slot"
 ACTION_RUN_SLOT_REJECTIONS_NAME = "action_run_slot_rejections"
 ACTION_CLEAN_STACK = "action_clean_stack"
+ACTION_TRIGGER_SEARCH = "action_trigger_search"
+ACTION_TRIGGER_CHITCHAT = "action_trigger_chitchat"
 
 
 DEFAULT_ACTION_NAMES = [
@@ -64,6 +66,8 @@ DEFAULT_ACTION_NAMES = [
     ACTION_CLARIFY_FLOWS,
     ACTION_RUN_SLOT_REJECTIONS_NAME,
     ACTION_CLEAN_STACK,
+    ACTION_TRIGGER_SEARCH,
+    ACTION_TRIGGER_CHITCHAT,
 ]
 
 ACTION_SHOULD_SEND_DOMAIN = "send_domain"

@@ -32,4 +32,4 @@ def test_run_command_on_tracker():
     assert len(dialogue_stack_event.value) == 1
 
     frame = dialogue_stack_event.value[0]
-    assert frame["type"] == "search"
+    assert frame["type"] == "pattern_search"

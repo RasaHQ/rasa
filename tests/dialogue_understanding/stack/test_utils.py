@@ -11,7 +11,7 @@ from rasa.dialogue_understanding.stack.utils import (
     top_user_flow_frame,
     user_flows_on_the_stack,
 )
-from tests.utilities import flows_from_str
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
 
 def test_top_flow_frame_ignores_pattern():

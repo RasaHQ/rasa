@@ -1158,6 +1158,53 @@ def test_verify_unique_flows_duplicate_names(
     ) in caplog.text
 
 
+# testing for None and empty string
+@pytest.mark.parametrize("way_of_emptiness", ["", '""'])
+def test_verify_flow_names_non_empty(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    caplog: LogCaptureFixture,
+    way_of_emptiness: str,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: This flow lets users send money.
+                            name: {way_of_emptiness}
+                            steps:
+                            - collect: transfer_recipient
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_unique_flows()
+
+    assert "empty name" in caplog.text
+    assert "transfer_money" in caplog.text
+
+
 def test_verify_unique_flows_duplicate_descriptions(
     tmp_path: Path,
     nlu_data_path: Path,
