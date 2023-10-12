@@ -1159,7 +1159,7 @@ def test_verify_unique_flows_duplicate_names(
 
 
 # testing for None and empty string
-@pytest.mark.parametrize("way_of_emptiness", ["", '""'])
+@pytest.mark.parametrize("way_of_emptiness", ['""', "''"])
 def test_verify_flow_names_non_empty(
     tmp_path: Path,
     nlu_data_path: Path,
