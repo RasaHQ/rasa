@@ -1,5 +1,6 @@
 flows:
   transfer_money:
+    name: transfer money
     description: This flow lets users send money to friends and family.
     steps:
       - id: "ask_recipient"

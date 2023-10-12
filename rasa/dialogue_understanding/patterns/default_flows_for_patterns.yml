@@ -140,6 +140,7 @@ flows:
 
   pattern_code_change:
     description: flow used to clean the stack after a bot update
+    name: pattern code change
     steps:
       - id: "inform_user"
         action: utter_inform_code_change
