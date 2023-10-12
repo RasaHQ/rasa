@@ -39,6 +39,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
+    SLOT_MAPPINGS,
     SlotMappingType,
     MAPPING_TYPE,
     MAPPING_CONDITIONS,
@@ -489,6 +490,13 @@ class Domain:
         for slot_name in slot_dict:
             slot_type = slot_dict[slot_name].pop("type", None)
             slot_class = Slot.resolve_by_type(slot_type)
+
+            if SLOT_MAPPINGS not in slot_dict[slot_name]:
+                logger.warning(
+                    f"Slot '{slot_name}' has no mappings defined. "
+                    f"We will continue with an empty list of mappings."
+                )
+                slot_dict[slot_name][SLOT_MAPPINGS] = []
 
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)

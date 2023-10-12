@@ -229,7 +229,7 @@ def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     )
 
     for slot_name, properties in domain_slots.items():
-        mappings = properties.get(SLOT_MAPPINGS)
+        mappings = properties.get(SLOT_MAPPINGS, [])
 
         for slot_mapping in mappings:
             SlotMapping.validate(slot_mapping, slot_name)
