@@ -35,6 +35,7 @@ class Slot(ABC):
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         influence_conversation: bool = True,
+        is_builtin: bool = False,
     ) -> None:
         """Create a Slot.
 
@@ -46,6 +47,7 @@ class Slot(ABC):
                 initial_value. This is behavior is currently not implemented.
             influence_conversation: If `True` the slot will be featurized and hence
                 influence the predictions of the dialogue polices.
+            is_builtin: `True` if the slot is a built-in slot, `False` otherwise.
         """
         self.name = name
         self.mappings = mappings
@@ -54,6 +56,7 @@ class Slot(ABC):
         self._value_reset_delay = value_reset_delay
         self.influence_conversation = influence_conversation
         self._has_been_set = False
+        self.is_builtin = is_builtin
 
     def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
@@ -180,6 +183,7 @@ class FloatSlot(Slot):
         max_value: float = 1.0,
         min_value: float = 0.0,
         influence_conversation: bool = True,
+        is_builtin: bool = False,
     ) -> None:
         """Creates a FloatSlot.
 
@@ -188,7 +192,12 @@ class FloatSlot(Slot):
             UserWarning, if initial_value is outside the min-max range.
         """
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            influence_conversation,
+            is_builtin,
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -318,10 +327,16 @@ class CategoricalSlot(Slot):
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         influence_conversation: bool = True,
+        is_builtin: bool = False,
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            influence_conversation,
+            is_builtin,
         )
         if values and None in values:
             rasa.shared.utils.io.raise_warning(
@@ -417,6 +432,7 @@ class AnySlot(Slot):
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         influence_conversation: bool = False,
+        is_builtin: bool = False,
     ) -> None:
         """Creates an `Any  Slot` (see parent class for detailed docstring).
 
@@ -433,7 +449,12 @@ class AnySlot(Slot):
             )
 
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            influence_conversation,
+            is_builtin,
         )
 
     def __eq__(self, other: Any) -> bool:
