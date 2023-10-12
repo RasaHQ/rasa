@@ -110,9 +110,6 @@
               "id": {
                 "type": "string"
               },
-              "reset_after_flow_ends": {
-                "type": "boolean"
-              },
               "set_slots": {
                 "$ref": "#$defs/set_slots"
               },
