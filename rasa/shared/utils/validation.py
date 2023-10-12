@@ -311,7 +311,7 @@ def validate_yaml_with_jsonschema(
     import pkg_resources
 
     schema_file = pkg_resources.resource_filename(package_name, schema_path)
-    schema_content = rasa.shared.utils.io.read_yaml_file(schema_file)
+    schema_content = rasa.shared.utils.io.read_json_file(schema_file)
 
     try:
         # we need "rt" since
