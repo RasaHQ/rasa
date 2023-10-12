@@ -592,7 +592,7 @@ The validator will perform the following checks on flows:
 - determine whether flow names or descriptions are unique after stripping punctuation
 - verify whether natural language conditions used in [branch steps](./concepts/flows.mdx#branching-conditions) or `collect` step [rejections](./concepts/flows.mdx#slot-validation) are valid `pypred` expressions
 - determine whether slots used in flows are defined in the domain
-- disallow `list` slots from being used in flows
+- disallow `list` slots from being used in flows `collect` steps: CALM supports only filling slots with values of type `int`, `string` or `bool` in flows.
 - disallow `dialogue_stack` internal slot from being used in flows
 
 For every failure, the validator will log an error and exit the command with exit code 1.
