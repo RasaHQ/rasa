@@ -905,7 +905,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
-
+        strategy = tf.distribute.MirroredStrategy()
         if not self.finetune_mode:
             # No pre-trained model to load from. Create a new instance of the model.
             if not self.component_config[MULTI_GPU]:
@@ -917,7 +917,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                     run_eagerly=self.component_config[RUN_EAGERLY],
                 )
             else:
-                strategy = tf.distribute.MirroredStrategy()
+                
                 with strategy.scope():
                     self.model = self._instantiate_model_class(model_data)
                     self.model.compile(
@@ -952,17 +952,27 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             self.component_config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
         )
-
-        self.model.fit(
-            data_generator,
-            epochs=self.component_config[EPOCHS],
-            validation_data=validation_data_generator,
-            validation_freq=self.component_config[EVAL_NUM_EPOCHS],
-            callbacks=callbacks,
-            verbose=False,
-            shuffle=False,  # we use custom shuffle inside data generator
-        )
-
+        if not self.component_config[MULTI_GPU]:
+            self.model.fit(
+                data_generator,
+                epochs=self.component_config[EPOCHS],
+                validation_data=validation_data_generator,
+                validation_freq=self.component_config[EVAL_NUM_EPOCHS],
+                callbacks=callbacks,
+                verbose=False,
+                shuffle=False,  # we use custom shuffle inside data generator
+            )
+        else:
+             with strategy.scope():
+                self.model.fit(
+                    data_generator,
+                    epochs=self.component_config[EPOCHS],
+                    validation_data=validation_data_generator,
+                    validation_freq=self.component_config[EVAL_NUM_EPOCHS],
+                    callbacks=callbacks,
+                    verbose=False,
+                    shuffle=False,  # we use custom shuffle inside data generator
+                )
         self.persist()
 
         return self._resource
