@@ -23,7 +23,7 @@ The following commands are relevant to all assistants built with Rasa.
 | `rasa run actions`      | Starts an action server using the Rasa SDK.                                                        |
 | `rasa test e2e`         | Runs end-to-end testing fully integrated with the action server that serves as acceptance testing. |
 | `rasa data split nlu`   | Performs a 80/20 split of your NLU training data.                                                  |
-| `rasa data validate`    | Checks the domain, NLU, business logic and conversation data for inconsistencies.                                  |
+| `rasa data validate`    | Checks the domain, NLU, flows and conversation data for inconsistencies.                                  |
 | `rasa export`           | Exports conversations from a tracker store to an event broker.                                     |
 | `rasa evaluate markers` | Extracts markers from an existing tracker store.                                                   |
 | `rasa marker upload`    | Upload marker configurations to Analytics Data Pipeline                                            |
@@ -574,7 +574,7 @@ identical training examples.
 The validator also checks if you have any stories where different assistant actions follow from the same
 dialogue history. Conflicts between stories will prevent a model from learning the correct
 pattern for a dialogue.
-To learn more about the checks performed by the validator on the business logic, continue reading in the [next section](./command-line-interface.mdx#validate-flows).
+To learn more about the checks performed by the validator on flows, continue reading in the [next section](./command-line-interface.mdx#validate-flows).
 
 :::info Searching for the `assistant_id` key introduced in 3.5
 
@@ -590,12 +590,12 @@ smallest of those values in the validator command using the `--max-history <max_
 
 The validator will perform the following checks on flows:
 - determine whether flow names or descriptions are unique after stripping punctuation
-- verify whether natural language conditions used in branch steps or `collect` step rejections are valid `pypred` expressions
+- verify whether natural language conditions used in [branch steps](./concepts/flows.mdx#branching-conditions) or `collect` step [rejections](./concepts/flows.mdx#slot-validation) are valid `pypred` expressions
 - determine whether slots used in flows are defined in the domain
 - disallow `list` slots from being used in flows
 - disallow `dialogue_stack` internal slot from being used in flows
 
-For every failure, the validator will log an error and exit the command.
+For every failure, the validator will log an error and exit the command with exit code 1.
 
 You can validate flows only by running this command:
 
