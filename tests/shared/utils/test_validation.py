@@ -630,43 +630,47 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
                 "is not valid under any of the given schemas."
             ),
         ),
-        (# random addition to flow definition
-          """flows:
+        (  # random addition to flow definition
+            """flows:
   test:
     random_xyz: True
     steps:
       - action: utter_xyz
         next: END""",
-        "Additional properties are not allowed ('random_xyz' was unexpected)."
+            "Additional properties are not allowed ('random_xyz' was unexpected).",
         ),
         (
-          """flows:
+            """flows:
   test:
     steps:
       - action: True
         next: END""",
-        "True is not of type 'string'."),
-        ( # next is a step
-          """flows:
-  test:
-    steps:
-      - action: xyz
-        next:
-        - action: utter_xyz""",
-        (
-        "([('action', 'xyz'), ('next', [ordereddict([('action', 'utter_xyz')])])])"
-        " is not valid under any of the given schemas.")
+            "True is not of type 'string'.",
         ),
-        ( # next is a step
-          """flows:
+        (  # next is a step
+            """flows:
   test:
     steps:
       - action: xyz
         next:
         - action: utter_xyz""",
-        (
-        "([('action', 'xyz'), ('next', [ordereddict([('action', 'utter_xyz')])])])"
-        " is not valid under any of the given schemas.")
+            (
+                "([('action', 'xyz'), ('next',"
+                " [ordereddict([('action', 'utter_xyz')])])])"
+                " is not valid under any of the given schemas."
+            ),
+        ),
+        (  # next is without else
+            """flows:
+  test:
+    steps:
+      - action: xyz
+        next:
+        - if: xyz""",
+            (
+                "([('action', 'xyz'), ('next', [ordereddict([('if', 'xyz')])])])"
+                " is not valid under any of the given schemas."
+            ),
         ),
     ],
 )
