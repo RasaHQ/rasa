@@ -33,6 +33,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     RUN_EAGERLY,
+    MULTI_GPU
 )
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
@@ -81,7 +82,9 @@ class RasaModel(Model):
             random_seed: set the random seed to get reproducible results
         """
         # make sure that keras releases resources from previously trained model
-        tf.keras.backend.clear_session()
+        multi_gpu = kwargs.pop(MULTI_GPU)
+        if not multi_gpu:
+            tf.keras.backend.clear_session()
         super().__init__(**kwargs)
 
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
@@ -569,9 +572,11 @@ class TransformerRasaModel(RasaModel):
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
         label_data: RasaModelData,
     ) -> None:
-        super().__init__(name=name, random_seed=config[RANDOM_SEED])
+        
 
         self.config = config
+        multi_gpu = config.get(MULTI_GPU)
+        super().__init__(name=name, random_seed=config[RANDOM_SEED], multi_gpu=multi_gpu)
         self.data_signature = data_signature
         self.label_signature = label_data.get_signature()
         self._check_data()
