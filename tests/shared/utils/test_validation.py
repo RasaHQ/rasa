@@ -590,10 +590,88 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
                 "('next', 'END')])])])])]) is not valid under any of the given schemas."
             ),
         ),
+        (  # action added to collect
+            """flows:
+  test:
+    steps:
+      - collect: confirm_correct_card
+        action: utter_xyz
+        ask_before_filling: true
+        next: END""",
+            (
+                "([('collect', 'confirm_correct_card'), ('action', 'utter_xyz'),"
+                " ('ask_before_filling', True), ('next', 'END')]) is not"
+                " valid under any of the given schemas."
+            ),
+        ),
+        (  # random addition to action
+            """flows:
+  test:
+    steps:
+      - action: utter_xyz
+        random_xyz: true
+        next: END""",
+            (
+                "([('action', 'utter_xyz'), ('random_xyz', True),"
+                " ('next', 'END')]) is not valid under any of the given schemas."
+            ),
+        ),
+        (  # random addition to collect
+            """flows:
+  test:
+    steps:
+      - collect: confirm_correct_card
+        random_xyz: utter_xyz
+        ask_before_filling: true
+        next: END""",
+            (
+                "([('collect', 'confirm_correct_card'), ('random_xyz', 'utter_xyz'),"
+                " ('ask_before_filling', True), ('next', 'END')]) "
+                "is not valid under any of the given schemas."
+            ),
+        ),
+        (# random addition to flow definition
+          """flows:
+  test:
+    random_xyz: True
+    steps:
+      - action: utter_xyz
+        next: END""",
+        "Additional properties are not allowed ('random_xyz' was unexpected)."
+        ),
+        (
+          """flows:
+  test:
+    steps:
+      - action: True
+        next: END""",
+        "True is not of type 'string'."),
+        ( # next is a step
+          """flows:
+  test:
+    steps:
+      - action: xyz
+        next:
+        - action: utter_xyz""",
+        (
+        "([('action', 'xyz'), ('next', [ordereddict([('action', 'utter_xyz')])])])"
+        " is not valid under any of the given schemas.")
+        ),
+        ( # next is a step
+          """flows:
+  test:
+    steps:
+      - action: xyz
+        next:
+        - action: utter_xyz""",
+        (
+        "([('action', 'xyz'), ('next', [ordereddict([('action', 'utter_xyz')])])])"
+        " is not valid under any of the given schemas.")
+        ),
     ],
 )
 def test_flow_validation_fail(flow_yaml: str, error_msg: str) -> None:
-    with pytest.raises((SchemaValidationError, TypeError)) as e:
+    with pytest.raises(SchemaValidationError) as e:
         rasa.shared.utils.validation.validate_yaml_with_jsonschema(
             flow_yaml, FLOWS_SCHEMA_FILE
         )

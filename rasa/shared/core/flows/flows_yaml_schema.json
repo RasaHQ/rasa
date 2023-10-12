@@ -295,7 +295,7 @@
         "type": "object",
         "patternProperties": {
           "^[A-Za-z_][A-Za-z0-9_]*$": {
-            "type": ["string", "null"]
+            "type": ["string", "null", "boolean", "number"]
           }
         }
       }
