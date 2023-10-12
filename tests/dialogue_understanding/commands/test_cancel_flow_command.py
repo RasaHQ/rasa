@@ -8,7 +8,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowSt
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.utilities import flows_from_str
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
 
 def test_command_name():

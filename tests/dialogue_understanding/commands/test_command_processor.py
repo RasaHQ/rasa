@@ -13,8 +13,8 @@ from rasa.dialogue_understanding.stack.frames import (
 from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from tests.dialogue_understanding.commands.conftest import start_bar_user_uttered
-from tests.utilities import flows_from_str
 
 
 def test_properly_prepared_tracker(tracker: DialogueStateTracker):
