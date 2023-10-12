@@ -660,7 +660,7 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
                 " is not valid under any of the given schemas."
             ),
         ),
-        (  # next is without else
+        (  # next is without then
             """flows:
   test:
     steps:
