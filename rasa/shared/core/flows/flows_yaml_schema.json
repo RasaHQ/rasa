@@ -98,6 +98,9 @@
               },
               "link": {
                 "type": "string"
+              },
+              "next": {
+                "$ref": "#$defs/next"
               }
             }
           },
@@ -143,6 +146,9 @@
               },
               "id": {
                 "type": "string"
+              },
+              "next": {
+                "$ref": "#$defs/next"
               }
             }
           },
@@ -174,6 +180,9 @@
               },
               "entry_prompt": {
                 "type": "string"
+              },
+              "next": {
+                "$ref": "#$defs/next"
               }
             }
           }
