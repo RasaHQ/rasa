@@ -582,12 +582,12 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
               - action: utter_relevant_card_not_linked
                 next: END""",
             (
-                "ordereddict([('ask_before_filling', True), "
-                "('next', [ordereddict([('if', 'confirm_correct_card'),"
-                " ('then', [ordereddict([('link', 'replace_eligible_card')])])]),"
-                " ordereddict([('else', [ordereddict([('action',"
-                " 'utter_relevant_card_not_linked'), "
-                "('next', 'END')])])])])]) is not valid under any of the given schemas."
+                "('if', 'confirm_correct_card'), ('then',"
+                " [ordereddict([('link', 'replace_eligible_card')])])]), "
+                "ordereddict([('else', [ordereddict([('action', "
+                "'utter_relevant_card_not_linked'), ('next', 'END')])])])]"
+                " is not of type 'null'. Failed to validate data,"
+                " make sure your data is valid."
             ),
         ),
         (  # action added to collect
@@ -596,12 +596,11 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
     steps:
       - collect: confirm_correct_card
         action: utter_xyz
-        ask_before_filling: true
-        next: END""",
+        ask_before_filling: true""",
             (
                 "([('collect', 'confirm_correct_card'), ('action', 'utter_xyz'),"
-                " ('ask_before_filling', True), ('next', 'END')]) is not"
-                " valid under any of the given schemas."
+                " ('ask_before_filling', True)])"
+                " is not valid under any of the given schemas."
             ),
         ),
         (  # random addition to action
@@ -611,10 +610,7 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
       - action: utter_xyz
         random_xyz: true
         next: END""",
-            (
-                "([('action', 'utter_xyz'), ('random_xyz', True),"
-                " ('next', 'END')]) is not valid under any of the given schemas."
-            ),
+            "Failed validating 'type' in schema[2]['properties']['next']",
         ),
         (  # random addition to collect
             """flows:
@@ -622,12 +618,11 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
     steps:
       - collect: confirm_correct_card
         random_xyz: utter_xyz
-        ask_before_filling: true
-        next: END""",
+        ask_before_filling: true""",
             (
-                "([('collect', 'confirm_correct_card'), ('random_xyz', 'utter_xyz'),"
-                " ('ask_before_filling', True), ('next', 'END')]) "
-                "is not valid under any of the given schemas."
+                "ordereddict([('collect', 'confirm_correct_card'), "
+                "('random_xyz', 'utter_xyz'), ('ask_before_filling', True)])"
+                " is not valid under any of the given schemas."
             ),
         ),
         (  # random addition to flow definition
@@ -636,7 +631,7 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
     random_xyz: True
     steps:
       - action: utter_xyz
-        next: END""",
+        next: id-21312""",
             "Additional properties are not allowed ('random_xyz' was unexpected).",
         ),
         (
@@ -644,8 +639,11 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
   test:
     steps:
       - action: True
-        next: END""",
-            "True is not of type 'string'.",
+        next: id-2132""",
+            (
+                "ordereddict([('action', True), ('next', 'id-2132')])"
+                " is not valid under any of the given schemas."
+            ),
         ),
         (  # next is a step
             """flows:
