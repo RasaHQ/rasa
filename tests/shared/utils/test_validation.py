@@ -509,7 +509,7 @@ flows:
             description: Test flow
             steps:
               - id: "1"
-                intent: transfer_money
+                action: action_xyz
                 next: "2"
               - id: "2"
                 action: utter_ask_name""",
