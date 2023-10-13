@@ -16,6 +16,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, Event, SlotSet
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
+from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
@@ -327,3 +328,46 @@ def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
 
     selection = executor.select_next_action(tracker)
     assert selection.action_name == "action_listen"
+
+
+def test_flow_policy_resets_all_slots_after_flow_ends() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            steps:
+            - id: "1"
+              collect: my_slot
+            - id: "2"
+              set_slots:
+                - foo: bar
+                - other_slot: other_value
+            - id: "3"
+              action: action_listen
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        [
+            SlotSet("my_slot", "my_value"),
+            SlotSet("foo", "bar"),
+            SlotSet("other_slot", "other_value"),
+            ActionExecuted("action_listen"),
+        ],
+        slots=[
+            TextSlot("my_slot", mappings=[], initial_value="initial_value"),
+            TextSlot("foo", mappings=[]),
+            TextSlot("other_slot", mappings=[]),
+        ],
+    )
+
+    domain = Domain.empty()
+    executor = FlowExecutor.from_tracker(tracker, flows, domain)
+
+    current_flow = flows.flow_by_id("foo_flow")
+    events = executor._reset_scoped_slots(current_flow, tracker)
+    assert events == [
+        SlotSet("my_slot", "initial_value"),
+        SlotSet("foo", None),
+        SlotSet("other_slot", None),
+    ]

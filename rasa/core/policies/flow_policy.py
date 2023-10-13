@@ -559,6 +559,14 @@ class FlowExecutor:
         self, current_flow: Flow, tracker: DialogueStateTracker
     ) -> List[Event]:
         """Reset all scoped slots."""
+
+        def _reset_slot(
+            slot_name: Text, dialogue_tracker: DialogueStateTracker
+        ) -> None:
+            slot = dialogue_tracker.slots.get(slot_name, None)
+            initial_value = slot.initial_value if slot else None
+            events.append(SlotSet(slot_name, initial_value))
+
         events: List[Event] = []
         for step in current_flow.steps:
             # reset all slots scoped to the flow
@@ -566,9 +574,10 @@ class FlowExecutor:
                 isinstance(step, CollectInformationFlowStep)
                 and step.reset_after_flow_ends
             ):
-                slot = tracker.slots.get(step.collect, None)
-                initial_value = slot.initial_value if slot else None
-                events.append(SlotSet(step.collect, initial_value))
+                _reset_slot(step.collect, tracker)
+            elif isinstance(step, SetSlotsFlowStep):
+                for slot in step.slots:
+                    _reset_slot(slot["key"], tracker)
         return events
 
     def run_step(
