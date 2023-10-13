@@ -103,19 +103,6 @@ def test_slot_mappings_ignored_intents_during_active_loop():
     )
 
 
-def test_missing_slot_mappings_raises():
-    with pytest.raises(YamlValidationException):
-        Domain.from_yaml(
-            f"""
-            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-            slots:
-              some_slot:
-                type: text
-                influence_conversation: False
-            """
-        )
-
-
 def test_slot_mappings_invalid_type_raises():
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(

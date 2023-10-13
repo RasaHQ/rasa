@@ -227,24 +227,6 @@ class Validator:
                 stories_utterances.add(event.action_name)
         return stories_utterances
 
-    def _utterances_used_in_flows(self) -> Set[str]:
-        """Return all utterances which are used in flows."""
-        flow_utterances = set()
-
-        for flow in self.flows.underlying_flows:
-            for step in flow.steps:
-                if isinstance(step, ActionFlowStep) and step.action.startswith(
-                    UTTER_PREFIX
-                ):
-                    flow_utterances.add(step.action)
-                if isinstance(step, CollectInformationFlowStep):
-                    flow_utterances.add(step.utter)
-
-                    for rejection in step.rejections:
-                        flow_utterances.add(rejection.utter)
-
-        return flow_utterances
-
     def verify_utterances_in_dialogues(self, ignore_warnings: bool = True) -> bool:
         """Verifies usage of utterances in stories or flows.
 
@@ -254,7 +236,7 @@ class Validator:
         utterance_actions = self._gather_utterance_actions()
 
         stories_utterances = self._utterances_used_in_stories()
-        flow_utterances = self._utterances_used_in_flows()
+        flow_utterances = self.flows.utterances
 
         all_used_utterances = flow_utterances.union(stories_utterances)
 
@@ -615,6 +597,10 @@ class Validator:
                     f"Flow descriptions must be unique. "
                     f"Please make sure that all flows have different descriptions."
                 )
+                all_good = False
+
+            if not flow.name:
+                logger.error(f"Flow with flow id '{flow.id}' has an empty name.")
                 all_good = False
 
             if flow.name in flow_names:

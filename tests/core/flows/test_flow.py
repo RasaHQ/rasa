@@ -1,6 +1,7 @@
 import pytest
 
 from rasa.shared.core.flows.flow import Flow, FlowsList
+from rasa.shared.importers.importer import FlowSyncImporter
 from tests.utilities import flows_from_str
 
 
@@ -67,3 +68,40 @@ def test_user_flows_handles_patterns_only(
     only_patterns: FlowsList, empty_flowlist: FlowsList
 ):
     assert only_patterns.user_flows == empty_flowlist
+
+
+def test_collecting_flow_utterances():
+    all_flows = flows_from_str(
+        """
+        flows:
+          foo:
+            steps:
+              - action: utter_welcome
+              - action: setup
+              - collect: age
+                rejections:
+                  - if: age<18
+                    utter: utter_too_young
+                  - if: age>100
+                    utter: utter_too_old
+          bar:
+            steps:
+              - action: utter_hello
+              - collect: income
+                utter: utter_ask_income_politely
+        """
+    )
+    assert all_flows.utterances == {
+        "utter_ask_age",
+        "utter_ask_income_politely",
+        "utter_hello",
+        "utter_welcome",
+        "utter_too_young",
+        "utter_too_old",
+    }
+
+
+def test_default_flows_have_non_empty_names():
+    default_flows = FlowSyncImporter.load_default_pattern_flows()
+    for flow in default_flows.underlying_flows:
+        assert flow.name

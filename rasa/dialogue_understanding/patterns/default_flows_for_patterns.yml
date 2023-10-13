@@ -37,6 +37,11 @@ responses:
       metadata:
         rephrase: True
 
+  utter_no_knowledge_base:
+    - text: I am afraid, I don't know the answer. At this point, I don't have access to a knowledge base.
+      metadata:
+        rephrase: True
+
 slots:
   confirm_correction:
     type: bool
@@ -49,26 +54,19 @@ flows:
     name: pattern continue interrupted
 
     steps:
-      - id: "0"
-        action: utter_flow_continue_interrupted
+      - action: utter_flow_continue_interrupted
   
   pattern_correction:
     description: Handle a correction of a slot value.
     name: pattern correction
-
     steps:
-      - id: "check_if_reset_only"
+      - action: action_correct_flow_slot
         next:
-          - if: context.is_reset_only
-            then: "jump_back_without_message"
-          - else: "correct_slots"
-      - id: "correct_slots"
-        action: action_correct_flow_slot
-        next: "inform_user"
-      - id: "inform_user"
-        action: utter_corrected_previous_input
-      - id: "jump_back_without_message"
-        action: action_correct_flow_slot
+          - if: not context.is_reset_only
+            then:
+              - action: utter_corrected_previous_input
+                next: "END"
+          - else: "END"
 
   pattern_cancel_flow:
     description: A meta flow that's started when a flow is cancelled.
@@ -85,37 +83,38 @@ flows:
     description: internal error
     name: pattern internal error
     steps:
-      - id: "0"
-        action: utter_internal_error_rasa
+      - action: utter_internal_error_rasa
   
   pattern_completed:
     description: a flow has been completed and there is nothing else to be done
     name: pattern completed
     steps:
-      - id: "0"
-        action: utter_can_do_something_else
+      - action: utter_can_do_something_else
 
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented
     name: pattern chitchat
     steps:
-      - id: "0"
-        generation_prompt: |
+      - generation_prompt: |
           You are an incredibly friendly assistant. Generate a short 
           response to the user's comment in simple english.
 
           User: {{latest_user_message}}
           Response:
 
+  pattern_search:
+    description: handle a knowledge-based question or request
+    name: pattern search
+    steps:
+      - action: utter_no_knowledge_base
+      # - action: action_trigger_search to use doc search policy if present
+
   pattern_clarification:
     description: handle clarifications with the user
     name: pattern clarification
     steps:
-      - id: "0"
-        action: action_clarify_flows
-        next: "1"
-      - id: "1"
-        action: utter_clarification_options_rasa
+      - action: action_clarify_flows
+      - action: utter_clarification_options_rasa
 
   pattern_collect_information:
     description: flow used to fill a slot
@@ -123,9 +122,7 @@ flows:
     steps:
       - id: "start"
         action: action_run_slot_rejections
-        next: "validate"
-      - id: "validate"
-        action: validate_{{context.collect}}
+      - action: validate_{{context.collect}}
         next: 
         - if: "{{context.collect}} is not null"
           then: "done"
@@ -140,9 +137,7 @@ flows:
 
   pattern_code_change:
     description: flow used to clean the stack after a bot update
+    name: pattern code change
     steps:
-      - id: "inform_user"
-        action: utter_inform_code_change
-        next: "run_cleanup"
-      - id: "run_cleanup"
-        action: action_clean_stack
+      - action: utter_inform_code_change
+      - action: action_clean_stack

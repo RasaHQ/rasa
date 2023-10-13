@@ -77,7 +77,7 @@ mapping:
             required: False
           mappings:
            type: "seq"
-           required: True
+           required: False
            allowempty: False
            sequence:
               - type: "map"

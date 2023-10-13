@@ -10,9 +10,6 @@ from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
 from rasa.shared.constants import FLOW_PREFIX
 
-from rasa.shared.core.constants import (
-    DIALOGUE_STACK_SLOT,
-)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActiveLoop,
@@ -70,7 +67,7 @@ class FlowTriggerAction(action.Action):
         ]
 
         events: List[Event] = [
-            SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())
+            stack.persist_as_event(),
         ] + slot_set_events
         if tracker.active_loop_name:
             events.append(ActiveLoop(None))
