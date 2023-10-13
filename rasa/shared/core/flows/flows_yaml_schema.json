@@ -154,23 +154,6 @@
           },
           {
             "required": [
-              "intent"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "intent": {
-                "type": "string"
-              },
-              "next": {
-                "$ref": "#$defs/next"
-              }
-            }
-          },
-          {
-            "required": [
               "entry_prompt"
             ],
             "additionalProperties": false,
@@ -212,6 +195,7 @@
               "intent"
             ],
             "type": "object",
+            "additionalProperties": false, 
             "properties": {
               "intent": {
                 "type": "object",
