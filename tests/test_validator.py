@@ -1158,13 +1158,10 @@ def test_verify_unique_flows_duplicate_names(
     ) in caplog.text
 
 
-# testing for None and empty string
-@pytest.mark.parametrize("way_of_emptiness", ['""', "''"])
 def test_verify_flow_names_non_empty(
     tmp_path: Path,
     nlu_data_path: Path,
     caplog: LogCaptureFixture,
-    way_of_emptiness: str,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -1174,7 +1171,7 @@ def test_verify_flow_names_non_empty(
                         flows:
                           transfer_money:
                             description: This flow lets users send money.
-                            name: {way_of_emptiness}
+                            name: ""
                             steps:
                             - collect: transfer_recipient
                         """

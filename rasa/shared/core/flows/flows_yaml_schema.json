@@ -148,17 +148,6 @@
           },
           {
             "required": [
-              "id"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "type": "string"
-              }
-            }
-          },
-          {
-            "required": [
               "intent"
             ],
             "additionalProperties": false,
