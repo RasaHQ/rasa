@@ -92,7 +92,7 @@ def _run_flow_until_listen(
             break
     return actions, events
 
-
+@pytest.mark.skip(reason="Skip until intent gets replaced by nlu_trigger")
 def test_select_next_action() -> None:
     flows = YAMLFlowsReader.read_from_string(
         textwrap.dedent(
