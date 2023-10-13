@@ -100,7 +100,7 @@
                 "type": "string"
               },
               "next": {
-                "$ref": "#$defs/next"
+                "type": "null"
               }
             }
           },
