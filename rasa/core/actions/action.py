@@ -57,6 +57,7 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     SlotMappingType,
+    KNOWLEDGE_BASE_SLOT_NAMES,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -100,9 +101,10 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
     from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
     from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
     from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
-    from rasa.core.actions.action_run_slot_rejections import (
-        ActionRunSlotRejections,
-    )
+    from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
+    from rasa.core.actions.action_trigger_chitchat import ActionTriggerChitchat
+    from rasa.core.actions.action_trigger_search import ActionTriggerSearch
+    from rasa.core.actions.action_clean_stack import ActionCleanStack
 
     return [
         ActionListen(),
@@ -122,6 +124,9 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionCorrectFlowSlot(),
         ActionClarifyFlows(),
         ActionRunSlotRejections(),
+        ActionCleanStack(),
+        ActionTriggerSearch(),
+        ActionTriggerChitchat(),
     ]
 
 
@@ -1175,7 +1180,7 @@ class ActionExtractSlots(Action):
         except (RasaException, ClientResponseError) as e:
             logger.warning(
                 f"Failed to execute custom action '{custom_action}' "
-                f"as a result of error '{str(e)}'. The default action "
+                f"as a result of error '{e!s}'. The default action "
                 f"'{self.name()}' failed to fill slots with custom "
                 f"mappings."
             )
@@ -1292,7 +1297,9 @@ class ActionExtractSlots(Action):
         executed_custom_actions: Set[Text] = set()
 
         user_slots = [
-            slot for slot in domain.slots if slot.name not in DEFAULT_SLOT_NAMES
+            slot
+            for slot in domain.slots
+            if slot.name not in DEFAULT_SLOT_NAMES | KNOWLEDGE_BASE_SLOT_NAMES
         ]
 
         for slot in user_slots:

@@ -171,7 +171,6 @@ class TrainingData:
         Returns:
             TrainingData: A TrainingData with filtered training examples.
         """
-
         return TrainingData(
             list(filter(condition, self.training_examples)),
             self.entity_synonyms,
@@ -195,7 +194,6 @@ class TrainingData:
         Remove trailing whitespaces from intent and response annotations and drop
         duplicate examples.
         """
-
         for ex in examples:
             if ex.get(INTENT):
                 ex.set(INTENT, ex.get(INTENT).strip())
@@ -305,7 +303,6 @@ class TrainingData:
     @lazy_property
     def number_of_examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
-
         entities = []
 
         def _append_entity(entity: Dict[Text, Any], attribute: Text) -> None:
@@ -322,7 +319,7 @@ class TrainingData:
         return dict(Counter(entities))
 
     def sort_regex_features(self) -> None:
-        """Sorts regex features lexicographically by name+pattern"""
+        """Sorts regex features lexicographically by name+pattern."""
         self.regex_features = sorted(
             self.regex_features, key=lambda e: "{}+{}".format(e["name"], e["pattern"])
         )
@@ -432,8 +429,8 @@ class TrainingData:
         self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
     ) -> Dict[Text, Any]:
         """Persists this training data to disk and returns necessary
-        information to load it again."""
-
+        information to load it again.
+        """
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
@@ -445,7 +442,6 @@ class TrainingData:
 
     def sorted_entities(self) -> List[Any]:
         """Extract all entities from examples and sorts them by entity type."""
-
         entity_examples = [
             entity for ex in self.entity_examples for entity in ex.get("entities")
         ]
@@ -505,8 +501,8 @@ class TrainingData:
         self, train_frac: float = 0.8, random_seed: Optional[int] = None
     ) -> Tuple["TrainingData", "TrainingData"]:
         """Split into a training and test dataset,
-        preserving the fraction of examples per intent."""
-
+        preserving the fraction of examples per intent.
+        """
         # collect all nlu data
         test, train = self.split_nlu_examples(train_frac, random_seed)
 
@@ -543,7 +539,6 @@ class TrainingData:
         Returns:
             All responses that appear at least once in the list of examples.
         """
-
         responses = {}
         for ex in examples:
             if ex.get(INTENT_RESPONSE_KEY) and ex.get(RESPONSE):
@@ -563,7 +558,6 @@ class TrainingData:
         Returns:
             Test and training examples.
         """
-
         self.validate()
 
         # Stratified split: both test and train should have (approximately) the

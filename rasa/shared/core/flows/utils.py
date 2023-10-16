@@ -3,7 +3,6 @@ from typing import Text, Union
 import rasa.shared.data
 import rasa.shared.utils.io
 
-
 KEY_FLOWS = "flows"
 
 

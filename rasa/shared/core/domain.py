@@ -37,12 +37,13 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
     RESPONSE_CONDITION,
 )
-import rasa.shared.core.constants
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
+    SLOT_MAPPINGS,
     SlotMappingType,
     MAPPING_TYPE,
     MAPPING_CONDITIONS,
+    KNOWLEDGE_BASE_SLOT_NAMES,
 )
 from rasa.shared.exceptions import (
     RasaException,
@@ -490,6 +491,13 @@ class Domain:
             slot_type = slot_dict[slot_name].pop("type", None)
             slot_class = Slot.resolve_by_type(slot_type)
 
+            if SLOT_MAPPINGS not in slot_dict[slot_name]:
+                logger.warning(
+                    f"Slot '{slot_name}' has no mappings defined. "
+                    f"We will continue with an empty list of mappings."
+                )
+                slot_dict[slot_name][SLOT_MAPPINGS] = []
+
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots
@@ -518,7 +526,7 @@ class Domain:
             `used_entities` since this is the expected format of the intent
             when used internally.
         """
-        name, properties = list(intent.items())[0]
+        name, properties = next(iter(intent.items()))
 
         if properties:
             properties.setdefault(USE_ENTITIES_KEY, True)
@@ -709,7 +717,7 @@ class Domain:
                 }
             }
         else:
-            intent_name = list(intent.keys())[0]
+            intent_name = next(iter(intent.keys()))
 
         return (
             intent_name,
@@ -852,7 +860,7 @@ class Domain:
             User-defined intents that are default intents.
         """
         intent_names: Set[Text] = {
-            list(intent.keys())[0] if isinstance(intent, dict) else intent
+            next(iter(intent.keys())) if isinstance(intent, dict) else intent
             for intent in intents
         }
         return sorted(
@@ -909,7 +917,7 @@ class Domain:
     ) -> List[Union[Text, Dict]]:
         def sort(elem: Union[Text, Dict]) -> Union[Text, Dict]:
             if isinstance(elem, dict):
-                return list(elem.keys())[0]
+                return next(iter(elem.keys()))
             elif isinstance(elem, str):
                 return elem
 
@@ -1030,12 +1038,7 @@ class Domain:
                 )
             )
             slot_names = [slot.name for slot in self.slots]
-            knowledge_base_slots = [
-                rasa.shared.core.constants.SLOT_LISTED_ITEMS,
-                rasa.shared.core.constants.SLOT_LAST_OBJECT,
-                rasa.shared.core.constants.SLOT_LAST_OBJECT_TYPE,
-            ]
-            for slot in knowledge_base_slots:
+            for slot in KNOWLEDGE_BASE_SLOT_NAMES:
                 if slot not in slot_names:
                     self.slots.append(
                         TextSlot(slot, mappings=[], influence_conversation=False)
@@ -1722,7 +1725,7 @@ class Domain:
 
         def get_exception_message(
             duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
-            mappings: List[Tuple[Text, Text]] = None,
+            mappings: Optional[List[Tuple[Text, Text]]] = None,
         ) -> Text:
             """Return a message given a list of error locations."""
             message = ""

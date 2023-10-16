@@ -34,7 +34,7 @@ class CompletedPatternFlowStackFrame(PatternFlowStackFrame):
             The created `DialogueStackFrame`.
         """
         return CompletedPatternFlowStackFrame(
-            data["frame_id"],
+            frame_id=data["frame_id"],
             step_id=data["step_id"],
             previous_flow_name=data["previous_flow_name"],
         )

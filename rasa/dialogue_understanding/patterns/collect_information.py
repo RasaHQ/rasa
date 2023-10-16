@@ -52,7 +52,7 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
             ]
 
         return CollectInformationPatternFlowStackFrame(
-            data["frame_id"],
+            frame_id=data["frame_id"],
             step_id=data["step_id"],
             collect=data["collect"],
             utter=data["utter"],

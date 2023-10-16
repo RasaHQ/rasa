@@ -405,15 +405,19 @@ class FlowSyncImporter(PassThroughImporter):
 
         return Domain.from_path(default_flows_file)
 
-    @rasa.shared.utils.common.cached_method
-    def get_flows(self) -> FlowsList:
-        flows = self._importer.get_flows()
+    @classmethod
+    def merge_with_default_flows(cls, flows: FlowsList) -> FlowsList:
+        """Merges the passed flows with the default flows.
 
-        if flows.is_empty():
-            # if there are no flows, we don't need to add the default flows either
-            return flows
+        If a user defined flow contains a flow with an id of a default flow,
+        it will overwrite the default flow.
 
-        default_flows = self.load_default_pattern_flows()
+        Args:
+            flows: user defined flows.
+
+        Returns:
+            Merged flows."""
+        default_flows = cls.load_default_pattern_flows()
 
         user_flow_ids = [flow.id for flow in flows.underlying_flows]
         missing_default_flows = [
@@ -423,6 +427,16 @@ class FlowSyncImporter(PassThroughImporter):
         ]
 
         return flows.merge(FlowsList(missing_default_flows))
+
+    @rasa.shared.utils.common.cached_method
+    def get_flows(self) -> FlowsList:
+        flows = self._importer.get_flows()
+
+        if flows.is_empty():
+            # if there are no flows, we don't need to add the default flows either
+            return flows
+
+        return self.merge_with_default_flows(flows)
 
     @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:

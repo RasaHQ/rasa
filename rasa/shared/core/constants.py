@@ -41,6 +41,9 @@ ACTION_CANCEL_FLOW = "action_cancel_flow"
 ACTION_CLARIFY_FLOWS = "action_clarify_flows"
 ACTION_CORRECT_FLOW_SLOT = "action_correct_flow_slot"
 ACTION_RUN_SLOT_REJECTIONS_NAME = "action_run_slot_rejections"
+ACTION_CLEAN_STACK = "action_clean_stack"
+ACTION_TRIGGER_SEARCH = "action_trigger_search"
+ACTION_TRIGGER_CHITCHAT = "action_trigger_chitchat"
 
 
 DEFAULT_ACTION_NAMES = [
@@ -62,6 +65,9 @@ DEFAULT_ACTION_NAMES = [
     ACTION_CORRECT_FLOW_SLOT,
     ACTION_CLARIFY_FLOWS,
     ACTION_RUN_SLOT_REJECTIONS_NAME,
+    ACTION_CLEAN_STACK,
+    ACTION_TRIGGER_SEARCH,
+    ACTION_TRIGGER_CHITCHAT,
 ]
 
 ACTION_SHOULD_SEND_DOMAIN = "send_domain"
@@ -89,11 +95,9 @@ ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 REQUESTED_SLOT = "requested_slot"
 DIALOGUE_STACK_SLOT = "dialogue_stack"
 RETURN_VALUE_SLOT = "return_value"
+FLOW_HASHES_SLOT = "flow_hashes"
 
-FLOW_SLOT_NAMES = [
-    DIALOGUE_STACK_SLOT,
-    RETURN_VALUE_SLOT,
-]
+FLOW_SLOT_NAMES = [DIALOGUE_STACK_SLOT, RETURN_VALUE_SLOT, FLOW_HASHES_SLOT]
 
 # slots for knowledge base
 SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
@@ -101,13 +105,18 @@ SLOT_LAST_OBJECT = "knowledge_base_last_object"
 SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
 DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
+KNOWLEDGE_BASE_SLOT_NAMES = {
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_OBJECT,
+    SLOT_LAST_OBJECT_TYPE,
+}
+
 DEFAULT_SLOT_NAMES = {
     REQUESTED_SLOT,
     DIALOGUE_STACK_SLOT,
     SESSION_START_METADATA_SLOT,
-    SLOT_LISTED_ITEMS,
-    SLOT_LAST_OBJECT,
-    SLOT_LAST_OBJECT_TYPE,
+    RETURN_VALUE_SLOT,
+    FLOW_HASHES_SLOT,
 }
 
 

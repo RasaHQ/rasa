@@ -12,9 +12,9 @@ from rasa.core.actions import action
 from rasa.core.channels.channel import OutputChannel
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-from rasa.shared.core.constants import ACTION_CLARIFY_FLOWS, DIALOGUE_STACK_SLOT
+from rasa.shared.core.constants import ACTION_CLARIFY_FLOWS
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import Event
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -50,7 +50,7 @@ class ClarifyPatternFlowStackFrame(PatternFlowStackFrame):
             The created `DialogueStackFrame`.
         """
         return ClarifyPatternFlowStackFrame(
-            data["frame_id"],
+            frame_id=data["frame_id"],
             step_id=data["step_id"],
             names=data["names"],
             clarification_options=data["clarification_options"],
@@ -98,4 +98,4 @@ class ActionClarifyFlows(action.Action):
         options_string = self.assemble_options_string(top.names)
         top.clarification_options = options_string
         # since we modified the stack frame, we need to update the stack
-        return [SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())]
+        return [stack.persist_as_event()]
