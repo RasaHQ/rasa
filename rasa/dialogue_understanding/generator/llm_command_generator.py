@@ -1,6 +1,6 @@
 import importlib.resources
 import re
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, List, Optional, Tuple, Union
 
 from jinja2 import Template
 import structlog
@@ -396,7 +396,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             )
         )
 
-    def allowed_values_for_slot(self, slot: Slot) -> Optional[str]:
+    def allowed_values_for_slot(self, slot: Slot) -> Union[str, None]:
         """Get the allowed values for a slot."""
         if isinstance(slot, BooleanSlot):
             return str([True, False])
@@ -425,6 +425,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     def prepare_current_flow_slots_for_template(
         self, top_flow: Flow, current_step: FlowStep, tracker: DialogueStateTracker
     ) -> List[Dict[str, Any]]:
+        """Prepare the current flow slots for the template.
+
+        Args:
+            top_flow: The top flow.
+            current_step: The current step in the flow.
+            tracker: The tracker containing the current state of the conversation.
+
+        Returns:
+            The slots with values, types, allowed values and a description.
+        """
         if top_flow is not None:
             flow_slots = [
                 {
@@ -445,7 +455,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     def prepare_current_slot_for_template(
         self, current_step: FlowStep
-    ) -> tuple[Optional[str], Optional[str]]:
+    ) -> Tuple[Union[str, None], Union[str, None]]:
         """Prepare the current slot for the template."""
         return (
             (current_step.collect, current_step.description)
