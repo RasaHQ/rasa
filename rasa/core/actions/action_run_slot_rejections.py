@@ -114,7 +114,7 @@ class ActionRunSlotRejections(Action):
                 # only fill categorical slots with values that are present in the domain
                 structlogger.debug(
                     "run.rejection.categorical_slot_value_not_in_domain",
-                    command=self,
+                    rejection=self,
                 )
                 events.append(SlotSet(slot_name, None))
                 utterance = "utter_default_slot_rejection"
