@@ -166,7 +166,7 @@ class TestLLMCommandGenerator:
                 description: some description
                 steps:
                 - id: first_step
-                  collect_information: test_slot
+                  collect: test_slot
             """
         )
         with open(EXPECTED_PROMPT_PATH, "r", encoding="unicode_escape") as f:
