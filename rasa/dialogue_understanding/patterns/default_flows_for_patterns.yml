@@ -31,7 +31,11 @@ responses:
       metadata:
         rephrase: True
         template: jinja
-
+  
+  utter_default_slot_rejection:
+    - text: Sorry, you requested an option that is not valid. Please select one of the available options.
+      metadata:
+        rephrase: True
 
 slots:
   confirm_correction:

@@ -11,6 +11,7 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.constants import ACTION_RUN_SLOT_REJECTIONS_NAME
 from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.slots import CategoricalSlot
 
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
@@ -47,9 +48,6 @@ class ActionRunSlotRejections(Action):
         if not isinstance(top_frame, CollectInformationPatternFlowStackFrame):
             return []
 
-        if not top_frame.rejections:
-            return []
-
         slot_name = top_frame.collect
         slot_instance = tracker.slots.get(slot_name)
         if slot_instance and not slot_instance.has_been_set:
@@ -65,46 +63,63 @@ class ActionRunSlotRejections(Action):
 
         slot_value = tracker.get_slot(slot_name)
 
-        current_context = dialogue_stack.current_context()
-        current_context[slot_name] = slot_value
+        if top_frame.rejections:
+            # run validation when rejections are defined
+            current_context = dialogue_stack.current_context()
+            current_context[slot_name] = slot_value
 
-        structlogger.debug("run.predicate.context", context=current_context)
-        document = current_context.copy()
+            structlogger.debug("run.predicate.context", context=current_context)
+            document = current_context.copy()
 
-        for rejection in top_frame.rejections:
-            condition = rejection.if_
-            utterance = rejection.utter
+            for rejection in top_frame.rejections:
+                condition = rejection.if_
+                utterance = rejection.utter
 
-            try:
-                rendered_template = Template(condition).render(current_context)
-                predicate = Predicate(rendered_template)
-                violation = predicate.evaluate(document)
+                try:
+                    rendered_template = Template(condition).render(current_context)
+                    predicate = Predicate(rendered_template)
+                    violation = predicate.evaluate(document)
+                    structlogger.debug(
+                        "run.predicate.result",
+                        predicate=predicate.description(),
+                        violation=violation,
+                    )
+                except (TypeError, Exception) as e:
+                    structlogger.error(
+                        "run.predicate.error",
+                        predicate=condition,
+                        document=document,
+                        error=str(e),
+                    )
+                    violation = True
+                    internal_error = True
+
+                if violation:
+                    break
+
+            if not violation:
+                return []
+
+            # reset slot value that was initially filled with an invalid value
+            events.append(SlotSet(top_frame.collect, None))
+
+            if internal_error:
+                utterance = "utter_internal_error_rasa"
+        else:
+            # run implicit validations.
+            if (
+                isinstance(slot_instance, CategoricalSlot)
+                and slot_value not in slot_instance.values
+            ):
+                # only fill categorical slots with values that are present in the domain
                 structlogger.debug(
-                    "run.predicate.result",
-                    predicate=predicate.description(),
-                    violation=violation,
+                    "run.rejection.categorical_slot_value_not_in_domain",
+                    command=self,
                 )
-            except (TypeError, Exception) as e:
-                structlogger.error(
-                    "run.predicate.error",
-                    predicate=condition,
-                    document=document,
-                    error=str(e),
-                )
-                violation = True
-                internal_error = True
-
-            if violation:
-                break
-
-        if not violation:
-            return []
-
-        # reset slot value that was initially filled with an invalid value
-        events.append(SlotSet(top_frame.collect, None))
-
-        if internal_error:
-            utterance = "utter_internal_error_rasa"
+                events.append(SlotSet(slot_name, None))
+                utterance = "utter_default_slot_rejection"
+            else:
+                return []
 
         if not isinstance(utterance, str):
             structlogger.error(

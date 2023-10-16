@@ -1,7 +1,6 @@
 import pytest
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -227,57 +226,3 @@ def test_run_command_skips_setting_unknown_slot():
     command = SetSlotCommand(name="unknown", value="unknown")
 
     assert command.run_command_on_tracker(tracker, all_flows, tracker) == []
-
-
-def test_run_command_slot_set_categorical_slot_values():
-    all_flows = flows_from_str(
-        """
-        flows:
-            my_flow:
-                steps:
-                - id: collect_foo
-                  collect: foo
-                  next: collect_bar
-                - id: collect_bar
-                  collect: bar
-        """
-    )
-    domain = Domain.from_yaml(
-        """
-        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-        slots:
-            bar:
-                type: categorical
-                values:
-                    - low
-                    - high
-                mappings:
-                - type: custom
-        """
-    )
-    tracker = DialogueStateTracker.from_events(
-        "test",
-        evts=[
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_bar",
-                        "frame_id": "some-frame-id",
-                    },
-                ],
-            ),
-        ],
-        slots=domain.slots,
-    )
-    # set the slot to a value that is not in the domain
-    command = SetSlotCommand(name="bar", value="medium")
-    assert command.run_command_on_tracker(tracker, all_flows, tracker) == []
-
-    # set the slot to a value present in the domain
-    command = SetSlotCommand(name="bar", value="low")
-    assert command.run_command_on_tracker(tracker, all_flows, tracker) == [
-        SlotSet("bar", "low")
-    ]

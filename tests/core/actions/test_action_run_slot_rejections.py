@@ -7,6 +7,7 @@ from pytest import CaptureFixture
 from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
 from rasa.core.channels import OutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import AnySlot, FloatSlot, TextSlot
@@ -31,6 +32,12 @@ def rejection_test_nlg() -> TemplatedNaturalLanguageGenerator:
             "utter_payment_negative": [
                 {"text": "Sorry, the amount cannot be negative."}
             ],
+            "utter_default_slot_rejection": [
+                {"text": "Sorry, you requested an option that is not valid."}
+            ],
+            "utter_ask_payment_execution_mode": [
+                {"text": "When do you want to execute the payment?"},
+            ],
         }
     )
 
@@ -49,6 +56,13 @@ def rejection_test_domain() -> Domain:
             payment_amount:
                 type: float
                 mappings: []
+            payment_execution_mode:
+                type: categorical
+                values:
+                    - immediate
+                    - future
+                mappings:
+                - type: custom
         responses:
             utter_ask_recurrent_payment_type:
              - text: "What type of recurrent payment do you want to setup?"
@@ -62,6 +76,8 @@ def rejection_test_domain() -> Domain:
              - text: "Sorry, the amount is above the maximum £1,000 allowed."
             utter_payment_negative:
              - text: "Sorry, the amount cannot be negative."
+            utter_default_slot_rejection:
+             - text: "Sorry, you requested an option that is not valid."
         """
     )
 
@@ -84,11 +100,11 @@ async def test_action_run_slot_rejections_top_frame_not_collect_information(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("i want to setup a new recurrent payment."),
-            SlotSet("dialogue_stack", dialogue_stack),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
+            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
 
@@ -132,11 +148,11 @@ async def test_action_run_slot_rejections_top_frame_none_rejections(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("I want to make a payment."),
-            SlotSet("dialogue_stack", dialogue_stack),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             TextSlot("payment_recipient", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
+            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
 
@@ -185,11 +201,11 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("i want to setup a new recurrent payment."),
-            SlotSet("dialogue_stack", dialogue_stack),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
+            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
 
@@ -239,11 +255,11 @@ async def test_action_run_slot_rejections_run_success(
         evts=[
             UserUttered("i want to setup an international transfer."),
             SlotSet("recurrent_payment_type", "international transfer"),
-            SlotSet("dialogue_stack", dialogue_stack),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
+            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
 
@@ -304,11 +320,11 @@ async def test_action_run_slot_rejections_internal_error(
         evts=[
             UserUttered("i want to setup a new recurrent payment."),
             SlotSet("recurrent_payment_type", "international transfer"),
-            SlotSet("dialogue_stack", dialogue_stack),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
+            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
 
@@ -365,11 +381,11 @@ async def test_action_run_slot_rejections_collect_missing_utter(
         evts=[
             UserUttered("i want to setup a new recurrent payment."),
             SlotSet("recurrent_payment_type", "international transfer"),
-            SlotSet("dialogue_stack", dialogue_stack),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
+            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
 
@@ -423,11 +439,11 @@ async def test_action_run_slot_rejections_not_found_utter(
         evts=[
             UserUttered("i want to setup a new recurrent payment."),
             SlotSet("recurrent_payment_type", "international transfer"),
-            SlotSet("dialogue_stack", dialogue_stack),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
+            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
 
@@ -485,11 +501,11 @@ async def test_action_run_slot_rejections_pass_multiple_rejection_checks(
         evts=[
             UserUttered("i want to transfer £500."),
             SlotSet("payment_amount", 500),
-            SlotSet("dialogue_stack", dialogue_stack),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             FloatSlot("payment_amount", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
+            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
 
@@ -544,11 +560,11 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
         evts=[
             UserUttered("i want to transfer $-100."),
             SlotSet("payment_amount", -100),
-            SlotSet("dialogue_stack", dialogue_stack),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             FloatSlot("payment_amount", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
+            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
 
@@ -567,3 +583,95 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
             metadata={"utter_action": "utter_payment_negative"},
         ),
     ]
+
+
+async def test_invalid_categorical_slot_without_rejection_mechanism(
+    default_channel: OutputChannel,
+    rejection_test_nlg: TemplatedNaturalLanguageGenerator,
+    rejection_test_domain: Domain,
+) -> None:
+    dialogue_stack = [
+        {
+            "frame_id": "4YL3KDBR",
+            "flow_id": "setup_recurrent_payment",
+            "step_id": "ask_payment_type",
+            "frame_type": "regular",
+            "type": "flow",
+        },
+        {
+            "frame_id": "6Z7PSTRM",
+            "flow_id": "pattern_collect_information",
+            "step_id": "start",
+            "collect": "payment_execution_mode",
+            "utter": "utter_ask_payment_execution_mode",
+            "type": "pattern_collect_information",
+        },
+    ]
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex,
+        evts=[
+            UserUttered("i want to make a fast payment"),
+            SlotSet("payment_execution_mode", "fast"),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
+        ],
+        slots=rejection_test_domain.slots,
+    )
+
+    action_run_slot_rejections = ActionRunSlotRejections()
+    events = await action_run_slot_rejections.run(
+        output_channel=default_channel,
+        nlg=rejection_test_nlg,
+        tracker=tracker,
+        domain=rejection_test_domain,
+    )
+
+    assert events == [
+        SlotSet("payment_execution_mode", None),
+        BotUttered(
+            "Sorry, you requested an option that is not valid.",
+            metadata={"utter_action": "utter_default_slot_rejection"},
+        ),
+    ]
+
+
+async def test_valid_categorical_slot_without_rejection_mechanism(
+    default_channel: OutputChannel,
+    rejection_test_nlg: TemplatedNaturalLanguageGenerator,
+    rejection_test_domain: Domain,
+) -> None:
+    dialogue_stack = [
+        {
+            "frame_id": "4YL3KDBR",
+            "flow_id": "setup_recurrent_payment",
+            "step_id": "ask_payment_type",
+            "frame_type": "regular",
+            "type": "flow",
+        },
+        {
+            "frame_id": "6Z7PSTRM",
+            "flow_id": "pattern_collect_information",
+            "step_id": "start",
+            "collect": "payment_execution_mode",
+            "utter": "utter_ask_payment_execution_mode",
+            "type": "pattern_collect_information",
+        },
+    ]
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex,
+        evts=[
+            UserUttered("i want to make an immediate payment"),
+            SlotSet("payment_execution_mode", "immediate"),
+            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
+        ],
+        slots=rejection_test_domain.slots,
+    )
+
+    action_run_slot_rejections = ActionRunSlotRejections()
+    events = await action_run_slot_rejections.run(
+        output_channel=default_channel,
+        nlg=rejection_test_nlg,
+        tracker=tracker,
+        domain=rejection_test_domain,
+    )
+
+    assert events == []
