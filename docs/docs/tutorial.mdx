@@ -151,6 +151,7 @@ flows:
     steps:
       - collect: recipient
       - collect: amount
+        description: the number of US dollars to send
       - action: utter_transfer_complete
 ```
 
@@ -160,15 +161,13 @@ But it is also helpful for anyone who inspects your code to understand what is g
 If a user says "I need to transfer some money", the description helps Rasa understand that this is the relevant flow.
 The `steps` describe the business logic required to do what the user asked for.
 
-There are three steps defined, each with an `id`.
-The `id` can be anything you like, but it's a good idea to use names that make it clear what is going on.
-The first step is a `collect_information` step, which is used to fill a `slot`.
-A `collect_information` step sends a message to the user requesting information, and waits for an answer.
+The first step in your flow is a `collect` step, which is used to fill a `slot`.
+A `collect` step sends a message to the user requesting information, and waits for an answer.
 
 
 ## Collecting Information in Slots
 
-`Slots` are variables your assistant can read and write throughout a conversation.
+`Slots` are variables that your assistant can read and write throughout a conversation.
 Slots are defined in your `domain.yml` file. For example, the definition of your `recipient` slot looks like this:
 
 ```yaml-rasa title="domain.yml"
@@ -191,6 +190,7 @@ flows:
       # highlight-next-line    
       - collect: recipient
       - collect: amount
+        description: the number of US dollars to send
       - action: utter_transfer_complete
 ```
 
@@ -216,6 +216,24 @@ and how they can be used to create branching logic.
   src={useBaseUrl("/img/slots_in_flows.png")}
 />
 
+### Descriptions in collect steps
+
+The second `collect` step includes a description of the information your assistant
+will request from the user.
+Descriptions are optional, but can help Rasa extract slot values more reliably.
+
+```yaml-rasa title="flows.yml"
+flows:
+  transfer_money:
+    description: This flow lets users send money to friends and family.
+    steps:  
+      - collect: recipient
+      - collect: amount
+        # highlight-next-line        
+        description: the number of US dollars to send
+      - action: utter_transfer_complete
+```
+
 ## Action Steps
 
 The third `step` in your `transfer_money` flow is not a `collect` step but an `action` step.
@@ -231,6 +249,7 @@ flows:
     steps:
       - collect: recipient
       - collect: amount
+        description: the number of US dollars to send
       # highlight-next-line    
       - action: utter_transfer_complete
 ```
@@ -276,8 +295,15 @@ responses:
 
 Notice that your confirmation question uses curly brackets `{}` to include slot values in your response.
 
-Add a `collect_information` step to your flow and give it the id `confirm_transfer`.
-Also change the `next` attribute of the `ask_amount` step to match the `id` of your newly created step: `confirm_transfer`.
+Add a `collect` step to your flow for the slot `final_confirmation`.
+This step includes a `next` attribute with your branching logic. 
+The expression after the `if` key will be evaluated to true or false to determine
+the next step in your flow.
+The `then` and `else` keys can contain either a list of steps or the `id` of a step
+to jump to.
+In this case, the `then` key contains an `action` step to inform the user their transfer
+was cancelled. The `else` key contains the id `transfer_successful`. 
+Notice that you've added this `id` to the final step in your flow.
 
 
 ```yaml-rasa title="flows.yml"
@@ -287,6 +313,7 @@ flows:
     steps:
       - collect: recipient
       - collect: amount
+        description: the number of US dollars to send
       # highlight-start
       - collect: final_confirmation
         next:
@@ -295,9 +322,12 @@ flows:
               - action: utter_transfer_cancelled
                 next: END
           - else: transfer_successful
-      - id: transfer_successful
       # highlight-end
-        action: utter_transfer_complete
+      - action: utter_transfer_complete
+        # highlight-next-line
+        id: transfer_successful
+
+
 ```
 
 
@@ -384,6 +414,9 @@ responses:
 Now you are going to update your flow logic to handle the cases where the user does or does not have
 enough money in their account to make the transfer.
 
+Notice that your `collect: final_confirmation` step now also has an id so that your branching logic
+can jump to it. 
+
 ```yaml-rasa title="flows.yml"
 flows:
   transfer_money:
@@ -391,6 +424,7 @@ flows:
     steps:
       - collect: recipient
       - collect: amount
+        description: the number of US dollars to send
       # highlight-start
       - action: action_check_sufficient_funds
         next:
@@ -399,17 +433,18 @@ flows:
               - action: utter_insufficient_funds
                 next: END
           - else: final_confirmation
-      - id: final_confirmation
-      # highlight-end      
-        collect: final_confirmation
+      # highlight-end          
+      - collect: final_confirmation
+        # highlight-next-line
+        id: final_confirmation
         next:
           - if: not final_confirmation
             then:
               - action: utter_transfer_cancelled
                 next: END
           - else: transfer_successful
-      - id: transfer_successful
-        action: utter_transfer_complete
+      - action: utter_transfer_complete
+        id: transfer_successful
 ```
 
 ## Testing your Custom Action
