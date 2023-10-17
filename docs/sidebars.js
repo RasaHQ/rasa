@@ -63,9 +63,9 @@ module.exports = {
           items: [
             "concepts/components/overview",
             "concepts/components/llm-configuration",
-            "concepts/components/llm-custom",
             "concepts/components/custom-graph-components",
-            "concepts/components/graph-recipe",
+            "concepts/components/llm-custom",        
+            "concepts/components/graph-recipe",            
           ],
         },
         "concepts/policies", // TODO: ENG-538
