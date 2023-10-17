@@ -48,6 +48,8 @@ class Slot(ABC):
             influence_conversation: If `True` the slot will be featurized and hence
                 influence the predictions of the dialogue polices.
             is_builtin: `True` if the slot is a built-in slot, `False` otherwise.
+                Built-in slots also encompass user writable slots (via custom actions),
+                such as `return_value`.
         """
         self.name = name
         self.mappings = mappings
