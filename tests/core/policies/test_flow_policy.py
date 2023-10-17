@@ -371,3 +371,45 @@ def test_flow_policy_resets_all_slots_after_flow_ends() -> None:
         SlotSet("foo", None),
         SlotSet("other_slot", None),
     ]
+
+
+def test_flow_policy_set_slots_inherit_reset_from_collect_step() -> None:
+    """Test that `reset_after_flow_ends` is inherited from the collect step."""
+    slot_name = "my_slot"
+    flows = flows_from_str(
+        f"""
+        flows:
+          foo_flow:
+            steps:
+            - id: "1"
+              collect: {slot_name}
+              reset_after_flow_ends: false
+            - id: "2"
+              set_slots:
+                - foo: bar
+                - {slot_name}: my_value
+            - id: "3"
+              action: action_listen
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test123",
+        [
+            SlotSet("my_slot", "my_value"),
+            SlotSet("foo", "bar"),
+            ActionExecuted("action_listen"),
+        ],
+        slots=[
+            TextSlot("my_slot", mappings=[], initial_value="initial_value"),
+            TextSlot("foo", mappings=[]),
+        ],
+    )
+
+    domain = Domain.empty()
+    executor = FlowExecutor.from_tracker(tracker, flows, domain)
+
+    current_flow = flows.flow_by_id("foo_flow")
+    events = executor._reset_scoped_slots(current_flow, tracker)
+    assert events == [
+        SlotSet("foo", None),
+    ]
