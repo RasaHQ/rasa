@@ -32,7 +32,7 @@ def rejection_test_nlg() -> TemplatedNaturalLanguageGenerator:
             "utter_payment_negative": [
                 {"text": "Sorry, the amount cannot be negative."}
             ],
-            "utter_default_slot_rejection": [
+            "utter_categorical_slot_rejection": [
                 {"text": "Sorry, you requested an option that is not valid."}
             ],
             "utter_ask_payment_execution_mode": [
@@ -76,7 +76,7 @@ def rejection_test_domain() -> Domain:
              - text: "Sorry, the amount is above the maximum £1,000 allowed."
             utter_payment_negative:
              - text: "Sorry, the amount cannot be negative."
-            utter_default_slot_rejection:
+            utter_categorical_slot_rejection:
              - text: "Sorry, you requested an option that is not valid."
         """
     )
@@ -629,7 +629,7 @@ async def test_invalid_categorical_slot_without_rejection_mechanism(
         SlotSet("payment_execution_mode", None),
         BotUttered(
             "Sorry, you requested an option that is not valid.",
-            metadata={"utter_action": "utter_default_slot_rejection"},
+            metadata={"utter_action": "utter_categorical_slot_rejection"},
         ),
     ]
 

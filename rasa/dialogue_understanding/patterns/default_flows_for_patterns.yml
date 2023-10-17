@@ -42,7 +42,7 @@ responses:
       metadata:
         rephrase: True
 
-  utter_default_slot_rejection:
+  utter_categorical_slot_rejection:
     - text: Sorry, you requested an option that is not valid. Please select one of the available options.
       metadata:
         rephrase: True

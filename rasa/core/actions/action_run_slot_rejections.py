@@ -117,7 +117,7 @@ class ActionRunSlotRejections(Action):
                     rejection=self,
                 )
                 events.append(SlotSet(slot_name, None))
-                utterance = "utter_default_slot_rejection"
+                utterance = "utter_categorical_slot_rejection"
             else:
                 return []
 
