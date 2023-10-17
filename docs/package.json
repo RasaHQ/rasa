@@ -116,7 +116,8 @@
             "^https://github\\.com/mit-nlp/MITIE/releases/download/v0\\.4/MITIE-models-v0\\.2\\.tar\\.bz2$",
             "^https://forum.rasa.com/t/rasa-open-source-2-0-is-out-now-internal-draft/35577$",
             "https://docs-test-001.openai.azure.com",
-            "^https://github.com/RasaHQ/rasa/tree/main/examples/*"
+            "^https://github.com/RasaHQ/rasa/tree/main/examples/*",
+            "^https://github.com/RasaHQ/rasa/blob/main/examples/*"
           ]
         }
       ]
