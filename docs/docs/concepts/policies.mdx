@@ -69,7 +69,7 @@ The Flow Policy is a state machine that deterministically executes
 the business logic defined in your [flows](./flows.mdx).
 
 The Flow Policy oversees your assistant's state, handles state transitions, and
-triggers new flows when needed.
+starts new flows when required for [Conversation Repair](./conversation-repair.mdx).
 
 ### Adding the Flow Policy to your assistant
 
@@ -128,7 +128,7 @@ policy will skip directly to the final step in the flow.
 
 There are many things a user might say *other than* providing the value of the slot your
 assistant has requested.
-The may clarify that they didn't want to send money after all, or ask a clarifying question,
+They may clarify that they didn't want to send money after all, ask a clarifying question,
 or change their mind about something they said earlier. 
 Those cases are handled by
 [Conversation Repair](./conversation-repair.mdx).
@@ -144,8 +144,8 @@ A flow can be started in several ways:
 - One flow can ["link" to another flow](../concepts/flows.mdx#link), which will initiate
   the linked flow and return to the original flow once the linked flow
   completes.
-- Flows can be automatically added by the `FlowPolicy` in the case of 
-  [Conversation Repair](./conversation-repair.mdx)
+- In the case of [Conversation Repair](./conversation-repair.mdx), default flows can be 
+  automatically added by the `FlowPolicy`.
 
 
 ## FAQs
@@ -343,7 +343,7 @@ The _Intentless Policy_ is part of Rasa's new Conversational AI with
 Language Models (CALM) approach and available starting with version `3.7.0`.
 :::
 
-The Intentless Policy is used to send `responses` in a conversation which
+The Intentless Policy is used to send `responses` which
 are not part of a flow. 
 This can be helpful for handling chitchat, contextual questions,
 and high-stakes topics.
@@ -372,6 +372,8 @@ and may change when the underlying model changes.
 For high-stakes topics, it is safest to send a self-contained, vetted answer
 rather than relying on a generative model.
 The Intentless Policy provides that capability in a CALM assistant.
+Note that conversation design is crucial in these cases, as you want your responses
+to be self-contained and unambiguous rather than just "yes" or "no".
 
 ### Interjections
 When a flow reaches a `collect` step and your assistant asks the user for information,
