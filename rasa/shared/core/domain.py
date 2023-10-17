@@ -993,7 +993,12 @@ class Domain:
         for flow_slot in FLOW_SLOT_NAMES:
             if flow_slot not in slot_names:
                 self.slots.append(
-                    AnySlot(flow_slot, mappings=[], influence_conversation=False)
+                    AnySlot(
+                        flow_slot,
+                        mappings=[],
+                        influence_conversation=False,
+                        is_builtin=True,
+                    )
                 )
             else:
                 # TODO: figure out what to do here.
@@ -1016,6 +1021,7 @@ class Domain:
                     rasa.shared.core.constants.REQUESTED_SLOT,
                     mappings=[],
                     influence_conversation=False,
+                    is_builtin=True,
                 )
             )
 
@@ -1041,12 +1047,21 @@ class Domain:
             for slot in KNOWLEDGE_BASE_SLOT_NAMES:
                 if slot not in slot_names:
                     self.slots.append(
-                        TextSlot(slot, mappings=[], influence_conversation=False)
+                        TextSlot(
+                            slot,
+                            mappings=[],
+                            influence_conversation=False,
+                            is_builtin=True,
+                        )
                     )
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[])
+            AnySlot(
+                rasa.shared.core.constants.SESSION_START_METADATA_SLOT,
+                mappings=[],
+                is_builtin=True,
+            )
         )
 
     def index_for_action(self, action_name: Text) -> int:
