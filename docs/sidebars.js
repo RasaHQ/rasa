@@ -63,6 +63,9 @@ module.exports = {
           items: [
             "concepts/components/overview",
             "concepts/components/llm-configuration",
+            "concepts/components/custom-graph-components",
+            "concepts/components/llm-custom",        
+            "concepts/components/graph-recipe",            
           ],
         },
         "concepts/policies", // TODO: ENG-538
@@ -255,9 +258,6 @@ module.exports = {
       collapsed: true,
       items: [
         "nlu-based-assistants/glossary",
-        "concepts/components/custom-graph-components",
-        "concepts/components/llm-custom",        
-        "concepts/components/graph-recipe",
         "telemetry/telemetry",
         "telemetry/reference",
         require("./docs/reference/sidebar.json"),
