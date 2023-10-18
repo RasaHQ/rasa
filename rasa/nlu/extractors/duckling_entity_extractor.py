@@ -16,6 +16,7 @@ from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
+from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
@@ -204,3 +205,25 @@ class DucklingEntityExtractor(GraphComponent, EntityExtractorMixin):
             )
 
         return messages
+    
+class GermanDatetimeEntityExtractor(DucklingEntityExtractor):
+    def __init__(self, config: Dict[Text, Any]) -> None:
+        super().__init__(config)
+    def _duckling_parse(self, text: Text, reference_time: int) -> List[Dict[Text, Any]]:
+        if self.component_config.get("locale") == "de":
+            original_result = super()._duckling_parse(text, reference_time)
+            modified_result = self.modify_datetime_format(original_result)
+            return modified_result
+
+        return super()._duckling_parse(text, reference_time)
+
+    def modify_datetime_format(self, original_result):
+        for entity in original_result:
+            if "value" in entity and entity["dim"] == "time":
+                try:
+                    original_datetime = datetime.fromisoformat(entity["value"])
+                    formatted_datetime = original_datetime.strftime("%d-%m-%Y")
+                    entity["value"] = formatted_datetime
+                except ValueError:
+                    print(ValueError)
+        return original_result
