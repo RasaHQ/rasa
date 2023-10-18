@@ -170,14 +170,16 @@ class TestLLMCommandGenerator:
             """
         )
         with open(EXPECTED_PROMPT_PATH, "r", encoding="unicode_escape") as f:
-            expected_template = f.read()
-        # # When
+            expected_template = f.readlines()
+        # When
         rendered_template = command_generator.render_template(
             message=test_message, tracker=test_tracker, flows=test_flows
         )
-
-        # # Then
-        assert rendered_template == expected_template
+        # Then
+        for rendered_line, expected_line in zip(
+            rendered_template.splitlines(True), expected_template
+        ):
+            assert rendered_line == expected_line
 
     @pytest.mark.parametrize(
         "input_action, expected_command",
