@@ -1,0 +1,23 @@
+flows:
+  transfer_money:
+    description: This flow lets users send money to friends and family.
+    steps:
+      - collect: recipient
+      - collect: amount
+      - action: action_check_sufficient_funds
+        next:
+          - if: not has_sufficient_funds
+            then:
+              - action: utter_insufficient_funds
+                next: END
+          - else: final_confirmation
+      - id: final_confirmation
+        collect: final_confirmation
+        next:
+          - if: not final_confirmation
+            then:
+              - action: utter_transfer_cancelled
+                next: END
+          - else: transfer_successful
+      - id: transfer_successful
+        action: utter_transfer_complete
