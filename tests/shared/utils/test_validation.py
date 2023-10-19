@@ -4,6 +4,7 @@ from threading import Thread
 import pytest
 
 from pep440_version_utils import Version
+from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE
 
 from rasa.shared.exceptions import YamlException, SchemaValidationError
 import rasa.shared.utils.io
@@ -16,7 +17,10 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
-from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.utils.validation import (
+    KEY_TRAINING_DATA_FORMAT_VERSION,
+    validate_yaml_with_jsonschema,
+)
 
 
 @pytest.mark.parametrize(
@@ -380,3 +384,297 @@ nlu:
         thread.join()
 
     assert len(successful_results) == len(threads)
+
+
+@pytest.mark.parametrize(
+    "flow_yaml",
+    [
+        """flows:
+  replace_eligible_card:
+    description: Never predict StartFlow for this flow, users are not able to trigger.
+    name: replace eligible card
+    steps:
+      - collect: replacement_reason
+        next:
+          - if: replacement_reason == "lost"
+            then:
+              - collect: was_card_used_fraudulently
+                ask_before_filling: true
+                next:
+                  - if: was_card_used_fraudulently
+                    then:
+                      - action: utter_report_fraud
+                        next: END
+                  - else: start_replacement
+          - if: "replacement_reason == 'damaged'"
+            then: start_replacement
+          - else:
+            - action: utter_unknown_replacement_reason_handover
+              next: END
+      - id: start_replacement
+        action: utter_will_cancel_and_send_new
+      - action: utter_new_card_has_been_ordered""",
+        """flows:
+  replace_card:
+    description: The user needs to replace their card.
+    name: replace_card
+    steps:
+      - collect: confirm_correct_card
+        ask_before_filling: true
+        next:
+          - if: "confirm_correct_card"
+            then:
+              - link: "replace_eligible_card"
+          - else:
+              - action: utter_relevant_card_not_linked
+                next: END
+    """,
+        f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+flows:
+    transfer_money:
+        description: This flow lets users send money.
+        name: transfer money
+        steps:
+        - id: "ask_recipient"
+          collect: transfer_recipient
+          next: "ask_amount"
+        - id: "ask_amount"
+          collect: transfer_amount
+          next: "execute_transfer"
+        - id: "execute_transfer"
+          action: action_transfer_money""",
+        """flows:
+  setup_recurrent_payment:
+    name: setup recurrent payment
+    steps:
+      - collect: recurrent_payment_type
+        rejections:
+          - if: not ({"direct debit" "standing order"} contains recurrent_payment_type)
+            utter: utter_invalid_recurrent_payment_type
+        description: the type of payment
+      - collect: recurrent_payment_recipient
+        utter: utter_ask_recipient
+        description: the name of a person
+      - collect: recurrent_payment_amount_of_money
+        description: the amount of money without any currency designation
+      - collect: recurrent_payment_frequency
+        description: the frequency of the payment
+        rejections:
+          - if: not ({"monthly" "yearly"} contains recurrent_payment_frequency)
+            utter: utter_invalid_recurrent_payment_frequency
+      - collect: recurrent_payment_start_date
+        description: the start date of the payment
+      - collect: recurrent_payment_end_date
+        description: the end date of the payment
+        rejections:
+          - if: recurrent_payment_end_date < recurrent_payment_start_date
+            utter: utter_invalid_recurrent_payment_end_date
+      - collect: recurrent_payment_confirmation
+        description: accepts True or False
+        ask_before_filling: true
+        next:
+          - if: not recurrent_payment_confirmation
+            then:
+              - action: utter_payment_cancelled
+                next: END
+          - else: "execute_payment"
+      - id: "execute_payment"
+        action: action_execute_recurrent_payment
+        next:
+          - if: setup_recurrent_payment_successful
+            then:
+              - action: utter_payment_complete
+                next: END
+          - else: "payment_failed"
+      - id: "payment_failed"
+        action: utter_payment_failed
+      - action: utter_failed_payment_handover
+      - action: utter_failed_handoff""",
+        """
+        flows:
+          foo_flow:
+            steps:
+            - id: "1"
+              set_slots:
+                - foo: bar
+              next: "2"
+            - id: "2"
+              action: action_listen
+              next: "1"
+              """,
+        """
+        flows:
+          test_flow:
+            description: Test flow
+            steps:
+              - id: "1"
+                action: action_xyz
+                next: "2"
+              - id: "2"
+                action: utter_ask_name""",
+    ],
+)
+def test_flow_validation_pass(flow_yaml: str) -> None:
+    # test fails if exception is raised
+    validate_yaml_with_jsonschema(flow_yaml, FLOWS_SCHEMA_FILE)
+
+
+@pytest.mark.parametrize(
+    "flow_yaml, error_msg",
+    [
+        ("""flows:""", "None is not of type 'object'."),
+        (
+            """flows:
+  test:
+    name: test
+    steps:""",
+            ("None is not of type 'array'."),
+        ),
+        (
+            """flows:
+         test:
+         - id: test""",
+            "[ordereddict([('id', 'test')])] is not of type 'object'.",
+        ),
+        (
+            """flows:
+  test:
+    name: test
+    steps:
+      - collect: recurrent_payment_type
+        rejections:
+          - if: not ({"direct debit" "standing order"} contains recurrent_payment_type)
+            utter: utter_invalid_recurrent_payment_type
+        desc: the type of payment""",
+            (
+                "('desc', 'the type of payment')]) is not valid"
+                " under any of the given schemas."
+            ),
+        ),
+        (  # next is a Bool
+            """flows:
+  test:
+    name: test
+    steps:
+      - collect: confirm_correct_card
+        ask_before_filling: true
+        next:
+          - if: "confirm_correct_card"
+            then:
+              - link: "replace_eligible_card"
+          - else:
+              - action: utter_relevant_card_not_linked
+                next: True""",
+            "('next', True)])])])])]) is not valid under any of the given schemas.",
+        ),
+        (  # just next and ask_before_filling
+            """flows:
+  test:
+    name: test
+    steps:
+      - ask_before_filling: true
+        next:
+          - if: "confirm_correct_card"
+            then:
+              - link: "replace_eligible_card"
+          - else:
+              - action: utter_relevant_card_not_linked
+                next: END""",
+            (
+                "('if', 'confirm_correct_card'), ('then',"
+                " [ordereddict([('link', 'replace_eligible_card')])])]), "
+                "ordereddict([('else', [ordereddict([('action', "
+                "'utter_relevant_card_not_linked'), ('next', 'END')])])])]"
+                " is not of type 'null'. Failed to validate data,"
+                " make sure your data is valid."
+            ),
+        ),
+        (  # action added to collect
+            """flows:
+  test:
+    steps:
+      - collect: confirm_correct_card
+        action: utter_xyz
+        ask_before_filling: true""",
+            (
+                "([('collect', 'confirm_correct_card'), ('action', 'utter_xyz'),"
+                " ('ask_before_filling', True)])"
+                " is not valid under any of the given schemas."
+            ),
+        ),
+        (  # random addition to action
+            """flows:
+  test:
+    steps:
+      - action: utter_xyz
+        random_xyz: true
+        next: END""",
+            "Failed validating 'type' in schema[2]['properties']['next']",
+        ),
+        (  # random addition to collect
+            """flows:
+  test:
+    steps:
+      - collect: confirm_correct_card
+        random_xyz: utter_xyz
+        ask_before_filling: true""",
+            (
+                "ordereddict([('collect', 'confirm_correct_card'), "
+                "('random_xyz', 'utter_xyz'), ('ask_before_filling', True)])"
+                " is not valid under any of the given schemas."
+            ),
+        ),
+        (  # random addition to flow definition
+            """flows:
+  test:
+    random_xyz: True
+    steps:
+      - action: utter_xyz
+        next: id-21312""",
+            "Additional properties are not allowed ('random_xyz' was unexpected).",
+        ),
+        (
+            """flows:
+  test:
+    steps:
+      - action: True
+        next: id-2132""",
+            (
+                "ordereddict([('action', True), ('next', 'id-2132')])"
+                " is not valid under any of the given schemas."
+            ),
+        ),
+        (  # next is a step
+            """flows:
+  test:
+    steps:
+      - action: xyz
+        next:
+        - action: utter_xyz""",
+            (
+                "([('action', 'xyz'), ('next',"
+                " [ordereddict([('action', 'utter_xyz')])])])"
+                " is not valid under any of the given schemas."
+            ),
+        ),
+        (  # next is without then
+            """flows:
+  test:
+    steps:
+      - action: xyz
+        next:
+        - if: xyz""",
+            (
+                "([('action', 'xyz'), ('next', [ordereddict([('if', 'xyz')])])])"
+                " is not valid under any of the given schemas."
+            ),
+        ),
+    ],
+)
+def test_flow_validation_fail(flow_yaml: str, error_msg: str) -> None:
+    with pytest.raises(SchemaValidationError) as e:
+        rasa.shared.utils.validation.validate_yaml_with_jsonschema(
+            flow_yaml, FLOWS_SCHEMA_FILE
+        )
+    assert error_msg in str(e.value)

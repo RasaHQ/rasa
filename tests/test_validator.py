@@ -348,7 +348,7 @@ def test_early_exit_on_invalid_domain():
 def test_verify_there_is_not_example_repetition_in_intents():
     importer = RasaFileImporter(
         domain_path="data/test_moodbot/domain.yml",
-        training_data_paths=["examples/knowledgebasebot/data/nlu.yml"],
+        training_data_paths=["examples/nlu_based/knowledgebasebot/data/nlu.yml"],
     )
     validator = Validator.from_importer(importer)
     # force validator to not ignore warnings (default is True)
@@ -1156,6 +1156,50 @@ def test_verify_unique_flows_duplicate_names(
         f"flow id 'recurrent_payment'. Flow names must be unique. "
         f"Please make sure that all flows have different names."
     ) in caplog.text
+
+
+def test_verify_flow_names_non_empty(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: This flow lets users send money.
+                            name: ""
+                            steps:
+                            - collect: transfer_recipient
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_unique_flows()
+
+    assert "empty name" in caplog.text
+    assert "transfer_money" in caplog.text
 
 
 def test_verify_unique_flows_duplicate_descriptions(

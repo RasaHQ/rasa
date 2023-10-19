@@ -1,5 +1,6 @@
 import copy
 import json
+import logging
 import re
 import textwrap
 from pathlib import Path
@@ -7,6 +8,7 @@ import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
+from pytest import LogCaptureFixture
 from pytest import WarningsRecorder
 
 from rasa.shared.exceptions import YamlSyntaxException, YamlException
@@ -21,6 +23,7 @@ from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturize
 from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
 from rasa.shared.core.constants import (
     DEFAULT_INTENTS,
+    KNOWLEDGE_BASE_SLOT_NAMES,
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
@@ -2352,3 +2355,29 @@ def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
 def test_domain_responses_with_ids_are_loaded(domain_yaml, expected) -> None:
     domain = Domain.from_yaml(domain_yaml)
     assert domain.responses == expected
+
+
+def test_domain_with_slots_without_mappings(caplog: LogCaptureFixture) -> None:
+    domain_yaml = """
+    slots:
+      slot_without_mappings:
+        type: text
+    """
+    with caplog.at_level(logging.WARN):
+        domain = Domain.from_yaml(domain_yaml)
+
+    assert isinstance(domain.slots[0].mappings, list)
+    assert len(domain.slots[0].mappings) == 0
+    assert (
+        "Slot 'slot_without_mappings' has no mappings defined. "
+        "We will continue with an empty list of mappings."
+    ) in caplog.text
+
+
+def test_domain_default_slots_are_marked_as_builtin(domain: Domain) -> None:
+    all_default_slot_names = DEFAULT_SLOT_NAMES.union(KNOWLEDGE_BASE_SLOT_NAMES)
+    domain_default_slots = [
+        slot for slot in domain.slots if slot.name in all_default_slot_names
+    ]
+
+    assert all(slot.is_builtin for slot in domain_default_slots)

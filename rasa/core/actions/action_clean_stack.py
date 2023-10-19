@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, Dict, Any, List
 
-from rasa.core.actions import action
+from rasa.core.actions.action import Action
 from rasa.core.channels import OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -18,7 +18,7 @@ from rasa.shared.core.flows.flow import ContinueFlowStep, END_STEP
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
-class ActionCleanStack(action.Action):
+class ActionCleanStack(Action):
     """Action which cancels a flow from the stack."""
 
     def name(self) -> str:

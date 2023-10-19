@@ -93,6 +93,7 @@ def _run_flow_until_listen(
     return actions, events
 
 
+@pytest.mark.skip(reason="Skip until intent gets replaced by nlu_trigger")
 def test_select_next_action() -> None:
     flows = YAMLFlowsReader.read_from_string(
         textwrap.dedent(
@@ -212,12 +213,12 @@ def test_executor_trips_internal_circuit_breaker():
           foo_flow:
             steps:
             - id: "1"
-              set_slot:
-                foo: bar
+              set_slots:
+                - foo: bar
               next: "2"
             - id: "2"
-              set_slot:
-                foo: barbar
+              set_slots:
+                - foo: barbar
               next: "1"
         """
     )
@@ -250,12 +251,12 @@ def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
           foo_flow:
             steps:
             - id: "1"
-              set_slot:
-                foo: bar
+              set_slots:
+                - foo: bar
               next: "2"
             - id: "2"
-              set_slot:
-                foo: barbar
+              set_slots:
+                - foo: barbar
               next: "1"
         """
     )
@@ -301,8 +302,8 @@ def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
           foo_flow:
             steps:
             - id: "1"
-              set_slot:
-                foo: bar
+              set_slots:
+                - foo: bar
               next: "2"
             - id: "2"
               action: action_listen

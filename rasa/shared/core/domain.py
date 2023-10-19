@@ -39,6 +39,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
+    SLOT_MAPPINGS,
     SlotMappingType,
     MAPPING_TYPE,
     MAPPING_CONDITIONS,
@@ -489,6 +490,13 @@ class Domain:
         for slot_name in slot_dict:
             slot_type = slot_dict[slot_name].pop("type", None)
             slot_class = Slot.resolve_by_type(slot_type)
+
+            if SLOT_MAPPINGS not in slot_dict[slot_name]:
+                logger.warning(
+                    f"Slot '{slot_name}' has no mappings defined. "
+                    f"We will continue with an empty list of mappings."
+                )
+                slot_dict[slot_name][SLOT_MAPPINGS] = []
 
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
@@ -985,7 +993,12 @@ class Domain:
         for flow_slot in FLOW_SLOT_NAMES:
             if flow_slot not in slot_names:
                 self.slots.append(
-                    AnySlot(flow_slot, mappings=[], influence_conversation=False)
+                    AnySlot(
+                        flow_slot,
+                        mappings=[],
+                        influence_conversation=False,
+                        is_builtin=True,
+                    )
                 )
             else:
                 # TODO: figure out what to do here.
@@ -1008,6 +1021,7 @@ class Domain:
                     rasa.shared.core.constants.REQUESTED_SLOT,
                     mappings=[],
                     influence_conversation=False,
+                    is_builtin=True,
                 )
             )
 
@@ -1033,12 +1047,21 @@ class Domain:
             for slot in KNOWLEDGE_BASE_SLOT_NAMES:
                 if slot not in slot_names:
                     self.slots.append(
-                        TextSlot(slot, mappings=[], influence_conversation=False)
+                        TextSlot(
+                            slot,
+                            mappings=[],
+                            influence_conversation=False,
+                            is_builtin=True,
+                        )
                     )
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[])
+            AnySlot(
+                rasa.shared.core.constants.SESSION_START_METADATA_SLOT,
+                mappings=[],
+                is_builtin=True,
+            )
         )
 
     def index_for_action(self, action_name: Text) -> int:

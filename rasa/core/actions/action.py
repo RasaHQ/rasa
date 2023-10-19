@@ -37,6 +37,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
+    DIALOGUE_STACK_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -101,9 +102,10 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
     from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
     from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
     from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
-    from rasa.core.actions.action_run_slot_rejections import (
-        ActionRunSlotRejections,
-    )
+    from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
+    from rasa.core.actions.action_trigger_chitchat import ActionTriggerChitchat
+    from rasa.core.actions.action_trigger_search import ActionTriggerSearch
+    from rasa.core.actions.action_clean_stack import ActionCleanStack
 
     return [
         ActionListen(),
@@ -123,6 +125,9 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionCorrectFlowSlot(),
         ActionClarifyFlows(),
         ActionRunSlotRejections(),
+        ActionCleanStack(),
+        ActionTriggerSearch(),
+        ActionTriggerChitchat(),
     ]
 
 
@@ -825,6 +830,13 @@ class RemoteAction(Action):
             )
 
             evts = events.deserialise_events(events_json)
+            # filter out `SlotSet` events for internal `dialogue_stack` slot
+            evts = [
+                event
+                for event in evts
+                if not (isinstance(event, SlotSet) and event.key == DIALOGUE_STACK_SLOT)
+            ]
+
             return cast(List[Event], bot_messages) + evts
 
         except ClientResponseError as e:

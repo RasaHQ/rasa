@@ -28,7 +28,7 @@ def test_slot_mapping_entity_is_desired(slot_name: Text, expected: bool):
 
 
 def test_slot_mapping_intent_is_desired(domain: Domain):
-    domain = Domain.from_file("examples/formbot/domain.yml")
+    domain = Domain.from_file("examples/nlu_based/formbot/domain.yml")
     tracker = DialogueStateTracker("sender_id_test", slots=domain.slots)
     event1 = UserUttered(
         text="I'd like to book a restaurant for 2 people.",
@@ -101,19 +101,6 @@ def test_slot_mappings_ignored_intents_during_active_loop():
     assert (
         SlotMapping.intent_is_desired(mappings_for_cuisine[0], tracker, domain) is False
     )
-
-
-def test_missing_slot_mappings_raises():
-    with pytest.raises(YamlValidationException):
-        Domain.from_yaml(
-            f"""
-            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-            slots:
-              some_slot:
-                type: text
-                influence_conversation: False
-            """
-        )
 
 
 def test_slot_mappings_invalid_type_raises():
