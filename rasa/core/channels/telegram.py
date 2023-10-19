@@ -147,7 +147,7 @@ class TelegramOutput(Bot, OutputChannel):
 
 
 class TelegramInput(InputChannel):
-    """Telegram input channel"""
+    """Telegram input channel."""
 
     @classmethod
     def name(cls) -> Text:

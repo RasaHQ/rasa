@@ -63,9 +63,9 @@ module.exports = {
           items: [
             "concepts/components/overview",
             "concepts/components/llm-configuration",
-            "concepts/components/llm-custom",
             "concepts/components/custom-graph-components",
-            "concepts/components/graph-recipe",
+            "concepts/components/llm-custom",        
+            "concepts/components/graph-recipe",            
           ],
         },
         "concepts/policies", // TODO: ENG-538
@@ -216,6 +216,7 @@ module.exports = {
             "deploy/deploy-rasa",
             "deploy/deploy-action-server",
             "deploy/deploy-rasa-pro-services",
+            "deploy/environment-variables",
           ],
         },
         "production/load-testing-guidelines",

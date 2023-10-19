@@ -1,7 +1,7 @@
 ---
 id: contextual-response-rephraser
 sidebar_label: Rephrasing
-title: Contextual Response Rephrasing
+title: Contextual Response Rephraser
 abstract: |
   Respond to users more naturally by using an LLM to
   rephrase your templated responses, taking the context
@@ -9,15 +9,17 @@ abstract: |
 ---
 
 import RasaProLabel from "@theme/RasaProLabel";
-import RasaProBanner from "@theme/RasaProBanner";
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
 
 <RasaProLabel />
 
-<RasaProBanner />
+<RasaLabsLabel />
+
 
 :::info New in 3.7
 
-The _Contextual Response Rephrasing_ is part of Rasa's new
+The _Contextual Response Rephraser_ is part of Rasa's new
 Conversational AI with Language Models (CALM) approach and available starting
 with version `3.7.0`.
 :::
@@ -37,8 +39,8 @@ with version `3.7.0`.
 ## Demo
 
 The following example shows a demo of a chatbot using an LLM to rephrase static
-response templates. The first example is from an assistant without rephrasing.
-The second example is exactly the same assistant, with rephrasing enabled.
+response templates. The first example is from an assistant without rephrasing the response templates.
+The second example is exactly the same assistant, with rephrasing for response templates enabled.
 
 <Chat caption="No rephrasing: Chatbot handling out of scope requests">
   <ChatUserText>can you order me a pizza?</ChatUserText>
@@ -93,12 +95,12 @@ impacted.
 
 :::
 
-## How to Use Rephrasing in Your Bot
+## How to Use the Rephraser in Your Bot
 
 The following assumes that you have already
 [configured your NLG server](../production/nlg.mdx).
 
-To use rephrasing, add the following lines to your `endpoints.yml` file:
+To use the rephraser, add the following lines to your `endpoints.yml` file:
 
 ```yaml-rasa title="endpoints.yml"
 nlg:

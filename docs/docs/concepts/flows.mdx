@@ -460,23 +460,43 @@ If the "final_confirmation" slot is already filled, the bot will clear it, ask
 the `collect_information` step and fill the slot again. This ensures the confirmation
 `collect_information` step is always asked.
 
-#### Scopes
+#### Reset slot value after flow execution
 
-Scopes determine the lifespan of a slot or variable. There are two types of
-scopes available:
+You can configure the reset slot value behaviour after the flow completes by setting the optional
+`reset_after_flow_ends` property to `true` or `false`. If the property is not defined for the
+`collect` step, the default value will be `true`.
 
-- **flow**: The variable exists only for the duration of the flow. Once the flow
-  ends, the variable ceases to exist.
-- **global**: The variable persists across flows until it is explicitly changed.
+If the `reset_after_flow_ends` property is set to `true`, the slot value exists only for the duration of the flow.
+Once the flow ends, the slot value is either reset to `null` or the slot's initial value (if provided in the domain
+file under `slots`). If instead, the `reset_after_flow_ends` property is set to `false`, this indicates that the slot
+value should persist across flows until it is explicitly changed.
 
-The slot can also be configured to be cleared at the end of the flow execution.
-The following configuration would clear the answer to the `collect_information` step when a
+The following configuration would clear the answer to the `collect` step when a
 flow is completed.
 
 ```yaml
-- id: "another_confirmation_step"
-  collect_information: "yes_or_no" # slot name
-  scope: "flow"
+- collect: "my_custom_slot" # slot name
+  reset_after_flow_ends: true
+```
+
+#### Define a different response for the `collect` step
+
+By default, the assistant will ask the user to fill the slot with the `utter_ask_{slot_name}` response. You can define
+a different response for the `collect` step by adding a `utter` property to the step. The `utter` property
+is optional and represents the name of the [response](./responses.mdx) the assistant will use to collect the information from the
+user. Make sure to have this response included in the domain.
+
+Here is an example:
+
+```rasa-yaml title="flows.yml"
+flows:
+  replace_supplementary_card:
+    description: This flow helps the user to replace a supplementary card for a family member.
+    name: replace card
+    steps:
+      - collect: account_type
+        utter: utter_ask_secondary_account_type
+        next: "ask_account_number"
 ```
 
 #### Slot validation
@@ -517,6 +537,13 @@ Please try again later.`. You can override the text message for `utter_internal_
 the custom text in your domain file. We recommend using end-to-end testing to ensure that your flows work as expected.
 
 If no rejections are defined, the assistant will fill the slot with the collected value and proceed to the next step.
+
+:::note
+For more complex validation logic, you can also define slot validation in a [custom action](./custom-actions.mdx).
+Note that this custom action must follow this naming convention: `validate_{slot_name}`.
+
+:::
+
 
 ### Link
 

@@ -1,7 +1,7 @@
 ---
 id: llm-configuration
-sidebar_label: Configuration
-title: Configuration
+sidebar_label: LLM Providers
+title: LLM Providers
 abstract: |
   Instructions on how to setup and configure Large Language Models from
   OpenAI, Cohere, and other providers.
@@ -9,43 +9,32 @@ abstract: |
   efficiently with your specific use case.
 ---
 
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
+
+<RasaProLabel />
+
+<RasaLabsLabel />
+
 ## Overview
 
-This guide will walk you through the process of configuring Rasa to connect to an
-LLM, including deployments that rely on Azure OpenAI service. Instructions for
-other LLM providers are further down the page.
+All Rasa components which make use of an LLM can be configured. 
+This includes:
+* The LLM provider
+* The model
+* The sampling temperature
+* The prompt template
 
-## Assitant Configration
+and other settings.
+This page applies to the following components which use LLMs:
 
-To use LLMs in your assistant, you need to configure the following components:
+* [LLMCommandGenerator](../dialogue-understanding.mdx)
+* DocsearchPolicy
+* IntentlessPolicy
+* ContextualResponseRephraser
+* LLMIntentClassifier
 
-```yaml title="config.yml"
-recipe: default.v1
-language: en
-pipeline:
-  - name: LLMCommandGenerator
-
-policies:
-  - name: rasa.core.policies.flow_policy.FlowPolicy
-  - name: rasa_plus.ml.DocsearchPolicy
-  - name: RulePolicy
-```
-
-To use the rephrasing capability, you'll also need to add the following to your
-endpoint configuration:
-
-```yaml title="endpoints.yml"
-nlg:
-  type: rasa_plus.ml.ContextualResponseRephraser
-```
-
-Additional configuration parameters are explained in detail in the documentation
-pages for each of these components:
-
-- [LLMCommandGenerator](../dialogue-understanding.mdx)
-- [FlowPolicy](../policies.mdx#flow-policy)
-- Docseacrh
-- [ContextualResponseRephraser](../contextual-response-rephraser.mdx)
 
 ## OpenAI Configuration
 
@@ -55,18 +44,10 @@ can be configured with different LLMs, but OpenAI is the default.
 If you want to configure your assistant with a different LLM, you can find
 instructions for other LLM providers further down the page.
 
-### Prerequisites
-
-Before beginning, make sure that you have:
-
-- Access to OpenAI's services
-- Ability to generate API keys for OpenAI
 
 ### API Token
 
-The API token is a key element that allows your Rasa instance to connect and
-communicate with OpenAI. This needs to be configured correctly to ensure seamless
-interaction between the two.
+The API token authenticates your requests to the OpenAI API.
 
 To configure the API token, follow these steps:
 
@@ -102,16 +83,24 @@ To configure the API token, follow these steps:
 
 ### Model Configuration
 
-Rasa allow you to use different models for different components. For example,
-you might use one model for intent classification and another for rephrasing.
+Many LLM providers offer multiple models through their API. 
+The model is specified individually for each component, so that if you want to you can use
+a combination of various models. For instance here is how you could configure a different model
+for the `LLMCommandGenerator` and the `DocsearchPolicy`:
 
-To configure models per component, follow these steps described on the
-pages for each component:
+```yaml title="config.yml"
+recipe: default.v1
+language: en
+pipeline:
+  - name: LLMCommandGenerator
+    model: "gpt-4"
 
-1. [intent classification instructions](../../nlu-based-assistants/components.mdx#llmintentclassifier)
-2. [rephrasing instructions](../contextual-response-rephraser.mdx#llm-configuration)
-3. [intentless policy instructions](../policies.mdx#flow-policy)
-4. docsearch instructions
+policies:
+  - name: rasa.core.policies.flow_policy.FlowPolicy
+  - name: rasa_plus.ml.DocsearchPolicy
+    model: "gpt-3.5-turbo"
+```
+
 
 ### Additional Configuration for Azure OpenAI Service
 

@@ -12,10 +12,6 @@ abstract: |
 flow designers primarily focus on linear [happy paths](../nlu-based-assistants/glossary.mdx#happy-path--conversation-repair),
 Rasa provides a robust way to manage conversation repair, simplifying design complexity.
 
-### Default Behaviors
-
-Rasa ships a **default behavior for every conversation repair case**. Override
-defaults by creating a flows with the same name of a pattern, like `pattern_correction`.
 
 ## Conversation Repair Cases
 
@@ -132,9 +128,9 @@ Errors arise from unexpected system or flow issues.
 
 ## Configurations
 
-Each of these conversation repair cases can be configured using Rasa's YAML-based
-domain and flow system. You can overwrite a default behavior by creating
-a flow with the same name as the pattern:
+### Default Behavior
+
+Rasa ships a **default behavior for every conversation repair case** that works out-of-the-box. Each case is handled through a pattern which is a special flow designed specifically to handle the case: 
 
 - `pattern_continue_interrupted` for digressions.
 - `pattern_correction` for corrections.
@@ -144,14 +140,33 @@ a flow with the same name as the pattern:
 - `pattern_clarification` for clarification.
 - `pattern_internal_error` for internal errors.
 
+
 The syntax for each of these flows is the same as any other flow.
 
 :::info
 
-Since mose of these patterns interrupt another flow, they should be
+Conversation repair cases are expected to work out-of-the-box. This means that if the [default behaviour](../concepts/conversation-repair.mdx#reference-default-pattern-configuration) is good enough for the assistant's use case, then the flow corresponding to the pattern handling the repair case is not needed in the assistant's project directory.
+
+:::info
+
+
+### Modifying default behaviour
+
+It is possible to override the default behaviour of each conversation repair case by creating a flow with the same name as that of the pattern used to handle the corresponding case, like `pattern_correction`. If the pattern uses a default action which needs to be modified, you can override the implementation of the default action by implementing a new custom action and use that custom action in the flow.
+
+:::info
+
+Make sure the assistant is re-trained after the modification is completed.
+
+:::
+
+:::info
+
+Since most of these patterns interrupt another flow, they should be
 kept short and simple.
 
 :::
+
 
 ### Sample Configuration
 
@@ -196,7 +211,7 @@ result in a conversation like this:
   <ChatUserText>...</ChatUserText>
 </Chat>
 
-To achieve the above confirmation, create a flow cancelled
+To achieve the above confirmation, create a flow named
 `pattern_correction` which is defined as follows:
 
 ```yaml title="flows.yml"
@@ -256,7 +271,7 @@ responses:
 
 ### React dependent on the current flow
 
-You can change a patterns behaviour depending
+You can change a pattern's behaviour depending
 on the flow that was interrupted. This can be done by using the
 `context` object in the `if` condition of a pattern:
 

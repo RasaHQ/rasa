@@ -28,7 +28,7 @@ def strategy_sample_n(keys: List[Text], count: int) -> Iterable[Text]:
 class MarkerTrackerLoader:
     """Represents a wrapper over a `TrackerStore` with a configurable access pattern."""
 
-    _STRATEGY_MAP = {
+    _STRATEGY_MAP = {  # noqa: RUF012
         "all": strategy_all,
         "first_n": strategy_first_n,
         "sample_n": strategy_sample_n,
@@ -38,7 +38,7 @@ class MarkerTrackerLoader:
         self,
         tracker_store: TrackerStore,
         strategy: str,
-        count: int = None,
+        count: Optional[int] = None,
         seed: Any = None,
     ) -> None:
         """Creates a MarkerTrackerLoader.

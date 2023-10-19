@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 class FileEventBroker(EventBroker):
     """Log events to a file in json format.
 
-    There will be one event per line and each event is stored as json."""
+    There will be one event per line and each event is stored as json.
+    """
 
     DEFAULT_LOG_FILE_NAME = "rasa_event.log"
 
@@ -38,7 +39,6 @@ class FileEventBroker(EventBroker):
 
     def _event_logger(self) -> logging.Logger:
         """Instantiate the file logger."""
-
         logger_file = self.path
         # noinspection PyTypeChecker
         query_logger = logging.getLogger("event-logger")
@@ -54,6 +54,5 @@ class FileEventBroker(EventBroker):
 
     def publish(self, event: Dict) -> None:
         """Write event to file."""
-
         self.event_logger.info(json.dumps(event))
         self.event_logger.handlers[0].flush()
