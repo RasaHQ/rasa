@@ -1977,6 +1977,33 @@ def test_domain_slots_for_entities_with_mapping_conditions_no_slot_set():
     assert len(events) == 0
 
 
+def test_domain_slots_for_entities_with_mapping_conditions_no_active_loop():
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            entities:
+            - city
+            slots:
+              location:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: city
+                  conditions:
+                  - active_loop: null
+            forms:
+              booking_form:
+                required_slots:
+                  - location
+            """
+        )
+    )
+    events = domain.slots_for_entities([{"entity": "city", "value": "Berlin"}])
+    assert events == [SlotSet("location", "Berlin")]
+
+
 def test_domain_slots_for_entities_sets_valid_slot():
     domain = Domain.from_yaml(
         textwrap.dedent(
