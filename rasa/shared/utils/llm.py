@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Text, Type
+from typing import Any, Dict, Optional, Text, Type, TYPE_CHECKING
 import warnings
 
 import structlog
@@ -8,9 +8,7 @@ from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.engine.caching import get_local_cache_location
 import rasa.shared.utils.io
 
-import typing
-
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from langchain.embeddings.base import Embeddings
     from langchain.llms.base import BaseLLM
 
