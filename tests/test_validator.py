@@ -348,7 +348,7 @@ def test_early_exit_on_invalid_domain():
 def test_verify_there_is_not_example_repetition_in_intents():
     importer = RasaFileImporter(
         domain_path="data/test_moodbot/domain.yml",
-        training_data_paths=["examples/knowledgebasebot/data/nlu.yml"],
+        training_data_paths=["examples/nlu_based/knowledgebasebot/data/nlu.yml"],
     )
     validator = Validator.from_importer(importer)
     # force validator to not ignore warnings (default is True)
@@ -1158,13 +1158,10 @@ def test_verify_unique_flows_duplicate_names(
     ) in caplog.text
 
 
-# testing for None and empty string
-@pytest.mark.parametrize("way_of_emptiness", ["", '""'])
 def test_verify_flow_names_non_empty(
     tmp_path: Path,
     nlu_data_path: Path,
     caplog: LogCaptureFixture,
-    way_of_emptiness: str,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -1174,7 +1171,7 @@ def test_verify_flow_names_non_empty(
                         flows:
                           transfer_money:
                             description: This flow lets users send money.
-                            name: {way_of_emptiness}
+                            name: ""
                             steps:
                             - collect: transfer_recipient
                         """

@@ -270,10 +270,10 @@ flows:
         name: transfer money
         steps:
         - id: "ask_recipient"
-          collect_information: transfer_recipient
+          collect: "transfer_recipient"
           next: "ask_amount"
         - id: "ask_amount"
-          collect_information: transfer_amount
+          collect: "transfer_amount"
           next: "execute_transfer"
         - id: "execute_transfer"
           action: action_transfer_money"""

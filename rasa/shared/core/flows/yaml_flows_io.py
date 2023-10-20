@@ -1,6 +1,7 @@
 import textwrap
 from pathlib import Path
 from typing import List, Text, Union
+
 from rasa.shared.core.flows.utils import KEY_FLOWS
 
 import rasa.shared.utils.io
@@ -9,7 +10,7 @@ from rasa.shared.exceptions import YamlException
 
 from rasa.shared.core.flows.flow import Flow, FlowsList
 
-FLOWS_SCHEMA_FILE = "/shared/core/flows/flows_yaml_schema.yml"
+FLOWS_SCHEMA_FILE = "shared/core/flows/flows_yaml_schema.json"
 
 
 class YAMLFlowsReader:
@@ -53,7 +54,9 @@ class YAMLFlowsReader:
             `Flow`s read from `string`.
         """
         if not skip_validation:
-            rasa.shared.utils.validation.validate_yaml_schema(string, FLOWS_SCHEMA_FILE)
+            rasa.shared.utils.validation.validate_yaml_with_jsonschema(
+                string, FLOWS_SCHEMA_FILE
+            )
 
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
