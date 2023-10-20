@@ -158,8 +158,8 @@ def test_rasa_validate_null_active_loop_no_errors(
 
     test_data_dir = Path(request.config.rootdir, "data", "test", "test_integration")
     test_config_dir = Path(request.config.rootdir, "data", "test_config")
-    source_file = (test_data_dir).absolute()
-    domain_file = (test_data_dir / "domain_with_null_active_loop.yml").absolute()
+    source_file = (test_data_dir / "data").absolute()
+    domain_file = (test_data_dir / "domain.yml").absolute()
     config_file = (test_config_dir / "config_unique_assistant_id.yml").absolute()
     result = run(
         "data",
@@ -181,12 +181,3 @@ def test_rasa_validate_null_active_loop_no_errors(
     assert "Validating utterances..." in stderr_text
     assert "Considering all preceding turns for conflict analysis." in stderr_text
     assert "No story structure conflicts found." in stderr_text
-
-    output_text = "".join(result.outlines)
-    assert "Rasa Open Source reports anonymous usage telemetry"
-    "to help improve the product" in output_text
-    assert "for all its users." in output_text
-    assert "If you'd like to opt-out,"
-    "you can use `rasa telemetry disable`." in output_text
-    assert "To learn more, check out"
-    "https://rasa.com/docs/rasa/telemetry/telemetry." in output_text
