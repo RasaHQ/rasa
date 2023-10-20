@@ -1,0 +1,43 @@
+version: "3.1"
+
+slots:
+  recipient:
+    type: text
+    mappings:
+    - type: custom
+  amount:
+    type: float
+    mappings:
+    - type: custom
+  final_confirmation:
+    type: bool
+    mappings:
+    - type: custom
+  has_sufficient_funds:
+    type: bool
+    mappings:
+      - type: custom
+
+responses:
+  utter_ask_recipient:
+    - text: "Who would you like to send money to?"
+
+  utter_ask_amount:
+    - text: "How much money would you like to send?"
+
+  utter_transfer_complete:
+    - text: "All done. ${amount} has been sent to {recipient}."
+
+  utter_ask_final_confirmation:
+    - text: "Please confirm: you want to transfer ${amount} to {recipient}?"
+  
+  utter_transfer_cancelled:
+    - text: "Your transfer has been cancelled."
+
+  utter_insufficient_funds:
+    - text: "You do not have enough funds to make this transaction."
+
+
+
+actions:
+  - action_check_sufficient_funds

@@ -125,7 +125,7 @@ flows:
       - action: validate_{{context.collect}}
         next: 
         - if: "{{context.collect}} is not null"
-          then: "done"
+          then: "END"
         - else: "ask_collect"
       - id: "ask_collect"
         action: "{{context.utter}}"
@@ -133,7 +133,7 @@ flows:
       - id: "listen"
         action: action_listen
         next: "start"
-      - id: "done"
+
 
   pattern_code_change:
     description: flow used to clean the stack after a bot update

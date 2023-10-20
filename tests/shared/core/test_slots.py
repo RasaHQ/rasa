@@ -156,6 +156,10 @@ class SlotTestCollection:
         f2 = slot.fingerprint()
         assert f1 != f2
 
+    def test_slot_is_not_builtin_by_default(self, mappings: List[Dict[Text, Any]]):
+        slot = self.create_slot(mappings, influence_conversation=False)
+        assert not slot.is_builtin
+
 
 class TestTextSlot(SlotTestCollection):
     def create_slot(
