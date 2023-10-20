@@ -4,4 +4,5 @@ flows:
     steps:
       - collect: recipient
       - collect: amount
+        description: the number of US dollars to send
       - action: utter_transfer_complete

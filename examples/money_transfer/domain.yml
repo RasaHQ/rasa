@@ -3,20 +3,12 @@ version: "3.1"
 slots:
   recipient:
     type: text
-    mappings:
-    - type: custom
   amount:
     type: float
-    mappings:
-    - type: custom
   final_confirmation:
     type: bool
-    mappings:
-    - type: custom
   has_sufficient_funds:
     type: bool
-    mappings:
-      - type: custom
 
 responses:
   utter_ask_recipient:
