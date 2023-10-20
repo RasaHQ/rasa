@@ -1,0 +1,69 @@
+---
+id: large-language-models
+sidebar_label: LLMs in Rasa
+title: Using LLMs with Rasa
+className: hide
+abstract:
+---
+
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
+
+<RasaProLabel />
+
+<RasaLabsLabel />
+
+<RasaLabsBanner version="3.7.0b1" />
+
+As part of a beta release, we have released multiple components 
+which make use of the latest generation of Large Language Models (LLMs).
+This document offers an overview of what you can do with them.
+We encourage you to experiment with these components and share your findings with us.
+We are working on some larger changes to the platform that leverage LLMs natively.
+Please reach out to us if you'd like to learn more about upcoming changes.
+
+
+## LLMs can do more than just NLU
+
+The recent advances in large language models (LLMs) have opened up new
+possibilities for conversational AI. LLMs are pretrained models that can be
+used to perform a variety of tasks, including intent classification,
+dialogue handling, and natural language generation (NLG). The components described
+here all use in-context learning. In other words, instructions and examples are
+provided in a prompt which are sent to a general-purpose LLM. They do not require
+fine-tuning of large models.
+
+### Plug & Play LLMs of your choice
+
+Just like our NLU pipeline, the LLM components here can be configured to use different
+LLMs. There is no one-size-fits-all best model, and new models are being released every
+week. We encourage you to try out different models and evaluate their performance on 
+different languages in terms of fluency, accuracy, and latency.
+
+### An adjustable risk profile
+
+The potential and risks of LLMs vary per use case. For customer-facing use cases, 
+you may not ever want to send generated text to your users. Rasa gives you full 
+control over where and when you want to make use of LLMs. You can use LLMs for NLU and
+dialogue, and still only send messages that were authored by a human. 
+You can also allow an LLM to rephrase your existing messages to account for context.
+
+It's essential that your system provides full
+control over these processes. Understanding how LLMs and other components
+behave and have the power to override any decision.
+
+## Where to go from here
+
+This section of the documentation guides you through the diverse ways you can
+integrate LLMs into Rasa. We will delve into the following topics:
+
+1. [Setting up LLMs](./llm-setup.mdx)
+2. [Intentless Policy](./llm-intentless.mdx)
+4. [LLM Intent Classification](./llm-intent.mdx)
+5. [Response Rephrasing](./llm-nlg.mdx)
+
+Each link will direct you to a detailed guide on the respective topic, offering
+further depth and information about using LLMs with Rasa. By the end of this
+series, you'll be equipped to effectively use LLMs to augment your Rasa
+applications.
