@@ -1711,7 +1711,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   It is an auxiliary policy that should only be used in conjunction with
   at least one other policy, as the only action that it can trigger
   is the special and newly introduced
-  [`action_unlikely_intent`](./concepts/default-actions.mdx#action_unlikely_intent) action.
+  [`action_unlikely_intent`](./nlu-based-assistants/default-actions.mdx#action_unlikely_intent) action.
 
   The auto-configuration will include `UnexpecTEDIntentPolicy` in your
   configuration automatically, but you can also include it yourself
@@ -1729,7 +1729,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   - [`IntentMaxHistoryTrackerFeaturizer`](./nlu-based-assistants/policies.mdx#3-intent-max-history)
     to featurize the trackers for `UnexpecTEDIntentPolicy`.
   - `MultiLabelDotProductLoss` to support `UnexpecTEDIntentPolicy`'s multi-label training objective.
-  - A new default action called [`action_unlikely_intent`](./concepts/default-actions.mdx#action_unlikely_intent).
+  - A new default action called [`action_unlikely_intent`](./nlu-based-assistants/default-actions.mdx#action_unlikely_intent).
 
   `rasa test` command has also been adapted to `UnexpecTEDIntentPolicy`:
 

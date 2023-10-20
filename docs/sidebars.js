@@ -46,7 +46,6 @@ module.exports = {
             "concepts/actions",
             "concepts/custom-actions",
             "concepts/default-actions",
-            "concepts/slot-validation-actions",
           ],
         },
         {
@@ -86,6 +85,15 @@ module.exports = {
                 "nlu-based-assistants/unexpected-input",
                 "nlu-based-assistants/contextual-conversations",
                 "nlu-based-assistants/reaching-out-to-user",
+              ],
+            },
+            {
+              type: "category",
+              label: "Actions",
+              items: [
+                "nlu-based-assistants/actions",
+                "nlu-based-assistants/default-actions",
+                "nlu-based-assistants/slot-validation-actions",
               ],
             },
             {
