@@ -1085,6 +1085,7 @@ jobs:
         name: Authenticate with gcloud for dev registry 🎫
         uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
         with:
+          token_format: 'access_token'
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
       - name: Authenticate docker for dev registry 🎫
@@ -1181,6 +1182,7 @@ jobs:
         name: Authenticate with gcloud for release registry 🎫
         uses: "google-github-actions/auth@ceee102ec2387dd9e844e01b530ccd4ec87ce955"
         with:
+          token_format: 'access_token'
           credentials_json: "${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}"
 
       - name: "Set up Cloud SDK"
