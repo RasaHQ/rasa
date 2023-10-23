@@ -639,8 +639,6 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         return LinkFlowStep.from_json(flow_step_config)
     if "set_slots" in flow_step_config:
         return SetSlotsFlowStep.from_json(flow_step_config)
-    if "entry_prompt" in flow_step_config:
-        return EntryPromptFlowStep.from_json(flow_step_config)
     if "generation_prompt" in flow_step_config:
         return GenerateResponseFlowStep.from_json(flow_step_config)
     else:
@@ -1142,111 +1140,6 @@ class GenerateResponseFlowStep(FlowStep):
 
     def default_id_postfix(self) -> str:
         return "generate"
-
-
-@dataclass
-class EntryPromptFlowStep(FlowStep, StepThatCanStartAFlow):
-    """Represents the configuration of a step prompting an LLM."""
-
-    entry_prompt: Text
-    """The prompt template of the flow step."""
-    advance_if: Optional[Text]
-    """The expected response to start the flow"""
-    llm_config: Optional[Dict[Text, Any]] = None
-    """The LLM configuration of the flow step."""
-
-    @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> EntryPromptFlowStep:
-        """Used to read flow steps from parsed YAML.
-
-        Args:
-            flow_step_config: The parsed YAML as a dictionary.
-
-        Returns:
-            The parsed flow step.
-        """
-        base = super()._from_json(flow_step_config)
-        return EntryPromptFlowStep(
-            entry_prompt=flow_step_config.get("entry_prompt", ""),
-            advance_if=flow_step_config.get("advance_if"),
-            llm_config=flow_step_config.get("llm", None),
-            **base.__dict__,
-        )
-
-    def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
-
-        Returns:
-            The flow step as a dictionary.
-        """
-        dump = super().as_json()
-        dump["entry_prompt"] = self.entry_prompt
-        if self.advance_if:
-            dump["advance_if"] = self.advance_if
-
-        if self.llm_config:
-            dump["llm"] = self.llm_config
-        return dump
-
-    def _generate_using_llm(self, prompt: str) -> Optional[str]:
-        """Use LLM to generate a response.
-
-        Args:
-            prompt: the prompt to send to the LLM
-
-        Returns:
-            generated text
-        """
-        from rasa.shared.utils.llm import llm_factory
-
-        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
-
-        try:
-            return llm(prompt)
-        except Exception as e:
-            # unfortunately, langchain does not wrap LLM exceptions which means
-            # we have to catch all exceptions here
-            structlogger.error(
-                "flow.entry_step.llm.error", error=e, step=self.id, prompt=prompt
-            )
-            return None
-
-    def is_triggered(self, tracker: DialogueStateTracker) -> bool:
-        """Returns whether the flow step is triggered by the given intent and entities.
-
-        Args:
-            intent: The intent to check.
-            entities: The entities to check.
-
-        Returns:
-            Whether the flow step is triggered by the given intent and entities.
-        """
-        from rasa.shared.utils import llm
-        from jinja2 import Template
-
-        if not self.entry_prompt:
-            return False
-
-        context = {
-            "history": llm.tracker_as_readable_transcript(tracker, max_turns=5),
-            "latest_user_message": tracker.latest_message.text
-            if tracker.latest_message
-            else "",
-        }
-        context.update(tracker.current_slot_values())
-        prompt = Template(self.entry_prompt).render(context)
-
-        generated = self._generate_using_llm(prompt)
-
-        expected_response = self.advance_if.lower() if self.advance_if else "yes"
-        if generated and generated.lower() == expected_response:
-            return True
-        else:
-            return False
-
-    def default_id_postfix(self) -> str:
-        """Returns the default id postfix of the flow step."""
-        return "entry_prompt"
 
 
 @dataclass

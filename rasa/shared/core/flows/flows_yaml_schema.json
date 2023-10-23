@@ -151,23 +151,6 @@
                 "$ref": "#$defs/next"
               }
             }
-          },
-          {
-            "required": [
-              "entry_prompt"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "entry_prompt": {
-                "type": "string"
-              },
-              "next": {
-                "$ref": "#$defs/next"
-              }
-            }
           }
         ]
       }
