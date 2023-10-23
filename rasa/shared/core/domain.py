@@ -43,6 +43,7 @@ from rasa.shared.core.constants import (
     SlotMappingType,
     MAPPING_TYPE,
     MAPPING_CONDITIONS,
+    ACTIVE_LOOP,
 )
 from rasa.shared.exceptions import (
     RasaException,
@@ -1408,9 +1409,11 @@ class Domain:
                 matching_entities = []
 
                 for mapping in slot.mappings:
-                    if mapping[MAPPING_TYPE] != str(
-                        SlotMappingType.FROM_ENTITY
-                    ) or mapping.get(MAPPING_CONDITIONS):
+                    mapping_conditions = mapping.get(MAPPING_CONDITIONS)
+                    if mapping[MAPPING_TYPE] != str(SlotMappingType.FROM_ENTITY) or (
+                        mapping_conditions
+                        and mapping_conditions[0].get(ACTIVE_LOOP) is not None
+                    ):
                         continue
 
                     for entity in entities:
