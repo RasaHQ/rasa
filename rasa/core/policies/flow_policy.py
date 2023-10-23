@@ -56,7 +56,6 @@ from rasa.shared.core.flows.flow import (
     FlowsList,
     GenerateResponseFlowStep,
     IfFlowLink,
-    EntryPromptFlowStep,
     SlotRejection,
     StepThatCanStartAFlow,
     UserMessageStep,
@@ -675,10 +674,6 @@ class FlowExecutor:
 
         elif isinstance(step, BranchFlowStep):
             structlogger.debug("flow.step.run.branch")
-            return ContinueFlowWithNextStep()
-
-        elif isinstance(step, EntryPromptFlowStep):
-            structlogger.debug("flow.step.run.entry_prompt")
             return ContinueFlowWithNextStep()
 
         elif isinstance(step, GenerateResponseFlowStep):
