@@ -109,7 +109,7 @@ jobs:
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
       - name: Update the comment with the configuration
-        uses: peter-evans/create-or-update-comment@3383acd359705b10cb1eeef05c0e88c056ea4666
+        uses: peter-evans/create-or-update-comment@23ff15729ef2fc348714a3bb66d2f655ca9066f2
         if: steps.fc_config.outputs.comment-id != ''
         with:
           comment-id: ${{ steps.fc_config.outputs.comment-id }}
@@ -135,7 +135,7 @@ jobs:
           body-includes: "^/modeltest"
 
       - name: Add reaction
-        uses: peter-evans/create-or-update-comment@3383acd359705b10cb1eeef05c0e88c056ea4666
+        uses: peter-evans/create-or-update-comment@23ff15729ef2fc348714a3bb66d2f655ca9066f2
         if: steps.fc_config_update.outputs.comment-id != ''
         with:
           edit-mode: "replace"
