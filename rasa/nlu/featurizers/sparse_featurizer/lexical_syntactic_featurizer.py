@@ -76,7 +76,9 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
 
     # NOTE: "suffix5" of the token "is" will be "is". Hence, when combining multiple
     # prefixes, short words will be represented/encoded repeatedly.
-    _FUNCTION_DICT: Dict[Text, Callable[[Token], Union[Text, bool, None]]] = {
+    _FUNCTION_DICT: Dict[
+        Text, Callable[[Token], Union[Text, bool, None]]
+    ] = {  # noqa: RUF012
         "low": lambda token: token.text.islower(),
         "title": lambda token: token.text.istitle(),
         "prefix5": lambda token: token.text[:5],

@@ -546,8 +546,8 @@ jobs:
           path: |
             ${{ github.workspace }}/${{ matrix.test }}-coverage
 
-  upload_coverage_reports:
-    name: Upload coverage reports to codeclimate
+  prepare_coverage_reports_analyse_with_sonarcloud:
+    name: Prepare coverage reports and Analyse coverage with Sonarcloud
     if: github.ref_type != 'tag'
     runs-on: ubuntu-22.04
     # Always upload results even if tests failed
@@ -588,15 +588,19 @@ jobs:
           coverage combine "${final_dir}/"*
           coverage xml
 
-      - name: Upload reports to codeclimate
-        if: needs.changes.outputs.backend == 'true'
-        uses: paambaati/codeclimate-action@b649ad206d2e83dafb9ed130deba698aa1b41d78
+      - name: Analyse code with SonarCloud
+        uses: sonarsource/sonarcloud-github-action@5875562561d22a34be0c657405578705a169af6c
         env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CODECLIMATE_REPORTER_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          coverageLocations: |
-            ${{ github.workspace }}/coverage.xml:coverage.py
-          debug: true
+          args: >
+            -Dsonar.organization=rasahq
+            -Dsonar.projectKey=RasaHQ_rasa
+            -Dsonar.sources=.
+            -Dsonar.python.coverage.reportPaths=${{ github.workspace }}/tests_coverage
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.verbose=true
 
   integration_test:
     name: Run Non-Sequential Integration Tests
@@ -869,7 +873,7 @@ jobs:
         uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@ecf95283f03858871ff00b787d79c419715afc34  # v2.7.0
+        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55  # v2.7.0
 
       - name: Read Poetry Version 🔢
         run: |
@@ -1054,7 +1058,7 @@ jobs:
         uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@ecf95283f03858871ff00b787d79c419715afc34  # v2.7.0
+        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55  # v2.7.0
 
       - name: Free disk space
         if: needs.changes.outputs.docker == 'true'
@@ -1110,19 +1114,21 @@ jobs:
 
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
-#          # Tag the image as latest
-#          if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
-#            if [[ "${{ matrix.image }}" == "default" ]]; then
-#              RELEASE_TAG="${IMAGE_TAG}"
-#            else
-#              RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
-#            fi
-#
-#            LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
-#
-#            docker tag rasa/rasa:${RELEASE_TAG} rasa/rasa:${LATEST_TAG}
-#            docker push rasa/rasa:${LATEST_TAG}
-#          fi
+          # Tag the image as latest
+          if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
+            if [[ "${{ matrix.image }}" == "default" ]]; then
+              RELEASE_TAG="${IMAGE_TAG}"
+            else
+              RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
+            fi
+
+            LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
+            
+            # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
+            IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+            # Push tagged image
+            IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          fi
 
   deploy:
     name: Deploy to PyPI

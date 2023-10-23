@@ -1,3 +1,5 @@
+# file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests. # noqa: E501
+
 import asyncio
 import json
 import os
@@ -2203,7 +2205,7 @@ async def test_get_tracker_with_query_param_include_events_after_restart(
 
     serialized_actual_events = tracker["events"]
 
-    restarted_event = [
+    restarted_event = [  # noqa: RUF015
         event for event in events_to_store if isinstance(event, Restarted)
     ][0]
     truncated_events = events_to_store[events_to_store.index(restarted_event) + 1 :]
@@ -2234,11 +2236,11 @@ async def test_get_tracker_with_query_param_include_events_applied(
 
     serialized_actual_events = tracker["events"]
 
-    restarted_event = [
+    restarted_event = [  # noqa: RUF015
         event for event in events_to_store if isinstance(event, Restarted)
     ][0]
     truncated_events = events_to_store[events_to_store.index(restarted_event) + 1 :]
-    session_started = [
+    session_started = [  # noqa: RUF015
         event for event in truncated_events if isinstance(event, SessionStarted)
     ][0]
     truncated_events = truncated_events[truncated_events.index(session_started) + 1 :]
