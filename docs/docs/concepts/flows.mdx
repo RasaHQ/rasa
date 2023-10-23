@@ -116,8 +116,6 @@ The `next` field can also be omitted. In this case, the flow will end.
 
 Steps can manifest in one of the following types:
 
-- [entry prompt step](#entry-prompt): an LLM prompt that will be used
-  to determine if the flow should start
 - [action step](#action): a custom action or utterance action to be
   run by the flow
 - [branch step](#branch): a step to branch based on a condition
@@ -229,73 +227,10 @@ Flows can be triggered by other Rasa components, e.g. the
 each flow is very important for the LLM Command Generator, as it uses the
 description to determine which flow to trigger.
 
-An Alternative way to trigger flows is using an
-[entry prompt step](#entry-prompt). Entry prompts trigger an LLM call
-with the given context and a yes/no question to determine whether to start the
-flow.
-
 ## Step Types
 
 Every step in a flow has a type. The type determines what the step does and what
 properties it supports.
-
-### Entry Prompt
-
-An `entry_prompt` step is used to determine if a flow should be started. Here's
-an example:
-
-```yaml
-- id: "start_if_sensitive_topic"
-  entry_prompt: |
-    Below is the message from the user to the specialized
-    financial chatbot. Can you detect the sensitive topic, not related to
-    the scope of the bot? Reply "yes" or "no" and nothing else.
-
-    {{latest_user_message}}
-  advance_if: "yes" # optional, defaults to "yes"
-  llm: # optional, defaults to "openai"
-    type: "openai"
-```
-
-When a new message is received, the `entry_prompt` will be sent to an LLM. If
-the LLM responds with the value specified in `advance_if`, the flow will be
-started.
-
-:::caution
-
-Entry prompts should be **used infrequently**, as the prompt will be sent to an
-LLM for every incoming user message. Having to many entry prompts can slow down
-the bot.
-
-:::
-
-Good use cases for entry prompts are detecting sensitive topics or out of scope
-messages.
-
-:::info Using Other LLMs
-
-By default, OpenAI is used as the underlying LLM.
-
-The used LLM provider can be configured as part of the properties of the flow
-step and another provider, e.g. `cohere` can be used:
-
-```yaml
-- id: "start_if_sensitive_topic"
-  entry_prompt: |
-    Below is the message from the user to the specialized
-    financial chatbot. Can you detect the sensitive topic, not related to
-    the scope of the bot? Reply "yes" or "no" and nothing else.
-
-    {{latest_user_message}}
-  advance_if: "yes"
-  llm:
-    type: "cohere"
-```
-
-For more information, see the
-[LLM setup page on llms and embeddings](./components/llm-configuration.mdx#other-llmsembeddings)
-
-:::
 
 ### Action
 
