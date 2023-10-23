@@ -120,7 +120,7 @@ jobs:
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -266,7 +266,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -421,7 +421,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -561,7 +561,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
         with:
           python-version: "3.10"
 
@@ -673,7 +673,7 @@ jobs:
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -775,7 +775,7 @@ jobs:
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -1143,7 +1143,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
         with:
           python-version: 3.9
 
