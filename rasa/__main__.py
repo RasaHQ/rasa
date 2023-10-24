@@ -128,7 +128,7 @@ def main() -> None:
                 endpoints_file=endpoints_file
             )
             # configure structlog
-            configure_structlog(log_level)
+            configure_structlog(log_level, logging_config_file)
 
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):

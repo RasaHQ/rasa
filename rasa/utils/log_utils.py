@@ -2,13 +2,14 @@ from __future__ import annotations
 import os
 import logging
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Text
 
 import structlog
 from structlog_sentry import SentryProcessor
 from structlog.dev import ConsoleRenderer
 from structlog.typing import EventDict, WrappedLogger
 from rasa.shared.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+from rasa.utils.common import configure_logging_from_file
 from rasa.plugin import plugin_manager
 
 
@@ -72,19 +73,22 @@ def _anonymizer(
 
 def configure_structlog(
     log_level: Optional[int] = None,
+    logging_config_file: Optional[Text] = None,
 ) -> None:
     """Configure logging of the server."""
+    if logging_config_file is not None:
+        configure_logging_from_file(logging_config_file)
     if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
         log_level_name = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
         # Change log level from str to int (note that log_level in function parameter
         # int already, coming from CLI argparse parameter).
         log_level = logging.getLevelName(log_level_name)
 
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=log_level,
-    )
+    #logging.basicConfig(
+    #    format="%(message)s",
+    #    stream=sys.stdout,
+    #    level=log_level,
+    #)
 
     shared_processors = [
         _anonymizer,
