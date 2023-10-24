@@ -10,7 +10,7 @@ from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWrite
 
 from rasa.shared.core.flows.flow import FlowsList
 
-FLOWS_PERSITENCE_FILE_NAME = "flows.yml"
+FLOWS_PERSISTENCE_FILE_NAME = "flows.yml"
 
 
 class FlowsProvider(GraphComponent):
@@ -50,7 +50,7 @@ class FlowsProvider(GraphComponent):
         """Creates provider using a persisted version of itself."""
         with model_storage.read_from(resource) as resource_directory:
             flows = YAMLFlowsReader.read_from_file(
-                resource_directory / FLOWS_PERSITENCE_FILE_NAME
+                resource_directory / FLOWS_PERSISTENCE_FILE_NAME
             )
         return cls(model_storage, resource, flows)
 
@@ -59,7 +59,7 @@ class FlowsProvider(GraphComponent):
         with self._model_storage.write_to(self._resource) as resource_directory:
             YamlFlowsWriter.dump(
                 flows.underlying_flows,
-                resource_directory / FLOWS_PERSITENCE_FILE_NAME,
+                resource_directory / FLOWS_PERSISTENCE_FILE_NAME,
             )
 
     def provide_train(self, importer: TrainingDataImporter) -> FlowsList:
