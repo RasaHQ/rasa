@@ -24,6 +24,8 @@ from rasa.shared.core.flows.exceptions import (
     NoNextAllowedForLinkException,
     UnresolvedFlowStepIdException,
     UnresolvedFlowException,
+    EmptyStepSequenceException,
+    EmptyFlowException,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX, UTTER_PREFIX
@@ -273,11 +275,25 @@ class Flow:
             - whether all next links point to existing steps
             - whether all steps can be reached from the start step
         """
+        self._validate_no_empty_flows()
+        self._validate_no_empty_step_sequences()
         self._validate_all_steps_next_property()
         self._validate_all_next_ids_are_available_steps()
         self._validate_all_steps_can_be_reached()
         self._validate_all_branches_have_an_else()
         self._validate_not_using_buildin_ids()
+
+    def _validate_no_empty_flows(self) -> None:
+        """Validate that the flow is not empty."""
+        if len(self.steps) == 0:
+            raise EmptyFlowException(self.id)
+
+    def _validate_no_empty_step_sequences(self) -> None:
+        """Validate that the flow does not have any empty step sequences."""
+        for step in self.steps:
+            for link in step.next.links:
+                if isinstance(link, BranchBasedLink) and link.target is None:
+                    raise EmptyStepSequenceException(self.id, step.id)
 
     def _validate_not_using_buildin_ids(self) -> None:
         """Validates that the flow does not use any of the build in ids."""

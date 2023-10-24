@@ -130,3 +130,31 @@ class UnresolvedFlowException(RasaException):
             f"Flow '{self.flow_id}' can not be resolved. "
             f"Please make sure that the flow is defined."
         )
+
+
+class EmptyStepSequenceException(RasaException):
+    """Raised when an empty step sequence is encountered."""
+
+    def __init__(self, flow_id: str, step_id: str) -> None:
+        """Initializes the exception."""
+        self.flow_id = flow_id
+        self.step_id = step_id
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        if not self.flow_id:
+            return "Encountered an empty step sequence."
+        else:
+            return f"Encountered an empty step sequence in flow '{self.flow_id}'."
+
+
+class EmptyFlowException(RasaException):
+    """Raised when a flow is completely empty."""
+
+    def __init__(self, flow_id: str) -> None:
+        """Initializes the exception."""
+        self.flow_id = flow_id
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return f"Flow '{self.flow_id}' does not have any steps."
