@@ -16,9 +16,17 @@ from typing import (
 )
 import structlog
 
+from rasa.shared.core.flows.exceptions import (
+    UnreachableFlowStepException,
+    MissingNextLinkException,
+    ReservedFlowStepIdException,
+    MissingElseBranchException,
+    NoNextAllowedForLinkException,
+    UnresolvedFlowStepIdException,
+    UnresolvedFlowException,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX, UTTER_PREFIX
-from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, INTENT_NAME_KEY
 
 import rasa.shared.utils.io
@@ -34,133 +42,6 @@ START_STEP = "START"
 END_STEP = "END"
 
 DEFAULT_STEPS = {END_STEP, START_STEP}
-
-
-class UnreachableFlowStepException(RasaException):
-    """Raised when a flow step is unreachable."""
-
-    def __init__(self, step: FlowStep, flow: Flow) -> None:
-        """Initializes the exception."""
-        self.step = step
-        self.flow = flow
-
-    def __str__(self) -> Text:
-        """Return a string representation of the exception."""
-        return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' can not be reached "
-            f"from the start step. Please make sure that all steps can be reached "
-            f"from the start step, e.g. by "
-            f"checking that another step points to this step."
-        )
-
-
-class MissingNextLinkException(RasaException):
-    """Raised when a flow step is missing a next link."""
-
-    def __init__(self, step: FlowStep, flow: Flow) -> None:
-        """Initializes the exception."""
-        self.step = step
-        self.flow = flow
-
-    def __str__(self) -> Text:
-        """Return a string representation of the exception."""
-        return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' is missing a `next`. "
-            f"As a last step of a branch, it is required to have one. "
-        )
-
-
-class ReservedFlowStepIdException(RasaException):
-    """Raised when a flow step is using a reserved id."""
-
-    def __init__(self, step: FlowStep, flow: Flow) -> None:
-        """Initializes the exception."""
-        self.step = step
-        self.flow = flow
-
-    def __str__(self) -> Text:
-        """Return a string representation of the exception."""
-        return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' is using the reserved id "
-            f"'{self.step.id}'. Please use a different id for your step."
-        )
-
-
-class MissingElseBranchException(RasaException):
-    """Raised when a flow step is missing an else branch."""
-
-    def __init__(self, step: FlowStep, flow: Flow) -> None:
-        """Initializes the exception."""
-        self.step = step
-        self.flow = flow
-
-    def __str__(self) -> Text:
-        """Return a string representation of the exception."""
-        return (
-            f"Step '{self.step.id}' in flow '{self.flow.id}' is missing an `else` "
-            f"branch. If a steps `next` statement contains an `if` it always "
-            f"also needs an `else` branch. Please add the missing `else` branch."
-        )
-
-
-class NoNextAllowedForLinkException(RasaException):
-    """Raised when a flow step has a next link but is not allowed to have one."""
-
-    def __init__(self, step: FlowStep, flow: Flow) -> None:
-        """Initializes the exception."""
-        self.step = step
-        self.flow = flow
-
-    def __str__(self) -> Text:
-        """Return a string representation of the exception."""
-        return (
-            f"Link step '{self.step.id}' in flow '{self.flow.id}' has a `next` but "
-            f"as a link step is not allowed to have one."
-        )
-
-
-class UnresolvedFlowStepIdException(RasaException):
-    """Raised when a flow step is referenced, but its id can not be resolved."""
-
-    def __init__(
-        self, step_id: Text, flow: Flow, referenced_from: Optional[FlowStep]
-    ) -> None:
-        """Initializes the exception."""
-        self.step_id = step_id
-        self.flow = flow
-        self.referenced_from = referenced_from
-
-    def __str__(self) -> Text:
-        """Return a string representation of the exception."""
-        if self.referenced_from:
-            exception_message = (
-                f"Step with id '{self.step_id}' could not be resolved. "
-                f"'Step '{self.referenced_from.id}' in flow '{self.flow.id}' "
-                f"referenced this step but it does not exist. "
-            )
-        else:
-            exception_message = (
-                f"Step '{self.step_id}' in flow '{self.flow.id}' can not be resolved. "
-            )
-
-        return exception_message + (
-            "Please make sure that the step is defined in the same flow."
-        )
-
-
-class UnresolvedFlowException(RasaException):
-    """Raised when a flow is referenced but it's id can not be resolved."""
-
-    def __init__(self, flow_id: Text) -> None:
-        """Initializes the exception."""
-        self.flow_id = flow_id
-
-    def __str__(self) -> Text:
-        """Return a string representation of the exception."""
-        return (
-            f"Flow '{self.flow_id}' can not be resolved. "
-            f"Please make sure that the flow is defined."
-        )
 
 
 class FlowsList:
@@ -256,7 +137,9 @@ class FlowsList:
 
         step = flow.step_by_id(step_id)
         if not step:
-            raise UnresolvedFlowStepIdException(step_id, flow, referenced_from=None)
+            raise UnresolvedFlowStepIdException(
+                step_id, flow.id, referenced_from_step_id=None
+            )
 
         return step
 
@@ -391,7 +274,7 @@ class Flow:
             - whether all steps can be reached from the start step
         """
         self._validate_all_steps_next_property()
-        self._validate_all_next_ids_are_availble_steps()
+        self._validate_all_next_ids_are_available_steps()
         self._validate_all_steps_can_be_reached()
         self._validate_all_branches_have_an_else()
         self._validate_not_using_buildin_ids()
@@ -400,7 +283,7 @@ class Flow:
         """Validates that the flow does not use any of the build in ids."""
         for step in self.steps:
             if step.id in DEFAULT_STEPS or step.id.startswith(CONTINUE_STEP_PREFIX):
-                raise ReservedFlowStepIdException(step, self)
+                raise ReservedFlowStepIdException(step.id, self.id)
 
     def _validate_all_branches_have_an_else(self) -> None:
         """Validates that all branches have an else link."""
@@ -411,7 +294,7 @@ class Flow:
             has_an_else = any(isinstance(link, ElseFlowLink) for link in links)
 
             if has_an_if and not has_an_else:
-                raise MissingElseBranchException(step, self)
+                raise MissingElseBranchException(step.id, self.id)
 
     def _validate_all_steps_next_property(self) -> None:
         """Validates that every step has a next link."""
@@ -419,18 +302,18 @@ class Flow:
             if isinstance(step, LinkFlowStep):
                 # link steps can't have a next link!
                 if not step.next.no_link_available():
-                    raise NoNextAllowedForLinkException(step, self)
+                    raise NoNextAllowedForLinkException(step.id, self.id)
             elif step.next.no_link_available():
                 # all other steps should have a next link
-                raise MissingNextLinkException(step, self)
+                raise MissingNextLinkException(step.id, self.id)
 
-    def _validate_all_next_ids_are_availble_steps(self) -> None:
+    def _validate_all_next_ids_are_available_steps(self) -> None:
         """Validates that all next links point to existing steps."""
         available_steps = {step.id for step in self.steps} | DEFAULT_STEPS
         for step in self.steps:
             for link in step.next.links:
                 if link.target not in available_steps:
-                    raise UnresolvedFlowStepIdException(link.target, self, step)
+                    raise UnresolvedFlowStepIdException(link.target, self.id, step.id)
 
     def _validate_all_steps_can_be_reached(self) -> None:
         """Validates that all steps can be reached from the start step."""
@@ -453,7 +336,7 @@ class Flow:
 
         for step in self.steps:
             if step.id not in reached_steps:
-                raise UnreachableFlowStepException(step, self)
+                raise UnreachableFlowStepException(step.id, self.id)
 
     def step_by_id(self, step_id: Optional[Text]) -> Optional[FlowStep]:
         """Returns the step with the given id."""
