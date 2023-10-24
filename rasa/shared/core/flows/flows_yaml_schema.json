@@ -19,7 +19,7 @@
   "$defs": {
     "steps": {
       "type": "array",
-      "minContains": 1,
+      "minItems": 1,
       "items": {
         "type": "object",
         "oneOf": [
@@ -206,7 +206,7 @@
       "anyOf": [
         {
           "type": "array",
-          "minContains": 1,
+          "minItems": 1,
           "items": {
             "type": "object",
             "oneOf": [
