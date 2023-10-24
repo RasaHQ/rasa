@@ -1,9 +1,9 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any, Dict
-from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
+
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 
 
 FLOW_PATTERN_COMPLETED = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "completed"

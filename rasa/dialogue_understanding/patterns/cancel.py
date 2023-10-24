@@ -1,19 +1,18 @@
 from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 import structlog
+from rasa.core.actions import action
+from rasa.core.channels.channel import OutputChannel
+from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import (
     DialogueStack,
 )
 from rasa.dialogue_understanding.stack.frames import (
-    PatternFlowStackFrame,
     BaseFlowStackFrame,
+    PatternFlowStackFrame,
 )
-from rasa.core.actions import action
-from rasa.core.channels.channel import OutputChannel
-from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import ACTION_CANCEL_FLOW
 from rasa.shared.core.domain import Domain
