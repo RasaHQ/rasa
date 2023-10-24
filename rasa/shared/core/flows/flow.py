@@ -240,9 +240,9 @@ class Flow:
                             # if this is the root sequence, we need to add an end step
                             # to the end of the sequence. other sequences, e.g.
                             # in branches need to explicitly add a next step.
-                            step.next.links.append(StaticFlowLink(target=END_STEP))
+                            step.next.links.append(StaticFlowLink(END_STEP))
                     else:
-                        step.next.links.append(StaticFlowLink(target=steps[i + 1].id))
+                        step.next.links.append(StaticFlowLink(steps[i + 1].id))
                 for link in step.next.links:
                     if sub_steps := link.child_steps():
                         resolve_default_next(sub_steps, is_root_sequence=False)
@@ -656,7 +656,7 @@ class StartFlowStep(InternalFlowStep):
             start_step: The step to start the flow from.
         """
         if start_step_id is not None:
-            links: List[FlowLink] = [StaticFlowLink(target=start_step_id)]
+            links: List[FlowLink] = [StaticFlowLink(start_step_id)]
         else:
             links = []
 
@@ -705,7 +705,7 @@ class ContinueFlowStep(InternalFlowStep):
             # if we want to "re-run" a step, we need to link to it again.
             # This is why the continue step links to the step that should be
             # continued.
-            next=FlowLinks(links=[StaticFlowLink(target=next)]),
+            next=FlowLinks(links=[StaticFlowLink(next)]),
         )
 
     @staticmethod
@@ -1256,7 +1256,7 @@ class FlowLinks:
             yield from link.steps_in_tree()
 
 
-class FlowLink(Protocol):
+class FlowLink:
     """Represents a flow link."""
 
     @property
@@ -1266,7 +1266,7 @@ class FlowLink(Protocol):
         Returns:
             The target of the flow link.
         """
-        ...
+        raise NotImplementedError()
 
     def as_json(self) -> Any:
         """Returns the flow link as a dictionary.
@@ -1274,7 +1274,7 @@ class FlowLink(Protocol):
         Returns:
             The flow link as a dictionary.
         """
-        ...
+        raise NotImplementedError()
 
     @staticmethod
     def from_json(link_config: Any) -> FlowLink:
@@ -1286,19 +1286,19 @@ class FlowLink(Protocol):
         Returns:
             The parsed flow link.
         """
-        ...
+        raise NotImplementedError()
 
     def steps_in_tree(self) -> Generator[FlowStep, None, None]:
         """Returns the steps in the tree of the flow link."""
-        ...
+        raise NotImplementedError()
 
     def child_steps(self) -> List[FlowStep]:
         """Returns the child steps of the flow link."""
-        ...
+        raise NotImplementedError()
 
 
 @dataclass
-class BranchBasedLink:
+class BranchBasedLink(FlowLink):
     target_reference: Union[Text, StepSequence]
     """The id of the linked flow."""
 
@@ -1402,10 +1402,10 @@ class ElseFlowLink(BranchBasedLink):
 
 
 @dataclass
-class StaticFlowLink:
+class StaticFlowLink(FlowLink):
     """Represents the configuration of a static flow link."""
 
-    target: Text
+    target_id: Text
     """The id of the linked flow."""
 
     @staticmethod
@@ -1418,7 +1418,7 @@ class StaticFlowLink:
         Returns:
             The parsed flow link.
         """
-        return StaticFlowLink(target=link_config)
+        return StaticFlowLink(link_config)
 
     def as_json(self) -> Text:
         """Returns the flow link as a dictionary.
@@ -1436,3 +1436,8 @@ class StaticFlowLink:
     def child_steps(self) -> List[FlowStep]:
         """Returns the child steps of the flow link."""
         return []
+
+    @property
+    def target(self) -> Optional[Text]:
+        """Returns the target of the flow link."""
+        return self.target_id
