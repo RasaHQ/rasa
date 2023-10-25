@@ -1,12 +1,12 @@
 import pytest
 
-from rasa.shared.core.flows.exceptions import (
+from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.flows_list import FlowsList
+from rasa.shared.core.flows.validation import (
+    validate_flow,
     EmptyStepSequenceException,
     EmptyFlowException,
 )
-from rasa.shared.core.flows.flow import Flow
-from rasa.shared.core.flows.flows_list import FlowsList
-from rasa.shared.core.flows.validation import validate_flow
 from rasa.shared.importers.importer import FlowSyncImporter
 from tests.utilities import flows_from_str
 
