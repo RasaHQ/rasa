@@ -255,9 +255,9 @@ class Flow:
     def previous_collect_steps(
         self, step_id: Optional[str]
     ) -> List[CollectInformationFlowStep]:
-        """Returns the collect informations asked before the given step.
+        """Returns the collect information steps asked before the given step.
 
-        CollectInformations are returned roughly in reverse order, i.e. the first
+        CollectInformationSteps are returned roughly in reverse order, i.e. the first
         collect information in the list is the one asked last. But due to circles
         in the flow the order is not guaranteed to be exactly reverse.
         """
@@ -265,7 +265,7 @@ class Flow:
         def _previously_asked_collect(
             current_step_id: str, visited_steps: Set[str]
         ) -> List[CollectInformationFlowStep]:
-            """Returns the collect informations asked before the given step.
+            """Returns the collect information steps asked before the given step.
 
             Keeps track of the steps that have been visited to avoid circles.
             """
@@ -293,26 +293,6 @@ class Flow:
             return collects
 
         return _previously_asked_collect(step_id or START_STEP, set())
-
-    def get_trigger_intents(self) -> Set[str]:
-        """Returns the trigger intents of the flow"""
-        results: Set[str] = set()
-        if len(self.steps) == 0:
-            return results
-
-        first_step = self.steps[0]
-
-        if not isinstance(first_step, UserMessageStep):
-            return results
-
-        for condition in first_step.trigger_conditions:
-            results.add(condition.intent)
-
-        return results
-
-    def is_user_triggerable(self) -> bool:
-        """Test whether a user can trigger the flow with an intent."""
-        return len(self.get_trigger_intents()) > 0
 
     @property
     def is_rasa_default_flow(self) -> bool:
