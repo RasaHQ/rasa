@@ -1,6 +1,8 @@
 import logging
 import os
 from typing import Dict, List, Optional, Text, Union
+
+import rasa.shared.core.flows.yaml_flows_io
 from rasa.shared.core.flows.flows_list import FlowsList
 
 import rasa.shared.data
@@ -11,7 +13,6 @@ from rasa.shared.importers import utils
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.core.domain import InvalidDomain, Domain
-import rasa.shared.core.flows.utils
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
@@ -38,7 +39,7 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths, YAMLStoryReader.is_stories_file
         )
         self._flow_files = rasa.shared.data.get_data_files(
-            training_data_paths, rasa.shared.core.flows.utils.is_flows_file
+            training_data_paths, rasa.shared.core.flows.yaml_flows_io.is_flows_file
         )
         self._conversation_test_files = rasa.shared.data.get_data_files(
             training_data_paths, YAMLStoryReader.is_test_stories_file
