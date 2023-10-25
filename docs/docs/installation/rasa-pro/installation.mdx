@@ -41,6 +41,7 @@ As a prerequisite, you will need:
 - to verify that the user or service account you are using has the required permissions to access the repository.
 
 #### Authentication Set-Up
+
 To authenticate you need use a service account key file provided by Rasa to authenticate with Google Cloud.
 
 Authenticate with GCP using the service account key.
@@ -67,23 +68,9 @@ The results should include `ChainerBackend` and `GooglePythonAuth`.
 
 #### Installing with `pip`
 
-Enter the following settings to the `.pypirc` file. This can be found:
-
-- Linux and MacOS: `$HOME/.pypirc`
-- Windows: `%USERPROFILE%\.pypirc`
-
-
-```
-[distutils]
-index-servers =
-    rasa-plus-py
-
-[rasa-plus-py]
-repository: https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/
-
-```
-
-Next, add these specific settings to the pip configuration file. The location for this depends on whether you want to update the per-user file or the file specific to a virtual environment that you are using.
+Add these authentication settings to the `pip` configuration file. The location
+for this depends on whether you want to update the per-user file or the file
+specific to a virtual environment that you are using.
 
 For the file associated with your operating system user:
 
@@ -96,20 +83,22 @@ For virtual environments:
 - Linux and macOS: `$VIRTUAL_ENV/pip.conf`
 - Windows: `%VIRTUAL_ENV%\pip.ini`
 
-
 ```
 [global]
 extra-index-url = https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/simple/
-
 ```
 
 Finally, you should be able to run `pip install rasa-plus`.
 
 #### Installing with `poetry`
 
-To install `rasa-plus` with `poetry`, you will need to associate the Artifact Registry URL with `rasa-plus` before installing it.
-Note that you must upgrade poetry to the latest minor (`1.2.0`) in order for `poetry` to work with the GCP authentication set-up.
-Proceed with the following steps:
+<Tabs values={[{"label": "Poetry 1.4", "value": "poetry14"},{"label": "Poetry 1.6", "value": "poetry16"}]}
+    groupId="poetry-versions" defaultValue="poetry16">
+<TabItem value="poetry14">
+
+To install `rasa-plus` with `poetry`, you will need to associate the Artifact Registry URL with `rasa-plus`
+before installing it. Note that you must upgrade poetry to the latest minor version (currently `1.4.2`) in
+order for `poetry` to work with the GCP authentication set-up.
 
 1. Run `poetry self add "keyrings.google-artifactregistry-auth"`
 2. Add this section to `pyproject.toml`:
@@ -120,11 +109,30 @@ name = "rasa-plus"
 url = "https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/simple"
 default = false
 secondary = true
-
 ```
 
 3. Run `poetry install`.
 
+</TabItem>
+<TabItem value="poetry16">
+To install `rasa-plus` with `poetry`, you will need to associate the Artifact
+Registry URL with `rasa-plus` before installing it in order to authenticate
+with GCP.
+
+1. Run `poetry self add keyrings.google-artifactregistry-auth`
+2. Add this section to `pyproject.toml`:
+
+```toml
+[[tool.poetry.source]]
+name = "rasa-plus"
+url = "https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/simple"
+priority = "supplemental"
+```
+
+3. Run `poetry install`.
+
+</TabItem>
+</Tabs>
 
 ### Docker Image Installation
 
