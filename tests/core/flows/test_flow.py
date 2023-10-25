@@ -6,6 +6,7 @@ from rasa.shared.core.flows.exceptions import (
 )
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
+from rasa.shared.core.flows.validation import validate_flow
 from rasa.shared.importers.importer import FlowSyncImporter
 from tests.utilities import flows_from_str
 
@@ -116,7 +117,7 @@ def test_flow_from_json_with_empty_steps_raises():
     flow_as_dict = {"description": "a flow with empty steps", "steps": []}
     flow = Flow.from_json("empty_flow", flow_as_dict)
     with pytest.raises(EmptyFlowException) as e:
-        flow.validate()
+        validate_flow(flow)
     assert e.value.flow_id == "empty_flow"
 
 
@@ -132,6 +133,6 @@ def test_flow_from_json_with_empty_branch_raises():
     }
     flow = Flow.from_json("empty_branch_flow", flow_as_dict)
     with pytest.raises(EmptyStepSequenceException) as e:
-        flow.validate()
+        validate_flow(flow)
     assert e.value.flow_id == "empty_branch_flow"
     assert "utter_something" in e.value.step_id

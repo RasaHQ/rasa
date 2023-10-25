@@ -4,6 +4,7 @@ from typing import List, Generator, Any, Optional, Dict, Text, Set
 
 import rasa.shared
 from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.validation import validate_flow
 
 
 class FlowsList:
@@ -94,7 +95,7 @@ class FlowsList:
     def validate(self) -> None:
         """Validate the flows."""
         for flow in self.underlying_flows:
-            flow.validate()
+            validate_flow(flow)
 
     @property
     def user_flow_ids(self) -> List[str]:
