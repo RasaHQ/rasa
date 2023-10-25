@@ -27,9 +27,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.slots import (
     BooleanSlot,
     CategoricalSlot,
-    FloatSlot,
     Slot,
-    bool_from_any,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -164,55 +162,11 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return commands
 
     @staticmethod
-    def is_none_value(value: str) -> bool:
-        return value in {
-            "[missing information]",
-            "[missing]",
-            "None",
-            "undefined",
-            "null",
-        }
-
-    @staticmethod
     def clean_extracted_value(value: str) -> str:
         """Clean up the extracted value from the llm."""
         # replace any combination of single quotes, double quotes, and spaces
         # from the beginning and end of the string
         return re.sub(r"^['\"\s]+|['\"\s]+$", "", value)
-
-    @classmethod
-    def coerce_slot_value(
-        cls, slot_value: str, slot_name: str, tracker: DialogueStateTracker
-    ) -> Union[str, bool, float, None]:
-        """Coerce the slot value to the correct type.
-
-        Tries to coerce the slot value to the correct type. If the
-        conversion fails, `None` is returned.
-
-        Args:
-            value: the value to coerce
-            slot_name: the name of the slot
-            tracker: the tracker
-
-        Returns:
-            the coerced value or `None` if the conversion failed."""
-        nullable_value = slot_value if not cls.is_none_value(slot_value) else None
-        if slot_name not in tracker.slots:
-            return nullable_value
-
-        slot = tracker.slots[slot_name]
-        if isinstance(slot, BooleanSlot):
-            try:
-                return bool_from_any(nullable_value)
-            except (ValueError, TypeError):
-                return None
-        elif isinstance(slot, FloatSlot):
-            try:
-                return float(nullable_value)
-            except (ValueError, TypeError):
-                return None
-        else:
-            return nullable_value
 
     @classmethod
     def parse_commands(
@@ -242,12 +196,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
                 else:
-                    typed_slot_value = cls.coerce_slot_value(
-                        slot_value, slot_name, tracker
-                    )
-                    commands.append(
-                        SetSlotCommand(name=slot_name, value=typed_slot_value)
-                    )
+                    commands.append(SetSlotCommand(name=slot_name, value=slot_value))
             elif m := start_flow_re.search(action):
                 commands.append(StartFlowCommand(flow=m.group(1).strip()))
             elif cancel_flow_re.search(action):
