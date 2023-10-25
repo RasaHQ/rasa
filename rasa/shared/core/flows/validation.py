@@ -10,8 +10,7 @@ from rasa.shared.core.flows.exceptions import (
     UnresolvedFlowStepIdException,
     UnreachableFlowStepException,
 )
-from rasa.shared.core.flows.flow import (
-    Flow,
+from rasa.shared.core.flows.flow_step import (
     BranchBasedLink,
     DEFAULT_STEPS,
     CONTINUE_STEP_PREFIX,
@@ -20,6 +19,7 @@ from rasa.shared.core.flows.flow import (
     LinkFlowStep,
     FlowStep,
 )
+from rasa.shared.core.flows.flow import Flow
 
 
 def validate_flow(flow: Flow) -> None:

@@ -16,7 +16,7 @@ from rasa.dialogue_understanding.stack.frames import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
-from rasa.shared.core.flows.flow import (
+from rasa.shared.core.flows.flow_step import (
     START_STEP,
     ContinueFlowStep,
     END_STEP,

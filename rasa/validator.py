@@ -7,7 +7,7 @@ from typing import Set, Text, Optional, Dict, Any, List, Tuple
 from pypred import Predicate
 
 import rasa.core.training.story_conflict
-from rasa.shared.core.flows.flow import (
+from rasa.shared.core.flows.flow_step import (
     ActionFlowStep,
     BranchFlowStep,
     CollectInformationFlowStep,

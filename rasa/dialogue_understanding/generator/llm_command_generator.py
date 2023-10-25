@@ -23,11 +23,11 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.flows.flow import (
-    Flow,
+from rasa.shared.core.flows.flow_step import (
     FlowStep,
     CollectInformationFlowStep,
 )
+from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.slots import (

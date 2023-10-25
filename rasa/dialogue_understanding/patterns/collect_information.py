@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStackFrame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
-from rasa.shared.core.flows.flow import SlotRejection
+from rasa.shared.core.flows.flow_step import SlotRejection
 
 FLOW_PATTERN_COLLECT_INFORMATION = (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX + "collect_information"

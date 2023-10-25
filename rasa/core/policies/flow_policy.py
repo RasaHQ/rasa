@@ -44,13 +44,12 @@ from rasa.shared.core.constants import (
     ACTION_SEND_TEXT_NAME,
 )
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.flow import (
+from rasa.shared.core.flows.flow_step import (
     END_STEP,
     ActionFlowStep,
     BranchFlowStep,
     ContinueFlowStep,
     ElseFlowLink,
-    Flow,
     FlowStep,
     GenerateResponseFlowStep,
     IfFlowLink,
@@ -62,8 +61,9 @@ from rasa.shared.core.flows.flow import (
     CollectInformationFlowStep,
     StaticFlowLink,
 )
+from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
-from rasa.shared.core.flows.flow import EndFlowStep
+from rasa.shared.core.flows.flow_step import EndFlowStep
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.engine.graph import ExecutionContext
