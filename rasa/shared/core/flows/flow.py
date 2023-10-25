@@ -131,20 +131,6 @@ class FlowsList:
         else:
             return None
 
-    def step_by_id(self, step_id: Text, flow_id: Text) -> FlowStep:
-        """Return the step with the given id."""
-        flow = self.flow_by_id(flow_id)
-        if not flow:
-            raise UnresolvedFlowException(flow_id)
-
-        step = flow.step_by_id(step_id)
-        if not step:
-            raise UnresolvedFlowStepIdException(
-                step_id, flow.id, referenced_from_step_id=None
-            )
-
-        return step
-
     def validate(self) -> None:
         """Validate the flows."""
         for flow in self.underlying_flows:
