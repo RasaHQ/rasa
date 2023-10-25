@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import structlog
 from jinja2 import Template
@@ -71,7 +71,9 @@ def coerce_slot_value(
         return nullable_value
 
 
-def run_rejections(slot_value, slot_name, top_frame, dialogue_stack):
+def run_rejections(
+    slot_value, slot_name, top_frame, dialogue_stack
+) -> Tuple[Union[SlotSet, None], Union[str, None]]:
     """Run the predicate checks under rejections."""
     violation = False
     internal_error = False
@@ -115,8 +117,10 @@ def run_rejections(slot_value, slot_name, top_frame, dialogue_stack):
     return SlotSet(top_frame.collect, None), utterance
 
 
-def run_categorical_slot_validation(slot_value, slot_name, slot_instance):
-    """Run categorical slot validation."""
+def run_categorical_slot_validation(
+    slot_value, slot_name, slot_instance
+) -> Tuple[Union[SlotSet, None], Union[str, None]]:
+    """Runs categorical slot validation."""
     if (
         isinstance(slot_instance, CategoricalSlot)
         and slot_value not in slot_instance.values

@@ -330,7 +330,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return commands
 
     @classmethod
-    def create_template_inputs(
+    def prepare_flows_for_template(
         cls, flows: FlowsList, tracker: DialogueStateTracker
     ) -> List[Dict[str, Any]]:
         """Format data on available flows for insertion into the prompt template.
