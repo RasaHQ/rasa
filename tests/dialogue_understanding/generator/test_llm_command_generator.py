@@ -257,41 +257,9 @@ class TestLLMCommandGenerator:
         expected_command: Command,
     ):
         """Test that parse_commands identifies the correct commands."""
-        # When
-        with patch.object(
-            LLMCommandGenerator, "coerce_slot_value", Mock(return_value=None)
-        ):
-            parsed_commands = LLMCommandGenerator.parse_commands(input_action, Mock())
+        parsed_commands = LLMCommandGenerator.parse_commands(input_action, Mock())
         # Then
         assert parsed_commands == expected_command
-
-    @pytest.mark.parametrize(
-        "slot_name, slot, slot_value, expected_output",
-        [
-            ("some_other_slot", FloatSlot("some_float", []), None, None),
-            ("some_float", FloatSlot("some_float", []), 40, 40.0),
-            ("some_float", FloatSlot("some_float", []), 40.0, 40.0),
-            ("some_text", TextSlot("some_text", []), "fourty", "fourty"),
-            ("some_bool", BooleanSlot("some_bool", []), "True", True),
-            ("some_bool", BooleanSlot("some_bool", []), "false", False),
-        ],
-    )
-    def test_coerce_slot_value(
-        self,
-        slot_name: str,
-        slot: Slot,
-        slot_value: Any,
-        expected_output: Any,
-    ):
-        """Test that coerce_slot_value coerces the slot value correctly."""
-        # Given
-        tracker = DialogueStateTracker.from_events("test", evts=[], slots=[slot])
-        # When
-        coerced_value = LLMCommandGenerator.coerce_slot_value(
-            slot_value, slot_name, tracker
-        )
-        # Then
-        assert coerced_value == expected_output
 
     @pytest.mark.parametrize(
         "input_value, expected_output",
@@ -312,24 +280,6 @@ class TestLLMCommandGenerator:
         cleaned_value = LLMCommandGenerator.clean_extracted_value(input_value)
         # Then
         assert cleaned_value == expected_output
-
-    @pytest.mark.parametrize(
-        "input_value, expected_truthiness",
-        [
-            ("", False),
-            (" ", False),
-            ("none", False),
-            ("some text", False),
-            ("[missing information]", True),
-            ("[missing]", True),
-            ("None", True),
-            ("undefined", True),
-            ("null", True),
-        ],
-    )
-    def test_is_none_value(self, input_value: str, expected_truthiness: bool):
-        """Test that is_none_value returns True when the value is None."""
-        assert LLMCommandGenerator.is_none_value(input_value) == expected_truthiness
 
     @pytest.mark.parametrize(
         "slot, slot_name, expected_output",

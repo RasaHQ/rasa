@@ -185,6 +185,8 @@ class ActionRunSlotRejections(Action):
                 typed_slot_value, slot_name, slot_instance
             )
         events: List[Event] = [event] if event else []
+        if slot_value != typed_slot_value and not event:
+            events.append(SlotSet(slot_name, typed_slot_value))
 
         if not isinstance(utterance, str):
             structlogger.error(

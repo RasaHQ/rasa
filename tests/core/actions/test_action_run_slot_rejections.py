@@ -1,16 +1,20 @@
 import uuid
-from typing import Optional, Text
+from typing import Any, Optional, Text
 
 import pytest
 from pytest import CaptureFixture
 
-from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
+from rasa.core.actions.action_run_slot_rejections import (
+    ActionRunSlotRejections,
+    coerce_slot_value,
+    is_none_value,
+)
 from rasa.core.channels import OutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-from rasa.shared.core.slots import AnySlot, FloatSlot, TextSlot
+from rasa.shared.core.slots import AnySlot, BooleanSlot, FloatSlot, Slot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -675,3 +679,48 @@ async def test_valid_categorical_slot_without_rejection_mechanism(
     )
 
     assert events == []
+
+
+@pytest.mark.parametrize(
+    "slot_name, slot, slot_value, expected_output",
+    [
+        ("some_other_slot", FloatSlot("some_float", []), None, None),
+        ("some_float", FloatSlot("some_float", []), 40, 40.0),
+        ("some_float", FloatSlot("some_float", []), 40.0, 40.0),
+        ("some_text", TextSlot("some_text", []), "fourty", "fourty"),
+        ("some_bool", BooleanSlot("some_bool", []), "True", True),
+        ("some_bool", BooleanSlot("some_bool", []), "false", False),
+    ],
+)
+def test_coerce_slot_value(
+    slot_name: str,
+    slot: Slot,
+    slot_value: Any,
+    expected_output: Any,
+):
+    """Test that coerce_slot_value coerces the slot value correctly."""
+    # Given
+    tracker = DialogueStateTracker.from_events("test", evts=[], slots=[slot])
+    # When
+    coerced_value = coerce_slot_value(slot_value, slot_name, tracker)
+    # Then
+    assert coerced_value == expected_output
+
+
+@pytest.mark.parametrize(
+    "input_value, expected_truthiness",
+    [
+        ("", False),
+        (" ", False),
+        ("none", False),
+        ("some text", False),
+        ("[missing information]", True),
+        ("[missing]", True),
+        ("None", True),
+        ("undefined", True),
+        ("null", True),
+    ],
+)
+def test_is_none_value(input_value: str, expected_truthiness: bool):
+    """Test that is_none_value returns True when the value is None."""
+    assert is_none_value(input_value) == expected_truthiness
