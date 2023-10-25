@@ -8,6 +8,7 @@ intents:
   - mood_great
   - mood_unhappy
   - bot_challenge
+  - block
 
 responses:
   utter_greet:
@@ -28,6 +29,35 @@ responses:
 
   utter_iamabot:
     - text: "I am a bot, powered by Rasa."
+
+  utter_block_account:
+  - text: "your account has been blocked"
+
+  utter_checking:
+  - text: "checking account"
+
+  utter_credit:
+  - text: "credit account"
+
+  utter_nothing:
+  - text: "no account type was specified"
+
+entities:
+  - account_type
+
+slots:
+  account_type: 
+    type: categorical
+    influence_conversation: true
+    values:
+      - savings
+      - checking
+      - credit
+    mappings: 
+    - type: from_entity
+      entity: account_type
+      conditions:
+        - active_loop: null
 
 session_config:
   session_expiration_time: 60

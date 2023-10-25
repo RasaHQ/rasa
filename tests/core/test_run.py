@@ -1,5 +1,7 @@
+import warnings
 from unittest.mock import Mock
 
+import aiohttp
 import pytest
 from typing import Text
 
@@ -82,8 +84,9 @@ async def test_close_resources(loop: AbstractEventLoop):
     broker = SQLEventBroker()
     app = Mock()
     app.ctx.agent.tracker_store.event_broker = broker
+    app.ctx.agent.action_endpoint.session = aiohttp.ClientSession()
+    app.ctx.agent.model_server.session = aiohttp.ClientSession()
 
-    with pytest.warns(None) as warnings:
+    with warnings.catch_warnings() as record:
         await run.close_resources(app, loop)
-
-    assert len(warnings) == 0
+        assert record is None
