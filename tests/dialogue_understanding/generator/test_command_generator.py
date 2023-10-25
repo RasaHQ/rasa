@@ -7,7 +7,7 @@ from rasa.dialogue_understanding.generator.command_generator import CommandGener
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, COMMANDS
 from rasa.shared.nlu.training_data.message import Message

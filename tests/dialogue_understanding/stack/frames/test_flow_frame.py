@@ -10,9 +10,9 @@ from rasa.shared.core.flows.flow import (
     ActionFlowStep,
     Flow,
     FlowLinks,
-    FlowsList,
     StepSequence,
 )
+from rasa.shared.core.flows.flows_list import FlowsList
 
 
 def test_flow_frame_type():

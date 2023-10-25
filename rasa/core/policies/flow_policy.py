@@ -52,7 +52,6 @@ from rasa.shared.core.flows.flow import (
     ElseFlowLink,
     Flow,
     FlowStep,
-    FlowsList,
     GenerateResponseFlowStep,
     IfFlowLink,
     SlotRejection,
@@ -63,6 +62,7 @@ from rasa.shared.core.flows.flow import (
     CollectInformationFlowStep,
     StaticFlowLink,
 )
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.flow import EndFlowStep
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, PolicyPrediction

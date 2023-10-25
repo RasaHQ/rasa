@@ -8,7 +8,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
 
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 
 FLOWS_PERSISTENCE_FILE_NAME = "flows.yml"
 

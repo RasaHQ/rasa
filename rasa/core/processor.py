@@ -17,7 +17,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
 from rasa.plugin import plugin_manager
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.data import TrainingType
 import rasa.shared.utils.io
 import rasa.core.actions.action

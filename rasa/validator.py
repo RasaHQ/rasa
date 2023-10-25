@@ -11,10 +11,10 @@ from rasa.shared.core.flows.flow import (
     ActionFlowStep,
     BranchFlowStep,
     CollectInformationFlowStep,
-    FlowsList,
     IfFlowLink,
     SetSlotsFlowStep,
 )
+from rasa.shared.core.flows.flows_list import FlowsList
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,

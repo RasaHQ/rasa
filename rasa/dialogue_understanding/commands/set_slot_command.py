@@ -8,7 +8,7 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.utils import filled_slots_for_active_flow
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()

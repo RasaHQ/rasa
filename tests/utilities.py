@@ -1,6 +1,6 @@
 from yarl import URL
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.importers.importer import FlowSyncImporter
 

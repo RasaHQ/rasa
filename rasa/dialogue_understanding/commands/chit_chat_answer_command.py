@@ -6,7 +6,7 @@ from rasa.dialogue_understanding.commands import FreeFormAnswerCommand
 from rasa.dialogue_understanding.patterns.chitchat import ChitchatPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import Event
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
 

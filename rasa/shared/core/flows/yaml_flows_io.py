@@ -8,7 +8,8 @@ import rasa.shared.utils.io
 import rasa.shared.utils.validation
 from rasa.shared.exceptions import YamlException
 
-from rasa.shared.core.flows.flow import Flow, FlowsList
+from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.flows_list import FlowsList
 
 FLOWS_SCHEMA_FILE = "shared/core/flows/flows_yaml_schema.json"
 

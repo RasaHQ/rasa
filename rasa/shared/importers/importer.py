@@ -6,7 +6,7 @@ import logging
 import pkg_resources
 
 import rasa.shared.constants
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io

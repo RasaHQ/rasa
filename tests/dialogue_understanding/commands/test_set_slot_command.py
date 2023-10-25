@@ -2,7 +2,7 @@ import pytest
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 

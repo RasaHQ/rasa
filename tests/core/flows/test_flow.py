@@ -4,7 +4,8 @@ from rasa.shared.core.flows.exceptions import (
     EmptyStepSequenceException,
     EmptyFlowException,
 )
-from rasa.shared.core.flows.flow import Flow, FlowsList
+from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.importers.importer import FlowSyncImporter
 from tests.utilities import flows_from_str
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import dataclasses
 from typing import Any, Dict, List
 from rasa.shared.core.events import Event
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.shared.utils.common
 

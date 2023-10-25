@@ -1,7 +1,7 @@
 from typing import List, Optional
 import structlog
 from rasa.dialogue_understanding.commands import Command
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import COMMANDS

@@ -1,7 +1,7 @@
 from typing import Iterable, Text, Optional, List
 
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.training_data import TrainingData
 

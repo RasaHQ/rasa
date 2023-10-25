@@ -26,9 +26,9 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.flows.flow import (
     Flow,
     FlowStep,
-    FlowsList,
     CollectInformationFlowStep,
 )
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.slots import (
     BooleanSlot,

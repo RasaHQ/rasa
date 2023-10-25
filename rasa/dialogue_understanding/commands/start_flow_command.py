@@ -15,7 +15,7 @@ from rasa.dialogue_understanding.stack.utils import (
     user_flows_on_the_stack,
 )
 from rasa.shared.core.events import Event
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()

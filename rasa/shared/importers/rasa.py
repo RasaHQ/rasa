@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import Dict, List, Optional, Text, Union
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows.flows_list import FlowsList
 
 import rasa.shared.data
 import rasa.shared.utils.common

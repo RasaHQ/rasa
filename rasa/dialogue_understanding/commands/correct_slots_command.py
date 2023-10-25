@@ -16,7 +16,8 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
 )
 from rasa.shared.core.events import Event
-from rasa.shared.core.flows.flow import END_STEP, ContinueFlowStep, FlowStep, FlowsList
+from rasa.shared.core.flows.flow import END_STEP, ContinueFlowStep, FlowStep
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.dialogue_understanding.stack.utils as utils
 
