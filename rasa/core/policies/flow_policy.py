@@ -63,7 +63,7 @@ from rasa.shared.core.flows.flow import (
     CollectInformationFlowStep,
     StaticFlowLink,
 )
-from rasa.shared.core.flows.steps.internal import EndFlowStep
+from rasa.shared.core.flows.flow import EndFlowStep
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.engine.graph import ExecutionContext

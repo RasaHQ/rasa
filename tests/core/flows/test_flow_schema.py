@@ -25,7 +25,7 @@ def test_schema_validation_fails_on_empty_steps_for_branch() -> None:
               - action: utter_greet
                 next:
                   - if: "status == logged_in"
-                    then: 
+                    then:
                       - action: utter_already_logged_in
                         next: "END"
                   - else:
