@@ -973,28 +973,11 @@ class FlowLinks:
 
         return FlowLinks(
             links=[
-                FlowLinks.link_from_json(link_config)
+                BranchBasedLink.from_json(link_config)
                 for link_config in flow_links_config
                 if link_config
             ]
         )
-
-    @staticmethod
-    def link_from_json(link_config: Dict[Text, Any]) -> FlowLink:
-        """Used to read a single flow links from parsed YAML.
-
-        Args:
-            link_config: The parsed YAML as a dictionary.
-
-        Returns:
-            The parsed flow link.
-        """
-        if "if" in link_config:
-            return IfFlowLink.from_json(link_config)
-        elif "else" in link_config:
-            return ElseFlowLink.from_json(link_config)
-        else:
-            raise Exception("Invalid flow link")
 
     def as_json(self) -> Optional[Union[str, List[Dict[str, Any]]]]:
         """Returns the flow links as a dictionary.
@@ -1088,6 +1071,21 @@ class BranchBasedLink(FlowLink):
                 return None
         else:
             return self.target_reference
+
+    @staticmethod
+    def from_json(link_config: Dict[Text, Any]) -> BranchBasedLink:
+        """Used to read a single flow links from parsed YAML.
+
+        Args:
+            link_config: The parsed YAML as a dictionary.
+
+        Returns:
+            The parsed flow link.
+        """
+        if "if" in link_config:
+            return IfFlowLink.from_json(link_config)
+        else:
+            return ElseFlowLink.from_json(link_config)
 
 
 @dataclass
