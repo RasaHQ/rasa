@@ -253,12 +253,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
                 else:
-                    typed_slot_value = cls.coerce_slot_value(
-                        slot_value, slot_name, tracker
-                    )
-                    commands.append(
-                        SetSlotCommand(name=slot_name, value=typed_slot_value)
-                    )
+                    commands.append(SetSlotCommand(name=slot_name, value=slot_value))
             elif match := start_flow_re.search(action):
                 commands.append(StartFlowCommand(flow=match.group(1).strip()))
             elif cancel_flow_re.search(action):
@@ -281,53 +276,6 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         # replace any combination of single quotes, double quotes, and spaces
         # from the beginning and end of the string
         return value.strip("'\" ")
-
-    @classmethod
-    def parse_commands(
-        cls, actions: Optional[str], tracker: DialogueStateTracker
-    ) -> List[Command]:
-        """Parse the actions returned by the llm into intent and entities."""
-        if not actions:
-            return [ErrorCommand()]
-
-        commands: List[Command] = []
-
-        slot_set_re = re.compile(
-            r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)"""
-        )
-        start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
-        cancel_flow_re = re.compile(r"CancelFlow\(\)")
-        chitchat_re = re.compile(r"ChitChat\(\)")
-        knowledge_re = re.compile(r"SearchAndReply\(\)")
-        humand_handoff_re = re.compile(r"HumandHandoff\(\)")
-        clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
-
-        for action in actions.strip().splitlines():
-            if m := slot_set_re.search(action):
-                slot_name = m.group(1).strip()
-                slot_value = cls.clean_extracted_value(m.group(2))
-                # error case where the llm tries to start a flow using a slot set
-                if slot_name == "flow_name":
-                    commands.append(StartFlowCommand(flow=slot_value))
-                else:
-                    commands.append(
-                        SetSlotCommand(name=slot_name, value=typed_slot_value)
-                    )
-            elif m := start_flow_re.search(action):
-                commands.append(StartFlowCommand(flow=m.group(1).strip()))
-            elif cancel_flow_re.search(action):
-                commands.append(CancelFlowCommand())
-            elif chitchat_re.search(action):
-                commands.append(ChitChatAnswerCommand())
-            elif knowledge_re.search(action):
-                commands.append(KnowledgeAnswerCommand())
-            elif humand_handoff_re.search(action):
-                commands.append(HumanHandoffCommand())
-            elif m := clarify_re.search(action):
-                options = [opt.strip() for opt in m.group(1).split(",")]
-                commands.append(ClarifyCommand(options))
-
-        return commands
 
     @classmethod
     def prepare_flows_for_template(

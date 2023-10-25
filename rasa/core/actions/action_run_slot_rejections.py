@@ -15,6 +15,7 @@ from rasa.shared.core.slots import (
     BooleanSlot,
     CategoricalSlot,
     FloatSlot,
+    Slot,
     bool_from_any,
 )
 
@@ -72,7 +73,10 @@ def coerce_slot_value(
 
 
 def run_rejections(
-    slot_value, slot_name, top_frame, dialogue_stack
+    slot_value: Union[str, bool, float, None],
+    slot_name: str,
+    top_frame: CollectInformationPatternFlowStackFrame,
+    dialogue_stack: DialogueStack,
 ) -> Tuple[Union[SlotSet, None], Union[str, None]]:
     """Run the predicate checks under rejections."""
     violation = False
@@ -83,6 +87,7 @@ def run_rejections(
     structlogger.debug("run.predicate.context", context=current_context)
     document = current_context.copy()
 
+    assert top_frame.rejections is not None
     for rejection in top_frame.rejections:
         condition = rejection.if_
         utterance = rejection.utter
@@ -118,7 +123,7 @@ def run_rejections(
 
 
 def run_categorical_slot_validation(
-    slot_value, slot_name, slot_instance
+    slot_value: Union[str, bool, float, None], slot_name: str, slot_instance: Slot
 ) -> Tuple[Union[SlotSet, None], Union[str, None]]:
     """Runs categorical slot validation."""
     if (
