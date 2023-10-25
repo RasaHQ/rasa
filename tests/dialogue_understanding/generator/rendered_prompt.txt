@@ -1,35 +1,25 @@
 Your task is to analyze the current conversation context and generate a list of actions to start new business processes that we call flows, to extract slots, or respond to small talk and knowledge requests.
 
 These are the flows that can be started, with their description and slots:
-{% for flow in available_flows %}
-{{ flow.name }}: {{ flow.description }}
-    {% for slot in flow.slots -%}
-    slot: {{ slot.name }}{% if slot.description %} ({{ slot.description }}){% endif %}
-    {% endfor %}
-{%- endfor %}
+
+test_flow: some description
+    slot: test_slot
+    
 
 ===
 Here is what happened previously in the conversation:
-{{ current_conversation }}
+USER: Hello
+AI: Hi
+USER: some message
 
 ===
-{% if current_flow != None %}
-You are currently in the flow "{{ current_flow }}".
-You have just asked the user for the slot "{{ current_slot }}"{% if current_slot_description %} ({{ current_slot_description }}){% endif %}.
 
-{% if flow_slots|length > 0 %}
-Here are the slots of the currently active flow:
-{% for slot in flow_slots -%}
-- name: {{ slot.name }}, value: {{ slot.value }}, type: {{ slot.type }}, description: {{ slot.description}}{% if slot.allowed_values %}, allowed values: {{ slot.allowed_values }}{% endif %}
-{% endfor %}
-{% endif %}
-{% else %}
 You are currently not in any flow and so there are no active slots.
 This means you can only set a slot if you first start a flow that requires that slot.
-{% endif %}
+
 If you start a flow, first start the flow and then optionally fill that flow's slots with information the user provided in their message.
 
-The user just said """{{ user_message }}""".
+The user just said """some message""".
 
 ===
 Based on this information generate a list of actions you want to take. Your job is to start flows and to fill slots where appropriate. Any logic of what happens afterwards is handled by the flow engine. These are your available actions:

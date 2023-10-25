@@ -135,11 +135,11 @@ def default_tracker(domain: Domain) -> DialogueStateTracker:
 @pytest.fixture(scope="session")
 async def trained_formbot(trained_async: Callable) -> Text:
     return await trained_async(
-        domain="examples/formbot/domain.yml",
-        config="examples/formbot/config.yml",
+        domain="examples/nlu_based/formbot/domain.yml",
+        config="examples/nlu_based/formbot/config.yml",
         training_files=[
-            "examples/formbot/data/rules.yml",
-            "examples/formbot/data/stories.yml",
+            "examples/nlu_based/formbot/data/rules.yml",
+            "examples/nlu_based/formbot/data/stories.yml",
         ],
     )
 

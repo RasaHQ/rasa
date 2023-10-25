@@ -1,0 +1,7 @@
+test_cases:
+  - test_case: user corrects recipient in the next message
+    steps:
+      - user: I want to send 400 dollars to James
+      - utter: utter_ask_final_confirmation
+      - user: yes
+      - utter: utter_transfer_complete

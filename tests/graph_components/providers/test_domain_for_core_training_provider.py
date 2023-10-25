@@ -98,7 +98,7 @@ def test_train_core_with_original_or_provided_domain_and_compare(
     default_execution_context: ExecutionContext,
 ):
     # Choose an example where the provider will remove a lot of information:
-    example = Path("examples/formbot/")
+    example = Path("examples/nlu_based/formbot/")
     training_files = [example / "data" / "rules.yml"]
 
     # Choose a configuration with a policy
