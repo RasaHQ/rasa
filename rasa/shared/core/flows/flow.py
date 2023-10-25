@@ -956,7 +956,7 @@ class FlowLinks:
     links: List[FlowLink]
 
     @staticmethod
-    def from_json(flow_links_config: List[Dict[Text, Any]]) -> FlowLinks:
+    def from_json(flow_links_config: Union[str, List[Dict[Text, Any]]]) -> FlowLinks:
         """Used to read flow links from parsed YAML.
 
         Args:
@@ -996,7 +996,7 @@ class FlowLinks:
         else:
             raise Exception("Invalid flow link")
 
-    def as_json(self) -> Any:
+    def as_json(self) -> Optional[Union[str, List[Dict[str, Any]]]]:
         """Returns the flow links as a dictionary.
 
         Returns:
