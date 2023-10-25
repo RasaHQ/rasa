@@ -330,9 +330,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         else:
             return nullable_value
 
-    @classmethod
     def prepare_flows_for_template(
-        cls, flows: FlowsList, tracker: DialogueStateTracker
+        self, flows: FlowsList, tracker: DialogueStateTracker
     ) -> List[Dict[str, Any]]:
         """Format data on available flows for insertion into the prompt template.
 
@@ -346,9 +345,15 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         result = []
         for flow in flows.user_flows:
             slots_with_info = [
-                {"name": q.collect, "description": q.description}
+                {
+                    "name": q.collect,
+                    "description": q.description,
+                    "allowed_values": self.allowed_values_for_slot(
+                        tracker.slots[q.collect]
+                    ),
+                }
                 for q in flow.get_collect_steps()
-                if cls.is_extractable(q, tracker)
+                if LLMCommandGenerator.is_extractable(q, tracker)
             ]
             result.append(
                 {
