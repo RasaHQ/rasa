@@ -436,7 +436,8 @@ def test_db_url_with_query_from_endpoint_config(tmp_path: Path):
     import itertools
 
     # order of query dictionary in yaml is random, test against both permutations
-    connection_url = "postgresql://user:pw@:5123/login-db?"
+    connection_url = "postgresql://user:***@:5123/login-db?"
+
     assert any(
         str(url) == connection_url + "&".join(permutation)
         for permutation in (
@@ -743,8 +744,8 @@ def test_session_scope_error(
     [
         (f"{PGDialect.name}://admin:pw@localhost:5432/rasa", True),
         (f"{SQLiteDialect.name}:///", False),
-        (URL(PGDialect.name), True),
-        (URL(SQLiteDialect.name), False),
+        (URL(PGDialect.name, None, None, None, None, None, {}), True),
+        (URL(SQLiteDialect.name, None, None, None, None, None, {}), False),
     ],
 )
 def test_is_postgres_url(url: Union[Text, URL], is_postgres_url: bool):

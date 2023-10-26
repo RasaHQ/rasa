@@ -1161,6 +1161,9 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             port = parsed.port or port
             host = parsed.hostname or host
 
+        if not query:
+            query = {}
+
         return sa.engine.url.URL(
             dialect,
             username,
