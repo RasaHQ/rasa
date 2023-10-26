@@ -2,24 +2,24 @@ from __future__ import annotations
 
 from typing import List, Generator, Any, Optional, Dict, Text, Set
 
-import rasa.shared
+import rasa.shared.utils.io
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.validation import validate_flow
 
 
 class FlowsList:
-    """Represents the configuration of a list of flow.
+    """A collection of flows.
 
-    We need this class to be able to fingerprint the flows configuration.
-    Fingerprinting is needed to make sure that the model is retrained if the
-    flows configuration changes.
+    This class defines a number of methods that are executed across the available flows,
+    such as fingerprinting (for retraining caching), collecting flows with
+    specific attributes or collecting all utterances across all flows.
     """
 
     def __init__(self, flows: List[Flow]) -> None:
-        """Initializes the configuration of flows.
+        """Initializes the FlowsList object.
 
         Args:
-            flows: The flows to be configured.
+            flows: The flows for this collection.
         """
         self.underlying_flows = flows
 
@@ -28,7 +28,7 @@ class FlowsList:
         yield from self.underlying_flows
 
     def __eq__(self, other: Any) -> bool:
-        """Compares the flows."""
+        """Compares this FlowsList to another one."""
         return (
             isinstance(other, FlowsList)
             and self.underlying_flows == other.underlying_flows
@@ -39,40 +39,38 @@ class FlowsList:
         return len(self.underlying_flows) == 0
 
     @classmethod
-    def from_json(
-        cls, flows_configs: Optional[Dict[Text, Dict[Text, Any]]]
-    ) -> FlowsList:
-        """Used to read flows from parsed YAML.
+    def from_json(cls, data: Optional[Dict[Text, Dict[Text, Any]]]) -> FlowsList:
+        """Create a FlowsList object from serialized data
 
         Args:
-            flows_configs: The parsed YAML as a dictionary.
+            data: data for a FlowsList in a serialized format
 
         Returns:
-            The parsed flows.
+            A FlowsList object.
         """
-        if not flows_configs:
+        if not data:
             return cls([])
 
         return cls(
             [
                 Flow.from_json(flow_id, flow_config)
-                for flow_id, flow_config in flows_configs.items()
+                for flow_id, flow_config in data.items()
             ]
         )
 
-    def as_json(self) -> List[Dict[Text, Any]]:
-        """Returns the flows as a dictionary.
+    def as_json_list(self) -> List[Dict[Text, Any]]:
+        """Serialize the FlowsList object to list format and not to the original dict.
 
         Returns:
-            The flows as a dictionary.
+            The FlowsList object as serialized data in a list
         """
         return [flow.as_json() for flow in self.underlying_flows]
 
     def fingerprint(self) -> str:
-        """Creates a fingerprint of the flows configuration.
+        """Creates a fingerprint of the existing flows.
 
         Returns:
-            The fingerprint of the flows configuration.
+            The fingerprint of the flows.
         """
         flow_dicts = [flow.as_json() for flow in self.underlying_flows]
         return rasa.shared.utils.io.get_list_fingerprint(flow_dicts)
@@ -81,13 +79,13 @@ class FlowsList:
         """Merges two lists of flows together."""
         return FlowsList(self.underlying_flows + other.underlying_flows)
 
-    def flow_by_id(self, id: Optional[Text]) -> Optional[Flow]:
+    def flow_by_id(self, flow_id: Optional[Text]) -> Optional[Flow]:
         """Return the flow with the given id."""
-        if not id:
+        if not flow_id:
             return None
 
         for flow in self.underlying_flows:
-            if flow.id == id:
+            if flow.id == flow_id:
                 return flow
         else:
             return None
