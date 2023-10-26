@@ -636,6 +636,9 @@ class Validator:
             for step in flow.steps:
                 for link in step.next.links:
                     if isinstance(link, IfFlowStepLink):
+                        # TODO: need to handle link conditions with context / jinja
+                        if "{{" in link.condition:
+                            continue
                         predicate, all_good = Validator._construct_predicate(
                             link.condition, step.id
                         )
