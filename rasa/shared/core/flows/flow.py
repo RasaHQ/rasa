@@ -4,21 +4,23 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Text, Optional, Dict, Any, List, Set
 
-import rasa.shared
+import rasa.shared.utils.io
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.flows.flow_step import (
-    StepSequence,
     FlowStep,
-    LinkFlowStep,
-    StaticFlowLink,
-    END_STEP,
-    START_STEP,
-    StartFlowStep,
-    EndFlowStep,
-    CONTINUE_STEP_PREFIX,
-    ContinueFlowStep,
-    CollectInformationFlowStep,
 )
+from rasa.shared.core.flows.flow_step_links import StaticFlowLink
+from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
+from rasa.shared.core.flows.steps.constants import (
+    CONTINUE_STEP_PREFIX,
+    START_STEP,
+    END_STEP,
+)
+from rasa.shared.core.flows.steps.end import EndFlowStep
+from rasa.shared.core.flows.steps.start import StartFlowStep
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
+from rasa.shared.core.flows.steps.link import LinkFlowStep
+from rasa.shared.core.flows.flow_step_sequence import StepSequence
 
 
 @dataclass

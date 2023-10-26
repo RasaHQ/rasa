@@ -6,11 +6,9 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
     FlowStackFrameType,
 )
-from rasa.shared.core.flows.flow_step import (
-    ActionFlowStep,
-    FlowLinks,
-    StepSequence,
-)
+from rasa.shared.core.flows.flow_step_links import FlowLinks
+from rasa.shared.core.flows.steps.action import ActionFlowStep
+from rasa.shared.core.flows.flow_step_sequence import StepSequence
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
 

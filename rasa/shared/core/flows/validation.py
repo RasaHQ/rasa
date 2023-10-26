@@ -3,14 +3,15 @@ from __future__ import annotations
 from typing import Optional, Set, Text
 
 from rasa.shared.core.flows.flow_step import (
-    BranchBasedLink,
-    DEFAULT_STEPS,
-    CONTINUE_STEP_PREFIX,
-    IfFlowLink,
-    ElseFlowLink,
-    LinkFlowStep,
     FlowStep,
 )
+from rasa.shared.core.flows.flow_step_links import (
+    BranchBasedLink,
+    IfFlowLink,
+    ElseFlowLink,
+)
+from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX, DEFAULT_STEPS
+from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.exceptions import RasaException
 

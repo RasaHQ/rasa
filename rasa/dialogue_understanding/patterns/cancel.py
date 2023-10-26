@@ -18,7 +18,8 @@ from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import ACTION_CANCEL_FLOW
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event
-from rasa.shared.core.flows.flow_step import END_STEP, ContinueFlowStep
+from rasa.shared.core.flows.steps.constants import END_STEP
+from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 
 

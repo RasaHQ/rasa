@@ -26,9 +26,9 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-from rasa.shared.core.flows.flow_step import (
-    CollectInformationFlowStep,
+from rasa.shared.core.flows.steps.collect import (
     SlotRejection,
+    CollectInformationFlowStep,
 )
 from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.slots import (

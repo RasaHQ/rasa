@@ -7,13 +7,11 @@ from typing import Set, Text, Optional, Dict, Any, List, Tuple
 from pypred import Predicate
 
 import rasa.core.training.story_conflict
-from rasa.shared.core.flows.flow_step import (
-    ActionFlowStep,
-    BranchFlowStep,
-    CollectInformationFlowStep,
-    IfFlowLink,
-    SetSlotsFlowStep,
-)
+from rasa.shared.core.flows.flow_step_links import IfFlowLink
+from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
+from rasa.shared.core.flows.steps.branch import BranchFlowStep
+from rasa.shared.core.flows.steps.action import ActionFlowStep
 from rasa.shared.core.flows.flows_list import FlowsList
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (

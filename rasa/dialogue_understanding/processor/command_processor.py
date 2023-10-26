@@ -28,9 +28,7 @@ from rasa.dialogue_understanding.stack.utils import (
 )
 from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.flow_step import (
-    CollectInformationFlowStep,
-)
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS

@@ -45,25 +45,31 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.flow_step import (
-    END_STEP,
-    ActionFlowStep,
-    BranchFlowStep,
-    ContinueFlowStep,
-    ElseFlowLink,
     FlowStep,
-    GenerateResponseFlowStep,
+)
+from rasa.shared.core.flows.flow_step_links import (
     IfFlowLink,
-    SlotRejection,
-    StepThatCanStartAFlow,
-    UserMessageStep,
-    LinkFlowStep,
-    SetSlotsFlowStep,
-    CollectInformationFlowStep,
+    ElseFlowLink,
     StaticFlowLink,
 )
+from rasa.shared.core.flows.steps.constants import END_STEP
+from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
+from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
+from rasa.shared.core.flows.steps.collect import (
+    SlotRejection,
+    CollectInformationFlowStep,
+)
+from rasa.shared.core.flows.steps.generate_response import GenerateResponseFlowStep
+from rasa.shared.core.flows.steps.user_message import (
+    StepThatCanStartAFlow,
+    UserMessageStep,
+)
+from rasa.shared.core.flows.steps.link import LinkFlowStep
+from rasa.shared.core.flows.steps.branch import BranchFlowStep
+from rasa.shared.core.flows.steps.action import ActionFlowStep
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
-from rasa.shared.core.flows.flow_step import EndFlowStep
+from rasa.shared.core.flows.steps.end import EndFlowStep
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.engine.graph import ExecutionContext
