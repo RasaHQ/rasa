@@ -238,7 +238,7 @@ def validate_all_steps_next_property(flow: Flow) -> None:
             raise MissingNextLinkException(step.id, flow.id)
 
 
-def validate_all_next_ids_are_available_steps(flow) -> None:
+def validate_all_next_ids_are_available_steps(flow: Flow) -> None:
     """Validates that all next links point to existing steps."""
     available_steps = {step.id for step in flow.steps} | DEFAULT_STEPS
     for step in flow.steps:
@@ -247,7 +247,7 @@ def validate_all_next_ids_are_available_steps(flow) -> None:
                 raise UnresolvedFlowStepIdException(link.target, flow.id, step.id)
 
 
-def validate_all_steps_can_be_reached(flow) -> None:
+def validate_all_steps_can_be_reached(flow: Flow) -> None:
     """Validates that all steps can be reached from the start step."""
 
     def _reachable_steps(
