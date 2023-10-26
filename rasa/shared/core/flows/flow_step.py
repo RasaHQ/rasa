@@ -18,14 +18,14 @@ if TYPE_CHECKING:
 structlogger = structlog.get_logger()
 
 
-def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
-    """Used to read flow steps from parsed YAML.
+def step_from_json(data: Dict[Text, Any]) -> FlowStep:
+    """Create a specific FlowStep from serialized data.
 
     Args:
-        flow_step_config: The parsed YAML as a dictionary.
+        data: data for a specific FlowStep object in a serialized data format.
 
     Returns:
-        The parsed flow step.
+        An instance of a specific FlowStep class.
     """
     from rasa.shared.core.flows.steps import (
         ActionFlowStep,
@@ -37,25 +37,25 @@ def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
         BranchFlowStep,
     )
 
-    if "action" in flow_step_config:
-        return ActionFlowStep.from_json(flow_step_config)
-    if "intent" in flow_step_config:
-        return UserMessageStep.from_json(flow_step_config)
-    if "collect" in flow_step_config:
-        return CollectInformationFlowStep.from_json(flow_step_config)
-    if "link" in flow_step_config:
-        return LinkFlowStep.from_json(flow_step_config)
-    if "set_slots" in flow_step_config:
-        return SetSlotsFlowStep.from_json(flow_step_config)
-    if "generation_prompt" in flow_step_config:
-        return GenerateResponseFlowStep.from_json(flow_step_config)
+    if "action" in data:
+        return ActionFlowStep.from_json(data)
+    if "intent" in data:
+        return UserMessageStep.from_json(data)
+    if "collect" in data:
+        return CollectInformationFlowStep.from_json(data)
+    if "link" in data:
+        return LinkFlowStep.from_json(data)
+    if "set_slots" in data:
+        return SetSlotsFlowStep.from_json(data)
+    if "generation_prompt" in data:
+        return GenerateResponseFlowStep.from_json(data)
     else:
-        return BranchFlowStep.from_json(flow_step_config)
+        return BranchFlowStep.from_json(data)
 
 
 @dataclass
 class FlowStep:
-    """Represents the configuration of a flow step."""
+    """A single step in a flow."""
 
     custom_id: Optional[Text]
     """The id of the flow step."""
@@ -91,33 +91,35 @@ class FlowStep:
         )
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
+        """Serialize the FlowStep object.
 
         Returns:
-            The flow step as a dictionary.
+            The FlowStep as serialized data.
         """
-        dump = {"next": self.next.as_json(), "id": self.id}
+        data = {"next": self.next.as_json(), "id": self.id}
 
         if self.description:
-            dump["description"] = self.description
+            data["description"] = self.description
         if self.metadata:
-            dump["metadata"] = self.metadata
-        return dump
+            data["metadata"] = self.metadata
+        return data
 
     def steps_in_tree(self) -> Generator[FlowStep, None, None]:
-        """Returns the steps in the tree of the flow step."""
+        """Recursively generates the steps in the tree."""
         yield self
         yield from self.next.steps_in_tree()
 
     @property
     def id(self) -> Text:
         """Returns the id of the flow step."""
-        return self.custom_id or self.default_id()
+        return self.custom_id or self.default_id
 
+    @property
     def default_id(self) -> str:
         """Returns the default id of the flow step."""
-        return f"{self.idx}_{self.default_id_postfix()}"
+        return f"{self.idx}_{self.default_id_postfix}"
 
+    @property
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         raise NotImplementedError()

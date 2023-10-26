@@ -136,6 +136,7 @@ class UserMessageStep(FlowStep, StepThatCanStartAFlow):
             for trigger_condition in self.trigger_conditions
         )
 
+    @property
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         return "intent"

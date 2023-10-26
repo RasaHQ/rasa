@@ -21,7 +21,7 @@ DEFAULT_LLM_CONFIG = {
 
 @dataclass
 class GenerateResponseFlowStep(FlowStep):
-    """Represents the configuration of a step prompting an LLM."""
+    """A flow step that creates a free-form bot utterance using an LLM."""
 
     generation_prompt: Text
     """The prompt template of the flow step."""
@@ -29,34 +29,34 @@ class GenerateResponseFlowStep(FlowStep):
     """The LLM configuration of the flow step."""
 
     @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> GenerateResponseFlowStep:
-        """Used to read flow steps from parsed YAML.
+    def from_json(cls, data: Dict[Text, Any]) -> GenerateResponseFlowStep:
+        """Create a GenerateResponseFlowStep from serialized data
 
         Args:
-            flow_step_config: The parsed YAML as a dictionary.
+            data: data for a GenerateResponseFlowStep in a serialized format
 
         Returns:
-            The parsed flow step.
+            A GenerateResponseFlowStep object
         """
-        base = super()._from_json(flow_step_config)
+        base = super()._from_json(data)
         return GenerateResponseFlowStep(
-            generation_prompt=flow_step_config.get("generation_prompt", ""),
-            llm_config=flow_step_config.get("llm", None),
+            generation_prompt=data["generation_prompt"],
+            llm_config=data.get("llm"),
             **base.__dict__,
         )
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
+        """Serialize the GenerateResponseFlowStep object.
 
         Returns:
-            The flow step as a dictionary.
+            the GenerateResponseFlowStep object as serialized data.
         """
-        dump = super().as_json()
-        dump["generation_prompt"] = self.generation_prompt
+        data = super().as_json()
+        data["generation_prompt"] = self.generation_prompt
         if self.llm_config:
-            dump["llm"] = self.llm_config
+            data["llm"] = self.llm_config
 
-        return dump
+        return data
 
     def generate(self, tracker: DialogueStateTracker) -> Optional[Text]:
         """Generates a response for the given tracker.
@@ -91,5 +91,6 @@ class GenerateResponseFlowStep(FlowStep):
             )
             return None
 
+    @property
     def default_id_postfix(self) -> str:
         return "generate"

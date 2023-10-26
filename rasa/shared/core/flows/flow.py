@@ -37,21 +37,21 @@ class Flow:
     """The steps of the flow."""
 
     @staticmethod
-    def from_json(flow_id: Text, flow_config: Dict[Text, Any]) -> Flow:
-        """Used to read flows from parsed YAML.
+    def from_json(flow_id: Text, data: Dict[Text, Any]) -> Flow:
+        """Create a Flow object from serialized data
 
         Args:
-            flow_config: The parsed YAML as a dictionary.
+            data: data for a Flow object in a serialized format.
 
         Returns:
-            The parsed flow.
+            A Flow object.
         """
-        step_sequence = StepSequence.from_json(flow_config.get("steps"))
+        step_sequence = StepSequence.from_json(data.get("steps"))
 
         return Flow(
             id=flow_id,
-            name=flow_config.get("name", Flow.create_default_name(flow_id)),
-            description=flow_config.get("description"),
+            name=data.get("name", Flow.create_default_name(flow_id)),
+            description=data.get("description"),
             step_sequence=Flow.resolve_default_ids(step_sequence),
         )
 
@@ -100,10 +100,10 @@ class Flow:
         return step_sequence
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow as a dictionary.
+        """Serialize the Flow object.
 
         Returns:
-            The flow as a dictionary.
+            The Flow object as serialized data.
         """
         return {
             "id": self.id,
@@ -146,11 +146,11 @@ class Flow:
     def previous_collect_steps(
         self, step_id: Optional[str]
     ) -> List[CollectInformationFlowStep]:
-        """Returns the collect information steps asked before the given step.
+        """Return the CollectInformationFlowSteps asked before the given step.
 
-        CollectInformationSteps are returned roughly in reverse order, i.e. the first
-        collect information in the list is the one asked last. But due to circles
-        in the flow the order is not guaranteed to be exactly reverse.
+        CollectInformationFlowSteps are returned roughly in reverse order,
+        i.e. the first step in the list is the one that was asked last. However,
+        due to circles in the flow, the order is not guaranteed to be exactly reverse.
         """
 
         def _previously_asked_collect(
@@ -187,11 +187,11 @@ class Flow:
 
     @property
     def is_rasa_default_flow(self) -> bool:
-        """Test whether something is a rasa default flow."""
+        """Test whether the flow is a rasa default flow."""
         return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
 
     def get_collect_steps(self) -> List[CollectInformationFlowStep]:
-        """Return the collect information steps of the flow."""
+        """Return all CollectInformationFlowSteps in the flow."""
         collect_steps = []
         for step in self.steps:
             if isinstance(step, CollectInformationFlowStep):
@@ -200,7 +200,7 @@ class Flow:
 
     @property
     def steps(self) -> List[FlowStep]:
-        """Returns the steps of the flow."""
+        """Return the steps of the flow."""
         return self.step_sequence.steps
 
     @cached_property

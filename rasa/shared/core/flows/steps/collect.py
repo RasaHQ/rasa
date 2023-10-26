@@ -8,7 +8,7 @@ from rasa.shared.core.flows.flow_step import FlowStep
 
 @dataclass
 class SlotRejection:
-    """A slot rejection."""
+    """A pair of validation condition and an utterance for the case of failure."""
 
     if_: str
     """The condition that should be checked."""
@@ -16,25 +16,25 @@ class SlotRejection:
     """The utterance that should be executed if the condition is met."""
 
     @staticmethod
-    def from_dict(rejection_config: Dict[Text, Any]) -> SlotRejection:
-        """Used to read slot rejections from parsed YAML.
+    def from_dict(data: Dict[Text, Any]) -> SlotRejection:
+        """Create a SlotRejection object from serialized data
 
         Args:
-            rejection_config: The parsed YAML as a dictionary.
+            data: data for a SlotRejection object in a serialized format
 
         Returns:
-            The parsed slot rejection.
+            A SlotRejection object
         """
         return SlotRejection(
-            if_=rejection_config["if"],
-            utter=rejection_config["utter"],
+            if_=data["if"],
+            utter=data["utter"],
         )
 
     def as_dict(self) -> Dict[Text, Any]:
-        """Returns the slot rejection as a dictionary.
+        """Serialize the SlotRejection object
 
         Returns:
-            The slot rejection as a dictionary.
+            the SlotRejection object as serialized data
         """
         return {
             "if": self.if_,
@@ -44,7 +44,7 @@ class SlotRejection:
 
 @dataclass
 class CollectInformationFlowStep(FlowStep):
-    """Represents the configuration of a collect information flow step."""
+    """A flow step for asking the user for information to fill a specific slot."""
 
     collect: Text
     """The collect information of the flow step."""
@@ -58,45 +58,44 @@ class CollectInformationFlowStep(FlowStep):
     """Determines whether to reset the slot value at the end of the flow."""
 
     @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> CollectInformationFlowStep:
-        """Used to read flow steps from parsed YAML.
+    def from_json(cls, data: Dict[Text, Any]) -> CollectInformationFlowStep:
+        """Create a CollectInformationFlowStep object from serialized data
 
         Args:
-            flow_step_config: The parsed YAML as a dictionary.
+            data: data for a CollectInformationFlowStep object in a serialized format
 
         Returns:
-            The parsed flow step.
+            A CollectInformationFlowStep object
         """
-        base = super()._from_json(flow_step_config)
+        base = super()._from_json(data)
         return CollectInformationFlowStep(
-            collect=flow_step_config["collect"],
-            utter=flow_step_config.get(
-                "utter", f"utter_ask_{flow_step_config['collect']}"
-            ),
-            ask_before_filling=flow_step_config.get("ask_before_filling", False),
-            reset_after_flow_ends=flow_step_config.get("reset_after_flow_ends", True),
+            collect=data["collect"],
+            utter=data.get("utter", f"utter_ask_{data['collect']}"),
+            ask_before_filling=data.get("ask_before_filling", False),
+            reset_after_flow_ends=data.get("reset_after_flow_ends", True),
             rejections=[
                 SlotRejection.from_dict(rejection)
-                for rejection in flow_step_config.get("rejections", [])
+                for rejection in data.get("rejections", [])
             ],
             **base.__dict__,
         )
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
+        """Serialize the CollectInformationFlowStep object.
 
         Returns:
-            The flow step as a dictionary.
+            the CollectInformationFlowStep object as serialized data
         """
-        dump = super().as_json()
-        dump["collect"] = self.collect
-        dump["utter"] = self.utter
-        dump["ask_before_filling"] = self.ask_before_filling
-        dump["reset_after_flow_ends"] = self.reset_after_flow_ends
-        dump["rejections"] = [rejection.as_dict() for rejection in self.rejections]
+        data = super().as_json()
+        data["collect"] = self.collect
+        data["utter"] = self.utter
+        data["ask_before_filling"] = self.ask_before_filling
+        data["reset_after_flow_ends"] = self.reset_after_flow_ends
+        data["rejections"] = [rejection.as_dict() for rejection in self.rejections]
 
-        return dump
+        return data
 
+    @property
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         return f"collect_{self.collect}"

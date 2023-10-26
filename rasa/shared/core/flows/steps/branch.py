@@ -5,33 +5,36 @@ from typing import Dict, Text, Any
 
 from rasa.shared.core.flows.flow_step import FlowStep
 
-
+# TODO: this is ambiguous, even steps that only have one static
+#  follow up might become branch flow steps
+#  validator also misuses it!!!
 @dataclass
 class BranchFlowStep(FlowStep):
-    """Represents the configuration of a branch flow step."""
+    """An unspecific FlowStep that has a next attribute."""
 
     @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> BranchFlowStep:
-        """Used to read flow steps from parsed YAML.
+    def from_json(cls, data: Dict[Text, Any]) -> BranchFlowStep:
+        """Create a BranchFlowStep object from serialized data.
 
         Args:
-            flow_step_config: The parsed YAML as a dictionary.
+            data: data for a BranchFlowStep object in a serialized format
 
         Returns:
-            The parsed flow step.
+            A BranchFlowStep object.
         """
-        base = super()._from_json(flow_step_config)
+        base = super()._from_json(data)
         return BranchFlowStep(**base.__dict__)
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
+        """Serialize the BranchFlowStep object
 
         Returns:
-            The flow step as a dictionary.
+            the BranchFlowStep object as serialized data.
         """
         dump = super().as_json()
         return dump
 
+    @property
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         return "branch"

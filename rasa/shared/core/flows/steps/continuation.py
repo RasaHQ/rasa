@@ -9,7 +9,7 @@ from rasa.shared.core.flows.steps.internal import InternalFlowStep
 
 @dataclass
 class ContinueFlowStep(InternalFlowStep):
-    """Represents the configuration of a continue-step flow step."""
+    """A flow step that is dynamically introduced to jump to other flow steps."""
 
     def __init__(self, next: str) -> None:
         """Initializes a continue-step flow step."""

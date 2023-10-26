@@ -9,37 +9,38 @@ from rasa.shared.core.flows.flow_step import FlowStep
 
 @dataclass
 class ActionFlowStep(FlowStep):
-    """Represents the configuration of an action flow step."""
+    """A flow step that that defines an action to be executed."""
 
     action: Text
     """The action of the flow step."""
 
     @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> ActionFlowStep:
-        """Used to read flow steps from parsed YAML.
+    def from_json(cls, data: Dict[Text, Any]) -> ActionFlowStep:
+        """Create an ActionFlowStep object from serialized data
 
         Args:
-            flow_step_config: The parsed YAML as a dictionary.
+            data: data for an ActionFlowStep object in a serialized format
 
         Returns:
-            The parsed flow step.
+            An ActionFlowStep object
         """
-        base = super()._from_json(flow_step_config)
+        base = super()._from_json(data)
         return ActionFlowStep(
-            action=flow_step_config.get("action", ""),
+            action=data["action"],
             **base.__dict__,
         )
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
+        """Serialize the ActionFlowStep
 
         Returns:
-            The flow step as a dictionary.
+            The ActionFlowStep object as serialized data.
         """
-        dump = super().as_json()
-        dump["action"] = self.action
-        return dump
+        data = super().as_json()
+        data["action"] = self.action
+        return data
 
+    @property
     def default_id_postfix(self) -> str:
         return self.action
 

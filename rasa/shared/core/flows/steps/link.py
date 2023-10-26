@@ -8,37 +8,38 @@ from rasa.shared.core.flows.flow_step import FlowStep
 
 @dataclass
 class LinkFlowStep(FlowStep):
-    """Represents the configuration of a link flow step."""
+    """A flow step at the end of a flow that links to and starts another flow."""
 
     link: Text
-    """The link of the flow step."""
+    """The id of the flow that should be started subsequently."""
 
     @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> LinkFlowStep:
-        """Used to read flow steps from parsed YAML.
+    def from_json(cls, data: Dict[Text, Any]) -> LinkFlowStep:
+        """Create a LinkFlowStep from serialized data
 
         Args:
-            flow_step_config: The parsed YAML as a dictionary.
+            data: data for a LinkFlowStep in a serialized format
 
         Returns:
-            The parsed flow step.
+            a LinkFlowStep object
         """
-        base = super()._from_json(flow_step_config)
+        base = super()._from_json(data)
         return LinkFlowStep(
-            link=flow_step_config.get("link", ""),
+            link=data.get("link", ""),
             **base.__dict__,
         )
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
+        """Serialize the LinkFlowStep object
 
         Returns:
-            The flow step as a dictionary.
+            the LinkFlowStep object as serialized data.
         """
-        dump = super().as_json()
-        dump["link"] = self.link
-        return dump
+        data = super().as_json()
+        data["link"] = self.link
+        return data
 
+    @property
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         return f"link_{self.link}"

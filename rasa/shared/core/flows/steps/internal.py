@@ -6,28 +6,34 @@ from rasa.shared.core.flows.flow_step import FlowStep
 
 
 class InternalFlowStep(FlowStep):
-    """Represents the configuration of a built-in flow step.
+    """A superclass for built-in flow steps.
 
-    Built in flow steps are required to manage the lifecycle of a
+    Built-in flow steps are required to manage the lifecycle of a
     flow and are not intended to be used by users.
     """
 
     @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> InternalFlowStep:
-        """Used to read flow steps from parsed JSON.
+    def from_json(cls, data: Dict[Text, Any]) -> InternalFlowStep:
+        """Create an InternalFlowStep object from serialized data.
 
         Args:
-            flow_step_config: The parsed JSON as a dictionary.
+            data: data for an InternalFlowStep in a serialized format
 
         Returns:
-            The parsed flow step.
+            Raises because InternalFlowSteps are not serialized or de-serialized.
         """
-        raise ValueError("A start step cannot be parsed.")
+        raise ValueError(
+            "Internal flow steps are ephemeral and are not to be serialized "
+            "or de-serialized."
+        )
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
+        """Serialize the InternalFlowStep object
 
         Returns:
-            The flow step as a dictionary.
+            Raises because InternalFlowSteps are not serialized or de-serialized.
         """
-        raise ValueError("A start step cannot be dumped.")
+        raise ValueError(
+            "Internal flow steps are ephemeral and are not to be serialized "
+            "or de-serialized."
+        )

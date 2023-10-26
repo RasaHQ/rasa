@@ -14,13 +14,13 @@ from rasa.shared.core.flows.steps.internal import InternalFlowStep
 
 @dataclass
 class StartFlowStep(InternalFlowStep):
-    """Represents the configuration of a start flow step."""
+    """A dynamically added flow step that represents the beginning of a flow."""
 
     def __init__(self, start_step_id: Optional[Text]) -> None:
         """Initializes a start flow step.
 
         Args:
-            start_step: The step to start the flow from.
+            start_step_id: The step id of the first step of the flow
         """
         if start_step_id is not None:
             links: List[FlowStepLink] = [StaticFlowStepLink(start_step_id)]

@@ -9,7 +9,7 @@ from rasa.shared.core.flows.steps.internal import InternalFlowStep
 
 @dataclass
 class EndFlowStep(InternalFlowStep):
-    """Represents the configuration of an end to a flow."""
+    """A dynamically added flow step that marks the end of a flow."""
 
     def __init__(self) -> None:
         """Initializes an end flow step."""
