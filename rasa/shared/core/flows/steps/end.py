@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rasa.shared.core.flows.flow_step_links import FlowLinks
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.internal import InternalFlowStep
 
@@ -18,5 +18,5 @@ class EndFlowStep(InternalFlowStep):
             custom_id=END_STEP,
             description=None,
             metadata={},
-            next=FlowLinks(links=[]),
+            next=FlowStepLinks(links=[]),
         )

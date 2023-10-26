@@ -6,9 +6,9 @@ from rasa.shared.core.flows.flow_step import (
     FlowStep,
 )
 from rasa.shared.core.flows.flow_step_links import (
-    BranchBasedLink,
-    IfFlowLink,
-    ElseFlowLink,
+    BranchingFlowStepLink,
+    IfFlowStepLink,
+    ElseFlowStepLink,
 )
 from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX, DEFAULT_STEPS
 from rasa.shared.core.flows.steps.link import LinkFlowStep
@@ -198,7 +198,7 @@ def validate_no_empty_step_sequences(flow: Flow) -> None:
     """Validate that the flow does not have any empty step sequences."""
     for step in flow.steps:
         for link in step.next.links:
-            if isinstance(link, BranchBasedLink) and link.target is None:
+            if isinstance(link, BranchingFlowStepLink) and link.target is None:
                 raise EmptyStepSequenceException(flow.id, step.id)
 
 
@@ -214,8 +214,8 @@ def validate_all_branches_have_an_else(flow: Flow) -> None:
     for step in flow.steps:
         links = step.next.links
 
-        has_an_if = any(isinstance(link, IfFlowLink) for link in links)
-        has_an_else = any(isinstance(link, ElseFlowLink) for link in links)
+        has_an_if = any(isinstance(link, IfFlowStepLink) for link in links)
+        has_an_else = any(isinstance(link, ElseFlowStepLink) for link in links)
 
         if has_an_if and not has_an_else:
             raise MissingElseBranchException(step.id, flow.id)

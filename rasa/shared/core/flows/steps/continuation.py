@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rasa.shared.core.flows.flow_step_links import FlowLinks, StaticFlowLink
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks, StaticFlowStepLink
 from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX
 from rasa.shared.core.flows.steps.internal import InternalFlowStep
 
@@ -25,7 +25,7 @@ class ContinueFlowStep(InternalFlowStep):
             # if we want to "re-run" a step, we need to link to it again.
             # This is why the continue step links to the step that should be
             # continued.
-            next=FlowLinks(links=[StaticFlowLink(next)]),
+            next=FlowStepLinks(links=[StaticFlowStepLink(next)]),
         )
 
     @staticmethod

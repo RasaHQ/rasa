@@ -3,7 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Text, List
 
-from rasa.shared.core.flows.flow_step_links import FlowLinks, FlowLink, StaticFlowLink
+from rasa.shared.core.flows.flow_step_links import (
+    FlowStepLinks,
+    FlowStepLink,
+    StaticFlowStepLink,
+)
 from rasa.shared.core.flows.steps.constants import START_STEP
 from rasa.shared.core.flows.steps.internal import InternalFlowStep
 
@@ -19,7 +23,7 @@ class StartFlowStep(InternalFlowStep):
             start_step: The step to start the flow from.
         """
         if start_step_id is not None:
-            links: List[FlowLink] = [StaticFlowLink(start_step_id)]
+            links: List[FlowStepLink] = [StaticFlowStepLink(start_step_id)]
         else:
             links = []
 
@@ -28,5 +32,5 @@ class StartFlowStep(InternalFlowStep):
             custom_id=START_STEP,
             description=None,
             metadata={},
-            next=FlowLinks(links=links),
+            next=FlowStepLinks(links=links),
         )

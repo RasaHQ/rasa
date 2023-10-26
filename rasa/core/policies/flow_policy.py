@@ -48,9 +48,9 @@ from rasa.shared.core.flows.flow_step import (
     FlowStep,
 )
 from rasa.shared.core.flows.flow_step_links import (
-    IfFlowLink,
-    ElseFlowLink,
-    StaticFlowLink,
+    IfFlowStepLink,
+    ElseFlowStepLink,
+    StaticFlowStepLink,
 )
 from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
@@ -370,18 +370,18 @@ class FlowExecutor:
     ) -> Optional[Text]:
         """Selects the next step id based on the current step."""
         next = current.next
-        if len(next.links) == 1 and isinstance(next.links[0], StaticFlowLink):
+        if len(next.links) == 1 and isinstance(next.links[0], StaticFlowStepLink):
             return next.links[0].target
 
         # evaluate if conditions
         for link in next.links:
-            if isinstance(link, IfFlowLink) and link.condition:
+            if isinstance(link, IfFlowStepLink) and link.condition:
                 if self.is_condition_satisfied(link.condition, tracker):
                     return link.target
 
         # evaluate else condition
         for link in next.links:
-            if isinstance(link, ElseFlowLink):
+            if isinstance(link, ElseFlowStepLink):
                 return link.target
 
         if next.links:

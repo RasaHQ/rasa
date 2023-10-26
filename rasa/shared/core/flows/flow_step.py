@@ -13,7 +13,7 @@ from typing import (
 import structlog
 
 if TYPE_CHECKING:
-    from rasa.shared.core.flows.flow_step_links import FlowLinks
+    from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 
 structlogger = structlog.get_logger()
 
@@ -65,7 +65,7 @@ class FlowStep:
     """The description of the flow step."""
     metadata: Dict[Text, Any]
     """Additional, unstructured information about this flow step."""
-    next: FlowLinks
+    next: FlowStepLinks
     """The next steps of the flow step."""
 
     @classmethod
@@ -78,7 +78,7 @@ class FlowStep:
         Returns:
             The parsed flow step.
         """
-        from rasa.shared.core.flows.flow_step_links import FlowLinks
+        from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 
         return FlowStep(
             # the idx is set later once the flow is created that contains
@@ -87,7 +87,7 @@ class FlowStep:
             custom_id=flow_step_config.get("id"),
             description=flow_step_config.get("description"),
             metadata=flow_step_config.get("metadata", {}),
-            next=FlowLinks.from_json(flow_step_config.get("next", [])),
+            next=FlowStepLinks.from_json(flow_step_config.get("next", [])),
         )
 
     def as_json(self) -> Dict[Text, Any]:

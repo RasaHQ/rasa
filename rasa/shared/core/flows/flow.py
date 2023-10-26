@@ -9,7 +9,7 @@ from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.flows.flow_step import (
     FlowStep,
 )
-from rasa.shared.core.flows.flow_step_links import StaticFlowLink
+from rasa.shared.core.flows.flow_step_links import StaticFlowStepLink
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.flows.steps.constants import (
     CONTINUE_STEP_PREFIX,
@@ -89,9 +89,9 @@ class Flow:
                             # if this is the root sequence, we need to add an end step
                             # to the end of the sequence. other sequences, e.g.
                             # in branches need to explicitly add a next step.
-                            step.next.links.append(StaticFlowLink(END_STEP))
+                            step.next.links.append(StaticFlowStepLink(END_STEP))
                     else:
-                        step.next.links.append(StaticFlowLink(steps[i + 1].id))
+                        step.next.links.append(StaticFlowStepLink(steps[i + 1].id))
                 for link in step.next.links:
                     if sub_steps := link.child_steps():
                         resolve_default_next(sub_steps, is_root_sequence=False)

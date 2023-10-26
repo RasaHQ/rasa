@@ -11,45 +11,45 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class FlowLinks:
-    """Represents the configuration of a list of flow links."""
+class FlowStepLinks:
+    """A list of flow step links."""
 
-    links: List[FlowLink]
+    links: List[FlowStepLink]
 
     @staticmethod
-    def from_json(flow_links_config: Union[str, List[Dict[Text, Any]]]) -> FlowLinks:
-        """Used to read flow links from parsed YAML.
+    def from_json(data: Union[str, List[Dict[Text, Any]]]) -> FlowStepLinks:
+        """Create a FlowStepLinks object from a serialized data format.
 
         Args:
-            flow_links_config: The parsed YAML as a dictionary.
+            data: data for a FlowStepLinks object in a serialized format.
 
         Returns:
-            The parsed flow links.
+            A FlowStepLinks object.
         """
-        if not flow_links_config:
-            return FlowLinks(links=[])
+        if not data:
+            return FlowStepLinks(links=[])
 
-        if isinstance(flow_links_config, str):
-            return FlowLinks(links=[StaticFlowLink.from_json(flow_links_config)])
+        if isinstance(data, str):
+            return FlowStepLinks(links=[StaticFlowStepLink.from_json(data)])
 
-        return FlowLinks(
+        return FlowStepLinks(
             links=[
-                BranchBasedLink.from_json(link_config)
-                for link_config in flow_links_config
+                BranchingFlowStepLink.from_json(link_config)
+                for link_config in data
                 if link_config
             ]
         )
 
     def as_json(self) -> Optional[Union[str, List[Dict[str, Any]]]]:
-        """Returns the flow links as a dictionary.
+        """Serialize the FlowStepLinks object.
 
         Returns:
-            The flow links as a dictionary.
+            The FlowStepLinks object as serialized data.
         """
         if not self.links:
             return None
 
-        if len(self.links) == 1 and isinstance(self.links[0], StaticFlowLink):
+        if len(self.links) == 1 and isinstance(self.links[0], StaticFlowStepLink):
             return self.links[0].as_json()
 
         return [link.as_json() for link in self.links]
@@ -59,66 +59,66 @@ class FlowLinks:
         return len(self.links) == 0
 
     def steps_in_tree(self) -> Generator[FlowStep, None, None]:
-        """Returns the steps in the tree of the flow links."""
+        """Returns the steps in the tree of the flow step links."""
         for link in self.links:
             yield from link.steps_in_tree()
 
 
-class FlowLink:
-    """Represents a flow link."""
+class FlowStepLink:
+    """A flow step link that links two steps in a single flow."""
 
     @property
-    def target(self) -> Optional[Text]:
-        """Returns the target of the flow link.
+    def target(self) -> Text:
+        """Returns the target flow step id.
 
         Returns:
-            The target of the flow link.
+            The target flow step id.
         """
         raise NotImplementedError()
 
     def as_json(self) -> Any:
-        """Returns the flow link as a dictionary.
+        """Serialize the FlowStepLink object.
 
         Returns:
-            The flow link as a dictionary.
+            The FlowStepLink as serialized data.
         """
         raise NotImplementedError()
 
     @staticmethod
-    def from_json(link_config: Any) -> FlowLink:
-        """Used to read flow links from parsed YAML.
+    def from_json(data: Any) -> FlowStepLink:
+        """Create a FlowStepLink object from a serialized data format.
 
         Args:
-            link_config: The parsed YAML as a dictionary.
+            data: data for a FlowStepLink object in a serialized format.
 
         Returns:
-            The parsed flow link.
+            The FlowStepLink object.
         """
         raise NotImplementedError()
 
     def steps_in_tree(self) -> Generator[FlowStep, None, None]:
-        """Returns the steps in the tree of the flow link."""
+        """Recursively generates the steps in the tree."""
         raise NotImplementedError()
 
     def child_steps(self) -> List[FlowStep]:
-        """Returns the child steps of the flow link."""
+        """Returns the steps of the linked FlowStepSequence if any."""
         raise NotImplementedError()
 
 
 @dataclass
-class BranchBasedLink(FlowLink):
+class BranchingFlowStepLink(FlowStepLink):
     target_reference: Union[Text, StepSequence]
-    """The id of the linked flow."""
+    """The id of the linked step or a sequence of steps."""
 
     def steps_in_tree(self) -> Generator[FlowStep, None, None]:
-        """Returns the steps in the tree of the flow link."""
+        """Recursively generates the steps in the tree."""
         from rasa.shared.core.flows.flow_step_sequence import StepSequence
 
         if isinstance(self.target_reference, StepSequence):
             yield from self.target_reference.steps
 
     def child_steps(self) -> List[FlowStep]:
-        """Returns the child steps of the flow link."""
+        """Returns the steps of the linked flow step sequence if any."""
         from rasa.shared.core.flows.flow_step_sequence import StepSequence
 
         if isinstance(self.target_reference, StepSequence):
@@ -127,68 +127,69 @@ class BranchBasedLink(FlowLink):
             return []
 
     @property
-    def target(self) -> Optional[Text]:
-        """Returns the target of the flow link."""
+    def target(self) -> Text:
+        """Return the target flow step id."""
         from rasa.shared.core.flows.flow_step_sequence import StepSequence
 
         if isinstance(self.target_reference, StepSequence):
             if first := self.target_reference.first():
                 return first.id
             else:
-                return None
+                raise RuntimeError(
+                    "Step sequence is empty despite previous validation of "
+                    "this not happening"
+                )
         else:
             return self.target_reference
 
     @staticmethod
-    def from_json(link_config: Dict[Text, Any]) -> BranchBasedLink:
-        """Used to read a single flow links from parsed YAML.
+    def from_json(data: Dict[Text, Any]) -> BranchingFlowStepLink:
+        """Create a BranchingFlowStepLink object from a serialized data format.
 
         Args:
-            link_config: The parsed YAML as a dictionary.
+            data: data for a BranchingFlowStepLink object in a serialized format.
 
         Returns:
-            The parsed flow link.
+            a BranchingFlowStepLink object.
         """
-        if "if" in link_config:
-            return IfFlowLink.from_json(link_config)
+        if "if" in data:
+            return IfFlowStepLink.from_json(data)
         else:
-            return ElseFlowLink.from_json(link_config)
+            return ElseFlowStepLink.from_json(data)
 
 
 @dataclass
-class IfFlowLink(BranchBasedLink):
-    """Represents the configuration of an if flow link."""
+class IfFlowStepLink(BranchingFlowStepLink):
+    """A flow step link that links to another step or step sequence conditionally."""
 
-    condition: Optional[Text]
-    """The condition of the linked flow."""
+    condition: Text
+    """The condition that needs to be satisfied to follow this flow step link."""
 
     @staticmethod
-    def from_json(link_config: Dict[Text, Any]) -> IfFlowLink:
-        """Used to read flow links from parsed YAML.
+    def from_json(data: Dict[Text, Any]) -> IfFlowStepLink:
+        """Create an IfFlowStepLink object from a serialized data format.
 
         Args:
-            link_config: The parsed YAML as a dictionary.
+            data: data for a IfFlowStepLink in a serialized format.
 
         Returns:
-            The parsed flow link.
+            An IfFlowStepLink object.
         """
         from rasa.shared.core.flows.flow_step_sequence import StepSequence
 
-        if isinstance(link_config["then"], str):
-            return IfFlowLink(
-                target_reference=link_config["then"], condition=link_config.get("if")
-            )
+        if isinstance(data["then"], str):
+            return IfFlowStepLink(target_reference=data["then"], condition=data["if"])
         else:
-            return IfFlowLink(
-                target_reference=StepSequence.from_json(link_config["then"]),
-                condition=link_config.get("if"),
+            return IfFlowStepLink(
+                target_reference=StepSequence.from_json(data["then"]),
+                condition=data["if"],
             )
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow link as a dictionary.
+        """Serialize the IfFlowStepLink object.
 
         Returns:
-            The flow link as a dictionary.
+            the IfFlowStepLink object as serialized data.
         """
         from rasa.shared.core.flows.flow_step_sequence import StepSequence
 
@@ -201,33 +202,33 @@ class IfFlowLink(BranchBasedLink):
 
 
 @dataclass
-class ElseFlowLink(BranchBasedLink):
-    """Represents the configuration of an else flow link."""
+class ElseFlowStepLink(BranchingFlowStepLink):
+    """A flow step link that is taken when conditional flow step links weren't taken."""
 
     @staticmethod
-    def from_json(link_config: Dict[Text, Any]) -> ElseFlowLink:
-        """Used to read flow links from parsed YAML.
+    def from_json(data: Dict[Text, Any]) -> ElseFlowStepLink:
+        """Create an ElseFlowStepLink object from serialized data.
 
         Args:
-            link_config: The parsed YAML as a dictionary.
+            data: data for an ElseFlowStepLink in a serialized format
 
         Returns:
-            The parsed flow link.
+            An ElseFlowStepLink
         """
         from rasa.shared.core.flows.flow_step_sequence import StepSequence
 
-        if isinstance(link_config["else"], str):
-            return ElseFlowLink(target_reference=link_config["else"])
+        if isinstance(data["else"], str):
+            return ElseFlowStepLink(target_reference=data["else"])
         else:
-            return ElseFlowLink(
-                target_reference=StepSequence.from_json(link_config["else"])
+            return ElseFlowStepLink(
+                target_reference=StepSequence.from_json(data["else"])
             )
 
     def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow link as a dictionary.
+        """Serialize the ElseFlowStepLink object
 
         Returns:
-            The flow link as a dictionary.
+            The ElseFlowStepLink as serialized data.
         """
         from rasa.shared.core.flows.flow_step_sequence import StepSequence
 
@@ -239,42 +240,42 @@ class ElseFlowLink(BranchBasedLink):
 
 
 @dataclass
-class StaticFlowLink(FlowLink):
-    """Represents the configuration of a static flow link."""
+class StaticFlowStepLink(FlowStepLink):
+    """A static flow step link, linking to a step in the same flow unconditionally."""
 
-    target_id: Text
-    """The id of the linked flow."""
+    target_step_id: Text
+    """The id of the linked step."""
 
     @staticmethod
-    def from_json(link_config: Text) -> StaticFlowLink:
-        """Used to read flow links from parsed YAML.
+    def from_json(data: Text) -> StaticFlowStepLink:
+        """Create a StaticFlowStepLink from serialized data
 
         Args:
-            link_config: The parsed YAML as a dictionary.
+            data: data for a StaticFlowStepLink in a serialized format
 
         Returns:
-            The parsed flow link.
+            A StaticFlowStepLink object
         """
-        return StaticFlowLink(link_config)
+        return StaticFlowStepLink(data)
 
     def as_json(self) -> Text:
-        """Returns the flow link as a dictionary.
+        """Serialize the StaticFlowStepLink object
 
         Returns:
-            The flow link as a dictionary.
+            The StaticFlowStepLink object as serialized data.
         """
         return self.target
 
     def steps_in_tree(self) -> Generator[FlowStep, None, None]:
-        """Returns the steps in the tree of the flow link."""
+        """Recursively generates the steps in the tree."""
         # static links do not have any child steps
         yield from []
 
     def child_steps(self) -> List[FlowStep]:
-        """Returns the child steps of the flow link."""
+        """Returns the steps of the linked FlowStepSequence if any."""
         return []
 
     @property
-    def target(self) -> Optional[Text]:
-        """Returns the target of the flow link."""
-        return self.target_id
+    def target(self) -> Text:
+        """Returns the target step id."""
+        return self.target_step_id

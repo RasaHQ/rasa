@@ -7,7 +7,7 @@ from typing import Set, Text, Optional, Dict, Any, List, Tuple
 from pypred import Predicate
 
 import rasa.core.training.story_conflict
-from rasa.shared.core.flows.flow_step_links import IfFlowLink
+from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
 from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.steps.branch import BranchFlowStep
@@ -637,7 +637,7 @@ class Validator:
             for step in flow.steps:
                 if isinstance(step, BranchFlowStep):
                     for link in step.next.links:
-                        if isinstance(link, IfFlowLink):
+                        if isinstance(link, IfFlowStepLink):
                             predicate, all_good = Validator._construct_predicate(
                                 link.condition, step.id
                             )

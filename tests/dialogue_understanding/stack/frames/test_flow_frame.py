@@ -6,7 +6,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
     FlowStackFrameType,
 )
-from rasa.shared.core.flows.flow_step_links import FlowLinks
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps.action import ActionFlowStep
 from rasa.shared.core.flows.flow_step_sequence import StepSequence
 from rasa.shared.core.flows.flow import Flow
@@ -87,7 +87,7 @@ def test_flow_get_step():
         custom_id="my_step",
         description=None,
         metadata={},
-        next=FlowLinks(links=[]),
+        next=FlowStepLinks(links=[]),
     )
     all_flows = FlowsList(
         flows=[
