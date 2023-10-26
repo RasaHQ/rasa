@@ -10,7 +10,7 @@ import rasa.core.training.story_conflict
 from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
 from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
-from rasa.shared.core.flows.steps.branch import BranchFlowStep
+from rasa.shared.core.flows.flow_step import FlowStep
 from rasa.shared.core.flows.steps.action import ActionFlowStep
 from rasa.shared.core.flows.flows_list import FlowsList
 import rasa.shared.nlu.constants
@@ -631,24 +631,23 @@ class Validator:
         return pred, all_good
 
     def verify_predicates(self) -> bool:
-        """Checks that predicates used in branch flow steps or `collect` steps are valid."""  # noqa: E501
+        """Validate predicates used in flow step links and slot rejections."""
         all_good = True
         for flow in self.flows.underlying_flows:
             for step in flow.steps:
-                if isinstance(step, BranchFlowStep):
-                    for link in step.next.links:
-                        if isinstance(link, IfFlowStepLink):
-                            predicate, all_good = Validator._construct_predicate(
-                                link.condition, step.id
+                for link in step.next.links:
+                    if isinstance(link, IfFlowStepLink):
+                        predicate, all_good = Validator._construct_predicate(
+                            link.condition, step.id
+                        )
+                        if predicate and not predicate.is_valid():
+                            logger.error(
+                                f"Detected invalid condition '{link.condition}' "
+                                f"at step '{step.id}' for flow id '{flow.id}'. "
+                                f"Please make sure that all conditions are valid."
                             )
-                            if predicate and not predicate.is_valid():
-                                logger.error(
-                                    f"Detected invalid condition '{link.condition}' "
-                                    f"at step '{step.id}' for flow id '{flow.id}'. "
-                                    f"Please make sure that all conditions are valid."
-                                )
-                                all_good = False
-                elif isinstance(step, CollectInformationFlowStep):
+                            all_good = False
+                if isinstance(step, CollectInformationFlowStep):
                     predicates = [predicate.if_ for predicate in step.rejections]
                     for predicate in predicates:
                         pred, all_good = Validator._construct_predicate(

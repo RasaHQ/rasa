@@ -23,7 +23,7 @@ class SetSlotsFlowStep(FlowStep):
         Returns:
             a SetSlotsFlowStep object
         """
-        base = super()._from_json(data)
+        base = super().from_json(data)
         slots = [
             {"key": k, "value": v}
             for slot_sets in data["set_slots"]

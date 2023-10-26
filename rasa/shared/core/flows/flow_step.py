@@ -34,7 +34,6 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
         LinkFlowStep,
         SetSlotsFlowStep,
         GenerateResponseFlowStep,
-        BranchFlowStep,
     )
 
     if "action" in data:
@@ -50,7 +49,7 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
     if "generation_prompt" in data:
         return GenerateResponseFlowStep.from_json(data)
     else:
-        return BranchFlowStep.from_json(data)
+        return FlowStep.from_json(data)
 
 
 @dataclass
@@ -69,7 +68,7 @@ class FlowStep:
     """The next steps of the flow step."""
 
     @classmethod
-    def _from_json(cls, flow_step_config: Dict[Text, Any]) -> FlowStep:
+    def from_json(cls, flow_step_config: Dict[Text, Any]) -> FlowStep:
         """Used to read flow steps from parsed YAML.
 
         Args:
@@ -122,7 +121,7 @@ class FlowStep:
     @property
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
-        raise NotImplementedError()
+        return "step"
 
     @property
     def utterances(self) -> Set[str]:

@@ -1,5 +1,4 @@
 from .action import ActionFlowStep
-from .branch import BranchFlowStep
 from .collect import CollectInformationFlowStep
 from .continuation import ContinueFlowStep
 from .end import EndFlowStep
@@ -13,7 +12,6 @@ from .user_message import UserMessageStep
 # to make ruff happy and use the imported names
 all_steps = [
     ActionFlowStep,
-    BranchFlowStep,
     CollectInformationFlowStep,
     ContinueFlowStep,
     EndFlowStep,

@@ -37,3 +37,8 @@ class InternalFlowStep(FlowStep):
             "Internal flow steps are ephemeral and are not to be serialized "
             "or de-serialized."
         )
+
+    @property
+    def default_id_postfix(self) -> str:
+        """Returns the default id postfix of the flow step."""
+        raise ValueError("Internal flow steps do not need a default id")

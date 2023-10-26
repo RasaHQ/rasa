@@ -23,7 +23,7 @@ class LinkFlowStep(FlowStep):
         Returns:
             a LinkFlowStep object
         """
-        base = super()._from_json(data)
+        base = super().from_json(data)
         return LinkFlowStep(
             link=data.get("link", ""),
             **base.__dict__,

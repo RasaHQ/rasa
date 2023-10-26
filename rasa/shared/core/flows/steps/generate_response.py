@@ -38,7 +38,7 @@ class GenerateResponseFlowStep(FlowStep):
         Returns:
             A GenerateResponseFlowStep object
         """
-        base = super()._from_json(data)
+        base = super().from_json(data)
         return GenerateResponseFlowStep(
             generation_prompt=data["generation_prompt"],
             llm_config=data.get("llm"),

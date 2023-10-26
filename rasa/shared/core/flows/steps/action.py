@@ -24,7 +24,7 @@ class ActionFlowStep(FlowStep):
         Returns:
             An ActionFlowStep object
         """
-        base = super()._from_json(data)
+        base = super().from_json(data)
         return ActionFlowStep(
             action=data["action"],
             **base.__dict__,

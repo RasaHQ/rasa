@@ -67,7 +67,7 @@ class UserMessageStep(FlowStep, StepThatCanStartAFlow):
         Returns:
             The parsed flow step.
         """
-        base = super()._from_json(flow_step_config)
+        base = super().from_json(flow_step_config)
 
         trigger_conditions = []
         if "intent" in flow_step_config:

@@ -67,7 +67,7 @@ class CollectInformationFlowStep(FlowStep):
         Returns:
             A CollectInformationFlowStep object
         """
-        base = super()._from_json(data)
+        base = super().from_json(data)
         return CollectInformationFlowStep(
             collect=data["collect"],
             utter=data.get("utter", f"utter_ask_{data['collect']}"),
