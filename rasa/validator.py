@@ -10,7 +10,6 @@ import rasa.core.training.story_conflict
 from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
 from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
-from rasa.shared.core.flows.flow_step import FlowStep
 from rasa.shared.core.flows.steps.action import ActionFlowStep
 from rasa.shared.core.flows.flows_list import FlowsList
 import rasa.shared.nlu.constants
